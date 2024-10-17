@@ -1,13 +1,15 @@
 import { Queue, Worker } from "bullmq";
 
+const connection = {
+  host: process.env.REDISHOST,
+  port: parseInt(process.env.REDISPORT || "6379", 10),
+  username: process.env.REDISUSER,
+  password: process.env.REDISPASSWORD,
+};
+
 export const createQueue = (name: string) => {
   return new Queue(name, {
-    connection: {
-      host: process.env.REDISHOST,
-      port: parseInt(process.env.REDISPORT || "6379", 10),
-      username: process.env.REDISUSER,
-      password: process.env.REDISPASSWORD,
-    },
+    connection,
   });
 };
 
@@ -19,12 +21,7 @@ export const setupQueueProcessor = (queueName: string) => {
       console.log(`Processing job ${job.id} with data:`, job.data);
     },
     {
-      connection: {
-        host: process.env.REDISHOST,
-        port: parseInt(process.env.REDISPORT || "6379", 10),
-        username: process.env.REDISUSER,
-        password: process.env.REDISPASSWORD,
-      },
+      connection,
     }
   );
 
