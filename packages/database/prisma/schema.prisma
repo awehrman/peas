@@ -70,3 +70,25 @@ model VerificationToken {
 
   @@unique([identifier, token])
 }
+
+model Note {
+  id           String  @id @default(cuid())
+  evernoteGUID String?
+  title        String
+  source       String?
+  // some kind of original_note_date? or like evernote meta?
+
+  // categories Category[]
+  // tags       Tag[]
+
+  image    String?
+  content  String?   @db.Text
+  isParsed Boolean   @default(false)
+  parsedAt DateTime?
+
+  // ingredients  IngredientLine[]
+  // instructions InstructionLine[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

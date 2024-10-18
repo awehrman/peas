@@ -11,6 +11,8 @@ const port = process.env.PORT || 3000;
 // TODO this is still looking in dist but whatever i'll allow it
 const directoryPath = path.join(__dirname, "/public/files");
 
+const EVERNOTE_INDEX_FILE = "Evernote_index.html";
+
 async function enqueueHtmlFiles() {
   fs.readdir(directoryPath, async (err, files) => {
     if (err) {
@@ -19,9 +21,13 @@ async function enqueueHtmlFiles() {
 
     // Loop over the files and add them to the queue
     for (const file of files) {
-      if (file.endsWith(".html")) {
+      if (file.endsWith(".html") && file !== EVERNOTE_INDEX_FILE) {
+        const filePath = path.join(directoryPath, file);
+        const fileContents = fs.readFileSync(filePath, "utf-8");
+
         await htmlNoteQueue.add("process-html", {
-          filePath: path.join(directoryPath, file),
+          filePath,
+          fileContents,
         });
         console.log(`Enqueued ${file}`);
       }

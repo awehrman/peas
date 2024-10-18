@@ -16,6 +16,7 @@
     "dotenv": "^16.4.5"
   },
   "devDependencies": {
+    "database": "*",
     "typescript": "^5.6.3",
     "ts-node-dev": "^2.0.0",
     "@types/express": "^5.0.0",

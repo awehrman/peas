@@ -1,4 +1,5 @@
 import { Queue, Worker } from "bullmq";
+// import { createNote } from "database";
 
 const connection = {
   host: process.env.REDISHOST,
@@ -13,12 +14,43 @@ export const createQueue = (name: string) => {
   });
 };
 
+export const parseNoteContent = (
+  note: NoteWithRelations,
+  ingHash: IngredientHash
+): ParsedNoteContent => {
+  const response = parseHTML(note, ingHash);
+
+  return {
+    parsedNote: {
+      ...note,
+      ingredients: response.ingredients,
+      instructions: response.instructions,
+    },
+    ingHash: { ...response.ingHash },
+  };
+};
+
+const parseHTMLFile = async (filePath: string, file: string) => {
+  console.log(`Parsing HTML file... ${filePath}`);
+  console.log({ file });
+  // WEHRMAN you left off here
+  // we might need to adjust this app's typescript/eslint config or something
+  // to pull in the database package properly, currently this is erroring out
+  // await createNote({
+  //   title: filePath,
+  //   content: file,
+  // });
+};
+
 export const setupQueueProcessor = (queueName: string) => {
   const worker = new Worker(
     queueName,
     async (job) => {
       // Process the job here
       console.log(`Processing job ${job.id} with data:`, job.data);
+      await parseHTMLFile(job.data.filePath, job.data.fileContents);
+      // saveNote();
+      // removeFile();
     },
     {
       connection,
