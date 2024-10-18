@@ -1,5 +1,30 @@
 import { Queue, Worker } from "bullmq";
 // import { createNote } from "database";
+import { load } from "cheerio";
+import { Blocks, IngredientLine, InstructionLine } from "./types";
+
+export const parseHTML = (note: string): void => {
+  let ingredients: IngredientLine[] = [];
+  let instructions: InstructionLine[] = [];
+  // load our string dom content into a cheerio object
+  // this will allow us to easily traverse the DOM tree
+  const $ = load(note ?? "");
+  const enNote = $("en-note");
+  const firstNonEmptyLine = enNote
+    .find("div")
+    .filter((i, element) => $(element).text().trim() !== "")
+    .first();
+
+  const children = firstNonEmptyLine.parent().children("div");
+  const blocks: Blocks = []; // [[{}, {}, {}], [{}], [{}], [{}]]
+
+  // split the children into groups based on spacing
+  children.each((index) => {
+    const element = children[index];
+    const line = element?.children?.[0] ?? "";
+    console.log({ line });
+  });
+};
 
 const connection = {
   host: process.env.REDISHOST,
@@ -14,41 +39,15 @@ export const createQueue = (name: string) => {
   });
 };
 
-export const parseNoteContent = (
-  note: NoteWithRelations,
-  ingHash: IngredientHash
-): ParsedNoteContent => {
-  const response = parseHTML(note, ingHash);
-
-  return {
-    parsedNote: {
-      ...note,
-      ingredients: response.ingredients,
-      instructions: response.instructions,
-    },
-    ingHash: { ...response.ingHash },
-  };
-};
-
-const parseHTMLFile = async (filePath: string, file: string) => {
-  console.log(`Parsing HTML file... ${filePath}`);
-  console.log({ file });
-  // WEHRMAN you left off here
-  // we might need to adjust this app's typescript/eslint config or something
-  // to pull in the database package properly, currently this is erroring out
-  // await createNote({
-  //   title: filePath,
-  //   content: file,
-  // });
-};
+export const parseNoteContent = (note: string) => {};
 
 export const setupQueueProcessor = (queueName: string) => {
   const worker = new Worker(
     queueName,
     async (job) => {
       // Process the job here
-      console.log(`Processing job ${job.id} with data:`, job.data);
-      await parseHTMLFile(job.data.filePath, job.data.fileContents);
+      console.log(`Processing job ${job.data.filePath}`);
+      await parseHTML(job.data.fileContents);
       // saveNote();
       // removeFile();
     },

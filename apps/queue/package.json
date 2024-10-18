@@ -9,18 +9,19 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "express": "^4.17.1",
-    "bullmq": "^5.20.0",
     "@bull-board/api": "^6.2.2",
     "@bull-board/express": "^6.2.2",
-    "dotenv": "^16.4.5"
+    "bullmq": "^5.20.0",
+    "cheerio": "^1.0.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.17.1"
   },
   "devDependencies": {
-    "database": "*",
-    "typescript": "^5.6.3",
-    "ts-node-dev": "^2.0.0",
-    "@types/express": "^5.0.0",
     "@repo/eslint-config": "*",
-    "@repo/typescript-config": "*"
+    "@repo/typescript-config": "*",
+    "@types/express": "^5.0.0",
+    "database": "*",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.6.3"
   }
 }
