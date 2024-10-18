@@ -73,6 +73,7 @@ model VerificationToken {
 
 model Note {
   id           String  @id @default(cuid())
+  // we only get the guid if we're importing directly from the sdk
   evernoteGUID String?
   title        String
   source       String?

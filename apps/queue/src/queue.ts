@@ -1,17 +1,19 @@
 import { Queue, Worker } from "bullmq";
-// import { createNote } from "database";
+import { createNote, Note } from "database";
 import { load } from "cheerio";
+import { ParsedHTMLFile } from "./types";
 
-export const parseHTML = (note: string): void => {
+export const parseHTML = (note: string): ParsedHTMLFile => {
   const $ = load(note);
   const enNote = $("en-note");
   // get the content from meta itemprop="title"
   const title = $('meta[itemprop="title"]').attr("content");
-  console.log("Title:", title);
+  if (title === undefined) {
+    throw new Error("This file doesn't have a title!");
+  }
 
   // get the content from meta itemprop="sourceurl"
   const sourceUrl = $('meta[itemprop="source-url"]').attr("content");
-  console.log("Source URL:", sourceUrl);
 
   // TODO grab image
 
@@ -24,10 +26,6 @@ export const parseHTML = (note: string): void => {
       '1 Whole Wheat Pizza Crust',
       '<br>',
       '1 Yellow Onion, sliced thin',
-      '1/2 tbsp. Butter',
-      '1 Medium Apple (Honeycrisp, Fuji or anything crispy)',
-      '1 Cup Diced Smoked Mozzarella Cheese',
-      '1 Cup Shredded Parmesan Cheese',
       'Handful of Fresh Thyme',
       'Handful of Fresh Chives',
       '<br>',
@@ -39,15 +37,6 @@ export const parseHTML = (note: string): void => {
       'Make the pizza dough ...',
       '<br>',
       'In the meantime, ...',
-      '<br>',
-      'Seed and cut the apple ...',
-      '<br>',
-      'Roll out the dough ...',
-      '<br>',
-      'Pile your toppings ...',
-      '<br>',
-      'Brush the top of ...',
-      '<br>'
     ] */
   const contents = enNote
     .find("h1")
@@ -78,13 +67,22 @@ export const parseHTML = (note: string): void => {
     }
   });
 
-  // Add any remaining chunk to ingredients
   if (currentChunk.length > 0) {
     ingredients.push(currentChunk);
   }
 
-  console.log("Ingredients:", ingredients);
-  console.log("Instructions:", instructions);
+  const contentsString = contents.join("\n");
+
+  console.log(`Finished parsing "${title}."`);
+
+  return {
+    title,
+    sourceUrl,
+    ingredients,
+    instructions,
+    contents: contentsString,
+    // image
+  };
 };
 
 const connection = {
@@ -103,7 +101,8 @@ export const createQueue = (name: string) => {
 const processHTMLFile = async ({ data: { content = "" } }) => {
   console.log("processing file...");
   // cheerio parse meta (name, source, content, image)
-  parseHTML(content);
+  const file = parseHTML(content);
+  await createNote(file);
   // lookup existing note based on name + source
   // save note with base info
   // ? should the parser be a separate process?
