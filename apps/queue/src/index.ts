@@ -22,11 +22,10 @@ async function enqueueHtmlFiles() {
     for (const file of files) {
       if (file.endsWith(".html") && file !== EVERNOTE_INDEX_FILE) {
         const filePath = path.join(directoryPath, file);
-        const fileContents = fs.readFileSync(filePath, "utf-8");
+        const content = fs.readFileSync(filePath, "utf-8");
 
         await htmlNoteQueue.add("process-html", {
-          filePath,
-          fileContents,
+          content,
         });
         console.log(`Enqueued ${file}`);
       }
