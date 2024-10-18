@@ -5,17 +5,18 @@
   "scripts": {
     "dev": "ts-node-dev --project tsconfig.json src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js",
+    "start": "ts-node dist/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "database": "*",
     "@bull-board/api": "^6.2.2",
     "@bull-board/express": "^6.2.2",
     "bullmq": "^5.20.0",
     "cheerio": "^1.0.0",
+    "database": "*",
     "dotenv": "^16.4.5",
-    "express": "^4.17.1"
+    "express": "^4.17.1",
+    "ts-node": "^10.9.2"
   },
   "devDependencies": {
     "@repo/eslint-config": "*",

@@ -8,8 +8,7 @@ import { createQueue, setupQueueProcessor } from "./queue";
 
 const app = express();
 const port = process.env.PORT || 4200;
-// TODO this is still looking in dist but whatever i'll allow it
-const directoryPath = path.join(__dirname, "/public/files");
+const directoryPath = path.join(process.cwd(), "/public/files");
 
 const EVERNOTE_INDEX_FILE = "Evernote_index.html";
 

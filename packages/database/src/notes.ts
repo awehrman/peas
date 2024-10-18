@@ -11,6 +11,7 @@ export async function getNotes() {
 }
 
 export async function createNote({ title = "", content = "" }) {
+  console.log("creating note", { title });
   try {
     const note = await prisma.note.create({
       data: {
@@ -18,8 +19,10 @@ export async function createNote({ title = "", content = "" }) {
         content,
       },
     });
+    console.log(`created ${note.id}`);
     return { note };
   } catch (error) {
+    console.log({ error });
     return { error };
   }
 }

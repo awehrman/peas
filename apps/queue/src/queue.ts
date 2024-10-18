@@ -1,5 +1,5 @@
 import { Queue, Worker } from "bullmq";
-// import { createNote } from "database";
+import { createNote } from "database";
 import { load } from "cheerio";
 import { Blocks, IngredientLine, InstructionLine } from "./types";
 
@@ -42,10 +42,10 @@ export const createQueue = (name: string) => {
 export const setupQueueProcessor = (queueName: string) => {
   const worker = new Worker(
     queueName,
-    async (job) => {
+    async ({ data: { filePath, fileContents } }) => {
       // Process the job here
-      console.log(`Processing job ${job.data.filePath}`);
-      // await createNote({ title: job.data.filePath, content: job.data });
+      console.log(`Processing job ${filePath}`);
+      await createNote({ title: filePath, content: fileContents });
       // await parseHTML(job.data.fileContents);
       // saveNote();
       // removeFile();
