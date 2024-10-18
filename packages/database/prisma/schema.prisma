@@ -72,12 +72,12 @@ model VerificationToken {
 }
 
 model Note {
-  id           String  @id @default(cuid())
+  id                  String    @id @default(cuid())
   // we only get the guid if we're importing directly from the sdk
-  evernoteGUID String?
-  title        String
-  source       String?
-  // some kind of original_note_date? or like evernote meta?
+  evernoteGUID        String?
+  title               String
+  source              String?
+  historicalCreatedAt DateTime?
 
   // categories Category[]
   // tags       Tag[]
@@ -87,9 +87,73 @@ model Note {
   isParsed Boolean   @default(false)
   parsedAt DateTime?
 
-  // ingredients  IngredientLine[]
-  // instructions InstructionLine[]
+  ingredients  IngredientLine[]
+  instructions InstructionLine[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model IngredientLine {
+  id String @id @default(cuid())
+
+  blockIndex Int
+  lineIndex  Int
+  reference  String
+  rule       String?
+  isParsed   Boolean
+  parsedAt   DateTime?
+  parsed     ParsedSegment[]
+
+  // recipe   Recipe? @relation(fields: [recipeId], references: [id])
+  // recipeId String?
+
+  Note   Note?   @relation(fields: [noteId], references: [id])
+  noteId String?
+
+  // ingredient   Ingredient? @relation(fields: [ingredientId], references: [id])
+  // ingredientId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([noteId])
+}
+
+model InstructionLine {
+  id String @id @default(cuid())
+
+  lineIndex Int
+  reference String
+
+  note   Note?   @relation(fields: [noteId], references: [id])
+  noteId String?
+
+  // recipe   Recipe? @relation(fields: [recipeId], references: [id])
+  // recipeId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([noteId])
+}
+
+model ParsedSegment {
+  id String @id @default(cuid())
+
+  index Int
+  rule  String
+  type  String
+  value String
+
+  // ingredient   Ingredient? @relation(fields: [ingredientId], references: [id])
+  // ingredientId String?     @map("ingredient_id")
+
+  ingredientLine   IngredientLine @relation(fields: [ingredientLineId], references: [id])
+  ingredientLineId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ingredientLineId])
 }
