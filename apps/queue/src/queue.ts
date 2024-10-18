@@ -39,15 +39,14 @@ export const createQueue = (name: string) => {
   });
 };
 
-export const parseNoteContent = (note: string) => {};
-
 export const setupQueueProcessor = (queueName: string) => {
   const worker = new Worker(
     queueName,
     async (job) => {
       // Process the job here
       console.log(`Processing job ${job.data.filePath}`);
-      await parseHTML(job.data.fileContents);
+      // await createNote({ title: job.data.filePath, content: job.data });
+      // await parseHTML(job.data.fileContents);
       // saveNote();
       // removeFile();
     },

@@ -7,7 +7,7 @@ import { ExpressAdapter } from "@bull-board/express";
 import { createQueue, setupQueueProcessor } from "./queue";
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 4200;
 // TODO this is still looking in dist but whatever i'll allow it
 const directoryPath = path.join(__dirname, "/public/files");
 
