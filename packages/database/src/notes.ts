@@ -1,5 +1,5 @@
 import { ParsedHTMLFile } from "../../../apps/queue/src/types";
-import { Note, prisma } from "./client";
+import { Note, Prisma, prisma } from "./client";
 
 export async function getNotes() {
   console.log("getNotes");
@@ -16,8 +16,21 @@ export async function createNote(file: ParsedHTMLFile): Promise<Note> {
     const response: Note = await prisma.note.create({
       data: {
         title: file.title,
+        historicalCreatedAt: file.historicalCreatedAt,
         content: file.contents,
         source: file.sourceUrl ?? null,
+        isParsed: true,
+        parsedAt: new Date(),
+        ingredients: {
+          createMany: {
+            data: file.ingredients,
+          },
+        },
+        instructions: {
+          createMany: {
+            data: file.instructions,
+          },
+        },
       },
     });
     console.log(`Successfully create note ${response.id}`);
