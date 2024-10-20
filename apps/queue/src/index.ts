@@ -4,7 +4,11 @@ import path from "path";
 import { createBullBoard } from "@bull-board/api";
 import { BullMQAdapter } from "@bull-board/api/bullMQAdapter";
 import { ExpressAdapter } from "@bull-board/express";
-import { createQueue, setupQueueProcessor } from "./queue";
+import {
+  createQueue,
+  setupHTMLFileQueueProcessor,
+  setupParsingQueueProcessor,
+} from "./queue";
 
 const app = express();
 const port = process.env.PORT || 4200;
@@ -34,7 +38,10 @@ async function enqueueHtmlFiles() {
 }
 
 const htmlNoteQueue = createQueue("htmlNoteQueue");
-setupQueueProcessor(htmlNoteQueue.name);
+setupHTMLFileQueueProcessor(htmlNoteQueue.name);
+
+export const parserQueue = createQueue("parserQueue");
+setupParsingQueueProcessor(parserQueue.name);
 
 const serverAdapter = new ExpressAdapter();
 createBullBoard({

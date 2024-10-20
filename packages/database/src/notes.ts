@@ -1,6 +1,19 @@
 import { ParsedHTMLFile } from "../../../apps/queue/src/types";
 import { Note, Prisma, prisma } from "./client";
 
+// TODO see if we can pull this from types
+// type NoteWithIngredients = Prisma.NoteGetPayload<{
+//   include: { ingredients: true };
+// }>;
+
+type NoteWithIngredients = {
+  id: string;
+  ingredients: {
+    id: string;
+    reference: string;
+  }[];
+};
+
 export async function getNotes() {
   console.log("getNotes");
   try {
@@ -11,16 +24,16 @@ export async function getNotes() {
   }
 }
 
-export async function createNote(file: ParsedHTMLFile): Promise<Note> {
+export async function createNote(
+  file: ParsedHTMLFile
+): Promise<NoteWithIngredients> {
   try {
-    const response: Note = await prisma.note.create({
+    const response: NoteWithIngredients = await prisma.note.create({
       data: {
         title: file.title,
         historicalCreatedAt: file.historicalCreatedAt,
         content: file.contents,
         source: file.sourceUrl ?? null,
-        isParsed: true,
-        parsedAt: new Date(),
         ingredients: {
           createMany: {
             data: file.ingredients,
@@ -29,6 +42,19 @@ export async function createNote(file: ParsedHTMLFile): Promise<Note> {
         instructions: {
           createMany: {
             data: file.instructions,
+          },
+        },
+      },
+      select: {
+        id: true,
+        // title: true,
+        // historicalCreatedAt: true,
+        // content: true,
+        // source: true,
+        ingredients: {
+          select: {
+            id: true,
+            reference: true,
           },
         },
       },

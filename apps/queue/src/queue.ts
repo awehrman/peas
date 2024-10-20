@@ -7,6 +7,7 @@ import {
   ParsedInstructionLine,
 } from "./types";
 import { parseISO } from "date-fns";
+import { parserQueue } from ".";
 
 export const parseHTML = (note: string): ParsedHTMLFile => {
   const $ = load(note);
@@ -136,16 +137,21 @@ const processHTMLFile = async ({ data: { content = "" } }) => {
   console.log("processing file...");
   // cheerio parse meta (name, source, content, image)
   const file = parseHTML(content);
-  await createNote(file);
+  const note = await createNote(file);
   // lookup existing note based on name + source
   // save note with base info
   // ? should the parser be a separate process?
   // that basically queues up and processes anything in need of parsing?
   // parse note content and re-save with ing/ins
   // parse ing lines
+
+  // pass to parsing
+  await parserQueue.add("parse-ingredients", {
+    note,
+  });
 };
 
-export const setupQueueProcessor = (queueName: string) => {
+export const setupHTMLFileQueueProcessor = (queueName: string) => {
   const worker = new Worker(queueName, processHTMLFile, {
     connection,
   });
@@ -157,6 +163,31 @@ export const setupQueueProcessor = (queueName: string) => {
   worker.on("failed", (job, err) => {
     console.log(
       `Job ${job?.id ?? "unknown"} has failed with error ${err.message}`
+    );
+  });
+};
+
+// { data: { noteId } }
+const processIngredientLineParsing = async () => {
+  console.log("processing secondary parsing...");
+  // grab the first note in prisma where
+  // parsedAt is empty & !isParsed
+  // if you can't find any then where containsParsingErrors is true
+  // parse line
+};
+
+export const setupParsingQueueProcessor = (queueName: string) => {
+  const worker = new Worker(queueName, processIngredientLineParsing, {
+    connection,
+  });
+
+  worker.on("completed", (job) => {
+    console.log(`Secondary job ${job.id} completed`);
+  });
+
+  worker.on("failed", (job, err) => {
+    console.error(
+      `Secondary job ${job?.id ?? job} failed with error ${err.message}`
     );
   });
 };

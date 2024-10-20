@@ -82,10 +82,9 @@ model Note {
   // categories Category[]
   // tags       Tag[]
 
-  image    String?
-  content  String?   @db.Text
-  isParsed Boolean   @default(false)
-  parsedAt DateTime?
+  image                 String?
+  content               String? @db.Text
+  containsParsingErrors Boolean @default(false)
 
   ingredients  IngredientLine[]
   instructions InstructionLine[]

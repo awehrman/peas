@@ -1,0 +1,9 @@
+{
+  "name": "parser",
+  "version": "0.0.0",
+  "private": true,
+  "files": [
+    "line-parser.min.js"
+  ],
+  "devDependencies": {}
+}
