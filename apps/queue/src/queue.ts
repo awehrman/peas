@@ -8,6 +8,7 @@ import {
 } from "./types";
 import { parseISO } from "date-fns";
 import { parserQueue } from ".";
+import { parse } from "@repo/parser";
 
 export const parseHTML = (note: string): ParsedHTMLFile => {
   const $ = load(note);
@@ -170,6 +171,7 @@ export const setupHTMLFileQueueProcessor = (queueName: string) => {
 // { data: { noteId } }
 const processIngredientLineParsing = async () => {
   console.log("processing secondary parsing...");
+  console.log({ parse });
   // grab the first note in prisma where
   // parsedAt is empty & !isParsed
   // if you can't find any then where containsParsingErrors is true

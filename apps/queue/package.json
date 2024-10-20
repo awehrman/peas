@@ -11,6 +11,7 @@
   "dependencies": {
     "@bull-board/api": "^6.2.2",
     "@bull-board/express": "^6.2.2",
+    "@repo/parser": "*",
     "bullmq": "^5.20.0",
     "cheerio": "^1.0.0",
     "database": "*",
