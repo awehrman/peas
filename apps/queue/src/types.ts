@@ -1,9 +1,10 @@
 export type ParsedIngredientLine = {
   blockIndex: number;
   lineIndex: number;
-  reference: string;
-  isParsed: boolean;
+  containsParsingErrors?: boolean;
   parsedAt?: Date;
+  reference: string;
+  rule?: string;
 };
 
 export type ParsedInstructionLine = {

@@ -1,5 +1,5 @@
 import { Queue, Worker } from "bullmq";
-import { createNote, Note } from "database";
+import { createNote, Note, NoteWithIngredients } from "database";
 import { load } from "cheerio";
 import {
   ParsedHTMLFile,
@@ -8,7 +8,8 @@ import {
 } from "./types";
 import { parseISO } from "date-fns";
 import { parserQueue } from ".";
-import { parse } from "@repo/parser";
+
+const Parser = require("@repo/parser");
 
 export const parseHTML = (note: string): ParsedHTMLFile => {
   const $ = load(note);
@@ -102,7 +103,6 @@ export const parseHTML = (note: string): ParsedHTMLFile => {
         blockIndex,
         lineIndex,
         reference: line,
-        isParsed: false,
       }))
   );
 
@@ -138,7 +138,7 @@ const processHTMLFile = async ({ data: { content = "" } }) => {
   console.log("processing file...");
   // cheerio parse meta (name, source, content, image)
   const file = parseHTML(content);
-  const note = await createNote(file);
+  const note: NoteWithIngredients = await createNote(file);
   // lookup existing note based on name + source
   // save note with base info
   // ? should the parser be a separate process?
@@ -168,12 +168,31 @@ export const setupHTMLFileQueueProcessor = (queueName: string) => {
   });
 };
 
-// { data: { noteId } }
-const processIngredientLineParsing = async () => {
+const processIngredientLineParsing = async ({
+  data: { note },
+}: {
+  data: { note: NoteWithIngredients };
+}) => {
   console.log("processing secondary parsing...");
-  console.log({ parse });
+  const { ingredients = [] } = note;
+  console.log({ ingredients });
+  for (const line of note?.ingredients ?? []) {
+    try {
+      console.log(line.reference);
+      const parsed = Parser.parse(line.reference, {});
+      console.log(parsed);
+    } catch (err) {
+      console.error(err);
+    }
+  }
+  // okay...
+
+  // instead of trying to import this,
+  // lets do a just-in-time peg compilation
+  // then try to use that
+
   // grab the first note in prisma where
-  // parsedAt is empty & !isParsed
+  // parsedAt is empty
   // if you can't find any then where containsParsingErrors is true
   // parse line
 };

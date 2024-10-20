@@ -6,7 +6,7 @@ import { Note, Prisma, prisma } from "./client";
 //   include: { ingredients: true };
 // }>;
 
-type NoteWithIngredients = {
+export type NoteWithIngredients = {
   id: string;
   ingredients: {
     id: string;

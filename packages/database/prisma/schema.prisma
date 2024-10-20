@@ -100,9 +100,10 @@ model IngredientLine {
   lineIndex  Int
   reference  String
   rule       String?
-  isParsed   Boolean
-  parsedAt   DateTime?
-  parsed     ParsedSegment[]
+
+  containsParsingErrors Boolean         @default(false)
+  parsedAt              DateTime?
+  parsed                ParsedSegment[]
 
   // recipe   Recipe? @relation(fields: [recipeId], references: [id])
   // recipeId String?
