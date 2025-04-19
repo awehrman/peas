@@ -1,8 +1,8 @@
 {
   "extends": "@peas/typescript-config/react-library.json",
-  "compilerOptions": {
-    "outDir": "dist"
-  },
   "include": ["src"],
-  "exclude": ["node_modules", "dist"]
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src"
+  }
 }
