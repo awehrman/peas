@@ -1,0 +1,32 @@
+{
+  "name": "@peas/tailwind",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./index.js",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": "./index.js",
+    "./tailwind.config": "./tailwind.config.js",
+    "./postcss.config": "./postcss.config.js"
+  },
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "tailwind.config.js",
+    "postcss.config.js"
+  ],
+  "scripts": {
+    "lint": "eslint . --max-warnings 0"
+  },
+  "devDependencies": {
+    "@peas/eslint-config": "*",
+    "@peas/typescript-config": "*",
+    "@tailwindcss/postcss": "^4.1.4",
+    "@types/node": "^22.14.1",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.3",
+    "postcss-preset-env": "^10.1.5",
+    "tailwindcss": "^4.1.4",
+    "typescript": "^5.8.3"
+  }
+}

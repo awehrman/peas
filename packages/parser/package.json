@@ -1,0 +1,12 @@
+{
+  "name": "@peas/parser",
+  "version": "0.0.0",
+  "private": true,
+  "main": "src/index.js",
+  "scripts": {
+    "parser": "peggy -o src/index.js --format es src/grammar.peggy"
+  },
+  "dependencies": {
+    "peggy": "^4.2.0"
+  }
+}
