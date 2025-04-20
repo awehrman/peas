@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { Button } from "@peas/ui/button";
+import { Button } from "@peas/ui";
 
 export default function Home() {
   return (

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ReactNode } from "react";
+import { Button } from "@peas/ui";
 
 export default function ImportPage(): ReactNode {
   return (
@@ -36,12 +37,12 @@ export default function ImportPage(): ReactNode {
                 placeholder="https://www.evernote.com/shard/..."
               />
             </div>
-            <button
+            <Button
               type="submit"
               className="w-full px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-500 transition-colors"
             >
               Import from Evernote
-            </button>
+            </Button>
           </form>
         </div>
 
@@ -80,12 +81,12 @@ export default function ImportPage(): ReactNode {
                 placeholder="Paste your recipe here..."
               />
             </div>
-            <button
+            <Button
               type="submit"
               className="w-full px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-500 transition-colors"
             >
               Import Recipe
-            </button>
+            </Button>
           </form>
         </div>
       </div>

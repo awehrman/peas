@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect } from "react";
+import { Button } from "@peas/ui";
 
 export default function Error({
   error,
@@ -24,12 +25,12 @@ export default function Error({
         {error.message || "An unexpected error occurred"}
       </p>
       <div className="flex flex-col sm:flex-row gap-4">
-        <button
+        <Button
           onClick={reset}
           className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-500 transition-colors"
         >
           Try again
-        </button>
+        </Button>
         <Link
           href="/"
           className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"

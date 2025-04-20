@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ReactNode } from "react";
+import { Button } from "@peas/ui";
 
 export default function RecipesPage(): ReactNode {
   // This would typically fetch recipes from your database
@@ -126,9 +127,9 @@ export default function RecipesPage(): ReactNode {
                   >
                     View
                   </Link>
-                  <button className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">
+                  <Button className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">
                     Delete
-                  </button>
+                  </Button>
                 </td>
               </tr>
             ))}

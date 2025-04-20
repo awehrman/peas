@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ReactNode } from "react";
+import { Button } from "@peas/ui";
 
 export default function LoginPage(): ReactNode {
   return (
@@ -79,12 +80,12 @@ export default function LoginPage(): ReactNode {
           </div>
 
           <div>
-            <button
+            <Button
               type="submit"
               className="group relative flex w-full justify-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white hover:bg-primary-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 dark:bg-primary-500 dark:hover:bg-primary-400"
             >
               Sign in
-            </button>
+            </Button>
           </div>
         </form>
       </div>

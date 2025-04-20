@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { Source_Sans_3 } from "next/font/google";
-import { SiteHeader } from "@peas/ui";
+import { Header } from "@peas/ui";
 import "./globals.css";
 import "./fonts.css";
+import { ClientNavigation } from "./components/ClientNavigation";
 
 const sourceSans = Source_Sans_3({
   subsets: ["latin"],
@@ -11,8 +12,7 @@ const sourceSans = Source_Sans_3({
 });
 
 export const metadata: Metadata = {
-  title: "Recipe Manager",
-  description: "Manage your recipes, notes, and ingredients",
+  title: "Peas",
 };
 
 export default function RootLayout({
@@ -23,9 +23,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${sourceSans.variable} font-sans`}>
-        <div className="relative flex min-h-screen flex-col">
-          <SiteHeader />
-          <main className="flex-1">{children}</main>
+        <div className="flex min-h-screen flex-col lg:flex-row">
+          <ClientNavigation />
+          <div className="flex flex-col flex-1 overflow-hidden">
+            <Header />
+            <main className="flex-1 overflow-auto p-4">{children}</main>
+          </div>
         </div>
       </body>
     </html>

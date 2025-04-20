@@ -1,6 +1,7 @@
 import { getNotes } from "@peas/database";
 import Link from "next/link";
 import { ReactNode } from "react";
+import { Button } from "@peas/ui";
 
 export default async function NotesPage(): Promise<ReactNode> {
   const { notes = [] } = await getNotes();
@@ -76,9 +77,9 @@ export default async function NotesPage(): Promise<ReactNode> {
                     >
                       View
                     </Link>
-                    <button className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 text-sm font-medium">
+                    <Button className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 text-sm font-medium">
                       Delete
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>
