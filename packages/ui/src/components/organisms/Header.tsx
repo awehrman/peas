@@ -1,21 +1,14 @@
-import { cn } from "../../lib/utils";
+"use client";
+import { usePathname } from "next/navigation";
 
-interface HeaderProps {
-  className?: string;
-  user?: {
-    name?: string | null;
-    email?: string | null;
-    image?: string | null;
-  };
-}
+export function Header() {
+  const pathname = usePathname();
 
-export function Header({ className }: HeaderProps) {
-  return (
-    <header
-      className={cn(
-        "sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60",
-        className
-      )}
-    ></header>
-  );
+  let routeName = "Dashboard";
+
+  if (pathname !== "/") {
+    routeName =
+      pathname.substring(1).charAt(0).toUpperCase() + pathname.substring(2);
+  }
+  return <header>{routeName}</header>;
 }

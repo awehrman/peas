@@ -9,10 +9,7 @@ interface NavLinkProps {
 
 export function NavLink({ to, className, children }: NavLinkProps) {
   return (
-    <Link
-      to={to}
-      className={cn("text-gray-600 hover:text-gray-900", className)}
-    >
+    <Link to={to} className={className}>
       {children}
     </Link>
   );

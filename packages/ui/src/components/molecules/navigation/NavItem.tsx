@@ -19,15 +19,8 @@ export function NavItem({
   className,
 }: NavItemProps) {
   return (
-    <Link
-      href={href}
-      className={cn(
-        "flex items-center rounded-md px-3 py-2 text-white hover:bg-gray-800",
-        className
-      )}
-      onClick={onClick}
-    >
-      <NavIcon icon={icon} className="mr-3 h-5 w-5" />
+    <Link href={href} className={className} onClick={onClick}>
+      <NavIcon icon={icon} />
       <span>{name}</span>
     </Link>
   );

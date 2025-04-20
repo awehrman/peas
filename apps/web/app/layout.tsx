@@ -23,13 +23,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${sourceSans.variable} font-sans`}>
-        <div className="flex min-h-screen flex-col lg:flex-row">
-          <ClientNavigation />
-          <div className="flex flex-col flex-1 overflow-hidden">
-            <Header />
-            <main className="flex-1 overflow-auto p-4">{children}</main>
-          </div>
-        </div>
+        <ClientNavigation />
+        <Header />
+        <main>{children}</main>
       </body>
     </html>
   );

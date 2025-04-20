@@ -7,5 +7,5 @@ interface NavIconProps {
 }
 
 export function NavIcon({ icon: Icon, className }: NavIconProps) {
-  return <Icon className={cn("h-5 w-5", className)} />;
+  return <Icon className={className} />;
 }
