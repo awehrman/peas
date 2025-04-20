@@ -1,7 +1,9 @@
+"use client";
+
 import { TopNav } from "./TopNav";
 import { SidebarNav } from "./SidebarNav";
-import { NavigationItem } from "../../types/navigation";
-import { NavigationProvider } from "../../contexts/NavigationContext";
+import { NavigationItem } from "@/components/types/navigation";
+import { NavigationProvider } from "@/components/contexts/NavigationContext";
 
 interface NavigationProps {
   items: NavigationItem[];

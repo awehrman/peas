@@ -28,6 +28,7 @@
     "clsx": "^2.1.0",
     "eslint": "^9.25.0",
     "lucide-react": "^0.501.0",
+    "react-router-dom": "^6.0.0",
     "tailwind-merge": "^2.2.1",
     "tailwindcss-animate": "^1.0.7",
     "tsc-alias": "^1.8.15",
@@ -40,6 +41,7 @@
   },
   "peerDependencies": {
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "react-router-dom": "^6.0.0"
   }
 }

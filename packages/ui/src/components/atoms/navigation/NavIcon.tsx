@@ -1,15 +1,11 @@
 import { LucideIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface NavIconProps {
   icon: LucideIcon;
-  size?: number;
   className?: string;
 }
 
-export function NavIcon({
-  icon: Icon,
-  size = 24,
-  className = "",
-}: NavIconProps) {
-  return <Icon size={size} className={className} />;
+export function NavIcon({ icon: Icon, className }: NavIconProps) {
+  return <Icon className={cn("h-5 w-5", className)} />;
 }

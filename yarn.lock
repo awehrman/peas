@@ -1692,6 +1692,7 @@ __metadata:
     lucide-react: "npm:^0.501.0"
     react: "npm:^19.1.0"
     react-dom: "npm:^19.1.0"
+    react-router-dom: "npm:^6.0.0"
     tailwind-merge: "npm:^2.2.1"
     tailwindcss-animate: "npm:^1.0.7"
     tsc-alias: "npm:^1.8.15"
@@ -1699,6 +1700,7 @@ __metadata:
   peerDependencies:
     react: ^19.1.0
     react-dom: ^19.1.0
+    react-router-dom: ^6.0.0
   languageName: unknown
   linkType: soft
 
@@ -1847,6 +1849,13 @@ __metadata:
     "@types/react":
       optional: true
   checksum: 10c0/f1455f36479e87a0a2254fc2e2b2aba6740d1fbcada949071210bf2a009a031ad508ac01b544bce96337bcca82f49531b46c71615141a5985aaa11ae69b967b1
+  languageName: node
+  linkType: hard
+
+"@remix-run/router@npm:1.23.0":
+  version: 1.23.0
+  resolution: "@remix-run/router@npm:1.23.0"
+  checksum: 10c0/eaef5cb46a1e413f7d1019a75990808307e08e53a39d4cf69c339432ddc03143d725decef3d6b9b5071b898da07f72a4a57c4e73f787005fcf10162973d8d7d7
   languageName: node
   linkType: hard
 
@@ -8609,6 +8618,30 @@ __metadata:
   version: 16.13.1
   resolution: "react-is@npm:16.13.1"
   checksum: 10c0/33977da7a5f1a287936a0c85639fec6ca74f4f15ef1e59a6bc20338fc73dc69555381e211f7a3529b8150a1f71e4225525b41b60b52965bda53ce7d47377ada1
+  languageName: node
+  linkType: hard
+
+"react-router-dom@npm:^6.0.0":
+  version: 6.30.0
+  resolution: "react-router-dom@npm:6.30.0"
+  dependencies:
+    "@remix-run/router": "npm:1.23.0"
+    react-router: "npm:6.30.0"
+  peerDependencies:
+    react: ">=16.8"
+    react-dom: ">=16.8"
+  checksum: 10c0/262954ba894d6a241ceda5f61098f7d6a292d0018a6ebb9c9c67425b7deb6e59b6191a9233a03d38e287e60f7ac3702e9e84c8e20b39a6487698fe088b71e27a
+  languageName: node
+  linkType: hard
+
+"react-router@npm:6.30.0":
+  version: 6.30.0
+  resolution: "react-router@npm:6.30.0"
+  dependencies:
+    "@remix-run/router": "npm:1.23.0"
+  peerDependencies:
+    react: ">=16.8"
+  checksum: 10c0/e6f20cf5c47ec057a057a4cfb9a55983d0a5b4b3314d20e07f0a70e59e004f51778d4dac415aee1e4e64db69cc4cd72e5acf8fd60dcf07d909895b8863b0b023
   languageName: node
   linkType: hard
 

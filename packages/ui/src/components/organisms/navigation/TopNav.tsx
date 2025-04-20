@@ -1,8 +1,8 @@
 import { Menu, X } from "lucide-react";
-import { NavButton } from "../../atoms/navigation/NavButton";
-import { NavItem } from "../../molecules/navigation/NavItem";
-import { NavigationItem } from "../../types/navigation";
-import { useNavigation } from "../../contexts/NavigationContext";
+import { NavButton } from "@/components/atoms/navigation/NavButton";
+import { NavItem } from "@/components/molecules/navigation/NavItem";
+import { NavigationItem } from "@/components/types/navigation";
+import { useNavigation } from "@/components/contexts/NavigationContext";
 
 interface TopNavProps {
   items: NavigationItem[];
@@ -14,6 +14,7 @@ export function TopNav({ items }: TopNavProps) {
   return (
     <>
       <div className="flex h-16 items-center justify-between border-b bg-black px-4 lg:hidden">
+        <div className="text-xl font-bold text-white">MyApp</div>
         <NavButton
           variant="icon"
           onClick={() => setIsTopNavOpen(!isTopNavOpen)}

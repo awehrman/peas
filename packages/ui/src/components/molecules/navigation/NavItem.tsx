@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { LucideIcon } from "lucide-react";
-import { cn } from "../../../lib/utils";
-import { NavIcon } from "../../atoms/navigation/NavIcon";
+import { cn } from "@/lib/utils";
+import { NavIcon } from "@/components/atoms/navigation/NavIcon";
 
 interface NavItemProps {
   name: string;
