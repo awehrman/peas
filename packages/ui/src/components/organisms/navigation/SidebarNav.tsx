@@ -3,6 +3,7 @@ import { NavItem } from "@/components/molecules/navigation/NavItem";
 import { NavToggle } from "@/components/molecules/navigation/NavToggle";
 import { useNavigation } from "@/components/contexts/NavigationContext";
 import { cn } from "@/lib/utils";
+import { RefObject } from "react";
 
 interface SidebarNavProps {
   items: NavigationItem[];
@@ -17,7 +18,7 @@ export function SidebarNav({ items }: SidebarNavProps) {
         "bg-primary w-full transition-all duration-300",
         isExpanded ? "min-h-screen" : "h-10"
       )}
-      ref={sidebarRef}
+      ref={sidebarRef as RefObject<HTMLDivElement>}
       // onMouseMove={handleMouseMove}
       onClick={() => !isExpanded && setIsExpanded(true)}
     >

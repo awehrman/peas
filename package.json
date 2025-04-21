@@ -6,7 +6,9 @@
     "dev": "turbo dev",
     "lint": "turbo lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "postinstall": "node --trace-warnings ./scripts/fix-max-event-listeners.js"
+    "postinstall": "node --trace-warnings ./scripts/fix-max-event-listeners.js",
+    "storybook": "turbo storybook",
+    "build-storybook": "turbo build-storybook"
   },
   "devDependencies": {
     "prettier": "^3.5.3",

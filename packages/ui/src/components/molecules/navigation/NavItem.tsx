@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { LucideIcon } from "lucide-react";
 import { NavIcon } from "@/components/atoms/navigation/NavIcon";
 
@@ -18,9 +17,9 @@ export function NavItem({
   className,
 }: NavItemProps) {
   return (
-    <Link href={href} className={className} onClick={onClick}>
+    <a href={href} className={className} onClick={onClick}>
       <NavIcon icon={icon} />
       <span>{name}</span>
-    </Link>
+    </a>
   );
 }

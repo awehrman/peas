@@ -1,5 +1,6 @@
 // Atoms
 export { Button } from "./components/atoms/Button";
+export type { ButtonProps } from "./components/atoms/Button";
 // > Navigation
 export { NavButton } from "./components/atoms/navigation/NavButton";
 export { NavIcon } from "./components/atoms/navigation/NavIcon";
