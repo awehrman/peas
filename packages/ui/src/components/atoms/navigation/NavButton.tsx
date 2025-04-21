@@ -1,6 +1,5 @@
 import { ButtonHTMLAttributes } from "react";
-import { cn } from "../../../lib/utils";
-import { Button } from "../Button";
+import { Button } from "@/components/atoms/Button";
 
 interface NavButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "default" | "icon";

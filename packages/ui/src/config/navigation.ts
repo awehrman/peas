@@ -5,7 +5,7 @@ import {
   CookingPot,
   StickyNote,
 } from "lucide-react";
-import { NavigationItem } from "../components/types/navigation";
+import { NavigationItem } from "@/components/types/navigation";
 
 export const navigationItems: NavigationItem[] = [
   { name: "Dashboard", href: "/", icon: Home },

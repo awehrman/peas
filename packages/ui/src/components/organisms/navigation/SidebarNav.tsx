@@ -1,7 +1,7 @@
-import { NavigationItem } from "../../types/navigation";
-import { NavItem } from "../../molecules/navigation/NavItem";
-import { NavToggle } from "../../molecules/navigation/NavToggle";
-import { useNavigation } from "../../contexts/NavigationContext";
+import { NavigationItem } from "@/components/types/navigation";
+import { NavItem } from "@/components/molecules/navigation/NavItem";
+import { NavToggle } from "@/components/molecules/navigation/NavToggle";
+import { useNavigation } from "@/components/contexts/NavigationContext";
 import { cn } from "@/lib/utils";
 
 interface SidebarNavProps {
