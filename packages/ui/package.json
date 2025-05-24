@@ -13,9 +13,10 @@
     "./styles.css": "./dist/styles.css"
   },
   "scripts": {
+    "clean": "rm -rf dist",
     "lint": "eslint . --max-warnings 0",
     "generate:component": "turbo gen react-component",
-    "build": "tsc && tsc-alias && tailwindcss -i ./src/styles.css -o ./dist/styles.css",
+    "build": "npm run clean && tsc && tailwindcss -i ./src/styles.css -o ./dist/styles.css",
     "dev": "tailwindcss -i ./src/styles.css -o ./dist/styles.css --watch"
   },
   "devDependencies": {

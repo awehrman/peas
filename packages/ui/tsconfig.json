@@ -1,13 +1,11 @@
 {
-  "extends": "@peas/typescript-config/base.json",
+  "extends": "@peas/typescript-config/react-library.json",
   "compilerOptions": {
-    "jsx": "react-jsx",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "allowJs": true,
-    "outDir": "./dist",
-    "rootDir": "./src"
-  },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.css"],
-  "exclude": ["node_modules", "dist"]
+    "declarationMap": false,
+    "sourceMap": false,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  }
 }

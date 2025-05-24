@@ -1,12 +1,11 @@
-import type { Config } from "tailwindcss";
+import { createConfig } from "@peas/tailwind";
 
-const config: Config = {
+export default createConfig({
   content: [
     "./src/**/*.{js,ts,jsx,tsx}",
     // Add any other packages that might use your UI components
     "../../apps/**/*.{js,ts,jsx,tsx}",
   ],
-  presets: [require("@peas/tailwind")], // If you have a shared Tailwind preset
   theme: {
     extend: {
       colors: {
@@ -16,7 +15,4 @@ const config: Config = {
       },
     },
   },
-  plugins: [],
-};
-
-export default config;
+});

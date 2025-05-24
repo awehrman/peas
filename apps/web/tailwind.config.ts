@@ -1,24 +1,13 @@
-import sharedConfig from "@peas/tailwind";
-import type { Config } from "tailwindcss";
+import { createConfig } from "@peas/tailwind";
 
-const config: Config = {
-  ...sharedConfig,
+export default createConfig({
   content: [
-    "./app/**/*.{js,ts,jsx,tsx,mdx}",
-    "./components/**/*.{js,ts,jsx,tsx,mdx}",
-    "../../packages/ui/src/**/*.{js,ts,jsx,tsx,mdx}",
+    "./app/**/*.{js,ts,jsx,tsx}",
+    "../../packages/ui/src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
-    ...sharedConfig.theme,
-    container: {
-      center: true,
-      padding: "2rem",
-      screens: {
-        "2xl": "1400px",
-      },
+    extend: {
+      // App-specific theme extensions
     },
   },
-  plugins: [...(sharedConfig.plugins || []), require("tailwindcss-animate")],
-};
-
-export default config;
+});
