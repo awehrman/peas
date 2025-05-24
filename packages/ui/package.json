@@ -8,24 +8,25 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "default": "./dist/index.js"
     },
-    "./styles.css": "./dist/styles.css"
+    "./styles.css": "./dist/styles.css",
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "default": "./dist/*.js"
+    }
   },
   "scripts": {
+    "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist",
-    "lint": "eslint . --max-warnings 0",
-    "generate:component": "turbo gen react-component",
-    "build": "npm run clean && tsc && tailwindcss -i ./src/styles.css -o ./dist/styles.css",
-    "dev": "tailwindcss -i ./src/styles.css -o ./dist/styles.css --watch"
+    "build": "tsc && tsc-alias && npx @tailwindcss/cli -i ./src/styles.css -o ./dist/styles.css --minify",
+    "check-types": "tsc --noEmit"
   },
   "devDependencies": {
     "@peas/eslint-config": "*",
     "@peas/tailwind": "*",
+    "@peas/theme": "*",
     "@peas/typescript-config": "*",
-    "@turbo/gen": "^2.5.0",
-    "@types/eslint": "^9.6.1",
-    "@types/node": "^22.14.1",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "autoprefixer": "^10.4.21",
@@ -33,11 +34,10 @@
     "clsx": "^2.1.0",
     "eslint": "^9.25.0",
     "lucide-react": "^0.501.0",
-    "react-router-dom": "^6.0.0",
     "tailwind-merge": "^2.2.1",
-    "tailwindcss": "^4.1.4",
+    "tailwindcss": "^4.1.7",
     "tailwindcss-animate": "^1.0.7",
-    "tsc-alias": "^1.8.15",
+    "tsc-alias": "^1.8.16",
     "typescript": "^5.8.3"
   },
   "dependencies": {
@@ -47,7 +47,6 @@
   },
   "peerDependencies": {
     "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-router-dom": "^6.0.0"
+    "react-dom": "^18.2.0"
   }
 }
