@@ -15,7 +15,7 @@ export function SidebarNav({ items }: SidebarNavProps) {
   return (
     <div
       className={cn(
-        "bg-primary w-full transition-all duration-300",
+        "bg-red-500 text-white w-full transition-all duration-300",
         isExpanded ? "min-h-screen" : "h-10"
       )}
       ref={sidebarRef as RefObject<HTMLDivElement>}
@@ -30,17 +30,21 @@ export function SidebarNav({ items }: SidebarNavProps) {
           >
             <NavToggle
               // position={buttonPosition}
-              className="text-white bg-transparent border-none"
+              className="text-white hover:text-white/80 bg-transparent border-none"
             />
           </div>
         </div>
       )}
 
       {isExpanded && (
-        <nav>
-          <NavToggle />
+        <nav className="p-4 space-y-2">
+          <NavToggle className="text-white hover:text-white/80" />
           {items.map((item) => (
-            <NavItem key={item.name} {...item} />
+            <NavItem
+              key={item.name}
+              {...item}
+              className="flex items-center gap-2 p-2 rounded-md hover:bg-white/10 transition-colors"
+            />
           ))}
         </nav>
       )}

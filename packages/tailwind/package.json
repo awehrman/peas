@@ -2,18 +2,35 @@
   "name": "@peas/tailwind",
   "version": "0.0.0",
   "private": true,
-  "main": "./index.js",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./index.js"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
   },
   "files": [
-    "index.js"
+    "dist/**"
   ],
   "scripts": {
-    "lint": "eslint . --max-warnings 0"
+    "build": "tsup index.ts --format cjs,esm --dts",
+    "dev": "tsup index.ts --format cjs,esm --watch --dts",
+    "lint": "eslint . --max-warnings 0",
+    "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist"
   },
-  "devDependencies": {
+  "dependencies": {
     "@peas/theme": "*",
     "tailwindcss": "^4.1.4"
+  },
+  "devDependencies": {
+    "@peas/eslint-config": "*",
+    "@peas/typescript-config": "*",
+    "@types/node": "^22.14.1",
+    "tsup": "^8.0.2",
+    "typescript": "^5.8.3"
   }
 }

@@ -23,9 +23,22 @@ export type FontSize = {
   "9xl": string;
 };
 
+export type FontWeight = {
+  thin: string;
+  extralight: string;
+  light: string;
+  normal: string;
+  medium: string;
+  semibold: string;
+  bold: string;
+  extrabold: string;
+  black: string;
+};
+
 export type Typography = {
   fontFamily: FontFamily;
   fontSize: FontSize;
+  fontWeight: FontWeight;
 };
 
 /**
@@ -50,6 +63,17 @@ export const typography: Typography = {
     "7xl": "4.5rem", // 72px
     "8xl": "6rem", // 96px
     "9xl": "8rem", // 128px
+  },
+  fontWeight: {
+    thin: "100",
+    extralight: "200",
+    light: "300",
+    normal: "400",
+    medium: "500",
+    semibold: "600",
+    bold: "700",
+    extrabold: "800",
+    black: "900",
   },
 };
 

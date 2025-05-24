@@ -1502,8 +1502,13 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@peas/tailwind@workspace:packages/tailwind"
   dependencies:
+    "@peas/eslint-config": "npm:*"
     "@peas/theme": "npm:*"
+    "@peas/typescript-config": "npm:*"
+    "@types/node": "npm:^22.14.1"
     tailwindcss: "npm:^4.1.4"
+    tsup: "npm:^8.0.2"
+    typescript: "npm:^5.8.3"
   languageName: unknown
   linkType: soft
 
