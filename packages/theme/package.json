@@ -10,49 +10,14 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
       "require": "./dist/index.js"
-    },
-    "./colors": {
-      "types": "./dist/colors.d.ts",
-      "import": "./dist/colors.mjs",
-      "require": "./dist/colors.js"
-    },
-    "./typography": {
-      "types": "./dist/typography.d.ts",
-      "import": "./dist/typography.mjs",
-      "require": "./dist/typography.js"
-    },
-    "./spacing": {
-      "types": "./dist/spacing.d.ts",
-      "import": "./dist/spacing.mjs",
-      "require": "./dist/spacing.js"
-    },
-    "./breakpoints": {
-      "types": "./dist/breakpoints.d.ts",
-      "import": "./dist/breakpoints.mjs",
-      "require": "./dist/breakpoints.js"
-    },
-    "./shadows": {
-      "types": "./dist/shadows.d.ts",
-      "import": "./dist/shadows.mjs",
-      "require": "./dist/shadows.js"
-    },
-    "./animations": {
-      "types": "./dist/animations.d.ts",
-      "import": "./dist/animations.mjs",
-      "require": "./dist/animations.js"
-    },
-    "./css-variables": {
-      "types": "./dist/css-variables.d.ts",
-      "import": "./dist/css-variables.mjs",
-      "require": "./dist/css-variables.js"
     }
   },
   "files": [
     "dist/**"
   ],
   "scripts": {
-    "build": "tsup src/index.ts src/colors.ts src/typography.ts src/spacing.ts src/breakpoints.ts src/shadows.ts src/animations.ts src/css-variables.ts --format cjs,esm --dts",
-    "dev": "tsup src/index.ts src/colors.ts src/typography.ts src/spacing.ts src/breakpoints.ts src/shadows.ts src/animations.ts src/css-variables.ts --format cjs,esm --watch --dts",
+    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "dev": "tsup src/index.ts --format cjs,esm --watch --dts",
     "lint": "eslint . --max-warnings 0",
     "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist"
   },
