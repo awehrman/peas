@@ -1,8 +1,12 @@
 "use client";
 
 import { createContext, useContext, useRef, useState, ReactNode } from "react";
+import { navigationItems as items } from "@/config/navigation";
+import { NavigationItem } from "../types/navigation";
 
 interface NavigationContextType {
+  items: NavigationItem[];
+
   // Sidebar state
   isExpanded: boolean;
   setIsExpanded: (value: boolean) => void;
@@ -42,6 +46,7 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
   // };
 
   const value = {
+    items,
     isExpanded,
     setIsExpanded,
     sidebarRef,
@@ -51,10 +56,11 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
     setIsHovering,
     // handleMouseMove,
   };
-
   return (
     <NavigationContext.Provider value={value}>
-      {children}
+      <div data-expanded={isExpanded} data-top-nav-open={isTopNavOpen}>
+        {children}
+      </div>
     </NavigationContext.Provider>
   );
 }

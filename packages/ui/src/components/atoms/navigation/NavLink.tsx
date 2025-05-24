@@ -1,15 +1,28 @@
-import { Link } from "react-router-dom";
+import { forwardRef } from "react";
+import { cn } from "@/lib/utils";
 
-interface NavLinkProps {
-  to: string;
-  className?: string;
-  children: React.ReactNode;
+interface NavLinkProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
+  active?: boolean;
 }
 
-export function NavLink({ to, className, children }: NavLinkProps) {
-  return (
-    <Link to={to} className={className}>
-      {children}
-    </Link>
-  );
-}
+export const NavLink = forwardRef<HTMLAnchorElement, NavLinkProps>(
+  ({ className, active, children, ...props }, ref) => {
+    return (
+      <a
+        ref={ref}
+        className={cn(
+          "flex items-center gap-3 w-full p-3 rounded-md transition-colors",
+          active
+            ? "bg-green-500 text-white"
+            : "hover:bg-green-500/50 text-white",
+          className
+        )}
+        {...props}
+      >
+        {children}
+      </a>
+    );
+  }
+);
+
+NavLink.displayName = "NavLink";

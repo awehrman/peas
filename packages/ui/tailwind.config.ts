@@ -1,16 +1,22 @@
-import sharedConfig from "@peas/tailwind";
 import type { Config } from "tailwindcss";
 
 const config: Config = {
-  ...sharedConfig,
   content: [
-    ...(Array.isArray(sharedConfig.content) ? sharedConfig.content : []),
     "./src/**/*.{js,ts,jsx,tsx}",
+    // Add any other packages that might use your UI components
+    "../../apps/**/*.{js,ts,jsx,tsx}",
   ],
+  presets: [require("@peas/tailwind")], // If you have a shared Tailwind preset
   theme: {
-    ...sharedConfig.theme,
+    extend: {
+      colors: {
+        red: {
+          500: "#ef4444",
+        },
+      },
+    },
   },
-  plugins: [...(sharedConfig.plugins || [])],
+  plugins: [],
 };
 
 export default config;

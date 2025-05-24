@@ -1,7 +1,15 @@
 "use client";
 
-import { Navigation, navigationItems } from "@peas/ui";
+import Link from "next/link";
+import { Navigation } from "@peas/ui";
+
+const NextLink = ({
+  active,
+  ...props
+}: { active?: boolean } & React.ComponentProps<typeof Link>) => {
+  return <Link {...props} />;
+};
 
 export function ClientNavigation() {
-  return <Navigation items={navigationItems} />;
+  return <Navigation LinkComponent={NextLink} />;
 }

@@ -2,18 +2,23 @@
 
 import { TopNav } from "./TopNav";
 import { SidebarNav } from "./SidebarNav";
-import { NavigationItem } from "@/components/types/navigation";
 import { NavigationProvider } from "@/components/contexts/NavigationContext";
+import { NavigationProps } from "@/components/types/navigation";
 
-interface NavigationProps {
-  items: NavigationItem[];
-}
-
-export function Navigation({ items }: NavigationProps) {
+export function Navigation({ LinkComponent }: NavigationProps) {
   return (
     <NavigationProvider>
-      <TopNav items={items} />
-      <SidebarNav items={items} />
+      <div className="min-h-screen bg-gray-50">
+        {/* Top Navigation for Mobile */}
+        <TopNav LinkComponent={LinkComponent} />
+
+        <div className="flex">
+          {/* Sidebar Navigation for Desktop */}
+          <div className="hidden md:block">
+            <SidebarNav LinkComponent={LinkComponent} />
+          </div>
+        </div>
+      </div>
     </NavigationProvider>
   );
 }

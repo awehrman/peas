@@ -1,21 +1,22 @@
 // Atoms
-export { Button } from "./components/atoms/Button";
-export type { ButtonProps } from "./components/atoms/Button";
+export { Button } from "./components/atoms/Button.jsx";
+export type { ButtonProps } from "./components/atoms/Button.js";
 // > Navigation
-export { NavButton } from "./components/atoms/navigation/NavButton";
-export { NavIcon } from "./components/atoms/navigation/NavIcon";
-export { NavItem } from "./components/molecules/navigation/NavItem";
-export { NavToggle } from "./components/molecules/navigation/NavToggle";
+export { NavButton } from "./components/atoms/navigation/NavButton.js";
+export { NavIcon } from "./components/atoms/navigation/NavIcon.js";
+export { NavItem } from "./components/molecules/navigation/NavItem.js";
+export { NavToggle } from "./components/molecules/navigation/NavToggle.js";
+export { NavLink } from "./components/atoms/navigation/NavLink.jsx";
 // > Organisms
-export { Header } from "./components/organisms/Header";
-export { Navigation } from "./components/organisms/navigation/Navigation";
-export { SidebarNav } from "./components/organisms/navigation/SidebarNav";
-export { TopNav } from "./components/organisms/navigation/TopNav";
+export { Header } from "./components/organisms/Header.js";
+export { Navigation } from "./components/organisms/navigation/Navigation.jsx";
+export { SidebarNav } from "./components/organisms/navigation/SidebarNav.jsx";
+export { TopNav } from "./components/organisms/navigation/TopNav.jsx";
 // > Contexts
 export {
   NavigationProvider,
   useNavigation,
-} from "./components/contexts/NavigationContext";
+} from "./components/contexts/NavigationContext.jsx";
 // > Utils
-export { cn } from "./lib/utils";
-export { navigationItems } from "./config/navigation";
+export { cn } from "./lib/utils.js";
+export { navigationItems } from "./config/navigation.js";

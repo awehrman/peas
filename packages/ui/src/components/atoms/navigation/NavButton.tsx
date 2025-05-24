@@ -1,9 +1,9 @@
 import { ButtonHTMLAttributes } from "react";
-import { Button } from "@/components/atoms/Button";
+import { Button, ButtonProps } from "@/components/atoms/Button";
 
-interface NavButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+type NavButtonProps = Omit<ButtonProps, "variant"> & {
   variant?: "default" | "icon";
-}
+};
 
 export function NavButton({
   children,
@@ -11,5 +11,9 @@ export function NavButton({
   variant = "default",
   ...props
 }: NavButtonProps) {
-  return <Button {...props}>{children}</Button>;
+  return (
+    <Button variant={variant} className={className} {...props}>
+      {children}
+    </Button>
+  );
 }

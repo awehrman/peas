@@ -2,13 +2,18 @@
 import { usePathname } from "next/navigation";
 
 export function Header() {
-  const pathname = usePathname();
-
+  const currentPath = usePathname();
   let routeName = "Dashboard";
 
-  if (pathname !== "/") {
+  if (currentPath !== "/") {
     routeName =
-      pathname.substring(1).charAt(0).toUpperCase() + pathname.substring(2);
+      currentPath.substring(1).charAt(0).toUpperCase() +
+      currentPath.substring(2);
   }
-  return <header>{routeName}</header>;
+
+  return (
+    <header className="bg-white border-b border-gray-200 p-4 hidden md:block">
+      <h1 className="text-2xl font-semibold text-gray-900">{routeName}</h1>
+    </header>
+  );
 }

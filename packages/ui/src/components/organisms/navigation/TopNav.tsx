@@ -1,52 +1,59 @@
+"use client";
 import { Menu, X } from "lucide-react";
-import { NavButton } from "@/components/atoms/navigation/NavButton";
-import { NavItem } from "@/components/molecules/navigation/NavItem";
-import { NavigationItem } from "@/components/types/navigation";
 import { useNavigation } from "@/components/contexts/NavigationContext";
-import { cn } from "@/lib/utils";
+import { Button } from "@/components/atoms/Button";
+import { usePathname } from "next/navigation";
+import { NavLink } from "@/components/atoms/navigation/NavLink";
 
 interface TopNavProps {
-  items: NavigationItem[];
+  LinkComponent?: React.ComponentType<{
+    href: string;
+    className?: string;
+    children: React.ReactNode;
+  }>;
 }
 
-export function TopNav({ items }: TopNavProps) {
-  const { isTopNavOpen, setIsTopNavOpen } = useNavigation();
+export function TopNav({ LinkComponent }: TopNavProps) {
+  const currentPath = usePathname();
+  const { items, isTopNavOpen, setIsTopNavOpen } = useNavigation();
+
+  const Link = LinkComponent || NavLink;
 
   return (
     <div
-      className={cn(
-        "bg-primary w-full transition-all duration-300",
-        isTopNavOpen ? "min-h-screen" : "h-10"
-      )}
+      className={`bg-green-600 text-white transition-all duration-300 ${
+        isTopNavOpen ? "h-auto" : "h-16"
+      } w-full md:hidden`}
     >
-      <div className="relative h-full">
-        <div className="absolute top-0 right-0 p-2">
-          <NavButton
-            variant="icon"
-            onClick={() => setIsTopNavOpen(!isTopNavOpen)}
-            aria-label={
-              isTopNavOpen ? "Close navigation menu" : "Open navigation menu"
-            }
-            className="text-white bg-transparent border-none hover:bg-primary-600"
-          >
-            {isTopNavOpen ? (
-              <X size={24} className="text-white" />
-            ) : (
-              <Menu size={24} className="text-white" />
-            )}
-          </NavButton>
-        </div>
+      {/* Header with toggle */}
+      <div className="flex items-center justify-between p-4">
+        <h1 className="text-lg font-semibold">Peas App</h1>
+        <Button
+          variant="icon"
+          onClick={() => setIsTopNavOpen(!isTopNavOpen)}
+          className="text-white hover:bg-green-500 bg-transparent border-none"
+        >
+          {isTopNavOpen ? <X size={24} /> : <Menu size={24} />}
+        </Button>
       </div>
 
+      {/* Navigation Menu */}
       {isTopNavOpen && (
-        <nav className="p-4">
-          {items.map((item) => (
-            <NavItem
-              key={item.name}
-              {...item}
-              onClick={() => setIsTopNavOpen(false)}
-            />
-          ))}
+        <nav className="px-4 pb-4 space-y-2">
+          {items.map((item) => {
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                active={currentPath === item.href}
+                onClick={() => setIsTopNavOpen(false)}
+              >
+                <Icon size={20} />
+                <span className="text-sm font-medium">{item.name}</span>
+              </Link>
+            );
+          })}
         </nav>
       )}
     </div>

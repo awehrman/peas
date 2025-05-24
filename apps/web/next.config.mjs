@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ["@peas/ui"],
+  transpilePackages: ["@peas/ui", "@peas/theme", "@peas/tailwind"],
   reactStrictMode: true,
 };
 

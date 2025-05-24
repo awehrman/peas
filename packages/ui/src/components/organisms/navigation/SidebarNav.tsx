@@ -1,53 +1,62 @@
-import { NavigationItem } from "@/components/types/navigation";
-import { NavItem } from "@/components/molecules/navigation/NavItem";
-import { NavToggle } from "@/components/molecules/navigation/NavToggle";
+"use client";
 import { useNavigation } from "@/components/contexts/NavigationContext";
-import { cn } from "@/lib/utils";
-import { RefObject } from "react";
+import { MoreVertical } from "lucide-react";
+import { Button } from "@/components/atoms/Button";
+import { usePathname } from "next/navigation";
+import { NavLink } from "@/components/atoms/navigation/NavLink";
 
-interface SidebarNavProps {
-  items: NavigationItem[];
+interface LinkComponentProps {
+  href: string;
+  className?: string;
+  active?: boolean;
+  children: React.ReactNode;
 }
 
-export function SidebarNav({ items }: SidebarNavProps) {
-  const { isExpanded, setIsExpanded, sidebarRef } = useNavigation();
+interface SidebarNavProps {
+  LinkComponent?: React.ComponentType<LinkComponentProps>;
+}
+
+export function SidebarNav({ LinkComponent }: SidebarNavProps) {
+  const { items, isExpanded, setIsExpanded } = useNavigation();
+  const currentPath = usePathname();
+
+  const Link = LinkComponent || NavLink;
 
   return (
     <div
-      className={cn(
-        "bg-red-500 text-white w-full transition-all duration-300",
-        isExpanded ? "min-h-screen" : "h-10"
-      )}
-      ref={sidebarRef as RefObject<HTMLDivElement>}
-      // onMouseMove={handleMouseMove}
-      onClick={() => !isExpanded && setIsExpanded(true)}
+      className={`bg-green-600 text-white transition-all duration-300 ${
+        isExpanded ? "w-64" : "w-16"
+      } min-h-screen`}
     >
-      {!isExpanded && (
-        <div className="relative h-full">
-          <div
-            className="absolute top-0 right-0 p-2"
-            // style={{ top: `${buttonPosition}%`, transform: "translateY(-50%)" }}
-          >
-            <NavToggle
-              // position={buttonPosition}
-              className="text-white hover:text-white/80 bg-transparent border-none"
-            />
-          </div>
-        </div>
-      )}
+      {/* Toggle Button */}
+      <div className="p-4 border-b border-green-500">
+        <Button
+          variant="icon"
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="text-white hover:bg-green-500 bg-transparent border-none"
+        >
+          <MoreVertical size={16} className={isExpanded ? "rotate-90" : ""} />
+        </Button>
+      </div>
 
-      {isExpanded && (
-        <nav className="p-4 space-y-2">
-          <NavToggle className="text-white hover:text-white/80" />
-          {items.map((item) => (
-            <NavItem
+      {/* Navigation Items */}
+      <nav className="p-4 space-y-2">
+        {items.map((item) => {
+          const Icon = item.icon;
+          return (
+            <Link
               key={item.name}
-              {...item}
-              className="flex items-center gap-2 p-2 rounded-md hover:bg-white/10 transition-colors"
-            />
-          ))}
-        </nav>
-      )}
+              href={item.href}
+              active={currentPath === item.href}
+            >
+              <Icon size={20} className="flex-shrink-0" />
+              {isExpanded && (
+                <span className="text-sm font-medium">{item.name}</span>
+              )}
+            </Link>
+          );
+        })}
+      </nav>
     </div>
   );
 }
