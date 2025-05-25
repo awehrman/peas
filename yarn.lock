@@ -1555,6 +1555,7 @@ __metadata:
   dependencies:
     "@peas/eslint-config": "npm:*"
     "@peas/tailwind": "npm:*"
+    "@peas/theme": "npm:*"
     "@peas/typescript-config": "npm:*"
     "@peas/ui": "npm:*"
     "@tailwindcss/postcss": "npm:^4.1.4"

@@ -17,14 +17,14 @@
     "dist/**"
   ],
   "scripts": {
-    "build": "tsup index.ts --format cjs,esm --dts",
-    "dev": "tsup index.ts --format cjs,esm --watch --dts",
+    "build": "tsup index.ts --format cjs,esm --dts --clean",
+    "dev": "tsup index.ts --format cjs,esm --watch --dts --clean",
     "lint": "eslint . --max-warnings 0",
     "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist"
   },
   "dependencies": {
     "@peas/theme": "*",
-    "tailwindcss": "^4.1.4"
+    "tailwindcss": "^3.4.1"
   },
   "devDependencies": {
     "@peas/eslint-config": "*",

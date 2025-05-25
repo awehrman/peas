@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { Source_Sans_3 } from "next/font/google";
-import { Header } from "@peas/ui";
 import "./globals.css";
+import "@peas/ui/styles.css";
 import "./fonts.css";
 import { ClientNavigation } from "./components/ClientNavigation";
-import "@peas/ui/styles.css";
+import { Header } from "@peas/ui";
 
 const sourceSans = Source_Sans_3({
   subsets: ["latin"],

@@ -8,7 +8,7 @@ import { NavigationProps } from "@/components/types/navigation";
 export function Navigation({ LinkComponent }: NavigationProps) {
   return (
     <NavigationProvider>
-      <div className="min-h-screen bg-gray-50">
+      <div className="bg-background">
         {/* Top Navigation for Mobile */}
         <TopNav LinkComponent={LinkComponent} />
 
