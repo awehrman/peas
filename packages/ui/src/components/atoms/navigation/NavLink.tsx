@@ -12,9 +12,7 @@ export const NavLink = forwardRef<HTMLAnchorElement, NavLinkProps>(
         ref={ref}
         className={cn(
           "flex items-center gap-3 w-full p-3 rounded-md transition-colors",
-          active
-            ? "bg-green-500 text-white"
-            : "hover:bg-green-500/50 text-white",
+          active ? "bg-mint-500 text-white" : "hover:bg-mint-500/50 text-white",
           className
         )}
         {...props}

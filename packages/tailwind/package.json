@@ -3,34 +3,19 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
-  "types": "./dist/index.d.ts",
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.js"
-    }
-  },
-  "files": [
-    "dist/**"
-  ],
-  "scripts": {
-    "build": "tsup index.ts --format cjs,esm --dts --clean",
-    "dev": "tsup index.ts --format cjs,esm --watch --dts --clean",
-    "lint": "eslint . --max-warnings 0",
-    "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist"
+    ".": "./shared-styles.css",
+    "./postcss": "./postcss.config.js"
   },
   "dependencies": {
     "@peas/theme": "*",
-    "tailwindcss": "^3.4.1"
+    "@tailwindcss/postcss": "^4.1.7",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^4.1.7"
   },
   "devDependencies": {
     "@peas/eslint-config": "*",
     "@peas/typescript-config": "*",
-    "@types/node": "^22.14.1",
-    "tsup": "^8.0.2",
-    "typescript": "^5.8.3"
+    "@types/node": "^22.14.1"
   }
 }

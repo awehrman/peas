@@ -24,16 +24,16 @@ export function SidebarNav({ LinkComponent }: SidebarNavProps) {
 
   return (
     <div
-      className={`bg-green-600 text-white transition-all duration-300 ${
+      className={`bg-mint-600 text-white transition-all duration-300 ${
         isExpanded ? "w-64" : "w-16"
       } min-h-screen`}
     >
       {/* Toggle Button */}
-      <div className="p-4 border-b border-green-500">
+      <div className="p-4 border-b border-mint-500">
         <Button
           variant="icon"
           onClick={() => setIsExpanded(!isExpanded)}
-          className="text-white hover:bg-green-500 bg-transparent border-none"
+          className="text-white hover:bg-mint-500 bg-transparent border-none"
         >
           <MoreVertical size={16} className={isExpanded ? "rotate-90" : ""} />
         </Button>

@@ -24,8 +24,6 @@
   },
   "devDependencies": {
     "@peas/eslint-config": "*",
-    "@peas/tailwind": "*",
-    "@peas/theme": "*",
     "@peas/typescript-config": "*",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
@@ -42,6 +40,8 @@
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.0.2",
+    "@tailwindcss/postcss": "^4.1.7",
+    "postcss": "^8.5.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
