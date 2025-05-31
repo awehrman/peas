@@ -3,10 +3,7 @@
 import Link from "next/link";
 import { Navigation } from "@peas/ui";
 
-const NextLink = ({
-  active,
-  ...props
-}: { active?: boolean } & React.ComponentProps<typeof Link>) => {
+const NextLink = ({ ...props }: React.ComponentProps<typeof Link>) => {
   return <Link {...props} />;
 };
 

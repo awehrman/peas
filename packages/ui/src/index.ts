@@ -10,8 +10,6 @@ export { NavLink } from "@/components/atoms/navigation/NavLink";
 // > Organisms
 export { Header } from "./components/organisms/Header.js";
 export { Navigation } from "@/components/organisms/navigation/Navigation";
-export { SidebarNav } from "@/components/organisms/navigation/SidebarNav";
-export { TopNav } from "@/components/organisms/navigation/TopNav";
 // > Contexts
 export {
   NavigationProvider,
