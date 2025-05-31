@@ -16,6 +16,12 @@
   "devDependencies": {
     "@peas/eslint-config": "*",
     "@peas/typescript-config": "*",
-    "@types/node": "^22.14.1"
+    "@types/node": "^22.14.1",
+    "tsup": "^8.5.0",
+    "typescript": "^5.8.3"
+  },
+  "scripts": {
+    "build:css:compile": "tsup scripts/build-styles.ts --format esm --out-dir dist-scripts",
+    "build:css": "yarn build:css:compile && node dist-scripts/build-styles.js"
   }
 }
