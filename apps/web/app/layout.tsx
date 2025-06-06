@@ -3,7 +3,6 @@ import { Source_Sans_3 } from "next/font/google";
 import "./globals.css";
 import "@peas/ui/styles.css";
 import "./fonts.css";
-import { ClientNavigation } from "./components/ClientNavigation";
 import { Header } from "@peas/ui";
 
 const sourceSans = Source_Sans_3({
@@ -25,7 +24,6 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${sourceSans.variable} font-sans`}>
         <Header />
-        <ClientNavigation />
         <main>{children}</main>
       </body>
     </html>
