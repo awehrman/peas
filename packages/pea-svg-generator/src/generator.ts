@@ -1,15 +1,31 @@
 import type { PeaConfig, PeaGeneratorOptions } from "./types.js";
 import { PEA_COLORS, HIGHLIGHT_POSITIONS, MIXED_COLOR_COMBINATIONS } from "./colors.js";
 
+function darkenHexColor(hex: string, percent: number): string {
+  // Remove # if present
+  hex = hex.replace(/^#/, "");
+  if (hex.length === 3) {
+    hex = hex.split("").map(x => x + x).join("");
+  }
+  const num = parseInt(hex, 16);
+  let r = (num >> 16) & 0xff;
+  let g = (num >> 8) & 0xff;
+  let b = num & 0xff;
+  r = Math.max(0, Math.min(255, Math.floor(r * (1 - percent))));
+  g = Math.max(0, Math.min(255, Math.floor(g * (1 - percent))));
+  b = Math.max(0, Math.min(255, Math.floor(b * (1 - percent))));
+  return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+}
+
 export class PeaGenerator {
   private options: Required<PeaGeneratorOptions>;
 
   constructor(options: PeaGeneratorOptions = {}) {
     this.options = {
-      width: options.width ?? 1200,
-      height: options.height ?? 600,
+      width: options.width ?? 1600,
+      height: options.height ?? 900,
       peasPerRow: options.peasPerRow ?? 6,
-      margin: options.margin ?? 100,
+      margin: options.margin ?? 140,
       outputPath: options.outputPath ?? "generated-peas.svg"
     };
   }
@@ -23,8 +39,11 @@ export class PeaGenerator {
       const row = Math.floor(colorIndex / this.options.peasPerRow);
       const col = colorIndex % this.options.peasPerRow;
       
-      const x = this.options.margin + col * 200;
-      const y = this.options.margin + row * 150;
+      // Increased spacing between peas by 1 pea width/height
+      const peaWidth = 35 * 2;
+      const peaHeight = 32 * 2;
+      const x = this.options.margin + col * (260 + peaWidth); // 260 + 70 = 330
+      const y = this.options.margin + row * (200 + peaHeight); // 200 + 64 = 264
 
       // Create variations with different highlight positions
       const highlightGroups = this.getHighlightGroups();
@@ -33,7 +52,7 @@ export class PeaGenerator {
         configs.push({
           id: id++,
           x,
-          y: y + highlightIndex * 50,
+          y: y + highlightIndex * 70, // keep variation spacing as before
           rx: 35,
           ry: 32,
           color,
@@ -52,8 +71,11 @@ export class PeaGenerator {
         const row = Math.floor((PEA_COLORS.length + comboIndex) / this.options.peasPerRow);
         const col = (PEA_COLORS.length + comboIndex) % this.options.peasPerRow;
         
-        const x = this.options.margin + col * 200;
-        const y = this.options.margin + row * 150;
+        // Increased spacing between peas by 1 pea width/height
+        const peaWidth = 35 * 2;
+        const peaHeight = 32 * 2;
+        const x = this.options.margin + col * (260 + peaWidth);
+        const y = this.options.margin + row * (200 + peaHeight);
 
         const highlights = this.getRandomHighlightGroup().map(h => ({
           ...h,
@@ -104,9 +126,9 @@ export class PeaGenerator {
 
   private generatePeaSVG(config: PeaConfig): string {
     const { x, y, rx, ry, color, highlights } = config;
-    
+    const dynamicStroke = darkenHexColor(color.base, 0.2);
     let svg = `  <!-- Pea ${config.id}: ${config.description} -->\n`;
-    svg += `  <ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="${color.base}" stroke="${color.stroke}" stroke-width="1"/>\n`;
+    svg += `  <ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="${color.base}" stroke="${dynamicStroke}" stroke-width="1"/>\n`;
     
     highlights.forEach(highlight => {
       const highlightX = x + highlight.x;
