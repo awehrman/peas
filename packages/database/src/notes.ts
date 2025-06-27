@@ -1,23 +1,32 @@
 import { ParsedHTMLFile } from "../../../apps/queue/src/types";
-import { Note, Prisma, prisma } from "./client";
+import { prisma } from "./client";
 
-// TODO see if we can pull this from types
-// type NoteWithIngredients = Prisma.NoteGetPayload<{
-//   include: { ingredients: true };
-// }>;
 
-export type NoteWithIngredients = {
+
+export type NoteWithParsedLines = {
   id: string;
-  ingredients: {
+  parsedIngredientLines: {
     id: string;
     reference: string;
+    blockIndex: number;
+    lineIndex: number;
+  }[];
+  parsedInstructionLines: {
+    id: string;
+    originalText: string;
+    lineIndex: number;
   }[];
 };
 
 export async function getNotes() {
   console.log("getNotes");
   try {
-    const notes = await prisma.note.findMany();
+    const notes = await prisma.note.findMany({
+      include: {
+        parsedIngredientLines: true,
+        parsedInstructionLines: true,
+      },
+    });
     return { notes };
   } catch (error) {
     return { error };
@@ -26,40 +35,46 @@ export async function getNotes() {
 
 export async function createNote(
   file: ParsedHTMLFile
-): Promise<NoteWithIngredients> {
+): Promise<NoteWithParsedLines> {
   try {
-    const response: NoteWithIngredients = await prisma.note.create({
+    const response = await prisma.note.create({
       data: {
         title: file.title,
-        historicalCreatedAt: file.historicalCreatedAt,
-        content: file.contents,
-        source: file.sourceUrl ?? null,
-        ingredients: {
-          createMany: {
-            data: file.ingredients,
-          },
+        html: file.contents,
+        parsedIngredientLines: {
+          create: file.ingredients.map((ingredient) => ({
+            reference: ingredient.reference,
+            blockIndex: ingredient.blockIndex,
+            lineIndex: ingredient.lineIndex,
+          })),
         },
-        instructions: {
-          createMany: {
-            data: file.instructions,
-          },
+        parsedInstructionLines: {
+          create: file.instructions.map((instruction) => ({
+            originalText: instruction.reference,
+            lineIndex: instruction.lineIndex,
+          })),
         },
       },
       select: {
         id: true,
-        // title: true,
-        // historicalCreatedAt: true,
-        // content: true,
-        // source: true,
-        ingredients: {
+        parsedIngredientLines: {
           select: {
             id: true,
             reference: true,
+            blockIndex: true,
+            lineIndex: true,
+          },
+        },
+        parsedInstructionLines: {
+          select: {
+            id: true,
+            originalText: true,
+            lineIndex: true,
           },
         },
       },
     });
-    console.log(`Successfully create note ${response.id}`);
+    console.log(`Successfully created note ${response.id}`);
     return response;
   } catch (error) {
     console.log({ error });

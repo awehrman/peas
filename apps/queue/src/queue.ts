@@ -1,5 +1,5 @@
 import { Queue, Worker } from "bullmq";
-import { createNote, Note, NoteWithIngredients } from "@peas/database";
+import { createNote, Note, NoteWithParsedLines } from "@peas/database";
 import { load } from "cheerio";
 import {
   ParsedHTMLFile,
@@ -138,11 +138,11 @@ const processHTMLFile = async ({ data: { content = "" } }) => {
   console.log("processing file...");
   // cheerio parse meta (name, source, content, image)
   const file = parseHTML(content);
-  const note: NoteWithIngredients = await createNote(file);
+  const noteWithLines = await createNote(file);
 
   // pass to parsing
   await parserQueue.add("parse-ingredients", {
-    note,
+    note: noteWithLines,
   });
 };
 
@@ -165,11 +165,11 @@ export const setupHTMLFileQueueProcessor = (queueName: string) => {
 const processIngredientLineParsing = async ({
   data: { note },
 }: {
-  data: { note: NoteWithIngredients };
+  data: { note: NoteWithParsedLines };
 }) => {
   console.log("parsing ingredients...");
-  const { ingredients = [] } = note;
-  for (const line of ingredients) {
+  const { parsedIngredientLines = [] } = note;
+  for (const line of parsedIngredientLines) {
     let message = `${line.reference}`;
     try {
       const parsed = Parser.parse(line.reference, {});

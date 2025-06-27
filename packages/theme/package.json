@@ -19,7 +19,7 @@
     "dist/**"
   ],
   "scripts": {
-    "build": "tsup src/index.ts --format esm --dts --out-extension:esm=.mjs",
+    "build": "tsup src/index.ts --format esm --dts",
     "dev": "tsup src/index.ts --format esm --watch --dts",
     "lint": "eslint . --max-warnings 0",
     "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist"
