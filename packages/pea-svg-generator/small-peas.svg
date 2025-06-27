@@ -1,0 +1,159 @@
+<svg width="600" height="400" xmlns="http://www.w3.org/2000/svg">
+  <!-- Pea 1: Classic Green - Dual highlights -->
+  <ellipse cx="50" cy="50" rx="35" ry="32" fill="#4CAF50" stroke="#388E3C" stroke-width="1"/>
+  <ellipse cx="45" cy="45" rx="8" ry="6" fill="#66BB6A" opacity="0.7"/>
+  <ellipse cx="60" cy="55" rx="5" ry="4" fill="#66BB6A" opacity="0.5"/>
+  <!-- Pea 2: Classic Green - Dual highlights -->
+  <ellipse cx="50" cy="100" rx="35" ry="32" fill="#4CAF50" stroke="#388E3C" stroke-width="1"/>
+  <ellipse cx="60" cy="90" rx="8" ry="6" fill="#66BB6A" opacity="0.7"/>
+  <ellipse cx="45" cy="110" rx="5" ry="4" fill="#66BB6A" opacity="0.5"/>
+  <!-- Pea 3: Classic Green - Multiple highlights -->
+  <ellipse cx="50" cy="150" rx="35" ry="32" fill="#4CAF50" stroke="#388E3C" stroke-width="1"/>
+  <ellipse cx="40" cy="160" rx="8" ry="6" fill="#66BB6A" opacity="0.7"/>
+  <ellipse cx="65" cy="140" rx="5" ry="4" fill="#66BB6A" opacity="0.5"/>
+  <ellipse cx="65" cy="160" rx="8" ry="6" fill="#66BB6A" opacity="0.7"/>
+  <!-- Pea 4: Bright Green - Multiple highlights -->
+  <ellipse cx="250" cy="50" rx="35" ry="32" fill="#9abf44" stroke="#7a9f35" stroke-width="1"/>
+  <ellipse cx="245" cy="45" rx="8" ry="6" fill="#b8d45a" opacity="0.7"/>
+  <ellipse cx="260" cy="55" rx="5" ry="4" fill="#b8d45a" opacity="0.5"/>
+  <ellipse cx="260" cy="40" rx="8" ry="6" fill="#b8d45a" opacity="0.7"/>
+  <!-- Pea 5: Bright Green - Dual highlights -->
+  <ellipse cx="250" cy="100" rx="35" ry="32" fill="#9abf44" stroke="#7a9f35" stroke-width="1"/>
+  <ellipse cx="245" cy="110" rx="5" ry="4" fill="#b8d45a" opacity="0.5"/>
+  <ellipse cx="240" cy="110" rx="8" ry="6" fill="#b8d45a" opacity="0.7"/>
+  <!-- Pea 6: Bright Green - Dual highlights -->
+  <ellipse cx="250" cy="150" rx="35" ry="32" fill="#9abf44" stroke="#7a9f35" stroke-width="1"/>
+  <ellipse cx="265" cy="140" rx="5" ry="4" fill="#b8d45a" opacity="0.5"/>
+  <ellipse cx="265" cy="160" rx="8" ry="6" fill="#b8d45a" opacity="0.7"/>
+  <!-- Pea 7: Dark Green - Dual highlights -->
+  <ellipse cx="450" cy="50" rx="35" ry="32" fill="#23400d" stroke="#1a300a" stroke-width="1"/>
+  <ellipse cx="445" cy="45" rx="8" ry="6" fill="#2d5210" opacity="0.7"/>
+  <ellipse cx="460" cy="55" rx="5" ry="4" fill="#2d5210" opacity="0.5"/>
+  <!-- Pea 8: Dark Green - Dual highlights -->
+  <ellipse cx="450" cy="100" rx="35" ry="32" fill="#23400d" stroke="#1a300a" stroke-width="1"/>
+  <ellipse cx="460" cy="90" rx="8" ry="6" fill="#2d5210" opacity="0.7"/>
+  <ellipse cx="445" cy="110" rx="5" ry="4" fill="#2d5210" opacity="0.5"/>
+  <!-- Pea 9: Dark Green - Dual highlights -->
+  <ellipse cx="450" cy="150" rx="35" ry="32" fill="#23400d" stroke="#1a300a" stroke-width="1"/>
+  <ellipse cx="440" cy="160" rx="8" ry="6" fill="#2d5210" opacity="0.7"/>
+  <ellipse cx="465" cy="140" rx="5" ry="4" fill="#2d5210" opacity="0.5"/>
+  <!-- Pea 10: Light Green - Multiple highlights -->
+  <ellipse cx="650" cy="50" rx="35" ry="32" fill="#cde87d" stroke="#a3c864" stroke-width="1"/>
+  <ellipse cx="645" cy="45" rx="8" ry="6" fill="#d8ed8a" opacity="0.7"/>
+  <ellipse cx="660" cy="55" rx="5" ry="4" fill="#d8ed8a" opacity="0.5"/>
+  <ellipse cx="660" cy="40" rx="8" ry="6" fill="#d8ed8a" opacity="0.7"/>
+  <!-- Pea 11: Light Green - Dual highlights -->
+  <ellipse cx="650" cy="100" rx="35" ry="32" fill="#cde87d" stroke="#a3c864" stroke-width="1"/>
+  <ellipse cx="645" cy="110" rx="5" ry="4" fill="#d8ed8a" opacity="0.5"/>
+  <ellipse cx="640" cy="110" rx="8" ry="6" fill="#d8ed8a" opacity="0.7"/>
+  <!-- Pea 12: Light Green - Dual highlights -->
+  <ellipse cx="650" cy="150" rx="35" ry="32" fill="#cde87d" stroke="#a3c864" stroke-width="1"/>
+  <ellipse cx="665" cy="140" rx="5" ry="4" fill="#d8ed8a" opacity="0.5"/>
+  <ellipse cx="665" cy="160" rx="8" ry="6" fill="#d8ed8a" opacity="0.7"/>
+  <!-- Pea 13: Forest Green - Dual highlights -->
+  <ellipse cx="50" cy="200" rx="35" ry="32" fill="#4c7017" stroke="#3d5a12" stroke-width="1"/>
+  <ellipse cx="45" cy="195" rx="8" ry="6" fill="#5d8a1d" opacity="0.7"/>
+  <ellipse cx="60" cy="205" rx="5" ry="4" fill="#5d8a1d" opacity="0.5"/>
+  <!-- Pea 14: Forest Green - Multiple highlights -->
+  <ellipse cx="50" cy="250" rx="35" ry="32" fill="#4c7017" stroke="#3d5a12" stroke-width="1"/>
+  <ellipse cx="60" cy="240" rx="8" ry="6" fill="#5d8a1d" opacity="0.7"/>
+  <ellipse cx="45" cy="260" rx="5" ry="4" fill="#5d8a1d" opacity="0.5"/>
+  <ellipse cx="40" cy="260" rx="8" ry="6" fill="#5d8a1d" opacity="0.7"/>
+  <!-- Pea 15: Forest Green - Dual highlights -->
+  <ellipse cx="50" cy="300" rx="35" ry="32" fill="#4c7017" stroke="#3d5a12" stroke-width="1"/>
+  <ellipse cx="65" cy="290" rx="5" ry="4" fill="#5d8a1d" opacity="0.5"/>
+  <ellipse cx="65" cy="310" rx="8" ry="6" fill="#5d8a1d" opacity="0.7"/>
+  <!-- Pea 16: Lime Green - Dual highlights -->
+  <ellipse cx="250" cy="200" rx="35" ry="32" fill="#a8d048" stroke="#86a639" stroke-width="1"/>
+  <ellipse cx="245" cy="195" rx="8" ry="6" fill="#b8da5a" opacity="0.7"/>
+  <ellipse cx="260" cy="205" rx="5" ry="4" fill="#b8da5a" opacity="0.5"/>
+  <!-- Pea 17: Lime Green - Multiple highlights -->
+  <ellipse cx="250" cy="250" rx="35" ry="32" fill="#a8d048" stroke="#86a639" stroke-width="1"/>
+  <ellipse cx="260" cy="240" rx="8" ry="6" fill="#b8da5a" opacity="0.7"/>
+  <ellipse cx="245" cy="260" rx="5" ry="4" fill="#b8da5a" opacity="0.5"/>
+  <ellipse cx="240" cy="260" rx="8" ry="6" fill="#b8da5a" opacity="0.7"/>
+  <!-- Pea 18: Lime Green - Multiple highlights -->
+  <ellipse cx="250" cy="300" rx="35" ry="32" fill="#a8d048" stroke="#86a639" stroke-width="1"/>
+  <ellipse cx="265" cy="290" rx="5" ry="4" fill="#b8da5a" opacity="0.5"/>
+  <ellipse cx="265" cy="310" rx="8" ry="6" fill="#b8da5a" opacity="0.7"/>
+  <ellipse cx="240" cy="290" rx="5" ry="4" fill="#b8da5a" opacity="0.5"/>
+  <!-- Pea 19: Yellow - Dual highlights -->
+  <ellipse cx="450" cy="200" rx="35" ry="32" fill="#FFC107" stroke="#FF8F00" stroke-width="1"/>
+  <ellipse cx="445" cy="195" rx="8" ry="6" fill="#FFD54F" opacity="0.7"/>
+  <ellipse cx="460" cy="205" rx="5" ry="4" fill="#FFD54F" opacity="0.5"/>
+  <!-- Pea 20: Yellow - Dual highlights -->
+  <ellipse cx="450" cy="250" rx="35" ry="32" fill="#FFC107" stroke="#FF8F00" stroke-width="1"/>
+  <ellipse cx="460" cy="240" rx="8" ry="6" fill="#FFD54F" opacity="0.7"/>
+  <ellipse cx="445" cy="260" rx="5" ry="4" fill="#FFD54F" opacity="0.5"/>
+  <!-- Pea 21: Yellow - Multiple highlights -->
+  <ellipse cx="450" cy="300" rx="35" ry="32" fill="#FFC107" stroke="#FF8F00" stroke-width="1"/>
+  <ellipse cx="440" cy="310" rx="8" ry="6" fill="#FFD54F" opacity="0.7"/>
+  <ellipse cx="465" cy="290" rx="5" ry="4" fill="#FFD54F" opacity="0.5"/>
+  <ellipse cx="465" cy="310" rx="8" ry="6" fill="#FFD54F" opacity="0.7"/>
+  <!-- Pea 22: Purple - Dual highlights -->
+  <ellipse cx="650" cy="200" rx="35" ry="32" fill="#9C27B0" stroke="#7B1FA2" stroke-width="1"/>
+  <ellipse cx="645" cy="195" rx="8" ry="6" fill="#BA68C8" opacity="0.7"/>
+  <ellipse cx="660" cy="205" rx="5" ry="4" fill="#BA68C8" opacity="0.5"/>
+  <!-- Pea 23: Purple - Multiple highlights -->
+  <ellipse cx="650" cy="250" rx="35" ry="32" fill="#9C27B0" stroke="#7B1FA2" stroke-width="1"/>
+  <ellipse cx="660" cy="240" rx="8" ry="6" fill="#BA68C8" opacity="0.7"/>
+  <ellipse cx="645" cy="260" rx="5" ry="4" fill="#BA68C8" opacity="0.5"/>
+  <ellipse cx="640" cy="260" rx="8" ry="6" fill="#BA68C8" opacity="0.7"/>
+  <!-- Pea 24: Purple - Dual highlights -->
+  <ellipse cx="650" cy="300" rx="35" ry="32" fill="#9C27B0" stroke="#7B1FA2" stroke-width="1"/>
+  <ellipse cx="665" cy="290" rx="5" ry="4" fill="#BA68C8" opacity="0.5"/>
+  <ellipse cx="665" cy="310" rx="8" ry="6" fill="#BA68C8" opacity="0.7"/>
+  <!-- Pea 25: Sugar Snap - Multiple highlights -->
+  <ellipse cx="50" cy="350" rx="35" ry="32" fill="#8BC34A" stroke="#689F38" stroke-width="1"/>
+  <ellipse cx="45" cy="345" rx="8" ry="6" fill="#A5D6A7" opacity="0.7"/>
+  <ellipse cx="60" cy="355" rx="5" ry="4" fill="#A5D6A7" opacity="0.5"/>
+  <ellipse cx="60" cy="340" rx="8" ry="6" fill="#A5D6A7" opacity="0.7"/>
+  <!-- Pea 26: Sugar Snap - Dual highlights -->
+  <ellipse cx="50" cy="400" rx="35" ry="32" fill="#8BC34A" stroke="#689F38" stroke-width="1"/>
+  <ellipse cx="45" cy="410" rx="5" ry="4" fill="#A5D6A7" opacity="0.5"/>
+  <ellipse cx="40" cy="410" rx="8" ry="6" fill="#A5D6A7" opacity="0.7"/>
+  <!-- Pea 27: Sugar Snap - Multiple highlights -->
+  <ellipse cx="50" cy="450" rx="35" ry="32" fill="#8BC34A" stroke="#689F38" stroke-width="1"/>
+  <ellipse cx="65" cy="440" rx="5" ry="4" fill="#A5D6A7" opacity="0.5"/>
+  <ellipse cx="65" cy="460" rx="8" ry="6" fill="#A5D6A7" opacity="0.7"/>
+  <ellipse cx="40" cy="440" rx="5" ry="4" fill="#A5D6A7" opacity="0.5"/>
+  <!-- Pea 28: Split Pea - Dual highlights -->
+  <ellipse cx="250" cy="350" rx="35" ry="32" fill="#795548" stroke="#5D4037" stroke-width="1"/>
+  <ellipse cx="245" cy="345" rx="8" ry="6" fill="#A1887F" opacity="0.7"/>
+  <ellipse cx="260" cy="355" rx="5" ry="4" fill="#A1887F" opacity="0.5"/>
+  <!-- Pea 29: Split Pea - Multiple highlights -->
+  <ellipse cx="250" cy="400" rx="35" ry="32" fill="#795548" stroke="#5D4037" stroke-width="1"/>
+  <ellipse cx="260" cy="390" rx="8" ry="6" fill="#A1887F" opacity="0.7"/>
+  <ellipse cx="245" cy="410" rx="5" ry="4" fill="#A1887F" opacity="0.5"/>
+  <ellipse cx="240" cy="410" rx="8" ry="6" fill="#A1887F" opacity="0.7"/>
+  <!-- Pea 30: Split Pea - Dual highlights -->
+  <ellipse cx="250" cy="450" rx="35" ry="32" fill="#795548" stroke="#5D4037" stroke-width="1"/>
+  <ellipse cx="265" cy="440" rx="5" ry="4" fill="#A1887F" opacity="0.5"/>
+  <ellipse cx="265" cy="460" rx="8" ry="6" fill="#A1887F" opacity="0.7"/>
+  <!-- Pea 31: Bright Green base with Lime Green highlights -->
+  <ellipse cx="450" cy="350" rx="35" ry="32" fill="#9abf44" stroke="#7a9f35" stroke-width="1"/>
+  <ellipse cx="465" cy="350" rx="5" ry="4" fill="#b8da5a" opacity="0.5"/>
+  <!-- Pea 32: Dark Green base with Light Green highlights -->
+  <ellipse cx="650" cy="350" rx="35" ry="32" fill="#23400d" stroke="#1a300a" stroke-width="1"/>
+  <ellipse cx="665" cy="360" rx="4" ry="3" fill="#d8ed8a" opacity="0.5"/>
+  <ellipse cx="650" cy="345" rx="3" ry="2" fill="#d8ed8a" opacity="0.6"/>
+  <ellipse cx="640" cy="345" rx="7" ry="5" fill="#d8ed8a" opacity="0.7"/>
+  <!-- Pea 33: Forest Green base with Bright Green highlights -->
+  <ellipse cx="50" cy="500" rx="35" ry="32" fill="#4c7017" stroke="#3d5a12" stroke-width="1"/>
+  <ellipse cx="45" cy="510" rx="5" ry="4" fill="#b8d45a" opacity="0.5"/>
+  <ellipse cx="40" cy="510" rx="8" ry="6" fill="#b8d45a" opacity="0.7"/>
+  <ellipse cx="65" cy="490" rx="5" ry="4" fill="#b8d45a" opacity="0.5"/>
+  <!-- Pea 34: Lime Green base with Forest Green highlights -->
+  <ellipse cx="250" cy="500" rx="35" ry="32" fill="#a8d048" stroke="#86a639" stroke-width="1"/>
+  <ellipse cx="260" cy="490" rx="8" ry="6" fill="#5d8a1d" opacity="0.7"/>
+  <ellipse cx="245" cy="510" rx="5" ry="4" fill="#5d8a1d" opacity="0.5"/>
+  <ellipse cx="240" cy="510" rx="8" ry="6" fill="#5d8a1d" opacity="0.7"/>
+  <!-- Pea 35: Classic Green base with Bright Green highlights -->
+  <ellipse cx="450" cy="500" rx="35" ry="32" fill="#4CAF50" stroke="#388E3C" stroke-width="1"/>
+  <ellipse cx="465" cy="510" rx="4" ry="3" fill="#b8d45a" opacity="0.5"/>
+  <ellipse cx="450" cy="495" rx="3" ry="2" fill="#b8d45a" opacity="0.6"/>
+  <!-- Pea 36: Light Green base with Dark Green highlights -->
+  <ellipse cx="650" cy="500" rx="35" ry="32" fill="#cde87d" stroke="#a3c864" stroke-width="1"/>
+  <ellipse cx="665" cy="510" rx="4" ry="3" fill="#2d5210" opacity="0.5"/>
+  <ellipse cx="650" cy="495" rx="3" ry="2" fill="#2d5210" opacity="0.6"/>
+</svg>

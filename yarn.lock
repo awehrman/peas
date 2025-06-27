@@ -1439,6 +1439,18 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@peas/pea-svg-generator@workspace:packages/pea-svg-generator":
+  version: 0.0.0-use.local
+  resolution: "@peas/pea-svg-generator@workspace:packages/pea-svg-generator"
+  dependencies:
+    "@peas/eslint-config": "npm:*"
+    "@peas/typescript-config": "npm:*"
+    "@types/node": "npm:^22.14.1"
+    tsup: "npm:^8.0.2"
+    typescript: "npm:^5.8.3"
+  languageName: unknown
+  linkType: soft
+
 "@peas/queue@workspace:apps/queue":
   version: 0.0.0-use.local
   resolution: "@peas/queue@workspace:apps/queue"

@@ -9,7 +9,8 @@
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "postinstall": "node --trace-warnings ./scripts/fix-max-event-listeners.js",
     "storybook": "turbo storybook",
-    "build-storybook": "turbo build-storybook"
+    "build-storybook": "turbo build-storybook",
+    "generate-peas": "turbo run generate"
   },
   "devDependencies": {
     "prettier": "^3.5.3",

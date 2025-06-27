@@ -1,0 +1,35 @@
+{
+  "name": "@peas/pea-svg-generator",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "default": "./dist/index.mjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist/**"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts",
+    "dev": "tsup src/index.ts --format esm --watch --dts",
+    "lint": "eslint . --max-warnings 0",
+    "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist",
+    "generate": "node dist/index.js"
+  },
+  "devDependencies": {
+    "@peas/eslint-config": "*",
+    "@peas/typescript-config": "*",
+    "@types/node": "^22.14.1",
+    "tsup": "^8.0.2",
+    "typescript": "^5.8.3"
+  }
+}

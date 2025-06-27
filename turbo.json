@@ -31,6 +31,10 @@
       "dependsOn": ["^build"],
       "outputs": ["storybook-static/**"],
       "inputs": ["packages/ui/dist/**"]
+    },
+    "generate": {
+      "dependsOn": ["^build"],
+      "cache": false
     }
   }
 }
