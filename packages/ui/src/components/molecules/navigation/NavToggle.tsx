@@ -1,6 +1,6 @@
 import { MoreVertical } from "lucide-react";
-import { NavButton } from "@/components/atoms/navigation/NavButton";
-import { useNavigation } from "@/components/contexts/NavigationContext";
+import { NavButton } from "../../atoms/navigation/NavButton";
+import { useNavigation } from "../../contexts/NavigationContext";
 
 interface NavToggleProps {
   position?: number;

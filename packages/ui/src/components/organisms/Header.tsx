@@ -12,8 +12,8 @@ export function Header() {
   }
 
   return (
-    <header className="bg-white border-b border-gray-200 p-4 hidden md:block">
-      <h1 className="text-2xl font-semibold text-gray-900">{routeName}</h1>
+    <header className="bg-white border-b border-gray-200 p-10 hidden md:block">
+      <h1 className="text-2xl font-light text-gray-900">{routeName}</h1>
     </header>
   );
 }

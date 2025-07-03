@@ -1,5 +1,5 @@
 import { ButtonHTMLAttributes } from "react";
-import { Button, ButtonProps } from "@/components/atoms/Button";
+import { Button, ButtonProps } from "../Button";
 
 type NavButtonProps = Omit<ButtonProps, "variant"> & {
   variant?: "default" | "icon";

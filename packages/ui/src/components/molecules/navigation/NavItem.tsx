@@ -1,5 +1,5 @@
 import { LucideIcon } from "lucide-react";
-import { NavIcon } from "@/components/atoms/navigation/NavIcon";
+import { NavIcon } from "../../atoms/navigation/NavIcon";
 
 interface NavItemProps {
   name: string;

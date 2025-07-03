@@ -1,7 +1,7 @@
 "use client";
 
-import { NavigationProvider } from "@/components/contexts/NavigationContext";
-import { NavigationProps } from "@/components/types/navigation";
+import { NavigationProvider } from "../contexts/NavigationContext";
+import { NavigationProps } from "../types/navigation";
 
 export function Navigation({ LinkComponent }: NavigationProps) {
   return (

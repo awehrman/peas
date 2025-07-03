@@ -24,7 +24,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${sourceSans.variable} font-sans`}>
         <Header />
-        <main>{children}</main>
+        <main className="m-10">{children}</main>
       </body>
     </html>
   );
