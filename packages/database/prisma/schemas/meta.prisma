@@ -1,0 +1,24 @@
+// Meta module
+// Contains categorization and tagging
+
+model Category {
+  id String @id @default(cuid())
+
+  name String
+
+  notes Note[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Tag {
+  id String @id @default(cuid())
+
+  name String
+
+  notes Note[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+} 

@@ -1,0 +1,52 @@
+// Queue module
+// Contains background job processing and queue management
+
+enum QueueJobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum QueueJobType {
+  PROCESS_NOTE
+  PROCESS_INGREDIENT_LINE
+  PROCESS_INSTRUCTION_LINE
+}
+
+model QueueJob {
+  id String @id @default(cuid())
+  
+  jobId String @unique
+  type QueueJobType
+  status QueueJobStatus @default(PENDING)
+  
+  data Json?
+  
+  errorMessage String?
+  errorCode ErrorCode?
+  errorDetails Json?
+  retryCount Int @default(0)
+  maxRetries Int @default(3)
+  
+  startedAt DateTime?
+  completedAt DateTime?
+  
+  note Note @relation(fields: [noteId], references: [id])
+  noteId String
+  
+  // Only one of these should be set based on job type
+  ingredientLine ParsedIngredientLine? @relation(fields: [ingredientLineId], references: [id])
+  ingredientLineId String?
+  
+  instructionLine ParsedInstructionLine? @relation(fields: [instructionLineId], references: [id])
+  instructionLineId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([noteId])
+  @@index([status])
+  @@index([type])
+} 

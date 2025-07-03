@@ -1,0 +1,58 @@
+// Parsing module
+// Contains parsed content from recipe notes
+
+model ParsedIngredientLine {
+  id String @id @default(cuid())
+
+  blockIndex Int
+  lineIndex  Int
+  reference  String
+  rule       String?
+
+  containsParsingErrors Boolean         @default(false)
+  parsedAt              DateTime?
+  parsed                ParsedSegment[]
+  queueJobs QueueJob[]
+
+  Note   Note?   @relation(fields: [noteId], references: [id])
+  noteId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([noteId])
+}
+
+model ParsedInstructionLine {
+  id String @id @default(cuid())
+
+  lineIndex Int
+  originalText String
+  normalizedText String?
+
+  note   Note?   @relation(fields: [noteId], references: [id])
+  noteId String?
+  queueJobs QueueJob[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([noteId])
+}
+
+model ParsedSegment {
+  id String @id @default(cuid())
+
+  index Int
+  rule  String
+  type  String
+  value String
+
+  ingredientLine   ParsedIngredientLine @relation(fields: [ingredientLineId], references: [id])
+  ingredientLineId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ingredientLineId])
+} 

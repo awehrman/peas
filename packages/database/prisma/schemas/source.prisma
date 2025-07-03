@@ -1,0 +1,50 @@
+// Source module
+// Contains source tracking and references
+
+enum SourceType {
+  URL
+  BOOK
+}
+
+model Source {
+  id String @id @default(cuid())
+
+  type SourceType
+  urls URL[]
+  book Book? @relation(fields: [bookId], references: [id])
+  bookId String?
+
+  notes Note[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model URL {
+  id String @id @default(cuid())
+
+  siteName String?
+  author String?
+  url String
+
+  source Source @relation(fields: [sourceId], references: [id])
+  sourceId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Book {
+  id String @id @default(cuid())
+
+  title String
+  author String?
+  publisher String?
+  publicationDate DateTime?
+  isbn String?
+
+  sources Source[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+} 
