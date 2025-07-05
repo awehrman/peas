@@ -3,7 +3,7 @@ import { LucideMessageSquareWarning } from "lucide-react";
 import { cloneElement } from "react";
 
 type PlaceholderProps = {
-  label: string;
+  label?: string;
   icon?: React.ReactElement<any>;
   button?: React.ReactElement;
   buttonSize?: "sm" | "md" | "lg";
@@ -20,7 +20,7 @@ const Placeholder = ({
       {cloneElement(icon, {
         className: "w-16 h-16",
       })}
-      <h2 className="text-lg text-center">{label}</h2>
+      {label && <h2 className="text-lg text-center">{label}</h2>}
       {cloneElement(button, {
         className:
           buttonSize === "sm" ? "h-8" : buttonSize === "lg" ? "h-12" : "h-10",
@@ -29,4 +29,5 @@ const Placeholder = ({
   );
 };
 
+export { Placeholder };
 export default Placeholder;
