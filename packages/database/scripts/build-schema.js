@@ -1,7 +1,11 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
-const path = require('path');
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Core schema content (generator and datasource)
 const coreSchema = `// This is your Prisma schema file,
@@ -24,32 +28,32 @@ datasource db {
 
 // Schema files to combine (in order)
 const schemaFiles = [
-  'prisma/schemas/auth.prisma',
-  'prisma/schemas/notes.prisma',
-  'prisma/schemas/queue.prisma',
-  'prisma/schemas/parsing.prisma',
-  'prisma/schemas/meta.prisma',
-  'prisma/schemas/source.prisma'
+  "prisma/schemas/auth.prisma",
+  "prisma/schemas/notes.prisma",
+  "prisma/schemas/queue.prisma",
+  "prisma/schemas/parsing.prisma",
+  "prisma/schemas/meta.prisma",
+  "prisma/schemas/source.prisma",
 ];
 
 // Combine all schema files
 let combinedSchema = coreSchema;
 
-schemaFiles.forEach(file => {
-  const filePath = path.join(__dirname, '..', file);
+schemaFiles.forEach((file) => {
+  const filePath = path.join(__dirname, "..", file);
   if (fs.existsSync(filePath)) {
-    const content = fs.readFileSync(filePath, 'utf8');
+    const content = fs.readFileSync(filePath, "utf8");
     combinedSchema += `\n// ${file}\n`;
     combinedSchema += content;
-    combinedSchema += '\n';
+    combinedSchema += "\n";
   } else {
     console.warn(`Warning: Schema file ${file} not found`);
   }
 });
 
 // Write the combined schema
-const outputPath = path.join(__dirname, '..', 'schema.prisma');
+const outputPath = path.join(__dirname, "..", "schema.prisma");
 fs.writeFileSync(outputPath, combinedSchema);
 
-console.log('✅ Schema files combined successfully!');
-console.log(`📁 Output: ${outputPath}`); 
+console.log("✅ Schema files combined successfully!");
+console.log(`📁 Output: ${outputPath}`);

@@ -1431,6 +1431,37 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@peas/features@npm:*, @peas/features@workspace:packages/features":
+  version: 0.0.0-use.local
+  resolution: "@peas/features@workspace:packages/features"
+  dependencies:
+    "@peas/eslint-config": "npm:*"
+    "@peas/typescript-config": "npm:*"
+    "@peas/ui": "npm:*"
+    "@radix-ui/react-slot": "npm:^1.0.2"
+    "@tailwindcss/postcss": "npm:^4.1.7"
+    "@types/react": "npm:^18.2.0"
+    "@types/react-dom": "npm:^18.2.0"
+    autoprefixer: "npm:^10.4.21"
+    class-variance-authority: "npm:^0.7.1"
+    clsx: "npm:^2.1.0"
+    concurrently: "npm:^9.2.0"
+    eslint: "npm:^9.25.0"
+    lucide-react: "npm:^0.525.0"
+    postcss: "npm:^8.5.3"
+    react: "npm:^18.2.0"
+    react-dom: "npm:^18.2.0"
+    tailwind-merge: "npm:^2.2.1"
+    tailwindcss: "npm:^4.1.7"
+    tailwindcss-animate: "npm:^1.0.7"
+    tsc-alias: "npm:^1.8.16"
+    typescript: "npm:^5.8.3"
+  peerDependencies:
+    react: ^18.2.0
+    react-dom: ^18.2.0
+  languageName: unknown
+  linkType: soft
+
 "@peas/parser@npm:*, @peas/parser@workspace:packages/parser":
   version: 0.0.0-use.local
   resolution: "@peas/parser@workspace:packages/parser"
@@ -1451,9 +1482,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@peas/peas-playground@workspace:apps/peas-playground":
+"@peas/playground@workspace:apps/playground":
   version: 0.0.0-use.local
-  resolution: "@peas/peas-playground@workspace:apps/peas-playground"
+  resolution: "@peas/playground@workspace:apps/playground"
   dependencies:
     "@peas/eslint-config": "npm:*"
     "@peas/tailwind": "npm:*"
@@ -1586,7 +1617,7 @@ __metadata:
     clsx: "npm:^2.1.0"
     concurrently: "npm:^9.2.0"
     eslint: "npm:^9.25.0"
-    lucide-react: "npm:^0.501.0"
+    lucide-react: "npm:^0.525.0"
     postcss: "npm:^8.5.3"
     react: "npm:^18.2.0"
     react-dom: "npm:^18.2.0"
@@ -1606,6 +1637,7 @@ __metadata:
   resolution: "@peas/web@workspace:apps/web"
   dependencies:
     "@peas/eslint-config": "npm:*"
+    "@peas/features": "npm:*"
     "@peas/tailwind": "npm:*"
     "@peas/typescript-config": "npm:*"
     "@peas/ui": "npm:*"
@@ -1617,7 +1649,7 @@ __metadata:
     database: "npm:*"
     eslint: "npm:^9.25.0"
     eslint-config-next: "npm:^15.3.1"
-    lucide-react: "npm:^0.501.0"
+    lucide-react: "npm:^0.525.0"
     next: "npm:^15.3.1"
     postcss: "npm:^8.5.3"
     react: "npm:^19.1.0"
@@ -8899,6 +8931,15 @@ __metadata:
   peerDependencies:
     react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
   checksum: 10c0/c684c81bba746c4371ff1758c9d7dcff75809bf35c8a7ec6e07fb2cf429f3bf212adab06630904b67b0f7fe2254b2cee58354ef71f62ea5139b63fdecb45f9a8
+  languageName: node
+  linkType: hard
+
+"lucide-react@npm:^0.525.0":
+  version: 0.525.0
+  resolution: "lucide-react@npm:0.525.0"
+  peerDependencies:
+    react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
+  checksum: 10c0/81c4438e2cf1c86ea2ebe0a97b378201512450894283cccce766a89bc6a4e47c8df1d9115d845d98f582bb0a10be31c454aa232520fea35018dac1cd8466ea9b
   languageName: node
   linkType: hard
 

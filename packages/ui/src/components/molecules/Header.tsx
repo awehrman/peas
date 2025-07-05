@@ -1,19 +1,19 @@
-"use client";
-import { usePathname } from "next/navigation";
+import { ReactNode } from "react";
 
-export function Header() {
-  const currentPath = usePathname();
-  let routeName = "Dashboard";
+export interface HeaderProps {
+  routeName?: string;
+  className?: string;
+}
 
-  if (currentPath !== "/") {
-    routeName =
-      currentPath.substring(1).charAt(0).toUpperCase() +
-      currentPath.substring(2);
-  }
-
+export function Header({
+  routeName = "Dashboard",
+  className = "",
+}: HeaderProps): ReactNode {
   return (
-    <header className="bg-white border-b border-gray-200 p-10 hidden md:block">
-      <h1 className="text-2xl font-light text-gray-900">{routeName}</h1>
+    <header
+      className={`bg-white border-b border-gray-200 p-10 hidden md:block ${className}`}
+    >
+      <h1 className="text-2xl font-light text-gray-600">{routeName}</h1>
     </header>
   );
-} 
+}

@@ -1,7 +1,5 @@
 import { ParsedHTMLFile } from "../../../apps/queue/src/types";
-import { prisma } from "./client";
-
-
+import { prisma, Note } from "./client";
 
 export type NoteWithParsedLines = {
   id: string;

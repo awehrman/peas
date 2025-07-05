@@ -7,7 +7,7 @@
     "dev": "turbo run dev",
     "watch": "turbo run watch",
     "lint": "turbo lint",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "format": "turbo run format",
     "postinstall": "node --trace-warnings ./scripts/fix-max-event-listeners.js",
     "storybook": "turbo storybook",
     "build-storybook": "turbo build-storybook",

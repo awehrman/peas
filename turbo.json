@@ -16,6 +16,9 @@
     "lint": {
       "dependsOn": ["^lint"]
     },
+    "format": {
+      "cache": false
+    },
     "dev": {
       "dependsOn": ["^db:generate", "^build"],
       "cache": false,

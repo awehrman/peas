@@ -1,5 +1,5 @@
 {
-  "name": "@peas/ui",
+  "name": "@peas/features",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -43,6 +43,7 @@
     "typescript": "^5.8.3"
   },
   "dependencies": {
+    "@peas/ui": "*",
     "@radix-ui/react-slot": "^1.0.2",
     "@tailwindcss/postcss": "^4.1.7",
     "postcss": "^8.5.3",
