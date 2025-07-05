@@ -1,5 +1,5 @@
 export * from "./navigation";
 
-export * from "./FileUpload";
-export * from "./Header";
-export * from "./Placeholder";
+export * from "./file-upload";
+export * from "./header";
+export * from "./placeholder";

@@ -1,3 +1,3 @@
-export * from "./NavButton";
-export * from "./NavIcon";
-export * from "./NavLink";
+export * from "./nav-button";
+export * from "./nav-icon";
+export * from "./nav-link";

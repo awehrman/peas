@@ -1,6 +1,6 @@
 "use client";
 import { ReactNode } from "react";
-import Placeholder from "./Placeholder";
+import Placeholder from "./placeholder";
 import { Upload } from "lucide-react";
 
 export interface FileUploadProps {

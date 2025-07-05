@@ -1,2 +1,2 @@
-export * from "./DesignSystem";
-export * from "./Navigation";
+export * from "./design-system";
+export * from "./navigation";

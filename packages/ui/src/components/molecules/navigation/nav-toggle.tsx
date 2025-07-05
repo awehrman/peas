@@ -1,5 +1,5 @@
 import { MoreVertical } from "lucide-react";
-import { NavButton } from "../../atoms/navigation/NavButton";
+import { NavButton } from "../../atoms/navigation/nav-button";
 import { useNavigation } from "../../contexts/NavigationContext";
 
 interface NavToggleProps {
@@ -13,7 +13,8 @@ export function NavToggle({ position, className }: NavToggleProps) {
   return (
     <div>
       <NavButton
-        variant="icon"
+        variant="ghost"
+        size="icon"
         onClick={(e) => {
           e.stopPropagation();
           setIsExpanded(!isExpanded);

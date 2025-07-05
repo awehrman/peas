@@ -1,3 +1,3 @@
-export * from "./client";
-export * from "./notes";
-export * from "./users";
+export * from "./client.js";
+export * from "./notes.js";
+export * from "./users.js";

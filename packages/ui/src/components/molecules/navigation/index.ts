@@ -1,2 +1,2 @@
-export * from "./NavItem";
-export * from "./NavToggle";
+export * from "./nav-item";
+export * from "./nav-toggle";

@@ -1,2 +1,2 @@
-export * from "./PendingReview";
-export * from "./RecentlyImported";
+export * from "./pending-review";
+export * from "./recently-imported";
