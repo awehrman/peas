@@ -3,7 +3,7 @@ import { Source_Sans_3 } from "next/font/google";
 import "./globals.css";
 import "@peas/ui/styles.css";
 import "./fonts.css";
-import { ClientHeader } from "./components/client/header";
+import ClientHeader from "./components/client/header";
 
 const sourceSans = Source_Sans_3({
   subsets: ["latin"],

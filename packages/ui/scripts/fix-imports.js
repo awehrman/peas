@@ -17,10 +17,31 @@ async function fixImports() {
         const filePath = join(distDir, file);
         const content = await readFile(filePath, "utf-8");
 
-        // Replace @/lib/utils with relative path
-        const fixedContent = content.replace(
+        // Replace path aliases with relative paths
+        let fixedContent = content;
+
+        // Handle @/lib/utils
+        fixedContent = fixedContent.replace(
           /from ["']@\/lib\/utils["']/g,
           "from '../../lib/utils.js'"
+        );
+
+        // Handle @/lib/* imports
+        fixedContent = fixedContent.replace(
+          /from ["']@\/lib\/([^"']+)["']/g,
+          "from '../../lib/$1.js'"
+        );
+
+        // Handle @/config/* imports
+        fixedContent = fixedContent.replace(
+          /from ["']@\/config\/([^"']+)["']/g,
+          "from '../../config/$1.js'"
+        );
+
+        // Handle @/components/* imports
+        fixedContent = fixedContent.replace(
+          /from ["']@\/components\/([^"']+)["']/g,
+          "from '../../components/$1.js'"
         );
 
         if (content !== fixedContent) {

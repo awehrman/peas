@@ -7,6 +7,6 @@ const NextLink = ({ ...props }: React.ComponentProps<typeof Link>) => {
   return <Link {...props} />;
 };
 
-export function ClientNavigation() {
+export default function ClientNavigation() {
   return <Navigation LinkComponent={NextLink} />;
 }

@@ -2,7 +2,7 @@
 import { usePathname } from "next/navigation";
 import { Header } from "@peas/ui";
 
-export function ClientHeader() {
+export default function ClientHeader() {
   const pathname = usePathname();
 
   // Convert pathname to route name
