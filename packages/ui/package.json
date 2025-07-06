@@ -20,7 +20,7 @@
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist",
     "build": "tsc && node scripts/fix-imports.js && npx @tailwindcss/cli -i ./src/styles.css -o ./dist/styles.css --minify",
-    "dev": "tsc --watch",
+    "dev": "concurrently \"tsc --watch\" \"node scripts/watch-and-fix.js\"",
     "watch": "concurrently \"tsc --watch\" \"npx @tailwindcss/cli -i ./src/styles.css -o ./dist/styles.css --watch\"",
     "check-types": "tsc --noEmit",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\""
