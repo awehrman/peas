@@ -1,136 +1,140 @@
 @import "tailwindcss";
-@import "tw-animate-css";
+
 
 /* ================= Theme Tokens ================= */
 @theme {
+
   /* Colors */
 
-  /* Primary Colors */
-  --color-primary-50: #f0fdf4;
-  --color-primary-100: #dcfce7;
-  --color-primary-200: #bbf7d0;
-  --color-primary-300: #86efac;
-  --color-primary-400: #4ade80;
-  --color-primary-500: #22c55e;
-  --color-primary-600: #16a34a;
-  --color-primary-700: #15803d;
-  --color-primary-800: #166534;
-  --color-primary-900: #14532d;
-  --color-primary-950: #052e16;
-  --color-primary: #22c55e;
-  --color-primary-foreground: #ffffff;
+    /* Primary Colors */
+    --color-primary-50: #e6f1ff;
+    --color-primary-100: #cce3ff;
+    --color-primary-200: #99c7ff;
+    --color-primary-300: #66abff;
+    --color-primary-400: #338fff;
+    --color-primary-500: #2a8af6;
+    --color-primary-600: #0066ff;
+    --color-primary-700: #0052cc;
+    --color-primary-800: #003d99;
+    --color-primary-900: #002966;
+    --color-primary-950: #001433;
+    --color-primary: #2a8af6;
+    --color-primary-foreground: #ffffff;
 
-  /* Secondary Colors */
-  --color-secondary-50: #f5f3ff;
-  --color-secondary-100: #ede9fe;
-  --color-secondary-200: #ddd6fe;
-  --color-secondary-300: #c4b5fd;
-  --color-secondary-400: #a78bfa;
-  --color-secondary-500: #8b5cf6;
-  --color-secondary-600: #7c3aed;
-  --color-secondary-700: #6d28d9;
-  --color-secondary-800: #5b21b6;
-  --color-secondary-900: #4c1d95;
-  --color-secondary-950: #2e1065;
-  --color-secondary: #8b5cf6;
-  --color-secondary-foreground: #ffffff;
+    /* Secondary Colors */
+    --color-secondary-50: #e0fcf7;
+    --color-secondary-100: #b8f7ec;
+    --color-secondary-200: #7eeadf;
+    --color-secondary-300: #36dccf;
+    --color-secondary-400: #12cfc2;
+    --color-secondary-500: #0bb3a7;
+    --color-secondary-600: #08998d;
+    --color-secondary-700: #067f74;
+    --color-secondary-800: #04655a;
+    --color-secondary-900: #024b41;
+    --color-secondary-950: #01322a;
+    --color-secondary: #0bb3a7;
+    --color-secondary-foreground: #ffffff;
 
-  /* Destructive Colors */
-  --color-destructive: #ef4444;
-  --color-destructive-foreground: #ffffff;
+    /* Destructive Colors */
+    --color-destructive: #ef4444;
+    --color-destructive-foreground: #ffffff;
 
-  /* Muted Colors */
-  --color-muted: #f3f4f6;
-  --color-muted-foreground: #6b7280;
+    /* Muted Colors */
+    --color-muted: #f3f4f6;
+    --color-muted-foreground: #6b7280;
 
-  /* Accent Colors */
-  --color-accent: #f59e0b;
-  --color-accent-foreground: #ffffff;
+    /* Accent Colors */
+    --color-accent: #f59e0b;
+    --color-accent-foreground: #ffffff;
 
-  /* Popover Colors */
-  --color-popover: #ffffff;
-  --color-popover-foreground: #111827;
+    /* Popover Colors */
+    --color-popover: #ffffff;
+    --color-popover-foreground: #111827;
 
-  /* Card Colors */
-  --color-card: #ffffff;
-  --color-card-foreground: #111827;
+    /* Card Colors */
+    --color-card: #ffffff;
+    --color-card-foreground: #111827;
 
-  --color-border: #e5e7eb;
-  --color-input: #e5e7eb;
-  --color-ring: #8b5cf6;
-  --color-background: #ffffff;
-  --color-foreground: #111827;
+    --color-border: #e5e7eb;
+    --color-input: #e5e7eb;
+    --color-ring: #8b5cf6;
+    --color-background: #ffffff;
+    --color-foreground: #111827;
 
   /* Typography */
 
-  --font-family-sans: var(--font-source-sans), sans-serif;
-  --font-family-mono: JetBrains Mono, monospace;
+    --font-family-sans: var(--font-source-sans), sans-serif;
+    --font-family-mono: JetBrains Mono, monospace;
 
-  --font-size-xs: 0.75rem;
-  --font-size-sm: 0.875rem;
-  --font-size-base: 1rem;
-  --font-size-lg: 1.125rem;
-  --font-size-xl: 1.25rem;
-  --font-size-2xl: 1.5rem;
-  --font-size-3xl: 1.875rem;
-  --font-size-4xl: 2.25rem;
-  --font-size-5xl: 3rem;
-  --font-size-6xl: 3.75rem;
-  --font-size-7xl: 4.5rem;
-  --font-size-8xl: 6rem;
-  --font-size-9xl: 8rem;
+    --font-size-xs: 0.75rem;
+    --font-size-sm: 0.875rem;
+    --font-size-base: 1rem;
+    --font-size-lg: 1.125rem;
+    --font-size-xl: 1.25rem;
+    --font-size-2xl: 1.5rem;
+    --font-size-3xl: 1.875rem;
+    --font-size-4xl: 2.25rem;
+    --font-size-5xl: 3rem;
+    --font-size-6xl: 3.75rem;
+    --font-size-7xl: 4.5rem;
+    --font-size-8xl: 6rem;
+    --font-size-9xl: 8rem;
 
-  --font-weight-thin: 100;
-  --font-weight-extralight: 200;
-  --font-weight-light: 300;
-  --font-weight-normal: 400;
-  --font-weight-medium: 500;
-  --font-weight-semibold: 600;
-  --font-weight-bold: 700;
-  --font-weight-extrabold: 800;
-  --font-weight-black: 900;
+    --font-weight-thin: 100;
+    --font-weight-extralight: 200;
+    --font-weight-light: 300;
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+    --font-weight-extrabold: 800;
+    --font-weight-black: 900;
+
 
   /* Spacing */
 
-  --spacing-0: 0px;
-  --spacing-1: 4px;
-  --spacing-2: 8px;
-  --spacing-3: 12px;
-  --spacing-4: 16px;
-  --spacing-5: 20px;
-  --spacing-6: 24px;
-  --spacing-8: 32px;
-  --spacing-10: 40px;
-  --spacing-12: 48px;
-  --spacing-16: 64px;
-  --spacing-20: 80px;
-  --spacing-24: 96px;
-  --spacing-32: 128px;
-  --spacing-40: 160px;
-  --spacing-48: 192px;
-  --spacing-56: 224px;
-  --spacing-64: 256px;
-  --spacing-72: 288px;
-  --spacing-80: 320px;
-  --spacing-96: 384px;
+    --spacing-0: 0px;
+    --spacing-1: 4px;
+    --spacing-2: 8px;
+    --spacing-3: 12px;
+    --spacing-4: 16px;
+    --spacing-5: 20px;
+    --spacing-6: 24px;
+    --spacing-8: 32px;
+    --spacing-10: 40px;
+    --spacing-12: 48px;
+    --spacing-16: 64px;
+    --spacing-20: 80px;
+    --spacing-24: 96px;
+    --spacing-32: 128px;
+    --spacing-40: 160px;
+    --spacing-48: 192px;
+    --spacing-56: 224px;
+    --spacing-64: 256px;
+    --spacing-72: 288px;
+    --spacing-80: 320px;
+    --spacing-96: 384px;
+
 
   /* Breakpoints */
 
-  --breakpoint-sm: 640px;
-  --breakpoint-md: 768px;
-  --breakpoint-lg: 1024px;
-  --breakpoint-xl: 1280px;
-  --breakpoint-2xl: 1536px;
+    --breakpoint-sm: 640px;
+    --breakpoint-md: 768px;
+    --breakpoint-lg: 1024px;
+    --breakpoint-xl: 1280px;
+    --breakpoint-2xl: 1536px;
+
 
   /* Shadows */
 
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg:
-    0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  --shadow-xl:
-    0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-  --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
-  --shadow-inner: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
-  --shadow-none: none;
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+    --shadow-inner: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
+    --shadow-none: none;
+
 }
+

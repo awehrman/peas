@@ -38,11 +38,12 @@ export function RecentlyImported({
           return (
             <li
               key={index}
-              className={`inline-block ${indentClass}`}
+              className={`inline-block animate-in slide-in-from-top-2 fade-in duration-300 ${indentClass}`}
               style={{
                 paddingLeft: item.indentLevel
                   ? `${item.indentLevel * 20}px`
                   : "0px",
+                animationDelay: `${index * 500}ms`,
               }}
             >
               <span className="text-sm text-gray-600">{item.text}</span>

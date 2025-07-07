@@ -2,6 +2,7 @@
 import { ReactNode } from "react";
 import Placeholder from "./placeholder";
 import { Upload } from "lucide-react";
+import { Button } from "../ui/button";
 
 export interface FileUploadProps {
   onFileUpload?: (file: File) => void;
@@ -56,14 +57,14 @@ export function FileUpload({
           icon={<Upload />}
           buttonSize="sm"
           button={
-            <label
-              htmlFor="file-upload"
-              className={`cursor-pointer bg-blue-600 text-white px-3 py-1 rounded-md hover:bg-blue-700 transition-colors text-sm ${
-                disabled ? "cursor-not-allowed opacity-50" : ""
-              }`}
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => document.getElementById("file-upload")?.click()}
+              disabled={disabled}
             >
               Choose a file
-            </label>
+            </Button>
           }
         />
         <input

@@ -22,8 +22,9 @@ const Placeholder = ({
       })}
       {label && <h2 className="text-lg text-center">{label}</h2>}
       {cloneElement(button, {
-        className:
-          buttonSize === "sm" ? "h-8" : buttonSize === "lg" ? "h-12" : "h-10",
+        className: `${button.props.className || ""} ${
+          buttonSize === "sm" ? "h-8" : buttonSize === "lg" ? "h-12" : "h-10"
+        }`,
       })}
     </div>
   );

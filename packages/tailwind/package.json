@@ -22,6 +22,7 @@
   },
   "scripts": {
     "build:css:compile": "tsup scripts/build-styles.ts --format esm --out-dir dist-scripts",
-    "build:css": "yarn build:css:compile && node dist-scripts/build-styles.js"
+    "build:css": "yarn build:css:compile && node dist-scripts/build-styles.js",
+    "build": "yarn build:css"
   }
 }
