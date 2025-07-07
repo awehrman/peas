@@ -4,6 +4,7 @@ import "./globals.css";
 import "@peas/ui/styles.css";
 import "./fonts.css";
 import ClientHeader from "./components/client/header";
+import { ThemeProvider } from "@peas/ui";
 
 const sourceSans = Source_Sans_3({
   subsets: ["latin"],
@@ -23,8 +24,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${sourceSans.variable} font-sans`}>
-        <ClientHeader />
-        <main className="m-10">{children}</main>
+        <ThemeProvider>
+          <ClientHeader />
+          <main className="m-10">{children}</main>
+        </ThemeProvider>
       </body>
     </html>
   );

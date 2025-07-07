@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import { ThemeToggle } from "./theme-toggle";
 
 export interface HeaderProps {
   routeName?: string;
@@ -11,9 +12,12 @@ export function Header({
 }: HeaderProps): ReactNode {
   return (
     <header
-      className={`bg-white border-b border-gray-200 p-10 hidden md:block ${className}`}
+      className={`bg-background border-b border-border p-10 md:block ${className}`}
     >
-      <h1 className="text-2xl font-light text-gray-600">{routeName}</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-light text-foreground">{routeName}</h1>
+        <ThemeToggle />
+      </div>
     </header>
   );
 }
