@@ -4,7 +4,7 @@ import "./globals.css";
 import "@peas/ui/styles.css";
 import "./fonts.css";
 import ClientHeader from "../components/client/header";
-import ClientNavigation from "..g/components/client/navigation";
+import ClientNavigation from "../components/client/navigation";
 import { ThemeProvider } from "@peas/ui";
 
 const sourceSans = Source_Sans_3({

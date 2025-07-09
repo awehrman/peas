@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { ThemeToggle } from "./theme-toggle";
+// import { ThemeToggle } from "./theme-toggle";
 
 export interface HeaderProps {
   routeName?: string;
@@ -16,7 +16,7 @@ export function Header({
     >
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-light text-foreground">{routeName}</h1>
-        <ThemeToggle />
+        {/* <ThemeToggle /> */}
       </div>
     </header>
   );
