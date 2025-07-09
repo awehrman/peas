@@ -4,6 +4,7 @@ import "./globals.css";
 import "@peas/ui/styles.css";
 import "./fonts.css";
 import ClientHeader from "./components/client/header";
+import ClientNavigation from "./components/client/navigation";
 import { ThemeProvider } from "@peas/ui";
 
 const sourceSans = Source_Sans_3({
@@ -25,8 +26,13 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${sourceSans.variable} font-sans`}>
         <ThemeProvider>
-          <ClientHeader />
-          <main className="m-10">{children}</main>
+          <div className="flex h-screen">
+            <ClientNavigation />
+            <div className="flex-1 flex flex-col h-screen">
+              <ClientHeader />
+              <main className="flex-1 overflow-auto p-8">{children}</main>
+            </div>
+          </div>
         </ThemeProvider>
       </body>
     </html>

@@ -1,30 +1,89 @@
 "use client";
 
-import { NavigationProvider } from "../contexts/NavigationContext";
+import { usePathname } from "next/navigation";
+import { MoreVertical } from "lucide-react";
+import { useState } from "react";
+import {
+  NavigationProvider,
+  useNavigation,
+} from "../contexts/NavigationContext";
 import { NavigationProps } from "../types/navigation";
+import { NavItem } from "../molecules/navigation/nav-item";
+import { Button } from "../ui/button";
+import { cn } from "../../lib/utils";
+
+function SidebarNavigation({ LinkComponent }: NavigationProps) {
+  const { items, isExpanded, setIsExpanded } = useNavigation();
+  const pathname = usePathname();
+  const [mouseY, setMouseY] = useState(16); // Default to top-4 (16px)
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const relativeY = e.clientY - rect.top;
+    // Constrain to reasonable bounds (16px from top to bottom)
+    const constrainedY = Math.max(16, Math.min(relativeY, rect.height - 40));
+    setMouseY(constrainedY);
+  };
+
+  return (
+    <aside
+      className={cn(
+        "bg-card border-r border-border transition-all duration-300 relative group h-screen",
+        isExpanded ? "w-64" : "w-16"
+      )}
+      onMouseMove={handleMouseMove}
+    >
+      {/* Toggle button */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="absolute z-50 h-6 w-6 bg-transparent hover:bg-transparent transition-all duration-150"
+        style={{
+          top: `${mouseY}px`,
+          left: isExpanded ? "auto" : "50%",
+          right: isExpanded ? "0" : "auto",
+          transform: isExpanded ? "none" : "translateX(-50%)",
+        }}
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <MoreVertical className="h-4 w-4 text-primary" />
+      </Button>
+
+      {/* Navigation items - hidden when collapsed */}
+      <nav
+        className={cn(
+          "p-4 space-y-2 pt-12 transition-all duration-300",
+          isExpanded ? "opacity-100" : "opacity-0 pointer-events-none"
+        )}
+      >
+        {items.map((item) => {
+          const isActive = pathname === item.href;
+          return (
+            <div key={item.href} className="relative group/item">
+              <NavItem
+                name={item.name}
+                href={item.href}
+                icon={item.icon}
+                LinkComponent={LinkComponent}
+                className={cn(
+                  "flex items-center gap-3 w-full p-3 rounded-md transition-colors",
+                  isActive
+                    ? "bg-primary text-primary-foreground"
+                    : "hover:bg-muted text-muted-foreground hover:text-foreground"
+                )}
+              />
+            </div>
+          );
+        })}
+      </nav>
+    </aside>
+  );
+}
 
 export function Navigation({ LinkComponent }: NavigationProps) {
   return (
     <NavigationProvider>
-      <main className="flex-1 p-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="space-y-4 p-4">
-            NAVIGATION COMPONENT
-            <div className="h-20 bg-primary-500 text-primary-500-foreground flex items-center justify-center">
-              primary 500
-            </div>
-            <div className="h-20 bg-primary-600 text-primary-500-foreground flex items-center justify-center">
-              primary 600
-            </div>
-            <div className="h-20 bg-secondary-500 text-secondary-foreground flex items-center justify-center">
-              Secondary 500
-            </div>
-            <div className="h-20 bg-background text-foreground border border-border flex items-center justify-center">
-              Background
-            </div>
-          </div>
-        </div>
-      </main>
+      <SidebarNavigation LinkComponent={LinkComponent} />
     </NavigationProvider>
   );
 }

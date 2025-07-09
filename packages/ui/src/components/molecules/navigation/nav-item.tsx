@@ -7,6 +7,11 @@ interface NavItemProps {
   icon: LucideIcon;
   onClick?: () => void;
   className?: string;
+  LinkComponent?: React.ComponentType<{
+    href: string;
+    className?: string;
+    children: React.ReactNode;
+  }>;
 }
 
 export function NavItem({
@@ -15,11 +20,35 @@ export function NavItem({
   icon,
   onClick,
   className,
+  LinkComponent,
 }: NavItemProps) {
-  return (
-    <a href={href} className={className} onClick={onClick}>
+  const content = (
+    <>
       <NavIcon icon={icon} />
       <span>{name}</span>
+    </>
+  );
+
+  const baseClassName = "flex items-center gap-3 w-full h-full";
+
+  if (LinkComponent) {
+    return (
+      <LinkComponent
+        href={href}
+        className={`${baseClassName} ${className || ""}`}
+      >
+        {content}
+      </LinkComponent>
+    );
+  }
+
+  return (
+    <a
+      href={href}
+      className={`${baseClassName} ${className || ""}`}
+      onClick={onClick}
+    >
+      {content}
     </a>
   );
 }
