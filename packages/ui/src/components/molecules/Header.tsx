@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import React from "react";
 // import { ThemeToggle } from "./theme-toggle";
 
 export interface HeaderProps {
@@ -9,7 +9,7 @@ export interface HeaderProps {
 export function Header({
   routeName = "Dashboard",
   className = "",
-}: HeaderProps): ReactNode {
+}: HeaderProps) {
   return (
     <header
       className={`bg-background border-b border-border p-10 md:block ${className}`}

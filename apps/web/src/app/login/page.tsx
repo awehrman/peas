@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
+import { LoginForm } from "@peas/features";
 
 export default function LoginPage(): ReactNode {
-  return <div>Login</div>;
+  return <LoginForm loginPath="/login" />;
 }

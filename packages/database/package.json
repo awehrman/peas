@@ -2,11 +2,12 @@
   "name": "@peas/database",
   "version": "0.0.0",
   "type": "module",
-  "main": "./src/index.ts",
+  "main": "./dist/index.js",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./dist/index.js"
   },
   "scripts": {
+    "build": "tsc",
     "build:schema": "node scripts/build-schema.js",
     "db:generate": "npm run build:schema && prisma generate",
     "db:push": "npm run build:schema && prisma db push --skip-generate",

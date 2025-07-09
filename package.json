@@ -3,15 +3,15 @@
   "private": true,
   "scripts": {
     "clean": "find . -type d \\( -name 'node_modules' -o -name '.next' -o -name 'dist' \\) -prune -exec rm -rf '{}' +",
-    "build": "turbo run build",
-    "dev": "turbo run dev",
-    "watch": "turbo run watch",
-    "lint": "turbo lint",
-    "format": "turbo run format",
+    "build": "turbo run build --concurrency=15",
+    "dev": "turbo run dev --concurrency=15",
+    "watch": "turbo run watch --concurrency=15",
+    "lint": "turbo lint --concurrency=15",
+    "format": "turbo run format --concurrency=15",
     "postinstall": "node --trace-warnings ./scripts/fix-max-event-listeners.js",
-    "storybook": "turbo storybook",
-    "build-storybook": "turbo build-storybook",
-    "generate-peas": "turbo run generate"
+    "storybook": "turbo storybook --concurrency=15",
+    "build-storybook": "turbo build-storybook --concurrency=15",
+    "generate-peas": "turbo run generate --concurrency=15"
   },
   "devDependencies": {
     "prettier": "^3.5.3",

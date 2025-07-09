@@ -1,5 +1,5 @@
 "use client";
-import { ReactNode } from "react";
+import React, { ReactNode } from "react";
 import Placeholder from "./placeholder";
 import { Upload } from "lucide-react";
 import { Button } from "../ui/button";
@@ -22,7 +22,7 @@ export function FileUpload({
   description = "or drag and drop",
   className = "",
   disabled = false,
-}: FileUploadProps): ReactNode {
+}: FileUploadProps) {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && onFileUpload) {

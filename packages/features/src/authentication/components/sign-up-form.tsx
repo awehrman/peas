@@ -1,3 +1,5 @@
+"use client";
+
 import { useActionState } from "react";
 import { Input } from "@peas/ui/components/ui/input";
 import { EMPTY_ACTION_STATE, FieldError, Form, SubmitButton } from "../../form";

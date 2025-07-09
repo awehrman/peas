@@ -1,8 +1,8 @@
 import { Lucia } from "lucia";
-import { PrismaAdapter } from "@lucia-auth/adapter-prisma";
+import { prisma as prismaAdapter } from "@lucia-auth/adapter-prisma";
 import { prisma } from "@peas/database";
 
-const adapter = new PrismaAdapter(prisma.session, prisma.user);
+const adapter = prismaAdapter(prisma);
 
 export const lucia = new Lucia(adapter, {
   sessionCookie: {

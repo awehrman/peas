@@ -1,0 +1,46 @@
+{
+  "name": "@peas/auth",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./next": {
+      "types": "./dist/next.d.ts",
+      "default": "./dist/next.js"
+    },
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "default": "./dist/*.js"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist",
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "check-types": "tsc --noEmit",
+    "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\""
+  },
+  "dependencies": {
+    "@lucia-auth/adapter-prisma": "^3.0.0",
+    "@peas/database": "*",
+    "lucia": "^3.0.0",
+    "next": "^15.0.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@peas/eslint-config": "*",
+    "@peas/typescript-config": "*",
+    "@types/node": "^22.10.2",
+    "eslint": "^9.25.0",
+    "tsup": "^8.1.2",
+    "typescript": "^5.8.3"
+  }
+}
