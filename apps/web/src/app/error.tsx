@@ -2,7 +2,7 @@
 
 import { Button, Placeholder } from "@peas/ui";
 import Link from "next/link";
-import { dashboardPath } from "paths";
+import { dashboardPath } from "src/paths";
 
 export default function Error({
   error,

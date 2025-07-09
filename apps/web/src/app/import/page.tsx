@@ -50,7 +50,6 @@ export default function ImportPageRoute(): ReactNode {
         <div className="flex-1">
           <FileUpload
             // onFileUpload={handleFileUpload}
-            acceptedFileTypes="PDF, DOC, DOCX"
             maxFileSize="10MB"
           />
         </div>

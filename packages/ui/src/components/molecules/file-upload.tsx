@@ -16,7 +16,7 @@ export interface FileUploadProps {
 
 export function FileUpload({
   onFileUpload,
-  acceptedFileTypes = "PDF, DOC, DOCX",
+  acceptedFileTypes = "HTML",
   maxFileSize = "10MB",
   title = "Upload file",
   description = "or drag and drop",
