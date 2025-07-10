@@ -3,8 +3,8 @@
   "private": true,
   "scripts": {
     "clean": "find . -type d \\( -name 'node_modules' -o -name '.next' -o -name 'dist' \\) -prune -exec rm -rf '{}' +",
-    "build": "turbo run build --concurrency=15",
-    "dev": "turbo run dev --concurrency=15",
+    "build": "dotenv -e apps/web/.env -- turbo run build --concurrency=15",
+    "dev": "dotenv -e apps/web/.env -- turbo run dev --concurrency=15",
     "watch": "turbo run watch --concurrency=15",
     "lint": "turbo lint --concurrency=15",
     "format": "turbo run format --concurrency=15",
@@ -26,5 +26,8 @@
   "workspaces": [
     "apps/*",
     "packages/*"
-  ]
+  ],
+  "dependencies": {
+    "dotenv-cli": "^8.0.0"
+  }
 }
