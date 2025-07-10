@@ -12,4 +12,6 @@ export interface NavigationProps {
     className?: string;
     children: React.ReactNode;
   }>;
+  pathname?: string;
+  signOut: () => Promise<void>;
 }

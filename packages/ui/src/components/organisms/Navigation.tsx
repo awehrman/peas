@@ -1,7 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
-import { MoreVertical } from "lucide-react";
+import { MoreVertical, LogOut } from "lucide-react";
 import { useState } from "react";
 import {
   NavigationProvider,
@@ -12,9 +11,12 @@ import { NavItem } from "../molecules/navigation/nav-item";
 import { Button } from "../ui/button";
 import { cn } from "../../lib/utils";
 
-function SidebarNavigation({ LinkComponent }: NavigationProps) {
+function SidebarNavigation({
+  LinkComponent,
+  pathname,
+  signOut,
+}: NavigationProps) {
   const { items, isExpanded, setIsExpanded } = useNavigation();
-  const pathname = usePathname();
   const [mouseY, setMouseY] = useState(16); // Default to top-4 (16px)
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -75,15 +77,30 @@ function SidebarNavigation({ LinkComponent }: NavigationProps) {
             </div>
           );
         })}
+        <form
+          action={signOut}
+          className="flex items-center gap-3 w-full p-3 rounded-md transition-colors text-muted-foreground hover:text-foreground hover:bg-muted"
+        >
+          <LogOut className="mr-2 h-4 w-4" />
+          <button type="submit">Sign Out</button>
+        </form>
       </nav>
     </aside>
   );
 }
 
-export function Navigation({ LinkComponent }: NavigationProps) {
+export function Navigation({
+  LinkComponent,
+  pathname,
+  signOut,
+}: NavigationProps) {
   return (
     <NavigationProvider>
-      <SidebarNavigation LinkComponent={LinkComponent} />
+      <SidebarNavigation
+        LinkComponent={LinkComponent}
+        pathname={pathname}
+        signOut={signOut}
+      />
     </NavigationProvider>
   );
 }

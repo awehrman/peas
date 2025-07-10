@@ -3,7 +3,7 @@
 import { cookies } from "next/headers";
 import { cache } from "react";
 import { SESSION_COOKIE_NAME } from "../utils/session-cookie";
-import { validateSession } from "../lucia";
+import { validateSession } from "../session";
 
 export const getAuth = cache(async () => {
   const sessionToken =

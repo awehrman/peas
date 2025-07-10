@@ -13,7 +13,7 @@ import {
 } from "@peas/features";
 import { hashPassword } from "../utils/hash-and-verify";
 import { generateRandomToken } from "../utils/crypto";
-import { createSession } from "../lucia";
+import { createSession } from "../session";
 import { setSessionCookie } from "../utils/session-cookie";
 
 const signUpSchema = z
