@@ -2,11 +2,23 @@
   "extends": "@peas/typescript-config/nextjs.json",
   "compilerOptions": {
     "baseUrl": ".",
+    "jsx": "preserve",
     "paths": {
-      "@/*": ["./src/app/*"],
-      "@/components/*": ["./src/app/components/*"],
-      "@/lib/*": ["./src/app/lib/*"],
-      "@/paths": ["./src/paths"]
+      "@/*": [
+        "./src/app/*"
+      ],
+      "@/components/*": [
+        "./src/app/components/*"
+      ],
+      "@/lib/*": [
+        "./src/app/lib/*"
+      ],
+      "@/paths": [
+        "./src/paths"
+      ],
+      "react": [
+        "./node_modules/@types/react"
+      ]
     }
   },
   "include": [
@@ -16,5 +28,7 @@
     ".next/types/**/*.ts",
     "postcss.config.mjs"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules"
+  ]
 }

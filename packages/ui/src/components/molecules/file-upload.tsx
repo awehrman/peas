@@ -1,5 +1,5 @@
 "use client";
-import React, { ReactNode } from "react";
+import React from "react";
 import Placeholder from "./placeholder";
 import { Upload } from "lucide-react";
 import { Button } from "../ui/button";
