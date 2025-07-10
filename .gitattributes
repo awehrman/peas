@@ -1,0 +1,69 @@
+# Language classification for GitHub
+*.ts linguist-language=TypeScript
+*.tsx linguist-language=TypeScript
+*.js linguist-language=JavaScript
+*.jsx linguist-language=JavaScript
+*.mjs linguist-language=JavaScript
+*.cjs linguist-language=JavaScript
+
+# Configuration files
+*.json linguist-language=JSON
+*.yaml linguist-language=YAML
+*.yml linguist-language=YAML
+*.toml linguist-language=TOML
+*.md linguist-language=Markdown
+
+# Database and schema files
+*.sql linguist-language=SQL
+*.prisma linguist-language=Prisma
+
+# Styling
+*.css linguist-language=CSS
+*.scss linguist-language=SCSS
+*.sass linguist-language=Sass
+*.less linguist-language=Less
+
+# Documentation
+*.md linguist-documentation
+README.md linguist-documentation
+CHANGELOG.md linguist-documentation
+LICENSE linguist-documentation
+
+# Generated files (should be ignored by language detection)
+*.d.ts linguist-generated
+*.js.map linguist-generated
+*.css.map linguist-generated
+dist/* linguist-generated
+.next/* linguist-generated
+build/* linguist-generated
+out/* linguist-generated
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.svg binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+
+# Scripts
+*.sh linguist-language=Shell
+*.bash linguist-language=Shell
+*.zsh linguist-language=Shell
+
+# Package files
+package.json linguist-language=JSON
+yarn.lock linguist-language=YAML
+pnpm-lock.yaml linguist-language=YAML
+
+# Config files
+.eslintrc.* linguist-language=JSON
+.prettierrc.* linguist-language=JSON
+tsconfig.json linguist-language=JSON
+next.config.* linguist-language=JavaScript
+tailwind.config.* linguist-language=JavaScript
+vite.config.* linguist-language=JavaScript 
