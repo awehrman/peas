@@ -1,3 +1,5 @@
-export default function HomePage() {
-  return <div className="min-h-screen"></div>;
+import { DashboardPageContent } from "@peas/features";
+
+export default function DashboardPage() {
+  return <DashboardPageContent />;
 }

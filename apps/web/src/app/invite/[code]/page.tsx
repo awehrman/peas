@@ -19,7 +19,7 @@ export default async function InvitePage({
   // If the app has no codes configured, allow anyone in.
   if (allowedCodes.length === 0) {
     const { SignUpForm } = await import(
-      "../../../lib/auth/components/sign-up-form"
+      "../../../lib/auth/components/forms/sign-up"
     );
     return <SignUpForm />;
   }
@@ -38,7 +38,7 @@ export default async function InvitePage({
   }
 
   const { SignUpForm } = await import(
-    "../../../lib/auth/components/sign-up-form"
+    "../../../lib/auth/components/forms/sign-up"
   );
   return <SignUpForm />;
 }

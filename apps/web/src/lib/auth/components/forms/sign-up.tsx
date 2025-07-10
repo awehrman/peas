@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { login } from "../actions/login";
+import { signUp } from "../../actions/sign-up";
 import {
   EMPTY_ACTION_STATE,
   Form,
@@ -10,22 +10,17 @@ import {
 } from "@peas/features";
 import { Input } from "@peas/ui";
 
-interface LoginFormProps {
-  error?: string;
-}
-
-const LoginForm = ({ error }: LoginFormProps) => {
-  const [actionState, action] = useActionState(login, EMPTY_ACTION_STATE);
+const SignUpForm = () => {
+  const [actionState, action] = useActionState(signUp, EMPTY_ACTION_STATE);
 
   return (
     <Form action={action} actionState={actionState}>
-      {error && (
-        <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md text-destructive text-sm">
-          {error === "invalid-signup-code"
-            ? "Invalid or missing sign-up code. Please contact an administrator for access."
-            : error}
-        </div>
-      )}
+      <Input
+        name="username"
+        placeholder="Username"
+        defaultValue={actionState.payload?.get("username") as string}
+      />
+      <FieldError actionState={actionState} name="username" />
 
       <Input
         name="email"
@@ -42,9 +37,17 @@ const LoginForm = ({ error }: LoginFormProps) => {
       />
       <FieldError actionState={actionState} name="password" />
 
-      <SubmitButton label="Sign In" />
+      <Input
+        type="password"
+        name="confirmPassword"
+        placeholder="Confirm Password"
+        defaultValue={actionState.payload?.get("confirmPassword") as string}
+      />
+      <FieldError actionState={actionState} name="confirmPassword" />
+
+      <SubmitButton label="Sign Up" />
     </Form>
   );
 };
 
-export { LoginForm };
+export { SignUpForm };

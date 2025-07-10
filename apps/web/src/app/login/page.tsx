@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { LoginForm } from "../../lib/auth/components/login-form";
+import { LoginForm } from "../../lib/auth/components/forms/login";
 
 export const dynamic = "force-dynamic";
 

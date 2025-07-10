@@ -3,7 +3,7 @@ import { Source_Sans_3 } from "next/font/google";
 import "./globals.css";
 import "@peas/ui/styles.css";
 import "./fonts.css";
-import LayoutWrapper from "../components/client/layout-wrapper";
+import { RouteGuard } from "../lib/auth/components/route-guard";
 import { ThemeProvider } from "@peas/ui";
 
 const sourceSans = Source_Sans_3({
@@ -25,7 +25,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${sourceSans.variable} font-sans`}>
         <ThemeProvider>
-          <LayoutWrapper>{children}</LayoutWrapper>
+          <RouteGuard>{children}</RouteGuard>
         </ThemeProvider>
       </body>
     </html>

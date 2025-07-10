@@ -4,7 +4,8 @@ export const designSystemPath = () => "/design";
 export const importPath = () => "/import";
 
 export const loginPath = () => "/login";
-export const signUpPath = () => "/signup";
+export const invitePath = (code?: string) =>
+  code ? `/invite/${code}` : "/invite";
 export const passwordResetPath = () => "/password-reset";
 
 export const ingredientsPath = () => "/ingredients";
