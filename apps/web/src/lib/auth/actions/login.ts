@@ -2,24 +2,26 @@
 
 import { redirect } from "next/navigation";
 import { z } from "zod";
-
-import { setSessionCookie } from "@peas/auth/next";
-import { createSession } from "@peas/auth";
-import { ActionState, toActionState, fromErrorToActionState } from "../../form";
-import { verifyPasswordHash } from "../utils/hash-and-verify";
 import { prisma } from "@peas/database";
-import { generateRandomToken } from "../../utils/crypto";
+import { dashboardPath } from "@/paths";
+import {
+  toActionState,
+  ActionState,
+  fromErrorToActionState,
+} from "@peas/features";
+import { verifyPasswordHash } from "../utils/hash-and-verify";
+import { generateRandomToken } from "../utils/crypto";
+import { createSession } from "../lucia";
+import { setSessionCookie } from "../utils/session-cookie";
 
-const signInSchema = z.object({
+const loginSchema = z.object({
   email: z.string().min(1, { message: "Is required" }).max(191).email(),
   password: z.string().min(6).max(191),
 });
 
-export const signIn = async (_actionState: ActionState, formData: FormData) => {
+export const login = async (_actionState: ActionState, formData: FormData) => {
   try {
-    const { email, password } = signInSchema.parse(
-      Object.fromEntries(formData)
-    );
+    const { email, password } = loginSchema.parse(Object.fromEntries(formData));
 
     const user = await prisma.user.findUnique({
       where: { email },
@@ -43,5 +45,5 @@ export const signIn = async (_actionState: ActionState, formData: FormData) => {
     return fromErrorToActionState(error, formData);
   }
 
-  redirect("/"); // TODO pass successful redirect path
+  redirect(dashboardPath());
 };

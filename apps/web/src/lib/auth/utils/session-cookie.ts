@@ -1,4 +1,3 @@
-// Next.js specific auth utilities
 import { cookies } from "next/headers";
 
 export const SESSION_COOKIE_NAME = "session";

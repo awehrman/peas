@@ -1152,13 +1152,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@lucia-auth/adapter-prisma@npm:^3.0.0":
-  version: 3.0.2
-  resolution: "@lucia-auth/adapter-prisma@npm:3.0.2"
+"@lucia-auth/adapter-prisma@npm:^4.0.1":
+  version: 4.0.1
+  resolution: "@lucia-auth/adapter-prisma@npm:4.0.1"
   peerDependencies:
     "@prisma/client": ^4.2.0 || ^5.0.0
-    lucia: ^2.0.0
-  checksum: 10c0/241a0c7602736e09d53f3da596159ccf09a2eb629e582249c47aed1006a1796a88b066a69134cf0c11fda8c15b31948327e10d32ac1af54c8d7b7677ab8b1f92
+    lucia: 3.x
+  checksum: 10c0/fc9778e129b9da84eceff7c052f5767231fd4a6bcc12f2fe2805fec6ac9dea4b0b4dcd42207e15cca9ffa49a83f7f39d2597eca2380503758b6d14af64ed4a98
   languageName: node
   linkType: hard
 
@@ -1656,18 +1656,20 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@peas/auth@workspace:packages/auth"
   dependencies:
-    "@lucia-auth/adapter-prisma": "npm:^3.0.0"
+    "@lucia-auth/adapter-prisma": "npm:^4.0.1"
+    "@node-rs/argon2": "npm:^2.0.2"
     "@peas/database": "npm:*"
     "@peas/eslint-config": "npm:*"
     "@peas/typescript-config": "npm:*"
     "@types/node": "npm:^22.10.2"
     eslint: "npm:^9.25.0"
-    lucia: "npm:^3.0.0"
+    lucia: "npm:^3.2.2"
     next: "npm:^15.0.0"
     react: "npm:^19.1.0"
     react-dom: "npm:^19.1.0"
     tsup: "npm:^8.1.2"
     typescript: "npm:^5.8.3"
+    zod: "npm:^3.23.8"
   languageName: unknown
   linkType: soft
 
@@ -9231,7 +9233,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lucia@npm:^3.0.0":
+"lucia@npm:^3.2.2":
   version: 3.2.2
   resolution: "lucia@npm:3.2.2"
   dependencies:
@@ -13421,7 +13423,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"zod@npm:^3.25.76":
+"zod@npm:^3.23.8, zod@npm:^3.25.76":
   version: 3.25.76
   resolution: "zod@npm:3.25.76"
   checksum: 10c0/5718ec35e3c40b600316c5b4c5e4976f7fee68151bc8f8d90ec18a469be9571f072e1bbaace10f1e85cf8892ea12d90821b200e980ab46916a6166a4260a983c
