@@ -8,9 +8,7 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
-    },
-    "moduleResolution": "bundler",
-    "module": "ESNext"
+    }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.css"],
   "exclude": [
