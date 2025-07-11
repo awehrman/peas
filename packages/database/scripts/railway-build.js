@@ -19,10 +19,27 @@ if (!databaseUrl) {
   console.log(
     "⚠️  DATABASE_URL not found, using minimal schema for type generation only."
   );
+  console.log(`📁 Minimal schema path: ${minimalSchemaPath}`);
+  console.log(`📁 Target schema path: ${schemaPath}`);
+
+  // Check if minimal schema exists
+  if (!fs.existsSync(minimalSchemaPath)) {
+    console.error(`❌ Minimal schema file not found at: ${minimalSchemaPath}`);
+    process.exit(1);
+  }
+
   // Copy minimal schema to schema.prisma for type generation
   try {
     fs.copyFileSync(minimalSchemaPath, schemaPath);
     console.log("✅ Copied minimal schema for type generation");
+
+    // Verify the copy worked
+    if (fs.existsSync(schemaPath)) {
+      console.log("✅ Schema file exists after copy");
+    } else {
+      console.error("❌ Schema file does not exist after copy");
+      process.exit(1);
+    }
   } catch (error) {
     console.error("❌ Failed to copy minimal schema:", error.message);
     process.exit(1);

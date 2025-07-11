@@ -3,6 +3,7 @@
 
 generator client {
   provider        = "prisma-client-js"
+  output          = "../node_modules/@prisma/client"
   previewFeatures = ["fullTextSearchPostgres"]
 }
 
@@ -227,11 +228,15 @@ model ParsedSegment {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([ingredientLineId])
 }
 
 model Category {
   id String @id @default(cuid())
-  name String @unique
+
+  name String
+
   notes Note[]
 
   createdAt DateTime @default(now())
@@ -240,7 +245,9 @@ model Category {
 
 model Tag {
   id String @id @default(cuid())
-  name String @unique
+
+  name String
+
   notes Note[]
 
   createdAt DateTime @default(now())
@@ -248,20 +255,19 @@ model Tag {
 }
 
 enum SourceType {
-  EVERNOTE
-  BOOK
   URL
-  MANUAL
+  BOOK
 }
 
 model Source {
   id String @id @default(cuid())
-  type SourceType
-  name String?
-  notes Note[]
 
-  url URL?
-  book Book?
+  type SourceType
+  urls URL[]
+  book Book? @relation(fields: [bookId], references: [id])
+  bookId String?
+
+  notes Note[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -269,9 +275,13 @@ model Source {
 
 model URL {
   id String @id @default(cuid())
-  url String @unique
+
+  siteName String?
+  author String?
+  url String
+
   source Source @relation(fields: [sourceId], references: [id])
-  sourceId String @unique
+  sourceId String
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -279,11 +289,14 @@ model URL {
 
 model Book {
   id String @id @default(cuid())
+
   title String
   author String?
+  publisher String?
+  publicationDate DateTime?
   isbn String?
-  source Source @relation(fields: [sourceId], references: [id])
-  sourceId String @unique
+
+  sources Source[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
