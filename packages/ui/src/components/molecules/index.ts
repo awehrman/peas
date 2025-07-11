@@ -1,4 +1,4 @@
-export * from "./navigation";
+export * from "./navigation/index";
 
 export * from "./file-upload";
 export * from "./header";
