@@ -17,12 +17,14 @@ Peas is designed to transform unstructured recipe content into structured, searc
 ## 🏗️ Architecture
 
 ### Frontend (`apps/web`)
+
 - **Import Route** (`/import`): Upload HTML recipe files
 - **File Upload**: Accept HTML files with drag-and-drop interface
 - **Status Tracking**: Real-time processing status updates
 - **Recipe Management**: View and manage processed recipes
 
 ### API Layer
+
 - **`/notes/import`**: Process uploaded HTML files
   - Save note content and metadata to database
   - Mock image upload with placeholder URLs
@@ -32,18 +34,21 @@ Peas is designed to transform unstructured recipe content into structured, searc
 ### Queue Processing Pipeline
 
 #### 1. **Process Note Queue**
+
 - Parse HTML structure to identify ingredient and instruction lines
 - Save parsed lines as `ParsedIngredientLine` and `ParsedInstructionLine` records
 - Queue individual lines for specialized processing
 - Update note status to `PROCESSING_INGREDIENTS`
 
 #### 2. **Ingredient Line Processor Queue**
+
 - Process each ingredient line through PEG grammar parser
 - Generate structured `ParsedSegment` records with ingredient details
 - Handle parsing errors and update error tracking
 - Update note status to `PROCESSING_INSTRUCTIONS`
 
 #### 3. **Instruction Line Processor Queue**
+
 - Apply spellcheck and text normalization to instruction lines
 - Clean and standardize instruction text
 - Update `normalizedText` field with processed content
@@ -61,6 +66,7 @@ peas/
 │   ├── database/      # Prisma database client and schema
 │   ├── eslint-config/ # Shared ESLint configuration
 │   ├── parser/        # PEG grammar recipe parser
+│   ├── pea-svg-generator/ # SVG generation for pea graphics
 │   ├── storybook/     # Component development environment
 │   ├── tailwind/      # Shared Tailwind CSS configuration
 │   ├── theme/         # Design system tokens and configuration
@@ -78,11 +84,14 @@ The project uses a comprehensive design system built with:
 - **Tailwind CSS**: Utility-first CSS framework
 - **Custom Theme Package**: Centralized design tokens
 - **Storybook**: Component development and documentation
+- **PhysicsBackground**: Animated physics background with bouncing peas
+- **Pea SVG Generator**: Dynamic SVG generation for pea graphics
 
 ### Component Architecture
+
 - **Atoms**: Basic UI elements (buttons, inputs, icons)
 - **Molecules**: Compound components (navigation items, form fields)
-- **Organisms**: Complex UI sections (headers, navigation, forms)
+- **Organisms**: Complex UI sections (headers, navigation, forms, physics backgrounds)
 - **Templates**: Page layouts and compositions
 
 ## 🚀 Getting Started
@@ -97,6 +106,7 @@ The project uses a comprehensive design system built with:
 ### Environment Setup
 
 1. **Copy environment files**:
+
    ```bash
    cp .env.example .env
    cp apps/web/.env.example apps/web/.env
@@ -180,6 +190,7 @@ The application uses Prisma with PostgreSQL and includes:
 - **Error Tracking**: Comprehensive error logging and recovery
 
 ### Key Models
+
 - `Note`: Recipe content and processing status
 - `ParsedIngredientLine`: Extracted ingredient information
 - `ParsedInstructionLine`: Processed instruction text
@@ -189,6 +200,7 @@ The application uses Prisma with PostgreSQL and includes:
 ## 🔧 Development Workflow
 
 ### Adding New Features
+
 1. Create feature branch from `main`
 2. Implement changes in appropriate packages
 3. Update tests and documentation
@@ -196,12 +208,14 @@ The application uses Prisma with PostgreSQL and includes:
 5. Submit pull request
 
 ### Database Changes
+
 1. Update `packages/database/prisma/schema.prisma`
 2. Generate migration: `npx prisma migrate dev --name "description"`
 3. Update Prisma client: `npx prisma generate`
 4. Test with sample data
 
 ### Component Development
+
 1. Create component in `packages/ui/src/components/`
 2. Add Storybook stories for testing
 3. Export from package index
@@ -210,6 +224,7 @@ The application uses Prisma with PostgreSQL and includes:
 ## 🚀 Deployment
 
 ### Production Build
+
 ```bash
 # Build all packages
 yarn build
@@ -222,7 +237,9 @@ cd packages/database && npx prisma migrate deploy
 ```
 
 ### Environment Variables
+
 Ensure all production environment variables are configured:
+
 - Database connection strings
 - Redis configuration
 - OAuth credentials

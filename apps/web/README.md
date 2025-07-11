@@ -11,6 +11,7 @@ This is a [Next.js](https://nextjs.org) application that provides the user inter
 - **shadcn/ui** components
 - **@peas/ui** design system components
 - **@peas/features** feature components
+- **PhysicsBackground** animated backgrounds with bouncing peas
 
 ## Getting Started
 

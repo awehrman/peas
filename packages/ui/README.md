@@ -68,10 +68,13 @@ function MyComponent() {
 
 - `Navigation` - Complete navigation system
 - `DesignSystem` - Design system showcase
+- `PhysicsBackground` - Animated physics background with bouncing peas
 
 ### UI (shadcn/ui)
 
 - `Button` - Primary button component
+- `Card` - Card container component
+- `Input` - Form input component
 - Additional shadcn components as needed
 
 ## Development

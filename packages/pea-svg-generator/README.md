@@ -4,14 +4,16 @@ SVG generator for creating pea-themed graphics and icons.
 
 ## Overview
 
-This package provides tools for generating SVG graphics with pea-themed designs. It can create various pea patterns, icons, and decorative elements.
+This package provides tools for generating SVG graphics with pea-themed designs. It can create various pea patterns, icons, and decorative elements for use in the Peas application.
 
 ## Features
 
-- **Pea pattern generation** - Create repeating pea patterns
-- **Color customization** - Configurable color palettes
-- **Size variations** - Different sizes and scales
+- **Pea pattern generation** - Create repeating pea patterns with customizable layouts
+- **Color customization** - Configurable color palettes and themes
+- **Size variations** - Different sizes and scales for various use cases
 - **CLI interface** - Command-line tool for generation
+- **TypeScript support** - Full TypeScript definitions
+- **ESM and CJS builds** - Compatible with both module systems
 
 ## Installation
 
@@ -20,6 +22,26 @@ yarn add @peas/pea-svg-generator
 ```
 
 ## Usage
+
+### Programmatic
+
+```typescript
+import { PeaGenerator } from "@peas/pea-svg-generator";
+
+// Create a generator instance
+const generator = new PeaGenerator({
+  width: 1000,
+  height: 1000,
+  peasPerRow: 3,
+  margin: 50,
+});
+
+// Generate pea configurations
+const peaConfigs = generator.generatePeaConfigs();
+
+// Convert a single pea config to SVG
+const svg = generator.peaConfigToSVG(peaConfigs[0]);
+```
 
 ### CLI
 
@@ -34,18 +56,37 @@ npx @peas/pea-svg-generator --colors green,lightgreen,darkgreen
 npx @peas/pea-svg-generator --size small
 ```
 
-### Programmatic
+## API Reference
 
-```javascript
-import { generatePeaPattern } from "@peas/pea-svg-generator";
+### PeaGenerator
 
-const svg = generatePeaPattern({
-  colors: ["#4ade80", "#22c55e", "#16a34a"],
-  size: "medium",
-  pattern: "random",
-});
+The main class for generating pea graphics.
 
-console.log(svg);
+```typescript
+interface PeaGeneratorOptions {
+  width: number;
+  height: number;
+  peasPerRow: number;
+  margin: number;
+}
+
+class PeaGenerator {
+  constructor(options: PeaGeneratorOptions);
+  generatePeaConfigs(): PeaConfig[];
+  peaConfigToSVG(config: PeaConfig): string;
+}
+```
+
+### PeaConfig
+
+Configuration for individual pea graphics.
+
+```typescript
+interface PeaConfig {
+  rx: number;
+  ry: number;
+  // ... other properties
+}
 ```
 
 ## Development
@@ -72,6 +113,7 @@ The generator creates SVG files with:
 
 This package is used by:
 
+- `@peas/ui` - For PhysicsBackground component
 - `@peas/web` - For decorative elements
 - `@peas/docs` - For documentation graphics
 
