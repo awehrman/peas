@@ -9,7 +9,7 @@
   "scripts": {
     "build": "node scripts/railway-build.js",
     "build:schema": "node scripts/build-schema.js",
-    "db:generate": "npm run build:schema && prisma generate",
+    "db:generate": "node scripts/railway-build.js",
     "db:push": "npm run build:schema && prisma db push --skip-generate",
     "lint:prisma": "npm run build:schema && prisma validate",
     "format:prisma": "npm run build:schema && prisma format",

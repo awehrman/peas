@@ -10,14 +10,16 @@ const __dirname = path.dirname(__filename);
 
 console.log("🚂 Railway build script starting...");
 
-// Check if DATABASE_URL is available
+// Check if we're in Railway environment
+const isRailway =
+  process.env.RAILWAY_ENVIRONMENT || process.env.NODE_ENV === "production";
 const databaseUrl = process.env.DATABASE_URL;
 const schemaPath = path.join(__dirname, "..", "schema.prisma");
 const minimalSchemaPath = path.join(__dirname, "minimal-schema.prisma");
 
-if (!databaseUrl) {
+if (!databaseUrl || isRailway) {
   console.log(
-    "⚠️  DATABASE_URL not found, using minimal schema for type generation only."
+    `⚠️  ${!databaseUrl ? "DATABASE_URL not found" : "Railway environment detected"}, using minimal schema for type generation only.`
   );
   console.log(`📁 Minimal schema path: ${minimalSchemaPath}`);
   console.log(`📁 Target schema path: ${schemaPath}`);
@@ -45,7 +47,9 @@ if (!databaseUrl) {
     process.exit(1);
   }
 } else {
-  console.log("✅ DATABASE_URL found, building full schema...");
+  console.log(
+    "✅ DATABASE_URL found and not in Railway, building full schema..."
+  );
   // Run the normal build schema script to ensure schema.prisma is up to date
   try {
     execSync("node scripts/build-schema.js", {
