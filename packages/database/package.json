@@ -7,12 +7,13 @@
     ".": "./dist/index.js"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "node scripts/railway-build.js",
     "build:schema": "node scripts/build-schema.js",
     "db:generate": "npm run build:schema && prisma generate",
     "db:push": "npm run build:schema && prisma db push --skip-generate",
     "lint:prisma": "npm run build:schema && prisma validate",
-    "format:prisma": "npm run build:schema && prisma format"
+    "format:prisma": "npm run build:schema && prisma format",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^6.6.0"

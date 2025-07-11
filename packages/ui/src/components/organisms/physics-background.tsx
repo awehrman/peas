@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import Matter from "matter-js";
-import { PeaGenerator, type PeaConfig } from "@peas/pea-svg-generator";
+import { PeaGenerator, type BlobPeaConfig } from "@peas/pea-svg-generator";
 
 interface PhysicsBackgroundProps {
   children: React.ReactNode;
@@ -12,7 +12,7 @@ interface PhysicsBackgroundProps {
 // Physics configuration constants
 const PHYSICS_CONFIG = {
   // Pea creation
-  NUM_PEAS: 1000,
+  NUM_PEAS: 2000,
   DROP_INTERVAL_MIN: 200, // ms
   DROP_INTERVAL_MAX: 1000, // ms
 
@@ -39,30 +39,52 @@ const PHYSICS_CONFIG = {
   CULLING_MARGIN: 100, // Extra margin for smooth transitions
 } as const;
 
-// Pre-generate a pool of pea configurations for performance
-let PEA_POOL: PeaConfig[] = [];
+// Pre-generate a pool of blob pea configurations for performance
+let PEA_POOL: BlobPeaConfig[] = [];
 
-// Generate SVG string for a pea config
-function peaConfigToSVG(pea: PeaConfig): string {
-  const { rx, ry, color, highlights } = pea;
-  const width = rx * 2 + 20;
-  const height = ry * 2 + 20;
-  const cx = width / 2;
-  const cy = height / 2;
+// Generate SVG string for a blob pea config
+function blobPeaConfigToSVG(pea: BlobPeaConfig): string {
+  const { width, height, color, highlights } = pea;
   let svg = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">`;
-  svg += `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="${color.base}" stroke="${color.stroke}" stroke-width="1"/>`;
-  highlights.forEach((h) => {
-    svg += `<ellipse cx="${cx + h.x}" cy="${cy + h.y}" rx="${h.rx}" ry="${h.ry}" fill="${h.color || color.highlight}" opacity="${h.opacity}"/>`;
+
+  // Generate the main blob pea
+  const generator = new PeaGenerator({ useBlobs: true });
+  const blobGenerator = (generator as any).blobGenerator;
+  svg += blobGenerator.generateBlobPea(pea);
+
+  // Add highlights
+  highlights.forEach((highlight) => {
+    const highlightConfig: BlobPeaConfig = {
+      id: pea.id,
+      x: highlight.x,
+      y: highlight.y,
+      width: pea.width * highlight.scale,
+      height: pea.height * highlight.scale,
+      color: {
+        ...pea.color,
+        base: highlight.color ?? pea.color.highlight,
+        stroke: "none",
+      },
+      highlights: [],
+      description: `highlight`,
+      blobSeed: highlight.blobSeed,
+    };
+    svg += `<g transform=\"translate(${highlight.x}, ${highlight.y})\">`;
+    svg += blobGenerator
+      .generateBlobPea(highlightConfig)
+      .replace('stroke="1"', 'stroke="none"');
+    svg += `</g>`;
   });
+
   svg += `</svg>`;
   return svg;
 }
 
-// Create an Image for each pea config
-function createPeaImages(peas: PeaConfig[]): HTMLImageElement[] {
+// Create an Image for each blob pea config
+function createBlobPeaImages(peas: BlobPeaConfig[]): HTMLImageElement[] {
   return peas.map((pea) => {
     const img = new window.Image();
-    const svg = peaConfigToSVG(pea);
+    const svg = blobPeaConfigToSVG(pea);
     img.src = `data:image/svg+xml;base64,${btoa(svg)}`;
     return img;
   });
@@ -77,10 +99,11 @@ function initializePeaPoolAndImages() {
       height: 1000,
       peasPerRow: 3,
       margin: 50,
+      useBlobs: true, // Enable blob peas
     });
-    PEA_POOL = generator.generatePeaConfigs();
+    PEA_POOL = generator.generatePeaConfigs() as BlobPeaConfig[];
     if (typeof window !== "undefined") {
-      PEA_IMAGES = createPeaImages(PEA_POOL);
+      PEA_IMAGES = createBlobPeaImages(PEA_POOL);
     }
   }
 }
@@ -198,7 +221,7 @@ export function PhysicsBackground({
         Math.random() *
           (PHYSICS_CONFIG.SIZE_SCALE_MAX - PHYSICS_CONFIG.SIZE_SCALE_MIN) +
         PHYSICS_CONFIG.SIZE_SCALE_MIN;
-      const radius = Math.max(pea.rx, pea.ry) / sizeScale;
+      const radius = Math.max(pea.width, pea.height) / 2 / sizeScale;
 
       const body = Matter.Bodies.circle(
         Math.random() * (canvas.width - 100) + 50,
@@ -261,16 +284,16 @@ export function PhysicsBackground({
         const pea = PEA_POOL[peaIdx];
         const img = PEA_IMAGES[peaIdx];
         if (!pea || !img) return; // Check both are defined
-        const { rx, ry } = pea;
-        const width = (rx * 2 + 20) / sizeScale; // Use individual scale
-        const height = (ry * 2 + 20) / sizeScale; // Use individual scale
+        const { width, height } = pea;
+        const drawWidth = width / sizeScale; // Use individual scale
+        const drawHeight = height / sizeScale; // Use individual scale
         ctx.save();
         ctx.translate(
-          body.position.x - width / 2,
-          body.position.y - height / 2
+          body.position.x - drawWidth / 2,
+          body.position.y - drawHeight / 2
         );
         ctx.rotate(body.angle);
-        ctx.drawImage(img, 0, 0, width, height);
+        ctx.drawImage(img, 0, 0, drawWidth, drawHeight);
         ctx.restore();
       }
       for (let i = 0; i < bodiesRef.current.length; i++) {
