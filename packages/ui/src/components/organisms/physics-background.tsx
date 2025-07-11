@@ -2,7 +2,11 @@
 
 import { useEffect, useRef } from "react";
 import Matter from "matter-js";
-import { PeaGenerator, type BlobPeaConfig } from "@peas/pea-svg-generator";
+import {
+  PeaGenerator,
+  type BlobPeaConfig,
+  BlobShapeGenerator,
+} from "@peas/pea-svg-generator";
 
 interface PhysicsBackgroundProps {
   children: React.ReactNode;
@@ -42,22 +46,24 @@ const PHYSICS_CONFIG = {
 // Pre-generate a pool of blob pea configurations for performance
 let PEA_POOL: BlobPeaConfig[] = [];
 
-// Generate SVG string for a blob pea config
+// Generate SVG string for a blob pea config with "locked" highlights
 function blobPeaConfigToSVG(pea: BlobPeaConfig): string {
   const { width, height, color, highlights } = pea;
+
+  // Create a group that contains the main blob and all highlights as a single unit
   let svg = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">`;
+  svg += `<g>`;
 
-  // Generate the main blob pea
-  const generator = new PeaGenerator({ useBlobs: true });
-  const blobGenerator = (generator as any).blobGenerator;
-  svg += blobGenerator.generateBlobPea(pea);
+  // Generate the main blob pea using the new BlobShapeGenerator
+  const blobShapeGenerator = new BlobShapeGenerator(pea.blobSeed);
+  svg += blobShapeGenerator.generateBlobPea(pea);
 
-  // Add highlights
+  // Add highlights as part of the same group (no separate transforms)
   highlights.forEach((highlight) => {
     const highlightConfig: BlobPeaConfig = {
       id: pea.id,
-      x: highlight.x,
-      y: highlight.y,
+      x: 0, // Position relative to the group, not the pea center
+      y: 0,
       width: pea.width * highlight.scale,
       height: pea.height * highlight.scale,
       color: {
@@ -69,13 +75,22 @@ function blobPeaConfigToSVG(pea: BlobPeaConfig): string {
       description: `highlight`,
       blobSeed: highlight.blobSeed,
     };
-    svg += `<g transform=\"translate(${highlight.x}, ${highlight.y})\">`;
-    svg += blobGenerator
+
+    // Create a separate blob generator for each highlight to use its unique seed
+    const highlightBlobGenerator = new BlobShapeGenerator(highlight.blobSeed);
+
+    // Position the highlight relative to the pea center within the group
+    const highlightX = width / 2 + highlight.x;
+    const highlightY = height / 2 + highlight.y;
+
+    svg += `<g transform=\"translate(${highlightX}, ${highlightY})\">`;
+    svg += highlightBlobGenerator
       .generateBlobPea(highlightConfig)
       .replace('stroke="1"', 'stroke="none"');
     svg += `</g>`;
   });
 
+  svg += `</g>`;
   svg += `</svg>`;
   return svg;
 }
@@ -101,7 +116,8 @@ function initializePeaPoolAndImages() {
       margin: 50,
       useBlobs: true, // Enable blob peas
     });
-    PEA_POOL = generator.generatePeaConfigs() as BlobPeaConfig[];
+    // Use the random blob pea configs (15-30% scale highlights) instead of organized ones (80% scale)
+    PEA_POOL = generator.generateManyBlobPeaConfigs(200) as BlobPeaConfig[];
     if (typeof window !== "undefined") {
       PEA_IMAGES = createBlobPeaImages(PEA_POOL);
     }
