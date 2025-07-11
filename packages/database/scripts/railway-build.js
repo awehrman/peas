@@ -15,7 +15,7 @@ const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
   console.log("⚠️  DATABASE_URL not found, using placeholder for build...");
 
-  // Create a temporary schema with a placeholder URL for build purposes
+  // Create a temporary schema with models that your code expects
   const tempSchema = `// Temporary schema for Railway build
 generator client {
   provider        = "prisma-client-js"
@@ -27,10 +27,24 @@ datasource db {
   url      = "postgresql://placeholder:placeholder@localhost:5432/placeholder"
 }
 
-// Minimal schema for build
-model Placeholder {
-  id   String @id @default(cuid())
-  name String
+// Models that your code expects
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  notes     Note[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Note {
+  id        String   @id @default(cuid())
+  title     String
+  content   String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 `;
 
