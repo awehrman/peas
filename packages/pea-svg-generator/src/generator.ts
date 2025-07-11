@@ -1,4 +1,10 @@
-import type { PeaConfig, PeaGeneratorOptions, BlobPeaConfig } from "./types.js";
+import type {
+  PeaConfig,
+  PeaGeneratorOptions,
+  BlobPeaConfig,
+  PeaHighlight,
+  BlobPeaHighlight,
+} from "./types.js";
 import {
   PEA_COLORS,
   HIGHLIGHT_POSITIONS,
@@ -22,6 +28,24 @@ function darkenHexColor(hex: string, percent: number): string {
   r = Math.max(0, Math.min(255, Math.floor(r * (1 - percent))));
   g = Math.max(0, Math.min(255, Math.floor(g * (1 - percent))));
   b = Math.max(0, Math.min(255, Math.floor(b * (1 - percent))));
+  return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+}
+
+function lightenHexColor(hex: string, percent: number): string {
+  hex = hex.replace(/^#/, "");
+  if (hex.length === 3) {
+    hex = hex
+      .split("")
+      .map((x) => x + x)
+      .join("");
+  }
+  const num = parseInt(hex, 16);
+  let r = (num >> 16) & 0xff;
+  let g = (num >> 8) & 0xff;
+  let b = num & 0xff;
+  r = Math.min(255, Math.floor(r + (255 - r) * percent));
+  g = Math.min(255, Math.floor(g + (255 - g) * percent));
+  b = Math.min(255, Math.floor(b + (255 - b) * percent));
   return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
 }
 
@@ -97,6 +121,8 @@ export class PeaGenerator {
         const highlights = this.getRandomHighlightGroup().map((h) => ({
           ...h,
           color: highlightColor.highlight,
+          scale: 0.5,
+          blobSeed: Math.random() * 10000,
         }));
 
         configs.push({
@@ -133,6 +159,11 @@ export class PeaGenerator {
       const highlightGroups = this.getHighlightGroups();
 
       highlightGroups.forEach((highlights, highlightIndex) => {
+        const blobHighlights = highlights.map((h) => ({
+          ...h,
+          scale: 0.5,
+          blobSeed: Math.random() * 10000,
+        }));
         configs.push({
           id: id++,
           x,
@@ -140,7 +171,7 @@ export class PeaGenerator {
           width: peaWidth,
           height: peaHeight,
           color,
-          highlights,
+          highlights: blobHighlights,
           description: `${color.name} blob - ${this.getHighlightDescription(highlights)}`,
           blobSeed: Math.random() * 10000,
         });
@@ -166,6 +197,8 @@ export class PeaGenerator {
         const highlights = this.getRandomHighlightGroup().map((h) => ({
           ...h,
           color: highlightColor.highlight,
+          scale: 0.5,
+          blobSeed: Math.random() * 10000,
         }));
 
         configs.push({
@@ -198,6 +231,65 @@ export class PeaGenerator {
       const x = this.options.margin + col * (peaWidth + 20);
       const y = this.options.margin + row * (peaHeight + 20);
       const color = PEA_COLORS[Math.floor(Math.random() * PEA_COLORS.length)]!;
+
+      // Generate 1-3 highlights with centered cluster + directional nudge
+      const numHighlights = Math.floor(Math.random() * 3) + 1; // 1-3 highlights
+      const direction = Math.floor(Math.random() * 4); // 0=N, 1=E, 2=W, 3=S
+      const nudgeIntensity = 0.3 + Math.random() * 0.4; // 0.3-0.7 intensity
+      const highlights: BlobPeaHighlight[] = [];
+
+      for (let h = 0; h < numHighlights; h++) {
+        // Ensure highlight is fully within the pea ellipse
+        const scale = 0.08 + Math.random() * 0.08; // 0.08-0.16 scale (even smaller)
+        const highlightRadiusX = (peaWidth * scale) / 2;
+        const highlightRadiusY = (peaHeight * scale) / 2;
+        // More conservative positioning to ensure highlights stay inside
+        const maxDistX = (peaWidth / 2 - highlightRadiusX) * 0.6; // 60% of max safe distance
+        const maxDistY = (peaHeight / 2 - highlightRadiusY) * 0.6; // 60% of max safe distance
+
+        // Start with centered position, then nudge in direction
+        let baseX = 0;
+        let baseY = 0;
+
+        // Add maximum random offset for extreme cluster spread
+        const clusterSpread = 0.7 + Math.random() * 0.3; // 0.7-1.0 spread (extreme spacing)
+        baseX += (Math.random() - 0.5) * maxDistX * clusterSpread;
+        baseY += (Math.random() - 0.5) * maxDistY * clusterSpread;
+
+        // Apply directional nudge
+        switch (direction) {
+          case 0: // North
+            baseY -= maxDistY * nudgeIntensity;
+            break;
+          case 1: // East
+            baseX += maxDistX * nudgeIntensity;
+            break;
+          case 2: // West
+            baseX -= maxDistX * nudgeIntensity;
+            break;
+          case 3: // South
+            baseY += maxDistY * nudgeIntensity;
+            break;
+        }
+
+        // Clamp to ensure highlights stay within bounds
+        const highlightX = Math.max(-maxDistX, Math.min(maxDistX, baseX));
+        const highlightY = Math.max(-maxDistY, Math.min(maxDistY, baseY));
+
+        // Use moderately light highlights for better contrast
+        const highlightColor = lightenHexColor(color.base, 0.5); // Reduced lightening
+        highlights.push({
+          x: highlightX,
+          y: highlightY,
+          rx: highlightRadiusX,
+          ry: highlightRadiusY,
+          opacity: 0.8 + Math.random() * 0.2, // 0.8-1.0 opacity
+          color: highlightColor,
+          scale: scale,
+          blobSeed: Math.random() * 10000, // Unique seed for each highlight
+        });
+      }
+
       configs.push({
         id: id++,
         x,
@@ -205,8 +297,8 @@ export class PeaGenerator {
         width: peaWidth,
         height: peaHeight,
         color,
-        highlights: [],
-        description: `${color.name} blob`,
+        highlights,
+        description: `${color.name} blob with ${numHighlights} highlights`,
         blobSeed: Math.random() * 10000,
       });
     }
@@ -250,7 +342,7 @@ export class PeaGenerator {
       const highlightY = y + highlight.y;
       const highlightColor = highlight.color || color.highlight;
 
-      svg += `  <ellipse cx="${highlightX}" cy="${highlightY}" rx="${highlight.rx}" ry="${highlight.ry}" fill="${highlightColor}" opacity="${highlight.opacity}"/>\n`;
+      svg += `  <ellipse cx="${highlightX}" cy="${highlightY}" rx="${highlight.rx}" ry="${highlight.ry}" fill="${highlightColor}" opacity="${highlight.opacity}" stroke="none"/>\n`;
     });
 
     return svg;
@@ -264,7 +356,34 @@ export class PeaGenerator {
       const configs = this.generateManyBlobPeaConfigs(200);
       configs.forEach((config) => {
         svg += `<g transform=\"translate(${config.x}, ${config.y})\">`;
+        // Render main pea
         svg += this.blobGenerator.generateBlobPea(config);
+        // Render highlights
+        config.highlights.forEach((highlight) => {
+          const highlightConfig: BlobPeaConfig = {
+            id: config.id,
+            x: highlight.x,
+            y: highlight.y,
+            width: config.width * highlight.scale,
+            height: config.height * highlight.scale,
+            color: {
+              ...config.color,
+              base: highlight.color ?? config.color.highlight,
+              stroke: "none",
+            },
+            highlights: [],
+            description: `highlight`,
+            blobSeed: highlight.blobSeed,
+          };
+          // Position highlights relative to blob center (config.width/2, config.height/2)
+          const highlightX = config.width / 2 + highlight.x;
+          const highlightY = config.height / 2 + highlight.y;
+          svg += `<g transform=\"translate(${highlightX}, ${highlightY})\">`;
+          svg += this.blobGenerator
+            .generateBlobPea(highlightConfig)
+            .replace('stroke="1"', 'stroke="none"');
+          svg += `</g>`;
+        });
         svg += `</g>\n`;
       });
     } else {

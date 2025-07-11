@@ -14,6 +14,11 @@ export interface PeaHighlight {
   color?: string;
 }
 
+export interface BlobPeaHighlight extends PeaHighlight {
+  scale: number;
+  blobSeed: number;
+}
+
 export interface PeaConfig {
   id: number;
   x: number;
@@ -32,7 +37,7 @@ export interface BlobPeaConfig {
   width: number;
   height: number;
   color: PeaColor;
-  highlights: PeaHighlight[];
+  highlights: BlobPeaHighlight[];
   description: string;
   blobSeed: number; // For consistent blob shape generation
 }
