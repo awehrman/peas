@@ -9,6 +9,7 @@ This package provides tools for generating SVG graphics with pea-themed designs.
 ## Features
 
 - **Pea pattern generation** - Create repeating pea patterns with customizable layouts
+- **Blob pea generation** - Create organic, cute blob-shaped peas using CSS shape() function approach
 - **Color customization** - Configurable color palettes and themes
 - **Size variations** - Different sizes and scales for various use cases
 - **CLI interface** - Command-line tool for generation
@@ -28,7 +29,7 @@ yarn add @peas/pea-svg-generator
 ```typescript
 import { PeaGenerator } from "@peas/pea-svg-generator";
 
-// Create a generator instance
+// Create a generator instance for regular peas
 const generator = new PeaGenerator({
   width: 1000,
   height: 1000,
@@ -41,13 +42,28 @@ const peaConfigs = generator.generatePeaConfigs();
 
 // Convert a single pea config to SVG
 const svg = generator.peaConfigToSVG(peaConfigs[0]);
+
+// Create blob peas (organic shapes)
+const blobGenerator = new PeaGenerator({
+  width: 1000,
+  height: 1000,
+  peasPerRow: 3,
+  margin: 50,
+  useBlobs: true, // Enable blob generation
+});
+
+// Generate blob pea configurations
+const blobConfigs = blobGenerator.generatePeaConfigs();
 ```
 
 ### CLI
 
 ```bash
-# Generate a basic pea pattern
+# Generate regular peas
 npx @peas/pea-svg-generator
+
+# Generate blob peas (organic shapes)
+npx @peas/pea-svg-generator --blobs
 
 # Generate with custom colors
 npx @peas/pea-svg-generator --colors green,lightgreen,darkgreen
@@ -68,12 +84,25 @@ interface PeaGeneratorOptions {
   height: number;
   peasPerRow: number;
   margin: number;
+  useBlobs?: boolean; // Enable organic blob shapes
 }
 
 class PeaGenerator {
   constructor(options: PeaGeneratorOptions);
-  generatePeaConfigs(): PeaConfig[];
+  generatePeaConfigs(): PeaConfig[] | BlobPeaConfig[];
   peaConfigToSVG(config: PeaConfig): string;
+}
+```
+
+### BlobGenerator
+
+The class for generating organic blob-shaped peas.
+
+```typescript
+class BlobGenerator {
+  constructor(seed?: number);
+  generateBlobPath(width: number, height: number, complexity?: number): string;
+  generatePeaBlob(config: BlobPeaConfig): string;
 }
 ```
 
