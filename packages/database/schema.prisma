@@ -1,0 +1,331 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearchPostgres"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+// prisma/schemas/auth.prisma
+// Authentication module
+// Contains user authentication and session management
+
+enum UserType {
+  ADMIN
+  USER
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  username      String   @unique
+  email         String   @unique
+  passwordHash  String
+  sessions Session[]
+
+  userType UserType @default(USER)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Session {
+  id           String   @id
+  expiresAt    DateTime
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+}
+
+// prisma/schemas/notes.prisma
+// Notes module
+// Contains note processing and status tracking
+
+enum NoteStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum ErrorCode {
+  HTML_PARSE_ERROR
+  INGREDIENT_PARSE_ERROR
+  INSTRUCTION_PARSE_ERROR
+  QUEUE_JOB_FAILED
+  IMAGE_UPLOAD_FAILED
+  UNKNOWN_ERROR
+}
+
+model EvernoteMetadata {
+  id String @id @default(cuid())
+
+  evernoteGUID        String?
+  source              String?
+
+  evernoteCreatedAt DateTime?
+  evernoteUpdatedAt DateTime?
+
+  note Note?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Note {
+  id                  String    @id @default(cuid())
+  title               String?
+  html                String @db.Text // For large HTML content
+  imageUrl            String?
+  status              NoteStatus @default(PENDING)
+
+  evernoteMetadataId String? @unique
+  evernoteMetadata   EvernoteMetadata? @relation(fields: [evernoteMetadataId], references: [id])
+  
+  totalIngredientLines Int @default(0)
+  totalInstructionLines Int @default(0)
+  containsParsingErrors Boolean @default(false)
+
+  parsedIngredientLines ParsedIngredientLine[]
+  parsedInstructionLines ParsedInstructionLine[]
+  queueJobs QueueJob[]
+  statusEvents NoteStatusEvent[]
+
+  errorMessage String?
+  errorCode ErrorCode?
+  errorDetails Json?
+
+  categories Category[]
+  tags       Tag[]
+  sources    Source[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model NoteStatusEvent {
+  id String @id @default(cuid())
+  
+  status NoteStatus
+  errorMessage String?
+  errorCode ErrorCode?
+  errorDetails Json?
+  
+  // For tracking progress (e.g., "ingredients (1/5) processed")
+  currentCount Int?
+  totalCount Int?
+  
+  // Additional context about what was being processed
+  context String? // e.g., "ingredient line parsing", "image upload", etc.
+  
+  note Note @relation(fields: [noteId], references: [id])
+  noteId String
+  
+  createdAt DateTime @default(now())
+  
+  @@index([noteId])
+  @@index([status])
+  @@index([createdAt])
+} 
+
+// prisma/schemas/queue.prisma
+// Queue module
+// Contains background job processing and queue management
+
+enum QueueJobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum QueueJobType {
+  PROCESS_NOTE
+  PROCESS_INGREDIENT_LINE
+  PROCESS_INSTRUCTION_LINE
+}
+
+model QueueJob {
+  id String @id @default(cuid())
+  
+  jobId String @unique
+  type QueueJobType
+  status QueueJobStatus @default(PENDING)
+  
+  data Json?
+  
+  errorMessage String?
+  errorCode ErrorCode?
+  errorDetails Json?
+  retryCount Int @default(0)
+  maxRetries Int @default(3)
+  
+  startedAt DateTime?
+  completedAt DateTime?
+  
+  note Note @relation(fields: [noteId], references: [id])
+  noteId String
+  
+  // Only one of these should be set based on job type
+  ingredientLine ParsedIngredientLine? @relation(fields: [ingredientLineId], references: [id])
+  ingredientLineId String?
+  
+  instructionLine ParsedInstructionLine? @relation(fields: [instructionLineId], references: [id])
+  instructionLineId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([noteId])
+  @@index([status])
+  @@index([type])
+} 
+
+// prisma/schemas/parsing.prisma
+// Parsing module
+// Contains parsed content from recipe notes
+
+model ParsedIngredientLine {
+  id String @id @default(cuid())
+
+  blockIndex Int
+  lineIndex  Int
+  reference  String
+  rule       String?
+
+  containsParsingErrors Boolean         @default(false)
+  parsedAt              DateTime?
+  parsed                ParsedSegment[]
+  queueJobs QueueJob[]
+
+  Note   Note?   @relation(fields: [noteId], references: [id])
+  noteId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([noteId])
+}
+
+model ParsedInstructionLine {
+  id String @id @default(cuid())
+
+  lineIndex Int
+  originalText String
+  normalizedText String?
+
+  note   Note?   @relation(fields: [noteId], references: [id])
+  noteId String?
+  queueJobs QueueJob[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([noteId])
+}
+
+model ParsedSegment {
+  id String @id @default(cuid())
+
+  index Int
+  rule  String
+  type  String
+  value String
+
+  ingredientLine   ParsedIngredientLine @relation(fields: [ingredientLineId], references: [id])
+  ingredientLineId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ingredientLineId])
+} 
+
+// prisma/schemas/meta.prisma
+// Meta module
+// Contains categorization and tagging
+
+model Category {
+  id String @id @default(cuid())
+
+  name String
+
+  notes Note[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Tag {
+  id String @id @default(cuid())
+
+  name String
+
+  notes Note[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+} 
+
+// prisma/schemas/source.prisma
+// Source module
+// Contains source tracking and references
+
+enum SourceType {
+  URL
+  BOOK
+}
+
+model Source {
+  id String @id @default(cuid())
+
+  type SourceType
+  urls URL[]
+  book Book? @relation(fields: [bookId], references: [id])
+  bookId String?
+
+  notes Note[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model URL {
+  id String @id @default(cuid())
+
+  siteName String?
+  author String?
+  url String
+
+  source Source @relation(fields: [sourceId], references: [id])
+  sourceId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Book {
+  id String @id @default(cuid())
+
+  title String
+  author String?
+  publisher String?
+  publicationDate DateTime?
+  isbn String?
+
+  sources Source[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+} 
