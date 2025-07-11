@@ -81,6 +81,8 @@ Desktop.ini
 
 # Prisma
 prisma/migrations/dev.db
+# Old custom Prisma client folder (no longer used)
+packages/database/generated/
 
 # Storybook
 storybook-static/

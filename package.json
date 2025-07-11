@@ -3,9 +3,9 @@
   "private": true,
   "scripts": {
     "clean": "find . -type d \\( -name 'node_modules' -o -name '.next' -o -name 'dist' \\) -prune -exec rm -rf '{}' +",
-    "build": "turbo run build --concurrency=15",
-    "build:local": "dotenv -e apps/web/.env -- turbo run build --concurrency=15",
-    "dev": "dotenv -e apps/web/.env -- turbo run dev --concurrency=15",
+    "build": "dotenv -e .env.local -- turbo run build --concurrency=15",
+    "build:local": "dotenv -e .env.local -- turbo run build --concurrency=15",
+    "dev": "dotenv -e .env -e .env.local -- turbo run dev --concurrency=15",
     "watch": "turbo run watch --concurrency=15",
     "lint": "turbo lint --concurrency=15",
     "format": "turbo run format --concurrency=15",

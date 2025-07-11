@@ -34,7 +34,10 @@ const Form = ({
   });
 
   return (
-    <form action={action as any} className="flex flex-col gap-y-2">
+    <form
+      action={action as any}
+      className="flex flex-col gap-y-2 bg-background"
+    >
       {children}
     </form>
   );

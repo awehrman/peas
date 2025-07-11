@@ -20,7 +20,7 @@ export function UnauthenticatedLayout({
         <div className="min-h-screen flex items-center justify-center p-4">
           <div className="w-full max-w-md">
             {(title || subtitle) && (
-              <div className="text-center mb-8">
+              <div className="text-center mb-8 bg-background">
                 {title && (
                   <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
                     {title}
@@ -32,7 +32,7 @@ export function UnauthenticatedLayout({
               </div>
             )}
 
-            <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg shadow-lg p-8">
+            <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg shadow-lg p-8 bg-background">
               {children}
             </div>
           </div>

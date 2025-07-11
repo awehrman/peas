@@ -7,6 +7,9 @@
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["fullTextSearchPostgres"]
+  // The default output is `node_modules/@prisma/client`, which plays nicely with TypeScript
+  // references across the codebase and with Yarn Plug'n'Play. Custom output broke
+  // TypeScript by hiding `PrismaClient`, so we revert to the default.
 }
 
 datasource db {
