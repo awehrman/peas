@@ -7,10 +7,10 @@ export const PHYSICS_CONFIG = {
   DROP_INTERVAL_MAX: 2000, // ms - increased from 1000
 
   // Physics properties
-  RESTITUTION: 0.4, // Less bouncy for more realistic behavior
-  FRICTION: 0.1, // Add some friction for more realistic motion
+  RESTITUTION: 0.5, // Restore some bounce
+  FRICTION: 0.1, // Reduce friction to allow settling
   FRICTION_AIR: 0.0005, // Lower air resistance to let gravity dominate longer
-  DENSITY: 0.001, // Consistent density
+  DENSITY: 0.001, // Back to original density
   INERTIA: 1000, // Allow some rotation but not chaotic
 
   // Initial velocity
@@ -25,6 +25,12 @@ export const PHYSICS_CONFIG = {
   // Size variation
   SIZE_SCALE_MIN: 1.5,
   SIZE_SCALE_MAX: 3.5,
+
+  // Collision tuning
+  COLLISION_RADIUS_FACTOR: 0.85, // Shrink physics body to better match visual pea
+
+  // Mouse interaction
+  MOUSE_RADIUS: 10, // Radius of invisible mouse collider
 
   // Performance
   CULLING_MARGIN: 100, // Extra margin for smooth transitions

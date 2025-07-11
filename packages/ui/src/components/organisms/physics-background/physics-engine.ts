@@ -9,6 +9,8 @@ export class PhysicsEngine {
   private engine: Matter.Engine | null = null;
   private bodies: Matter.Body[] = [];
   private timeouts: NodeJS.Timeout[] = [];
+  private mouseBody: Matter.Body | null = null;
+  private mouseMoveListener?: (e: MouseEvent) => void;
   private isRunning = false;
 
   /**
@@ -20,7 +22,37 @@ export class PhysicsEngine {
         x: PHYSICS_CONFIG.GRAVITY_X,
         y: PHYSICS_CONFIG.GRAVITY_Y,
       },
+      // Standard physics iterations
+      constraintIterations: 2,
+      positionIterations: 4,
+      velocityIterations: 2,
     });
+
+    // --- Mouse interaction (collision only) ---
+    // Invisible circular body that follows the mouse and collides with peas
+    this.mouseBody = Matter.Bodies.circle(
+      -1000,
+      -1000,
+      PHYSICS_CONFIG.MOUSE_RADIUS,
+      {
+        isStatic: true,
+        restitution: PHYSICS_CONFIG.RESTITUTION,
+        frictionAir: 0,
+        render: { visible: false },
+      }
+    );
+    Matter.Composite.add(this.engine.world, this.mouseBody);
+
+    // Track mouse position relative to canvas
+    this.mouseMoveListener = (e: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+      const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+      if (this.mouseBody) {
+        Matter.Body.setPosition(this.mouseBody, { x, y });
+      }
+    };
+    window.addEventListener("mousemove", this.mouseMoveListener);
 
     this.createContainmentWalls(canvas);
   }
@@ -33,7 +65,7 @@ export class PhysicsEngine {
 
     const ground = Matter.Bodies.rectangle(
       canvas.width / 2,
-      canvas.height + 50,
+      canvas.height + 50, // Position 20px above canvas height to account for pea radius
       canvas.width,
       100,
       { isStatic: true }
@@ -100,7 +132,8 @@ export class PhysicsEngine {
       Math.random() *
         (PHYSICS_CONFIG.SIZE_SCALE_MAX - PHYSICS_CONFIG.SIZE_SCALE_MIN) +
       PHYSICS_CONFIG.SIZE_SCALE_MIN;
-    const radius = Math.max(pea.width, pea.height) / 2 / sizeScale;
+    const baseRadius = Math.max(pea.width, pea.height) / 2 / sizeScale;
+    const radius = baseRadius * PHYSICS_CONFIG.COLLISION_RADIUS_FACTOR;
 
     const body = Matter.Bodies.circle(
       Math.random() * (canvas.width - 100) + 50,
@@ -183,6 +216,16 @@ export class PhysicsEngine {
 
     // Clear all bodies
     this.bodies = [];
+
+    // Remove mouse event listener and body
+    if (this.mouseMoveListener) {
+      window.removeEventListener("mousemove", this.mouseMoveListener);
+      this.mouseMoveListener = undefined;
+    }
+    if (this.mouseBody && this.engine) {
+      Matter.Composite.remove(this.engine.world, this.mouseBody);
+      this.mouseBody = null;
+    }
   }
 
   /**
