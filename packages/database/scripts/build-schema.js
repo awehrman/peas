@@ -7,6 +7,10 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Check if we're in Railway environment
+const isRailway =
+  process.env.RAILWAY_ENVIRONMENT || process.env.NODE_ENV === "production";
+
 // Core schema content (generator and datasource)
 const coreSchema = `// This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
@@ -39,17 +43,31 @@ const schemaFiles = [
 // Combine all schema files
 let combinedSchema = coreSchema;
 
-schemaFiles.forEach((file) => {
-  const filePath = path.join(__dirname, "..", file);
-  if (fs.existsSync(filePath)) {
-    const content = fs.readFileSync(filePath, "utf8");
-    combinedSchema += `\n// ${file}\n`;
-    combinedSchema += content;
-    combinedSchema += "\n";
-  } else {
-    console.warn(`Warning: Schema file ${file} not found`);
-  }
-});
+// Check if DATABASE_URL is available, if not create a minimal schema for build
+if (!process.env.DATABASE_URL && isRailway) {
+  console.log(
+    "⚠️  DATABASE_URL not found in Railway environment, creating minimal schema for build..."
+  );
+  combinedSchema += `
+// Minimal schema for Railway build
+model Placeholder {
+  id   String @id @default(cuid())
+  name String
+}
+`;
+} else {
+  schemaFiles.forEach((file) => {
+    const filePath = path.join(__dirname, "..", file);
+    if (fs.existsSync(filePath)) {
+      const content = fs.readFileSync(filePath, "utf8");
+      combinedSchema += `\n// ${file}\n`;
+      combinedSchema += content;
+      combinedSchema += "\n";
+    } else {
+      console.warn(`Warning: Schema file ${file} not found`);
+    }
+  });
+}
 
 // Write the combined schema
 const outputPath = path.join(__dirname, "..", "schema.prisma");

@@ -7,7 +7,7 @@
     ".": "./dist/index.js"
   },
   "scripts": {
-    "build": "node scripts/railway-build.js",
+    "build": "npm run build:schema && prisma generate && tsc",
     "build:schema": "node scripts/build-schema.js",
     "db:generate": "npm run build:schema && prisma generate",
     "db:push": "npm run build:schema && prisma db push --skip-generate",
