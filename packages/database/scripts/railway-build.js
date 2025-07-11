@@ -13,12 +13,20 @@ console.log("🚂 Railway build script starting...");
 // Check if DATABASE_URL is available
 const databaseUrl = process.env.DATABASE_URL;
 const schemaPath = path.join(__dirname, "..", "schema.prisma");
+const minimalSchemaPath = path.join(__dirname, "minimal-schema.prisma");
 
 if (!databaseUrl) {
   console.log(
-    "⚠️  DATABASE_URL not found, using real schema.prisma for type generation only. Some generators may fail if they require a live DB connection, but Prisma Client types will be generated."
+    "⚠️  DATABASE_URL not found, using minimal schema for type generation only."
   );
-  // Do NOT overwrite schema.prisma; just use the real one
+  // Copy minimal schema to schema.prisma for type generation
+  try {
+    fs.copyFileSync(minimalSchemaPath, schemaPath);
+    console.log("✅ Copied minimal schema for type generation");
+  } catch (error) {
+    console.error("❌ Failed to copy minimal schema:", error.message);
+    process.exit(1);
+  }
 } else {
   console.log("✅ DATABASE_URL found, building full schema...");
   // Run the normal build schema script to ensure schema.prisma is up to date
