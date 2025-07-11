@@ -1,18 +1,23 @@
-// Minimal schema for Railway builds when DATABASE_URL is not available
-// This schema includes only the models needed for TypeScript compilation
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
   provider        = "prisma-client-js"
-  output          = "../node_modules/@prisma/client"
   previewFeatures = ["fullTextSearchPostgres"]
 }
 
 datasource db {
   provider = "postgresql"
-  url      = "postgresql://placeholder:placeholder@localhost:5432/placeholder"
+  url      = env("DATABASE_URL")
 }
 
-// Minimal models needed for TypeScript compilation
+
+// prisma/schemas/auth.prisma
+// Authentication module
+// Contains user authentication and session management
 
 enum UserType {
   ADMIN
@@ -41,6 +46,10 @@ model Session {
 
   @@index([userId, expiresAt])
 }
+
+// prisma/schemas/notes.prisma
+// Notes module
+// Contains note processing and status tracking
 
 enum NoteStatus {
   PENDING
@@ -76,7 +85,7 @@ model EvernoteMetadata {
 model Note {
   id                  String    @id @default(cuid())
   title               String?
-  html                String @db.Text
+  html                String @db.Text // For large HTML content
   imageUrl            String?
   status              NoteStatus @default(PENDING)
 
@@ -112,10 +121,12 @@ model NoteStatusEvent {
   errorCode ErrorCode?
   errorDetails Json?
   
+  // For tracking progress (e.g., "ingredients (1/5) processed")
   currentCount Int?
   totalCount Int?
   
-  context String?
+  // Additional context about what was being processed
+  context String? // e.g., "ingredient line parsing", "image upload", etc.
   
   note Note @relation(fields: [noteId], references: [id])
   noteId String
@@ -125,7 +136,11 @@ model NoteStatusEvent {
   @@index([noteId])
   @@index([status])
   @@index([createdAt])
-}
+} 
+
+// prisma/schemas/queue.prisma
+// Queue module
+// Contains background job processing and queue management
 
 enum QueueJobStatus {
   PENDING
@@ -162,6 +177,7 @@ model QueueJob {
   note Note @relation(fields: [noteId], references: [id])
   noteId String
   
+  // Only one of these should be set based on job type
   ingredientLine ParsedIngredientLine? @relation(fields: [ingredientLineId], references: [id])
   ingredientLineId String?
   
@@ -174,7 +190,11 @@ model QueueJob {
   @@index([noteId])
   @@index([status])
   @@index([type])
-}
+} 
+
+// prisma/schemas/parsing.prisma
+// Parsing module
+// Contains parsed content from recipe notes
 
 model ParsedIngredientLine {
   id String @id @default(cuid())
@@ -230,7 +250,11 @@ model ParsedSegment {
   updatedAt DateTime @updatedAt
 
   @@index([ingredientLineId])
-}
+} 
+
+// prisma/schemas/meta.prisma
+// Meta module
+// Contains categorization and tagging
 
 model Category {
   id String @id @default(cuid())
@@ -252,7 +276,11 @@ model Tag {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-}
+} 
+
+// prisma/schemas/source.prisma
+// Source module
+// Contains source tracking and references
 
 enum SourceType {
   URL

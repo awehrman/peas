@@ -43,31 +43,18 @@ const schemaFiles = [
 // Combine all schema files
 let combinedSchema = coreSchema;
 
-// Check if DATABASE_URL is available, if not create a minimal schema for build
-if (!process.env.DATABASE_URL && isRailway) {
-  console.log(
-    "⚠️  DATABASE_URL not found in Railway environment, creating minimal schema for build..."
-  );
-  combinedSchema += `
-// Minimal schema for Railway build
-model Placeholder {
-  id   String @id @default(cuid())
-  name String
-}
-`;
-} else {
-  schemaFiles.forEach((file) => {
-    const filePath = path.join(__dirname, "..", file);
-    if (fs.existsSync(filePath)) {
-      const content = fs.readFileSync(filePath, "utf8");
-      combinedSchema += `\n// ${file}\n`;
-      combinedSchema += content;
-      combinedSchema += "\n";
-    } else {
-      console.warn(`Warning: Schema file ${file} not found`);
-    }
-  });
-}
+// Always combine the full schema files
+schemaFiles.forEach((file) => {
+  const filePath = path.join(__dirname, "..", file);
+  if (fs.existsSync(filePath)) {
+    const content = fs.readFileSync(filePath, "utf8");
+    combinedSchema += `\n// ${file}\n`;
+    combinedSchema += content;
+    combinedSchema += "\n";
+  } else {
+    console.warn(`Warning: Schema file ${file} not found`);
+  }
+});
 
 // Write the combined schema
 const outputPath = path.join(__dirname, "..", "schema.prisma");

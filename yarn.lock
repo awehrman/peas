@@ -1909,7 +1909,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@peas/database@workspace:packages/database"
   dependencies:
-    "@prisma/client": "npm:^6.6.0"
+    "@prisma/client": "npm:6.6.0"
     prisma: "npm:^6.6.0"
   languageName: unknown
   linkType: soft
@@ -2226,7 +2226,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@prisma/client@npm:^6.6.0":
+"@prisma/client@npm:6.6.0":
   version: 6.6.0
   resolution: "@prisma/client@npm:6.6.0"
   peerDependencies:

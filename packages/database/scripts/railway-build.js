@@ -14,77 +14,50 @@ console.log("🚂 Railway build script starting...");
 const isRailway =
   process.env.RAILWAY_ENVIRONMENT || process.env.NODE_ENV === "production";
 const databaseUrl = process.env.DATABASE_URL;
+
+console.log(`🔍 Environment check:`);
+console.log(
+  `   - RAILWAY_ENVIRONMENT: ${process.env.RAILWAY_ENVIRONMENT || "not set"}`
+);
+console.log(`   - NODE_ENV: ${process.env.NODE_ENV || "not set"}`);
+console.log(`   - DATABASE_URL: ${databaseUrl ? "set" : "not set"}`);
+console.log(`   - isRailway: ${isRailway}`);
 const schemaPath = path.join(__dirname, "..", "schema.prisma");
 const minimalSchemaPath = path.join(__dirname, "minimal-schema.prisma");
 
-if (!databaseUrl || isRailway) {
-  console.log(
-    `⚠️  ${!databaseUrl ? "DATABASE_URL not found" : "Railway environment detected"}, using minimal schema for type generation only.`
-  );
-  console.log(`📁 Minimal schema path: ${minimalSchemaPath}`);
-  console.log(`📁 Target schema path: ${schemaPath}`);
-
-  // Check if minimal schema exists
-  if (!fs.existsSync(minimalSchemaPath)) {
-    console.error(`❌ Minimal schema file not found at: ${minimalSchemaPath}`);
-    process.exit(1);
-  }
-
-  // Copy minimal schema to schema.prisma for type generation
-  try {
-    fs.copyFileSync(minimalSchemaPath, schemaPath);
-    console.log("✅ Copied minimal schema for type generation");
-
-    // Verify the copy worked
-    if (fs.existsSync(schemaPath)) {
-      console.log("✅ Schema file exists after copy");
-    } else {
-      console.error("❌ Schema file does not exist after copy");
-      process.exit(1);
-    }
-  } catch (error) {
-    console.error("❌ Failed to copy minimal schema:", error.message);
-    process.exit(1);
-  }
-} else {
-  console.log(
-    "✅ DATABASE_URL found and not in Railway, building full schema..."
-  );
-  // Run the normal build schema script to ensure schema.prisma is up to date
-  try {
-    execSync("node scripts/build-schema.js", {
-      cwd: path.join(__dirname, ".."),
-      stdio: "inherit",
-    });
-  } catch (error) {
-    console.error("❌ Failed to build schema:", error.message);
-    process.exit(1);
-  }
-}
-
-// Generate Prisma client
-console.log("🔧 Generating Prisma client...");
+// Always use the real schema, but generate without engine
+console.log("🔧 Building schema from source files...");
 try {
-  execSync("prisma generate", {
+  execSync("node scripts/build-schema.js", {
     cwd: path.join(__dirname, ".."),
-    stdio: "inherit",
+    stdio: "pipe",
   });
-  console.log("✅ Prisma client generated successfully");
+  console.log("✅ Schema built successfully");
 } catch (error) {
-  console.error("❌ Failed to generate Prisma client:", error.message);
+  console.error("❌ Failed to build schema:", error.message);
   process.exit(1);
 }
+
+// Skip Prisma generation during build - it will be generated at runtime
+console.log(
+  "⏭️  Skipping Prisma generation during build (will generate at runtime)"
+);
 
 // Compile TypeScript
 console.log("📝 Compiling TypeScript...");
 try {
-  execSync("npx tsc", {
+  // Capture output to suppress Yarn's verbose logging
+  const tscOutput = execSync("npx tsc --pretty false", {
     cwd: path.join(__dirname, ".."),
-    stdio: "inherit",
+    stdio: "pipe",
+    timeout: 30000, // 30 second timeout
   });
   console.log("✅ TypeScript compilation successful");
 } catch (error) {
   console.error("❌ TypeScript compilation failed:", error.message);
+  if (error.signal === "SIGTERM") {
+    console.error("❌ TypeScript compilation timed out after 30 seconds");
+  }
   process.exit(1);
 }
 
