@@ -28,6 +28,7 @@
   "devDependencies": {
     "@peas/eslint-config": "*",
     "@peas/typescript-config": "*",
+    "@types/matter-js": "^0",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
     "autoprefixer": "^10.4.21",
@@ -44,8 +45,10 @@
     "typescript": "^5.8.3"
   },
   "dependencies": {
+    "@peas/pea-svg-generator": "*",
     "@radix-ui/react-slot": "^1.2.3",
     "@tailwindcss/postcss": "^4.1.7",
+    "matter-js": "^0.20.0",
     "postcss": "^8.5.3",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",

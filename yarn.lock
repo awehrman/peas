@@ -1993,7 +1993,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@peas/pea-svg-generator@workspace:packages/pea-svg-generator":
+"@peas/pea-svg-generator@npm:*, @peas/pea-svg-generator@workspace:packages/pea-svg-generator":
   version: 0.0.0-use.local
   resolution: "@peas/pea-svg-generator@workspace:packages/pea-svg-generator"
   dependencies:
@@ -2130,9 +2130,11 @@ __metadata:
   resolution: "@peas/ui@workspace:packages/ui"
   dependencies:
     "@peas/eslint-config": "npm:*"
+    "@peas/pea-svg-generator": "npm:*"
     "@peas/typescript-config": "npm:*"
     "@radix-ui/react-slot": "npm:^1.2.3"
     "@tailwindcss/postcss": "npm:^4.1.7"
+    "@types/matter-js": "npm:^0"
     "@types/react": "npm:^19.1.0"
     "@types/react-dom": "npm:^19.1.0"
     autoprefixer: "npm:^10.4.21"
@@ -2141,6 +2143,7 @@ __metadata:
     concurrently: "npm:^9.2.0"
     eslint: "npm:^9.25.0"
     lucide-react: "npm:^0.525.0"
+    matter-js: "npm:^0.20.0"
     postcss: "npm:^8.5.3"
     react: "npm:^19.1.0"
     react-dom: "npm:^19.1.0"
@@ -2172,6 +2175,7 @@ __metadata:
     "@peas/typescript-config": "npm:*"
     "@peas/ui": "npm:*"
     "@tailwindcss/postcss": "npm:^4.1.7"
+    "@types/matter-js": "npm:^0"
     "@types/node": "npm:^22.14.1"
     "@types/react": "npm:^19.1.2"
     "@types/react-dom": "npm:^19.1.2"
@@ -2179,6 +2183,7 @@ __metadata:
     eslint: "npm:^9.25.0"
     eslint-config-next: "npm:^15.3.1"
     lucide-react: "npm:^0.525.0"
+    matter-js: "npm:^0.20.0"
     next: "npm:^15.3.1"
     oslo: "npm:^1.2.1"
     postcss: "npm:^8.5.3"
@@ -4423,6 +4428,13 @@ __metadata:
   version: 0.0.29
   resolution: "@types/json5@npm:0.0.29"
   checksum: 10c0/6bf5337bc447b706bb5b4431d37686aa2ea6d07cfd6f79cc31de80170d6ff9b1c7384a9c0ccbc45b3f512bae9e9f75c2e12109806a15331dc94e8a8db6dbb4ac
+  languageName: node
+  linkType: hard
+
+"@types/matter-js@npm:^0":
+  version: 0.19.8
+  resolution: "@types/matter-js@npm:0.19.8"
+  checksum: 10c0/3bb99f1d8c633cb3a0ddc1ba7ebc29847a24f97a59d12017adc9fe9340991df3525aaa26c52db6f7b4b00b92d56cb32eea680ab987934294fee4565d16f4f4d2
   languageName: node
   linkType: hard
 
@@ -9612,6 +9624,13 @@ __metadata:
   version: 1.1.0
   resolution: "math-intrinsics@npm:1.1.0"
   checksum: 10c0/7579ff94e899e2f76ab64491d76cf606274c874d8f2af4a442c016bd85688927fcfca157ba6bf74b08e9439dc010b248ce05b96cc7c126a354c3bae7fcb48b7f
+  languageName: node
+  linkType: hard
+
+"matter-js@npm:^0.20.0":
+  version: 0.20.0
+  resolution: "matter-js@npm:0.20.0"
+  checksum: 10c0/95d58f407205ad24c96422109c959999f474ef29af79b4c2ad7550bca97cdcdac99df31ebe35ab858d9863c8f6cd5205339fbbff70909b56a3e2a6a57200c51b
   languageName: node
   linkType: hard
 
