@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "clean": "find . -type d \\( -name 'node_modules' -o -name '.next' -o -name 'dist' \\) -prune -exec rm -rf '{}' +",
-    "clean:all": "rm -rf .turbo && find . -type d \\( -name 'node_modules' -o -name '.next' -o -name 'dist' -o -name '.turbo' -o -name '.cache' -o -name 'coverage' -o -name '.nyc_output' \\) -prune -exec rm -rf '{}' + && find . -name '*.tsbuildinfo' -delete && find . -name '.env.local' -delete && echo '🧹 All caches and build artifacts cleaned!'",
+    "clean:all": "rm -rf .turbo && find . -type d \\( -name 'node_modules' -o -name '.next' -o -name 'dist' -o -name '.turbo' -o -name '.cache' -o -name 'coverage' -o -name '.nyc_output' \\) -prune -exec rm -rf '{}' + && find . -name '*.tsbuildinfo' -delete && echo '🧹 All caches and build artifacts cleaned!'",
     "clean:cache": "rm -rf .turbo && find . -type d \\( -name '.next' -o -name 'dist' -o -name '.turbo' -o -name '.cache' -o -name 'coverage' -o -name '.nyc_output' \\) -prune -exec rm -rf '{}' + && find . -name '*.tsbuildinfo' -delete && echo '🧹 Build caches cleaned!'",
     "clean:modules": "find . -type d -name 'node_modules' -prune -exec rm -rf '{}' + && echo '📦 All node_modules directories removed!'",
     "build": "dotenv -e .env.local -- turbo run build --concurrency=15",
@@ -18,8 +18,8 @@
     "generate-peas": "turbo run generate --concurrency=15"
   },
   "devDependencies": {
-    "prettier": "^3.5.3",
-    "turbo": "^2.5.0",
+    "prettier": "^3.6.2",
+    "turbo": "^2.5.4",
     "typescript": "^5.8.3"
   },
   "engines": {

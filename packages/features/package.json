@@ -4,7 +4,6 @@
   "private": true,
   "type": "module",
   "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -34,10 +33,10 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "concurrently": "^9.2.0",
-    "eslint": "^9.25.0",
+    "eslint": "^9.31.0",
     "lucide-react": "^0.525.0",
     "tailwind-merge": "^3.3.1",
-    "tailwindcss": "^4.1.7",
+    "tailwindcss": "^4.1.11",
     "tailwindcss-animate": "^1.0.7",
     "tsc-alias": "^1.8.16",
     "typescript": "^5.8.3"
@@ -45,8 +44,8 @@
   "dependencies": {
     "@peas/ui": "*",
     "@radix-ui/react-slot": "^1.0.2",
-    "@tailwindcss/postcss": "^4.1.7",
-    "postcss": "^8.5.3",
+    "@tailwindcss/postcss": "^4.1.11",
+    "postcss": "^8.5.6",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-error-boundary": "^6.0.0",

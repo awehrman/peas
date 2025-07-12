@@ -5,12 +5,11 @@
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
-      "require": "./dist/index.cjs",
-      "types": "./dist/index.d.ts"
+      "require": "./dist/index.cjs"
     }
   },
   "files": [
@@ -27,7 +26,7 @@
   "devDependencies": {
     "@peas/eslint-config": "*",
     "@peas/typescript-config": "*",
-    "@types/node": "^22.14.1",
+    "@types/node": "^24.0.13",
     "tsup": "^8.0.2",
     "typescript": "^5.8.3"
   }

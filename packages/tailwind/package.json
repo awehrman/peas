@@ -9,14 +9,14 @@
   },
   "dependencies": {
     "@peas/theme": "*",
-    "@tailwindcss/postcss": "^4.1.7",
-    "postcss": "^8.5.3",
-    "tailwindcss": "^4.1.7"
+    "@tailwindcss/postcss": "^4.1.11",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.11"
   },
   "devDependencies": {
     "@peas/eslint-config": "*",
     "@peas/typescript-config": "*",
-    "@types/node": "^22.14.1",
+    "@types/node": "^24.0.13",
     "tsup": "^8.5.0",
     "typescript": "^5.8.3"
   },
