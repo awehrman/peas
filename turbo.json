@@ -12,7 +12,13 @@
     },
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**", "dist/**"]
+      "outputs": [
+        ".next/**",
+        "!.next/cache/**",
+        "dist/**",
+        "dist-scripts/**",
+        "shared-styles.css"
+      ]
     },
     "lint": {
       "dependsOn": ["^lint"]

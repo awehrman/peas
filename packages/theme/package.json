@@ -27,7 +27,7 @@
     "@peas/eslint-config": "*",
     "@peas/typescript-config": "*",
     "@types/node": "^24.0.13",
-    "tsup": "^8.0.2",
+    "tsup": "^8.5.0",
     "typescript": "^5.8.3"
   }
 }
