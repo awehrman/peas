@@ -1,5 +1,7 @@
 import { ReactNode } from "react";
+import { getIngredientCount } from "../actions";
 
-export function IngredientsPageContent(): ReactNode {
-  return <>Ingredients Content</>;
+export async function IngredientsPageContent(): Promise<ReactNode> {
+  const count = await getIngredientCount();
+  return <p>{count} Ingredients</p>;
 }

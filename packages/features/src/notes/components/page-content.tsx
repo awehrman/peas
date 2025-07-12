@@ -1,5 +1,7 @@
 import { ReactNode } from "react";
+import { getNoteCount } from "../actions";
 
-export function NotesPageContent(): ReactNode {
-  return <>Notes Content</>;
+export async function NotesPageContent(): Promise<ReactNode> {
+  const count = await getNoteCount();
+  return <p>{count} Notes</p>;
 }
