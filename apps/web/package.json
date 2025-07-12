@@ -18,7 +18,7 @@
     "@peas/ui": "*",
     "lucide-react": "^0.525.0",
     "matter-js": "^0.20.0",
-    "next": "^15.3.1",
+    "next": "15.3.1",
     "oslo": "^1.2.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
@@ -36,7 +36,7 @@
     "@types/react-dom": "^19.1.2",
     "autoprefixer": "^10.4.21",
     "eslint": "^9.25.0",
-    "eslint-config-next": "^15.3.1",
+    "eslint-config-next": "15.3.1",
     "postcss": "^8.5.3",
     "tailwindcss": "^4.1.7",
     "typescript": "^5.8.3"
