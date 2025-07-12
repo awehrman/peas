@@ -1,13 +1,11 @@
-"use client";
-
 import { ReactNode } from "react";
 import { FileUpload } from "@peas/ui";
 import { PendingReview, RecentlyImported } from "./index";
+import { getImportStats } from "../actions";
 
-export function ImportPageContent(): ReactNode {
-  const noteCount = 1;
-  const ingredientCount = 0;
-  const parsingErrorCount = 0;
+export async function ImportPageContent(): Promise<ReactNode> {
+  const { noteCount, ingredientCount, parsingErrorCount } =
+    await getImportStats();
 
   const recentlyImportedItems = [
     { text: 'Processing note "Summer Peach Fattoush".', indentLevel: 0 },

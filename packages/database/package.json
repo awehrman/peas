@@ -10,16 +10,18 @@
     "build": "node scripts/railway-build.js",
     "build:schema": "node scripts/build-schema.js",
     "db:generate": "node scripts/railway-build.js --generate-only",
-    "db:push": "npm run build:schema && prisma db push --skip-generate",
+    "db:push": "yarn build:schema && dotenv -e ../../.env.local -- prisma db push --skip-generate",
+    "db:migrate": "yarn build:schema && dotenv -e ../../.env.local -- prisma migrate dev",
     "lint:prisma": "npm run build:schema && prisma validate",
     "format:prisma": "npm run build:schema && prisma format",
-    "prisma:generate": "npx prisma generate"
+    "prisma:generate": "dotenv -e ../../.env.local -- prisma generate"
   },
   "dependencies": {
     "@prisma/client": "6.11.1",
     "dotenv": "^17.2.0"
   },
   "devDependencies": {
+    "dotenv-cli": "^8.0.0",
     "prisma": "^6.11.0"
   }
 }

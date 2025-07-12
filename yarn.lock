@@ -2117,6 +2117,7 @@ __metadata:
   dependencies:
     "@prisma/client": "npm:6.11.1"
     dotenv: "npm:^17.2.0"
+    dotenv-cli: "npm:^8.0.0"
     prisma: "npm:^6.11.0"
   languageName: unknown
   linkType: soft
