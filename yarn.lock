@@ -1143,7 +1143,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@eslint/js@npm:9.31.0, @eslint/js@npm:^9.31.0":
+"@eslint/js@npm:9.31.0, @eslint/js@npm:^9.0.0, @eslint/js@npm:^9.31.0":
   version: 9.31.0
   resolution: "@eslint/js@npm:9.31.0"
   checksum: 10c0/f9d4c73d0fafe70679a418cbb25ab7ebcc8f1dba6c32456d6f8ba5a137d583ecff233cfe10f61f41d7d4d2220e94cff1f39fc7ed1fa3819d1888dee1cad678ea
@@ -2308,9 +2308,11 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@peas/eslint-config@workspace:packages/eslint-config"
   dependencies:
+    "@eslint/js": "npm:^9.0.0"
     "@typescript-eslint/eslint-plugin": "npm:^8.36.0"
     "@typescript-eslint/parser": "npm:^8.36.0"
     "@vercel/style-guide": "npm:^6.0.0"
+    eslint: "npm:^9.0.0"
     eslint-config-prettier: "npm:^10.1.5"
     eslint-config-turbo: "npm:^2.5.4"
     eslint-plugin-only-warn: "npm:^1.1.0"
@@ -2389,6 +2391,7 @@ __metadata:
     cors: "npm:^2.8.5"
     date-fns: "npm:^4.1.0"
     dotenv: "npm:^17.2.0"
+    eslint: "npm:^9.0.0"
     express: "npm:^5.1.0"
     ts-node: "npm:^10.9.2"
     ts-node-dev: "npm:^2.0.0"
@@ -8010,7 +8013,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-plugin-react@npm:^7.34.0, eslint-plugin-react@npm:^7.37.0":
+"eslint-plugin-react@npm:^7.34.0, eslint-plugin-react@npm:^7.37.0, eslint-plugin-react@npm:^7.37.5":
   version: 7.37.5
   resolution: "eslint-plugin-react@npm:7.37.5"
   dependencies:
@@ -8175,7 +8178,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint@npm:^9.31.0":
+"eslint@npm:^9, eslint@npm:^9.0.0, eslint@npm:^9.31.0":
   version: 9.31.0
   resolution: "eslint@npm:9.31.0"
   dependencies:
@@ -11069,7 +11072,15 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "peas@workspace:."
   dependencies:
+    "@typescript-eslint/eslint-plugin": "npm:^8.36.0"
+    "@typescript-eslint/parser": "npm:^8.36.0"
     dotenv-cli: "npm:^8.0.0"
+    eslint: "npm:^9"
+    eslint-config-prettier: "npm:^10.1.5"
+    eslint-config-turbo: "npm:^2.5.4"
+    eslint-plugin-only-warn: "npm:^1.1.0"
+    eslint-plugin-react: "npm:^7.37.5"
+    eslint-plugin-react-hooks: "npm:^5.2.0"
     prettier: "npm:^3.6.2"
     turbo: "npm:^2.5.4"
     typescript: "npm:^5.8.3"

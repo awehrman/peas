@@ -1,3 +1,5 @@
+// Status events: Only emitted at start and completion for performance.
+// This reduces DB connection overhead and status event spam.
 import { Worker, Queue } from "bullmq";
 import { redisConnection } from "../config/redis";
 import { prisma, addStatusEvent } from "@peas/database";
@@ -78,62 +80,56 @@ export function setupCategorizationWorker(queue: Queue) {
           file.contents
         );
 
-        // Batch create categories and tags
-        const categoryResults = await Promise.all(
-          categories.map(async (categoryName) => {
-            await addStatusEvent({
-              noteId,
-              status: "PROCESSING",
-              message: `Creating category: ${categoryName}`,
-              context: "categorization",
-            });
+        // Batch find existing categories and tags
+        const [existingCategories, existingTags] = await Promise.all([
+          prisma.category.findMany({
+            where: { name: { in: categories } },
+          }),
+          prisma.tag.findMany({
+            where: { name: { in: tags } },
+          }),
+        ]);
 
-            let category = await prisma.category.findFirst({
-              where: { name: categoryName },
-            });
-
-            if (!category) {
-              category = await prisma.category.create({
-                data: { name: categoryName },
-              });
-            }
-
-            return category;
-          })
+        const existingCategoryNames = new Set(
+          existingCategories.map((c) => c.name)
         );
+        const existingTagNames = new Set(existingTags.map((t) => t.name));
 
-        const tagResults = await Promise.all(
-          tags.map(async (tagName) => {
-            await addStatusEvent({
-              noteId,
-              status: "PROCESSING",
-              message: `Adding tag: ${tagName}`,
-              context: "categorization",
-            });
+        // Batch create missing categories and tags
+        await Promise.all([
+          prisma.category.createMany({
+            data: categories
+              .filter((name) => !existingCategoryNames.has(name))
+              .map((name) => ({ name })),
+            skipDuplicates: true,
+          }),
+          prisma.tag.createMany({
+            data: tags
+              .filter((name) => !existingTagNames.has(name))
+              .map((name) => ({ name })),
+            skipDuplicates: true,
+          }),
+        ]);
 
-            let tag = await prisma.tag.findFirst({
-              where: { name: tagName },
-            });
+        // Fetch all categories and tags (including newly created ones)
+        const [allCategories, allTags] = await Promise.all([
+          prisma.category.findMany({
+            where: { name: { in: categories } },
+          }),
+          prisma.tag.findMany({
+            where: { name: { in: tags } },
+          }),
+        ]);
 
-            if (!tag) {
-              tag = await prisma.tag.create({
-                data: { name: tagName },
-              });
-            }
-
-            return tag;
-          })
-        );
-
-        // Batch update note with all connections
+        // Single batch update for note connections
         await prisma.note.update({
           where: { id: noteId },
           data: {
             categories: {
-              connect: categoryResults.map((cat) => ({ id: cat.id })),
+              connect: allCategories.map((cat) => ({ id: cat.id })),
             },
             tags: {
-              connect: tagResults.map((tag) => ({ id: tag.id })),
+              connect: allTags.map((tag) => ({ id: tag.id })),
             },
           },
         });
@@ -157,6 +153,7 @@ export function setupCategorizationWorker(queue: Queue) {
     },
     {
       connection: redisConnection,
+      concurrency: 3, // Process multiple categorization jobs simultaneously
     }
   );
 

@@ -1,7 +1,9 @@
+// Batching: DB updates and status events every 10 lines and at the end for performance.
+// This reduces DB connection overhead and status event spam.
 import { Worker, Queue } from "bullmq";
 import { redisConnection } from "../config/redis";
 import { NoteWithParsedLines, prisma, addStatusEvent } from "@peas/database";
-const Parser = require("@peas/parser");
+import { parse as Parser } from "@peas/parser";
 
 export function setupIngredientWorker(queue: Queue) {
   const worker = new Worker(
@@ -13,43 +15,67 @@ export function setupIngredientWorker(queue: Queue) {
       const total = parsedIngredientLines.length;
       let current = 0;
 
+      // Batch size for database operations
+      const BATCH_SIZE = 10;
+      const updatePromises: Promise<any>[] = [];
+      const statusEvents: Promise<any>[] = [];
+
       for (const line of parsedIngredientLines) {
         let message = `${line.reference}`;
+        let parseStatus: "CORRECT" | "ERROR" = "CORRECT";
+
         try {
-          const parsed = Parser.parse(line.reference, {});
+          const parsed = Parser(line.reference, {});
           message += " ✅";
-          // update line as CORRECT
-          await prisma.parsedIngredientLine.update({
-            where: { id: line.id },
-            data: { parseStatus: "CORRECT" },
-          });
           console.log(JSON.stringify(parsed, null, 2));
-        } catch (err) {
+        } catch {
           message += " ❌";
           errorCount += 1;
-          await prisma.parsedIngredientLine.update({
-            where: { id: line.id },
-            data: { parseStatus: "ERROR" },
-          });
+          parseStatus = "ERROR";
         }
         console.log(message);
 
         current += 1;
-        await addStatusEvent({
-          noteId: note.id,
-          status: "PROCESSING",
-          message: `...[${Math.round((current / total) * 100)}%] Processed ${current} of ${total} ingredient lines.`,
-          context: "ingredient line parsing",
-          currentCount: current,
-          totalCount: total,
-        });
+
+        // Batch database updates
+        updatePromises.push(
+          prisma.parsedIngredientLine.update({
+            where: { id: line.id },
+            data: { parseStatus },
+          })
+        );
+
+        // Batch status events (only send every BATCH_SIZE or at the end)
+        if (current % BATCH_SIZE === 0 || current === total) {
+          statusEvents.push(
+            addStatusEvent({
+              noteId: note.id,
+              status: "PROCESSING",
+              message: `...[${Math.round((current / total) * 100)}%] Processed ${current} of ${total} ingredient lines.`,
+              context: "ingredient line parsing",
+              currentCount: current,
+              totalCount: total,
+            })
+          );
+        }
+
+        // Execute batches to avoid memory buildup
+        if (updatePromises.length >= BATCH_SIZE) {
+          await Promise.all(updatePromises);
+          updatePromises.length = 0; // Clear array
+        }
       }
-      console.log(`errorCount: ${errorCount}`);
-      // update note's parsingErrorCount
-      await prisma.note.update({
-        where: { id: note.id },
-        data: { parsingErrorCount: errorCount },
-      });
+
+      // Execute remaining updates and status events
+      await Promise.all([
+        ...updatePromises,
+        ...statusEvents,
+        // Update note's parsingErrorCount in a single operation
+        prisma.note.update({
+          where: { id: note.id },
+          data: { parsingErrorCount: errorCount },
+        }),
+      ]);
 
       await addStatusEvent({
         noteId: note.id,
@@ -60,16 +86,17 @@ export function setupIngredientWorker(queue: Queue) {
     },
     {
       connection: redisConnection,
+      concurrency: 3, // Process multiple ingredient parsing jobs simultaneously
     }
   );
 
   worker.on("completed", (job) => {
-    console.log(`Secondary job ${job.id} completed`);
+    console.log(`Ingredient parsing job ${job.id} completed`);
   });
 
   worker.on("failed", (job, err) => {
     console.error(
-      `Secondary job ${job?.id ?? job} failed with error ${err.message}`
+      `Ingredient parsing job ${job?.id ?? job} failed with error ${err.message}`
     );
   });
 

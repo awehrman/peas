@@ -1,11 +1,12 @@
-import type { BlobPeaConfig, BlobPeaHighlight } from "../types.js";
+import type {
+  BlobPeaConfig,
+  BlobPeaHighlight,
+  PeaHighlight,
+} from "../types.js";
 import { PEA_COLORS, MIXED_COLOR_COMBINATIONS } from "../colors.js";
 import { BaseGenerator } from "./base-generator.js";
 import { clamp } from "../utils/geometry-utils.js";
-import {
-  hasCollision,
-  findNonCollidingPosition,
-} from "../utils/collision-utils.js";
+import { findNonCollidingPosition } from "../utils/collision-utils.js";
 
 /**
  * Configuration for highlight generation
@@ -181,8 +182,7 @@ export class BlobPeaConfigGenerator extends BaseGenerator {
         baseColor,
         peaWidth,
         peaHeight,
-        direction,
-        h
+        direction
       );
 
       // Calculate bounds for collision detection
@@ -225,8 +225,7 @@ export class BlobPeaConfigGenerator extends BaseGenerator {
     baseColor: string,
     peaWidth: number,
     peaHeight: number,
-    direction: number,
-    highlightIndex: number
+    direction: number
   ): BlobPeaHighlight {
     const config = DEFAULT_HIGHLIGHT_CONFIG;
 
@@ -268,7 +267,7 @@ export class BlobPeaConfigGenerator extends BaseGenerator {
    * Generates non-colliding highlights for organized peas
    */
   private generateNonCollidingHighlights(
-    baseHighlights: any[],
+    baseHighlights: PeaHighlight[],
     peaWidth: number,
     peaHeight: number,
     baseColor: string

@@ -2,12 +2,9 @@ import type {
   PeaConfig,
   BlobPeaConfig,
   PeaGeneratorOptions,
+  PeaHighlight,
 } from "../types.js";
-import {
-  PEA_COLORS,
-  HIGHLIGHT_POSITIONS,
-  MIXED_COLOR_COMBINATIONS,
-} from "../colors.js";
+import { HIGHLIGHT_POSITIONS } from "../colors.js";
 import { lightenHexColor } from "../utils/color-utils.js";
 
 /**
@@ -56,7 +53,7 @@ export abstract class BaseGenerator {
   /**
    * Gets a description for highlight configuration
    */
-  protected getHighlightDescription(highlights: any[]): string {
+  protected getHighlightDescription(highlights: PeaHighlight[]): string {
     if (highlights.length === 1) return "Single highlight";
     if (highlights.length === 2) return "Dual highlights";
     return "Multiple highlights";

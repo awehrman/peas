@@ -23,25 +23,29 @@ export function setupNoteWorker(queue: Queue) {
         await addStatusEvent({
           noteId: note.id,
           status: "PROCESSING",
-          message: `Added note "${file.title}"`,
+          message: `Added note "${file.title}" - Starting parallel processing`,
           context: "import",
         });
 
-        // Queue all processing tasks in parallel
-        await Promise.all([
-          imageQueue.add("process-image", { noteId: note.id, file }),
-          ingredientQueue.add("parse-ingredients", { note }),
-          instructionQueue.add("parse-instructions", { note }),
-          categorizationQueue.add("categorize-recipe", {
-            noteId: note.id,
-            file,
-          }),
-        ]);
+        // Fire-and-forget: do not await sub-tasks
+        ingredientQueue.add("parse-ingredients", { note }, { priority: 1 });
+        instructionQueue.add("parse-instructions", { note }, { priority: 1 });
+        imageQueue.add(
+          "process-image",
+          { noteId: note.id, file },
+          { priority: 2 }
+        );
+        categorizationQueue.add(
+          "categorize-recipe",
+          { noteId: note.id, file },
+          { priority: 3 }
+        );
 
+        // Optionally, emit a status event that all sub-tasks have been queued
         await addStatusEvent({
           noteId: note.id,
           status: "PROCESSING",
-          message: `Queued ${file.ingredients.length} ingredients, ${file.instructions.length} instructions for processing`,
+          message: `Queued ${file.ingredients.length} ingredients, ${file.instructions.length} instructions for parallel processing`,
           context: "import",
         });
       } catch (error) {
@@ -51,6 +55,7 @@ export function setupNoteWorker(queue: Queue) {
     },
     {
       connection: redisConnection,
+      concurrency: 5, // Process multiple notes simultaneously
     }
   );
 

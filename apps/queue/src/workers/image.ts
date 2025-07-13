@@ -1,3 +1,5 @@
+// Status events: Only emitted at major steps and on completion for performance.
+// This reduces DB connection overhead and status event spam.
 import { Worker, Queue } from "bullmq";
 import { redisConnection } from "../config/redis";
 import { prisma, addStatusEvent } from "@peas/database";
@@ -12,12 +14,13 @@ const IMAGE_PROCESSING_STEPS = [
 ] as const;
 
 const PROCESSING_DELAY_MS = 500;
+const STATUS_UPDATE_INTERVAL = 2; // Only send status every N steps
 
 export function setupImageWorker(queue: Queue) {
   const worker = new Worker(
     queue.name,
     async ({
-      data: { noteId, file },
+      data: { noteId },
     }: {
       data: { noteId: string; file: ParsedHTMLFile };
     }) => {
@@ -31,7 +34,7 @@ export function setupImageWorker(queue: Queue) {
           context: "image upload",
         });
 
-        // Process each step with progress tracking
+        // Process each step with reduced status updates
         for (let i = 0; i < IMAGE_PROCESSING_STEPS.length; i++) {
           const step = IMAGE_PROCESSING_STEPS[i];
           const progress = Math.round(
@@ -43,14 +46,20 @@ export function setupImageWorker(queue: Queue) {
             setTimeout(resolve, PROCESSING_DELAY_MS)
           );
 
-          await addStatusEvent({
-            noteId,
-            status: "PROCESSING",
-            message: `...[${progress}%] ${step}`,
-            context: "image upload",
-            currentCount: i + 1,
-            totalCount: IMAGE_PROCESSING_STEPS.length,
-          });
+          // Only send status updates at intervals or at the end
+          if (
+            i % STATUS_UPDATE_INTERVAL === 0 ||
+            i === IMAGE_PROCESSING_STEPS.length - 1
+          ) {
+            await addStatusEvent({
+              noteId,
+              status: "PROCESSING",
+              message: `...[${progress}%] ${step}`,
+              context: "image upload",
+              currentCount: i + 1,
+              totalCount: IMAGE_PROCESSING_STEPS.length,
+            });
+          }
         }
 
         // Update note with mock image URL
@@ -80,6 +89,7 @@ export function setupImageWorker(queue: Queue) {
     },
     {
       connection: redisConnection,
+      concurrency: 2, // Limit concurrent image processing
     }
   );
 
