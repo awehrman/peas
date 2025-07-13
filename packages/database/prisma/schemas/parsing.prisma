@@ -1,3 +1,10 @@
+enum ParseStatus {
+  PENDING
+  CORRECT
+  INCORRECT
+  ERROR
+}
+
 // Parsing module
 // Contains parsed content from recipe notes
 
@@ -9,12 +16,12 @@ model ParsedIngredientLine {
   reference  String
   rule       String?
 
-  containsParsingErrors Boolean         @default(false)
+  parseStatus ParseStatus @default(PENDING)
   parsedAt              DateTime?
   parsed                ParsedSegment[]
   queueJobs QueueJob[]
 
-  Note   Note?   @relation(fields: [noteId], references: [id])
+  Note   Note?   @relation(fields: [noteId], references: [id], onDelete: Cascade)
   noteId String?
 
   createdAt DateTime @default(now())
@@ -30,7 +37,9 @@ model ParsedInstructionLine {
   originalText String
   normalizedText String?
 
-  note   Note?   @relation(fields: [noteId], references: [id])
+  parseStatus ParseStatus @default(PENDING)
+
+  note   Note?   @relation(fields: [noteId], references: [id], onDelete: Cascade)
   noteId String?
   queueJobs QueueJob[]
 
@@ -48,7 +57,7 @@ model ParsedSegment {
   type  String
   value String
 
-  ingredientLine   ParsedIngredientLine @relation(fields: [ingredientLineId], references: [id])
+  ingredientLine   ParsedIngredientLine @relation(fields: [ingredientLineId], references: [id], onDelete: Cascade)
   ingredientLineId String
 
   createdAt DateTime @default(now())

@@ -1,8 +1,8 @@
 export * from "./client";
-export * from "./notes";
-export * from "./users";
+export * from "./repository/note";
+export * from "./repository/user";
 export type {
   ParsedIngredientLine,
   ParsedInstructionLine,
   ParsedHTMLFile,
-} from "./types";
+} from "./models/parsed-html-file";

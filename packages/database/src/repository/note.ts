@@ -1,5 +1,9 @@
-import { ParsedHTMLFile } from "./types.js";
-import { prisma, Note } from "./client.js";
+import { prisma } from "../client.js";
+import type {
+  ParsedHTMLFile,
+  ParsedIngredientLine,
+  ParsedInstructionLine,
+} from "../models/parsed-html-file.js";
 
 export type NoteWithParsedLines = {
   id: string;
@@ -39,18 +43,27 @@ export async function createNote(
       data: {
         title: file.title,
         html: file.contents,
+        // Counters
+        totalIngredientLines: file.ingredients.length,
+        totalInstructionLines: file.instructions.length,
+        parsingErrorCount: 0,
+        // Relations
         parsedIngredientLines: {
-          create: file.ingredients.map((ingredient) => ({
+          create: file.ingredients.map((ingredient: ParsedIngredientLine) => ({
             reference: ingredient.reference,
             blockIndex: ingredient.blockIndex,
             lineIndex: ingredient.lineIndex,
+            parseStatus: ingredient.parseStatus,
           })),
         },
         parsedInstructionLines: {
-          create: file.instructions.map((instruction) => ({
-            originalText: instruction.reference,
-            lineIndex: instruction.lineIndex,
-          })),
+          create: file.instructions.map(
+            (instruction: ParsedInstructionLine) => ({
+              originalText: instruction.reference,
+              lineIndex: instruction.lineIndex,
+              parseStatus: instruction.parseStatus,
+            })
+          ),
         },
       },
       select: {

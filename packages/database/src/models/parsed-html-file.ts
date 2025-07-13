@@ -1,13 +1,14 @@
 export type ParsedIngredientLine = {
   blockIndex: number;
   lineIndex: number;
-  containsParsingErrors?: boolean;
+  parseStatus?: "PENDING" | "CORRECT" | "INCORRECT" | "ERROR";
   parsedAt?: Date;
   reference: string;
   rule?: string;
 };
 
 export type ParsedInstructionLine = {
+  parseStatus?: "PENDING" | "CORRECT" | "INCORRECT" | "ERROR";
   lineIndex: number;
   reference: string;
 };

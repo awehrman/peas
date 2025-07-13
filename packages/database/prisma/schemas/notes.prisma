@@ -44,7 +44,6 @@ model Note {
   
   totalIngredientLines Int @default(0)
   totalInstructionLines Int @default(0)
-  containsParsingErrors Boolean @default(false)
   parsingErrorCount     Int     @default(0)
 
   parsedIngredientLines ParsedIngredientLine[]

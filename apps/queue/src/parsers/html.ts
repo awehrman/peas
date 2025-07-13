@@ -54,6 +54,7 @@ export function parseHTML(note: string): ParsedHTMLFile {
       instructions.push({
         reference: line,
         lineIndex,
+        parseStatus: "PENDING",
       });
     } else if (line.length > 0) {
       currentChunk.push(line);
@@ -70,6 +71,7 @@ export function parseHTML(note: string): ParsedHTMLFile {
         blockIndex,
         lineIndex,
         reference: line,
+        parseStatus: "PENDING",
       }))
   );
 
