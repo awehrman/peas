@@ -1,7 +1,7 @@
 import { Router } from "express";
 import fs from "fs";
 import path from "path";
-import { htmlNoteQueue, parserQueue } from "../queues";
+import { noteQueue, ingredientQueue } from "../queues";
 
 export const healthRouter = Router();
 
@@ -10,8 +10,8 @@ const directoryPath = path.join(process.cwd(), "/public/files");
 healthRouter.get("/", async (_req, res) => {
   res.json({
     queues: {
-      htmlNote: htmlNoteQueue.name,
-      parser: parserQueue.name,
+      note: noteQueue.name,
+      ingredient: ingredientQueue.name,
     },
     redis: {
       host: process.env.REDISHOST,

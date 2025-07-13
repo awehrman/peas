@@ -1,7 +1,7 @@
 import { Router } from "express";
 import fs from "fs";
 import path from "path";
-import { htmlNoteQueue } from "../queues";
+import { noteQueue } from "../queues";
 
 export const importRouter = Router();
 
@@ -18,7 +18,7 @@ async function enqueueHtmlFiles() {
     if (file.endsWith(".html") && file !== EVERNOTE_INDEX_FILE) {
       const filePath = path.join(directoryPath, file);
       const content = fs.readFileSync(filePath, "utf-8");
-      await htmlNoteQueue.add("process-html", { content });
+      await noteQueue.add("process-note", { content });
     }
   }
 }

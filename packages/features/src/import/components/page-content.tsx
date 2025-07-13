@@ -1,5 +1,4 @@
 import { ReactNode } from "react";
-import { FileUpload } from "@peas/ui";
 import { PendingReview, RecentlyImported } from "./index";
 import { getImportStats } from "../actions";
 import { FileUploadWithQueue } from "./file-upload-with-queue";
@@ -7,30 +6,6 @@ import { FileUploadWithQueue } from "./file-upload-with-queue";
 export async function ImportPageContent(): Promise<ReactNode> {
   const { noteCount, ingredientCount, parsingErrorCount } =
     await getImportStats();
-
-  const recentlyImportedItems = [
-    { text: 'Processing note "Summer Peach Fattoush".', indentLevel: 0 },
-    {
-      text: 'Added note "Summer Peach Fattoush" with ID 12345.',
-      indentLevel: 1,
-    },
-    { text: "Successfully uploaded image.", indentLevel: 1 },
-    { text: "Starting processing note content (5%):", indentLevel: 1 },
-    {
-      text: "...[0%] Processing 0 out of 10 ingredient lines.",
-      indentLevel: 2,
-    },
-    {
-      text: "...[10%] Processing 1 out of 10 instruction lines.",
-      indentLevel: 2,
-    },
-    { text: "Finishing importing note 12345 with 0 errors.", indentLevel: 1 },
-  ];
-
-  // const handleFileUpload = (file: File) => {
-  //   console.log("File uploaded:", file.name);
-  //   // Add your file upload logic here
-  // };
 
   return (
     <>
@@ -43,7 +18,7 @@ export async function ImportPageContent(): Promise<ReactNode> {
             parsingErrorCount={parsingErrorCount}
             className="mb-8"
           />
-          <RecentlyImported items={recentlyImportedItems} />
+          <RecentlyImported />
         </div>
 
         {/* Right Column */}

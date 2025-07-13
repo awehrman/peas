@@ -128,7 +128,7 @@ model NoteStatusEvent {
   // Additional context about what was being processed
   context String? // e.g., "ingredient line parsing", "image upload", etc.
   
-  note Note @relation(fields: [noteId], references: [id])
+  note Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
   noteId String
   
   createdAt DateTime @default(now())
@@ -136,6 +136,8 @@ model NoteStatusEvent {
   @@index([noteId])
   @@index([status])
   @@index([createdAt])
+  @@index([noteId, createdAt])  // for filtering by note + time
+  @@index([status, createdAt])  // for filtering by status + time
 } 
 
 // prisma/schemas/queue.prisma

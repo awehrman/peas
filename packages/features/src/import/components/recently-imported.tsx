@@ -1,56 +1,112 @@
 "use client";
-import { ReactNode } from "react";
 
-export interface RecentlyImportedItem {
+import { useEffect, useState } from "react";
+import { Placeholder } from "@peas/ui";
+
+interface Item {
   text: string;
-  indentLevel?: number;
+  indentLevel: number;
+  id: string;
 }
 
-export interface RecentlyImportedProps {
-  items?: RecentlyImportedItem[];
+interface Props {
   className?: string;
 }
 
-export function RecentlyImported({
-  items = [],
-  className = "",
-}: RecentlyImportedProps): ReactNode {
-  if (items.length === 0) {
+export function RecentlyImported({ className }: Props) {
+  const [items, setItems] = useState<Item[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [lastEventId, setLastEventId] = useState<string | null>(null);
+
+  const fetchStatusEvents = async (since?: string) => {
+    try {
+      const url = since
+        ? `/api/import/status?since=${since}`
+        : "/api/import/status";
+
+      const response = await fetch(url);
+      if (response.ok) {
+        const data = await response.json();
+
+        if (since && data.items.length > 0) {
+          // Incremental update - only add new items that aren't already in the list
+          setItems((prev) => {
+            const newItems = data.items.filter(
+              (newItem: Item) =>
+                !prev.some((existing) => existing.id === newItem.id)
+            );
+            return [...prev, ...newItems].slice(-25); // Keep last 25 items
+          });
+        } else {
+          // Full refresh
+          setItems(data.items);
+        }
+
+        setLastEventId(data.lastEventId);
+      }
+    } catch (error) {
+      console.error("Failed to fetch status events:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Consolidate progress updates - keep only the latest for each context
+  const consolidatedItems = items.reduce((acc: Item[], item: Item) => {
+    // If this is a progress update (contains percentage), check if we already have a newer one
+    if (item.text.includes("%") && item.text.includes("ingredient lines")) {
+      const existingIndex = acc.findIndex(
+        (existing) =>
+          existing.text.includes("%") &&
+          existing.text.includes("ingredient lines") &&
+          existing.indentLevel === item.indentLevel
+      );
+
+      if (existingIndex !== -1) {
+        // Replace the older progress update with the newer one
+        acc[existingIndex] = item;
+        return acc;
+      }
+    }
+
+    acc.push(item);
+    return acc;
+  }, []);
+
+  useEffect(() => {
+    fetchStatusEvents();
+
+    // Poll every 2 seconds, using incremental updates when possible
+    const interval = setInterval(() => {
+      fetchStatusEvents(lastEventId ?? undefined);
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [lastEventId]);
+
+  if (loading || consolidatedItems.length === 0) {
     return null;
   }
 
   return (
     <div className={className}>
-      <h3 className="text-xl font-semibold text-gray-900 mb-4">
-        Recently imported
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">
+        Recently Imported
       </h3>
-      <ul className="space-y-2 list-none">
-        {items.map((item, index) => {
-          const indentClass =
-            item.indentLevel === 1
-              ? "pl-5"
-              : item.indentLevel === 2
-                ? "pl-10"
-                : item.indentLevel === 3
-                  ? "pl-16"
-                  : "";
-
-          return (
-            <li
-              key={index}
-              className={`inline-block animate-in slide-in-from-top-2 fade-in duration-300 ${indentClass}`}
-              style={{
-                paddingLeft: item.indentLevel
-                  ? `${item.indentLevel * 20}px`
-                  : "0px",
-                animationDelay: `${index * 500}ms`,
-              }}
-            >
-              <span className="text-sm text-gray-600">{item.text}</span>
-            </li>
-          );
-        })}
-      </ul>
+      <div className="space-y-2">
+        {consolidatedItems.map((item) => (
+          <div
+            key={item.id}
+            className="text-sm text-gray-600"
+            style={{
+              paddingLeft:
+                item.indentLevel === 0 ? 0 : item.indentLevel === 1 ? 16 : 32,
+            }}
+          >
+            {item.text}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

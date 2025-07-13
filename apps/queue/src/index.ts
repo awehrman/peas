@@ -2,7 +2,13 @@ import express from "express";
 import { createBullBoard } from "@bull-board/api";
 import { BullMQAdapter } from "@bull-board/api/bullMQAdapter.js";
 import { ExpressAdapter } from "@bull-board/express";
-import { htmlNoteQueue } from "./queues";
+import {
+  noteQueue,
+  imageQueue,
+  ingredientQueue,
+  instructionQueue,
+  categorizationQueue,
+} from "./queues";
 import { importRouter, notesRouter, healthRouter } from "./routes";
 import cors from "cors";
 
@@ -13,7 +19,13 @@ const port = process.env.PORT || 4200;
 // Bull-Board setup
 const serverAdapter = new ExpressAdapter();
 createBullBoard({
-  queues: [new BullMQAdapter(htmlNoteQueue)],
+  queues: [
+    new BullMQAdapter(noteQueue),
+    new BullMQAdapter(imageQueue),
+    new BullMQAdapter(ingredientQueue),
+    new BullMQAdapter(instructionQueue),
+    new BullMQAdapter(categorizationQueue),
+  ],
   serverAdapter,
 });
 

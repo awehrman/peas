@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { htmlNoteQueue } from "../queues";
+import { noteQueue } from "../queues";
 
 export const notesRouter = Router();
 
@@ -10,6 +10,6 @@ notesRouter.post("/", async (req: Request, res: Response) => {
     return;
   }
 
-  await htmlNoteQueue.add("process-html", { content });
+  await noteQueue.add("process-note", { content });
   res.json({ queued: true });
 });
