@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 import { FileUpload } from "@peas/ui";
 import { PendingReview, RecentlyImported } from "./index";
 import { getImportStats } from "../actions";
+import { FileUploadWithQueue } from "./file-upload-with-queue";
 
 export async function ImportPageContent(): Promise<ReactNode> {
   const { noteCount, ingredientCount, parsingErrorCount } =
@@ -47,10 +48,7 @@ export async function ImportPageContent(): Promise<ReactNode> {
 
         {/* Right Column */}
         <div className="flex-1">
-          <FileUpload
-            // onFileUpload={handleFileUpload}
-            maxFileSize="10MB"
-          />
+          <FileUploadWithQueue maxFileSize="10MB" />
         </div>
       </div>
     </>
