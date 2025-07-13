@@ -2,13 +2,13 @@ import express from "express";
 import fs from "fs";
 import path from "path";
 import { createBullBoard } from "@bull-board/api";
-import { BullMQAdapter } from "@bull-board/api/bullMQAdapter";
+import { BullMQAdapter } from "@bull-board/api/bullMQAdapter.js";
 import { ExpressAdapter } from "@bull-board/express";
 import {
   createQueue,
   setupHTMLFileQueueProcessor,
   setupParsingQueueProcessor,
-} from "./queue";
+} from "./queue.js";
 
 const app = express();
 const port = process.env.PORT || 4200;
