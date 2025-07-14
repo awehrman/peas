@@ -18,7 +18,7 @@ export async function ImportPageContent(): Promise<ReactNode> {
             parsingErrorCount={parsingErrorCount}
             className="mb-8"
           />
-          <RecentlyImported />
+          <RecentlyImported className="mb-8" />
         </div>
 
         {/* Right Column */}

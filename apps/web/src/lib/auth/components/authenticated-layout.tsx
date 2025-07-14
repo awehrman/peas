@@ -43,18 +43,12 @@ export function AuthenticatedLayout({
 }) {
   const pathname = usePathname();
 
-  console.log("🎯 AuthenticatedLayout:", {
-    pathname,
-  });
-
   // Convert pathname to route name
   let routeName = "Dashboard";
   if (pathname && pathname !== "/") {
     routeName =
       pathname.substring(1).charAt(0).toUpperCase() + pathname.substring(2);
   }
-
-  console.log("📝 Route name:", routeName);
 
   return (
     <div className="flex h-screen">

@@ -116,7 +116,7 @@ The project uses a comprehensive design system built with:
 
 2. **Configure environment variables**:
    - `DATABASE_URL`: PostgreSQL connection string
-   - `REDIS_HOST`, `REDIS_PORT`: Redis connection details
+   - `REDISHOST`, `REDISPORT`: Redis connection details
    - `NEXTAUTH_SECRET`: Authentication secret
    - `GITHUB_ID`, `GITHUB_SECRET`: OAuth credentials
 

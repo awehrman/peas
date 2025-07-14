@@ -12,7 +12,8 @@
       "@peas/features/*": ["./src/*"]
     },
     "moduleResolution": "bundler",
-    "module": "ESNext"
+    "module": "ESNext",
+    "lib": ["es2022", "DOM", "DOM.Iterable"]
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.css"],
   "exclude": [

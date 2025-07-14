@@ -21,7 +21,6 @@ export type NoteWithParsedLines = {
 };
 
 export async function getNotes() {
-  console.log("getNotes");
   try {
     const notes = await prisma.note.findMany({
       include: {

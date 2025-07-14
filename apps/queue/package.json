@@ -15,6 +15,7 @@
     "@bull-board/express": "^6.11.0",
     "@peas/database": "*",
     "@peas/parser": "*",
+    "@types/find-up": "^4.0.2",
     "bullmq": "^5.56.4",
     "cheerio": "^1.1.0",
     "colors": "^1.4.0",
@@ -22,6 +23,7 @@
     "date-fns": "^4.1.0",
     "dotenv": "^17.2.0",
     "express": "^5.1.0",
+    "find-up": "^7.0.0",
     "ts-node": "^10.9.2"
   },
   "devDependencies": {

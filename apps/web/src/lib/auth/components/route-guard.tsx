@@ -54,52 +54,26 @@ function RouteGuardContent({ children }: RouteGuardProps) {
 
   useEffect(() => {
     async function checkAuth() {
-      console.log("🔐 RouteGuard: Debug info:", {
-        pathname,
-        publicRoutes: PUBLIC_ROUTES,
-      });
-
       // Skip auth check for public pages
       const isPublicPage = PUBLIC_ROUTES.some((route) =>
         pathname.startsWith(route)
       );
 
-      console.log("🔐 RouteGuard: Route check:", {
-        pathname,
-        isPublicPage,
-        matchingRoute: PUBLIC_ROUTES.find((route) =>
-          pathname.startsWith(route)
-        ),
-      });
-
       if (isPublicPage) {
-        console.log("🔐 RouteGuard: On public page, skipping auth check");
         setIsLoading(false);
         return;
       }
 
-      console.log("🔐 RouteGuard: Checking authentication...");
-
       try {
         const { user } = await getAuth();
 
-        console.log("🔐 RouteGuard: Auth result:", {
-          hasUser: !!user,
-          userId: user?.id,
-        });
-
         if (!user) {
-          console.log("🔐 RouteGuard: No user, redirecting to login");
           router.push(loginPath());
           return;
         }
 
-        console.log(
-          "🔐 RouteGuard: User authenticated, rendering authenticated layout"
-        );
         setIsAuthenticated(true);
-      } catch (error) {
-        console.error("🔐 RouteGuard: Auth error:", error);
+      } catch {
         router.push(loginPath());
         return;
       } finally {

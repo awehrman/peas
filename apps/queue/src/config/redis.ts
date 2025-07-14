@@ -4,3 +4,11 @@ export const redisConnection = {
   username: process.env.REDISUSER,
   password: process.env.REDISPASSWORD,
 };
+
+// Debug logging for Redis configuration
+console.log("[redis] Redis configuration:", {
+  host: redisConnection.host,
+  port: redisConnection.port,
+  username: redisConnection.username ? "set" : "undefined",
+  password: redisConnection.password ? "set" : "undefined",
+});
