@@ -1,4 +1,4 @@
-import { IContainer } from "../di";
+import { IServiceContainer } from "../services/container";
 import { WorkerFactory, createWorkerFactory } from "./factory";
 
 export interface WorkerManager {
@@ -11,7 +11,7 @@ export class DefaultWorkerManager implements WorkerManager {
   private workers: Map<string, any> = new Map();
   private workerFactory: WorkerFactory;
 
-  constructor(private container: IContainer) {
+  constructor(private container: IServiceContainer) {
     this.workerFactory = createWorkerFactory(container);
   }
 
@@ -86,6 +86,8 @@ export class DefaultWorkerManager implements WorkerManager {
 }
 
 // Factory function to create worker manager
-export function createWorkerManager(container: IContainer): WorkerManager {
+export function createWorkerManager(
+  container: IServiceContainer
+): WorkerManager {
   return new DefaultWorkerManager(container);
 }
