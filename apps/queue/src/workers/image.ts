@@ -2,7 +2,8 @@
 // This reduces DB connection overhead and status event spam.
 import { Worker, Queue } from "bullmq";
 import { redisConnection } from "../config/redis";
-import { prisma, addStatusEvent } from "@peas/database";
+import { prisma } from "@peas/database";
+import { addStatusEventAndBroadcast } from "../utils/status-broadcaster";
 import { ErrorHandler, QueueError } from "../utils";
 import { ErrorType, ErrorSeverity, ImageJobData } from "../types";
 import { HealthMonitor } from "../utils/health-monitor";
@@ -62,7 +63,7 @@ export function setupImageWorker(queue: Queue) {
         // Add status event with error handling
         await ErrorHandler.withErrorHandling(
           () =>
-            addStatusEvent({
+            addStatusEventAndBroadcast({
               noteId,
               status: "PROCESSING",
               message: "Starting image upload process...",
@@ -95,7 +96,7 @@ export function setupImageWorker(queue: Queue) {
             ) {
               await ErrorHandler.withErrorHandling(
                 () =>
-                  addStatusEvent({
+                  addStatusEventAndBroadcast({
                     noteId,
                     status: "PROCESSING",
                     message: `...[${progress}%] ${step}`,
@@ -143,7 +144,7 @@ export function setupImageWorker(queue: Queue) {
         // Add completion status event with error handling
         await ErrorHandler.withErrorHandling(
           () =>
-            addStatusEvent({
+            addStatusEventAndBroadcast({
               noteId,
               status: "COMPLETED",
               message: "Image uploaded successfully",
@@ -165,7 +166,7 @@ export function setupImageWorker(queue: Queue) {
 
           // Add failure status event
           try {
-            await addStatusEvent({
+            await addStatusEventAndBroadcast({
               noteId: job.data.noteId,
               status: "FAILED",
               message: `Image upload failed: ${jobError.message}`,

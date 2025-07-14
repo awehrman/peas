@@ -2,7 +2,8 @@
 // This reduces DB connection overhead and status event spam.
 import { Worker, Queue } from "bullmq";
 import { redisConnection } from "../config/redis";
-import { prisma, addStatusEvent } from "@peas/database";
+import { prisma } from "@peas/database";
+import { addStatusEventAndBroadcast } from "../utils/status-broadcaster";
 import { parse as Parser } from "@peas/parser";
 import { ErrorHandler, QueueError } from "../utils";
 import { ErrorType, ErrorSeverity, IngredientJobData } from "../types";
@@ -122,7 +123,7 @@ export function setupIngredientWorker(queue: Queue) {
             statusEvents.push(
               ErrorHandler.withErrorHandling(
                 () =>
-                  addStatusEvent({
+                  addStatusEventAndBroadcast({
                     noteId: note.id,
                     status: "PROCESSING",
                     message: `...[${Math.round((current / total) * 100)}%] Processed ${current} of ${total} ingredient lines.`,
@@ -182,7 +183,7 @@ export function setupIngredientWorker(queue: Queue) {
         if (errorCount > 0) {
           await ErrorHandler.withErrorHandling(
             () =>
-              addStatusEvent({
+              addStatusEventAndBroadcast({
                 noteId: note.id,
                 status: "COMPLETED",
                 message: `Finished ingredient parsing with ${errorCount} errors`,
@@ -207,7 +208,7 @@ export function setupIngredientWorker(queue: Queue) {
 
           // Add failure status event
           try {
-            await addStatusEvent({
+            await addStatusEventAndBroadcast({
               noteId: job.data.note.id,
               status: "FAILED",
               message: `Ingredient parsing failed: ${jobError.message}`,

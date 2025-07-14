@@ -2,7 +2,8 @@
 // This reduces DB connection overhead and status event spam.
 import { Worker, Queue } from "bullmq";
 import { redisConnection } from "../config/redis";
-import { prisma, addStatusEvent } from "@peas/database";
+import { prisma } from "@peas/database";
+import { addStatusEventAndBroadcast } from "../utils/status-broadcaster";
 import { ErrorHandler, QueueError } from "../utils";
 import { ErrorType, ErrorSeverity, CategorizationJobData } from "../types";
 import { HealthMonitor } from "../utils/health-monitor";
@@ -112,7 +113,7 @@ export function setupCategorizationWorker(queue: Queue) {
         // Add status event with error handling
         await ErrorHandler.withErrorHandling(
           () =>
-            addStatusEvent({
+            addStatusEventAndBroadcast({
               noteId,
               status: "PROCESSING",
               message: "Analyzing recipe for categories and tags...",
@@ -203,7 +204,7 @@ export function setupCategorizationWorker(queue: Queue) {
         // Add completion status event with error handling
         await ErrorHandler.withErrorHandling(
           () =>
-            addStatusEvent({
+            addStatusEventAndBroadcast({
               noteId,
               status: "COMPLETED",
               message: `Categorized as: ${categories.join(", ")} | Tags: ${tags.join(", ")}`,
@@ -225,7 +226,7 @@ export function setupCategorizationWorker(queue: Queue) {
 
           // Add failure status event
           try {
-            await addStatusEvent({
+            await addStatusEventAndBroadcast({
               noteId: job.data.noteId,
               status: "FAILED",
               message: `Categorization failed: ${jobError.message}`,

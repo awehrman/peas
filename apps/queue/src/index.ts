@@ -17,6 +17,7 @@ import { importRouter, notesRouter, healthRouter } from "./routes";
 import { ErrorHandler } from "./utils";
 import { ErrorType, ErrorSeverity } from "./types";
 import { HealthMonitor } from "./utils/health-monitor";
+import { initializeWebSocketServer } from "./websocket-server";
 import cors from "cors";
 
 const app = express();
@@ -189,6 +190,11 @@ const server = app.listen(port, () => {
   console.log(`🚀 Queue service running at http://localhost:${port}`);
   console.log(`📊 Bull Board available at http://localhost:${port}/bull-board`);
   console.log(`❤️ Health check available at http://localhost:${port}/health`);
+
+  // Initialize WebSocket server
+  const wsPort = parseInt(process.env.WS_PORT || "8080");
+  initializeWebSocketServer(wsPort);
+  console.log(`🔌 WebSocket server running on port ${wsPort}`);
 });
 
 // Handle server errors

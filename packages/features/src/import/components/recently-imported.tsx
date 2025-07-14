@@ -1,16 +1,13 @@
 "use client";
 
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode } from "react";
 import {
   Item,
   groupStatusItems,
   getStatusColor,
   getStatusIcon,
 } from "../utils";
-import {
-  getInitialNoteStatusEvents,
-  getIncrementalNoteStatusEvents,
-} from "../actions";
+import { useStatusWebSocket } from "../hooks/use-status-websocket";
 
 interface Props {
   className?: string;
@@ -19,133 +16,55 @@ interface Props {
 export function RecentlyImported({ className }: Props): ReactNode {
   console.log("🔍 Component: RecentlyImported component rendered");
 
-  const [items, setItems] = useState<Item[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [lastEventId, setLastEventId] = useState<string | null>(null);
-  const [lastPollTime, setLastPollTime] = useState<number>(Date.now());
+  const { events, isConnected, connectionStatus, error } = useStatusWebSocket({
+    wsUrl: "ws://localhost:8080",
+    autoReconnect: true,
+    reconnectInterval: 3000,
+    maxReconnectAttempts: 5,
+  });
 
-  // Debug: Log when new events are created
-  useEffect(() => {
-    console.log("🔍 Component: Items updated", {
-      itemCount: items.length,
-      lastEventId,
-      lastPollTime: new Date(lastPollTime).toISOString(),
-    });
-  }, [items, lastEventId, lastPollTime]);
-
-  const fetchInitialData = async () => {
-    console.log("🔄 Component: Starting initial data fetch");
-    try {
-      const result = await getInitialNoteStatusEvents();
-      console.log("✅ Component: Initial data received", {
-        itemCount: result?.items?.length ?? 0,
-        lastEventId: result.lastEventId,
-        items: result.items.map((item) => ({ id: item.id, text: item.text })),
-      });
-      setItems(result.items);
-      setLastEventId(result.lastEventId || null);
-    } catch (error) {
-      console.error(
-        "❌ Component: Failed to fetch initial status events:",
-        error
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Fetch initial data
-  useEffect(() => {
-    fetchInitialData();
-  }, []);
-
-  // Listen for file upload events and refresh data
-  useEffect(() => {
-    const handleFileUploaded = () => {
-      console.log("🔍 Component: File uploaded, refreshing data");
-      setLoading(true);
-      fetchInitialData();
-    };
-
-    window.addEventListener("fileUploaded", handleFileUploaded);
-
-    return () => {
-      window.removeEventListener("fileUploaded", handleFileUploaded);
-    };
-  }, []);
-
-  // Poll for updates every 2 seconds
-  useEffect(() => {
-    console.log("🔍 Component: Polling effect triggered", {
-      lastEventId,
-      itemsCount: items.length,
-    });
-
-    if (!lastEventId) {
-      console.log("🔍 Component: No lastEventId, skipping polling");
-      return;
-    }
-
-    console.log("🔍 Component: Starting polling interval");
-    const interval = setInterval(async () => {
-      console.log("🔄 Component: Polling for updates", { lastEventId });
-      try {
-        const result = await getIncrementalNoteStatusEvents(
-          lastEventId,
-          lastPollTime
-        );
-
-        if (result.items.length > 0) {
-          console.log("✅ Component: New items received", {
-            newItemCount: result.items.length,
-          });
-          // Add new items that aren't already in the list
-          setItems((prev) => {
-            const newItems = result.items.filter(
-              (newItem) => !prev.some((existing) => existing.id === newItem.id)
-            );
-            return [...prev, ...newItems].slice(-25); // Keep last 25 items
-          });
-        } else {
-          console.log("🔍 Component: No new items in this poll");
-        }
-
-        if (result.lastEventId) {
-          console.log("🔍 Component: Updating lastEventId", {
-            old: lastEventId,
-            new: result.lastEventId,
-          });
-          setLastEventId(result.lastEventId);
-        }
-
-        // Update the last poll time
-        setLastPollTime(Date.now());
-      } catch (error) {
-        console.error(
-          "❌ Component: Failed to fetch incremental status events:",
-          error
-        );
-      }
-    }, 2000);
-
-    return () => {
-      console.log("🔍 Component: Cleaning up polling interval");
-      clearInterval(interval);
-    };
-  }, [lastEventId]);
+  // Convert WebSocket events to Item format
+  const items: Item[] = events.map((event) => ({
+    id: `${event.noteId}-${event.createdAt.getTime()}`,
+    text:
+      event.errorMessage ||
+      event.message ||
+      event.context ||
+      `Status ${event.status}`,
+    indentLevel:
+      event.context?.includes("ingredient") ||
+      event.context?.includes("instruction")
+        ? 1
+        : 0,
+  }));
 
   // Group items by operation type and organize them hierarchically
   const groupedItems = groupStatusItems(items);
 
   console.log("🔍 Component: Render check", {
-    loading,
+    isConnected,
+    connectionStatus,
+    eventsCount: events.length,
     itemsCount: items.length,
     groupedItemsCount: groupedItems.length,
   });
 
-  if (loading || groupedItems.length === 0) {
-    console.log("🔍 Component: Not rendering - loading or no items");
-    return null;
+  if (groupedItems.length === 0) {
+    return (
+      <div className={className}>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          Recently Imported
+        </h3>
+        <div className="text-sm text-gray-500">
+          {connectionStatus === "connecting" &&
+            "Connecting to status updates..."}
+          {connectionStatus === "connected" && "No recent imports"}
+          {connectionStatus === "disconnected" &&
+            "Disconnected from status updates"}
+          {connectionStatus === "error" && `Connection error: ${error}`}
+        </div>
+      </div>
+    );
   }
 
   return (

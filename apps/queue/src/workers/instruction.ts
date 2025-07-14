@@ -2,7 +2,8 @@
 // This reduces DB connection overhead and status event spam.
 import { Worker, Queue } from "bullmq";
 import { redisConnection } from "../config/redis";
-import { prisma, addStatusEvent } from "@peas/database";
+import { prisma } from "@peas/database";
+import { addStatusEventAndBroadcast } from "../utils/status-broadcaster";
 import { ErrorHandler, QueueError } from "../utils";
 import { ErrorType, ErrorSeverity, InstructionJobData } from "../types";
 import { HealthMonitor } from "../utils/health-monitor";
@@ -122,7 +123,7 @@ export function setupInstructionWorker(queue: Queue) {
             statusEvents.push(
               ErrorHandler.withErrorHandling(
                 () =>
-                  addStatusEvent({
+                  addStatusEventAndBroadcast({
                     noteId: note.id,
                     status: "PROCESSING",
                     message: `...[${Math.round((current / total) * 100)}%] Processed ${current} of ${total} instruction lines.`,
@@ -173,7 +174,7 @@ export function setupInstructionWorker(queue: Queue) {
         if (errorCount > 0) {
           await ErrorHandler.withErrorHandling(
             () =>
-              addStatusEvent({
+              addStatusEventAndBroadcast({
                 noteId: note.id,
                 status: "COMPLETED",
                 message: `Finished instruction parsing with ${errorCount} errors`,
@@ -198,7 +199,7 @@ export function setupInstructionWorker(queue: Queue) {
 
           // Add failure status event
           try {
-            await addStatusEvent({
+            await addStatusEventAndBroadcast({
               noteId: job.data.note.id,
               status: "FAILED",
               message: `Instruction parsing failed: ${jobError.message}`,

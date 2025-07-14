@@ -1,7 +1,8 @@
 import { Worker, Queue } from "bullmq";
 import { redisConnection } from "../config/redis";
 import { parseHTML } from "../parsers/html";
-import { createNote, addStatusEvent } from "@peas/database";
+import { createNote } from "@peas/database";
+import { addStatusEventAndBroadcast } from "../utils/status-broadcaster";
 import {
   imageQueue,
   ingredientQueue,
@@ -68,7 +69,7 @@ export function setupNoteWorker(queue: Queue) {
         // Add status event with error handling
         await ErrorHandler.withErrorHandling(
           () =>
-            addStatusEvent({
+            addStatusEventAndBroadcast({
               noteId: note.id,
               status: "PROCESSING",
               message: `Added note "${file.title}"`,

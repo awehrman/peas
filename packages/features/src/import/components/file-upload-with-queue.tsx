@@ -47,14 +47,6 @@ export function FileUploadWithQueue({
         }
 
         setMessage("File queued successfully!");
-
-        // Trigger a refresh of the status events after successful upload
-        // This will cause the RecentlyImported component to refetch data
-        window.dispatchEvent(
-          new CustomEvent("fileUploaded", {
-            detail: { timestamp: Date.now() },
-          })
-        );
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Unknown error";
         setMessage(`Upload failed: ${msg}`);
