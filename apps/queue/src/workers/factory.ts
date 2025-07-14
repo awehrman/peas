@@ -1,5 +1,5 @@
 import { Queue } from "bullmq";
-import { IContainer } from "../di";
+import { IServiceContainer } from "../services/container";
 import { setupNoteWorker } from "./note";
 import { setupIngredientWorker } from "./ingredient";
 import { setupInstructionWorker } from "./instruction";
@@ -21,7 +21,7 @@ export interface WorkerFactory {
 }
 
 export class DefaultWorkerFactory implements WorkerFactory {
-  constructor(private container: IContainer) {}
+  constructor(private container: IServiceContainer) {}
 
   createNoteWorker(queue: Queue) {
     return setupNoteWorker(queue);
@@ -45,6 +45,8 @@ export class DefaultWorkerFactory implements WorkerFactory {
 }
 
 // Factory function to create worker factory with container
-export function createWorkerFactory(container: IContainer): WorkerFactory {
+export function createWorkerFactory(
+  container: IServiceContainer
+): WorkerFactory {
   return new DefaultWorkerFactory(container);
 }
