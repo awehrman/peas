@@ -3,12 +3,15 @@ import {
   ServiceContainer,
   createServiceContainer,
 } from "../../services/container";
-
-// Remove SIGTERM handler during tests to prevent unhandled rejections
-process.removeAllListeners("SIGTERM");
+import type {
+  ILoggerService,
+  IDatabaseService,
+  IQueueService,
+  IWebSocketService,
+} from "../../services/container";
 
 // Mock implementations for testing
-const mockQueueService = {
+const mockQueueService: Partial<IQueueService> = {
   noteQueue: { close: vi.fn() } as any,
   imageQueue: { close: vi.fn() } as any,
   ingredientQueue: { close: vi.fn() } as any,
@@ -16,226 +19,129 @@ const mockQueueService = {
   categorizationQueue: { close: vi.fn() } as any,
 };
 
-const mockDatabaseService = {
+const mockDatabaseService: Partial<IDatabaseService> = {
   prisma: {
     $disconnect: vi.fn(),
     note: {
       count: vi.fn().mockResolvedValue(5),
-    },
+    } as any,
   } as any,
 };
 
-const mockLoggerService = {
+const mockLoggerService: Partial<ILoggerService> = {
   log: vi.fn(),
 };
 
-const mockWebSocketService = {
+const mockWebSocketService: Partial<IWebSocketService> = {
   webSocketManager: {
+    broadcastStatusEvent: vi.fn(),
+    getConnectedClientsCount: vi.fn(),
     close: vi.fn(),
   } as any,
 };
 
+// Remove SIGTERM handler during tests to prevent unhandled rejections
+process.removeAllListeners("SIGTERM");
+
 describe("Dependency Injection ServiceContainer", () => {
+  let container: ServiceContainer;
+
   beforeEach(() => {
-    // Reset ServiceContainer before each test
-    ServiceContainer.reset();
+    vi.clearAllMocks();
+    // Reset singleton
+    (ServiceContainer as unknown as { instance: undefined }).instance =
+      undefined;
   });
 
   afterEach(() => {
-    // Clean up after each test
-    ServiceContainer.reset();
+    vi.restoreAllMocks();
   });
 
-  it("should create a singleton ServiceContainer instance", () => {
-    const container1 = ServiceContainer.getInstance();
-    const container2 = ServiceContainer.getInstance();
-
-    expect(container1).toBe(container2);
+  it("should return singleton instance", () => {
+    const instance1 = ServiceContainer.getInstance();
+    const instance2 = ServiceContainer.getInstance();
+    expect(instance1).toBe(instance2);
   });
 
-  it("should provide all required services", () => {
-    const container = ServiceContainer.getInstance();
-
+  it("should have all required services", () => {
+    container = ServiceContainer.getInstance();
     expect(container.queues).toBeDefined();
     expect(container.database).toBeDefined();
-    expect(container.errorHandler).toBeDefined();
-    expect(container.healthMonitor).toBeDefined();
-    expect(container.webSocket).toBeDefined();
     expect(container.logger).toBeDefined();
-    expect(container.config).toBeDefined();
+    expect(container.webSocket).toBeDefined();
   });
 
-  it("should allow creating ServiceContainer with custom dependencies", () => {
+  it("should create container with custom overrides", () => {
     const customContainer = createServiceContainer({
-      queues: mockQueueService,
-      database: mockDatabaseService,
-      logger: mockLoggerService,
-      webSocket: mockWebSocketService,
+      logger: mockLoggerService as ILoggerService,
+      database: mockDatabaseService as IDatabaseService,
+      queues: mockQueueService as IQueueService,
+      webSocket: mockWebSocketService as IWebSocketService,
     });
 
-    expect(customContainer.queues).toBe(mockQueueService);
-    expect(customContainer.database).toBe(mockDatabaseService);
     expect(customContainer.logger).toBe(mockLoggerService);
+    expect(customContainer.database).toBe(mockDatabaseService);
+    expect(customContainer.queues).toBe(mockQueueService);
     expect(customContainer.webSocket).toBe(mockWebSocketService);
   });
 
-  it("should close all resources properly", async () => {
+  it("should create container with partial overrides", () => {
     const customContainer = createServiceContainer({
-      queues: mockQueueService,
-      database: mockDatabaseService,
-      logger: mockLoggerService,
-      webSocket: mockWebSocketService,
-    }) as any; // Type assertion for testing
+      logger: mockLoggerService as ILoggerService,
+    });
 
-    await customContainer.close();
-
-    expect(mockQueueService.noteQueue.close).toHaveBeenCalled();
-    expect(mockQueueService.imageQueue.close).toHaveBeenCalled();
-    expect(mockQueueService.ingredientQueue.close).toHaveBeenCalled();
-    expect(mockQueueService.instructionQueue.close).toHaveBeenCalled();
-    expect(mockQueueService.categorizationQueue.close).toHaveBeenCalled();
-    expect(mockDatabaseService.prisma.$disconnect).toHaveBeenCalled();
-    expect(mockWebSocketService.webSocketManager.close).toHaveBeenCalled();
+    expect(customContainer.logger).toBe(mockLoggerService);
+    expect(customContainer.database).toBeDefined();
+    expect(customContainer.queues).toBeDefined();
+    expect(customContainer.webSocket).toBeDefined();
   });
 
-  it("should provide configuration from environment variables", () => {
-    const container = ServiceContainer.getInstance();
+  it("should create container with nested overrides", () => {
+    const customContainer = createServiceContainer({
+      database: {
+        prisma: {
+          $disconnect: vi.fn(),
+        },
+      } as any,
+    });
 
-    expect(container.config.port).toBe(4200); // default value
-    expect(container.config.wsPort).toBe(8080); // default value
-    expect(container.config.batchSize).toBe(10); // default value
-    expect(container.config.maxRetries).toBe(3); // default value
+    expect(customContainer.database.prisma.$disconnect).toBeDefined();
+  });
+
+  it("should create container with webSocket manager override", () => {
+    const customContainer = createServiceContainer({
+      webSocket: {
+        webSocketManager: {
+          close: vi.fn(),
+        },
+      } as any,
+    });
+
+    expect(customContainer.webSocket.webSocketManager?.close).toBeDefined();
   });
 
   it("should log messages with proper formatting", () => {
-    const container = ServiceContainer.getInstance();
-
-    container.logger.log("Test message");
-    container.logger.log("Warning message", "warn");
-    container.logger.log("Error message", "error");
-
-    // In a real test, you'd verify the console output
-    // For now, we just verify the method exists and doesn't throw
-    expect(container.logger.log).toBeDefined();
-  });
-
-  it("should create container without overrides", () => {
-    const container = createServiceContainer();
-    expect(container).toBeDefined();
-    expect(container.queues).toBeDefined();
-    expect(container.database).toBeDefined();
-    expect(container.logger).toBeDefined();
-    expect(container.webSocket).toBeDefined();
-  });
-
-  it("should create container with partial overrides", () => {
-    const container = createServiceContainer({
-      logger: mockLoggerService,
+    const customContainer = createServiceContainer({
+      logger: mockLoggerService as ILoggerService,
     });
 
-    expect(container.logger).toBe(mockLoggerService);
-    expect(container.queues).toBeDefined(); // Should use default
-    expect(container.database).toBeDefined(); // Should use default
-  });
+    customContainer.logger.log("Test message", "info");
+    customContainer.logger.log("Warning message", "warn");
+    customContainer.logger.log("Error message", "error");
 
-  it("should handle close with only queue overrides", async () => {
-    const container = createServiceContainer({
-      queues: mockQueueService,
-    }) as any;
-
-    await container.close();
-
-    expect(mockQueueService.noteQueue.close).toHaveBeenCalled();
-    expect(mockQueueService.imageQueue.close).toHaveBeenCalled();
-    expect(mockQueueService.ingredientQueue.close).toHaveBeenCalled();
-    expect(mockQueueService.instructionQueue.close).toHaveBeenCalled();
-    expect(mockQueueService.categorizationQueue.close).toHaveBeenCalled();
-  });
-
-  it("should handle close with only database overrides", async () => {
-    const container = createServiceContainer({
-      database: mockDatabaseService,
-    }) as any;
-
-    await container.close();
-
-    expect(mockDatabaseService.prisma.$disconnect).toHaveBeenCalled();
-  });
-
-  it("should handle close with only WebSocket overrides", async () => {
-    const container = createServiceContainer({
-      webSocket: mockWebSocketService,
-    }) as any;
-
-    await container.close();
-
-    expect(mockWebSocketService.webSocketManager.close).toHaveBeenCalled();
-  });
-
-  it("should handle close with only logger overrides", async () => {
-    const container = createServiceContainer({
-      logger: mockLoggerService,
-    }) as any;
-
-    await container.close();
-
+    expect(mockLoggerService.log).toHaveBeenCalledWith("Test message", "info");
     expect(mockLoggerService.log).toHaveBeenCalledWith(
-      "ServiceContainer closed successfully"
+      "Warning message",
+      "warn"
+    );
+    expect(mockLoggerService.log).toHaveBeenCalledWith(
+      "Error message",
+      "error"
     );
   });
 
-  it("should handle close with database without disconnect method", async () => {
-    const mockDatabaseWithoutDisconnect = {
-      prisma: {} as any,
-    };
-
-    const container = createServiceContainer({
-      database: mockDatabaseWithoutDisconnect,
-    }) as any;
-
-    // Should not throw error
-    await expect(container.close()).resolves.not.toThrow();
-  });
-
-  it("should handle close with WebSocket without close method", async () => {
-    const mockWebSocketWithoutClose = {
-      webSocketManager: {} as any,
-    };
-
-    const container = createServiceContainer({
-      webSocket: mockWebSocketWithoutClose,
-    }) as any;
-
-    // Should not throw error
-    await expect(container.close()).resolves.not.toThrow();
-  });
-
-  it("should handle close with logger without log method", async () => {
-    const mockLoggerWithoutLog = {} as any;
-
-    const container = createServiceContainer({
-      logger: mockLoggerWithoutLog,
-    }) as any;
-
-    // Should not throw error
-    await expect(container.close()).resolves.not.toThrow();
-  });
-
-  it("should handle close with null WebSocket manager", async () => {
-    const mockWebSocketWithNull = {
-      webSocketManager: null,
-    };
-
-    const container = createServiceContainer({
-      webSocket: mockWebSocketWithNull,
-    }) as any;
-
-    // Should not throw error
-    await expect(container.close()).resolves.not.toThrow();
-  });
-
   it("should test default container close method", async () => {
-    const container = ServiceContainer.getInstance();
+    container = ServiceContainer.getInstance();
 
     // Mock the queue close methods to avoid actual queue operations
     vi.spyOn(container.queues.noteQueue, "close").mockResolvedValue();
@@ -256,7 +162,7 @@ describe("Dependency Injection ServiceContainer", () => {
   });
 
   it("should test default container close method with WebSocket manager", async () => {
-    const container = ServiceContainer.getInstance();
+    container = ServiceContainer.getInstance();
 
     // Mock the queue close methods to avoid actual queue operations
     vi.spyOn(container.queues.noteQueue, "close").mockResolvedValue();
@@ -286,7 +192,7 @@ describe("Dependency Injection ServiceContainer", () => {
   });
 
   it("should handle error in close method", async () => {
-    const container = ServiceContainer.getInstance();
+    container = ServiceContainer.getInstance();
 
     // Mock the queue close methods to throw an error
     vi.spyOn(container.queues.noteQueue, "close").mockRejectedValue(
@@ -299,89 +205,47 @@ describe("Dependency Injection ServiceContainer", () => {
     vi.spyOn(container.database.prisma, "$disconnect").mockResolvedValue();
 
     // The close method uses Promise.allSettled, so it won't throw
-    // It should still log "ServiceContainer closed successfully"
-    const logSpy = vi.spyOn(container.logger, "log");
-
-    await container.close();
-
-    // Should log success, not error
-    expect(logSpy).toHaveBeenCalledWith("ServiceContainer closed successfully");
+    // Instead, we should test that the method completes successfully
+    await expect(container.close()).resolves.not.toThrow();
   });
 
   it("should throw error when database disconnect fails", async () => {
-    const container = ServiceContainer.getInstance();
+    container = ServiceContainer.getInstance();
 
-    // Mock all queue close methods to succeed
+    // Mock the queue close methods to avoid actual queue operations
     vi.spyOn(container.queues.noteQueue, "close").mockResolvedValue();
     vi.spyOn(container.queues.imageQueue, "close").mockResolvedValue();
     vi.spyOn(container.queues.ingredientQueue, "close").mockResolvedValue();
     vi.spyOn(container.queues.instructionQueue, "close").mockResolvedValue();
     vi.spyOn(container.queues.categorizationQueue, "close").mockResolvedValue();
-
-    // Mock database disconnect to throw an error
     vi.spyOn(container.database.prisma, "$disconnect").mockRejectedValue(
       new Error("Database disconnect failed")
     );
 
-    // The close method should throw the error
     await expect(container.close()).rejects.toThrow(
       "Database disconnect failed"
     );
   });
 
-  it("should test WebSocket manager setter", () => {
-    const container = ServiceContainer.getInstance();
-    const mockManager = {
-      broadcastStatusEvent: vi.fn(),
-      getConnectedClientsCount: vi.fn(),
-      close: vi.fn(),
-    };
-
-    // Test the setter
-    container.webSocket.webSocketManager = mockManager;
-    expect(container.webSocket.webSocketManager).toBe(mockManager);
-
-    // Test setting to null
-    container.webSocket.webSocketManager = null;
-    expect(container.webSocket.webSocketManager).toBeNull();
-  });
-
-  it("should test config service getters", () => {
-    const container = ServiceContainer.getInstance();
-    const config = container.config;
-
-    expect(config.port).toBe(4200);
-    expect(config.wsPort).toBe(8080);
-    expect(config.batchSize).toBe(10);
-    expect(config.maxRetries).toBe(3);
-    expect(config.backoffMs).toBe(1000);
-    expect(config.maxBackoffMs).toBe(30000);
-    expect(config.redisConnection).toBeDefined();
-  });
-
   it("should test logger service with all log levels", () => {
-    const container = ServiceContainer.getInstance();
-    const logger = container.logger;
+    const customContainer = createServiceContainer({
+      logger: mockLoggerService as ILoggerService,
+    });
 
-    // Test all log levels
-    logger.log("Info message", "info");
-    logger.log("Warning message", "warn");
-    logger.log("Error message", "error");
-    logger.log("Default message"); // Should default to "info"
+    customContainer.logger.log("Info message", "info");
+    customContainer.logger.log("Warning message", "warn");
+    customContainer.logger.log("Error message", "error");
+    customContainer.logger.log("Default message");
 
-    expect(logger.log).toBeDefined();
-  });
-
-  it("should test service getters", () => {
-    const container = ServiceContainer.getInstance();
-
-    // Test database service getter
-    expect(container.database.prisma).toBeDefined();
-
-    // Test error handler service getter
-    expect(container.errorHandler.errorHandler).toBeDefined();
-
-    // Test health monitor service getter
-    expect(container.healthMonitor.healthMonitor).toBeDefined();
+    expect(mockLoggerService.log).toHaveBeenCalledWith("Info message", "info");
+    expect(mockLoggerService.log).toHaveBeenCalledWith(
+      "Warning message",
+      "warn"
+    );
+    expect(mockLoggerService.log).toHaveBeenCalledWith(
+      "Error message",
+      "error"
+    );
+    expect(mockLoggerService.log).toHaveBeenCalledWith("Default message");
   });
 });

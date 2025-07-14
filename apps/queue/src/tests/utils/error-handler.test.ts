@@ -151,7 +151,7 @@ describe("ErrorHandler", () => {
         { ...baseError, severity: ErrorSeverity.MEDIUM, context: { foo: 1 } },
         { bar: 2 }
       );
-      const call = spy.mock.calls[0][1] as string;
+      const call = spy?.mock?.calls?.[0]?.[1] as string;
       expect(call).toContain("bar");
       spy.mockRestore();
     });
