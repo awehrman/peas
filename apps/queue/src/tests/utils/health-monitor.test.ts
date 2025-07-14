@@ -139,7 +139,7 @@ describe("HealthMonitor", () => {
   });
 
   it("should return degraded status for slow redis response", async () => {
-    // Mock the checkRedisHealth method directly to return degraded status
+    // Mock the private method directly
     const originalCheckRedisHealth = (monitor as any).checkRedisHealth;
     (monitor as any).checkRedisHealth = vi.fn().mockResolvedValue({
       status: "degraded",
@@ -161,7 +161,7 @@ describe("HealthMonitor", () => {
   });
 
   it("should return degraded status for slow queue response", async () => {
-    // Mock the checkQueueHealth method directly to return slow response time
+    // Mock the private method directly
     const originalCheckQueueHealth = (monitor as any).checkQueueHealth;
     (monitor as any).checkQueueHealth = vi.fn().mockResolvedValue({
       noteQueue: {
@@ -225,7 +225,19 @@ describe("HealthMonitor", () => {
     const health1 = await monitor.getHealth();
     const health2 = await monitor.refreshHealth();
     expect(health2.status).toBe("healthy");
-    expect(health2).toMatchObject(health1); // Should return same result but from fresh check
+    // Compare structure and status, but not exact response times which may vary
+    expect(health2.checks.database.status).toBe(health1.checks.database.status);
+    expect(health2.checks.redis.status).toBe(health1.checks.redis.status);
+    expect(health2.checks.queues.noteQueue!.status).toBe(
+      health1.checks.queues.noteQueue!.status
+    );
+    expect(health2.checks.database.message).toBe(
+      health1.checks.database.message
+    );
+    expect(health2.checks.redis.message).toBe(health1.checks.redis.message);
+    expect(health2.checks.queues.noteQueue!.message).toBe(
+      health1.checks.queues.noteQueue!.message
+    );
   });
 
   it("should test isHealthy method", async () => {
