@@ -2389,6 +2389,7 @@ __metadata:
     "@types/express": "npm:^5.0.3"
     "@types/find-up": "npm:^4.0.2"
     "@types/ws": "npm:^8.5.10"
+    "@vitest/coverage-v8": "npm:^3.2.4"
     "@vitest/ui": "npm:^3.2.4"
     bullmq: "npm:^5.56.4"
     cheerio: "npm:^1.1.0"
