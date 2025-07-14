@@ -131,12 +131,6 @@ export function setupNoteWorker(queue: Queue) {
 
         // Note processing job completed successfully
       } catch (error) {
-        console.log("[WORKER DEBUG] Caught error in worker:", error);
-        console.log("[WORKER DEBUG] Error type:", typeof error);
-        console.log(
-          "[WORKER DEBUG] Error instanceof QueueError:",
-          error instanceof QueueError
-        );
         // Handle structured errors
         if (error instanceof QueueError) {
           const jobError = error.jobError;
@@ -149,13 +143,11 @@ export function setupNoteWorker(queue: Queue) {
           // Determine if job should be retried
           if (ErrorHandler.shouldRetry(jobError, retryCount)) {
             const backoffDelay = ErrorHandler.calculateBackoff(retryCount);
-            console.log("[WORKER DEBUG] About to log retry message");
             console.log(
               `Scheduling retry for job ${jobId} in ${backoffDelay}ms`
             );
             throw error; // Re-throw for BullMQ retry
           } else {
-            console.log("[WORKER DEBUG] About to log permanent fail message");
             console.log(
               `Job ${jobId} failed permanently after ${retryCount + 1} attempts`
             );

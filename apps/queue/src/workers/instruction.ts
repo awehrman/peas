@@ -7,6 +7,7 @@ import { addStatusEventAndBroadcast } from "../utils/status-broadcaster";
 import { ErrorHandler, QueueError } from "../utils";
 import { ErrorType, ErrorSeverity, InstructionJobData } from "../types";
 import { HealthMonitor } from "../utils/health-monitor";
+import { validateJobData } from "../utils/error-handler";
 
 export function setupInstructionWorker(queue: Queue) {
   const worker = new Worker(
@@ -21,18 +22,19 @@ export function setupInstructionWorker(queue: Queue) {
 
       try {
         // Validate job data
-        const validationError =
-          ErrorHandler.validateJobData<InstructionJobData>(job.data, ["note"]);
-
+        const validationError = validateJobData(job.data);
         if (validationError) {
-          validationError.jobId = jobId;
-          validationError.queueName = queue.name;
-          validationError.retryCount = retryCount;
+          (validationError as any).jobId = jobId;
+          (validationError as any).queueName = queue.name;
+          (validationError as any).retryCount = retryCount;
           ErrorHandler.logError(validationError);
           throw new QueueError(validationError);
         }
 
         const { note } = job.data as InstructionJobData;
+        const { parsedInstructionLines = [] } = note as {
+          parsedInstructionLines?: any[];
+        };
 
         // Check service health before processing
         const healthMonitor = HealthMonitor.getInstance();
@@ -49,7 +51,6 @@ export function setupInstructionWorker(queue: Queue) {
           throw new QueueError(healthError);
         }
 
-        const { parsedInstructionLines = [] } = note;
         let errorCount = 0;
         const total = parsedInstructionLines.length;
         let current = 0;

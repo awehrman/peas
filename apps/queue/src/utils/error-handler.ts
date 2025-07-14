@@ -281,3 +281,15 @@ export class ErrorHandler {
     return null;
   }
 }
+
+export function validateJobData(data: any) {
+  if (!data || !data.note) {
+    return {
+      message: "Invalid job data: missing note",
+      type: ErrorType.UNKNOWN_ERROR,
+      severity: ErrorSeverity.MEDIUM,
+      timestamp: new Date(),
+    };
+  }
+  return null;
+}
