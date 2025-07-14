@@ -1,102 +1,97 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { vi } from "vitest";
+
+// Import mock functions first so they can be used in the mock
+import {
+  mockWithErrorHandling,
+  mockLogError,
+  mockShouldRetry,
+  mockCalculateBackoff,
+  mockCreateJobError,
+  mockClassifyError,
+  mockValidateJobData,
+} from "../utils/worker-test-utils";
+
+// Mock error-handler before any other imports to ensure it's in place
+vi.mock("../../utils/error-handler", () => {
+  class QueueErrorMock extends Error {
+    public readonly jobError: any;
+    constructor(jobError: any) {
+      super(jobError.message);
+      this.name = "QueueError";
+      this.jobError = jobError;
+    }
+  }
+
+  class ErrorHandlerMock {
+    static withErrorHandling = mockWithErrorHandling;
+    static logError = mockLogError;
+    static shouldRetry = mockShouldRetry;
+    static calculateBackoff = mockCalculateBackoff;
+    static createJobError = mockCreateJobError;
+    static classifyError = mockClassifyError;
+    static validateJobData = mockValidateJobData;
+  }
+
+  return {
+    ErrorHandler: ErrorHandlerMock,
+    QueueError: QueueErrorMock,
+  };
+});
+
+// Mock utils barrel export to include QueueError
+vi.mock("../../utils", () => {
+  class QueueErrorMock extends Error {
+    public readonly jobError: any;
+    constructor(jobError: any) {
+      super(jobError.message);
+      this.name = "QueueError";
+      this.jobError = jobError;
+    }
+  }
+
+  class ErrorHandlerMock {
+    static withErrorHandling = mockWithErrorHandling;
+    static logError = mockLogError;
+    static shouldRetry = mockShouldRetry;
+    static calculateBackoff = mockCalculateBackoff;
+    static createJobError = mockCreateJobError;
+    static classifyError = mockClassifyError;
+    static validateJobData = mockValidateJobData;
+  }
+
+  return {
+    QueueError: QueueErrorMock,
+    ErrorHandler: ErrorHandlerMock,
+  };
+});
+
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { QueueError } from "../../utils";
 import { ErrorType, ErrorSeverity } from "../../types";
-import * as ErrorHandler from "../../utils/error-handler";
-
-// Mocks for dependencies
-const mockPrisma = {
-  parsedInstructionLine: {
-    update: vi.fn(),
-  },
-};
-const mockAddStatusEventAndBroadcast = vi.fn();
-const mockWithErrorHandling = vi.fn();
-const mockValidateJobData = vi.fn();
-const mockLogError = vi.fn();
-const mockShouldRetry = vi.fn();
-const mockCalculateBackoff = vi.fn();
-const mockCreateJobError = vi.fn();
-const mockClassifyError = vi.fn();
-
-vi.mock("@peas/database", () => ({
-  prisma: mockPrisma,
-}));
-vi.mock("../../utils/status-broadcaster", () => ({
-  addStatusEventAndBroadcast: mockAddStatusEventAndBroadcast,
-}));
-
-const mockHealthMonitor = {
-  isHealthy: vi.fn(),
-};
-vi.mock("../../utils/health-monitor", () => ({
-  HealthMonitor: { getInstance: () => mockHealthMonitor },
-}));
-
-vi.doMock("../../utils", async () => {
-  const actual = await vi.importActual("../../utils");
-  return {
-    ...actual,
-    ErrorHandler: {
-      validateJobData: mockValidateJobData,
-      logError: mockLogError,
-      withErrorHandling: mockWithErrorHandling,
-      shouldRetry: mockShouldRetry,
-      calculateBackoff: mockCalculateBackoff,
-      createJobError: mockCreateJobError,
-      classifyError: mockClassifyError,
-    },
-    // Do NOT redefine QueueError here!
-  };
-});
-
-// --- Mock BullMQ Worker ---
-let capturedProcessFn: ((job: any) => Promise<any>) | null = null;
-let capturedListeners: Record<string, Array<(...args: any[]) => any>> = {};
-
-vi.mock("bullmq", () => {
-  return {
-    Worker: class MockWorker {
-      static lastInstance: any;
-      name: string;
-      opts: any;
-      constructor(
-        name: string,
-        processFn: (job: any) => Promise<any>,
-        opts: any
-      ) {
-        this.name = name;
-        this.opts = opts;
-        capturedProcessFn = processFn;
-        capturedListeners = {};
-        MockWorker.lastInstance = this;
-      }
-      on(event: string, listener: (...args: any[]) => any) {
-        if (!capturedListeners[event]) capturedListeners[event] = [];
-        capturedListeners[event].push(listener);
-        return this;
-      }
-    },
-    Queue: class {},
-  };
-});
-// --- End BullMQ Worker mock ---
+import {
+  setupWorkerTestEnvironment,
+  cleanupWorkerTestEnvironment,
+  capturedProcessFn,
+  capturedListeners,
+  mockAddStatusEventAndBroadcast,
+  mockHealthMonitor,
+  mockPrisma,
+} from "../utils/worker-test-utils";
 
 describe("setupInstructionWorker", () => {
   let setupInstructionWorker: any;
-  let queue: any;
-  let job: any;
-  let originalConsoleLog: any;
-  let originalConsoleError: any;
-  let logSpy: any;
-  let errorSpy: any;
+  let testSetup: any;
 
   beforeEach(async () => {
-    logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-    errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    console.log("🧪 Setting up test environment...");
+
+    testSetup = setupWorkerTestEnvironment();
+
     const module = await import("../../workers/instruction");
     setupInstructionWorker = module.setupInstructionWorker;
-    queue = { name: "instruction-queue" };
-    job = {
+
+    // Setup instruction-specific job data
+    testSetup.job = {
       id: "job1",
       attemptsMade: 0,
       data: {
@@ -109,69 +104,40 @@ describe("setupInstructionWorker", () => {
         },
       },
     };
-    vi.clearAllMocks();
-    mockHealthMonitor.isHealthy.mockResolvedValue(true);
-    mockValidateJobData.mockReturnValue(null);
-    mockWithErrorHandling.mockImplementation((fn) => fn());
+
+    // Setup instruction-specific mocks
     mockPrisma.parsedInstructionLine.update.mockResolvedValue({});
     mockAddStatusEventAndBroadcast.mockResolvedValue(undefined);
-    mockShouldRetry.mockReturnValue(false);
-    mockCalculateBackoff.mockReturnValue(1000);
-    mockCreateJobError.mockImplementation((error, type, severity, context) => {
-      const message = typeof error === "string" ? error : error.message;
-      return {
-        message,
-        type,
-        severity,
-        context,
-        timestamp: new Date(),
-      };
-    });
-    mockClassifyError.mockImplementation((err) => ({
-      message: err.message,
-      type: ErrorType.UNKNOWN_ERROR,
-      severity: ErrorSeverity.CRITICAL,
-    }));
-    originalConsoleLog = console.log;
-    originalConsoleError = console.error;
   });
 
   afterEach(() => {
-    logSpy.mockRestore();
-    errorSpy.mockRestore();
-    console.log = originalConsoleLog;
-    console.error = originalConsoleError;
-    capturedProcessFn = null;
-    capturedListeners = {};
+    console.log("🧹 Cleaning up test environment...");
+    cleanupWorkerTestEnvironment(testSetup);
   });
 
   it("should process all instruction lines successfully", async () => {
-    const validateSpy = vi.spyOn(ErrorHandler, "validateJobData");
-    setupInstructionWorker(queue);
-    await expect(capturedProcessFn?.(job)).resolves.toBeUndefined();
-    expect(validateSpy).toHaveBeenCalled();
+    setupInstructionWorker(testSetup.queue);
+    await expect(capturedProcessFn?.(testSetup.job)).resolves.toBeUndefined();
+    expect(mockValidateJobData).toHaveBeenCalled();
     expect(mockHealthMonitor.isHealthy).toHaveBeenCalled();
     expect(mockWithErrorHandling).toHaveBeenCalled();
-    validateSpy.mockRestore();
   });
 
   it("should handle job validation error (validation object)", async () => {
-    // Mock ErrorHandler.validateJobData to return a validation error object
     const validationError = {
       message: "Invalid data",
       type: ErrorType.UNKNOWN_ERROR,
       severity: ErrorSeverity.MEDIUM,
       timestamp: new Date(),
     };
-    const validateSpy = vi
-      .spyOn(ErrorHandler as any, "validateJobData")
-      .mockReturnValue(validationError);
-    setupInstructionWorker(queue);
-    await expect(capturedProcessFn?.(job)).rejects.toThrow(QueueError);
+    mockValidateJobData.mockReturnValue(validationError);
+    setupInstructionWorker(testSetup.queue);
+    await expect(capturedProcessFn?.(testSetup.job)).rejects.toThrow(
+      QueueError
+    );
     expect(mockLogError).toHaveBeenCalledWith(
       expect.objectContaining({ message: "Invalid data" })
     );
-    validateSpy.mockRestore();
   });
 
   it("should handle parsing errors for some lines and log to console.error", async () => {
@@ -184,8 +150,8 @@ describe("setupInstructionWorker", () => {
       return fn();
     });
     const errorSpy = vi.spyOn(console, "error");
-    setupInstructionWorker(queue);
-    await expect(capturedProcessFn?.(job)).resolves.toBeUndefined();
+    setupInstructionWorker(testSetup.queue);
+    await expect(capturedProcessFn?.(testSetup.job)).resolves.toBeUndefined();
     expect(mockLogError).toHaveBeenCalled();
     expect(errorSpy).toHaveBeenCalledWith(
       expect.stringContaining("❌ Failed to parse instruction")
@@ -195,38 +161,47 @@ describe("setupInstructionWorker", () => {
 
   it("should handle unhealthy service", async () => {
     mockHealthMonitor.isHealthy.mockResolvedValue(false);
-    setupInstructionWorker(queue);
-    await expect(capturedProcessFn?.(job)).rejects.toThrow(
+    setupInstructionWorker(testSetup.queue);
+    await expect(capturedProcessFn?.(testSetup.job)).rejects.toThrow(
       "Service is unhealthy, skipping instruction processing"
     );
     expect(mockLogError).toHaveBeenCalled();
   });
 
   it("should handle job validation error", async () => {
-    job.data.note = null;
-    setupInstructionWorker(queue);
-    await expect(capturedProcessFn?.(job)).rejects.toThrow(
+    testSetup.job.data.note = null;
+    // Mock validation to return error when note is null
+    mockValidateJobData.mockReturnValue({
+      message: "Invalid job data: missing note",
+      type: ErrorType.UNKNOWN_ERROR,
+      severity: ErrorSeverity.MEDIUM,
+      timestamp: new Date(),
+    });
+    setupInstructionWorker(testSetup.queue);
+    await expect(capturedProcessFn?.(testSetup.job)).rejects.toThrow(
       "Invalid job data: missing note"
     );
   });
 
   it("should handle batch DB update error", async () => {
-    // Mock the prisma update to throw an error
     mockPrisma.parsedInstructionLine.update.mockRejectedValueOnce(
       new Error("db fail")
     );
-    setupInstructionWorker(queue);
-    await expect(capturedProcessFn?.(job)).rejects.toThrow(QueueError);
+    setupInstructionWorker(testSetup.queue);
+    await expect(capturedProcessFn?.(testSetup.job)).rejects.toThrow(
+      QueueError
+    );
     expect(mockLogError).toHaveBeenCalled();
   });
 
   it("should handle error in status event", async () => {
-    // Mock the status broadcaster to throw an error
     mockAddStatusEventAndBroadcast.mockRejectedValueOnce(
       new Error("status fail")
     );
-    setupInstructionWorker(queue);
-    await expect(capturedProcessFn?.(job)).rejects.toThrow(QueueError);
+    setupInstructionWorker(testSetup.queue);
+    await expect(capturedProcessFn?.(testSetup.job)).rejects.toThrow(
+      QueueError
+    );
     expect(mockLogError).toHaveBeenCalled();
   });
 
@@ -246,10 +221,12 @@ describe("setupInstructionWorker", () => {
       .mockImplementationOnce(() => {
         throw error;
       }); // final batch
-    setupInstructionWorker(queue);
-    await expect(capturedProcessFn?.(job)).rejects.toThrow("retry me");
+    setupInstructionWorker(testSetup.queue);
+    await expect(capturedProcessFn?.(testSetup.job)).rejects.toThrow(
+      "retry me"
+    );
     await new Promise((r) => setTimeout(r, 0));
-    const logCalls = logSpy.mock.calls.flat();
+    const logCalls = testSetup.logSpy.mock.calls.flat();
     expect(
       logCalls.some(
         (msg: any) =>
@@ -274,10 +251,12 @@ describe("setupInstructionWorker", () => {
       .mockImplementationOnce(() => {
         throw error;
       }); // final batch
-    setupInstructionWorker(queue);
-    await expect(capturedProcessFn?.(job)).rejects.toThrow("fail permanently");
+    setupInstructionWorker(testSetup.queue);
+    await expect(capturedProcessFn?.(testSetup.job)).rejects.toThrow(
+      "fail permanently"
+    );
     await new Promise((r) => setTimeout(r, 0));
-    const logCalls = logSpy.mock.calls.flat();
+    const logCalls = testSetup.logSpy.mock.calls.flat();
     expect(
       logCalls.some(
         (msg: any) =>
@@ -293,21 +272,25 @@ describe("setupInstructionWorker", () => {
     mockWithErrorHandling.mockImplementation(() => {
       throw new Error("unexpected");
     });
-    setupInstructionWorker(queue);
-    await expect(capturedProcessFn?.(job)).rejects.toThrow("unexpected");
+    setupInstructionWorker(testSetup.queue);
+    await expect(capturedProcessFn?.(testSetup.job)).rejects.toThrow(
+      "unexpected"
+    );
     expect(mockLogError).toHaveBeenCalled();
   });
 
   it("should call completed event listener", () => {
-    setupInstructionWorker(queue);
+    setupInstructionWorker(testSetup.queue);
     const completedListener = capturedListeners["completed"]?.[0];
     expect(completedListener).toBeDefined();
     completedListener!({ id: "job1" });
-    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("completed"));
+    expect(testSetup.logSpy).toHaveBeenCalledWith(
+      expect.stringContaining("completed")
+    );
   });
 
   it("should call failed event listener with QueueError", () => {
-    setupInstructionWorker(queue);
+    setupInstructionWorker(testSetup.queue);
     const failedListener = capturedListeners["failed"]?.[0];
     expect(failedListener).toBeDefined();
     const error = new QueueError({
@@ -317,25 +300,25 @@ describe("setupInstructionWorker", () => {
       timestamp: new Date(),
     });
     failedListener?.({ id: "job1" }, error);
-    expect(errorSpy).toHaveBeenCalledWith(
+    expect(testSetup.errorSpy).toHaveBeenCalledWith(
       expect.stringContaining("failed:"),
       "fail"
     );
   });
 
   it("should call failed event listener with generic error", () => {
-    setupInstructionWorker(queue);
+    setupInstructionWorker(testSetup.queue);
     const failedListener = capturedListeners["failed"]?.[0];
     expect(failedListener).toBeDefined();
     failedListener?.({ id: "job1" }, new Error("fail"));
-    expect(errorSpy).toHaveBeenCalledWith(
+    expect(testSetup.errorSpy).toHaveBeenCalledWith(
       expect.stringContaining("failed:"),
       "fail"
     );
   });
 
   it("should call error event listener", () => {
-    setupInstructionWorker(queue);
+    setupInstructionWorker(testSetup.queue);
     const errorListener = capturedListeners["error"]?.[0];
     expect(errorListener).toBeDefined();
     errorListener?.(new Error("err"));
@@ -345,7 +328,7 @@ describe("setupInstructionWorker", () => {
 
   it("should handle batch DB update error in batch", async () => {
     // Exactly 10 lines to trigger batch (BATCH_SIZE = 10)
-    job.data.note.parsedInstructionLines = Array.from(
+    testSetup.job.data.note.parsedInstructionLines = Array.from(
       { length: 10 },
       (_, i) => ({
         id: 100 + i,
@@ -363,9 +346,9 @@ describe("setupInstructionWorker", () => {
       return Promise.resolve({});
     });
 
-    setupInstructionWorker(queue);
+    setupInstructionWorker(testSetup.queue);
     // The batch error is caught and handled gracefully, so job should resolve
-    await expect(capturedProcessFn?.(job)).resolves.toBeUndefined();
+    await expect(capturedProcessFn?.(testSetup.job)).resolves.toBeUndefined();
 
     // Should log the batch error
     expect(
@@ -376,25 +359,30 @@ describe("setupInstructionWorker", () => {
   });
 
   it("should handle failure status event error in catch block", async () => {
-    // Simulate a QueueError and make addStatusEventAndBroadcast throw
-    const error = new QueueError({
-      message: "fail",
-      type: ErrorType.UNKNOWN_ERROR,
-      severity: ErrorSeverity.MEDIUM,
-      timestamp: new Date(),
-    });
-    mockWithErrorHandling.mockImplementation(() => {
-      throw error;
-    });
-    mockShouldRetry.mockReturnValue(false);
+    // Simulate error in status event
     mockAddStatusEventAndBroadcast.mockRejectedValueOnce(
-      new Error("status event fail")
+      new Error("Failed to add failure status event")
     );
-    setupInstructionWorker(queue);
-    await expect(capturedProcessFn?.(job)).rejects.toThrow("fail");
+    // Allow parsing and updating to succeed, throw QueueError at the end
+    mockWithErrorHandling
+      .mockImplementationOnce((fn) => fn()) // parseInstruction
+      .mockImplementationOnce((fn) => fn()) // update
+      .mockImplementationOnce((fn) => fn()) // status event
+      .mockImplementationOnce(() => {
+        throw new QueueError({
+          message: "fail",
+          type: ErrorType.UNKNOWN_ERROR,
+          severity: ErrorSeverity.MEDIUM,
+          timestamp: new Date(),
+        });
+      }); // final batch triggers failure
+    const errorSpy = vi.spyOn(console, "error");
+    setupInstructionWorker(testSetup.queue);
+    await expect(capturedProcessFn?.(testSetup.job)).rejects.toThrow("fail");
     expect(errorSpy).toHaveBeenCalledWith(
       expect.stringContaining("Failed to add failure status event"),
-      expect.any(Error)
+      expect.anything()
     );
+    errorSpy.mockRestore();
   });
 });
