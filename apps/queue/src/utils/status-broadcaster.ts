@@ -1,4 +1,5 @@
 import { addStatusEvent } from "@peas/database";
+import type { NoteStatus } from "@peas/database";
 import { broadcastStatusEvent } from "../websocket-server";
 
 export async function addStatusEventAndBroadcast({
@@ -10,7 +11,7 @@ export async function addStatusEventAndBroadcast({
   totalCount,
 }: {
   noteId: string;
-  status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
+  status: NoteStatus;
   message?: string;
   context?: string;
   currentCount?: number;

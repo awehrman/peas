@@ -1,18 +1,30 @@
-export type ParsedIngredientLine = {
-  blockIndex: number;
-  lineIndex: number;
-  parseStatus?: "PENDING" | "CORRECT" | "INCORRECT" | "ERROR";
-  parsedAt?: Date;
-  reference: string;
-  rule?: string;
+// Import Prisma types for better type safety
+import type {
+  ParsedIngredientLine,
+  ParsedInstructionLine,
+  Note,
+  NoteStatus,
+  NoteStatusEvent,
+  QueueJob,
+  QueueJobStatus,
+  QueueJobType,
+  ErrorCode,
+} from "@peas/database";
+
+// Re-export commonly used types
+export type {
+  ParsedIngredientLine,
+  ParsedInstructionLine,
+  Note,
+  NoteStatus,
+  NoteStatusEvent,
+  QueueJob,
+  QueueJobStatus,
+  QueueJobType,
+  ErrorCode,
 };
 
-export type ParsedInstructionLine = {
-  parseStatus?: "PENDING" | "CORRECT" | "INCORRECT" | "ERROR";
-  lineIndex: number;
-  reference: string;
-};
-
+// Keep ParsedHTMLFile as it's specific to the parser output
 export type ParsedHTMLFile = {
   title: string;
   historicalCreatedAt?: Date;
@@ -85,11 +97,11 @@ export interface ImageJobData {
 }
 
 export interface IngredientJobData {
-  note: any; // Note from database
+  note: Note; // Use Prisma Note type
 }
 
 export interface InstructionJobData {
-  note: any; // Note from database
+  note: Note; // Use Prisma Note type
 }
 
 export interface CategorizationJobData {

@@ -1,11 +1,13 @@
 import { WebSocketServer, WebSocket } from "ws";
 import { randomUUID } from "crypto";
 
+import type { NoteStatus } from "@peas/database";
+
 interface StatusEvent {
   type: "status_update";
   data: {
     noteId: string;
-    status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
+    status: NoteStatus;
     message?: string;
     context?: string;
     errorMessage?: string;
@@ -25,6 +27,8 @@ class WebSocketManager {
   private wss: WebSocketServer;
   private clients: Map<string, Client> = new Map();
   private port: number;
+  private readonly MAX_CLIENTS = 100;
+  private readonly RATE_LIMIT_MS = 1000;
 
   constructor(port: number = 8080) {
     this.port = port;
@@ -34,6 +38,10 @@ class WebSocketManager {
 
   private setupEventHandlers() {
     this.wss.on("connection", (ws: WebSocket, _req) => {
+      if (this.clients.size >= this.MAX_CLIENTS) {
+        ws.close(1013, "Too many connections");
+        return;
+      }
       const clientId = randomUUID();
       const client: Client = {
         id: clientId,

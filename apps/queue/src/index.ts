@@ -6,22 +6,14 @@ import express from "express";
 import { createBullBoard } from "@bull-board/api";
 import { BullMQAdapter } from "@bull-board/api/bullMQAdapter.js";
 import { ExpressAdapter } from "@bull-board/express";
-import {
-  noteQueue,
-  imageQueue,
-  ingredientQueue,
-  instructionQueue,
-  categorizationQueue,
-} from "./queues";
 import { importRouter, notesRouter, healthRouter } from "./routes";
-import { ErrorHandler } from "./utils";
 import { ErrorType, ErrorSeverity } from "./types";
-import { HealthMonitor } from "./utils/health-monitor";
 import { initializeWebSocketServer } from "./websocket-server";
+import { serviceContainer } from "./services";
+import { createWorkerManager } from "./workers/manager";
 import cors from "cors";
 
 const app = express();
-const port = process.env.PORT || 4200;
 
 // Enhanced error handling middleware
 app.use((req, res, next) => {
@@ -52,7 +44,8 @@ app.use(
     res: express.Response,
     _next: express.NextFunction
   ) => {
-    const jobError = ErrorHandler.classifyError(error);
+    const jobError =
+      serviceContainer.errorHandler.errorHandler.classifyError(error);
     jobError.context = {
       ...jobError.context,
       path: req.path,
@@ -60,7 +53,7 @@ app.use(
       userAgent: req.get("User-Agent"),
     };
 
-    ErrorHandler.logError(jobError);
+    serviceContainer.errorHandler.errorHandler.logError(jobError);
 
     res.status(500).json({
       error: {
@@ -78,11 +71,11 @@ const serverAdapter = new ExpressAdapter();
 try {
   createBullBoard({
     queues: [
-      new BullMQAdapter(noteQueue),
-      new BullMQAdapter(imageQueue),
-      new BullMQAdapter(ingredientQueue),
-      new BullMQAdapter(instructionQueue),
-      new BullMQAdapter(categorizationQueue),
+      new BullMQAdapter(serviceContainer.queues.noteQueue),
+      new BullMQAdapter(serviceContainer.queues.imageQueue),
+      new BullMQAdapter(serviceContainer.queues.ingredientQueue),
+      new BullMQAdapter(serviceContainer.queues.instructionQueue),
+      new BullMQAdapter(serviceContainer.queues.categorizationQueue),
     ],
     serverAdapter,
   });
@@ -90,21 +83,21 @@ try {
   serverAdapter.setBasePath("/bull-board");
   app.use("/bull-board", serverAdapter.getRouter());
 } catch (error) {
-  const jobError = ErrorHandler.createJobError(
+  const jobError = serviceContainer.errorHandler.errorHandler.createJobError(
     error as Error,
     ErrorType.EXTERNAL_SERVICE_ERROR,
     ErrorSeverity.HIGH,
     { operation: "bull_board_setup" }
   );
-  ErrorHandler.logError(jobError);
+  serviceContainer.errorHandler.errorHandler.logError(jobError);
   console.error("Failed to setup Bull Board, continuing without it");
 }
 
 // Health check endpoint with monitoring
 app.get("/health", async (req, res) => {
   try {
-    const healthMonitor = HealthMonitor.getInstance();
-    const health = await healthMonitor.getHealth();
+    const health =
+      await serviceContainer.healthMonitor.healthMonitor.getHealth();
 
     const statusCode =
       health.status === "healthy"
@@ -115,13 +108,13 @@ app.get("/health", async (req, res) => {
 
     res.status(statusCode).json(health);
   } catch (error) {
-    const jobError = ErrorHandler.createJobError(
+    const jobError = serviceContainer.errorHandler.errorHandler.createJobError(
       error as Error,
       ErrorType.EXTERNAL_SERVICE_ERROR,
       ErrorSeverity.HIGH,
       { operation: "health_check_endpoint" }
     );
-    ErrorHandler.logError(jobError);
+    serviceContainer.errorHandler.errorHandler.logError(jobError);
 
     res.status(503).json({
       status: "unhealthy",
@@ -153,11 +146,11 @@ const gracefulShutdown = async (signal: string) => {
   try {
     // Close all queues gracefully
     await Promise.allSettled([
-      noteQueue.close(),
-      imageQueue.close(),
-      ingredientQueue.close(),
-      instructionQueue.close(),
-      categorizationQueue.close(),
+      serviceContainer.queues.noteQueue.close(),
+      serviceContainer.queues.imageQueue.close(),
+      serviceContainer.queues.ingredientQueue.close(),
+      serviceContainer.queues.instructionQueue.close(),
+      serviceContainer.queues.categorizationQueue.close(),
     ]);
 
     console.log("✅ All queues closed successfully");
@@ -174,38 +167,51 @@ const gracefulShutdown = async (signal: string) => {
       process.exit(1);
     }, 10000);
   } catch (error) {
-    const jobError = ErrorHandler.createJobError(
+    const jobError = serviceContainer.errorHandler.errorHandler.createJobError(
       error as Error,
       ErrorType.UNKNOWN_ERROR,
       ErrorSeverity.CRITICAL,
       { operation: "graceful_shutdown" }
     );
-    ErrorHandler.logError(jobError);
+    serviceContainer.errorHandler.errorHandler.logError(jobError);
     process.exit(1);
   }
 };
 
 // Start server with error handling
-const server = app.listen(port, () => {
-  console.log(`🚀 Queue service running at http://localhost:${port}`);
-  console.log(`📊 Bull Board available at http://localhost:${port}/bull-board`);
-  console.log(`❤️ Health check available at http://localhost:${port}/health`);
+const server = app.listen(serviceContainer.config.port, () => {
+  console.log(
+    `🚀 Queue service running at http://localhost:${serviceContainer.config.port}`
+  );
+  console.log(
+    `📊 Bull Board available at http://localhost:${serviceContainer.config.port}/bull-board`
+  );
+  console.log(
+    `❤️ Health check available at http://localhost:${serviceContainer.config.port}/health`
+  );
 
   // Initialize WebSocket server
-  const wsPort = parseInt(process.env.WS_PORT || "8080");
-  initializeWebSocketServer(wsPort);
-  console.log(`🔌 WebSocket server running on port ${wsPort}`);
+  const wsManager = initializeWebSocketServer(serviceContainer.config.wsPort);
+  serviceContainer.webSocket.webSocketManager = wsManager;
+  console.log(
+    `🔌 WebSocket server running on port ${serviceContainer.config.wsPort}`
+  );
+
+  // Initialize and start workers
+  const workerManager = createWorkerManager(serviceContainer);
+  workerManager.startAllWorkers();
+  console.log("👷 All workers started successfully");
 });
 
 // Handle server errors
 server.on("error", (error) => {
-  const jobError = ErrorHandler.createJobError(
+  const jobError = serviceContainer.errorHandler.errorHandler.createJobError(
     error,
     ErrorType.NETWORK_ERROR,
     ErrorSeverity.CRITICAL,
     { operation: "server_startup" }
   );
-  ErrorHandler.logError(jobError);
+  serviceContainer.errorHandler.errorHandler.logError(jobError);
   process.exit(1);
 });
 
@@ -215,24 +221,24 @@ process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 
 // Handle uncaught exceptions
 process.on("uncaughtException", (error) => {
-  const jobError = ErrorHandler.createJobError(
+  const jobError = serviceContainer.errorHandler.errorHandler.createJobError(
     error,
     ErrorType.UNKNOWN_ERROR,
     ErrorSeverity.CRITICAL,
     { operation: "uncaught_exception" }
   );
-  ErrorHandler.logError(jobError);
+  serviceContainer.errorHandler.errorHandler.logError(jobError);
   gracefulShutdown("uncaught exception");
 });
 
 // Handle unhandled promise rejections
 process.on("unhandledRejection", (reason, promise) => {
-  const jobError = ErrorHandler.createJobError(
+  const jobError = serviceContainer.errorHandler.errorHandler.createJobError(
     reason as Error,
     ErrorType.UNKNOWN_ERROR,
     ErrorSeverity.CRITICAL,
     { operation: "unhandled_rejection", promise: promise.toString() }
   );
-  ErrorHandler.logError(jobError);
+  serviceContainer.errorHandler.errorHandler.logError(jobError);
   gracefulShutdown("unhandled rejection");
 });

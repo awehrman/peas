@@ -26,6 +26,10 @@
     "format": {
       "cache": false
     },
+    "test": {
+      "cache": false,
+      "outputs": ["coverage/**"]
+    },
     "dev": {
       "dependsOn": ["^build"],
       "cache": false,

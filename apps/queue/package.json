@@ -7,7 +7,10 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "ts-node dist/index.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "lint": "eslint --ext .ts,.tsx src"
   },
   "dependencies": {
@@ -34,9 +37,11 @@
     "@types/cors": "^2.8.13",
     "@types/express": "^5.0.3",
     "@types/ws": "^8.5.10",
+    "@vitest/ui": "^3.2.4",
     "eslint": "^9.0.0",
     "ts-node-dev": "^2.0.0",
     "tsx": "^4.7.0",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
   }
 }
