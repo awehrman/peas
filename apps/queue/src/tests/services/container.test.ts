@@ -48,9 +48,8 @@ describe("Dependency Injection ServiceContainer", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    // Reset singleton
-    (ServiceContainer as unknown as { instance: undefined }).instance =
-      undefined;
+    // Reset singleton instance
+    (ServiceContainer as any).instance = undefined;
   });
 
   afterEach(() => {
