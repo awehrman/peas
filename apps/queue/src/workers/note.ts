@@ -20,7 +20,7 @@ export function setupNoteWorker(queue: Queue) {
       const jobId = job.id;
       const retryCount = job.attemptsMade;
 
-      console.log(`Processing note job ${jobId} (attempt ${retryCount + 1})`);
+      // Processing note job
 
       try {
         // Validate job data
@@ -129,7 +129,7 @@ export function setupNoteWorker(queue: Queue) {
           }
         }
 
-        console.log(`Note processing job ${jobId} completed successfully`);
+        // Note processing job completed successfully
       } catch (error) {
         // Handle structured errors
         if (error instanceof QueueError) {

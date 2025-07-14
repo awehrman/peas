@@ -42,9 +42,6 @@ class WebSocketManager {
       };
 
       this.clients.set(clientId, client);
-      console.log(
-        `🔌 WebSocket: Client ${clientId} connected (${this.clients.size} total)`
-      );
 
       // Send welcome message
       this.sendToClient(clientId, {
@@ -63,9 +60,6 @@ class WebSocketManager {
 
       ws.on("close", () => {
         this.clients.delete(clientId);
-        console.log(
-          `🔌 WebSocket: Client ${clientId} disconnected (${this.clients.size} total)`
-        );
       });
 
       ws.on("error", (error: any) => {
@@ -82,8 +76,6 @@ class WebSocketManager {
   }
 
   private handleClientMessage(clientId: string, message: any) {
-    console.log(`🔌 WebSocket: Received message from ${clientId}:`, message);
-
     // Handle different message types here if needed
     switch (message.type) {
       case "ping":
@@ -93,7 +85,8 @@ class WebSocketManager {
         });
         break;
       default:
-        console.log(`🔌 WebSocket: Unknown message type: ${message.type}`);
+        // Unknown message type - ignore
+        break;
     }
   }
 
@@ -119,13 +112,11 @@ class WebSocketManager {
     };
 
     const messageStr = JSON.stringify(message);
-    let sentCount = 0;
 
     for (const [clientId, client] of this.clients) {
       if (client.ws.readyState === WebSocket.OPEN) {
         try {
           client.ws.send(messageStr);
-          sentCount++;
         } catch (error) {
           console.error(
             `❌ WebSocket: Failed to broadcast to ${clientId}:`,
@@ -138,10 +129,6 @@ class WebSocketManager {
         this.clients.delete(clientId);
       }
     }
-
-    console.log(
-      `🔌 WebSocket: Broadcasted status event to ${sentCount} clients`
-    );
   }
 
   public getConnectedClientsCount(): number {

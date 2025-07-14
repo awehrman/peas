@@ -26,7 +26,7 @@ export function setupImageWorker(queue: Queue) {
       const jobId = job.id;
       const retryCount = job.attemptsMade;
 
-      console.log(`Processing image job ${jobId} (attempt ${retryCount + 1})`);
+      // Processing image job
 
       try {
         // Validate job data
@@ -153,7 +153,7 @@ export function setupImageWorker(queue: Queue) {
           { jobId, noteId, operation: "add_completion_status" }
         );
 
-        console.log(`Image processing job ${jobId} completed successfully`);
+        // Image processing job completed successfully
       } catch (error) {
         // Handle structured errors
         if (error instanceof QueueError) {

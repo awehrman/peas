@@ -38,14 +38,14 @@ export function getOperationType(text: string): {
     lowerText.includes("upload") ||
     lowerText.includes("thumbnail")
   ) {
-    return { operationType: "image", isChild: true };
+    return { operationType: "image", isChild: false };
   } else if (
     lowerText.includes("categoriz") ||
     lowerText.includes("analyzing") ||
     lowerText.includes("beverages") ||
     lowerText.includes("tags")
   ) {
-    return { operationType: "categorization", isChild: true };
+    return { operationType: "categorization", isChild: false };
   } else {
     return { operationType: "other", isChild: false };
   }
@@ -82,13 +82,19 @@ export function getStatusFromText(
   if (
     lowerText.includes("started") ||
     lowerText.includes("processing") ||
-    lowerText.includes("%")
+    lowerText.includes("%") ||
+    lowerText.includes("analyzing")
   ) {
     return "processing";
   } else if (
     lowerText.includes("completed") ||
     lowerText.includes("successfully") ||
-    lowerText.includes("finished")
+    lowerText.includes("finished") ||
+    lowerText.includes("added note") ||
+    lowerText.includes("categorized as") ||
+    lowerText.includes("uploaded successfully") ||
+    lowerText.includes("instruction parsing completed") ||
+    lowerText.includes("ingredient parsing completed")
   ) {
     return "completed";
   } else if (lowerText.includes("error") || lowerText.includes("failed")) {
@@ -126,7 +132,27 @@ export function getStatusIcon(status: string): string {
     case "error":
       return "❌";
     default:
-      return "⏸️";
+      return "🔄";
+  }
+}
+
+/**
+ * Get operation priority for sorting
+ */
+function getOperationPriority(operationType: string): number {
+  switch (operationType) {
+    case "note":
+      return 0; // Note processing first
+    case "ingredients":
+      return 1; // Ingredient parsing second
+    case "instructions":
+      return 2; // Instruction parsing third
+    case "categorization":
+      return 3; // Categorization fourth
+    case "image":
+      return 4; // Image processing last
+    default:
+      return 999; // Other operations at the end
   }
 }
 
@@ -134,8 +160,8 @@ export function getStatusIcon(status: string): string {
  * Group items by operation type and organize them hierarchically
  */
 export function groupStatusItems(items: Item[]): GroupedItem[] {
-  return items.reduce((groups: GroupedItem[], item: Item) => {
-    const { operationType, isChild } = getOperationType(item.text);
+  const groups = items.reduce((groups: GroupedItem[], item: Item) => {
+    const { operationType } = getOperationType(item.text);
 
     // Find or create the group by operation type
     let group = groups.find((g) => g.id === `group-${operationType}`);
@@ -158,14 +184,62 @@ export function groupStatusItems(items: Item[]): GroupedItem[] {
       group.status = newStatus;
     }
 
-    // Add as child if it's a sub-operation, otherwise update the group title
-    if (isChild) {
+    // Check if this is a progress update or detailed message
+    const lowerText = item.text.toLowerCase();
+    const isProgressUpdate =
+      lowerText.includes("%") ||
+      lowerText.includes("step") ||
+      lowerText.includes("extracting") ||
+      lowerText.includes("compressing") ||
+      lowerText.includes("generating") ||
+      lowerText.includes("processed") ||
+      lowerText.includes("finished") ||
+      lowerText.includes("uploaded successfully");
+
+    if (isProgressUpdate) {
+      // Add progress updates and detailed messages as children
       group.children.push(item);
     } else {
-      // Update group title with the actual message
-      group.title = item.text;
+      // Only update group title for main status messages
+      if (
+        lowerText.includes("added note") ||
+        lowerText.includes("categorized as") ||
+        lowerText.includes("finished") ||
+        lowerText.includes("uploaded successfully")
+      ) {
+        group.title = item.text;
+      } else {
+        // Add other messages as children
+        group.children.push(item);
+      }
     }
 
     return groups;
   }, []);
+
+  // Sort groups by operation priority
+  const sortedGroups = groups.sort((a, b) => {
+    const aType = a.id.replace("group-", "");
+    const bType = b.id.replace("group-", "");
+    return getOperationPriority(aType) - getOperationPriority(bType);
+  });
+
+  // Update note status based on completion of all sub-operations
+  const noteGroup = sortedGroups.find((g) => g.id === "group-note");
+  if (noteGroup) {
+    const subOperations = sortedGroups.filter((g) => g.id !== "group-note");
+    const allSubOperationsCompleted = subOperations.every(
+      (g) => g.status === "completed"
+    );
+
+    if (allSubOperationsCompleted && subOperations.length > 0) {
+      noteGroup.status = "completed";
+      // Remove any existing checkmark from title to avoid duplication
+      noteGroup.title = noteGroup.title.replace("✅ ", "");
+    } else if (subOperations.some((g) => g.status === "processing")) {
+      noteGroup.status = "processing";
+    }
+  }
+
+  return sortedGroups;
 }

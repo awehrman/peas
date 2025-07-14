@@ -75,7 +75,7 @@ export function setupInstructionWorker(queue: Queue) {
               }
             );
 
-            console.log(`✅ Parsed instruction: ${line.originalText}`);
+            // Parsed instruction successfully
           } catch (parseError) {
             errorCount += 1;
             parseStatus = "ERROR";
@@ -178,6 +178,18 @@ export function setupInstructionWorker(queue: Queue) {
                 noteId: note.id,
                 status: "COMPLETED",
                 message: `Finished instruction parsing with ${errorCount} errors`,
+                context: "instruction line parsing",
+              }),
+            { jobId, noteId: note.id, operation: "add_completion_status" }
+          );
+        } else {
+          // Add completion status event for successful parsing
+          await ErrorHandler.withErrorHandling(
+            () =>
+              addStatusEventAndBroadcast({
+                noteId: note.id,
+                status: "COMPLETED",
+                message: "Instruction parsing completed successfully",
                 context: "instruction line parsing",
               }),
             { jobId, noteId: note.id, operation: "add_completion_status" }

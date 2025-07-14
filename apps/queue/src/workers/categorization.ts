@@ -213,7 +213,7 @@ export function setupCategorizationWorker(queue: Queue) {
           { jobId, noteId, operation: "add_completion_status" }
         );
 
-        console.log(`Categorization job ${jobId} completed successfully`);
+        // Categorization job completed successfully
       } catch (error) {
         // Handle structured errors
         if (error instanceof QueueError) {

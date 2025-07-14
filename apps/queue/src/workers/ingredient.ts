@@ -77,7 +77,7 @@ export function setupIngredientWorker(queue: Queue) {
               }
             );
 
-            console.log(`✅ Parsed ingredient: ${line.reference}`);
+            // Parsed ingredient successfully
           } catch (parseError) {
             errorCount += 1;
             parseStatus = "ERROR";
@@ -187,6 +187,18 @@ export function setupIngredientWorker(queue: Queue) {
                 noteId: note.id,
                 status: "COMPLETED",
                 message: `Finished ingredient parsing with ${errorCount} errors`,
+                context: "ingredient line parsing",
+              }),
+            { jobId, noteId: note.id, operation: "add_completion_status" }
+          );
+        } else {
+          // Add completion status event for successful parsing
+          await ErrorHandler.withErrorHandling(
+            () =>
+              addStatusEventAndBroadcast({
+                noteId: note.id,
+                status: "COMPLETED",
+                message: "Ingredient parsing completed successfully",
                 context: "ingredient line parsing",
               }),
             { jobId, noteId: note.id, operation: "add_completion_status" }

@@ -60,7 +60,6 @@ export function useStatusWebSocket(options: UseStatusWebSocketOptions = {}) {
       wsRef.current = ws;
 
       ws.onopen = () => {
-        console.log("🔌 WebSocket: Connected to status updates");
         setIsConnected(true);
         setConnectionStatus("connected");
         reconnectAttemptsRef.current = 0;
@@ -78,36 +77,27 @@ export function useStatusWebSocket(options: UseStatusWebSocketOptions = {}) {
                 ...statusEvent,
                 createdAt: new Date(statusEvent.createdAt),
               };
-              console.log("🔌 WebSocket: Received status update:", parsedEvent);
               setEvents((prev) => [...prev, parsedEvent].slice(-50)); // Keep last 50 events
               break;
             }
 
             case "connection_established":
-              console.log(
-                "🔌 WebSocket: Connection established:",
-                message.data
-              );
+              // Connection established - no action needed
               break;
 
             case "pong":
-              console.log("🔌 WebSocket: Received pong");
               break;
 
             default:
-              console.log("🔌 WebSocket: Unknown message type:", message.type);
+              // Unknown message type - ignore
+              break;
           }
         } catch (err) {
           console.error("❌ WebSocket: Failed to parse message:", err);
         }
       };
 
-      ws.onclose = (event) => {
-        console.log(
-          "🔌 WebSocket: Connection closed:",
-          event.code,
-          event.reason
-        );
+      ws.onclose = (_event) => {
         setIsConnected(false);
         setConnectionStatus("disconnected");
 
@@ -116,10 +106,6 @@ export function useStatusWebSocket(options: UseStatusWebSocketOptions = {}) {
           reconnectAttemptsRef.current < maxReconnectAttempts
         ) {
           reconnectAttemptsRef.current++;
-          console.log(
-            `🔌 WebSocket: Attempting to reconnect (${reconnectAttemptsRef.current}/${maxReconnectAttempts})...`
-          );
-
           reconnectTimeoutRef.current = setTimeout(() => {
             connect();
           }, reconnectInterval);
@@ -129,8 +115,7 @@ export function useStatusWebSocket(options: UseStatusWebSocketOptions = {}) {
         }
       };
 
-      ws.onerror = (event) => {
-        console.error("❌ WebSocket: Connection error:", event);
+      ws.onerror = () => {
         setConnectionStatus("error");
         setError("WebSocket connection error");
       };
