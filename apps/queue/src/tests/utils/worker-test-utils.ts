@@ -69,16 +69,21 @@ class ErrorHandlerMock {
   static validateJobData = mockValidateJobData;
 }
 
-vi.mock("../../utils/error-handler", () => ({
-  withErrorHandling: mockWithErrorHandling,
-  logError: mockLogError,
-  shouldRetry: mockShouldRetry,
-  calculateBackoff: mockCalculateBackoff,
-  createJobError: mockCreateJobError,
-  classifyError: mockClassifyError,
-  validateJobData: mockValidateJobData, // standalone function
-  ErrorHandler: ErrorHandlerMock,
-}));
+vi.mock("../../utils/error-handler", async (importOriginal) => {
+  const actual = (await importOriginal()) as Record<string, any>;
+  return {
+    ...actual,
+    withErrorHandling: mockWithErrorHandling,
+    logError: mockLogError,
+    shouldRetry: mockShouldRetry,
+    calculateBackoff: mockCalculateBackoff,
+    createJobError: mockCreateJobError,
+    classifyError: mockClassifyError,
+    validateJobData: mockValidateJobData, // standalone function
+    ErrorHandler: ErrorHandlerMock,
+    QueueError: actual.QueueError, // <-- ensure QueueError is available
+  };
+});
 
 // Mock HealthMonitor
 export const mockHealthMonitor = {
@@ -160,7 +165,7 @@ export function setupWorkerTestEnvironment(): WorkerTestSetup {
       message,
       type,
       severity,
-      context,
+      ...(context || {}), // <-- ensure context is always an object
       timestamp: new Date(),
     };
   });

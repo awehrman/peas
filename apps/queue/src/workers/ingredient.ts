@@ -8,6 +8,7 @@ import { parse as Parser } from "@peas/parser";
 import { ErrorHandler, QueueError } from "../utils";
 import { ErrorType, ErrorSeverity, IngredientJobData } from "../types";
 import { HealthMonitor } from "../utils/health-monitor";
+import { Note } from "@peas/database";
 
 export function setupIngredientWorker(queue: Queue) {
   const worker = new Worker(
@@ -52,7 +53,9 @@ export function setupIngredientWorker(queue: Queue) {
           throw new QueueError(healthError);
         }
 
-        const { parsedIngredientLines = [] } = note;
+        const parsedIngredientLines =
+          (note as Note & { parsedIngredientLines?: any[] })
+            .parsedIngredientLines ?? [];
         let errorCount = 0;
         const total = parsedIngredientLines.length;
         let current = 0;

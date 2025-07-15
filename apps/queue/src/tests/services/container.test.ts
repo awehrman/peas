@@ -148,7 +148,9 @@ describe("Dependency Injection ServiceContainer", () => {
     vi.spyOn(container.queues.ingredientQueue, "close").mockResolvedValue();
     vi.spyOn(container.queues.instructionQueue, "close").mockResolvedValue();
     vi.spyOn(container.queues.categorizationQueue, "close").mockResolvedValue();
-    vi.spyOn(container.database.prisma, "$disconnect").mockResolvedValue();
+    vi.spyOn(container.database.prisma, "$disconnect").mockResolvedValue(
+      undefined
+    );
 
     await container.close();
 
@@ -169,7 +171,9 @@ describe("Dependency Injection ServiceContainer", () => {
     vi.spyOn(container.queues.ingredientQueue, "close").mockResolvedValue();
     vi.spyOn(container.queues.instructionQueue, "close").mockResolvedValue();
     vi.spyOn(container.queues.categorizationQueue, "close").mockResolvedValue();
-    vi.spyOn(container.database.prisma, "$disconnect").mockResolvedValue();
+    vi.spyOn(container.database.prisma, "$disconnect").mockResolvedValue(
+      undefined
+    );
 
     // Set a mock WebSocket manager
     const mockWebSocketManager = {
@@ -201,7 +205,9 @@ describe("Dependency Injection ServiceContainer", () => {
     vi.spyOn(container.queues.ingredientQueue, "close").mockResolvedValue();
     vi.spyOn(container.queues.instructionQueue, "close").mockResolvedValue();
     vi.spyOn(container.queues.categorizationQueue, "close").mockResolvedValue();
-    vi.spyOn(container.database.prisma, "$disconnect").mockResolvedValue();
+    vi.spyOn(container.database.prisma, "$disconnect").mockResolvedValue(
+      undefined
+    );
 
     // The close method uses Promise.allSettled, so it won't throw
     // Instead, we should test that the method completes successfully
@@ -264,7 +270,9 @@ describe("ServiceContainer additional coverage", () => {
     vi.spyOn(container.queues.ingredientQueue, "close").mockResolvedValue();
     vi.spyOn(container.queues.instructionQueue, "close").mockResolvedValue();
     vi.spyOn(container.queues.categorizationQueue, "close").mockResolvedValue();
-    vi.spyOn(container.database.prisma, "$disconnect").mockResolvedValue();
+    vi.spyOn(container.database.prisma, "$disconnect").mockResolvedValue(
+      undefined
+    );
     vi.spyOn(container.logger, "log").mockImplementation(
       (_message: string, ..._args) => {
         throw new Error("Logger failed");
@@ -279,7 +287,9 @@ describe("ServiceContainer additional coverage", () => {
     vi.spyOn(container.queues.ingredientQueue, "close").mockResolvedValue();
     vi.spyOn(container.queues.instructionQueue, "close").mockResolvedValue();
     vi.spyOn(container.queues.categorizationQueue, "close").mockResolvedValue();
-    vi.spyOn(container.database.prisma, "$disconnect").mockResolvedValue();
+    vi.spyOn(container.database.prisma, "$disconnect").mockResolvedValue(
+      undefined
+    );
     const mockWebSocketManager = {
       close: vi.fn().mockImplementation((..._args) => {
         throw new Error("WebSocket close failed");
@@ -301,7 +311,9 @@ describe("ServiceContainer additional coverage", () => {
         close: vi.fn((..._args: any[]) => Promise.resolve()),
       },
     };
-    const database = { prisma: { $disconnect: vi.fn().mockResolvedValue() } };
+    const database = {
+      prisma: { $disconnect: vi.fn().mockResolvedValue(undefined) },
+    };
     const webSocket = {
       webSocketManager: { close: vi.fn((..._args: any[]) => undefined) },
     };
@@ -335,7 +347,9 @@ describe("ServiceContainer additional coverage", () => {
         close: vi.fn((..._args: any[]) => Promise.resolve()),
       },
     };
-    const database = { prisma: { $disconnect: vi.fn().mockResolvedValue() } };
+    const database = {
+      prisma: { $disconnect: vi.fn().mockResolvedValue(undefined) },
+    };
     const webSocket = {
       webSocketManager: { close: vi.fn((..._args: any[]) => undefined) },
     };
@@ -365,7 +379,9 @@ describe("ServiceContainer additional coverage", () => {
         close: vi.fn((..._args: any[]) => Promise.resolve()),
       },
     };
-    const database = { prisma: { $disconnect: vi.fn().mockResolvedValue() } };
+    const database = {
+      prisma: { $disconnect: vi.fn().mockResolvedValue(undefined) },
+    };
     const webSocket = {
       webSocketManager: {
         close: vi.fn((..._args: any[]) => {

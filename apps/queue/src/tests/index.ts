@@ -11,6 +11,3 @@ export * from "./workers/manager.test";
 export * from "./utils/error-handler.test";
 export * from "./utils/health-monitor.test";
 export * from "./utils/performance.test";
-
-// WebSocket tests
-export * from "./websocket/websocket-server.test";

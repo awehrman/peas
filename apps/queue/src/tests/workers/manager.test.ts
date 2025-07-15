@@ -188,7 +188,10 @@ describe("Worker Manager", () => {
         logger: { log: vi.fn() },
       };
       const mockFactory = createMockWorkerFactory();
-      class TestableManager extends (DefaultWorkerManager as any) {
+      class TestableManager extends DefaultWorkerManager {
+        constructor(container: any, factory: any) {
+          super(container, factory);
+        }
         public get workersMap() {
           return this.getWorkers();
         }

@@ -1,6 +1,6 @@
 import { Queue } from "bullmq";
 import { IServiceContainer } from "../services/container";
-import { setupNoteWorker } from "./note";
+import { setupNoteWorker } from "./notes";
 import { setupIngredientWorker } from "./ingredient";
 import { setupInstructionWorker } from "./instruction";
 import { setupImageWorker } from "./image";
@@ -24,7 +24,12 @@ export class DefaultWorkerFactory implements WorkerFactory {
   constructor(private container: IServiceContainer) {}
 
   createNoteWorker(queue: Queue) {
-    return setupNoteWorker(queue);
+    return setupNoteWorker(queue, {
+      ingredientQueue: this.container.queues.ingredientQueue,
+      instructionQueue: this.container.queues.instructionQueue,
+      imageQueue: this.container.queues.imageQueue,
+      categorizationQueue: this.container.queues.categorizationQueue,
+    });
   }
 
   createIngredientWorker(queue: Queue) {

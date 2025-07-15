@@ -1,6 +1,4 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { QueueError } from "../../utils";
-import { ErrorType, ErrorSeverity } from "../../types";
 import {
   setupWorkerTestEnvironment,
   cleanupWorkerTestEnvironment,
@@ -9,11 +7,23 @@ import {
 describe("Worker Factory", () => {
   let createWorkerFactory: any;
   let testSetup: any;
+  let mockContainer: any;
 
   beforeEach(async () => {
     console.log("🧪 Setting up test environment...");
 
     testSetup = setupWorkerTestEnvironment();
+
+    // Create mock container with required queues
+    mockContainer = {
+      queues: {
+        ingredientQueue: { name: "ingredient-queue", add: vi.fn() },
+        instructionQueue: { name: "instruction-queue", add: vi.fn() },
+        imageQueue: { name: "image-queue", add: vi.fn() },
+        categorizationQueue: { name: "categorization-queue", add: vi.fn() },
+      },
+      config: { port: 3000 },
+    };
 
     const module = await import("../../workers/factory");
     createWorkerFactory = module.createWorkerFactory;
@@ -25,7 +35,7 @@ describe("Worker Factory", () => {
   });
 
   it("should create a note worker", () => {
-    const factory = createWorkerFactory({} as any);
+    const factory = createWorkerFactory(mockContainer);
     const worker = factory.createNoteWorker(testSetup.queue);
     expect(worker).toBeDefined();
     // The worker name comes from the BullMQ Worker constructor, which we mock
@@ -34,28 +44,28 @@ describe("Worker Factory", () => {
   });
 
   it("should create an instruction worker", () => {
-    const factory = createWorkerFactory({} as any);
+    const factory = createWorkerFactory(mockContainer);
     const worker = factory.createInstructionWorker(testSetup.queue);
     expect(worker).toBeDefined();
     expect(worker.name).toBe("test-queue");
   });
 
   it("should create an ingredient worker", () => {
-    const factory = createWorkerFactory({} as any);
+    const factory = createWorkerFactory(mockContainer);
     const worker = factory.createIngredientWorker(testSetup.queue);
     expect(worker).toBeDefined();
     expect(worker.name).toBe("test-queue");
   });
 
   it("should create an image worker", () => {
-    const factory = createWorkerFactory({} as any);
+    const factory = createWorkerFactory(mockContainer);
     const worker = factory.createImageWorker(testSetup.queue);
     expect(worker).toBeDefined();
     expect(worker.name).toBe("test-queue");
   });
 
   it("should create a categorization worker", () => {
-    const factory = createWorkerFactory({} as any);
+    const factory = createWorkerFactory(mockContainer);
     const worker = factory.createCategorizationWorker(testSetup.queue);
     expect(worker).toBeDefined();
     expect(worker.name).toBe("test-queue");
@@ -78,30 +88,29 @@ describe("Worker Factory", () => {
 
   it("should create worker with correct queue name", () => {
     const customQueue = { name: "custom-queue" };
-    const factory = createWorkerFactory({} as any);
+    const factory = createWorkerFactory(mockContainer);
     const worker = factory.createNoteWorker(customQueue);
     expect(worker).toBeDefined();
     expect(worker.name).toBe("custom-queue");
   });
 
   it("should handle null queue", () => {
-    const factory = createWorkerFactory({} as any);
+    const factory = createWorkerFactory(mockContainer);
     expect(() => factory.createNoteWorker(null as any)).toThrow();
   });
 
   it("should handle undefined queue", () => {
-    const factory = createWorkerFactory({} as any);
+    const factory = createWorkerFactory(mockContainer);
     expect(() => factory.createNoteWorker(undefined as any)).toThrow();
   });
 
   it("should create factory with container", () => {
-    const mockContainer = { config: { port: 3000 } };
     const factory = createWorkerFactory(mockContainer);
     expect(factory).toBeDefined();
   });
 
   it("should implement WorkerFactory interface", () => {
-    const factory = createWorkerFactory({} as any);
+    const factory = createWorkerFactory(mockContainer);
 
     // Test that all required methods exist
     expect(typeof factory.createNoteWorker).toBe("function");
@@ -112,7 +121,7 @@ describe("Worker Factory", () => {
   });
 
   it("should create all worker types", () => {
-    const factory = createWorkerFactory({} as any);
+    const factory = createWorkerFactory(mockContainer);
 
     const workers = [
       factory.createNoteWorker(testSetup.queue),
