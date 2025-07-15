@@ -248,3 +248,140 @@ describe("Dependency Injection ServiceContainer", () => {
     expect(mockLoggerService.log).toHaveBeenCalledWith("Default message");
   });
 });
+
+describe("ServiceContainer additional coverage", () => {
+  let container: ServiceContainer;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (ServiceContainer as any).instance = undefined;
+    container = ServiceContainer.getInstance();
+  });
+
+  it("should handle logger.log throwing in close", async () => {
+    vi.spyOn(container.queues.noteQueue, "close").mockResolvedValue();
+    vi.spyOn(container.queues.imageQueue, "close").mockResolvedValue();
+    vi.spyOn(container.queues.ingredientQueue, "close").mockResolvedValue();
+    vi.spyOn(container.queues.instructionQueue, "close").mockResolvedValue();
+    vi.spyOn(container.queues.categorizationQueue, "close").mockResolvedValue();
+    vi.spyOn(container.database.prisma, "$disconnect").mockResolvedValue();
+    vi.spyOn(container.logger, "log").mockImplementation(
+      (_message: string, ..._args) => {
+        throw new Error("Logger failed");
+      }
+    );
+    await expect(container.close()).rejects.toThrow("Logger failed");
+  });
+
+  it("should handle webSocketManager.close throwing in close", async () => {
+    vi.spyOn(container.queues.noteQueue, "close").mockResolvedValue();
+    vi.spyOn(container.queues.imageQueue, "close").mockResolvedValue();
+    vi.spyOn(container.queues.ingredientQueue, "close").mockResolvedValue();
+    vi.spyOn(container.queues.instructionQueue, "close").mockResolvedValue();
+    vi.spyOn(container.queues.categorizationQueue, "close").mockResolvedValue();
+    vi.spyOn(container.database.prisma, "$disconnect").mockResolvedValue();
+    const mockWebSocketManager = {
+      close: vi.fn().mockImplementation((..._args) => {
+        throw new Error("WebSocket close failed");
+      }),
+    };
+    container.webSocket.webSocketManager = mockWebSocketManager as any;
+    await expect(container.close()).rejects.toThrow("WebSocket close failed");
+  });
+
+  it("should call close on all overrides in createServiceContainer", async () => {
+    const queues = {
+      noteQueue: { close: vi.fn((..._args: any[]) => Promise.resolve()) },
+      imageQueue: { close: vi.fn((..._args: any[]) => Promise.resolve()) },
+      ingredientQueue: { close: vi.fn((..._args: any[]) => Promise.resolve()) },
+      instructionQueue: {
+        close: vi.fn((..._args: any[]) => Promise.resolve()),
+      },
+      categorizationQueue: {
+        close: vi.fn((..._args: any[]) => Promise.resolve()),
+      },
+    };
+    const database = { prisma: { $disconnect: vi.fn().mockResolvedValue() } };
+    const webSocket = {
+      webSocketManager: { close: vi.fn((..._args: any[]) => undefined) },
+    };
+    const logger = {
+      log: vi.fn((_message: string, ..._args: any[]) => undefined),
+    };
+    const custom = createServiceContainer({
+      queues,
+      database,
+      webSocket,
+      logger,
+    } as any);
+    await custom.close();
+    expect(queues.noteQueue.close).toHaveBeenCalled();
+    expect(database.prisma.$disconnect).toHaveBeenCalled();
+    expect(webSocket.webSocketManager.close).toHaveBeenCalled();
+    expect(logger.log).toHaveBeenCalledWith(
+      "ServiceContainer closed successfully"
+    );
+  });
+
+  it("should handle logger override whose log method throws in createServiceContainer.close", async () => {
+    const queues = {
+      noteQueue: { close: vi.fn((..._args: any[]) => Promise.resolve()) },
+      imageQueue: { close: vi.fn((..._args: any[]) => Promise.resolve()) },
+      ingredientQueue: { close: vi.fn((..._args: any[]) => Promise.resolve()) },
+      instructionQueue: {
+        close: vi.fn((..._args: any[]) => Promise.resolve()),
+      },
+      categorizationQueue: {
+        close: vi.fn((..._args: any[]) => Promise.resolve()),
+      },
+    };
+    const database = { prisma: { $disconnect: vi.fn().mockResolvedValue() } };
+    const webSocket = {
+      webSocketManager: { close: vi.fn((..._args: any[]) => undefined) },
+    };
+    const logger = {
+      log: vi.fn((_message: string, ..._args: any[]) => {
+        throw new Error("Logger failed");
+      }),
+    };
+    const custom = createServiceContainer({
+      queues,
+      database,
+      webSocket,
+      logger,
+    } as any);
+    await expect(custom.close()).rejects.toThrow("Logger failed");
+  });
+
+  it("should handle webSocketManager override whose close method throws in createServiceContainer.close", async () => {
+    const queues = {
+      noteQueue: { close: vi.fn((..._args: any[]) => Promise.resolve()) },
+      imageQueue: { close: vi.fn((..._args: any[]) => Promise.resolve()) },
+      ingredientQueue: { close: vi.fn((..._args: any[]) => Promise.resolve()) },
+      instructionQueue: {
+        close: vi.fn((..._args: any[]) => Promise.resolve()),
+      },
+      categorizationQueue: {
+        close: vi.fn((..._args: any[]) => Promise.resolve()),
+      },
+    };
+    const database = { prisma: { $disconnect: vi.fn().mockResolvedValue() } };
+    const webSocket = {
+      webSocketManager: {
+        close: vi.fn((..._args: any[]) => {
+          throw new Error("WebSocket close failed");
+        }),
+      },
+    };
+    const logger = {
+      log: vi.fn((_message: string, ..._args: any[]) => undefined),
+    };
+    const custom = createServiceContainer({
+      queues,
+      database,
+      webSocket,
+      logger,
+    } as any);
+    await expect(custom.close()).rejects.toThrow("WebSocket close failed");
+  });
+});

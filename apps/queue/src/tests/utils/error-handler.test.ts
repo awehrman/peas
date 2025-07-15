@@ -1,5 +1,9 @@
 import { describe, it, expect, vi } from "vitest";
-import { ErrorHandler, QueueError } from "../../utils/error-handler";
+import {
+  ErrorHandler,
+  QueueError,
+  validateJobData,
+} from "../../utils/error-handler";
 import { ErrorType, ErrorSeverity } from "../../types";
 
 describe("QueueError", () => {
@@ -221,6 +225,63 @@ describe("ErrorHandler", () => {
       expect(err).not.toBeNull();
       expect(err!.type).toBe(ErrorType.VALIDATION_ERROR);
       expect(err!.field).toBe("b");
+    });
+  });
+});
+
+describe("validateJobData (standalone function)", () => {
+  it("returns null when data and note are present", () => {
+    const data = { note: { id: 1, title: "test" } };
+    expect(validateJobData(data)).toBeNull();
+  });
+
+  it("returns error when data is null", () => {
+    const result = validateJobData(null);
+    expect(result).toEqual({
+      message: "Invalid job data: missing note",
+      type: ErrorType.UNKNOWN_ERROR,
+      severity: ErrorSeverity.MEDIUM,
+      timestamp: expect.any(Date),
+    });
+  });
+
+  it("returns error when data is undefined", () => {
+    const result = validateJobData(undefined);
+    expect(result).toEqual({
+      message: "Invalid job data: missing note",
+      type: ErrorType.UNKNOWN_ERROR,
+      severity: ErrorSeverity.MEDIUM,
+      timestamp: expect.any(Date),
+    });
+  });
+
+  it("returns error when data exists but note is missing", () => {
+    const result = validateJobData({ otherField: "value" });
+    expect(result).toEqual({
+      message: "Invalid job data: missing note",
+      type: ErrorType.UNKNOWN_ERROR,
+      severity: ErrorSeverity.MEDIUM,
+      timestamp: expect.any(Date),
+    });
+  });
+
+  it("returns error when data exists but note is null", () => {
+    const result = validateJobData({ note: null });
+    expect(result).toEqual({
+      message: "Invalid job data: missing note",
+      type: ErrorType.UNKNOWN_ERROR,
+      severity: ErrorSeverity.MEDIUM,
+      timestamp: expect.any(Date),
+    });
+  });
+
+  it("returns error when data exists but note is undefined", () => {
+    const result = validateJobData({ note: undefined });
+    expect(result).toEqual({
+      message: "Invalid job data: missing note",
+      type: ErrorType.UNKNOWN_ERROR,
+      severity: ErrorSeverity.MEDIUM,
+      timestamp: expect.any(Date),
     });
   });
 });

@@ -291,3 +291,73 @@ describe("HealthMonitor", () => {
     mockDateNow.mockRestore();
   });
 });
+
+describe("HealthMonitor additional coverage", () => {
+  let monitor: HealthMonitor;
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (HealthMonitor as any).instance = undefined;
+    monitor = HealthMonitor.getInstance();
+    (monitor as any).healthCache = null;
+    (monitor as any).lastCheckTime = null;
+  });
+
+  it("should return degraded status if any check is degraded and none are unhealthy", async () => {
+    // Mock performHealthChecks to return degraded for redis
+    const originalPerformHealthChecks = (monitor as any).performHealthChecks;
+    (monitor as any).performHealthChecks = vi.fn().mockResolvedValue({
+      status: "degraded",
+      checks: {
+        database: { status: "healthy", message: "ok", lastChecked: new Date() },
+        redis: { status: "degraded", message: "slow", lastChecked: new Date() },
+        queues: {
+          noteQueue: {
+            status: "healthy",
+            message: "ok",
+            lastChecked: new Date(),
+          },
+          imageQueue: {
+            status: "healthy",
+            message: "ok",
+            lastChecked: new Date(),
+          },
+          ingredientQueue: {
+            status: "healthy",
+            message: "ok",
+            lastChecked: new Date(),
+          },
+          instructionQueue: {
+            status: "healthy",
+            message: "ok",
+            lastChecked: new Date(),
+          },
+          categorizationQueue: {
+            status: "healthy",
+            message: "ok",
+            lastChecked: new Date(),
+          },
+        },
+      },
+      timestamp: new Date(),
+    });
+    const health = await monitor.getHealth();
+    expect(health.status).toBe("degraded");
+    (monitor as any).performHealthChecks = originalPerformHealthChecks;
+  });
+
+  it("should cover error branch in checkDatabaseHealth", async () => {
+    // Force prisma.$queryRaw to throw
+    (prisma.$queryRaw as any).mockRejectedValueOnce(new Error("db fail"));
+    const result = await (monitor as any).checkDatabaseHealth();
+    expect(result.status).toBe("unhealthy");
+    expect(result.message).toContain("Database connection failed");
+  });
+
+  it("should cover error branch in checkRedisHealth", async () => {
+    // Force redisConnection.host to be undefined
+    redisConnection.host = undefined;
+    const result = await (monitor as any).checkRedisHealth();
+    expect(result.status).toBe("unhealthy");
+    expect(result.message).toContain("Redis connection failed");
+  });
+});
