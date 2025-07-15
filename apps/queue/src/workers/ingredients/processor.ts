@@ -1,5 +1,7 @@
 import { parse as Parser } from "@peas/parser";
 import { IngredientLine, ProcessingResult } from "./types";
+import { ErrorHandler } from "../../utils/error-handler";
+import { ErrorType, ErrorSeverity } from "../../types";
 
 export class IngredientProcessor {
   static async parseIngredientLine(
@@ -9,6 +11,18 @@ export class IngredientProcessor {
       await Parser(line.reference, {});
       return "CORRECT";
     } catch (error) {
+      ErrorHandler.logError(
+        ErrorHandler.createJobError(
+          error as Error,
+          ErrorType.PARSING_ERROR,
+          ErrorSeverity.LOW,
+          {
+            lineId: line.id,
+            originalText: line.reference,
+            operation: "parse_ingredient",
+          }
+        )
+      );
       console.error(`❌ Failed to parse ingredient: ${line.reference}`, error);
       return "ERROR";
     }

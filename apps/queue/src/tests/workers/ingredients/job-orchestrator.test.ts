@@ -8,7 +8,6 @@ import {
   IngredientJobData,
 } from "../../../../src/types";
 
-// Mock dependencies
 vi.mock("@peas/database", () => ({
   PrismaClient: vi.fn().mockImplementation(() => ({
     parsedIngredientLine: {
@@ -287,7 +286,7 @@ describe("Ingredient Process Job", () => {
         (fn: any) => {
           callCount++;
           // The status event call happens after all the parsing and DB updates
-          if (callCount === 7) {
+          if (callCount === 6) {
             throw new QueueError({
               message: "status fail",
               type: ErrorType.UNKNOWN_ERROR,
@@ -436,12 +435,12 @@ describe("Ingredient Process Job", () => {
       const { ErrorHandler } = await import(
         "../../../../src/utils/error-handler"
       );
-      // Force parse error on first line
-      vi.mocked(ErrorHandler.withErrorHandling)
-        .mockImplementationOnce(() => {
-          throw new Error("parse fail");
-        })
-        .mockImplementation((fn: any) => fn());
+      // Force parse error on first line by mocking the parser to throw
+      const { parse: Parser } = await import("@peas/parser");
+      vi.mocked(Parser).mockImplementationOnce(() => {
+        throw new Error("parse fail");
+      });
+
       await expect(
         processIngredientJob(mockJob, mockQueue)
       ).resolves.toBeUndefined();

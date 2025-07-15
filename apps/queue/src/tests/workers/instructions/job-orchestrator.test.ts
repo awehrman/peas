@@ -45,6 +45,7 @@ vi.mock("../../../../src/utils/error-handler", async () => {
       calculateBackoff: vi.fn(() => 1000),
       classifyError: vi.fn((err) => err),
       withErrorHandling: vi.fn((fn) => fn()),
+      validateJobData: vi.fn(),
     },
   };
 });
@@ -121,10 +122,10 @@ describe("processInstructionJob", () => {
   });
 
   it("should handle validation error", async () => {
-    const { validateJobData, ErrorHandler } = await import(
+    const { ErrorHandler } = await import(
       "../../../../src/utils/error-handler"
     );
-    vi.mocked(validateJobData).mockReturnValueOnce({
+    vi.mocked(ErrorHandler.validateJobData).mockReturnValueOnce({
       message: "validation error",
       type: ErrorType.VALIDATION_ERROR,
       severity: ErrorSeverity.MEDIUM,

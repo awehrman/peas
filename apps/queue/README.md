@@ -35,7 +35,7 @@ apps/queue/
 │   │   ├── instructions/   # Instruction processing worker
 │   │   ├── image/          # Image processing worker
 │   │   ├── categorization/ # Categorization worker
-│   │   └── image.ts        # Re-export for backward compatibility
+│   │   # Some workers use a shared/common event handler and do not have a local event-handlers.ts
 │   ├── queues/             # Queue definitions and setup
 │   ├── routes/             # Express route handlers
 │   ├── config/             # Configuration files
@@ -86,7 +86,7 @@ The service uses a modular worker architecture where each worker type (notes, in
 
 - **worker.ts** - Worker setup and configuration
 - **job-orchestrator.ts** - Main job processing logic
-- **event-handlers.ts** - Worker event handling
+- **event-handlers.ts** - Worker event handling (not present in all workers; some use a shared/common event handler)
 - **processor.ts** - Business logic processing
 - **types.ts** - Type definitions
 - **index.ts** - Barrel exports
@@ -127,10 +127,10 @@ yarn test:ui
 
 The test suite achieves **100% coverage** on core functionality:
 
-- **189 tests passing** across 18 test files
-- **76.97% overall statement coverage**
-- **94.56% branch coverage**
-- **72.26% function coverage**
+- **Over 180 tests passing** across 18+ test files
+- **Over 75% overall statement coverage**
+- **Over 90% branch coverage**
+- **Over 70% function coverage**
 
 ### Test Structure
 
@@ -162,6 +162,8 @@ src/tests/
 
 ### Architecture Improvements
 
+- **DRY refactor of worker event handling and job processing** - Common event handler and job processing logic shared across workers for consistency and maintainability
+- **Consistent error handling and logging** - Parse errors for both instructions and ingredients are now logged using `ErrorHandler.logError`, matching the architecture
 - **Dependency injection** - ServiceContainer pattern for better testability
 - **Modular workers** - Each worker type organized in its own directory
 - **Comprehensive testing** - Full test coverage for all core functionality
@@ -188,6 +190,15 @@ yarn test:coverage
 # Start development server
 yarn dev
 ```
+
+## Type Safety & Linter Notes
+
+- If you see a linter warning about a missing type declaration for `@peas/parser`, you can safely ignore it for now, or add a declaration file:
+  - Create a file `@types/peas__parser/index.d.ts` with:
+    ```ts
+    declare module "@peas/parser";
+    ```
+  - Or install a type package if one becomes available.
 
 ## More Information
 

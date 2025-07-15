@@ -1,19 +1,13 @@
-import { Worker, Queue } from "bullmq";
-import { redisConnection } from "../../config/redis";
+import { Queue } from "bullmq";
 import { processIngredientJob } from "./job-orchestrator";
-import { registerIngredientEventHandlers } from "./event-handlers";
+import { createWorker } from "../common/worker-factory";
 
 export function setupIngredientWorker(queue: Queue) {
-  const worker = new Worker(
-    queue.name,
-    (job) => processIngredientJob(job, queue),
-    {
-      connection: redisConnection,
-      concurrency: 3, // Process multiple ingredient parsing jobs simultaneously
-    }
-  );
-
-  registerIngredientEventHandlers(worker, queue);
-
-  return worker;
+  return createWorker({
+    queue,
+    jobProcessor: processIngredientJob,
+    concurrency: 3,
+    workerName: "Ingredient parsing",
+    dependencies: {},
+  });
 }

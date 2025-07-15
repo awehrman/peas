@@ -1,50 +1,32 @@
 import { Queue, Job } from "bullmq";
 import { prisma } from "@peas/database";
 import { addStatusEventAndBroadcast } from "../../utils/status-broadcaster";
-import { ErrorHandler, QueueError } from "../../utils";
+import { ErrorHandler } from "../../utils/error-handler";
 import { ErrorType, ErrorSeverity, ImageJobData } from "../../types";
-import { HealthMonitor } from "../../utils/health-monitor";
 import { ImageProcessor, IMAGE_PROCESSING_STEPS } from "./processor";
+import {
+  extractJobContext,
+  validateJobDataAndHealth,
+  handleJobError,
+} from "../common/job-processing";
 
 const STATUS_UPDATE_INTERVAL = 2; // Only send status every N steps
 
 export async function processImageJob(job: Job, queue: Queue): Promise<void> {
-  const jobId = job.id;
-  const retryCount = job.attemptsMade;
+  const { jobId, retryCount } = extractJobContext(job, queue);
 
   console.log(`Processing image job ${jobId} (attempt ${retryCount + 1})`);
 
   try {
-    // Validate job data
-    const validationError = ErrorHandler.validateJobData<ImageJobData>(
-      job.data,
-      ["noteId", "file"]
+    // Validate job data and check health
+    await validateJobDataAndHealth<ImageJobData>(
+      job,
+      queue,
+      ["noteId", "file"],
+      "image processing"
     );
 
-    if (validationError) {
-      validationError.jobId = jobId;
-      validationError.queueName = queue.name;
-      validationError.retryCount = retryCount;
-      ErrorHandler.logError(validationError);
-      throw new QueueError(validationError);
-    }
-
     const { noteId } = job.data as ImageJobData;
-
-    // Check service health before processing
-    const healthMonitor = HealthMonitor.getInstance();
-    const isHealthy = await healthMonitor.isHealthy();
-
-    if (!isHealthy) {
-      const healthError = ErrorHandler.createJobError(
-        "Service is unhealthy, skipping image processing",
-        ErrorType.EXTERNAL_SERVICE_ERROR,
-        ErrorSeverity.HIGH,
-        { jobId, queueName: queue.name, retryCount }
-      );
-      ErrorHandler.logError(healthError);
-      throw new QueueError(healthError);
-    }
 
     // Add initial status event with error handling
     await ErrorHandler.withErrorHandling(
@@ -135,49 +117,6 @@ export async function processImageJob(job: Job, queue: Queue): Promise<void> {
 
     console.log(`Image processing job ${jobId} completed successfully`);
   } catch (error) {
-    // Handle structured errors
-    if (error instanceof QueueError) {
-      const jobError = error.jobError;
-      jobError.jobId = jobId;
-      jobError.queueName = queue.name;
-      jobError.retryCount = retryCount;
-
-      ErrorHandler.logError(jobError);
-
-      // Add failure status event
-      try {
-        await addStatusEventAndBroadcast({
-          noteId: job.data.noteId,
-          status: "FAILED",
-          message: `Image upload failed: ${jobError.message}`,
-          context: "image upload",
-        });
-      } catch (statusError) {
-        console.error("Failed to add failure status event:", statusError);
-      }
-
-      // Determine if job should be retried
-      if (ErrorHandler.shouldRetry(jobError, retryCount)) {
-        const backoffDelay = ErrorHandler.calculateBackoff(retryCount);
-        console.log(
-          `Scheduling retry for image job ${jobId} in ${backoffDelay}ms`
-        );
-        throw error; // Re-throw for BullMQ retry
-      } else {
-        console.log(
-          `Image job ${jobId} failed permanently after ${retryCount + 1} attempts`
-        );
-        throw error; // Re-throw to mark job as failed
-      }
-    }
-
-    // Handle unexpected errors
-    const unexpectedError = ErrorHandler.classifyError(error as Error);
-    unexpectedError.jobId = jobId;
-    unexpectedError.queueName = queue.name;
-    unexpectedError.retryCount = retryCount;
-
-    ErrorHandler.logError(unexpectedError);
-    throw new QueueError(unexpectedError);
+    await handleJobError(error, job, queue, "image upload");
   }
 }

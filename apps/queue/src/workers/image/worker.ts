@@ -1,15 +1,13 @@
-import { Worker, Queue } from "bullmq";
-import { redisConnection } from "../../config/redis";
+import { Queue } from "bullmq";
 import { processImageJob } from "./job-orchestrator";
-import { registerImageEventHandlers } from "./event-handlers";
+import { createWorker } from "../common/worker-factory";
 
-export function setupImageWorker(queue: Queue): Worker {
-  const worker = new Worker(queue.name, (job) => processImageJob(job, queue), {
-    connection: redisConnection,
-    concurrency: 2, // Limit concurrent image processing
+export function setupImageWorker(queue: Queue) {
+  return createWorker({
+    queue,
+    jobProcessor: processImageJob,
+    concurrency: 2,
+    workerName: "Image processing",
+    dependencies: {},
   });
-
-  registerImageEventHandlers(worker, queue);
-
-  return worker;
 }

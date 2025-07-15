@@ -1,19 +1,13 @@
-import { Worker, Queue } from "bullmq";
-import { redisConnection } from "../../config/redis";
+import { Queue } from "bullmq";
 import { processCategorizationJob } from "./job-orchestrator";
-import { registerCategorizationEventHandlers } from "./event-handlers";
+import { createWorker } from "../common/worker-factory";
 
 export function setupCategorizationWorker(queue: Queue) {
-  const worker = new Worker(
-    queue.name,
-    (job) => processCategorizationJob(job, queue),
-    {
-      connection: redisConnection,
-      concurrency: 3, // Process multiple categorization jobs simultaneously
-    }
-  );
-
-  registerCategorizationEventHandlers(worker, queue);
-
-  return worker;
+  return createWorker({
+    queue,
+    jobProcessor: processCategorizationJob,
+    concurrency: 3,
+    workerName: "Categorization",
+    dependencies: {},
+  });
 }

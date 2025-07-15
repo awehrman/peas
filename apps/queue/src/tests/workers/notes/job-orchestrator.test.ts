@@ -78,9 +78,9 @@ describe("Notes Process Job", () => {
     cleanupWorkerTestEnvironment(testSetup as any);
   });
 
-  describe("processNote", () => {
+  describe("parseAndCreateNote", () => {
     it("should process note content successfully", async () => {
-      const { processNote } = await import(
+      const { parseAndCreateNote } = await import(
         "../../../workers/notes/job-orchestrator"
       );
 
@@ -96,7 +96,7 @@ describe("Notes Process Job", () => {
         return await fn();
       });
 
-      const result = await processNote(
+      const result = await parseAndCreateNote(
         "test content",
         "job-1",
         mockDeps as any
@@ -109,7 +109,7 @@ describe("Notes Process Job", () => {
     });
 
     it("should handle HTML parsing errors", async () => {
-      const { processNote } = await import(
+      const { parseAndCreateNote } = await import(
         "../../../workers/notes/job-orchestrator"
       );
 
@@ -120,12 +120,12 @@ describe("Notes Process Job", () => {
       });
 
       await expect(
-        processNote("invalid content", "job-1", mockDeps as any)
+        parseAndCreateNote("invalid content", "job-1", mockDeps as any)
       ).rejects.toThrow("Parse failed");
     });
 
     it("should handle note creation errors", async () => {
-      const { processNote } = await import(
+      const { parseAndCreateNote } = await import(
         "../../../workers/notes/job-orchestrator"
       );
 
@@ -142,14 +142,14 @@ describe("Notes Process Job", () => {
       });
 
       await expect(
-        processNote("test content", "job-1", mockDeps as any)
+        parseAndCreateNote("test content", "job-1", mockDeps as any)
       ).rejects.toThrow("Create failed");
     });
   });
 
-  describe("addNoteStatusEvent", () => {
+  describe("broadcastNoteProcessingStatus", () => {
     it("should add status event successfully", async () => {
-      const { addNoteStatusEvent } = await import(
+      const { broadcastNoteProcessingStatus } = await import(
         "../../../workers/notes/job-orchestrator"
       );
 
@@ -161,7 +161,7 @@ describe("Notes Process Job", () => {
         return await fn();
       });
 
-      await addNoteStatusEvent(note, file, "job-1", mockDeps as any);
+      await broadcastNoteProcessingStatus(note, file, "job-1", mockDeps as any);
 
       expect(mockAddStatusEventAndBroadcast).toHaveBeenCalledWith({
         noteId: "note-1",
@@ -172,7 +172,7 @@ describe("Notes Process Job", () => {
     });
 
     it("should handle status event errors", async () => {
-      const { addNoteStatusEvent } = await import(
+      const { broadcastNoteProcessingStatus } = await import(
         "../../../workers/notes/job-orchestrator"
       );
 
@@ -186,7 +186,7 @@ describe("Notes Process Job", () => {
       });
 
       await expect(
-        addNoteStatusEvent(note, file, "job-1", mockDeps as any)
+        broadcastNoteProcessingStatus(note, file, "job-1", mockDeps as any)
       ).rejects.toThrow("Status failed");
     });
   });

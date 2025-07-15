@@ -54,7 +54,6 @@ export class DefaultWorkerFactory implements WorkerFactory {
   }
 }
 
-// Factory function to create worker factory with container
 export function createWorkerFactory(
   container: IServiceContainer
 ): WorkerFactory {

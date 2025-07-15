@@ -1,54 +1,39 @@
 import { Job, Queue } from "bullmq";
 import { prisma } from "@peas/database";
 import { addStatusEventAndBroadcast } from "../../utils/status-broadcaster";
-import { ErrorHandler, QueueError } from "../../utils";
+import { ErrorHandler } from "../../utils/error-handler";
 import { ErrorType, ErrorSeverity, InstructionJobData } from "../../types";
-import { HealthMonitor } from "../../utils/health-monitor";
-import { validateJobData } from "../../utils/error-handler";
 import { InstructionWorkerDependencies } from "./types";
+import {
+  extractJobContext,
+  validateJobDataAndHealth,
+  handleJobError,
+} from "../common/job-processing";
 
 export async function processInstructionJob(
   job: Job,
   queue: Queue,
   _deps: InstructionWorkerDependencies
 ): Promise<void> {
-  const jobId = job.id;
-  const retryCount = job.attemptsMade;
+  const { jobId, retryCount } = extractJobContext(job, queue);
 
   console.log(
     `Processing instruction job ${jobId} (attempt ${retryCount + 1})`
   );
 
   try {
-    // Validate job data
-    const validationError = validateJobData(job.data);
-    if (validationError) {
-      (validationError as any).jobId = jobId;
-      (validationError as any).queueName = queue.name;
-      (validationError as any).retryCount = retryCount;
-      ErrorHandler.logError(validationError);
-      throw new QueueError(validationError);
-    }
+    // Validate job data and check health
+    await validateJobDataAndHealth<InstructionJobData>(
+      job,
+      queue,
+      ["note"],
+      "instruction processing"
+    );
 
     const { note } = job.data as InstructionJobData;
     const { parsedInstructionLines = [] } = note as {
       parsedInstructionLines?: any[];
     };
-
-    // Check service health before processing
-    const healthMonitor = HealthMonitor.getInstance();
-    const isHealthy = await healthMonitor.isHealthy();
-
-    if (!isHealthy) {
-      const healthError = ErrorHandler.createJobError(
-        "Service is unhealthy, skipping instruction processing",
-        ErrorType.EXTERNAL_SERVICE_ERROR,
-        ErrorSeverity.HIGH,
-        { jobId, queueName: queue.name, retryCount }
-      );
-      ErrorHandler.logError(healthError);
-      throw new QueueError(healthError);
-    }
 
     let errorCount = 0;
     const total = parsedInstructionLines.length;
@@ -196,49 +181,6 @@ export async function processInstructionJob(
 
     console.log(`Instruction processing job ${jobId} completed successfully`);
   } catch (error) {
-    // Handle structured errors
-    if (error instanceof QueueError) {
-      const jobError = error.jobError;
-      jobError.jobId = jobId;
-      jobError.queueName = queue.name;
-      jobError.retryCount = retryCount;
-
-      ErrorHandler.logError(jobError);
-
-      // Add failure status event
-      try {
-        await addStatusEventAndBroadcast({
-          noteId: job.data.note.id,
-          status: "FAILED",
-          message: `Instruction parsing failed: ${jobError.message}`,
-          context: "instruction line parsing",
-        });
-      } catch (statusError) {
-        console.error("Failed to add failure status event:", statusError);
-      }
-
-      // Determine if job should be retried
-      if (ErrorHandler.shouldRetry(jobError, retryCount)) {
-        const backoffDelay = ErrorHandler.calculateBackoff(retryCount);
-        console.log(
-          `Scheduling retry for instruction job ${jobId} in ${backoffDelay}ms`
-        );
-        throw error; // Re-throw for BullMQ retry
-      } else {
-        console.log(
-          `Instruction job ${jobId} failed permanently after ${retryCount + 1} attempts`
-        );
-        throw error; // Re-throw to mark job as failed
-      }
-    }
-
-    // Handle unexpected errors
-    const unexpectedError = ErrorHandler.classifyError(error as Error);
-    unexpectedError.jobId = jobId;
-    unexpectedError.queueName = queue.name;
-    unexpectedError.retryCount = retryCount;
-
-    ErrorHandler.logError(unexpectedError);
-    throw new QueueError(unexpectedError);
+    await handleJobError(error, job, queue, "instruction line parsing");
   }
 }

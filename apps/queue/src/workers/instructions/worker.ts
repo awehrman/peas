@@ -1,5 +1,4 @@
 import { Worker, Queue } from "bullmq";
-import { redisConnection } from "../../config/redis";
 import { parseHTML } from "../../parsers/html";
 import { createNote } from "@peas/database";
 import { addStatusEventAndBroadcast } from "../../utils/status-broadcaster";
@@ -7,7 +6,7 @@ import { ErrorHandler } from "../../utils/error-handler";
 import { HealthMonitor } from "../../utils/health-monitor";
 import { InstructionWorkerDependencies } from "./types";
 import { processInstructionJob } from "./job-orchestrator";
-import { createEventHandlers } from "./event-handlers";
+import { createWorker } from "../common/worker-factory";
 
 export function getDefaultDependencies(): Omit<
   InstructionWorkerDependencies,
@@ -48,24 +47,16 @@ export function setupInstructionWorker(
     ...subQueues,
   };
 
-  const worker = new Worker(
-    queue.name,
-    async (job) => processInstructionJob(job, queue, deps),
-    {
-      connection: redisConnection,
-      concurrency: 3,
-    }
-  );
-
-  const handlers = createEventHandlers(
-    deps.logger ?? console,
-    deps.ErrorHandler,
-    queue.name
-  );
-
-  worker.on("completed", handlers.onCompleted);
-  worker.on("failed", handlers.onFailed);
-  worker.on("error", handlers.onError);
-
-  return worker;
+  return createWorker({
+    queue,
+    jobProcessor: (job, queue, dependencies) =>
+      processInstructionJob(
+        job,
+        queue,
+        dependencies as InstructionWorkerDependencies
+      ),
+    concurrency: 3,
+    workerName: "Instruction parsing",
+    dependencies: deps,
+  });
 }

@@ -1,17 +1,16 @@
 import { NoteWorkerDependencies } from "./types";
 import { Queue, Job } from "bullmq";
-import { validateNoteJobData, checkServiceHealth } from "./validation";
-import { queueSubTasks } from "./subtask-queues";
-import { QueueError } from "../../utils/error-handler";
-import {
-  ErrorType,
-  ErrorSeverity,
-  NoteJobData,
-  ParsedHTMLFile,
-} from "../../types";
-import { NoteWithParsedLines } from "@peas/database";
+import { queueFollowUpProcessingTasks } from "./follow-up-tasks";
 
-export async function processNote(
+import { NoteJobData, ParsedHTMLFile } from "../../types";
+import { NoteWithParsedLines } from "@peas/database";
+import {
+  extractJobContext,
+  validateJobDataAndHealth,
+  handleJobError,
+} from "../common/job-processing";
+
+export async function parseAndCreateNote(
   content: string,
   jobId: string,
   deps: Pick<
@@ -30,7 +29,7 @@ export async function processNote(
   return { note, file };
 }
 
-export async function addNoteStatusEvent(
+export async function broadcastNoteProcessingStatus(
   note: { id: string },
   file: { title: string },
   jobId: string,
@@ -56,69 +55,30 @@ export async function processNoteJob(
   queue: Queue,
   deps: NoteWorkerDependencies
 ): Promise<void> {
-  const jobId = job.id ?? "unknown";
-  const retryCount = job.attemptsMade;
+  const { jobId, retryCount } = extractJobContext(job, queue);
+
+  console.log(`Processing note job ${jobId} (attempt ${retryCount + 1})`);
 
   try {
-    const validationError = validateNoteJobData(job.data, deps.ErrorHandler);
-
-    if (validationError) {
-      validationError.jobId = jobId;
-      validationError.queueName = queue.name;
-      validationError.retryCount = retryCount;
-      deps.ErrorHandler.logError(validationError);
-      throw new QueueError(validationError);
-    }
+    // Validate job data and check health
+    await validateJobDataAndHealth<NoteJobData>(
+      job,
+      queue,
+      ["content"],
+      "note processing"
+    );
 
     const { content } = job.data as NoteJobData;
 
-    const isHealthy = await checkServiceHealth(deps.HealthMonitor);
+    // Process the note
+    const { note, file } = await parseAndCreateNote(content, jobId, deps);
 
-    if (!isHealthy) {
-      const healthError = deps.ErrorHandler.createJobError(
-        "Service is unhealthy, skipping job processing",
-        ErrorType.EXTERNAL_SERVICE_ERROR,
-        ErrorSeverity.HIGH,
-        { jobId, queueName: queue.name, retryCount }
-      );
-      deps.ErrorHandler.logError(healthError);
-      throw new QueueError(healthError);
-    }
+    // Broadcast status and queue follow-up tasks
+    await broadcastNoteProcessingStatus(note, file, jobId, deps);
+    await queueFollowUpProcessingTasks(note, file, jobId, deps);
 
-    const { note, file } = await processNote(content, jobId, deps);
-
-    await addNoteStatusEvent(note, file, jobId, deps);
-
-    await queueSubTasks(note, file, jobId, deps);
+    console.log(`Note processing job ${jobId} completed successfully`);
   } catch (error) {
-    if (error instanceof QueueError) {
-      const jobError = error.jobError;
-      jobError.jobId = jobId;
-      jobError.queueName = queue.name;
-      jobError.retryCount = retryCount;
-
-      deps.ErrorHandler.logError(jobError);
-
-      if (deps.ErrorHandler.shouldRetry(jobError, retryCount)) {
-        const backoffDelay = deps.ErrorHandler.calculateBackoff(retryCount);
-        deps.logger?.log(
-          `Scheduling retry for job ${jobId} in ${backoffDelay}ms`
-        );
-        throw error; // Re-throw for BullMQ retry
-      } else {
-        deps.logger?.log(
-          `Job ${jobId} failed permanently after ${retryCount + 1} attempts`
-        );
-        throw error;
-      }
-    }
-
-    const unexpectedError = deps.ErrorHandler.classifyError(error as Error);
-    unexpectedError.jobId = jobId;
-    unexpectedError.queueName = queue.name;
-    unexpectedError.retryCount = retryCount;
-
-    deps.ErrorHandler.logError(unexpectedError);
-    throw new QueueError(unexpectedError);
+    await handleJobError(error, job, queue, "note processing");
   }
 }

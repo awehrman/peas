@@ -1,7 +1,7 @@
 import { NoteWorkerDependencies } from "./types";
 import { ErrorType, ErrorSeverity } from "../../types";
 
-export async function queueSubTasks(
+export async function queueFollowUpProcessingTasks(
   note: { id: string },
   file: { title: string },
   jobId: string,
@@ -14,7 +14,7 @@ export async function queueSubTasks(
     | "ErrorHandler"
   >
 ): Promise<void> {
-  const subTasks = [
+  const followUpTasks = [
     {
       queue: deps.ingredientQueue,
       name: "parse-ingredients",
@@ -41,7 +41,7 @@ export async function queueSubTasks(
     },
   ];
 
-  for (const task of subTasks) {
+  for (const task of followUpTasks) {
     try {
       await task.queue.add(task.name, task.data, {
         priority: task.priority,

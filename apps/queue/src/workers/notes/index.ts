@@ -1,7 +1,6 @@
 export * from "./worker";
 export * from "./job-orchestrator";
-export * from "./event-handlers";
 export * from "./types";
-export * from "./validation";
-export * from "./subtask-queues";
+
+export * from "./follow-up-tasks";
 export * from "./processor";

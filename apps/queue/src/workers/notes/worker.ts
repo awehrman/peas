@@ -1,5 +1,4 @@
 import { Worker, Queue } from "bullmq";
-import { redisConnection } from "../../config/redis";
 import { parseHTML } from "../../parsers/html";
 import { createNote } from "@peas/database";
 import { addStatusEventAndBroadcast } from "../../utils/status-broadcaster";
@@ -7,7 +6,7 @@ import { ErrorHandler } from "../../utils/error-handler";
 import { HealthMonitor } from "../../utils/health-monitor";
 import { NoteWorkerDependencies } from "./types";
 import { processNoteJob } from "./job-orchestrator";
-import { createEventHandlers } from "./event-handlers";
+import { createWorker } from "../common/worker-factory";
 
 export function getDefaultDependencies(): Omit<
   NoteWorkerDependencies,
@@ -48,24 +47,12 @@ export function setupNoteWorker(
     ...subQueues,
   };
 
-  const worker = new Worker(
-    queue.name,
-    async (job) => processNoteJob(job, queue, deps),
-    {
-      connection: redisConnection,
-      concurrency: 5,
-    }
-  );
-
-  const handlers = createEventHandlers(
-    deps.logger,
-    deps.ErrorHandler,
-    queue.name
-  );
-
-  worker.on("completed", handlers.onCompleted);
-  worker.on("failed", handlers.onFailed);
-  worker.on("error", handlers.onError);
-
-  return worker;
+  return createWorker({
+    queue,
+    jobProcessor: (job, queue, dependencies) =>
+      processNoteJob(job, queue, dependencies as NoteWorkerDependencies),
+    concurrency: 5,
+    workerName: "Note processing",
+    dependencies: deps,
+  });
 }
