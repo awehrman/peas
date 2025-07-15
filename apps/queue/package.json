@@ -28,7 +28,8 @@
     "express": "^5.1.0",
     "find-up": "^7.0.0",
     "ts-node": "^10.9.2",
-    "ws": "^8.18.0"
+    "ws": "^8.18.0",
+    "zod": "^4.0.5"
   },
   "devDependencies": {
     "@peas/database": "*",

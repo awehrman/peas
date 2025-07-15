@@ -10,6 +10,21 @@ interface WebSocketManager {
   getConnectedClientsCount(): number;
   close(): void;
 }
+
+// Status broadcaster interface
+interface StatusBroadcaster {
+  addStatusEventAndBroadcast(event: {
+    noteId: string;
+    status: string;
+    message: string;
+    context: string;
+  }): Promise<any>;
+}
+
+// Parser service interface
+interface ParserService {
+  parseHTML: (content: string) => Promise<any>;
+}
 import { createQueue } from "../queues/createQueue";
 
 // Service interfaces for dependency injection
@@ -23,6 +38,7 @@ export interface IQueueService {
 
 export interface IDatabaseService {
   prisma: typeof prisma;
+  createNote?: (file: any) => Promise<any>;
 }
 
 export interface IErrorHandlerService {
@@ -37,8 +53,23 @@ export interface IWebSocketService {
   webSocketManager: WebSocketManager | null;
 }
 
+export interface IStatusBroadcasterService {
+  statusBroadcaster: StatusBroadcaster | null;
+  addStatusEventAndBroadcast?: (event: {
+    noteId: string;
+    status: string;
+    message: string;
+    context: string;
+  }) => Promise<any>;
+}
+
+export interface IParserService {
+  parsers: ParserService | null;
+  parseHTML?: (content: string) => Promise<any>;
+}
+
 export interface ILoggerService {
-  log(message: string, level?: "info" | "warn" | "error"): void;
+  log(message: string, level?: "info" | "warn" | "error" | string): void;
 }
 
 // Configuration interface
@@ -59,6 +90,8 @@ export interface IServiceContainer {
   errorHandler: IErrorHandlerService;
   healthMonitor: IHealthMonitorService;
   webSocket: IWebSocketService;
+  statusBroadcaster: IStatusBroadcasterService;
+  parsers: IParserService;
   logger: ILoggerService;
   config: IConfigService;
   close(): Promise<void>;
@@ -131,6 +164,14 @@ class DatabaseService implements IDatabaseService {
   get prisma() {
     return prisma;
   }
+
+  get createNote() {
+    // Import the createNote function from the database package
+    return async (file: any) => {
+      const { createNote } = await import("@peas/database");
+      return createNote(file);
+    };
+  }
 }
 
 // Default error handler service implementation
@@ -160,6 +201,36 @@ class WebSocketService implements IWebSocketService {
   }
 }
 
+// Default status broadcaster service implementation
+class StatusBroadcasterService implements IStatusBroadcasterService {
+  private _statusBroadcaster: StatusBroadcaster | null = null;
+
+  get statusBroadcaster(): StatusBroadcaster | null {
+    return this._statusBroadcaster;
+  }
+
+  set statusBroadcaster(broadcaster: StatusBroadcaster | null) {
+    this._statusBroadcaster = broadcaster;
+  }
+}
+
+// Default parser service implementation
+class ParserServiceImpl implements IParserService {
+  private _parsers: ParserService | null = null;
+
+  get parsers(): ParserService | null {
+    return this._parsers;
+  }
+
+  set parsers(parsers: ParserService | null) {
+    this._parsers = parsers;
+  }
+
+  get parseHTML(): ((content: string) => Promise<any>) | undefined {
+    return this._parsers?.parseHTML;
+  }
+}
+
 // Main container implementation
 export class ServiceContainer implements IServiceContainer {
   private static instance: ServiceContainer;
@@ -169,6 +240,8 @@ export class ServiceContainer implements IServiceContainer {
   public readonly errorHandler: IErrorHandlerService;
   public readonly healthMonitor: IHealthMonitorService;
   public readonly webSocket: IWebSocketService;
+  public readonly statusBroadcaster: IStatusBroadcasterService;
+  public readonly parsers: IParserService;
   public readonly logger: ILoggerService;
   public readonly config: IConfigService;
 
@@ -178,8 +251,28 @@ export class ServiceContainer implements IServiceContainer {
     this.errorHandler = new ErrorHandlerService();
     this.healthMonitor = new HealthMonitorService();
     this.webSocket = new WebSocketService();
+    this.statusBroadcaster = new StatusBroadcasterService();
+    this.parsers = new ParserServiceImpl();
     this.logger = new LoggerService();
     this.config = new ConfigService();
+
+    // Initialize parsers with the actual parseHTML function
+    this.parsers.parsers = {
+      parseHTML: async (content: string) => {
+        const { parseHTML } = await import("../parsers/html.js");
+        return parseHTML(content);
+      },
+    };
+
+    // Initialize status broadcaster with the actual function
+    this.statusBroadcaster.statusBroadcaster = {
+      addStatusEventAndBroadcast: async (event: any) => {
+        const { addStatusEventAndBroadcast } = await import(
+          "../utils/status-broadcaster.js"
+        );
+        return addStatusEventAndBroadcast(event);
+      },
+    };
   }
 
   static getInstance(): ServiceContainer {

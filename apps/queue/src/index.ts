@@ -10,7 +10,7 @@ import { importRouter, notesRouter, healthRouter } from "./routes";
 import { ErrorType, ErrorSeverity } from "./types";
 import { initializeWebSocketServer } from "./websocket-server";
 import { serviceContainer } from "./services";
-import { createWorkerManager } from "./workers/manager";
+
 import cors from "cors";
 
 const app = express();
@@ -197,9 +197,7 @@ const server = app.listen(serviceContainer.config.port, () => {
     `🔌 WebSocket server running on port ${serviceContainer.config.wsPort}`
   );
 
-  // Initialize and start workers
-  const workerManager = createWorkerManager(serviceContainer);
-  workerManager.startAllWorkers();
+  // Workers are automatically started when queues are imported
   console.log("👷 All workers started successfully");
 });
 

@@ -1,5 +1,8 @@
 import { createQueue } from "./createQueue";
-import { setupImageWorker } from "../workers/image";
+import { createImageWorker } from "../workers/image-worker";
+import { serviceContainer } from "../services/container";
 
 export const imageQueue = createQueue("imageQueue");
-setupImageWorker(imageQueue);
+
+// Create and start the image worker
+createImageWorker(imageQueue, serviceContainer);
