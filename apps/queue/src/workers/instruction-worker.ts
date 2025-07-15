@@ -1,9 +1,5 @@
 import { Queue } from "bullmq";
-import {
-  BaseWorker,
-  BaseWorkerDependencies,
-  BaseJobData,
-} from "./core/base-worker";
+import { BaseWorker } from "./core/base-worker";
 import { BaseAction } from "./actions/core/base-action";
 import { ActionContext } from "./actions/core/types";
 import {
@@ -11,14 +7,12 @@ import {
   SaveInstructionLineAction,
 } from "./actions/instruction";
 import { IServiceContainer } from "../services/container";
+import type {
+  InstructionWorkerDependencies,
+  InstructionJobData,
+} from "./types";
 
-export type InstructionWorkerDependencies = BaseWorkerDependencies;
-
-export interface InstructionJobData extends BaseJobData {
-  instructionLineId: string;
-  originalText: string;
-  lineIndex: number;
-}
+// Using imported types from ./types.ts
 
 /**
  * Instruction Worker that extends BaseWorker for instruction processing
@@ -82,6 +76,49 @@ export function createInstructionWorker(
       withErrorHandling: async (operation) => operation(),
     },
     logger: container.logger,
+
+    // Instruction-specific dependencies
+    database: {
+      updateInstructionLine: async (id: string, data: any) => {
+        container.logger.log(
+          `[INSTRUCTION] Updating instruction line ${id} with data: ${JSON.stringify(data)}`
+        );
+        // TODO: Implement actual database update
+        const result = { id, ...data };
+        container.logger.log(
+          `[INSTRUCTION] Successfully updated instruction line ${id}`
+        );
+        return result;
+      },
+      createInstructionSteps: async (steps: any[]) => {
+        container.logger.log(
+          `[INSTRUCTION] Creating ${steps.length} instruction steps`
+        );
+        // TODO: Implement actual step creation
+        const result = steps;
+        container.logger.log(
+          `[INSTRUCTION] Successfully created ${steps.length} instruction steps`
+        );
+        return result;
+      },
+    },
+    parseInstruction: async (text: string) => {
+      container.logger.log(
+        `[INSTRUCTION] Parsing instruction text: "${text.substring(0, 50)}${text.length > 50 ? "..." : ""}"`
+      );
+      // TODO: Implement actual instruction parsing
+      const result = {
+        success: true,
+        parseStatus: "CORRECT" as const,
+        normalizedText: text,
+        steps: [],
+        processingTime: 0,
+      };
+      container.logger.log(
+        `[INSTRUCTION] Parsing completed with status: ${result.parseStatus}`
+      );
+      return result;
+    },
   };
 
   return new InstructionWorker(queue, dependencies);

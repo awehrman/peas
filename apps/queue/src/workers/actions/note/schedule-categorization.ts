@@ -21,10 +21,26 @@ export class ScheduleCategorizationAction extends BaseAction<
     deps: ScheduleCategorizationDeps,
     _context: ActionContext
   ) {
-    await deps.categorizationQueue.add("categorize_note", {
-      noteId: data.note.id,
-      file: data.file,
-    });
+    console.log(
+      `[SCHEDULE_CATEGORIZATION] Scheduling categorization for note ${data.note.id}`
+    );
+
+    try {
+      await deps.categorizationQueue.add("categorize_note", {
+        noteId: data.note.id,
+        file: data.file,
+      });
+      console.log(
+        `[SCHEDULE_CATEGORIZATION] Successfully scheduled categorization job for note ${data.note.id}`
+      );
+    } catch (error) {
+      console.error(
+        `[SCHEDULE_CATEGORIZATION] Failed to schedule categorization job:`,
+        error
+      );
+      throw error;
+    }
+
     return data;
   }
 }

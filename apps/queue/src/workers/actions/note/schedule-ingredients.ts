@@ -21,10 +21,31 @@ export class ScheduleIngredientsAction extends BaseAction<
     deps: ScheduleIngredientsDeps,
     _context: ActionContext
   ) {
-    await deps.ingredientQueue.add("process_ingredients", {
-      noteId: data.note.id,
-      file: data.file,
+    console.log(
+      `[SCHEDULE_INGREDIENTS] Scheduling ingredient processing for note ${data.note.id}`
+    );
+    console.log(`[SCHEDULE_INGREDIENTS] Data structure:`, {
+      noteId: data.note?.id,
+      fileTitle: data.file?.title,
+      hasFile: !!data.file,
     });
+
+    try {
+      await deps.ingredientQueue.add("process_ingredients", {
+        noteId: data.note.id,
+        file: data.file,
+      });
+      console.log(
+        `[SCHEDULE_INGREDIENTS] Successfully scheduled ingredient job for note ${data.note.id}`
+      );
+    } catch (error) {
+      console.error(
+        `[SCHEDULE_INGREDIENTS] Failed to schedule ingredient job:`,
+        error
+      );
+      throw error;
+    }
+
     return data;
   }
 }

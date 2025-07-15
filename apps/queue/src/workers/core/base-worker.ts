@@ -15,29 +15,13 @@ import { RetryWrapperAction } from "../shared/retry";
 import { globalActionCache, createCacheKey } from "./cache";
 import { WorkerMetrics } from "./metrics";
 import { ActionExecutionError } from "./errors";
+import type {
+  BaseWorkerDependencies,
+  BaseJobData,
+  TypedAction,
+} from "../types";
 
-export interface BaseWorkerDependencies {
-  addStatusEventAndBroadcast: (event: {
-    noteId: string;
-    status: string;
-    message: string;
-    context: string;
-  }) => Promise<void>;
-  ErrorHandler: {
-    withErrorHandling: <T>(
-      operation: () => Promise<T>,
-      context: { jobId: string; operation: string; noteId?: string }
-    ) => Promise<T>;
-  };
-  logger: {
-    log: (message: string, level?: string) => void;
-  };
-}
-
-export interface BaseJobData {
-  noteId?: string;
-  [key: string]: any;
-}
+// Using imported types from ../types.ts
 
 /**
  * Base worker class that provides common functionality for all workers
@@ -74,6 +58,18 @@ export abstract class BaseWorker<
   ): BaseAction<any, any>[];
 
   /**
+   * Create a typed action pipeline (optional override for better type safety)
+   */
+  protected createTypedActionPipeline?(
+    _data: TData,
+    _context: ActionContext
+  ): TypedAction<any, any, TDeps>[] {
+    // Default implementation returns empty array
+    // Subclasses can override for better type safety
+    return [];
+  }
+
+  /**
    * Abstract method to register worker-specific actions
    */
   protected abstract registerActions(): void;
@@ -100,14 +96,25 @@ export abstract class BaseWorker<
 
       const data = job.data as TData;
 
+      this.dependencies.logger.log(
+        `[${this.getOperationName().toUpperCase()}] Starting job ${context.jobId}`
+      );
+
       try {
         // Create the action pipeline
         const actions = this.createActionPipeline(data, context);
 
         // Execute the pipeline
         let result = data;
+        console.log(
+          `[${this.getOperationName().toUpperCase()}] Pipeline has ${actions.length} actions:`,
+          actions.map((a) => a.name)
+        );
         for (const action of actions) {
           const actionStartTime = Date.now();
+          console.log(
+            `[${this.getOperationName().toUpperCase()}] ▶️ ${action.name}`
+          );
           try {
             result = await this.executeActionWithCaching(
               action,
@@ -120,12 +127,18 @@ export abstract class BaseWorker<
               actionDuration,
               true
             );
+            console.log(
+              `[${this.getOperationName().toUpperCase()}] ✅ ${action.name} (${actionDuration}ms)`
+            );
           } catch (error) {
             const actionDuration = Date.now() - actionStartTime;
             WorkerMetrics.recordActionExecutionTime(
               action.name,
               actionDuration,
               false
+            );
+            console.log(
+              `[${this.getOperationName().toUpperCase()}] ❌ ${action.name} (${actionDuration}ms) - ${(error as Error).message}`
             );
             throw new ActionExecutionError(
               `Action ${action.name} failed: ${(error as Error).message}`,
@@ -184,11 +197,21 @@ export abstract class BaseWorker<
     actions: BaseAction<any, any>[],
     data: TData
   ): void {
-    // Only add status actions if we have a noteId
-    if (data.noteId) {
-      actions.unshift(new BroadcastProcessingAction());
-      actions.push(new BroadcastCompletedAction());
-    }
+    console.log(
+      `[${this.getOperationName().toUpperCase()}] addStatusActions called with data:`,
+      {
+        noteId: data.noteId,
+        hasNoteId: !!data.noteId,
+        dataKeys: Object.keys(data),
+      }
+    );
+
+    // Add status actions regardless of noteId - they will handle missing noteId gracefully
+    console.log(
+      `[${this.getOperationName().toUpperCase()}] Adding status actions`
+    );
+    actions.unshift(new BroadcastProcessingAction());
+    actions.push(new BroadcastCompletedAction());
   }
 
   /**

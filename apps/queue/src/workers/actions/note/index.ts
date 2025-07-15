@@ -4,6 +4,7 @@ export * from "./schedule-categorization";
 export * from "./schedule-images";
 export * from "./schedule-ingredients";
 export * from "./schedule-instructions";
+export * from "./add-status-actions";
 export * from "./types";
 export * from "./validation";
 
@@ -14,6 +15,7 @@ import { ScheduleCategorizationAction } from "./schedule-categorization";
 import { ScheduleImagesAction } from "./schedule-images";
 import { ScheduleIngredientsAction } from "./schedule-ingredients";
 import { ScheduleInstructionsAction } from "./schedule-instructions";
+import { AddStatusActionsAction } from "./add-status-actions";
 
 /**
  * Register all note actions in the given ActionFactory
@@ -34,4 +36,5 @@ export function registerNoteActions(factory: ActionFactory) {
     "schedule_instructions",
     () => new ScheduleInstructionsAction()
   );
+  factory.register("add_status_actions", () => new AddStatusActionsAction());
 }

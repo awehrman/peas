@@ -55,7 +55,7 @@ export interface IWebSocketService {
 
 export interface IStatusBroadcasterService {
   statusBroadcaster: StatusBroadcaster | null;
-  addStatusEventAndBroadcast?: (event: {
+  addStatusEventAndBroadcast: (event: {
     noteId: string;
     status: string;
     message: string;
@@ -212,6 +212,20 @@ class StatusBroadcasterService implements IStatusBroadcasterService {
   set statusBroadcaster(broadcaster: StatusBroadcaster | null) {
     this._statusBroadcaster = broadcaster;
   }
+
+  get addStatusEventAndBroadcast(): (event: {
+    noteId: string;
+    status: string;
+    message: string;
+    context: string;
+  }) => Promise<any> {
+    return async (event: any) => {
+      const { addStatusEventAndBroadcast } = await import(
+        "../utils/status-broadcaster.js"
+      );
+      return addStatusEventAndBroadcast(event);
+    };
+  }
 }
 
 // Default parser service implementation
@@ -261,16 +275,6 @@ export class ServiceContainer implements IServiceContainer {
       parseHTML: async (content: string) => {
         const { parseHTML } = await import("../parsers/html.js");
         return parseHTML(content);
-      },
-    };
-
-    // Initialize status broadcaster with the actual function
-    this.statusBroadcaster.statusBroadcaster = {
-      addStatusEventAndBroadcast: async (event: any) => {
-        const { addStatusEventAndBroadcast } = await import(
-          "../utils/status-broadcaster.js"
-        );
-        return addStatusEventAndBroadcast(event);
       },
     };
   }

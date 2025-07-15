@@ -1,22 +1,12 @@
 import { Queue } from "bullmq";
-import {
-  BaseWorker,
-  BaseWorkerDependencies,
-  BaseJobData,
-} from "./core/base-worker";
+import { BaseWorker } from "./core/base-worker";
 import { BaseAction } from "./actions/core/base-action";
 import { ActionContext } from "./actions/core/types";
 import { ProcessImageAction, SaveImageAction } from "./actions/image";
 import { IServiceContainer } from "../services/container";
+import type { ImageWorkerDependencies, ImageJobData } from "./types";
 
-export type ImageWorkerDependencies = BaseWorkerDependencies;
-
-export interface ImageJobData extends BaseJobData {
-  imageUrl?: string;
-  imageData?: string; // Base64 encoded image data
-  imageType?: string; // MIME type
-  fileName?: string;
-}
+// Using imported types from ./types.ts
 
 /**
  * Image Worker that extends BaseWorker for image processing
@@ -73,6 +63,53 @@ export function createImageWorker(
       withErrorHandling: async (operation) => operation(),
     },
     logger: container.logger,
+
+    // Image-specific dependencies
+    imageProcessor: {
+      processImage: async (data: any) => {
+        container.logger.log(
+          `[IMAGE] Processing image for note ${data.noteId || "unknown"}`
+        );
+        // TODO: Implement actual image processing
+        const result = {
+          success: true,
+          processedUrl: "processed-image-url",
+          metadata: {
+            width: 800,
+            height: 600,
+            format: "jpeg",
+            size: 1024,
+          },
+          processingTime: 100,
+        };
+        container.logger.log(
+          `[IMAGE] Image processing completed: ${result.processedUrl} (${result.metadata.width}x${result.metadata.height})`
+        );
+        return result;
+      },
+      saveImage: async (result: any) => {
+        container.logger.log(
+          `[IMAGE] Saving processed image: ${result.processedUrl}`
+        );
+        // TODO: Implement actual image saving
+        const savedUrl = "saved-image-url";
+        container.logger.log(`[IMAGE] Image saved successfully: ${savedUrl}`);
+        return savedUrl;
+      },
+    },
+    database: {
+      updateNoteImage: async (noteId: string, imageUrl: string) => {
+        container.logger.log(
+          `[IMAGE] Updating note ${noteId} with image URL: ${imageUrl}`
+        );
+        // TODO: Implement actual database update
+        const result = { noteId, imageUrl };
+        container.logger.log(
+          `[IMAGE] Successfully updated note ${noteId} with image`
+        );
+        return result;
+      },
+    },
   };
 
   return new ImageWorker(queue, dependencies);

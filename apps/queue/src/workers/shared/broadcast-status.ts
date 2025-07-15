@@ -45,22 +45,29 @@ export class BroadcastStatusAction extends BaseAction<
  * Action that broadcasts a processing status
  */
 export class BroadcastProcessingAction extends BaseAction<
-  { noteId: string; message?: string },
+  { noteId?: string; message?: string },
   BroadcastStatusDeps
 > {
   name = "broadcast_processing";
 
   async execute(
-    data: { noteId: string; message?: string },
+    data: { noteId?: string; message?: string },
     deps: BroadcastStatusDeps,
     context: ActionContext
   ) {
-    await deps.addStatusEventAndBroadcast({
-      noteId: data.noteId,
-      status: "PROCESSING",
-      message: data.message || `${context.operation} in progress`,
-      context: context.operation,
-    });
+    // Only broadcast if we have a noteId
+    if (data.noteId) {
+      await deps.addStatusEventAndBroadcast({
+        noteId: data.noteId,
+        status: "PROCESSING",
+        message: data.message || `${context.operation} in progress`,
+        context: context.operation,
+      });
+    } else {
+      console.log(
+        `[${context.operation.toUpperCase()}] Skipping processing broadcast - no noteId available`
+      );
+    }
     return data;
   }
 }
@@ -69,22 +76,29 @@ export class BroadcastProcessingAction extends BaseAction<
  * Action that broadcasts a completed status
  */
 export class BroadcastCompletedAction extends BaseAction<
-  { noteId: string; message?: string },
+  { noteId?: string; message?: string },
   BroadcastStatusDeps
 > {
   name = "broadcast_completed";
 
   async execute(
-    data: { noteId: string; message?: string },
+    data: { noteId?: string; message?: string },
     deps: BroadcastStatusDeps,
     context: ActionContext
   ) {
-    await deps.addStatusEventAndBroadcast({
-      noteId: data.noteId,
-      status: "COMPLETED",
-      message: data.message || `${context.operation} completed successfully`,
-      context: context.operation,
-    });
+    // Only broadcast if we have a noteId
+    if (data.noteId) {
+      await deps.addStatusEventAndBroadcast({
+        noteId: data.noteId,
+        status: "COMPLETED",
+        message: data.message || `${context.operation} completed successfully`,
+        context: context.operation,
+      });
+    } else {
+      console.log(
+        `[${context.operation.toUpperCase()}] Skipping completed broadcast - no noteId available`
+      );
+    }
     return data;
   }
 }

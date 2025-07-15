@@ -21,10 +21,23 @@ export class ScheduleImagesAction extends BaseAction<
     deps: ScheduleImagesDeps,
     _context: ActionContext
   ) {
-    await deps.imageQueue.add("process_images", {
-      noteId: data.note.id,
-      file: data.file,
-    });
+    console.log(
+      `[SCHEDULE_IMAGES] Scheduling image processing for note ${data.note.id}`
+    );
+
+    try {
+      await deps.imageQueue.add("process_images", {
+        noteId: data.note.id,
+        file: data.file,
+      });
+      console.log(
+        `[SCHEDULE_IMAGES] Successfully scheduled image job for note ${data.note.id}`
+      );
+    } catch (error) {
+      console.error(`[SCHEDULE_IMAGES] Failed to schedule image job:`, error);
+      throw error;
+    }
+
     return data;
   }
 }

@@ -121,10 +121,20 @@ class WebSocketManager {
 
     const messageStr = JSON.stringify(message);
 
+    console.log(
+      `[WebSocket] Broadcasting status event to ${this.clients.size} clients:`,
+      message
+    );
+
+    if (this.clients.size === 0) {
+      console.log("[WebSocket] No clients connected to receive the broadcast");
+    }
+
     for (const [clientId, client] of this.clients) {
       if (client.ws.readyState === WebSocket.OPEN) {
         try {
           client.ws.send(messageStr);
+          console.log(`[WebSocket] Successfully sent to client ${clientId}`);
         } catch (error) {
           console.error(
             `❌ WebSocket: Failed to broadcast to ${clientId}:`,
@@ -135,6 +145,7 @@ class WebSocketManager {
       } else {
         // Remove disconnected clients
         this.clients.delete(clientId);
+        console.log(`[WebSocket] Removed disconnected client ${clientId}`);
       }
     }
   }

@@ -17,6 +17,12 @@ export async function addStatusEventAndBroadcast({
   currentCount?: number;
   totalCount?: number;
 }) {
+  console.log("[addStatusEventAndBroadcast] called with:", {
+    noteId,
+    status,
+    message,
+    context,
+  });
   try {
     // Add to database
     const dbEvent = await addStatusEvent({
