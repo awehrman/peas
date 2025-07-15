@@ -1,6 +1,6 @@
 import { Worker, Queue } from "bullmq";
 import { redisConnection } from "../../config/redis";
-import { processIngredientJob } from "./process-job";
+import { processIngredientJob } from "./job-orchestrator";
 import { registerIngredientEventHandlers } from "./event-handlers";
 
 export function setupIngredientWorker(queue: Queue) {

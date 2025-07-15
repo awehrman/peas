@@ -81,7 +81,7 @@ describe("Notes Process Job", () => {
   describe("processNote", () => {
     it("should process note content successfully", async () => {
       const { processNote } = await import(
-        "../../../workers/notes/process-job"
+        "../../../workers/notes/job-orchestrator"
       );
 
       const mockFile: TestFile = {
@@ -110,7 +110,7 @@ describe("Notes Process Job", () => {
 
     it("should handle HTML parsing errors", async () => {
       const { processNote } = await import(
-        "../../../workers/notes/process-job"
+        "../../../workers/notes/job-orchestrator"
       );
 
       const parseError = new Error("Parse failed");
@@ -126,7 +126,7 @@ describe("Notes Process Job", () => {
 
     it("should handle note creation errors", async () => {
       const { processNote } = await import(
-        "../../../workers/notes/process-job"
+        "../../../workers/notes/job-orchestrator"
       );
 
       const mockFile: TestFile = {
@@ -150,7 +150,7 @@ describe("Notes Process Job", () => {
   describe("addNoteStatusEvent", () => {
     it("should add status event successfully", async () => {
       const { addNoteStatusEvent } = await import(
-        "../../../workers/notes/process-job"
+        "../../../workers/notes/job-orchestrator"
       );
 
       const note: TestNote = { id: "note-1" };
@@ -173,7 +173,7 @@ describe("Notes Process Job", () => {
 
     it("should handle status event errors", async () => {
       const { addNoteStatusEvent } = await import(
-        "../../../workers/notes/process-job"
+        "../../../workers/notes/job-orchestrator"
       );
 
       const note: TestNote = { id: "note-1" };
@@ -194,7 +194,7 @@ describe("Notes Process Job", () => {
   describe("processNoteJob", () => {
     it("should process job successfully", async () => {
       const { processNoteJob } = await import(
-        "../../../workers/notes/process-job"
+        "../../../workers/notes/job-orchestrator"
       );
 
       const mockFile: TestFile = {
@@ -240,7 +240,7 @@ describe("Notes Process Job", () => {
 
     it("should handle validation errors", async () => {
       const { processNoteJob } = await import(
-        "../../../workers/notes/process-job"
+        "../../../workers/notes/job-orchestrator"
       );
 
       const validationError = {
@@ -271,7 +271,7 @@ describe("Notes Process Job", () => {
 
     it("should handle unhealthy service", async () => {
       const { processNoteJob } = await import(
-        "../../../workers/notes/process-job"
+        "../../../workers/notes/job-orchestrator"
       );
 
       mockValidateJobData.mockReturnValue(null);
@@ -302,7 +302,7 @@ describe("Notes Process Job", () => {
 
     it("should handle retryable errors", async () => {
       const { processNoteJob } = await import(
-        "../../../workers/notes/process-job"
+        "../../../workers/notes/job-orchestrator"
       );
 
       const retryableError = new QueueError({
@@ -332,7 +332,7 @@ describe("Notes Process Job", () => {
 
     it("should handle non-retryable errors", async () => {
       const { processNoteJob } = await import(
-        "../../../workers/notes/process-job"
+        "../../../workers/notes/job-orchestrator"
       );
 
       const nonRetryableError = new QueueError({
@@ -361,7 +361,7 @@ describe("Notes Process Job", () => {
 
     it("should handle unexpected errors", async () => {
       const { processNoteJob } = await import(
-        "../../../workers/notes/process-job"
+        "../../../workers/notes/job-orchestrator"
       );
 
       const unexpectedError = new Error("Unexpected error");

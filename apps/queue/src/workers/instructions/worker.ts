@@ -6,7 +6,7 @@ import { addStatusEventAndBroadcast } from "../../utils/status-broadcaster";
 import { ErrorHandler } from "../../utils/error-handler";
 import { HealthMonitor } from "../../utils/health-monitor";
 import { InstructionWorkerDependencies } from "./types";
-import { processInstructionJob } from "./process-job";
+import { processInstructionJob } from "./job-orchestrator";
 import { createEventHandlers } from "./event-handlers";
 
 export function getDefaultDependencies(): Omit<

@@ -15,7 +15,7 @@ vi.mock("../../../../src/config/redis", () => ({
   redisConnection: {},
 }));
 
-vi.mock("../../../../src/workers/ingredients/process-job");
+vi.mock("../../../../src/workers/ingredients/job-orchestrator");
 vi.mock("../../../../src/workers/ingredients/event-handlers", () => ({
   registerIngredientEventHandlers: vi.fn((worker, _queue) => {
     worker.on("completed", (_job: any) => {
@@ -78,7 +78,7 @@ describe("Ingredient Worker", () => {
   describe("Worker Integration", () => {
     it("should process a job through the worker", async () => {
       const { processIngredientJob } = await import(
-        "../../../../src/workers/ingredients/process-job"
+        "../../../../src/workers/ingredients/job-orchestrator"
       );
       (processIngredientJob as any).mockResolvedValueOnce(undefined);
       setupIngredientWorker(testSetup.queue);
@@ -90,7 +90,7 @@ describe("Ingredient Worker", () => {
 
     it("should handle job processing errors", async () => {
       const { processIngredientJob } = await import(
-        "../../../../src/workers/ingredients/process-job"
+        "../../../../src/workers/ingredients/job-orchestrator"
       );
       (processIngredientJob as any).mockRejectedValueOnce(new Error("fail"));
       setupIngredientWorker(testSetup.queue);

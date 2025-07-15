@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { processInstructionJob } from "../../../../src/workers/instructions/process-job";
+import { processInstructionJob } from "../../../../src/workers/instructions/job-orchestrator";
 import { Queue } from "bullmq";
 import { InstructionWorkerDependencies } from "../../../../src/workers/instructions/types";
 import { QueueError } from "../../../../src/utils/error-handler";

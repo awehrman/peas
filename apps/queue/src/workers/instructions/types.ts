@@ -5,6 +5,24 @@ import { addStatusEventAndBroadcast } from "../../utils/status-broadcaster";
 import { ErrorHandler } from "../../utils/error-handler";
 import { HealthMonitor } from "../../utils/health-monitor";
 
+export interface InstructionLine {
+  id: string;
+  originalText: string;
+}
+
+export interface ProcessingState {
+  errorCount: number;
+  total: number;
+  current: number;
+  parseStatus: "CORRECT" | "ERROR";
+}
+
+export interface ProcessingResult {
+  errorCount: number;
+  total: number;
+  successCount: number;
+}
+
 export interface InstructionWorkerDependencies {
   parseHTML: typeof parseHTML;
   createNote: typeof createNote;

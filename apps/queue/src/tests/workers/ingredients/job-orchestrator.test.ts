@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { Job, Queue } from "bullmq";
-import { processIngredientJob } from "../../../../src/workers/ingredients/process-job";
+import { processIngredientJob } from "../../../../src/workers/ingredients/job-orchestrator";
 import { QueueError } from "../../../../src/utils/error-handler";
 import {
   ErrorType,
