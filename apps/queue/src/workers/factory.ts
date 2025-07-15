@@ -2,7 +2,7 @@ import { Queue } from "bullmq";
 import { IServiceContainer } from "../services/container";
 import { setupNoteWorker } from "./notes";
 import { setupIngredientWorker } from "./ingredient";
-import { setupInstructionWorker } from "./instruction";
+import { setupInstructionWorker } from "./instructions";
 import { setupImageWorker } from "./image";
 import { setupCategorizationWorker } from "./categorization";
 
@@ -37,7 +37,12 @@ export class DefaultWorkerFactory implements WorkerFactory {
   }
 
   createInstructionWorker(queue: Queue) {
-    return setupInstructionWorker(queue);
+    return setupInstructionWorker(queue, {
+      ingredientQueue: this.container.queues.ingredientQueue,
+      instructionQueue: this.container.queues.instructionQueue,
+      imageQueue: this.container.queues.imageQueue,
+      categorizationQueue: this.container.queues.categorizationQueue,
+    });
   }
 
   createImageWorker(queue: Queue) {
