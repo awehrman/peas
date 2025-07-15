@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createEventHandlers } from "../../../../src/workers/instructions/event-handlers";
 import { QueueError } from "../../../../src/utils";
+import { ErrorType, ErrorSeverity } from "../../../../src/types";
 
 const mockLogger = { log: vi.fn(), error: vi.fn() };
 const mockErrorHandler = {
@@ -41,12 +42,14 @@ describe("createEventHandlers", () => {
     const spy = vi.spyOn(console, "error");
     const err = new QueueError({
       message: "fail",
-      jobError: { message: "fail" },
+      type: ErrorType.UNKNOWN_ERROR,
+      severity: ErrorSeverity.HIGH,
+      timestamp: new Date(),
     });
     handlers.onFailed({ id: "job-id" } as any, err);
     expect(spy).toHaveBeenCalledWith(
       "❌ Instruction parsing job job-id failed:",
-      err.jobError.message
+      err.message
     );
     spy.mockRestore();
   });

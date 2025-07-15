@@ -1,7 +1,7 @@
 import { Queue } from "bullmq";
 import { IServiceContainer } from "../services/container";
 import { setupNoteWorker } from "./notes";
-import { setupIngredientWorker } from "./ingredient";
+import { setupIngredientWorker } from "./ingredients";
 import { setupInstructionWorker } from "./instructions";
 import { setupImageWorker } from "./image";
 import { setupCategorizationWorker } from "./categorization";
