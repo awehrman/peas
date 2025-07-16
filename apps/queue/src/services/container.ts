@@ -6,10 +6,11 @@ import { registerQueues } from "./register-queues";
 import { registerDatabase } from "./register-database";
 import { registerLogger } from "./register-logger";
 import { SERVER_DEFAULTS, QUEUE_DEFAULTS } from "../config";
+import type { NoteStatus } from "@peas/database";
 
 // WebSocket manager type - we'll define this locally since it's not exported
 interface WebSocketManager {
-  broadcastStatusEvent(event: any): void;
+  broadcastStatusEvent(event: unknown): void;
   getConnectedClientsCount(): number;
   close(): void;
 }
@@ -18,15 +19,17 @@ interface WebSocketManager {
 interface StatusBroadcaster {
   addStatusEventAndBroadcast(event: {
     noteId: string;
-    status: string;
-    message: string;
-    context: string;
-  }): Promise<any>;
+    status: NoteStatus;
+    message?: string;
+    context?: string;
+    currentCount?: number;
+    totalCount?: number;
+  }): Promise<unknown>;
 }
 
 // Parser service interface
 interface ParserService {
-  parseHTML: (content: string) => Promise<any>;
+  parseHTML: (content: string) => Promise<unknown>;
 }
 
 export interface IErrorHandlerService {
@@ -45,15 +48,17 @@ export interface IStatusBroadcasterService {
   statusBroadcaster: StatusBroadcaster | null;
   addStatusEventAndBroadcast: (event: {
     noteId: string;
-    status: string;
-    message: string;
-    context: string;
-  }) => Promise<any>;
+    status: NoteStatus;
+    message?: string;
+    context?: string;
+    currentCount?: number;
+    totalCount?: number;
+  }) => Promise<unknown>;
 }
 
 export interface IParserService {
   parsers: ParserService | null;
-  parseHTML?: (content: string) => Promise<any>;
+  parseHTML?: (content: string) => Promise<unknown>;
 }
 
 // Configuration interface
@@ -168,11 +173,20 @@ class StatusBroadcasterService implements IStatusBroadcasterService {
 
   get addStatusEventAndBroadcast(): (event: {
     noteId: string;
-    status: string;
-    message: string;
-    context: string;
-  }) => Promise<any> {
-    return async (event: any) => {
+    status: NoteStatus;
+    message?: string;
+    context?: string;
+    currentCount?: number;
+    totalCount?: number;
+  }) => Promise<unknown> {
+    return async (event: {
+      noteId: string;
+      status: NoteStatus;
+      message?: string;
+      context?: string;
+      currentCount?: number;
+      totalCount?: number;
+    }) => {
       const { addStatusEventAndBroadcast } = await import(
         "../utils/status-broadcaster.js"
       );
@@ -193,7 +207,7 @@ class ParserServiceImpl implements IParserService {
     this._parsers = parsers;
   }
 
-  get parseHTML(): ((content: string) => Promise<any>) | undefined {
+  get parseHTML(): ((content: string) => Promise<unknown>) | undefined {
     return this._parsers?.parseHTML;
   }
 }

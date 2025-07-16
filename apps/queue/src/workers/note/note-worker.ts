@@ -74,18 +74,18 @@ export class NoteWorker extends BaseWorker<
     );
 
     // 4. Schedule follow-up processing tasks (with error handling only, no retry)
-    // const scheduleActions = [
-    //   "schedule_categorization",
-    //   "schedule_images",
-    //   "schedule_ingredients",
-    //   "schedule_instructions",
-    // ];
+    const scheduleActions = [
+      "schedule_source", // Schedule source worker instead of categorization
+      "schedule_images",
+      "schedule_ingredients",
+      "schedule_instructions",
+    ];
 
-    // scheduleActions.forEach((actionName) => {
-    //   actions.push(
-    //     this.createErrorHandledAction(actionName, this.dependencies)
-    //   );
-    // });
+    scheduleActions.forEach((actionName) => {
+      actions.push(
+        this.createErrorHandledAction(actionName, this.dependencies)
+      );
+    });
 
     // 5. Add "COMPLETED" status at the very end
     // Input: NoteJobData & { file: ParsedHTMLFile, note: NoteWithParsedLines } -> Output: same
@@ -126,19 +126,19 @@ export function createNoteWorker(
  */
 function createNoteDependenciesFromContainer(container: IServiceContainer) {
   return {
-    parseHTML: async (content: string) => {
+    parseHTML: async (content: string): Promise<ParsedHTMLFile> => {
       if (!container.parsers?.parseHTML) {
         throw new Error("parseHTML function not available");
       }
       const result = await container.parsers.parseHTML(content);
-      return result;
+      return result as ParsedHTMLFile;
     },
-    createNote: async (file: ParsedHTMLFile) => {
+    createNote: async (file: ParsedHTMLFile): Promise<NoteWithParsedLines> => {
       if (!container.database?.createNote) {
         throw new Error("createNote function not available");
       }
       const result = await container.database.createNote(file);
-      return result;
+      return result as NoteWithParsedLines;
     },
     ingredientQueue: container.queues.ingredientQueue,
     instructionQueue: container.queues.instructionQueue,

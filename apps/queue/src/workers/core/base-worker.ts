@@ -18,6 +18,7 @@ import type {
   ActionContext,
 } from "../types";
 import type { IServiceContainer } from "../../services/container";
+import type { NoteStatus } from "@peas/database";
 
 /**
  * Base worker class that provides common functionality for all workers
@@ -85,9 +86,9 @@ export abstract class BaseWorker<
 
     return async (event: {
       noteId: string;
-      status: string;
-      message: string;
-      context: string;
+      status: NoteStatus;
+      message?: string;
+      context?: string;
       currentCount?: number;
       totalCount?: number;
     }) => {
@@ -364,11 +365,11 @@ export abstract class BaseWorker<
   /**
    * Execute an action with caching support
    */
-  private async executeActionWithCaching<TInput, TOutput>(
-    action: BaseAction<TInput, TOutput>,
-    data: TInput,
+  private async executeActionWithCaching(
+    action: BaseAction<unknown, unknown>,
+    data: unknown,
     context: ActionContext
-  ): Promise<TOutput> {
+  ): Promise<unknown> {
     // Check if action supports caching
     if (action.name.includes("parse") || action.name.includes("fetch")) {
       const cacheKey = createCacheKey(
@@ -378,17 +379,17 @@ export abstract class BaseWorker<
         JSON.stringify(data)
       );
 
-      const cached = globalActionCache.get(cacheKey);
+      const cached = globalActionCache.get<unknown>(cacheKey);
       if (cached) {
         this.dependencies.logger.log(
           `Cache hit for action ${action.name} in job ${context.jobId}`
         );
-        return cached as TOutput;
+        return cached;
       }
 
       const result = await action.execute(
         data,
-        this.dependencies as unknown as TOutput,
+        this.dependencies as unknown,
         context
       );
       globalActionCache.set(cacheKey, result, 300000); // Cache for 5 minutes
@@ -396,11 +397,12 @@ export abstract class BaseWorker<
     }
 
     // No caching for other actions
-    return action.execute(
+    const result = await action.execute(
       data,
-      this.dependencies as unknown as TOutput,
+      this.dependencies as unknown,
       context
     );
+    return result;
   }
 
   /**
@@ -428,9 +430,9 @@ export function createBaseDependenciesFromContainer(
   return {
     addStatusEventAndBroadcast: async (event: {
       noteId: string;
-      status: string;
-      message: string;
-      context: string;
+      status: NoteStatus;
+      message?: string;
+      context?: string;
       currentCount?: number;
       totalCount?: number;
     }) => {

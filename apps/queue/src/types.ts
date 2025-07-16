@@ -59,7 +59,7 @@ export interface JobError {
   severity: ErrorSeverity;
   message: string;
   code?: string;
-  context?: Record<string, any>;
+  context?: Record<string, unknown>;
   originalError?: Error;
   timestamp: Date;
   jobId?: string;
@@ -70,7 +70,7 @@ export interface JobError {
 export interface ValidationError extends JobError {
   type: ErrorType.VALIDATION_ERROR;
   field?: string;
-  value?: any;
+  value?: unknown;
 }
 
 export interface DatabaseError extends JobError {

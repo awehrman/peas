@@ -1,13 +1,35 @@
 import { Queue } from "bullmq";
 
 /**
+ * Base interface for job data - all job data should extend this
+ */
+export interface BaseJobData {
+  noteId?: string;
+  [key: string]: unknown;
+}
+
+/**
+ * Base interface for worker dependencies - all dependencies should extend this
+ */
+export interface BaseWorkerDependencies {
+  logger: {
+    log: (message: string, level?: string) => void;
+  };
+  [key: string]: unknown;
+}
+
+/**
  * Represents a single action that can be performed by a worker
  */
-export interface WorkerAction<TData = any, TDeps = any> {
+export interface WorkerAction<TData = unknown, TDeps = unknown> {
   /** Unique identifier for this action */
   name: string;
   /** Function that performs the action */
-  execute: (data: TData, deps: TDeps, context: ActionContext) => Promise<any>;
+  execute: (
+    data: TData,
+    deps: TDeps,
+    context: ActionContext
+  ) => Promise<unknown>;
   /** Whether this action should be retried on failure */
   retryable?: boolean;
   /** Custom error handling for this action */
@@ -24,10 +46,10 @@ export interface WorkerAction<TData = any, TDeps = any> {
     data: TData,
     deps: TDeps,
     context: ActionContext
-  ) => Promise<ActionResult>;
+  ) => Promise<ActionResult<unknown>>;
   /** Create a new action instance with custom configuration */
   withConfig?: (
-    config: Partial<Pick<WorkerAction, "retryable" | "priority">>
+    config: Partial<Pick<WorkerAction<TData, TDeps>, "retryable" | "priority">>
   ) => WorkerAction<TData, TDeps>;
 }
 
@@ -48,7 +70,7 @@ export interface ActionContext {
 /**
  * Configuration for an action-based worker
  */
-export interface ActionBasedWorkerConfig<TData = any, TDeps = any> {
+export interface ActionBasedWorkerConfig<TData = unknown, TDeps = unknown> {
   /** The BullMQ queue to process jobs from */
   queue: Queue;
   /** List of actions to execute in sequence */
@@ -74,7 +96,7 @@ export interface ActionBasedWorkerConfig<TData = any, TDeps = any> {
 /**
  * Result of an action execution
  */
-export interface ActionResult<T = any> {
+export interface ActionResult<T = unknown> {
   success: boolean;
   data?: T;
   error?: Error;
@@ -87,7 +109,7 @@ export interface ActionResult<T = any> {
 export interface JobProcessingResult {
   success: boolean;
   jobId: string;
-  actions: ActionResult[];
+  actions: ActionResult<unknown>[];
   totalDuration: number;
   error?: Error;
 }

@@ -4,6 +4,7 @@ import { ActionContext } from "../core/types";
 import {
   ProcessIngredientLineAction,
   SaveIngredientLineAction,
+  ScheduleCategorizationAction,
 } from "./actions";
 import { IServiceContainer } from "../../services/container";
 import type { IngredientWorkerDependencies, IngredientJobData } from "./types";
@@ -27,6 +28,10 @@ export class IngredientWorker extends BaseWorker<
     this.actionFactory.register(
       "save_ingredient_line",
       () => new SaveIngredientLineAction()
+    );
+    this.actionFactory.register(
+      "schedule_categorization",
+      () => new ScheduleCategorizationAction()
     );
   }
 
@@ -53,6 +58,17 @@ export class IngredientWorker extends BaseWorker<
       this.createWrappedAction("save_ingredient_line", this.dependencies)
     );
 
+    // 3. Schedule categorization (with error handling only, no retry)
+    // Note: This will schedule categorization after each ingredient line.
+    // In a production system, you might want to track when ALL ingredient lines
+    // for a note are completed before scheduling categorization.
+    actions.push(
+      this.createErrorHandledAction(
+        "schedule_categorization",
+        this.dependencies
+      )
+    );
+
     return actions;
   }
 }
@@ -75,6 +91,7 @@ export function createIngredientWorker(
     logger: container.logger,
 
     // Ingredient-specific dependencies
+    categorizationQueue: container.queues.categorizationQueue,
     database: {
       updateIngredientLine: async (id: string, data: any) => {
         container.logger.log(

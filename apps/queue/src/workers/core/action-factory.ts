@@ -1,23 +1,30 @@
 import { WorkerAction } from "./types";
 
 /**
+ * Type for action creators that can create actions with dependencies
+ */
+export type ActionCreator<TData = unknown, TDeps = unknown> = (
+  deps?: TDeps
+) => WorkerAction<TData, TDeps>;
+
+/**
  * ActionFactory allows registering and creating actions by name.
  * Supports dependency injection and singleton/per-job instantiation.
  */
 export class ActionFactory {
-  private registry = new Map<string, (deps?: any) => WorkerAction<any, any>>();
+  private registry = new Map<string, ActionCreator<unknown, unknown>>();
 
   /**
    * Register an action constructor by name.
    * @param name Unique action name
    * @param creator Function that returns a new action instance
    */
-  register<TData = any, TDeps = any>(
+  register<TData = unknown, TDeps = unknown>(
     name: string,
-    creator: (deps?: TDeps) => WorkerAction<TData, TDeps>
-  ) {
+    creator: ActionCreator<TData, TDeps>
+  ): void {
     // Allow re-registration - this is safe for multiple worker instances
-    this.registry.set(name, creator as any);
+    this.registry.set(name, creator as ActionCreator<unknown, unknown>);
   }
 
   /**
@@ -25,7 +32,7 @@ export class ActionFactory {
    * @param name Action name
    * @param deps Dependencies to inject
    */
-  create<TData = any, TDeps = any>(
+  create<TData = unknown, TDeps = unknown>(
     name: string,
     deps?: TDeps
   ): WorkerAction<TData, TDeps> {
@@ -35,7 +42,7 @@ export class ActionFactory {
         `Action '${name}' is not registered in the ActionFactory.`
       );
     }
-    return creator(deps);
+    return creator(deps) as WorkerAction<TData, TDeps>;
   }
 
   /**

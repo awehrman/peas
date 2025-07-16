@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, Request, Response } from "express";
 import { noteTestRouter } from "./note";
 import { sourceTestRouter } from "./source";
 import { ingredientTestRouter } from "./ingredient";
@@ -17,7 +17,7 @@ router.use("/image", imageTestRouter);
 router.use("/categorization", categorizationTestRouter);
 
 // Test overview endpoint
-router.get("/", (req: any, res: any) => {
+router.get("/", (req: Request, res: Response) => {
   res.json({
     message: "Queue Test Routes",
     endpoints: {

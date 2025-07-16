@@ -10,7 +10,7 @@ The Categorization Worker is responsible for analyzing and categorizing recipes 
 
 ## Structure
 
-```
+```text
 src/workers/categorization/
 ├── categorization-worker.ts   # Main worker class
 ├── types.ts                  # Categorization-specific type definitions

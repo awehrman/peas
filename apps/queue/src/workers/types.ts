@@ -3,6 +3,7 @@ import type { IServiceContainer } from "../services/container";
 import type { BaseWorker } from "./core/base-worker";
 import type { BaseAction } from "./core/base-action";
 import type { ActionContext as CoreActionContext } from "./core/types";
+import type { NoteStatus } from "@peas/database";
 
 // ============================================================================
 // UNIFIED ACTION CONTEXT
@@ -133,9 +134,9 @@ export interface BaseWorkerDependencies {
  */
 export interface StatusEvent {
   noteId: string;
-  status: string;
-  message: string;
-  context: string;
+  status: NoteStatus;
+  message?: string;
+  context?: string;
   currentCount?: number;
   totalCount?: number;
   metadata?: Record<string, unknown>;
@@ -241,14 +242,15 @@ export type PartialWithRequired<T, K extends keyof T> = Partial<T> &
 /**
  * Type helper for creating union types with better type safety
  */
-export type UnionToIntersection<U> =
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (U extends any ? (k: U) => void : never) extends (k: infer I) => void
-    ? I
-    : never;
+export type UnionToIntersection<U> = (
+  U extends unknown ? (k: U) => void : never
+) extends (k: infer I) => void
+  ? I
+  : never;
 
 /**
  * Type helper for extracting the return type of a function
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type ReturnType<T> = T extends (...args: any[]) => infer R ? R : never;
+export type ReturnType<T> = T extends (...args: unknown[]) => infer R
+  ? R
+  : never;

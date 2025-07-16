@@ -1,4 +1,5 @@
 import type { BaseWorkerDependencies, BaseJobData } from "../types";
+import { Queue } from "bullmq";
 
 // Ingredient Worker Dependencies
 export interface IngredientWorkerDependencies extends BaseWorkerDependencies {
@@ -12,6 +13,7 @@ export interface IngredientWorkerDependencies extends BaseWorkerDependencies {
     ) => Promise<unknown>;
   };
   parseIngredient: (text: string) => Promise<ParsedIngredientResult>;
+  categorizationQueue: Queue; // Add categorization queue for scheduling
 }
 
 // Ingredient Job Data

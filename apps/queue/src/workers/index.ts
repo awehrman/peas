@@ -12,6 +12,9 @@ export * from "./image";
 export * from "./categorization";
 export * from "./source";
 
+// Explicitly re-export BaseJobData to avoid conflicts
+export type { BaseJobData } from "./types";
+
 // Factory functions
 export { createNoteWorker } from "./note";
 export { createIngredientWorker } from "./ingredient";

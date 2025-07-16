@@ -4,7 +4,7 @@ import { WorkerAction, ActionContext, ActionResult } from "./types";
  * Abstract base class for all worker actions.
  * Provides timing, error handling, and config utilities.
  */
-export abstract class BaseAction<TData = any, TDeps = any>
+export abstract class BaseAction<TData = unknown, TDeps = unknown>
   implements WorkerAction<TData, TDeps>
 {
   abstract name: string;
@@ -12,7 +12,7 @@ export abstract class BaseAction<TData = any, TDeps = any>
     data: TData,
     deps: TDeps,
     context: ActionContext
-  ): Promise<any>;
+  ): Promise<unknown>;
 
   /** Whether this action should be retried on failure */
   retryable?: boolean = true;
@@ -26,7 +26,7 @@ export abstract class BaseAction<TData = any, TDeps = any>
     data: TData,
     deps: TDeps,
     context: ActionContext
-  ): Promise<ActionResult> {
+  ): Promise<ActionResult<unknown>> {
     const startTime = Date.now();
     try {
       const result = await this.execute(data, deps, context);
@@ -46,8 +46,8 @@ export abstract class BaseAction<TData = any, TDeps = any>
    */
   async onError?(
     error: Error,
-    data: TData,
-    deps: TDeps,
+    _data: TData,
+    _deps: TDeps,
     context: ActionContext
   ): Promise<void> {
     // Default: log to console
@@ -68,7 +68,7 @@ export abstract class BaseAction<TData = any, TDeps = any>
    * Create a new action instance with custom configuration.
    */
   withConfig(
-    config: Partial<Pick<WorkerAction, "retryable" | "priority">>
+    config: Partial<Pick<WorkerAction<TData, TDeps>, "retryable" | "priority">>
   ): this {
     const newAction = Object.create(this);
     Object.assign(newAction, config);
@@ -79,9 +79,9 @@ export abstract class BaseAction<TData = any, TDeps = any>
 /**
  * Action that does nothing - useful for testing or as a placeholder.
  */
-export class NoOpAction extends BaseAction<any, any> {
+export class NoOpAction extends BaseAction<unknown, unknown> {
   name = "no_op";
-  async execute(_data?: any): Promise<void> {
+  async execute(_data?: unknown): Promise<void> {
     // No operation performed
   }
 }
@@ -89,15 +89,15 @@ export class NoOpAction extends BaseAction<any, any> {
 /**
  * Action that validates data and passes it through.
  */
-export class ValidationAction<TData> extends BaseAction<TData, any> {
+export class ValidationAction<TData> extends BaseAction<TData, unknown> {
   name = "validation";
   constructor(private validator: (data: TData) => Error | null) {
     super();
   }
-  async execute(_data: TData): Promise<TData> {
-    const error = this.validator(_data);
+  async execute(data: TData): Promise<TData> {
+    const error = this.validator(data);
     if (error) throw error;
-    return _data;
+    return data;
   }
   retryable = false;
 }
@@ -105,14 +105,23 @@ export class ValidationAction<TData> extends BaseAction<TData, any> {
 /**
  * Action that logs information about the job.
  */
-export class LoggingAction extends BaseAction<any, any> {
+export class LoggingAction extends BaseAction<
+  unknown,
+  { logger?: { log: (message: string) => void } }
+> {
   name = "logging";
   constructor(
-    private message: string | ((data: any, context: ActionContext) => string)
+    private message:
+      | string
+      | ((data: unknown, context: ActionContext) => string)
   ) {
     super();
   }
-  async execute(data: any, deps: any, context: ActionContext): Promise<any> {
+  async execute(
+    data: unknown,
+    deps: { logger?: { log: (message: string) => void } },
+    context: ActionContext
+  ): Promise<unknown> {
     const logMessage =
       typeof this.message === "function"
         ? this.message(data, context)

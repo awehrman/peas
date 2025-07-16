@@ -4,7 +4,7 @@
 export class ActionResultCache {
   private cache = new Map<
     string,
-    { value: any; timestamp: number; ttl: number }
+    { value: unknown; timestamp: number; ttl: number }
   >();
 
   /**

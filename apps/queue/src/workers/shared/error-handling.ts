@@ -12,7 +12,7 @@ export interface ErrorHandlingDeps {
 
 export interface ErrorHandlingData {
   noteId?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**
@@ -24,7 +24,7 @@ export class ErrorHandlingWrapperAction extends BaseAction<
 > {
   name: string;
 
-  constructor(private wrappedAction: BaseAction<any, any>) {
+  constructor(private wrappedAction: BaseAction<unknown, unknown>) {
     super();
     this.name = `error_handling_wrapper(${wrappedAction.name})`;
   }
@@ -53,13 +53,13 @@ export class ErrorHandlingWrapperAction extends BaseAction<
  */
 export class LogErrorAction extends BaseAction<
   { error: Error; noteId?: string },
-  any
+  unknown
 > {
   name = "log_error";
 
   async execute(
     data: { error: Error; noteId?: string },
-    _deps: any,
+    _deps: unknown,
     context: ActionContext
   ) {
     console.error(
@@ -77,13 +77,13 @@ export class LogErrorAction extends BaseAction<
  */
 export class CaptureErrorAction extends BaseAction<
   { error: Error; noteId?: string },
-  any
+  unknown
 > {
   name = "capture_error";
 
   async execute(
     data: { error: Error; noteId?: string },
-    _deps: any,
+    _deps: unknown,
     context: ActionContext
   ) {
     // Store error information for monitoring/alerting
@@ -113,13 +113,13 @@ export class CaptureErrorAction extends BaseAction<
  */
 export class ErrorRecoveryAction extends BaseAction<
   { error: Error; noteId?: string },
-  any
+  unknown
 > {
   name = "error_recovery";
 
   async execute(
     data: { error: Error; noteId?: string },
-    _deps: any,
+    _deps: unknown,
     context: ActionContext
   ) {
     // Attempt to recover based on error type
@@ -142,7 +142,7 @@ export class ErrorRecoveryAction extends BaseAction<
 /**
  * Helper function to create an error handling wrapper for any action
  */
-export function withErrorHandling<T extends BaseAction<any, any>>(
+export function withErrorHandling<T extends BaseAction<unknown, unknown>>(
   action: T,
   errorHandler?: (error: Error, context: ActionContext) => Promise<void>
 ): ErrorHandlingWrapperAction {
@@ -157,7 +157,7 @@ export function withErrorHandling<T extends BaseAction<any, any>>(
  */
 export function createErrorHandlingChain(
   _noteId?: string
-): BaseAction<{ error: Error; noteId?: string }, any>[] {
+): BaseAction<{ error: Error; noteId?: string }, unknown>[] {
   return [
     new LogErrorAction(),
     new CaptureErrorAction(),

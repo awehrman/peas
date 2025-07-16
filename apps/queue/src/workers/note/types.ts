@@ -1,5 +1,6 @@
 import { Queue } from "bullmq";
 import type { ParsedHTMLFile } from "../../types";
+import type { NoteStatus } from "@peas/database";
 
 // ============================================================================
 // NOTE WORKER TYPES
@@ -114,7 +115,7 @@ export interface SaveNoteDeps {
  */
 export interface ScheduleActionDeps {
   queue: {
-    add: (name: string, data: Record<string, any>) => Promise<any>;
+    add: (name: string, data: Record<string, unknown>) => Promise<unknown>;
   };
 }
 
@@ -152,7 +153,7 @@ export interface ScheduleCategorizationData {
  */
 export interface ScheduleCategorizationDeps {
   categorizationQueue: {
-    add: (name: string, data: Record<string, any>) => Promise<any>;
+    add: (name: string, data: Record<string, unknown>) => Promise<unknown>;
   };
 }
 
@@ -168,7 +169,7 @@ export interface ScheduleImagesData {
  */
 export interface ScheduleImagesDeps {
   imageQueue: {
-    add: (name: string, data: Record<string, any>) => Promise<any>;
+    add: (name: string, data: Record<string, unknown>) => Promise<unknown>;
   };
 }
 
@@ -184,7 +185,7 @@ export interface ScheduleIngredientsData {
  */
 export interface ScheduleIngredientsDeps {
   ingredientQueue: {
-    add: (name: string, data: Record<string, any>) => Promise<any>;
+    add: (name: string, data: Record<string, unknown>) => Promise<unknown>;
   };
 }
 
@@ -200,7 +201,23 @@ export interface ScheduleInstructionsData {
  */
 export interface ScheduleInstructionsDeps {
   instructionQueue: {
-    add: (name: string, data: Record<string, any>) => Promise<any>;
+    add: (name: string, data: Record<string, unknown>) => Promise<unknown>;
+  };
+}
+
+/**
+ * Schedule Source Action Data
+ */
+export interface ScheduleSourceData {
+  noteId: string;
+}
+
+/**
+ * Schedule Source Action Dependencies
+ */
+export interface ScheduleSourceDeps {
+  sourceQueue: {
+    add: (name: string, data: Record<string, unknown>) => Promise<unknown>;
   };
 }
 
@@ -220,9 +237,9 @@ export type ParsedHtmlFile = ParsedHTMLFile;
  */
 export interface StatusEvent {
   noteId: string;
-  status: string;
-  message: string;
-  context: string;
+  status: NoteStatus;
+  message?: string;
+  context?: string;
   currentCount?: number;
   totalCount?: number;
   metadata?: Record<string, unknown>;
@@ -252,18 +269,6 @@ export type { ActionContext } from "../core";
  */
 export type ActionPipeline = Array<unknown>;
 
-/**
- * Base job data that all jobs should include
- */
-export interface BaseJobData {
-  /** Optional note ID for status tracking */
-  noteId?: string;
-  /** Job metadata */
-  metadata?: Record<string, unknown>;
-  /** Job creation timestamp */
-  createdAt?: Date;
-  /** Job priority */
-  priority?: number;
-  /** Job timeout in milliseconds */
-  timeout?: number;
-}
+// BaseJobData is already exported from core types
+// Re-export for convenience
+export type { BaseJobData } from "../types";

@@ -19,7 +19,7 @@ export interface RetryData {
   attempt: number;
   maxAttempts: number;
   lastError?: Error;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**
@@ -91,18 +91,18 @@ export class RetryAction extends BaseAction<RetryData, RetryDeps> {
 /**
  * Action that wraps another action with retry logic
  */
-export class RetryWrapperAction extends BaseAction<any, RetryDeps> {
+export class RetryWrapperAction extends BaseAction<unknown, RetryDeps> {
   name: string;
 
   constructor(
-    private wrappedAction: BaseAction<any, any>,
+    private wrappedAction: BaseAction<unknown, unknown>,
     private config: RetryConfig = DEFAULT_RETRY_CONFIG
   ) {
     super();
     this.name = `retry_wrapper(${wrappedAction.name})`;
   }
 
-  async execute(data: any, deps: RetryDeps, context: ActionContext) {
+  async execute(data: unknown, deps: RetryDeps, context: ActionContext) {
     let lastError: Error;
 
     for (let attempt = 0; attempt <= this.config.maxAttempts; attempt++) {
@@ -152,7 +152,7 @@ export class RetryWrapperAction extends BaseAction<any, RetryDeps> {
 /**
  * Action that implements circuit breaker pattern
  */
-export class CircuitBreakerAction extends BaseAction<any, RetryDeps> {
+export class CircuitBreakerAction extends BaseAction<unknown, RetryDeps> {
   name = "circuit_breaker";
 
   private static breakers = new Map<
@@ -165,7 +165,7 @@ export class CircuitBreakerAction extends BaseAction<any, RetryDeps> {
   >();
 
   constructor(
-    private wrappedAction: BaseAction<any, any>,
+    private wrappedAction: BaseAction<unknown, unknown>,
     private config: {
       failureThreshold: number;
       resetTimeout: number;
@@ -178,7 +178,7 @@ export class CircuitBreakerAction extends BaseAction<any, RetryDeps> {
     super();
   }
 
-  async execute(data: any, deps: RetryDeps, context: ActionContext) {
+  async execute(data: unknown, deps: RetryDeps, context: ActionContext) {
     const key = this.config.breakerKey || context.operation;
     const breaker = this.getBreaker(key);
 
@@ -205,6 +205,12 @@ export class CircuitBreakerAction extends BaseAction<any, RetryDeps> {
 
       if (breaker.failures >= this.config.failureThreshold) {
         breaker.state = "OPEN";
+        const message = `Circuit breaker opened for ${key} after ${breaker.failures} failures`;
+        if (deps.logger?.log) {
+          deps.logger.log(message, "error");
+        } else {
+          console.error(message);
+        }
       }
 
       throw error;
@@ -226,7 +232,7 @@ export class CircuitBreakerAction extends BaseAction<any, RetryDeps> {
 /**
  * Helper function to create a retry wrapper for any action
  */
-export function withRetry<T extends BaseAction<any, any>>(
+export function withRetry<T extends BaseAction<unknown, unknown>>(
   action: T,
   config?: RetryConfig
 ): RetryWrapperAction {
@@ -236,7 +242,7 @@ export function withRetry<T extends BaseAction<any, any>>(
 /**
  * Helper function to create a circuit breaker wrapper for any action
  */
-export function withCircuitBreaker<T extends BaseAction<any, any>>(
+export function withCircuitBreaker<T extends BaseAction<unknown, unknown>>(
   action: T,
   config?: {
     failureThreshold: number;

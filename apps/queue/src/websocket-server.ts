@@ -57,11 +57,11 @@ class WebSocketManager {
         data: { clientId, message: "Connected to status updates" },
       });
 
-      ws.on("message", (data: any) => {
+      ws.on("message", (data: Buffer) => {
         try {
           const message = JSON.parse(data.toString());
           this.handleClientMessage(clientId, message);
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error("❌ WebSocket: Failed to parse client message:", error);
         }
       });
@@ -70,7 +70,7 @@ class WebSocketManager {
         this.clients.delete(clientId);
       });
 
-      ws.on("error", (error: any) => {
+      ws.on("error", (error: Error) => {
         console.error(`❌ WebSocket: Client ${clientId} error:`, error);
         this.clients.delete(clientId);
       });
@@ -83,7 +83,10 @@ class WebSocketManager {
     console.log(`🔌 WebSocket: Server started on port ${this.port}`);
   }
 
-  private handleClientMessage(clientId: string, message: any) {
+  private handleClientMessage(
+    clientId: string,
+    message: { type: string; [key: string]: unknown }
+  ) {
     // Handle different message types here if needed
     switch (message.type) {
       case "ping":
@@ -98,7 +101,10 @@ class WebSocketManager {
     }
   }
 
-  private sendToClient(clientId: string, message: any) {
+  private sendToClient(
+    clientId: string,
+    message: { type: string; data: unknown }
+  ) {
     const client = this.clients.get(clientId);
     if (client && client.ws.readyState === WebSocket.OPEN) {
       try {

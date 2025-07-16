@@ -48,13 +48,14 @@ app.use(express.json({ limit: SERVER_DEFAULTS.REQUEST_SIZE_LIMIT })); // Limit r
 // Global error handler
 app.use(
   (
-    error: any,
+    error: unknown,
     req: express.Request,
     res: express.Response,
     _next: express.NextFunction
   ) => {
-    const jobError =
-      serviceContainer.errorHandler.errorHandler.classifyError(error);
+    const jobError = serviceContainer.errorHandler.errorHandler.classifyError(
+      error as Error
+    );
     jobError.context = {
       ...jobError.context,
       path: req.path,
