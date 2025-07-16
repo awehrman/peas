@@ -4,7 +4,7 @@ This directory contains a centralized schema system for the queue application. A
 
 ## Structure
 
-```
+```text
 schemas/
 ├── base.ts          # Base schemas shared across all workers
 ├── note.ts          # Note-specific schemas

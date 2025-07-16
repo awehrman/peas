@@ -6,7 +6,7 @@ A Prisma instance to help us talk to a PostgreSQL database. This was generated w
 
 The Prisma schema is organized into modular files for better maintainability:
 
-```
+```text
 prisma/
 ├── schema.prisma          # Main schema (auto-generated)
 ├── schemas/
@@ -23,7 +23,7 @@ prisma/
 ### Schema Modules
 
 - **`auth.prisma`**: User authentication and session management
-  - `User`, `Account`, `Session`, `VerificationToken`
+  - `User`, `Account`, `Session`, `VerificationToken`œœ
   - `UserType` enum
 
 - **`notes.prisma`**: Note processing and status tracking

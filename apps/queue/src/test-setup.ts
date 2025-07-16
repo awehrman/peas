@@ -1,5 +1,5 @@
 // Test setup file for Vitest
-import { beforeAll, afterAll } from "vitest";
+import { beforeAll, afterAll, vi } from "vitest";
 import { SERVER_DEFAULTS, QUEUE_DEFAULTS } from "./config";
 
 // Mock environment variables for testing
@@ -10,6 +10,25 @@ process.env.BATCH_SIZE = QUEUE_DEFAULTS.BATCH_SIZE.toString();
 process.env.MAX_RETRIES = QUEUE_DEFAULTS.MAX_RETRIES.toString();
 process.env.BACKOFF_MS = QUEUE_DEFAULTS.BACKOFF_MS.toString();
 process.env.MAX_BACKOFF_MS = QUEUE_DEFAULTS.MAX_BACKOFF_MS.toString();
+
+// Mock Redis connection for testing
+vi.mock("./config/redis", () => ({
+  redisConnection: {
+    host: "localhost",
+    port: 6379,
+  },
+}));
+
+// Mock BullMQ for testing
+vi.mock("bullmq", () => ({
+  Queue: vi.fn().mockImplementation(() => ({
+    add: vi.fn().mockResolvedValue({ id: "test-job-id" }),
+    close: vi.fn().mockResolvedValue(undefined),
+  })),
+  Worker: vi.fn().mockImplementation(() => ({
+    close: vi.fn().mockResolvedValue(undefined),
+  })),
+}));
 
 // Global test setup
 beforeAll(() => {

@@ -4,9 +4,10 @@
 
 ### Testing & Quality Assurance
 
-- [ ] **Add comprehensive test suite** - Currently 0% test coverage across all components
-  - [ ] Unit tests for core components (BaseWorker, BaseAction, ActionFactory)
-  - [ ] Unit tests for all worker actions
+- [x] **Add comprehensive test suite** - Progress: ~15% test coverage
+  - [x] Unit tests for core components (BaseWorker, BaseAction, ActionFactory)
+  - [x] Unit tests for retry and circuit breaker utilities
+  - [ ] Unit tests for all worker actions (partially complete)
   - [ ] Unit tests for utilities (error-handler, health-monitor, logger)
   - [ ] Integration tests for worker pipelines
   - [ ] End-to-end tests for complete workflows
