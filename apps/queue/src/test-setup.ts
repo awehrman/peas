@@ -30,6 +30,23 @@ vi.mock("bullmq", () => ({
   })),
 }));
 
+// Mock createQueue globally for all tests
+vi.mock("apps/queue/src/queues/createQueue", () => ({
+  createQueue: vi.fn((name) => ({
+    get name() {
+      return name;
+    },
+  })),
+}));
+// Also mock for tests that import from ../queues/createQueue
+vi.mock("../queues/createQueue", () => ({
+  createQueue: vi.fn((name) => ({
+    get name() {
+      return name;
+    },
+  })),
+}));
+
 // Global test setup
 beforeAll(() => {
   // Any global setup before tests
