@@ -10,7 +10,14 @@ export class HealthMonitor {
   private readonly CACHE_DURATION_MS = 30000; // 30 seconds
   private readonly TIMEOUT_MS = 5000; // 5 seconds
 
-  private constructor() {}
+  private constructor() {
+    // Prevent direct instantiation
+    if (HealthMonitor.instance) {
+      throw new Error(
+        "HealthMonitor is a singleton. Use getInstance() instead."
+      );
+    }
+  }
 
   static getInstance(): HealthMonitor {
     if (!HealthMonitor.instance) {
