@@ -1,5 +1,5 @@
 import { createQueue } from "./createQueue";
-import { createIngredientWorker } from "../workers/ingredient-worker";
+import { createIngredientWorker } from "../workers/ingredient";
 import { serviceContainer } from "../services/container";
 
 export const ingredientQueue = createQueue("ingredientQueue");

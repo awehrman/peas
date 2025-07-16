@@ -10,6 +10,7 @@ import { importRouter, notesRouter, healthRouter, testRouter } from "./routes";
 import { ErrorType, ErrorSeverity } from "./types";
 import { initializeWebSocketServer } from "./websocket-server";
 import { serviceContainer } from "./services";
+import { SERVER_DEFAULTS, SERVER_CONSTANTS } from "./config";
 
 import cors from "cors";
 
@@ -38,8 +39,11 @@ app.use((req, res, next) => {
   next();
 });
 
+// CORS configuration
 app.use(cors());
-app.use(express.json({ limit: "10mb" })); // Limit request size
+
+// Body parsing middleware
+app.use(express.json({ limit: SERVER_DEFAULTS.REQUEST_SIZE_LIMIT })); // Limit request size
 
 // Global error handler
 app.use(
@@ -113,7 +117,7 @@ app.get("/health", async (req, res) => {
         ? 200
         : health.status === "degraded"
           ? 200
-          : 503;
+          : SERVER_CONSTANTS.STATUS_CODES.SERVICE_UNAVAILABLE;
 
     res.status(statusCode).json(health);
   } catch (error) {
@@ -174,11 +178,11 @@ const gracefulShutdown = async (signal: string) => {
       process.exit(0);
     });
 
-    // Force exit after 10 seconds
+    // Force exit after timeout
     setTimeout(() => {
       serviceContainer.logger.log("❌ Forced shutdown after timeout", "error");
       process.exit(1);
-    }, 10000);
+    }, SERVER_DEFAULTS.GRACEFUL_SHUTDOWN_TIMEOUT_MS);
   } catch (error) {
     const jobError = serviceContainer.errorHandler.errorHandler.createJobError(
       error as Error,

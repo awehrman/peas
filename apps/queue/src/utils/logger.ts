@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import type { ILoggerService } from "../services/container";
+import type { ILoggerService } from "../services";
 
 export interface LogConfig {
   /** Directory to store log files */

@@ -5,6 +5,6 @@ export * from "./metrics";
 export * from "./base-worker";
 
 // Action system
-export * from "../actions/core/types";
-export * from "../actions/core/base-action";
-export * from "../actions/core/action-factory";
+export * from "./types";
+export * from "./base-action";
+export * from "./action-factory";

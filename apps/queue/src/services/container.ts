@@ -1,9 +1,11 @@
-import { Queue } from "bullmq";
 import { redisConnection } from "../config/redis";
-import { prisma } from "../config/database";
 import { ErrorHandler } from "../utils/error-handler";
 import { HealthMonitor } from "../utils/health-monitor";
-import { createLogger } from "../utils/logger";
+import { IQueueService, ILoggerService, IDatabaseService } from "./index";
+import { registerQueues } from "./register-queues";
+import { registerDatabase } from "./register-database";
+import { registerLogger } from "./register-logger";
+import { SERVER_DEFAULTS, QUEUE_DEFAULTS } from "../config";
 
 // WebSocket manager type - we'll define this locally since it's not exported
 interface WebSocketManager {
@@ -25,22 +27,6 @@ interface StatusBroadcaster {
 // Parser service interface
 interface ParserService {
   parseHTML: (content: string) => Promise<any>;
-}
-import { createQueue } from "../queues/createQueue";
-
-// Service interfaces for dependency injection
-export interface IQueueService {
-  noteQueue: Queue;
-  imageQueue: Queue;
-  ingredientQueue: Queue;
-  instructionQueue: Queue;
-  categorizationQueue: Queue;
-  sourceQueue: Queue;
-}
-
-export interface IDatabaseService {
-  prisma: typeof prisma;
-  createNote?: (file: any) => Promise<any>;
 }
 
 export interface IErrorHandlerService {
@@ -68,27 +54,6 @@ export interface IStatusBroadcasterService {
 export interface IParserService {
   parsers: ParserService | null;
   parseHTML?: (content: string) => Promise<any>;
-}
-
-export interface ILoggerService {
-  log(
-    message: string,
-    level?: "debug" | "info" | "warn" | "error" | "fatal"
-  ): void;
-  debug?(message: string, context?: Record<string, unknown>): void;
-  info?(message: string, context?: Record<string, unknown>): void;
-  warn?(message: string, context?: Record<string, unknown>): void;
-  error?(message: string, context?: Record<string, unknown>): void;
-  fatal?(message: string, context?: Record<string, unknown>): void;
-  logWithContext?(
-    level: string,
-    message: string,
-    context: Record<string, unknown>
-  ): void;
-  getLogFiles?(): { main: string; error: string };
-  rotateLogs?(maxSizeMB?: number): void;
-  getLogStats?(): { mainLogSize: number; errorLogSize: number };
-  clearOldLogs?(daysOld?: number): void;
 }
 
 // Configuration interface
@@ -119,11 +84,14 @@ export interface IServiceContainer {
 // Default configuration service
 class ConfigService implements IConfigService {
   get port(): number {
-    return parseInt(process.env.PORT || "4200", 10);
+    return parseInt(process.env.PORT || SERVER_DEFAULTS.PORT.toString(), 10);
   }
 
   get wsPort(): number {
-    return parseInt(process.env.WS_PORT || "8080", 10);
+    return parseInt(
+      process.env.WS_PORT || SERVER_DEFAULTS.WS_PORT.toString(),
+      10
+    );
   }
 
   get redisConnection() {
@@ -131,53 +99,31 @@ class ConfigService implements IConfigService {
   }
 
   get batchSize(): number {
-    return parseInt(process.env.BATCH_SIZE || "10", 10);
+    return parseInt(
+      process.env.BATCH_SIZE || QUEUE_DEFAULTS.BATCH_SIZE.toString(),
+      10
+    );
   }
 
   get maxRetries(): number {
-    return parseInt(process.env.MAX_RETRIES || "3", 10);
+    return parseInt(
+      process.env.MAX_RETRIES || QUEUE_DEFAULTS.MAX_RETRIES.toString(),
+      10
+    );
   }
 
   get backoffMs(): number {
-    return parseInt(process.env.BACKOFF_MS || "1000", 10);
+    return parseInt(
+      process.env.BACKOFF_MS || QUEUE_DEFAULTS.BACKOFF_MS.toString(),
+      10
+    );
   }
 
   get maxBackoffMs(): number {
-    return parseInt(process.env.MAX_BACKOFF_MS || "30000", 10);
-  }
-}
-
-// Default queue service implementation
-class QueueService implements IQueueService {
-  public readonly noteQueue: Queue;
-  public readonly imageQueue: Queue;
-  public readonly ingredientQueue: Queue;
-  public readonly instructionQueue: Queue;
-  public readonly categorizationQueue: Queue;
-  public readonly sourceQueue: Queue;
-
-  constructor() {
-    this.noteQueue = createQueue("note");
-    this.imageQueue = createQueue("image");
-    this.ingredientQueue = createQueue("ingredient");
-    this.instructionQueue = createQueue("instruction");
-    this.categorizationQueue = createQueue("categorization");
-    this.sourceQueue = createQueue("source");
-  }
-}
-
-// Default database service implementation
-class DatabaseService implements IDatabaseService {
-  get prisma() {
-    return prisma;
-  }
-
-  get createNote() {
-    // Import the createNote function from the database package
-    return async (file: any) => {
-      const { createNote } = await import("@peas/database");
-      return createNote(file);
-    };
+    return parseInt(
+      process.env.MAX_BACKOFF_MS || QUEUE_DEFAULTS.MAX_BACKOFF_MS.toString(),
+      10
+    );
   }
 }
 
@@ -267,14 +213,14 @@ export class ServiceContainer implements IServiceContainer {
   public readonly config: IConfigService;
 
   private constructor() {
-    this.queues = new QueueService();
-    this.database = new DatabaseService();
+    this.queues = registerQueues();
+    this.database = registerDatabase();
     this.errorHandler = new ErrorHandlerService();
     this.healthMonitor = new HealthMonitorService();
     this.webSocket = new WebSocketService();
     this.statusBroadcaster = new StatusBroadcasterService();
     this.parsers = new ParserServiceImpl();
-    this.logger = createLogger(); // Use enhanced logger with file logging
+    this.logger = registerLogger(); // Use enhanced logger with file logging
     this.config = new ConfigService();
 
     // Initialize parsers with the actual parseHTML function

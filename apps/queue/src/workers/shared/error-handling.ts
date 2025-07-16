@@ -1,5 +1,5 @@
-import { BaseAction } from "../actions/core/base-action";
-import { ActionContext } from "../actions/core/types";
+import { BaseAction } from "../core/base-action";
+import { ActionContext } from "../core/types";
 
 export interface ErrorHandlingDeps {
   ErrorHandler: {
@@ -22,10 +22,11 @@ export class ErrorHandlingWrapperAction extends BaseAction<
   ErrorHandlingData,
   ErrorHandlingDeps
 > {
-  name = "error_handling_wrapper";
+  name: string;
 
   constructor(private wrappedAction: BaseAction<any, any>) {
     super();
+    this.name = `error_handling_wrapper(${wrappedAction.name})`;
   }
 
   async execute(

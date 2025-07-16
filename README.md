@@ -56,7 +56,7 @@ Peas is designed to transform unstructured recipe content into structured, searc
 
 ## 📁 Project Structure
 
-```
+```text
 peas/
 ├── apps/
 │   ├── docs/          # Documentation site (Next.js)

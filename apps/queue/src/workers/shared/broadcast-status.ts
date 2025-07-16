@@ -1,5 +1,5 @@
-import { BaseAction } from "../actions/core/base-action";
-import { ActionContext } from "../actions/core/types";
+import { BaseAction } from "../core/base-action";
+import { ActionContext } from "../core/types";
 
 export interface BroadcastStatusDeps {
   addStatusEventAndBroadcast: (event: {

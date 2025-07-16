@@ -1,5 +1,5 @@
-import { BaseAction } from "../actions/core/base-action";
-import { ActionContext } from "../actions/core/types";
+import { BaseAction } from "../core/base-action";
+import { ActionContext } from "../core/types";
 
 export interface RetryDeps {
   logger?: {
@@ -92,13 +92,14 @@ export class RetryAction extends BaseAction<RetryData, RetryDeps> {
  * Action that wraps another action with retry logic
  */
 export class RetryWrapperAction extends BaseAction<any, RetryDeps> {
-  name = "retry_wrapper";
+  name: string;
 
   constructor(
     private wrappedAction: BaseAction<any, any>,
     private config: RetryConfig = DEFAULT_RETRY_CONFIG
   ) {
     super();
+    this.name = `retry_wrapper(${wrappedAction.name})`;
   }
 
   async execute(data: any, deps: RetryDeps, context: ActionContext) {

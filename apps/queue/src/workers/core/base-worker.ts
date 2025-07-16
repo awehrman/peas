@@ -1,11 +1,8 @@
 import { Worker, Queue, Job } from "bullmq";
 import { redisConnection } from "../../config/redis";
-import { BaseAction } from "../actions/core/base-action";
+import { BaseAction } from "../core/base-action";
 
-import {
-  ActionFactory,
-  globalActionFactory,
-} from "../actions/core/action-factory";
+import { ActionFactory, globalActionFactory } from "../core/action-factory";
 import {
   BroadcastProcessingAction,
   BroadcastCompletedAction,
@@ -170,13 +167,37 @@ export abstract class BaseWorker<
 
         // Execute the pipeline
         let result: TData = data;
+        const actionNames = actions.map((a) => {
+          // Extract the actual action name from wrapper names
+          if (a.name.includes("error_handling_wrapper(")) {
+            return a.name
+              .replace("error_handling_wrapper(", "")
+              .replace(")", "");
+          }
+          if (a.name.includes("retry_wrapper(")) {
+            return a.name.replace("retry_wrapper(", "").replace(")", "");
+          }
+          return a.name;
+        });
         this.dependencies.logger.log(
-          `[${this.getOperationName().toUpperCase()}] Executing ${actions.length} actions: ${actions.map((a) => a.name).join(", ")}`
+          `[${this.getOperationName().toUpperCase()}] Executing ${actions.length} actions: ${actionNames.join(", ")}`
         );
         for (const action of actions) {
           const actionStartTime = Date.now();
+          // Extract clean action name for logging
+          let cleanActionName = action.name;
+          if (action.name.includes("error_handling_wrapper(")) {
+            cleanActionName = action.name
+              .replace("error_handling_wrapper(", "")
+              .replace(")", "");
+          }
+          if (action.name.includes("retry_wrapper(")) {
+            cleanActionName = action.name
+              .replace("retry_wrapper(", "")
+              .replace(")", "");
+          }
           this.dependencies.logger.log(
-            `[${this.getOperationName().toUpperCase()}] ▶️ ${action.name}`
+            `[${this.getOperationName().toUpperCase()}] ▶️ ${cleanActionName}`
           );
           try {
             result = (await this.executeActionWithCaching(
@@ -191,7 +212,7 @@ export abstract class BaseWorker<
               true
             );
             this.dependencies.logger.log(
-              `[${this.getOperationName().toUpperCase()}] ✅ ${action.name} (${actionDuration}ms)`
+              `[${this.getOperationName().toUpperCase()}] ✅ ${cleanActionName} (${actionDuration}ms)`
             );
           } catch (error) {
             const actionDuration = Date.now() - actionStartTime;
@@ -201,7 +222,7 @@ export abstract class BaseWorker<
               false
             );
             this.dependencies.logger.log(
-              `[${this.getOperationName().toUpperCase()}] ❌ ${action.name} (${actionDuration}ms) - ${(error as Error).message}`,
+              `[${this.getOperationName().toUpperCase()}] ❌ ${cleanActionName} (${actionDuration}ms) - ${(error as Error).message}`,
               "error"
             );
             throw new ActionExecutionError(

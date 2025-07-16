@@ -23,7 +23,7 @@ The system is built around **actions** - small, focused units of work that can b
 
 ## 📁 Project Structure
 
-```
+```text
 apps/queue/
 ├── src/
 │   ├── services/           # ServiceContainer and dependency injection
@@ -319,7 +319,7 @@ The test suite achieves **100% coverage** on core functionality:
 
 ### Test Structure
 
-```
+```text
 src/tests/
 ├── workers/           # Worker tests
 │   ├── factory.test.ts
@@ -421,9 +421,11 @@ MAX_BACKOFF_MS=30000
 
 - If you see a linter warning about a missing type declaration for `@peas/parser`, you can safely ignore it for now, or add a declaration file:
   - Create a file `@types/peas__parser/index.d.ts` with:
+
     ```ts
     declare module "@peas/parser";
     ```
+
   - Or install a type package if one becomes available.
 
 ## 🎯 Benefits
