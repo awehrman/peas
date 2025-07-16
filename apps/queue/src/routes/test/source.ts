@@ -6,33 +6,49 @@ const router = Router();
 // Test source processing
 router.post("/", async (req: any, res: any) => {
   try {
-    const { title, content } = req.body;
+    const { noteId, title, content, url } = req.body;
 
-    if (!title || !content) {
+    if (!noteId) {
+      serviceContainer.logger.log(
+        "Source test endpoint: Missing required fields",
+        "warn"
+      );
       return res.status(400).json({
         error: "Missing required fields",
-        message: "title and content are required",
+        message: "noteId is required",
       });
     }
+
+    serviceContainer.logger.log(
+      `Source test endpoint: Queuing job for note ${noteId}`
+    );
 
     // Add job to source queue
     const job = await serviceContainer.queues.sourceQueue.add(
       "process_source",
       {
-        title,
-        content,
+        noteId,
+        title: title || "Untitled Source",
+        content: content || "",
+        url: url || "",
       }
     );
 
+    serviceContainer.logger.log(
+      `Source test endpoint: Job queued successfully with ID ${job.id}`
+    );
     res.json({
       success: true,
       message: "Source test job queued successfully",
       jobId: job.id,
-      data: { title, content },
+      data: { noteId, title, contentLength: content?.length || 0, url },
       queue: "source",
     });
   } catch (error) {
-    console.error("Error queuing source test job:", error);
+    serviceContainer.logger.log(
+      `Source test endpoint: Failed to queue job - ${(error as Error).message}`,
+      "error"
+    );
     res.status(500).json({
       error: "Failed to queue source test job",
       message: (error as Error).message,
@@ -42,12 +58,16 @@ router.post("/", async (req: any, res: any) => {
 
 // Get source test info
 router.get("/", (req: any, res: any) => {
+  serviceContainer.logger.log("Source test endpoint: Info request");
   res.json({
     message: "Source Worker Test Endpoint",
-    usage: "POST with { title: string, content: string }",
+    usage:
+      "POST with { noteId: string, title?: string, content?: string, url?: string }",
     example: {
-      title: "Test Recipe",
-      content: "This is a test recipe content for processing",
+      noteId: "note_123",
+      title: "Recipe from Food Blog",
+      content: "This recipe was found on a popular food blog...",
+      url: "https://example.com/recipe",
     },
   });
 });

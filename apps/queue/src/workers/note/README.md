@@ -16,16 +16,16 @@ The Note Worker handles the complete lifecycle of note creation:
 ```text
 src/workers/note/
 ├── note-worker.ts          # Main worker class
-├── types.ts               # Note-specific type definitions
-├── index.ts               # Barrel exports
-├── actions/               # Note processing actions
-│   ├── index.ts          # Action registration
-│   ├── parse-html.ts     # HTML parsing action
-│   ├── save-note.ts      # Database save action
+├── types.ts                # Note-specific type definitions
+├── schema.ts               # Zod schemas and validation utilities for note processing
+├── index.ts                # Barrel exports
+├── actions/                # Note processing actions
+│   ├── index.ts            # Action registration
+│   ├── parse-html.ts       # HTML parsing action
+│   ├── save-note.ts        # Database save action
 │   ├── add-status-actions.ts # Status management
-│   ├── schedule-*.ts     # Follow-up task scheduling
-│   └── validation.ts     # Input validation
-└── tests/                # Unit tests (TODO)
+│   ├── schedule-*.ts       # Follow-up task scheduling
+└── tests/                  # Unit tests (TODO)
 ```
 
 ## Key Components
@@ -55,6 +55,22 @@ Comprehensive type definitions for:
 - Action inputs/outputs
 - Database models
 
+### Schemas & Validation
+
+All Zod schemas and validation utilities for note processing are defined in `schema.ts` at the root of the `note/` directory. These schemas are used to validate job data, parsed files, and action inputs/outputs throughout the note processing pipeline.
+
+**Example usage in an action:**
+
+```typescript
+import { ZodNoteValidation } from "../schema";
+
+// ... inside an action class ...
+const validationResult = ZodNoteValidation.validateSaveNoteData(data);
+if (!validationResult.success) {
+  throw new Error(validationResult.error);
+}
+```
+
 ## Usage
 
 ### Creating a Note Worker
@@ -70,7 +86,7 @@ const worker = createNoteWorker(noteQueue, serviceContainer);
 ### Adding a Job
 
 ```typescript
-await noteQueue.add("process_note", {
+await noteQueue.add("process-note", {
   content: "<html>...</html>",
   noteId: "optional-note-id",
   source: {

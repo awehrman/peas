@@ -6,33 +6,44 @@ const router = Router();
 // Test image processing
 router.post("/", async (req: any, res: any) => {
   try {
-    const { noteId, imageUrl, imageData, imageType, fileName } = req.body;
+    const { noteId, imageUrl } = req.body;
 
     if (!noteId) {
+      serviceContainer.logger.log(
+        "Image test endpoint: Missing required fields",
+        "warn"
+      );
       return res.status(400).json({
         error: "Missing required fields",
         message: "noteId is required",
       });
     }
 
+    serviceContainer.logger.log(
+      `Image test endpoint: Queuing job for note ${noteId}`
+    );
+
     // Add job to image queue
     const job = await serviceContainer.queues.imageQueue.add("process_image", {
       noteId,
-      imageUrl,
-      imageData,
-      imageType,
-      fileName,
+      imageUrl: imageUrl || "https://example.com/image.jpg",
     });
 
+    serviceContainer.logger.log(
+      `Image test endpoint: Job queued successfully with ID ${job.id}`
+    );
     res.json({
       success: true,
       message: "Image test job queued successfully",
       jobId: job.id,
-      data: { noteId, hasImageUrl: !!imageUrl, hasImageData: !!imageData },
+      data: { noteId, imageUrl },
       queue: "image",
     });
   } catch (error) {
-    console.error("Error queuing image test job:", error);
+    serviceContainer.logger.log(
+      `Image test endpoint: Failed to queue job - ${(error as Error).message}`,
+      "error"
+    );
     res.status(500).json({
       error: "Failed to queue image test job",
       message: (error as Error).message,
@@ -42,15 +53,13 @@ router.post("/", async (req: any, res: any) => {
 
 // Get image test info
 router.get("/", (req: any, res: any) => {
+  serviceContainer.logger.log("Image test endpoint: Info request");
   res.json({
     message: "Image Worker Test Endpoint",
-    usage:
-      "POST with { noteId: string, imageUrl?: string, imageData?: string, imageType?: string, fileName?: string }",
+    usage: "POST with { noteId: string, imageUrl?: string }",
     example: {
-      noteId: "note_456",
-      imageUrl: "https://example.com/image.jpg",
-      imageType: "image/jpeg",
-      fileName: "recipe-image.jpg",
+      noteId: "note_123",
+      imageUrl: "https://example.com/recipe-image.jpg",
     },
   });
 });

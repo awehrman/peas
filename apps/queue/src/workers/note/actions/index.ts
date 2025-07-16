@@ -5,7 +5,7 @@ export * from "./schedule-images";
 export * from "./schedule-ingredients";
 export * from "./schedule-instructions";
 export * from "./add-status-actions";
-export * from "./validation";
+export * from "../schema";
 
 import { ActionFactory } from "../../core/action-factory";
 import { SaveNoteAction } from "./save-note";

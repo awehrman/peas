@@ -1,22 +1,23 @@
-import { BaseAction } from "../../core/base-action";
+import { ValidatedAction } from "../../core/validated-action";
 import { ActionContext } from "../../core/types";
 import { ParseHtmlData, ParseHtmlDeps, ParsedHtmlFile } from "../types";
-import { NoteValidation } from "./validation";
+import { ParseHtmlDataSchema } from "../schema";
 
-export class ParseHtmlAction extends BaseAction<ParseHtmlData, ParseHtmlDeps> {
+export class ParseHtmlAction extends ValidatedAction<
+  typeof ParseHtmlDataSchema,
+  ParseHtmlDeps,
+  ParseHtmlData & { file: ParsedHtmlFile }
+> {
   name = "parse_html";
+  constructor() {
+    super(ParseHtmlDataSchema);
+  }
 
-  async execute(
+  async run(
     data: ParseHtmlData,
     deps: ParseHtmlDeps,
     _context: ActionContext
   ): Promise<ParseHtmlData & { file: ParsedHtmlFile }> {
-    // Validate input
-    const validationError = NoteValidation.validateParseHtmlData(data);
-    if (validationError) {
-      throw validationError;
-    }
-
     const file = await deps.parseHTML(data.content);
     return { ...data, file };
   }

@@ -10,11 +10,19 @@ router.post("/", async (req: any, res: any) => {
       req.body;
 
     if (!ingredientLineId || !reference || !noteId) {
+      serviceContainer.logger.log(
+        "Ingredient test endpoint: Missing required fields",
+        "warn"
+      );
       return res.status(400).json({
         error: "Missing required fields",
         message: "ingredientLineId, reference, and noteId are required",
       });
     }
+
+    serviceContainer.logger.log(
+      `Ingredient test endpoint: Queuing job for line "${reference}"`
+    );
 
     // Add job to ingredient queue
     const job = await serviceContainer.queues.ingredientQueue.add(
@@ -28,6 +36,9 @@ router.post("/", async (req: any, res: any) => {
       }
     );
 
+    serviceContainer.logger.log(
+      `Ingredient test endpoint: Job queued successfully with ID ${job.id}`
+    );
     res.json({
       success: true,
       message: "Ingredient test job queued successfully",
@@ -36,7 +47,10 @@ router.post("/", async (req: any, res: any) => {
       queue: "ingredient",
     });
   } catch (error) {
-    console.error("Error queuing ingredient test job:", error);
+    serviceContainer.logger.log(
+      `Ingredient test endpoint: Failed to queue job - ${(error as Error).message}`,
+      "error"
+    );
     res.status(500).json({
       error: "Failed to queue ingredient test job",
       message: (error as Error).message,
@@ -46,6 +60,7 @@ router.post("/", async (req: any, res: any) => {
 
 // Get ingredient test info
 router.get("/", (req: any, res: any) => {
+  serviceContainer.logger.log("Ingredient test endpoint: Info request");
   res.json({
     message: "Ingredient Worker Test Endpoint",
     usage:
