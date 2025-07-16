@@ -1,8 +1,4 @@
-import { createQueue } from "./createQueue";
-import { createIngredientWorker } from "../workers/ingredient";
 import { serviceContainer } from "../services/container";
 
-export const ingredientQueue = createQueue("ingredientQueue");
-
-// Create and start the ingredient worker
-createIngredientWorker(ingredientQueue, serviceContainer);
+// Export the service container's ingredientQueue
+export const ingredientQueue = serviceContainer.queues.ingredientQueue;

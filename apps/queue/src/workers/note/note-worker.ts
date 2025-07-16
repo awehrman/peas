@@ -74,19 +74,19 @@ export class NoteWorker extends BaseWorker<
       this.createErrorHandledAction("add_processing_status", this.dependencies)
     );
 
-    // 4. Schedule follow-up processing tasks (with error handling only, no retry)
-    const scheduleActions = [
-      "schedule_source",
-      "schedule_images",
-      "schedule_ingredients",
-      "schedule_instructions",
-    ] as const;
+    // 4. Schedule follow-up processing tasks (COMMENTED OUT FOR SIMPLIFIED TESTING)
+    // const scheduleActions = [
+    //   "schedule_source",
+    //   "schedule_images",
+    //   "schedule_ingredients",
+    //   "schedule_instructions",
+    // ] as const;
 
-    scheduleActions.forEach((actionName) => {
-      actions.push(
-        this.createErrorHandledAction(actionName, this.dependencies)
-      );
-    });
+    // scheduleActions.forEach((actionName) => {
+    //   actions.push(
+    //     this.createErrorHandledAction(actionName, this.dependencies)
+    //   );
+    // });
 
     // 5. Add "COMPLETED" status at the very end
     // Input: NotePipelineStage3 -> Output: NotePipelineStage3

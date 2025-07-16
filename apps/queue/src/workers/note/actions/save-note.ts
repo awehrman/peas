@@ -1,7 +1,7 @@
 import { ValidatedAction } from "../../core/validated-action";
 import { ActionContext } from "../../core/types";
-import { SaveNoteData, SaveNoteDeps, NoteWithParsedLines } from "../types";
-import { SaveNoteDataSchema } from "../schema";
+import { SaveNoteDeps, NoteWithParsedLines } from "../types";
+import { SaveNoteDataSchema, type SaveNoteData } from "../schema";
 
 export class SaveNoteAction extends ValidatedAction<
   typeof SaveNoteDataSchema,
@@ -16,9 +16,18 @@ export class SaveNoteAction extends ValidatedAction<
   async run(
     data: SaveNoteData,
     deps: SaveNoteDeps,
-    _context: ActionContext
+    context: ActionContext
   ): Promise<SaveNoteData & { note: NoteWithParsedLines }> {
+    deps.logger.log(
+      `[SAVE_NOTE] Starting note creation for job ${context.jobId}`
+    );
+
     const note = await deps.createNote(data.file);
+
+    deps.logger.log(
+      `[SAVE_NOTE] Successfully created note for job ${context.jobId}, noteId: "${note.id}"`
+    );
+
     return { ...data, note };
   }
 }

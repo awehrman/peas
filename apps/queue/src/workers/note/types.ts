@@ -127,6 +127,9 @@ export interface Note {
  */
 export interface ParseHtmlDeps {
   parseHTML: (content: string) => Promise<ParsedHtmlFile>;
+  logger: {
+    log: (message: string, level?: LogLevel) => void;
+  };
 }
 
 /**
@@ -134,6 +137,9 @@ export interface ParseHtmlDeps {
  */
 export interface SaveNoteDeps {
   createNote: (file: ParsedHtmlFile) => Promise<NoteWithParsedLines>;
+  logger: {
+    log: (message: string, level?: LogLevel) => void;
+  };
 }
 
 /**

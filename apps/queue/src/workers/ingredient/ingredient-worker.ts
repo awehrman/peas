@@ -58,16 +58,16 @@ export class IngredientWorker extends BaseWorker<
       this.createWrappedAction("save_ingredient_line", this.dependencies)
     );
 
-    // 3. Schedule categorization (with error handling only, no retry)
+    // 3. Schedule categorization (COMMENTED OUT FOR SIMPLIFIED TESTING)
     // Note: This will schedule categorization after each ingredient line.
     // In a production system, you might want to track when ALL ingredient lines
     // for a note are completed before scheduling categorization.
-    actions.push(
-      this.createErrorHandledAction(
-        "schedule_categorization",
-        this.dependencies
-      )
-    );
+    // actions.push(
+    //   this.createErrorHandledAction(
+    //     "schedule_categorization",
+    //     this.dependencies
+    //   )
+    // );
 
     return actions;
   }

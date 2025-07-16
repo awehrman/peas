@@ -2,24 +2,27 @@ import { Router, Request, Response } from "express";
 import { readFileSync } from "fs";
 import { join } from "path";
 import { serviceContainer } from "../../services/container";
+import { NoteValidation } from "../../schemas";
 
 const router = Router();
 
 // Test note processing
 router.post("/", (req: Request, res: Response) => {
-  const { content } = req.body as { content?: string };
-
-  if (!content) {
+  // Validate the request body using the centralized schema
+  const validation = NoteValidation.validateNoteJobData(req.body);
+  if (!validation.success) {
     serviceContainer.logger.log(
-      "Note test endpoint: Missing content field",
+      `Note test endpoint: Validation failed - ${validation.error}`,
       "warn"
     );
     res.status(400).json({
-      error: "Missing required fields",
-      message: "content is required",
+      error: "Invalid request data",
+      message: validation.error,
     });
     return;
   }
+
+  const { content } = validation.data;
 
   serviceContainer.logger.log(
     `Note test endpoint: Queuing job with ${content.length} characters`
@@ -66,25 +69,6 @@ router.post("/acai-smoothie", (req: Request, res: Response) => {
       `Acai smoothie test: Reading file from ${filePath}`
     );
 
-    // Extract some basic info from the HTML for the response
-    const titleMatch = htmlContent.match(
-      /<meta itemprop="title" content="([^"]+)"/
-    );
-    const title = titleMatch ? titleMatch[1] : "Unknown";
-
-    const tagMatches = htmlContent.match(
-      /<meta itemprop="tag" content="([^"]+)"/g
-    );
-    const tags = tagMatches
-      ? tagMatches
-          .map((match) => match.match(/content="([^"]+)"/)?.[1])
-          .filter(Boolean)
-      : [];
-
-    serviceContainer.logger.log(
-      `Acai smoothie test: Extracted title "${title}" and ${tags.length} tags`
-    );
-
     serviceContainer.queues.noteQueue
       .add("process-note", { content: htmlContent })
       .then((job) => {
@@ -92,26 +76,15 @@ router.post("/acai-smoothie", (req: Request, res: Response) => {
           `Acai smoothie test: Job queued successfully with ID ${job.id}`
         );
         res.json({
-          success: true,
-          message: "Acai Berry Smoothie test job queued successfully",
-          jobId: job.id,
-          data: {
-            contentLength: htmlContent.length,
-            source: "Acai Berry Smoothie.html",
-            extractedInfo: {
-              title,
-              tags,
-              hasImage: htmlContent.includes("<img"),
-              hasIngredients:
-                htmlContent.includes("apple") ||
-                htmlContent.includes("carrots"),
+          message: `[${job.id}] Acai Berry Smoothie test job queued successfully`,
+          job: {
+            data: {
+              ...job.data,
+              content:
+                job.data.content.substring(0, 50) +
+                (job.data.content.length > 50 ? "..." : ""),
             },
-            jobData: job.data,
-            jobOptions: job.opts,
-            jobStatus: job.finishedOn ? "completed" : "pending",
-            timestamp: new Date().toISOString(),
           },
-          queue: "note",
         });
       })
       .catch((error) => {

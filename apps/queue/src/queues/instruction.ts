@@ -1,8 +1,4 @@
-import { createQueue } from "./createQueue";
-import { createInstructionWorker } from "../workers/instruction";
 import { serviceContainer } from "../services/container";
 
-export const instructionQueue = createQueue("instructionQueue");
-
-// Create and start the instruction worker
-createInstructionWorker(instructionQueue, serviceContainer);
+// Export the service container's instructionQueue
+export const instructionQueue = serviceContainer.queues.instructionQueue;

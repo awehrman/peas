@@ -1,11 +1,12 @@
 import { BaseAction } from "./base-action";
 import type { ActionContext } from "./types";
-import type { ZodSchema, z } from "zod";
+import type { z } from "zod";
+import type { ParseResult } from "../../schemas";
 
 export abstract class ValidatedAction<
-  Schema extends ZodSchema<any>,
+  Schema extends z.ZodTypeAny,
   D,
-  TOutput = unknown,
+  TOutput = ParseResult,
 > extends BaseAction<z.infer<Schema>, D> {
   constructor(public schema: Schema) {
     super();

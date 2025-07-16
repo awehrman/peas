@@ -11,6 +11,7 @@ import { ErrorType, ErrorSeverity } from "./types";
 import { initializeWebSocketServer } from "./websocket-server";
 import { serviceContainer } from "./services";
 import { SERVER_DEFAULTS, SERVER_CONSTANTS } from "./config";
+import { startWorkers } from "./workers/startup";
 
 import cors from "cors";
 
@@ -161,6 +162,21 @@ const gracefulShutdown = async (signal: string) => {
   );
 
   try {
+    // Close all workers gracefully first
+    const workers = (serviceContainer as any)._workers;
+    if (workers) {
+      serviceContainer.logger.log("🔄 Closing workers...");
+      await Promise.allSettled([
+        workers.noteWorker?.close(),
+        workers.imageWorker?.close(),
+        workers.ingredientWorker?.close(),
+        workers.instructionWorker?.close(),
+        workers.categorizationWorker?.close(),
+        workers.sourceWorker?.close(),
+      ]);
+      serviceContainer.logger.log("✅ All workers closed successfully");
+    }
+
     // Close all queues gracefully
     await Promise.allSettled([
       serviceContainer.queues.noteQueue.close(),
@@ -215,7 +231,8 @@ const server = app.listen(serviceContainer.config.port, () => {
     `🔌 WebSocket server running on port ${serviceContainer.config.wsPort}`
   );
 
-  // Workers are automatically started when queues are imported
+  // Start all workers after the service container is fully initialized
+  startWorkers(serviceContainer.queues, serviceContainer);
   serviceContainer.logger.log("👷 All workers started successfully");
 });
 

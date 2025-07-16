@@ -16,9 +16,18 @@ export class ParseHtmlAction extends ValidatedAction<
   async run(
     data: ParseHtmlData,
     deps: ParseHtmlDeps,
-    _context: ActionContext
+    context: ActionContext
   ): Promise<ParseHtmlData & { file: ParsedHtmlFile }> {
+    deps.logger.log(
+      `[PARSE_HTML] Starting HTML parsing for job ${context.jobId}`
+    );
+
     const file = await deps.parseHTML(data.content);
+
+    deps.logger.log(
+      `[PARSE_HTML] Successfully parsed HTML for job ${context.jobId}, title: "${file.title}"`
+    );
+
     return { ...data, file };
   }
 }
