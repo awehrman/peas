@@ -52,7 +52,7 @@ export const JobMetadataSchema = z.object({
  * Base job data schema that all workers extend
  */
 export const BaseJobDataSchema = z.object({
-  metadata: JobMetadataSchema,
+  metadata: JobMetadataSchema.optional(),
   source: SourceSchema.optional(),
   options: ProcessingOptionsSchema.optional(),
   createdAt: z.date().optional(),

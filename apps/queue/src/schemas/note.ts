@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { BaseJobDataSchema, SourceSchema, BaseValidation } from "./base";
+import { BaseJobDataSchema, BaseValidation } from "./base";
 import type {
   ParsedIngredientLine,
   ParsedInstructionLine,
@@ -33,8 +33,6 @@ export const NoteJobDataSchema = BaseJobDataSchema.extend({
  */
 export const ParseHtmlDataSchema = z.object({
   content: z.string().min(1, "Content cannot be empty"),
-  noteId: z.string().uuid("Note ID must be a valid UUID").optional(),
-  source: SourceSchema.optional(),
 });
 
 /**
@@ -68,7 +66,6 @@ export const ParsedHtmlFileSchema = z.object({
  * Save note data schema
  */
 export const SaveNoteDataSchema = z.object({
-  noteId: z.string().uuid("Note ID must be a valid UUID"),
   file: ParsedHtmlFileSchema,
 });
 

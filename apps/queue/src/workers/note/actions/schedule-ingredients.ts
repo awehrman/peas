@@ -13,7 +13,7 @@ export class ScheduleIngredientsAction extends BaseAction<
     deps: ScheduleIngredientsDeps,
     _context: ActionContext
   ): Promise<ScheduleIngredientsData> {
-    await deps.ingredientQueue.add("process_ingredient_line", {
+    await deps.ingredientQueue.add("process-ingredient-line", {
       noteId: data.noteId,
     });
     return data;

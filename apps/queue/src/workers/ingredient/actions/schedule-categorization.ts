@@ -38,7 +38,7 @@ export class ScheduleCategorizationAction extends BaseAction<
       const { noteId } = input;
 
       // Schedule categorization job
-      const job = await deps.categorizationQueue.add("process_categorization", {
+      const job = await deps.categorizationQueue.add("process-categorization", {
         noteId,
         triggeredBy: "ingredient_processing",
         sourceJobId: context.jobId,

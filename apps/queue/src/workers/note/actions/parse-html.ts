@@ -25,7 +25,7 @@ export class ParseHtmlAction extends ValidatedAction<
     const file = await deps.parseHTML(data.content);
 
     deps.logger.log(
-      `[PARSE_HTML] Successfully parsed HTML for job ${context.jobId}, title: "${file.title}"`
+      `[PARSE_HTML] Successfully parsed HTML for job ${context.jobId}, title: "${file.title}, ingredients: ${file.ingredients.length}, instructions: ${file.instructions.length}"`
     );
 
     return { ...data, file };

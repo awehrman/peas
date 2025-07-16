@@ -75,18 +75,18 @@ export class NoteWorker extends BaseWorker<
     );
 
     // 4. Schedule follow-up processing tasks (COMMENTED OUT FOR SIMPLIFIED TESTING)
-    // const scheduleActions = [
-    //   "schedule_source",
-    //   "schedule_images",
-    //   "schedule_ingredients",
-    //   "schedule_instructions",
-    // ] as const;
+    const scheduleActions = [
+      // "schedule_source",
+      // "schedule_images",
+      // "schedule_ingredients",
+      // "schedule_instructions",
+    ] as const;
 
-    // scheduleActions.forEach((actionName) => {
-    //   actions.push(
-    //     this.createErrorHandledAction(actionName, this.dependencies)
-    //   );
-    // });
+    scheduleActions.forEach((actionName) => {
+      actions.push(
+        this.createErrorHandledAction(actionName, this.dependencies)
+      );
+    });
 
     // 5. Add "COMPLETED" status at the very end
     // Input: NotePipelineStage3 -> Output: NotePipelineStage3

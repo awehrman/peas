@@ -13,7 +13,7 @@ export class ScheduleImagesAction extends BaseAction<
     deps: ScheduleImagesDeps,
     _context: ActionContext
   ): Promise<ScheduleImagesData> {
-    await deps.imageQueue.add("process_image", {
+    await deps.imageQueue.add("process-image", {
       noteId: data.noteId,
     });
     return data;

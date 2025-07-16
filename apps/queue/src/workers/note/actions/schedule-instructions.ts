@@ -13,7 +13,7 @@ export class ScheduleInstructionsAction extends BaseAction<
     deps: ScheduleInstructionsDeps,
     _context: ActionContext
   ): Promise<ScheduleInstructionsData> {
-    await deps.instructionQueue.add("process_instruction_line", {
+    await deps.instructionQueue.add("process-instruction-line", {
       noteId: data.noteId,
     });
     return data;

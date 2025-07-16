@@ -13,7 +13,7 @@ export class ScheduleSourceAction extends BaseAction<
     deps: ScheduleSourceDeps,
     _context: ActionContext
   ): Promise<ScheduleSourceData> {
-    await deps.sourceQueue.add("categorize", {
+    await deps.sourceQueue.add("process-source", {
       noteId: data.noteId,
     });
     return data;
