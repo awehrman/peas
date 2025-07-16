@@ -6,7 +6,7 @@ import express from "express";
 import { createBullBoard } from "@bull-board/api";
 import { BullMQAdapter } from "@bull-board/api/bullMQAdapter.js";
 import { ExpressAdapter } from "@bull-board/express";
-import { importRouter, notesRouter, healthRouter } from "./routes";
+import { importRouter, notesRouter, healthRouter, testRouter } from "./routes";
 import { ErrorType, ErrorSeverity } from "./types";
 import { initializeWebSocketServer } from "./websocket-server";
 import { serviceContainer } from "./services";
@@ -76,6 +76,7 @@ try {
       new BullMQAdapter(serviceContainer.queues.ingredientQueue),
       new BullMQAdapter(serviceContainer.queues.instructionQueue),
       new BullMQAdapter(serviceContainer.queues.categorizationQueue),
+      new BullMQAdapter(serviceContainer.queues.sourceQueue),
     ],
     serverAdapter,
   });
@@ -129,6 +130,7 @@ app.get("/health", async (req, res) => {
 app.use("/import", importRouter);
 app.use("/notes", notesRouter);
 app.use("/health", healthRouter);
+app.use("/test", testRouter);
 
 // 404 handler
 app.use((req, res) => {
@@ -151,6 +153,7 @@ const gracefulShutdown = async (signal: string) => {
       serviceContainer.queues.ingredientQueue.close(),
       serviceContainer.queues.instructionQueue.close(),
       serviceContainer.queues.categorizationQueue.close(),
+      serviceContainer.queues.sourceQueue.close(),
     ]);
 
     console.log("✅ All queues closed successfully");

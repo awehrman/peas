@@ -34,6 +34,7 @@ export interface IQueueService {
   ingredientQueue: Queue;
   instructionQueue: Queue;
   categorizationQueue: Queue;
+  sourceQueue: Queue;
 }
 
 export interface IDatabaseService {
@@ -149,6 +150,7 @@ class QueueService implements IQueueService {
   public readonly ingredientQueue: Queue;
   public readonly instructionQueue: Queue;
   public readonly categorizationQueue: Queue;
+  public readonly sourceQueue: Queue;
 
   constructor() {
     this.noteQueue = createQueue("note");
@@ -156,6 +158,7 @@ class QueueService implements IQueueService {
     this.ingredientQueue = createQueue("ingredient");
     this.instructionQueue = createQueue("instruction");
     this.categorizationQueue = createQueue("categorization");
+    this.sourceQueue = createQueue("source");
   }
 }
 

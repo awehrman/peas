@@ -10,6 +10,7 @@ export * from "./ingredient-worker";
 export * from "./instruction-worker";
 export * from "./image-worker";
 export * from "./categorization-worker";
+export * from "./source-worker";
 
 // Domain-specific actions
 export * from "./actions/note";

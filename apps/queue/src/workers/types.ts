@@ -267,6 +267,31 @@ export interface CategorizationResult {
   processingTime: number;
 }
 
+/**
+ * Source Worker Types
+ */
+export interface SourceWorkerDependencies extends BaseWorkerDependencies {
+  /** Source processing utilities */
+  sourceProcessor: {
+    processSource: (data: any) => Promise<any>;
+  };
+  /** Database operations for sources */
+  database: {
+    saveSource: (data: any) => Promise<any>;
+  };
+}
+
+export interface SourceJobData extends BaseJobData {
+  /** Source title */
+  title?: string;
+  /** Source content */
+  content?: string;
+  /** Source ID */
+  sourceId?: string;
+  /** Processed source data */
+  source?: any;
+}
+
 // ============================================================================
 // ACTION TYPES
 // ============================================================================
@@ -382,6 +407,11 @@ export type WorkerTypes = {
     data: CategorizationJobData;
     deps: CategorizationWorkerDependencies;
     result: CategorizationResult;
+  };
+  source: {
+    data: SourceJobData;
+    deps: SourceWorkerDependencies;
+    result: any;
   };
 };
 
