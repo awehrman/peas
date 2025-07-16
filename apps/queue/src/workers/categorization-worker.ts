@@ -1,6 +1,5 @@
 import { Queue } from "bullmq";
 import { BaseWorker } from "./core/base-worker";
-import { BaseAction } from "./actions/core/base-action";
 import { ActionContext } from "./actions/core/types";
 import {
   ProcessCategorizationAction,
@@ -10,6 +9,8 @@ import { IServiceContainer } from "../services/container";
 import type {
   CategorizationWorkerDependencies,
   CategorizationJobData,
+  ActionPipeline,
+  CategorizationResult,
 } from "./types";
 
 // Using imported types from ./types.ts
@@ -40,8 +41,9 @@ export class CategorizationWorker extends BaseWorker<
   protected createActionPipeline(
     data: CategorizationJobData,
     _context: ActionContext
-  ): BaseAction<any, any>[] {
-    const actions: BaseAction<any, any>[] = [];
+  ): ActionPipeline<CategorizationJobData, CategorizationResult> {
+    const actions: ActionPipeline<CategorizationJobData, CategorizationResult> =
+      [];
 
     // Add standard status actions if we have a noteId
     this.addStatusActions(actions, data);

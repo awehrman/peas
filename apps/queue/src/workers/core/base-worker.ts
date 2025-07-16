@@ -1,7 +1,7 @@
 import { Worker, Queue, Job } from "bullmq";
 import { redisConnection } from "../../config/redis";
 import { BaseAction } from "../actions/core/base-action";
-import { ActionContext } from "../actions/core/types";
+
 import {
   ActionFactory,
   globalActionFactory,
@@ -18,10 +18,9 @@ import { ActionExecutionError } from "./errors";
 import type {
   BaseWorkerDependencies,
   BaseJobData,
-  TypedAction,
+  ActionContext,
 } from "../types";
-
-// Using imported types from ../types.ts
+import type { IServiceContainer } from "../../services/container";
 
 /**
  * Base worker class that provides common functionality for all workers
@@ -33,39 +32,32 @@ export abstract class BaseWorker<
   protected worker: Worker;
   protected actionFactory: ActionFactory;
   protected dependencies: TDeps;
+  protected container?: IServiceContainer;
 
   constructor(
     queue: Queue,
     dependencies: TDeps,
-    actionFactory?: ActionFactory
+    actionFactory?: ActionFactory,
+    container?: IServiceContainer
   ) {
     this.dependencies = dependencies;
     this.actionFactory = actionFactory || globalActionFactory;
+    this.container = container;
 
-    // Register actions if needed
     this.registerActions();
-
-    // Create the worker
     this.worker = this.createWorker(queue);
   }
 
   /**
-   * Abstract method to create the action pipeline for this worker
+   * Create a typed action pipeline for this worker
+   * This method provides better type safety and should be overridden by subclasses
    */
-  protected abstract createActionPipeline(
-    data: TData,
-    context: ActionContext
-  ): BaseAction<any, any>[];
-
-  /**
-   * Create a typed action pipeline (optional override for better type safety)
-   */
-  protected createTypedActionPipeline?(
+  protected createActionPipeline(
     _data: TData,
     _context: ActionContext
-  ): TypedAction<any, any, TDeps>[] {
+  ): BaseAction<unknown, unknown>[] {
     // Default implementation returns empty array
-    // Subclasses can override for better type safety
+    // Subclasses should override this method for better type safety
     return [];
   }
 
@@ -80,6 +72,76 @@ export abstract class BaseWorker<
   protected abstract getOperationName(): string;
 
   /**
+   * Validate that required dependencies are available
+   */
+  public validateDependencies(): void {
+    // Subclasses can override to add specific validations
+  }
+
+  /**
+   * Create standard status broadcasting dependency
+   */
+  protected createStatusBroadcaster() {
+    if (!this.container) {
+      throw new Error("Container not available for status broadcaster");
+    }
+
+    return async (event: {
+      noteId: string;
+      status: string;
+      message: string;
+      context: string;
+      currentCount?: number;
+      totalCount?: number;
+    }) => {
+      if (this.container?.statusBroadcaster?.addStatusEventAndBroadcast) {
+        return this.container.statusBroadcaster.addStatusEventAndBroadcast(
+          event
+        );
+      } else {
+        return Promise.resolve();
+      }
+    };
+  }
+
+  /**
+   * Create standard error handler dependency
+   */
+  protected createErrorHandler() {
+    if (!this.container) {
+      throw new Error("Container not available for error handler");
+    }
+
+    return (
+      this.container.errorHandler?.errorHandler || {
+        withErrorHandling: async (operation) => operation(),
+      }
+    );
+  }
+
+  /**
+   * Create standard logger dependency
+   */
+  protected createLogger() {
+    if (!this.container) {
+      throw new Error("Container not available for logger");
+    }
+
+    return this.container.logger;
+  }
+
+  /**
+   * Create base dependencies that all workers need
+   */
+  public createBaseDependencies() {
+    return {
+      addStatusEventAndBroadcast: this.createStatusBroadcaster(),
+      ErrorHandler: this.createErrorHandler(),
+      logger: this.createLogger(),
+    };
+  }
+
+  /**
    * Create the BullMQ worker with action-based job processing
    */
   private createWorker(queue: Queue): Worker {
@@ -92,6 +154,8 @@ export abstract class BaseWorker<
         noteId: (job.data as TData).noteId,
         operation: this.getOperationName(),
         startTime,
+        workerName: this.getOperationName(),
+        attemptNumber: job.attemptsMade + 1,
       };
 
       const data = job.data as TData;
@@ -105,9 +169,9 @@ export abstract class BaseWorker<
         const actions = this.createActionPipeline(data, context);
 
         // Execute the pipeline
-        let result = data;
+        let result: TData = data;
         console.log(
-          `[${this.getOperationName().toUpperCase()}] Pipeline has ${actions.length} actions:`,
+          `[${this.getOperationName().toUpperCase()}] Executing ${actions.length} actions:`,
           actions.map((a) => a.name)
         );
         for (const action of actions) {
@@ -116,11 +180,11 @@ export abstract class BaseWorker<
             `[${this.getOperationName().toUpperCase()}] ▶️ ${action.name}`
           );
           try {
-            result = await this.executeActionWithCaching(
+            result = (await this.executeActionWithCaching(
               action,
               result,
               context
-            );
+            )) as TData;
             const actionDuration = Date.now() - actionStartTime;
             WorkerMetrics.recordActionExecutionTime(
               action.name,
@@ -194,7 +258,7 @@ export abstract class BaseWorker<
    * Add standard status broadcasting actions to the pipeline
    */
   protected addStatusActions(
-    actions: BaseAction<any, any>[],
+    actions: BaseAction<unknown, unknown>[],
     data: TData
   ): void {
     console.log(
@@ -217,20 +281,26 @@ export abstract class BaseWorker<
   /**
    * Wrap an action with retry and error handling
    */
-  protected wrapWithRetryAndErrorHandling(
-    action: BaseAction<any, any>
-  ): BaseAction<any, any> {
+  protected wrapWithRetryAndErrorHandling<TInput, TOutput>(
+    action: BaseAction<TInput, TOutput>
+  ): BaseAction<TInput, TOutput> {
     const withRetry = new RetryWrapperAction(action);
-    return new ErrorHandlingWrapperAction(withRetry);
+    return new ErrorHandlingWrapperAction(withRetry) as BaseAction<
+      TInput,
+      TOutput
+    >;
   }
 
   /**
    * Wrap an action with just error handling (no retry)
    */
-  protected wrapWithErrorHandling(
-    action: BaseAction<any, any>
-  ): BaseAction<any, any> {
-    return new ErrorHandlingWrapperAction(action);
+  protected wrapWithErrorHandling<TInput, TOutput>(
+    action: BaseAction<TInput, TOutput>
+  ): BaseAction<TInput, TOutput> {
+    return new ErrorHandlingWrapperAction(action) as BaseAction<
+      TInput,
+      TOutput
+    >;
   }
 
   /**
@@ -238,12 +308,12 @@ export abstract class BaseWorker<
    */
   protected createWrappedAction(
     actionName: string,
-    deps?: any
-  ): BaseAction<any, any> {
-    const action = this.actionFactory.create(actionName, deps) as BaseAction<
-      any,
-      any
-    >;
+    deps?: TDeps
+  ): BaseAction<TData, TData> {
+    const action = this.actionFactory.create(
+      actionName,
+      deps
+    ) as unknown as BaseAction<TData, TData>;
     return this.wrapWithRetryAndErrorHandling(action);
   }
 
@@ -252,12 +322,12 @@ export abstract class BaseWorker<
    */
   protected createErrorHandledAction(
     actionName: string,
-    deps?: any
-  ): BaseAction<any, any> {
-    const action = this.actionFactory.create(actionName, deps) as BaseAction<
-      any,
-      any
-    >;
+    deps?: TDeps
+  ): BaseAction<TData, TData> {
+    const action = this.actionFactory.create(
+      actionName,
+      deps
+    ) as unknown as BaseAction<TData, TData>;
     return this.wrapWithErrorHandling(action);
   }
 
@@ -278,11 +348,11 @@ export abstract class BaseWorker<
   /**
    * Execute an action with caching support
    */
-  private async executeActionWithCaching(
-    action: BaseAction<any, any>,
-    data: any,
+  private async executeActionWithCaching<TInput, TOutput>(
+    action: BaseAction<TInput, TOutput>,
+    data: TInput,
     context: ActionContext
-  ): Promise<any> {
+  ): Promise<TOutput> {
     // Check if action supports caching
     if (action.name.includes("parse") || action.name.includes("fetch")) {
       const cacheKey = createCacheKey(
@@ -297,16 +367,24 @@ export abstract class BaseWorker<
         this.dependencies.logger.log(
           `Cache hit for action ${action.name} in job ${context.jobId}`
         );
-        return cached;
+        return cached as TOutput;
       }
 
-      const result = await action.execute(data, this.dependencies, context);
+      const result = await action.execute(
+        data,
+        this.dependencies as unknown as TOutput,
+        context
+      );
       globalActionCache.set(cacheKey, result, 300000); // Cache for 5 minutes
       return result;
     }
 
     // No caching for other actions
-    return action.execute(data, this.dependencies, context);
+    return action.execute(
+      data,
+      this.dependencies as unknown as TOutput,
+      context
+    );
   }
 
   /**
@@ -323,4 +401,32 @@ export abstract class BaseWorker<
 
     return status;
   }
+}
+
+/**
+ * Static helper to create base dependencies from a container
+ */
+export function createBaseDependenciesFromContainer(
+  container: IServiceContainer
+) {
+  return {
+    addStatusEventAndBroadcast: async (event: {
+      noteId: string;
+      status: string;
+      message: string;
+      context: string;
+      currentCount?: number;
+      totalCount?: number;
+    }) => {
+      if (container.statusBroadcaster?.addStatusEventAndBroadcast) {
+        return container.statusBroadcaster.addStatusEventAndBroadcast(event);
+      } else {
+        return Promise.resolve();
+      }
+    },
+    ErrorHandler: container.errorHandler?.errorHandler || {
+      withErrorHandling: async (operation) => operation(),
+    },
+    logger: container.logger,
+  };
 }

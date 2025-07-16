@@ -1,6 +1,5 @@
 import { Queue } from "bullmq";
 import { BaseWorker } from "./core/base-worker";
-import { BaseAction } from "./actions/core/base-action";
 import { ActionContext } from "./actions/core/types";
 import {
   ProcessInstructionLineAction,
@@ -10,6 +9,8 @@ import { IServiceContainer } from "../services/container";
 import type {
   InstructionWorkerDependencies,
   InstructionJobData,
+  ActionPipeline,
+  ParsedInstructionResult,
 } from "./types";
 
 // Using imported types from ./types.ts
@@ -40,8 +41,9 @@ export class InstructionWorker extends BaseWorker<
   protected createActionPipeline(
     data: InstructionJobData,
     _context: ActionContext
-  ): BaseAction<any, any>[] {
-    const actions: BaseAction<any, any>[] = [];
+  ): ActionPipeline<InstructionJobData, ParsedInstructionResult> {
+    const actions: ActionPipeline<InstructionJobData, ParsedInstructionResult> =
+      [];
 
     // Add standard status actions if we have a noteId
     this.addStatusActions(actions, data);

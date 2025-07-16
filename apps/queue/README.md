@@ -163,8 +163,8 @@ export class MyWorker extends BaseWorker<MyJobData, MyDependencies> {
   protected createActionPipeline(
     data: MyJobData,
     context: ActionContext
-  ): BaseAction<any, any>[] {
-    const actions: BaseAction<any, any>[] = [];
+  ): ActionPipeline<MyJobData, MyJobResult> {
+    const actions: ActionPipeline<MyJobData, MyJobResult> = [];
 
     // Add status broadcasting (automatic if noteId exists)
     this.addStatusActions(actions, data);

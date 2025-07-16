@@ -1,6 +1,5 @@
 import { Queue } from "bullmq";
 import { BaseWorker } from "./core/base-worker";
-import { BaseAction } from "./actions/core/base-action";
 import { ActionContext } from "./actions/core/types";
 import { ProcessSourceAction, SaveSourceAction } from "./actions/source";
 import {
@@ -8,7 +7,11 @@ import {
   AddCompletedStatusAction,
 } from "./actions/source";
 import { IServiceContainer } from "../services/container";
-import type { SourceWorkerDependencies, SourceJobData } from "./types";
+import type {
+  SourceWorkerDependencies,
+  SourceJobData,
+  ActionPipeline,
+} from "./types";
 
 /**
  * Source Worker that extends BaseWorker for source processing
@@ -41,8 +44,8 @@ export class SourceWorker extends BaseWorker<
   protected createActionPipeline(
     _data: SourceJobData,
     _context: ActionContext
-  ): BaseAction<any, any>[] {
-    const actions: BaseAction<any, any>[] = [];
+  ): ActionPipeline<SourceJobData, Record<string, unknown>> {
+    const actions: ActionPipeline<SourceJobData, Record<string, unknown>> = [];
 
     // 1. Process source (with retry and error handling)
     actions.push(this.createWrappedAction("process_source", this.dependencies));

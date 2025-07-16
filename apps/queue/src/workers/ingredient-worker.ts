@@ -1,13 +1,17 @@
 import { Queue } from "bullmq";
 import { BaseWorker } from "./core/base-worker";
-import { BaseAction } from "./actions/core/base-action";
 import { ActionContext } from "./actions/core/types";
 import {
   ProcessIngredientLineAction,
   SaveIngredientLineAction,
 } from "./actions/ingredient";
 import { IServiceContainer } from "../services/container";
-import type { IngredientWorkerDependencies, IngredientJobData } from "./types";
+import type {
+  IngredientWorkerDependencies,
+  IngredientJobData,
+  ActionPipeline,
+  ParsedIngredientResult,
+} from "./types";
 
 // Using imported types from ./types.ts
 
@@ -37,8 +41,9 @@ export class IngredientWorker extends BaseWorker<
   protected createActionPipeline(
     data: IngredientJobData,
     _context: ActionContext
-  ): BaseAction<any, any>[] {
-    const actions: BaseAction<any, any>[] = [];
+  ): ActionPipeline<IngredientJobData, ParsedIngredientResult> {
+    const actions: ActionPipeline<IngredientJobData, ParsedIngredientResult> =
+      [];
 
     // Add standard status actions if we have a noteId
     this.addStatusActions(actions, data);

@@ -1,10 +1,14 @@
 import { Queue } from "bullmq";
 import { BaseWorker } from "./core/base-worker";
-import { BaseAction } from "./actions/core/base-action";
 import { ActionContext } from "./actions/core/types";
 import { ProcessImageAction, SaveImageAction } from "./actions/image";
 import { IServiceContainer } from "../services/container";
-import type { ImageWorkerDependencies, ImageJobData } from "./types";
+import type {
+  ImageWorkerDependencies,
+  ImageJobData,
+  ActionPipeline,
+  ProcessedImageResult,
+} from "./types";
 
 // Using imported types from ./types.ts
 
@@ -31,8 +35,8 @@ export class ImageWorker extends BaseWorker<
   protected createActionPipeline(
     data: ImageJobData,
     _context: ActionContext
-  ): BaseAction<any, any>[] {
-    const actions: BaseAction<any, any>[] = [];
+  ): ActionPipeline<ImageJobData, ProcessedImageResult> {
+    const actions: ActionPipeline<ImageJobData, ProcessedImageResult> = [];
 
     // Add standard status actions if we have a noteId
     this.addStatusActions(actions, data);
@@ -74,7 +78,7 @@ export function createImageWorker(
         const result = {
           success: true,
           processedUrl: "processed-image-url",
-          metadata: {
+          imageMetadata: {
             width: 800,
             height: 600,
             format: "jpeg",
@@ -83,7 +87,7 @@ export function createImageWorker(
           processingTime: 100,
         };
         container.logger.log(
-          `[IMAGE] Image processing completed: ${result.processedUrl} (${result.metadata.width}x${result.metadata.height})`
+          `[IMAGE] Image processing completed: ${result.processedUrl} (${result.imageMetadata.width}x${result.imageMetadata.height})`
         );
         return result;
       },
