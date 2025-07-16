@@ -46,12 +46,18 @@ export class ProcessIngredientLineAction extends BaseAction<
       // 5. Storing parsed segments in the database
 
       // Stub implementation for now
-      console.log(`Processing ingredient line for note ${noteId}:`, {
-        ingredientLineId,
-        reference,
-        blockIndex,
-        lineIndex,
-      });
+      if (_deps.logger) {
+        _deps.logger.log(
+          `Processing ingredient line for note ${noteId}: ingredientLineId=${ingredientLineId}, reference="${reference}", blockIndex=${blockIndex}, lineIndex=${lineIndex}`
+        );
+      } else {
+        console.log(`Processing ingredient line for note ${noteId}:`, {
+          ingredientLineId,
+          reference,
+          blockIndex,
+          lineIndex,
+        });
+      }
 
       // Simulate parsing
       await new Promise((resolve) => setTimeout(resolve, 50));

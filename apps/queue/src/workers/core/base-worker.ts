@@ -170,13 +170,12 @@ export abstract class BaseWorker<
 
         // Execute the pipeline
         let result: TData = data;
-        console.log(
-          `[${this.getOperationName().toUpperCase()}] Executing ${actions.length} actions:`,
-          actions.map((a) => a.name)
+        this.dependencies.logger.log(
+          `[${this.getOperationName().toUpperCase()}] Executing ${actions.length} actions: ${actions.map((a) => a.name).join(", ")}`
         );
         for (const action of actions) {
           const actionStartTime = Date.now();
-          console.log(
+          this.dependencies.logger.log(
             `[${this.getOperationName().toUpperCase()}] ▶️ ${action.name}`
           );
           try {
@@ -191,7 +190,7 @@ export abstract class BaseWorker<
               actionDuration,
               true
             );
-            console.log(
+            this.dependencies.logger.log(
               `[${this.getOperationName().toUpperCase()}] ✅ ${action.name} (${actionDuration}ms)`
             );
           } catch (error) {
@@ -201,8 +200,9 @@ export abstract class BaseWorker<
               actionDuration,
               false
             );
-            console.log(
-              `[${this.getOperationName().toUpperCase()}] ❌ ${action.name} (${actionDuration}ms) - ${(error as Error).message}`
+            this.dependencies.logger.log(
+              `[${this.getOperationName().toUpperCase()}] ❌ ${action.name} (${actionDuration}ms) - ${(error as Error).message}`,
+              "error"
             );
             throw new ActionExecutionError(
               `Action ${action.name} failed: ${(error as Error).message}`,
@@ -261,17 +261,12 @@ export abstract class BaseWorker<
     actions: BaseAction<unknown, unknown>[],
     data: TData
   ): void {
-    console.log(
-      `[${this.getOperationName().toUpperCase()}] addStatusActions called with data:`,
-      {
-        noteId: data.noteId,
-        hasNoteId: !!data.noteId,
-        dataKeys: Object.keys(data),
-      }
+    this.dependencies.logger.log(
+      `[${this.getOperationName().toUpperCase()}] addStatusActions called with data: noteId=${data.noteId}, hasNoteId=${!!data.noteId}, dataKeys=${Object.keys(data).join(", ")}`
     );
 
     // Add status actions regardless of noteId - they will handle missing noteId gracefully
-    console.log(
+    this.dependencies.logger.log(
       `[${this.getOperationName().toUpperCase()}] Adding status actions`
     );
     actions.unshift(new BroadcastProcessingAction());

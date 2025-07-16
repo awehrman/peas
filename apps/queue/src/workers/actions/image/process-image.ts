@@ -43,12 +43,18 @@ export class ProcessImageAction extends BaseAction<ProcessImageInput, any> {
       // 6. Metadata extraction
 
       // Stub implementation for now
-      console.log(`Processing image for note ${noteId}:`, {
-        hasImageUrl: !!imageUrl,
-        hasImageData: !!imageData,
-        imageType,
-        fileName,
-      });
+      if (_deps.logger) {
+        _deps.logger.log(
+          `Processing image for note ${noteId}: hasImageUrl=${!!imageUrl}, hasImageData=${!!imageData}, imageType=${imageType}, fileName=${fileName}`
+        );
+      } else {
+        console.log(`Processing image for note ${noteId}:`, {
+          hasImageUrl: !!imageUrl,
+          hasImageData: !!imageData,
+          imageType,
+          fileName,
+        });
+      }
 
       // Simulate processing time
       await new Promise((resolve) => setTimeout(resolve, 100));

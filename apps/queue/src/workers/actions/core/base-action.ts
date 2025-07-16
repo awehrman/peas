@@ -112,12 +112,16 @@ export class LoggingAction extends BaseAction<any, any> {
   ) {
     super();
   }
-  async execute(data: any, _deps: any, context: ActionContext): Promise<any> {
+  async execute(data: any, deps: any, context: ActionContext): Promise<any> {
     const logMessage =
       typeof this.message === "function"
         ? this.message(data, context)
         : this.message;
-    console.log(`[${context.jobId}] ${logMessage}`);
+    if (deps.logger) {
+      deps.logger.log(`[${context.jobId}] ${logMessage}`);
+    } else {
+      console.log(`[${context.jobId}] ${logMessage}`);
+    }
     return data;
   }
   retryable = false;

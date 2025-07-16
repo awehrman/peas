@@ -29,5 +29,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# logs
+/logs
+/logs/*
+*.log
+
 # /public/files/*
 # /public/files/**/*

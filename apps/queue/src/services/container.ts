@@ -3,6 +3,7 @@ import { redisConnection } from "../config/redis";
 import { prisma } from "../config/database";
 import { ErrorHandler } from "../utils/error-handler";
 import { HealthMonitor } from "../utils/health-monitor";
+import { createLogger } from "../utils/logger";
 
 // WebSocket manager type - we'll define this locally since it's not exported
 interface WebSocketManager {
@@ -70,7 +71,24 @@ export interface IParserService {
 }
 
 export interface ILoggerService {
-  log(message: string, level?: "info" | "warn" | "error" | string): void;
+  log(
+    message: string,
+    level?: "debug" | "info" | "warn" | "error" | "fatal"
+  ): void;
+  debug?(message: string, context?: Record<string, unknown>): void;
+  info?(message: string, context?: Record<string, unknown>): void;
+  warn?(message: string, context?: Record<string, unknown>): void;
+  error?(message: string, context?: Record<string, unknown>): void;
+  fatal?(message: string, context?: Record<string, unknown>): void;
+  logWithContext?(
+    level: string,
+    message: string,
+    context: Record<string, unknown>
+  ): void;
+  getLogFiles?(): { main: string; error: string };
+  rotateLogs?(maxSizeMB?: number): void;
+  getLogStats?(): { mainLogSize: number; errorLogSize: number };
+  clearOldLogs?(daysOld?: number): void;
 }
 
 // Configuration interface
@@ -96,20 +114,6 @@ export interface IServiceContainer {
   logger: ILoggerService;
   config: IConfigService;
   close(): Promise<void>;
-}
-
-// Default logger implementation
-class LoggerService implements ILoggerService {
-  log(message: string, level: "info" | "warn" | "error" = "info"): void {
-    const timestamp = new Date().toISOString();
-    const prefix = {
-      info: "ℹ️",
-      warn: "⚠️",
-      error: "❌",
-    }[level];
-
-    console.log(`${prefix} [${timestamp}] ${message}`);
-  }
 }
 
 // Default configuration service
@@ -270,7 +274,7 @@ export class ServiceContainer implements IServiceContainer {
     this.webSocket = new WebSocketService();
     this.statusBroadcaster = new StatusBroadcasterService();
     this.parsers = new ParserServiceImpl();
-    this.logger = new LoggerService();
+    this.logger = createLogger(); // Use enhanced logger with file logging
     this.config = new ConfigService();
 
     // Initialize parsers with the actual parseHTML function

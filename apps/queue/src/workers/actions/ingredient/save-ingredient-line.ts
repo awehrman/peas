@@ -36,11 +36,17 @@ export class SaveIngredientLineAction extends BaseAction<
       // 4. Updating note parsing error count if needed
 
       // Stub implementation for now
-      console.log(`Saving ingredient line data for note ${noteId}:`, {
-        ingredientLineId,
-        parseStatus: parseResult.parseStatus,
-        segmentsCount: parseResult.parsedSegments?.length || 0,
-      });
+      if (_deps.logger) {
+        _deps.logger.log(
+          `Saving ingredient line data for note ${noteId}: ingredientLineId=${ingredientLineId}, parseStatus=${parseResult.parseStatus}, segmentsCount=${parseResult.parsedSegments?.length || 0}`
+        );
+      } else {
+        console.log(`Saving ingredient line data for note ${noteId}:`, {
+          ingredientLineId,
+          parseStatus: parseResult.parseStatus,
+          segmentsCount: parseResult.parsedSegments?.length || 0,
+        });
+      }
 
       const segmentsSaved = parseResult.parsedSegments?.length || 0;
 

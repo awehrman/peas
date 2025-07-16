@@ -24,9 +24,14 @@ app.use((req, res, next) => {
     const status = res.statusCode;
 
     if (status >= 400) {
-      console.warn(`⚠️ ${req.method} ${req.path} - ${status} (${duration}ms)`);
+      serviceContainer.logger.log(
+        `⚠️ ${req.method} ${req.path} - ${status} (${duration}ms)`,
+        "warn"
+      );
     } else {
-      console.log(`✅ ${req.method} ${req.path} - ${status} (${duration}ms)`);
+      serviceContainer.logger.log(
+        `✅ ${req.method} ${req.path} - ${status} (${duration}ms)`
+      );
     }
   });
 
@@ -91,7 +96,10 @@ try {
     { operation: "bull_board_setup" }
   );
   serviceContainer.errorHandler.errorHandler.logError(jobError);
-  console.error("Failed to setup Bull Board, continuing without it");
+  serviceContainer.logger.log(
+    "Failed to setup Bull Board, continuing without it",
+    "error"
+  );
 }
 
 // Health check endpoint with monitoring
@@ -143,7 +151,9 @@ app.use((req, res) => {
 
 // Graceful shutdown handling
 const gracefulShutdown = async (signal: string) => {
-  console.log(`\n🛑 Received ${signal}, starting graceful shutdown...`);
+  serviceContainer.logger.log(
+    `\n🛑 Received ${signal}, starting graceful shutdown...`
+  );
 
   try {
     // Close all queues gracefully
@@ -156,17 +166,17 @@ const gracefulShutdown = async (signal: string) => {
       serviceContainer.queues.sourceQueue.close(),
     ]);
 
-    console.log("✅ All queues closed successfully");
+    serviceContainer.logger.log("✅ All queues closed successfully");
 
     // Close server
     server.close(() => {
-      console.log("✅ HTTP server closed");
+      serviceContainer.logger.log("✅ HTTP server closed");
       process.exit(0);
     });
 
     // Force exit after 10 seconds
     setTimeout(() => {
-      console.error("❌ Forced shutdown after timeout");
+      serviceContainer.logger.log("❌ Forced shutdown after timeout", "error");
       process.exit(1);
     }, 10000);
   } catch (error) {
@@ -183,25 +193,25 @@ const gracefulShutdown = async (signal: string) => {
 
 // Start server with error handling
 const server = app.listen(serviceContainer.config.port, () => {
-  console.log(
+  serviceContainer.logger.log(
     `🚀 Queue service running at http://localhost:${serviceContainer.config.port}`
   );
-  console.log(
+  serviceContainer.logger.log(
     `📊 Bull Board available at http://localhost:${serviceContainer.config.port}/bull-board`
   );
-  console.log(
+  serviceContainer.logger.log(
     `❤️ Health check available at http://localhost:${serviceContainer.config.port}/health`
   );
 
   // Initialize WebSocket server
   const wsManager = initializeWebSocketServer(serviceContainer.config.wsPort);
   serviceContainer.webSocket.webSocketManager = wsManager;
-  console.log(
+  serviceContainer.logger.log(
     `🔌 WebSocket server running on port ${serviceContainer.config.wsPort}`
   );
 
   // Workers are automatically started when queues are imported
-  console.log("👷 All workers started successfully");
+  serviceContainer.logger.log("👷 All workers started successfully");
 });
 
 // Handle server errors
