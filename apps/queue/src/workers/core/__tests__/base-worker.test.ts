@@ -781,6 +781,7 @@ describe("BaseWorker advanced coverage", () => {
     });
 
     it("should handle circular references gracefully", () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test circular reference
       const circular: any = { name: "test" };
       circular.self = circular;
       const result = worker["truncateResultForLogging"](circular);

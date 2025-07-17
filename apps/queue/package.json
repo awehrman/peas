@@ -10,6 +10,7 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
+    "test:ci": "vitest run",
     "test:coverage": "vitest run --coverage",
     "lint": "eslint --ext .ts,.tsx src"
   },

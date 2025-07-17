@@ -55,12 +55,15 @@ async function enqueueHtmlFiles() {
         throw new Error(`File is empty: ${file}`);
       }
 
+      // Generate a unique noteId for tracking
+      const noteId = `import-${file}-${Date.now()}`;
+
       // Add to queue
       await noteQueue.add(
         "process-note",
-        { content },
+        { content, noteId },
         {
-          jobId: `import-${file}-${Date.now()}`,
+          jobId: noteId,
           attempts: 3,
           backoff: {
             type: "exponential",
