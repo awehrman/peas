@@ -7,7 +7,8 @@ import {
 
 export interface AddStatusActionsDeps {
   addStatusEventAndBroadcast: (event: {
-    noteId: string;
+    importId: string;
+    noteId?: string;
     status: string;
     message: string;
     context: string;
@@ -49,7 +50,11 @@ export class AddStatusActionsAction extends BaseAction<
     }
 
     // Create data with noteId for the status actions
-    const statusData = { noteId, message: "Processing completed" };
+    const statusData = {
+      importId: noteId,
+      noteId,
+      message: "Processing completed",
+    };
 
     // Create and execute processing status action
     const processingAction = new BroadcastProcessingAction();

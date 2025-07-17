@@ -71,10 +71,12 @@ describe("AddStatusActionsAction", () => {
       };
 
       const processingExecute = vi.fn().mockResolvedValue({
+        importId: "note-123",
         noteId: "note-123",
         message: "Processing completed",
       });
       const completedExecute = vi.fn().mockResolvedValue({
+        importId: "note-123",
         noteId: "note-123",
         message: "Processing completed",
       });
@@ -92,12 +94,20 @@ describe("AddStatusActionsAction", () => {
 
       expect(result).toEqual(inputData);
       expect(processingExecute).toHaveBeenCalledWith(
-        { noteId: "note-123", message: "Processing completed" },
+        {
+          importId: "note-123",
+          noteId: "note-123",
+          message: "Processing completed",
+        },
         mockDeps,
         mockContext
       );
       expect(completedExecute).toHaveBeenCalledWith(
-        { noteId: "note-123", message: "Processing completed" },
+        {
+          importId: "note-123",
+          noteId: "note-123",
+          message: "Processing completed",
+        },
         mockDeps,
         mockContext
       );
@@ -113,10 +123,12 @@ describe("AddStatusActionsAction", () => {
       };
 
       const processingExecute = vi.fn().mockResolvedValue({
+        importId: "note-123",
         noteId: "note-123",
         message: "Processing completed",
       });
       const completedExecute = vi.fn().mockResolvedValue({
+        importId: "note-123",
         noteId: "note-123",
         message: "Processing completed",
       });
@@ -133,7 +145,11 @@ describe("AddStatusActionsAction", () => {
       await action.execute(inputData, mockDeps, mockContext);
       expect(BroadcastProcessingAction).toHaveBeenCalled();
       expect(processingExecute).toHaveBeenCalledWith(
-        { noteId: "note-123", message: "Processing completed" },
+        {
+          importId: "note-123",
+          noteId: "note-123",
+          message: "Processing completed",
+        },
         mockDeps,
         mockContext
       );
@@ -149,10 +165,12 @@ describe("AddStatusActionsAction", () => {
       };
 
       const processingExecute = vi.fn().mockResolvedValue({
+        importId: "note-123",
         noteId: "note-123",
         message: "Processing completed",
       });
       const completedExecute = vi.fn().mockResolvedValue({
+        importId: "note-123",
         noteId: "note-123",
         message: "Processing completed",
       });
@@ -169,7 +187,11 @@ describe("AddStatusActionsAction", () => {
       await action.execute(inputData, mockDeps, mockContext);
       expect(BroadcastCompletedAction).toHaveBeenCalled();
       expect(completedExecute).toHaveBeenCalledWith(
-        { noteId: "note-123", message: "Processing completed" },
+        {
+          importId: "note-123",
+          noteId: "note-123",
+          message: "Processing completed",
+        },
         mockDeps,
         mockContext
       );

@@ -23,7 +23,8 @@ interface Worker {
 // Status broadcaster interface
 interface StatusBroadcaster {
   addStatusEventAndBroadcast(event: {
-    noteId: string;
+    importId: string;
+    noteId?: string;
     status: NoteStatus;
     message?: string;
     context?: string;
@@ -52,7 +53,8 @@ export interface IWebSocketService {
 export interface IStatusBroadcasterService {
   statusBroadcaster: StatusBroadcaster | null;
   addStatusEventAndBroadcast: (event: {
-    noteId: string;
+    importId: string;
+    noteId?: string;
     status: NoteStatus;
     message?: string;
     context?: string;
@@ -185,7 +187,8 @@ class StatusBroadcasterService implements IStatusBroadcasterService {
   }
 
   get addStatusEventAndBroadcast(): (event: {
-    noteId: string;
+    importId: string;
+    noteId?: string;
     status: NoteStatus;
     message?: string;
     context?: string;
@@ -193,7 +196,8 @@ class StatusBroadcasterService implements IStatusBroadcasterService {
     totalCount?: number;
   }) => Promise<unknown> {
     return async (event: {
-      noteId: string;
+      importId: string;
+      noteId?: string;
       status: NoteStatus;
       message?: string;
       context?: string;

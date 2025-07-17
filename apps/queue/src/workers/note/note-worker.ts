@@ -18,6 +18,7 @@ import type {
   NotePipelineStage3,
   NotePipelineStage4,
   NotePipelineAction,
+  StatusEvent,
 } from "./types";
 
 // ============================================================================
@@ -60,6 +61,10 @@ export class NoteWorker extends BaseWorker<
   ): NotePipelineAction[] {
     const actions: NotePipelineAction[] = [];
 
+    // ============================================================================
+    // SYNCHRONOUS PHASE - Execute sequentially, wait for each to complete
+    // ============================================================================
+
     // 1. Clean HTML (remove style and icons tags)
     // Input: NotePipelineStage1 -> Output: NotePipelineStage1 (cleaned)
     actions.push(this.createWrappedAction("clean_html", this.dependencies));
@@ -72,27 +77,26 @@ export class NoteWorker extends BaseWorker<
     // Input: NotePipelineStage2 -> Output: NotePipelineStage3
     actions.push(this.createWrappedAction("save_note", this.dependencies));
 
-    // 3. Add "PROCESSING" status after note is created
+    // 4. Add "PROCESSING" status after note is created
     // Input: NotePipelineStage3 -> Output: NotePipelineStage3
     actions.push(
       this.createErrorHandledAction("note_processing_status", this.dependencies)
     );
 
-    // 4. Schedule follow-up processing tasks (COMMENTED OUT FOR SIMPLIFIED TESTING)
-    const scheduleActions = [
-      // "schedule_source",
-      // "schedule_images",
-      // "schedule_ingredients",
-      // "schedule_instructions",
-    ] as const;
+    // ============================================================================
+    // CONCURRENT PHASE - Schedule all follow-up tasks simultaneously
+    // ============================================================================
 
-    scheduleActions.forEach((actionName) => {
-      actions.push(
-        this.createErrorHandledAction(actionName, this.dependencies)
-      );
-    });
+    // 5. Schedule all follow-up processing tasks concurrently
+    // This action will schedule multiple jobs to different queues at once
+    actions.push(
+      this.createErrorHandledAction(
+        "schedule_all_followup_tasks",
+        this.dependencies
+      )
+    );
 
-    // 5. Add "COMPLETED" status at the very end
+    // 6. Add "COMPLETED" status at the very end
     // Input: NotePipelineStage3 -> Output: NotePipelineStage3
     actions.push(
       this.createErrorHandledAction("note_completed_status", this.dependencies)
@@ -161,6 +165,7 @@ function createNoteDependenciesFromContainer(container: IServiceContainer): {
   imageQueue: Queue;
   categorizationQueue: Queue;
   sourceQueue: Queue;
+  addStatusEventAndBroadcast: (event: StatusEvent) => Promise<unknown>;
 } {
   return {
     parseHTML: async (content: string): Promise<ParsedHtmlFile> => {
@@ -182,5 +187,12 @@ function createNoteDependenciesFromContainer(container: IServiceContainer): {
     imageQueue: container.queues.imageQueue,
     categorizationQueue: container.queues.categorizationQueue,
     sourceQueue: container.queues.sourceQueue,
+    addStatusEventAndBroadcast: async (event: StatusEvent) => {
+      if (container.statusBroadcaster?.addStatusEventAndBroadcast) {
+        return container.statusBroadcaster.addStatusEventAndBroadcast(event);
+      } else {
+        return Promise.resolve();
+      }
+    },
   };
 }

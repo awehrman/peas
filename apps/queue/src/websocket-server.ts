@@ -6,7 +6,8 @@ import type { NoteStatus } from "@peas/database";
 interface StatusEvent {
   type: "status_update";
   data: {
-    noteId: string;
+    importId: string; // Temporary ID for frontend grouping
+    noteId?: string; // Actual note ID once saved
     status: NoteStatus;
     message?: string;
     context?: string;

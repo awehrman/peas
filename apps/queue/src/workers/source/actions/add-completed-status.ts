@@ -4,7 +4,8 @@ import { BroadcastCompletedAction } from "../../shared/broadcast-status";
 
 export interface AddCompletedStatusDeps {
   addStatusEventAndBroadcast: (event: {
-    noteId: string;
+    importId: string;
+    noteId?: string;
     status: string;
     message: string;
     context: string;
@@ -12,6 +13,8 @@ export interface AddCompletedStatusDeps {
 }
 
 export interface AddCompletedStatusData {
+  noteId?: string;
+  importId?: string;
   sourceId?: string;
   savedSource?: { id: string; [key: string]: unknown };
   [key: string]: unknown;
@@ -31,21 +34,24 @@ export class AddCompletedStatusAction extends BaseAction<
     deps: AddCompletedStatusDeps,
     context: ActionContext
   ) {
-    const sourceId = data.sourceId || data.savedSource?.id;
+    const noteId = data.noteId;
+    const importId = data.importId;
+
     console.log(
-      `[${context.operation.toUpperCase()}] Adding completed status for sourceId: ${sourceId}`
+      `[${context.operation.toUpperCase()}] Adding completed status for noteId: ${noteId}`
     );
 
-    if (!sourceId) {
+    if (!noteId || !importId) {
       console.log(
-        `[${context.operation.toUpperCase()}] No sourceId available, skipping completed status`
+        `[${context.operation.toUpperCase()}] No noteId or importId available, skipping completed status`
       );
       return data;
     }
 
-    // Create data with sourceId for the status action
+    // Create data with noteId for the status action
     const statusData = {
-      noteId: sourceId,
+      importId,
+      noteId,
       message: "Source processing completed",
     };
 

@@ -85,7 +85,8 @@ export abstract class BaseWorker<
     }
 
     return async (event: {
-      noteId: string;
+      importId: string;
+      noteId?: string;
       status: NoteStatus;
       message?: string;
       context?: string;
@@ -457,7 +458,8 @@ export function createBaseDependenciesFromContainer(
 ) {
   return {
     addStatusEventAndBroadcast: async (event: {
-      noteId: string;
+      importId: string;
+      noteId?: string;
       status: NoteStatus;
       message?: string;
       context?: string;

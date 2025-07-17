@@ -11,6 +11,7 @@ let addStatusEvent: unknown;
 
 describe("addStatusEventAndBroadcast", () => {
   const baseArgs = {
+    importId: "import-1",
     noteId: "note-1",
     status: "PROCESSING" as NoteStatus,
     message: "Test message",
@@ -38,13 +39,25 @@ describe("addStatusEventAndBroadcast", () => {
   });
 
   it("calls addStatusEvent with correct args and returns dbEvent", async () => {
-    const fakeDbEvent = { createdAt: new Date(), ...baseArgs };
+    const fakeDbEvent = {
+      createdAt: new Date(),
+      noteId: "note-1",
+      status: "PROCESSING" as NoteStatus,
+    };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
     (addStatusEvent as any).mockResolvedValue(fakeDbEvent);
 
     const result = await addStatusEventAndBroadcast(baseArgs);
 
-    expect(addStatusEvent).toHaveBeenCalledWith(baseArgs);
+    // The function only passes noteId, status, message, context, currentCount, totalCount to addStatusEvent
+    expect(addStatusEvent).toHaveBeenCalledWith({
+      noteId: "note-1",
+      status: "PROCESSING",
+      message: "Test message",
+      context: "test-context",
+      currentCount: 2,
+      totalCount: 5,
+    });
     expect(result).toBe(fakeDbEvent);
     expect(consoleLogSpy).toHaveBeenCalledWith(
       "[addStatusEventAndBroadcast] called with:",
@@ -72,13 +85,25 @@ describe("addStatusEventAndBroadcast", () => {
   });
 
   it("works with minimal args (only required)", async () => {
-    const minimalArgs = { noteId: "n2", status: "COMPLETE" as NoteStatus };
-    const fakeDbEvent = { createdAt: new Date(), ...minimalArgs };
+    const minimalArgs = {
+      importId: "import-2",
+      noteId: "n2",
+      status: "COMPLETE" as NoteStatus,
+    };
+    const fakeDbEvent = {
+      createdAt: new Date(),
+      noteId: "n2",
+      status: "COMPLETE" as NoteStatus,
+    };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
     (addStatusEvent as any).mockResolvedValue(fakeDbEvent);
 
     const result = await addStatusEventAndBroadcast(minimalArgs);
-    expect(addStatusEvent).toHaveBeenCalledWith(minimalArgs);
+    // The function only passes noteId and status to addStatusEvent for minimal args
+    expect(addStatusEvent).toHaveBeenCalledWith({
+      noteId: "n2",
+      status: "COMPLETE",
+    });
     expect(result).toBe(fakeDbEvent);
   });
 

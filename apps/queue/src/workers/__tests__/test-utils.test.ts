@@ -167,6 +167,7 @@ describe("test-utils", () => {
       const container = createMockServiceContainer();
 
       await container.statusBroadcaster.addStatusEventAndBroadcast({
+        importId: "test-import",
         noteId: "test-note",
         status: "PENDING",
       });

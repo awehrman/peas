@@ -1,7 +1,8 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 
 interface StatusEvent {
-  noteId: string;
+  importId: string; // Temporary ID for frontend grouping
+  noteId?: string; // Actual note ID once saved
   status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
   message?: string;
   context?: string;

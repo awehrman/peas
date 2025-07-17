@@ -46,7 +46,8 @@ export function FileUploadWithQueue({
           throw new Error(`Queue API responded ${res.status}`);
         }
 
-        setMessage("File queued successfully!");
+        const result = await res.json();
+        setMessage(`File queued successfully! Import ID: ${result.importId}`);
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Unknown error";
         setMessage(`Upload failed: ${msg}`);

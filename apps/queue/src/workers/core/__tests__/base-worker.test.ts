@@ -226,12 +226,14 @@ describe("BaseWorker", () => {
         mockAddStatusEvent;
 
       await broadcaster({
+        importId: "test-import",
         noteId: "test-note",
         status: "PROCESSING",
         message: "Test message",
       });
 
       expect(mockAddStatusEvent).toHaveBeenCalledWith({
+        importId: "test-import",
         noteId: "test-note",
         status: "PROCESSING",
         message: "Test message",
@@ -246,6 +248,7 @@ describe("BaseWorker", () => {
 
       await expect(
         broadcaster({
+          importId: "test-import",
           noteId: "test-note",
           status: "PROCESSING",
         })
@@ -597,6 +600,7 @@ describe("createBaseDependenciesFromContainer", () => {
     const deps = createBaseDependenciesFromContainer(mockContainer);
     await expect(
       deps.addStatusEventAndBroadcast({
+        importId: "test-import",
         noteId: "test-note",
         status: "PROCESSING",
       })

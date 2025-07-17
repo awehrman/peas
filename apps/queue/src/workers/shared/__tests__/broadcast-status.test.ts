@@ -21,7 +21,8 @@ describe("BroadcastStatusAction", () => {
   let deps: ReturnType<typeof makeDeps>;
   let context: ActionContext;
   let data: {
-    noteId: string;
+    importId: string;
+    noteId?: string;
     status: string;
     message: string;
     context?: string;
@@ -32,6 +33,7 @@ describe("BroadcastStatusAction", () => {
     deps = makeDeps();
     context = createMockActionContext();
     data = {
+      importId: "import-1",
       noteId: "note-1",
       status: "CUSTOM",
       message: "A message",
@@ -42,6 +44,7 @@ describe("BroadcastStatusAction", () => {
   it("calls addStatusEventAndBroadcast with correct args", async () => {
     await action.execute(data, deps, context);
     expect(deps.addStatusEventAndBroadcast).toHaveBeenCalledWith({
+      importId: "import-1",
       noteId: "note-1",
       status: "CUSTOM",
       message: "A message",
@@ -62,14 +65,14 @@ describe("BroadcastProcessingAction", () => {
   let action: BroadcastProcessingAction;
   let deps: ReturnType<typeof makeDeps>;
   let context: ActionContext;
-  let data: { noteId?: string; message?: string };
+  let data: { importId: string; noteId?: string; message?: string };
   let consoleSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     action = new BroadcastProcessingAction();
     deps = makeDeps();
     context = createMockActionContext();
-    data = { noteId: "note-2", message: "Processing..." };
+    data = { importId: "import-2", noteId: "note-2", message: "Processing..." };
     consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
   });
   afterEach(() => {
@@ -79,6 +82,7 @@ describe("BroadcastProcessingAction", () => {
   it("broadcasts processing status if noteId present", async () => {
     await action.execute(data, deps, context);
     expect(deps.addStatusEventAndBroadcast).toHaveBeenCalledWith({
+      importId: "import-2",
       noteId: "note-2",
       status: "PROCESSING",
       message: "Processing...",
@@ -91,15 +95,22 @@ describe("BroadcastProcessingAction", () => {
     await action.execute(data, deps, context);
     expect(deps.addStatusEventAndBroadcast).toHaveBeenCalledWith(
       expect.objectContaining({
+        importId: "import-2",
         message: expect.stringContaining("in progress"),
       })
     );
   });
 
-  it("skips if noteId missing", async () => {
+  it("always broadcasts with importId", async () => {
     delete data.noteId;
     await action.execute(data, deps, context);
-    expect(deps.addStatusEventAndBroadcast).not.toHaveBeenCalled();
+    expect(deps.addStatusEventAndBroadcast).toHaveBeenCalledWith({
+      importId: "import-2",
+      noteId: undefined,
+      status: "PROCESSING",
+      message: "Processing...",
+      context: context.operation,
+    });
   });
 });
 
@@ -107,14 +118,14 @@ describe("BroadcastCompletedAction", () => {
   let action: BroadcastCompletedAction;
   let deps: ReturnType<typeof makeDeps>;
   let context: ActionContext;
-  let data: { noteId?: string; message?: string };
+  let data: { importId: string; noteId?: string; message?: string };
   let consoleSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     action = new BroadcastCompletedAction();
     deps = makeDeps();
     context = createMockActionContext();
-    data = { noteId: "note-3", message: "Done!" };
+    data = { importId: "import-3", noteId: "note-3", message: "Done!" };
     consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
   });
   afterEach(() => {
@@ -124,6 +135,7 @@ describe("BroadcastCompletedAction", () => {
   it("broadcasts completed status if noteId present", async () => {
     await action.execute(data, deps, context);
     expect(deps.addStatusEventAndBroadcast).toHaveBeenCalledWith({
+      importId: "import-3",
       noteId: "note-3",
       status: "COMPLETED",
       message: "Done!",
@@ -136,15 +148,22 @@ describe("BroadcastCompletedAction", () => {
     await action.execute(data, deps, context);
     expect(deps.addStatusEventAndBroadcast).toHaveBeenCalledWith(
       expect.objectContaining({
+        importId: "import-3",
         message: expect.stringContaining("completed successfully"),
       })
     );
   });
 
-  it("skips if noteId missing", async () => {
+  it("always broadcasts with importId", async () => {
     delete data.noteId;
     await action.execute(data, deps, context);
-    expect(deps.addStatusEventAndBroadcast).not.toHaveBeenCalled();
+    expect(deps.addStatusEventAndBroadcast).toHaveBeenCalledWith({
+      importId: "import-3",
+      noteId: undefined,
+      status: "COMPLETED",
+      message: "Done!",
+      context: context.operation,
+    });
   });
 });
 
@@ -152,18 +171,19 @@ describe("BroadcastFailedAction", () => {
   let action: BroadcastFailedAction;
   let deps: ReturnType<typeof makeDeps>;
   let context: ActionContext;
-  let data: { noteId: string; error?: string };
+  let data: { importId: string; noteId?: string; error?: string };
 
   beforeEach(() => {
     action = new BroadcastFailedAction();
     deps = makeDeps();
     context = createMockActionContext();
-    data = { noteId: "note-4", error: "fail msg" };
+    data = { importId: "import-4", noteId: "note-4", error: "fail msg" };
   });
 
   it("broadcasts failed status with error message", async () => {
     await action.execute(data, deps, context);
     expect(deps.addStatusEventAndBroadcast).toHaveBeenCalledWith({
+      importId: "import-4",
       noteId: "note-4",
       status: "FAILED",
       message: "fail msg",
@@ -175,7 +195,10 @@ describe("BroadcastFailedAction", () => {
     delete data.error;
     await action.execute(data, deps, context);
     expect(deps.addStatusEventAndBroadcast).toHaveBeenCalledWith(
-      expect.objectContaining({ message: expect.stringContaining("failed") })
+      expect.objectContaining({
+        importId: "import-4",
+        message: expect.stringContaining("failed"),
+      })
     );
   });
 });
@@ -186,9 +209,15 @@ describe("createStatusAction", () => {
     const action = new CustomAction();
     const deps = makeDeps();
     const context = createMockActionContext();
-    const data = { noteId: "note-5", status: "ARCHIVED", message: "archived!" };
+    const data = {
+      importId: "import-5",
+      noteId: "note-5",
+      status: "ARCHIVED",
+      message: "archived!",
+    };
     await action.execute(data, deps, context);
     expect(deps.addStatusEventAndBroadcast).toHaveBeenCalledWith({
+      importId: "import-5",
       noteId: "note-5",
       status: "ARCHIVED",
       message: "archived!",
@@ -204,9 +233,15 @@ describe("createStatusAction", () => {
     const action = new CustomAction();
     const deps = makeDeps();
     const context = createMockActionContext();
-    const data = { noteId: "note-6", status: "ARCHIVED", message: "archived!" };
+    const data = {
+      importId: "import-6",
+      noteId: "note-6",
+      status: "ARCHIVED",
+      message: "archived!",
+    };
     await action.execute(data, deps, context);
     expect(deps.addStatusEventAndBroadcast).toHaveBeenCalledWith({
+      importId: "import-6",
       noteId: "note-6",
       status: "ARCHIVED",
       message: expect.stringContaining("archived by"),

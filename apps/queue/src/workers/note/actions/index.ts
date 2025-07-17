@@ -6,6 +6,7 @@ export * from "./schedule-images";
 export * from "./schedule-ingredients";
 export * from "./schedule-instructions";
 export * from "./add-status-actions";
+export * from "./schedule-all-followup-tasks";
 export * from "../schema";
 
 import { ActionFactory } from "../../core/action-factory";
@@ -17,6 +18,7 @@ import { ScheduleImagesAction } from "./schedule-images";
 import { ScheduleIngredientsAction } from "./schedule-ingredients";
 import { ScheduleInstructionsAction } from "./schedule-instructions";
 import { AddStatusActionsAction } from "./add-status-actions";
+import { ScheduleAllFollowupTasksAction } from "./schedule-all-followup-tasks";
 import {
   BroadcastProcessingAction,
   BroadcastCompletedAction,
@@ -47,5 +49,9 @@ export function registerNoteActions(factory: ActionFactory) {
   factory.register(
     "note_completed_status",
     () => new BroadcastCompletedAction()
+  );
+  factory.register(
+    "schedule_all_followup_tasks",
+    () => new ScheduleAllFollowupTasksAction()
   );
 }

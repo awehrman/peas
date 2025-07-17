@@ -3,6 +3,7 @@ import type { NoteStatus } from "@peas/database";
 import { broadcastStatusEvent } from "../websocket-server";
 
 export async function addStatusEventAndBroadcast({
+  importId,
   noteId,
   status,
   message,
@@ -10,7 +11,8 @@ export async function addStatusEventAndBroadcast({
   currentCount,
   totalCount,
 }: {
-  noteId: string;
+  importId: string;
+  noteId?: string;
   status: NoteStatus;
   message?: string;
   context?: string;
@@ -18,6 +20,7 @@ export async function addStatusEventAndBroadcast({
   totalCount?: number;
 }) {
   console.log("[addStatusEventAndBroadcast] called with:", {
+    importId,
     noteId,
     status,
     message,
@@ -26,20 +29,23 @@ export async function addStatusEventAndBroadcast({
     totalCount,
   });
   try {
-    // Add to database
-    const dbEvent = await addStatusEvent({
-      noteId,
-      status,
-      message,
-      context,
-      currentCount,
-      totalCount,
-    });
+    // Add to database (only if we have a noteId)
+    let dbEvent = null;
+    if (noteId) {
+      dbEvent = await addStatusEvent({
+        noteId,
+        status,
+        message,
+        context,
+        currentCount,
+        totalCount,
+      });
+      console.log("[addStatusEventAndBroadcast] DB event created:", dbEvent);
+    }
 
-    console.log("[addStatusEventAndBroadcast] DB event created:", dbEvent);
-
-    // Broadcast to WebSocket clients
+    // Broadcast to WebSocket clients (always use importId for frontend grouping)
     broadcastStatusEvent({
+      importId,
       noteId,
       status,
       message,
@@ -47,7 +53,7 @@ export async function addStatusEventAndBroadcast({
       errorMessage: message,
       currentCount,
       totalCount,
-      createdAt: dbEvent.createdAt,
+      createdAt: dbEvent?.createdAt || new Date(),
     });
 
     console.log("[addStatusEventAndBroadcast] Broadcasted to websocket");

@@ -99,7 +99,7 @@ export function RecentlyImported({ className }: Props): ReactNode {
 
   // Convert WebSocket events to Item format
   const items: Item[] = events.map((event) => ({
-    id: `${event.noteId}-${new Date(event.createdAt).getTime()}`,
+    id: `${event.importId}-${new Date(event.createdAt).getTime()}`,
     text:
       event.errorMessage ||
       event.message ||

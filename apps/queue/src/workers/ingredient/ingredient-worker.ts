@@ -5,6 +5,8 @@ import {
   ProcessIngredientLineAction,
   SaveIngredientLineAction,
   ScheduleCategorizationAction,
+  ProcessIngredientsAction,
+  ScheduleCategorizationAfterCompletionAction,
 } from "./actions";
 import { IServiceContainer } from "../../services/container";
 import type { IngredientWorkerDependencies, IngredientJobData } from "./types";
@@ -32,6 +34,14 @@ export class IngredientWorker extends BaseWorker<
     this.actionFactory.register(
       "schedule_categorization",
       () => new ScheduleCategorizationAction()
+    );
+    this.actionFactory.register(
+      "process_ingredients",
+      () => new ProcessIngredientsAction()
+    );
+    this.actionFactory.register(
+      "schedule_categorization_after_completion",
+      () => new ScheduleCategorizationAfterCompletionAction()
     );
   }
 

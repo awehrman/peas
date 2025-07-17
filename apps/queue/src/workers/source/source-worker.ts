@@ -78,7 +78,8 @@ export function createSourceWorker(
   const dependencies: SourceWorkerDependencies = {
     // Base dependencies
     addStatusEventAndBroadcast: async (event: {
-      noteId: string;
+      importId: string;
+      noteId?: string;
       status: NoteStatus;
       message?: string;
       context?: string;

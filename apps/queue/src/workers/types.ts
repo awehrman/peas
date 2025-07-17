@@ -133,7 +133,8 @@ export interface BaseWorkerDependencies {
  * Status event type for better type safety
  */
 export interface StatusEvent {
-  noteId: string;
+  importId: string;
+  noteId?: string;
   status: NoteStatus;
   message?: string;
   context?: string;

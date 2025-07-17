@@ -43,6 +43,8 @@ export interface NoteWorkerDependencies {
 export interface NoteJobData {
   /** HTML content to process - required */
   content: string;
+  /** Temporary ID for frontend grouping - required */
+  importId: string;
   /** Optional note ID for status tracking and correlation */
   noteId?: string;
   /** Optional source information about where the content came from */
@@ -267,8 +269,10 @@ export type ParsedHtmlFile = ParsedHTMLFile;
  * Status event for tracking note processing progress
  */
 export interface StatusEvent {
-  /** ID of the note being processed */
-  noteId: string;
+  /** Temporary ID for frontend grouping */
+  importId: string;
+  /** ID of the note being processed (optional until saved) */
+  noteId?: string;
   /** Current status of the note */
   status: NoteStatus;
   /** Optional message describing the status */

@@ -4,7 +4,8 @@ import { BroadcastProcessingAction } from "../../shared/broadcast-status";
 
 export interface AddProcessingStatusDeps {
   addStatusEventAndBroadcast: (event: {
-    noteId: string;
+    importId: string;
+    noteId?: string;
     status: string;
     message: string;
     context: string;
@@ -12,6 +13,8 @@ export interface AddProcessingStatusDeps {
 }
 
 export interface AddProcessingStatusData {
+  noteId?: string;
+  importId?: string;
   sourceId?: string;
   source?: { id: string; [key: string]: unknown };
   [key: string]: unknown;
@@ -31,21 +34,24 @@ export class AddProcessingStatusAction extends BaseAction<
     deps: AddProcessingStatusDeps,
     context: ActionContext
   ) {
-    const sourceId = data.sourceId || data.source?.id;
+    const noteId = data.noteId;
+    const importId = data.importId;
+
     console.log(
-      `[${context.operation.toUpperCase()}] Adding processing status for sourceId: ${sourceId}`
+      `[${context.operation.toUpperCase()}] Adding processing status for noteId: ${noteId}`
     );
 
-    if (!sourceId) {
+    if (!noteId || !importId) {
       console.log(
-        `[${context.operation.toUpperCase()}] No sourceId available, skipping processing status`
+        `[${context.operation.toUpperCase()}] No noteId or importId available, skipping processing status`
       );
       return data;
     }
 
-    // Create data with sourceId for the status action
+    // Create data with noteId for the status action
     const statusData = {
-      noteId: sourceId,
+      importId,
+      noteId,
       message: "Source processing in progress",
     };
 
