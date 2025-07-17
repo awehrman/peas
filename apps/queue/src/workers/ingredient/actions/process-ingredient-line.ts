@@ -1,5 +1,6 @@
 import { BaseAction } from "../../core/base-action";
 import { ActionContext } from "../../core/types";
+import type { IngredientWorkerDependencies } from "../types";
 
 export interface ProcessIngredientLineInput {
   noteId: string;
@@ -24,13 +25,13 @@ export interface ProcessIngredientLineOutput {
 
 export class ProcessIngredientLineAction extends BaseAction<
   ProcessIngredientLineInput,
-  any
+  IngredientWorkerDependencies
 > {
   name = "process-ingredient-line";
 
   async execute(
     input: ProcessIngredientLineInput,
-    _deps: any,
+    deps: IngredientWorkerDependencies,
     _context: ActionContext
   ): Promise<ProcessIngredientLineOutput> {
     try {
@@ -46,8 +47,8 @@ export class ProcessIngredientLineAction extends BaseAction<
       // 5. Storing parsed segments in the database
 
       // Stub implementation for now
-      if (_deps.logger) {
-        _deps.logger.log(
+      if (deps.logger) {
+        deps.logger.log(
           `Processing ingredient line for note ${noteId}: ingredientLineId=${ingredientLineId}, reference="${reference}", blockIndex=${blockIndex}, lineIndex=${lineIndex}`
         );
       } else {

@@ -9,6 +9,7 @@ import { IServiceContainer } from "../../services/container";
 import type {
   CategorizationWorkerDependencies,
   CategorizationJobData,
+  CategorizationInput,
 } from "./types";
 import type { BaseAction } from "../core/base-action";
 
@@ -79,9 +80,9 @@ export function createCategorizationWorker(
 
     // Categorization-specific dependencies
     categorizer: {
-      categorizeRecipe: async (data: any) => {
+      categorizeRecipe: async (data: CategorizationInput) => {
         container.logger.log(
-          `[CATEGORIZATION] Categorizing recipe for note ${data.noteId || "unknown"}`
+          `[CATEGORIZATION] Categorizing recipe with title: ${data.title || "untitled"}`
         );
         // TODO: Implement actual categorization
         const result = {

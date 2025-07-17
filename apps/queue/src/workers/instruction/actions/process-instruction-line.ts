@@ -1,5 +1,6 @@
 import { BaseAction } from "../../core/base-action";
 import { ActionContext } from "../../core/types";
+import type { InstructionWorkerDependencies } from "../types";
 
 export interface ProcessInstructionLineInput {
   noteId: string;
@@ -24,13 +25,13 @@ export interface ProcessInstructionLineOutput {
 
 export class ProcessInstructionLineAction extends BaseAction<
   ProcessInstructionLineInput,
-  any
+  InstructionWorkerDependencies
 > {
   name = "process-instruction-line";
 
   async execute(
     input: ProcessInstructionLineInput,
-    _deps: any,
+    deps: InstructionWorkerDependencies,
     _context: ActionContext
   ): Promise<ProcessInstructionLineOutput> {
     try {
@@ -45,11 +46,17 @@ export class ProcessInstructionLineAction extends BaseAction<
       // 5. Cooking method detection
 
       // Stub implementation for now
-      console.log(`Processing instruction line for note ${noteId}:`, {
-        instructionLineId,
-        originalText,
-        lineIndex,
-      });
+      if (deps.logger) {
+        deps.logger.log(
+          `Processing instruction line for note ${noteId}: instructionLineId=${instructionLineId}, originalText="${originalText}", lineIndex=${lineIndex}`
+        );
+      } else {
+        console.log(`Processing instruction line for note ${noteId}:`, {
+          instructionLineId,
+          originalText,
+          lineIndex,
+        });
+      }
 
       // Simulate parsing
       await new Promise((resolve) => setTimeout(resolve, 30));

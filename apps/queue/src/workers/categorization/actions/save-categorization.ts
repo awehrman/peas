@@ -15,13 +15,13 @@ export interface SaveCategorizationOutput {
 
 export class SaveCategorizationAction extends BaseAction<
   SaveCategorizationInput,
-  any
+  SaveCategorizationOutput
 > {
   name = "save-categorization";
 
   async execute(
     input: SaveCategorizationInput,
-    _deps: any,
+    _deps: object,
     _context: ActionContext
   ): Promise<SaveCategorizationOutput> {
     try {

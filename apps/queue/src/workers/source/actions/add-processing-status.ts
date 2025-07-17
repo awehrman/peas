@@ -13,7 +13,8 @@ export interface AddProcessingStatusDeps {
 
 export interface AddProcessingStatusData {
   sourceId?: string;
-  [key: string]: any;
+  source?: { id: string; [key: string]: unknown };
+  [key: string]: unknown;
 }
 
 /**

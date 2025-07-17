@@ -20,7 +20,12 @@ describe("BroadcastStatusAction", () => {
   let action: BroadcastStatusAction;
   let deps: ReturnType<typeof makeDeps>;
   let context: ActionContext;
-  let data: any;
+  let data: {
+    noteId: string;
+    status: string;
+    message: string;
+    context?: string;
+  };
 
   beforeEach(() => {
     action = new BroadcastStatusAction();
@@ -57,7 +62,7 @@ describe("BroadcastProcessingAction", () => {
   let action: BroadcastProcessingAction;
   let deps: ReturnType<typeof makeDeps>;
   let context: ActionContext;
-  let data: any;
+  let data: { noteId?: string; message?: string };
   let consoleSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
@@ -106,7 +111,7 @@ describe("BroadcastCompletedAction", () => {
   let action: BroadcastCompletedAction;
   let deps: ReturnType<typeof makeDeps>;
   let context: ActionContext;
-  let data: any;
+  let data: { noteId?: string; message?: string };
   let consoleSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
@@ -154,7 +159,7 @@ describe("BroadcastFailedAction", () => {
   let action: BroadcastFailedAction;
   let deps: ReturnType<typeof makeDeps>;
   let context: ActionContext;
-  let data: any;
+  let data: { noteId: string; error?: string };
 
   beforeEach(() => {
     action = new BroadcastFailedAction();
@@ -184,11 +189,11 @@ describe("BroadcastFailedAction", () => {
 
 describe("createStatusAction", () => {
   it("creates a custom status action with static message", async () => {
-    const CustomAction = createStatusAction("ARCHIVED", "archived!") as any;
+    const CustomAction = createStatusAction("ARCHIVED", "archived!");
     const action = new CustomAction();
     const deps = makeDeps();
     const context = createMockActionContext();
-    const data = { noteId: "note-5" };
+    const data = { noteId: "note-5", status: "ARCHIVED", message: "archived!" };
     await action.execute(data, deps, context);
     expect(deps.addStatusEventAndBroadcast).toHaveBeenCalledWith({
       noteId: "note-5",
@@ -202,11 +207,11 @@ describe("createStatusAction", () => {
     const CustomAction = createStatusAction(
       "ARCHIVED",
       (data, ctx) => `archived by ${ctx.operation}`
-    ) as any;
+    );
     const action = new CustomAction();
     const deps = makeDeps();
     const context = createMockActionContext();
-    const data = { noteId: "note-6" };
+    const data = { noteId: "note-6", status: "ARCHIVED", message: "archived!" };
     await action.execute(data, deps, context);
     expect(deps.addStatusEventAndBroadcast).toHaveBeenCalledWith({
       noteId: "note-6",

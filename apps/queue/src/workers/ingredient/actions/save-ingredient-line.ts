@@ -1,5 +1,6 @@
 import { BaseAction } from "../../core/base-action";
 import { ActionContext } from "../../core/types";
+import type { IngredientWorkerDependencies } from "../types";
 import { ProcessIngredientLineOutput } from "./process-ingredient-line";
 
 export interface SaveIngredientLineInput {
@@ -16,13 +17,13 @@ export interface SaveIngredientLineOutput {
 
 export class SaveIngredientLineAction extends BaseAction<
   SaveIngredientLineInput,
-  any
+  IngredientWorkerDependencies
 > {
   name = "save-ingredient-line";
 
   async execute(
     input: SaveIngredientLineInput,
-    _deps: any,
+    deps: IngredientWorkerDependencies,
     _context: ActionContext
   ): Promise<SaveIngredientLineOutput> {
     try {
@@ -36,8 +37,8 @@ export class SaveIngredientLineAction extends BaseAction<
       // 4. Updating note parsing error count if needed
 
       // Stub implementation for now
-      if (_deps.logger) {
-        _deps.logger.log(
+      if (deps.logger) {
+        deps.logger.log(
           `Saving ingredient line data for note ${noteId}: ingredientLineId=${ingredientLineId}, parseStatus=${parseResult.parseStatus}, segmentsCount=${parseResult.parsedSegments?.length || 0}`
         );
       } else {

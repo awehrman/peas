@@ -13,12 +13,15 @@ export interface SaveImageOutput {
   thumbnailUrl?: string;
 }
 
-export class SaveImageAction extends BaseAction<SaveImageInput, any> {
+export class SaveImageAction extends BaseAction<
+  SaveImageInput,
+  SaveImageOutput
+> {
   name = "save-image";
 
   async execute(
     input: SaveImageInput,
-    _deps: any,
+    _deps: object,
     _context: ActionContext
   ): Promise<SaveImageOutput> {
     try {

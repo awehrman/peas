@@ -3,7 +3,12 @@ import { BaseWorker } from "../core/base-worker";
 import { ActionContext } from "../core/types";
 import { ProcessImageAction, SaveImageAction } from "./actions";
 import { IServiceContainer } from "../../services/container";
-import type { ImageWorkerDependencies, ImageJobData } from "./types";
+import type {
+  ImageWorkerDependencies,
+  ImageJobData,
+  ImageData,
+  ProcessedImageResult,
+} from "./types";
 import type { BaseAction } from "../core/base-action";
 
 // Using imported types from ./types.ts
@@ -66,12 +71,12 @@ export function createImageWorker(
 
     // Image-specific dependencies
     imageProcessor: {
-      processImage: async (data: any) => {
+      processImage: async (data: ImageData) => {
         container.logger.log(
           `[IMAGE] Processing image for note ${data.noteId || "unknown"}`
         );
         // TODO: Implement actual image processing
-        const result = {
+        const result: ProcessedImageResult = {
           success: true,
           processedUrl: "processed-image-url",
           imageMetadata: {
@@ -87,7 +92,7 @@ export function createImageWorker(
         );
         return result;
       },
-      saveImage: async (result: any) => {
+      saveImage: async (result: ProcessedImageResult) => {
         container.logger.log(
           `[IMAGE] Saving processed image: ${result.processedUrl}`
         );

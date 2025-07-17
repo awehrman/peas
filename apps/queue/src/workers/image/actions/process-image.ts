@@ -22,12 +22,15 @@ export interface ProcessImageOutput {
   processingTime: number;
 }
 
-export class ProcessImageAction extends BaseAction<ProcessImageInput, any> {
+export class ProcessImageAction extends BaseAction<
+  ProcessImageInput,
+  ProcessImageOutput
+> {
   name = "process-image";
 
   async execute(
     input: ProcessImageInput,
-    _deps: any,
+    _deps: object,
     _context: ActionContext
   ): Promise<ProcessImageOutput> {
     try {
@@ -43,8 +46,8 @@ export class ProcessImageAction extends BaseAction<ProcessImageInput, any> {
       // 6. Metadata extraction
 
       // Stub implementation for now
-      if (_deps.logger) {
-        _deps.logger.log(
+      if ((_deps as { logger?: { log: (msg: string) => void } }).logger) {
+        (_deps as { logger: { log: (msg: string) => void } }).logger.log(
           `Processing image for note ${noteId}: hasImageUrl=${!!imageUrl}, hasImageData=${!!imageData}, imageType=${imageType}, fileName=${fileName}`
         );
       } else {

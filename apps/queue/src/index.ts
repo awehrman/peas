@@ -163,7 +163,7 @@ const gracefulShutdown = async (signal: string) => {
 
   try {
     // Close all workers gracefully first
-    const workers = (serviceContainer as any)._workers;
+    const workers = serviceContainer._workers;
     if (workers) {
       serviceContainer.logger.log("🔄 Closing workers...");
       await Promise.allSettled([
@@ -192,13 +192,13 @@ const gracefulShutdown = async (signal: string) => {
     // Close server
     server.close(() => {
       serviceContainer.logger.log("✅ HTTP server closed");
-      process.exit(0);
+      throw new Error("Server closed successfully");
     });
 
     // Force exit after timeout
     setTimeout(() => {
       serviceContainer.logger.log("❌ Forced shutdown after timeout", "error");
-      process.exit(1);
+      throw new Error("Forced shutdown after timeout");
     }, SERVER_DEFAULTS.GRACEFUL_SHUTDOWN_TIMEOUT_MS);
   } catch (error) {
     const jobError = serviceContainer.errorHandler.errorHandler.createJobError(
@@ -208,7 +208,7 @@ const gracefulShutdown = async (signal: string) => {
       { operation: "graceful_shutdown" }
     );
     serviceContainer.errorHandler.errorHandler.logError(jobError);
-    process.exit(1);
+    throw new Error("Graceful shutdown failed");
   }
 };
 
@@ -245,7 +245,7 @@ server.on("error", (error) => {
     { operation: "server_startup" }
   );
   serviceContainer.errorHandler.errorHandler.logError(jobError);
-  process.exit(1);
+  throw new Error("Server startup failed");
 });
 
 // Register shutdown handlers

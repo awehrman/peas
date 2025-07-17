@@ -7,7 +7,9 @@ export interface ProcessSourceData extends SourceJobData {
 
 export interface ProcessSourceDeps {
   sourceProcessor: {
-    processSource: (data: any) => Promise<any>;
+    processSource: (
+      data: Record<string, unknown>
+    ) => Promise<Record<string, unknown>>;
   };
 }
 
@@ -16,13 +18,15 @@ export interface SaveSourceData extends SourceJobData {
     processedData: {
       title: string;
       content: string;
-      metadata: any;
+      metadata: Record<string, unknown>;
     };
   };
 }
 
 export interface SaveSourceDeps {
   database: {
-    saveSource: (data: any) => Promise<any>;
+    saveSource: (
+      data: Record<string, unknown>
+    ) => Promise<Record<string, unknown>>;
   };
 }

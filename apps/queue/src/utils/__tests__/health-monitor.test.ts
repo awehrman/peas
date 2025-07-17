@@ -27,13 +27,72 @@ vi.mock("../error-handler", () => ({
   },
 }));
 
+// Interface for accessing private methods in tests
+interface HealthMonitorPrivate {
+  performHealthChecks: () => Promise<ServiceHealth>;
+  lastCheckTime: Date;
+  checkDatabaseHealth: () => Promise<{
+    status: string;
+    message: string;
+    responseTime?: number;
+    lastChecked: Date;
+  }>;
+  checkRedisHealth: () => Promise<{
+    status: string;
+    message: string;
+    responseTime?: number;
+    lastChecked: Date;
+  }>;
+  checkQueueHealth: () => Promise<{
+    noteQueue: {
+      status: string;
+      message: string;
+      responseTime?: number;
+      lastChecked: Date;
+    };
+    imageQueue: {
+      status: string;
+      message: string;
+      responseTime?: number;
+      lastChecked: Date;
+    };
+    ingredientQueue: {
+      status: string;
+      message: string;
+      responseTime?: number;
+      lastChecked: Date;
+    };
+    instructionQueue: {
+      status: string;
+      message: string;
+      responseTime?: number;
+      lastChecked: Date;
+    };
+    categorizationQueue: {
+      status: string;
+      message: string;
+      responseTime?: number;
+      lastChecked: Date;
+    };
+  }>;
+  determineOverallStatus: (checks: unknown) => string;
+  createFailedHealthCheck: (
+    error: Error | string,
+    context: string
+  ) => {
+    status: string;
+    message: string;
+    lastChecked: Date;
+  };
+}
+
 describe("HealthMonitor", () => {
   let monitor: HealthMonitor;
 
   beforeEach(() => {
     vi.clearAllMocks();
     // Reset the singleton instance before each test
-    (HealthMonitor as any).instance = undefined;
+    (HealthMonitor as unknown as { instance: undefined }).instance = undefined;
     monitor = HealthMonitor.getInstance();
   });
 
@@ -77,15 +136,18 @@ describe("HealthMonitor", () => {
       };
 
       // Mock the private method to return our test data
-      vi.spyOn(monitor as any, "performHealthChecks").mockResolvedValue(
-        mockHealth
-      );
+      vi.spyOn(
+        monitor as unknown as HealthMonitorPrivate,
+        "performHealthChecks"
+      ).mockResolvedValue(mockHealth);
 
       const health1 = await monitor.getHealth();
       const health2 = await monitor.getHealth();
 
       expect(health1).toBe(health2);
-      expect((monitor as any).performHealthChecks).toHaveBeenCalledTimes(1);
+      expect(
+        (monitor as unknown as HealthMonitorPrivate).performHealthChecks
+      ).toHaveBeenCalledTimes(1);
     });
 
     it("should perform fresh checks after cache expires", async () => {
@@ -109,20 +171,25 @@ describe("HealthMonitor", () => {
         timestamp: new Date(),
       };
 
-      vi.spyOn(monitor as any, "performHealthChecks").mockResolvedValue(
-        mockHealth
-      );
+      vi.spyOn(
+        monitor as unknown as HealthMonitorPrivate,
+        "performHealthChecks"
+      ).mockResolvedValue(mockHealth);
 
       // First call
       await monitor.getHealth();
 
       // Simulate cache expiration by setting lastCheckTime to 31 seconds ago
-      (monitor as any).lastCheckTime = new Date(Date.now() - 31000);
+      (monitor as unknown as HealthMonitorPrivate).lastCheckTime = new Date(
+        Date.now() - 31000
+      );
 
       // Second call should perform fresh checks
       await monitor.getHealth();
 
-      expect((monitor as any).performHealthChecks).toHaveBeenCalledTimes(2);
+      expect(
+        (monitor as unknown as HealthMonitorPrivate).performHealthChecks
+      ).toHaveBeenCalledTimes(2);
     });
 
     it("should force refresh when refreshHealth is called", async () => {
@@ -146,14 +213,17 @@ describe("HealthMonitor", () => {
         timestamp: new Date(),
       };
 
-      vi.spyOn(monitor as any, "performHealthChecks").mockResolvedValue(
-        mockHealth
-      );
+      vi.spyOn(
+        monitor as unknown as HealthMonitorPrivate,
+        "performHealthChecks"
+      ).mockResolvedValue(mockHealth);
 
       await monitor.getHealth();
       await monitor.refreshHealth();
 
-      expect((monitor as any).performHealthChecks).toHaveBeenCalledTimes(2);
+      expect(
+        (monitor as unknown as HealthMonitorPrivate).performHealthChecks
+      ).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -199,9 +269,10 @@ describe("HealthMonitor", () => {
         timestamp: new Date(),
       };
 
-      vi.spyOn(monitor as any, "performHealthChecks").mockResolvedValue(
-        mockHealth
-      );
+      vi.spyOn(
+        monitor as unknown as HealthMonitorPrivate,
+        "performHealthChecks"
+      ).mockResolvedValue(mockHealth);
 
       const health = await monitor.getHealth();
 
@@ -231,9 +302,10 @@ describe("HealthMonitor", () => {
         timestamp: new Date(),
       };
 
-      vi.spyOn(monitor as any, "performHealthChecks").mockResolvedValue(
-        mockHealth
-      );
+      vi.spyOn(
+        monitor as unknown as HealthMonitorPrivate,
+        "performHealthChecks"
+      ).mockResolvedValue(mockHealth);
 
       const isHealthy = await monitor.isHealthy();
       expect(isHealthy).toBe(true);
@@ -260,9 +332,10 @@ describe("HealthMonitor", () => {
         timestamp: new Date(),
       };
 
-      vi.spyOn(monitor as any, "performHealthChecks").mockResolvedValue(
-        mockHealth
-      );
+      vi.spyOn(
+        monitor as unknown as HealthMonitorPrivate,
+        "performHealthChecks"
+      ).mockResolvedValue(mockHealth);
 
       const isHealthy = await monitor.isHealthy();
       expect(isHealthy).toBe(false);
@@ -289,9 +362,10 @@ describe("HealthMonitor", () => {
         timestamp: new Date(),
       };
 
-      vi.spyOn(monitor as any, "performHealthChecks").mockResolvedValue(
-        mockHealth
-      );
+      vi.spyOn(
+        monitor as unknown as HealthMonitorPrivate,
+        "performHealthChecks"
+      ).mockResolvedValue(mockHealth);
 
       const databaseHealth = await monitor.getComponentHealth("database");
       expect(databaseHealth).toEqual(mockHealth.checks.database);
@@ -304,10 +378,13 @@ describe("HealthMonitor", () => {
   describe("Database Health Check", () => {
     it("should return healthy status for fast database response", async () => {
       const { prisma } = await import("../../config/database");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
       vi.mocked(prisma.$queryRaw).mockResolvedValue([{ "1": 1 }] as any);
       vi.mocked(prisma.note.count).mockResolvedValue(10);
 
-      const health = await (monitor as any).checkDatabaseHealth();
+      const health = await (
+        monitor as unknown as HealthMonitorPrivate
+      ).checkDatabaseHealth();
 
       expect(health.status).toBe("healthy");
       expect(health.message).toContain("responding normally");
@@ -320,12 +397,14 @@ describe("HealthMonitor", () => {
       vi.mocked(prisma.$queryRaw).mockImplementation(
         () =>
           new Promise((resolve) =>
-            setTimeout(() => resolve([{ "1": 1 }] as any), 1100)
+            setTimeout(() => resolve([{ "1": 1 }] as unknown), 1100)
           )
       );
       vi.mocked(prisma.note.count).mockResolvedValue(10);
 
-      const health = await (monitor as any).checkDatabaseHealth();
+      const health = await (
+        monitor as unknown as HealthMonitorPrivate
+      ).checkDatabaseHealth();
 
       expect(health.status).toBe("degraded");
       expect(health.message).toContain("slow to respond");
@@ -335,9 +414,9 @@ describe("HealthMonitor", () => {
       const { prisma } = await import("../../config/database");
       const { ErrorHandler } = await import("../error-handler");
 
-      vi
-        .mocked(prisma.$queryRaw)
-        .mockRejectedValue(new Error("Database connection failed")) as any;
+      vi.mocked(prisma.$queryRaw).mockRejectedValue(
+        new Error("Database connection failed")
+      );
       vi.mocked(ErrorHandler.createJobError).mockImplementation(
         (err: string | Error, type?: ErrorType, _severity?: ErrorSeverity) => {
           if (type === ErrorType.DATABASE_ERROR) {
@@ -366,7 +445,9 @@ describe("HealthMonitor", () => {
       );
       vi.mocked(ErrorHandler.logError).mockImplementation(() => {});
 
-      const health = await (monitor as any).checkDatabaseHealth();
+      const health = await (
+        monitor as unknown as HealthMonitorPrivate
+      ).checkDatabaseHealth();
 
       expect(health.status).toBe("unhealthy");
       expect(health.message).toContain("Database connection failed");
@@ -377,7 +458,9 @@ describe("HealthMonitor", () => {
 
   describe("Redis Health Check", () => {
     it("should return healthy status for valid Redis configuration", async () => {
-      const health = await (monitor as any).checkRedisHealth();
+      const health = await (
+        monitor as unknown as HealthMonitorPrivate
+      ).checkRedisHealth();
 
       expect(health.status).toBe("healthy");
       expect(health.message).toContain("configuration is valid");
@@ -398,7 +481,9 @@ describe("HealthMonitor", () => {
         }
       });
 
-      const health = await (monitor as any).checkRedisHealth();
+      const health = await (
+        monitor as unknown as HealthMonitorPrivate
+      ).checkRedisHealth();
 
       expect(health.status).toBe("degraded");
       expect(health.message).toContain("configuration check is slow");
@@ -414,6 +499,7 @@ describe("HealthMonitor", () => {
 
       // Temporarily modify redisConnection
       const originalHost = redisConnection.host;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
       (redisConnection as any).host = undefined;
 
       vi.mocked(ErrorHandler.createJobError).mockImplementation(
@@ -444,7 +530,9 @@ describe("HealthMonitor", () => {
       );
       vi.mocked(ErrorHandler.logError).mockImplementation(() => {});
 
-      const health = await (monitor as any).checkRedisHealth();
+      const health = await (
+        monitor as unknown as HealthMonitorPrivate
+      ).checkRedisHealth();
 
       expect(health.status).toBe("unhealthy");
       expect(health.message).toContain("Redis host not configured");
@@ -452,13 +540,16 @@ describe("HealthMonitor", () => {
       expect(ErrorHandler.logError).toHaveBeenCalled();
 
       // Restore original value
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
       (redisConnection as any).host = originalHost;
     });
   });
 
   describe("Queue Health Check", () => {
     it("should return healthy status for all queues when Redis is configured", async () => {
-      const queues = await (monitor as any).checkQueueHealth();
+      const queues = await (
+        monitor as unknown as HealthMonitorPrivate
+      ).checkQueueHealth();
 
       expect(queues.noteQueue.status).toBe("healthy");
       expect(queues.imageQueue.status).toBe("healthy");
@@ -477,6 +568,7 @@ describe("HealthMonitor", () => {
 
       // Temporarily modify redisConnection
       const originalHost = redisConnection.host;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
       (redisConnection as any).host = undefined;
 
       vi.mocked(ErrorHandler.createJobError).mockImplementation(
@@ -507,7 +599,9 @@ describe("HealthMonitor", () => {
       );
       vi.mocked(ErrorHandler.logError).mockImplementation(() => {});
 
-      const queues = await (monitor as any).checkQueueHealth();
+      const queues = await (
+        monitor as unknown as HealthMonitorPrivate
+      ).checkQueueHealth();
 
       expect(queues.noteQueue.status).toBe("unhealthy");
       expect(queues.imageQueue.status).toBe("unhealthy");
@@ -520,6 +614,7 @@ describe("HealthMonitor", () => {
       expect(ErrorHandler.logError).toHaveBeenCalled();
 
       // Restore original value
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
       (redisConnection as any).host = originalHost;
     });
   });
@@ -546,7 +641,9 @@ describe("HealthMonitor", () => {
         },
       };
 
-      const status = (monitor as any).determineOverallStatus(checks);
+      const status = (
+        monitor as unknown as HealthMonitorPrivate
+      ).determineOverallStatus(checks);
       expect(status).toBe("unhealthy");
     });
 
@@ -571,7 +668,9 @@ describe("HealthMonitor", () => {
         },
       };
 
-      const status = (monitor as any).determineOverallStatus(checks);
+      const status = (
+        monitor as unknown as HealthMonitorPrivate
+      ).determineOverallStatus(checks);
       expect(status).toBe("degraded");
     });
 
@@ -596,16 +695,18 @@ describe("HealthMonitor", () => {
         },
       };
 
-      const status = (monitor as any).determineOverallStatus(checks);
+      const status = (
+        monitor as unknown as HealthMonitorPrivate
+      ).determineOverallStatus(checks);
       expect(status).toBe("healthy");
     });
   });
 
   describe("Failed Health Check Creation", () => {
     it("should create a failed health check with correct properties", () => {
-      const failedCheck = (monitor as any).createFailedHealthCheck(
-        "Test failure"
-      );
+      const failedCheck = (
+        monitor as unknown as HealthMonitorPrivate
+      ).createFailedHealthCheck("Test failure", "test context");
 
       expect(failedCheck.status).toBe("unhealthy");
       expect(failedCheck.message).toBe("Test failure");
@@ -619,9 +720,9 @@ describe("HealthMonitor", () => {
       const { ErrorHandler } = await import("../error-handler");
 
       // Mock database failure
-      vi
-        .mocked(prisma.$queryRaw)
-        .mockRejectedValue(new Error("Database connection failed")) as any;
+      vi.mocked(prisma.$queryRaw).mockRejectedValue(
+        new Error("Database connection failed")
+      );
       vi.mocked(ErrorHandler.createJobError).mockImplementation(
         (err: string | Error, type?: ErrorType, _severity?: ErrorSeverity) => {
           if (type === ErrorType.DATABASE_ERROR) {
@@ -650,7 +751,9 @@ describe("HealthMonitor", () => {
       );
       vi.mocked(ErrorHandler.logError).mockImplementation(() => {});
 
-      const health = await (monitor as any).performHealthChecks();
+      const health = await (
+        monitor as unknown as HealthMonitorPrivate
+      ).performHealthChecks();
 
       expect(health.checks.database.status).toBe("unhealthy");
       expect(health.checks.database.message).toContain(
@@ -666,11 +769,13 @@ describe("HealthMonitor", () => {
       const { ErrorHandler } = await import("../error-handler");
 
       // Mock database health check to succeed
-      vi.mocked(prisma.$queryRaw).mockResolvedValue([{ "1": 1 }] as any) as any;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
+      (vi.mocked(prisma.$queryRaw) as any).mockResolvedValue([{ "1": 1 }]);
       vi.mocked(prisma.note.count).mockResolvedValue(10);
 
       // Temporarily modify redisConnection to cause failure
       const originalHost = redisConnection.host;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
       (redisConnection as any).host = undefined;
 
       vi.mocked(ErrorHandler.createJobError).mockImplementation(
@@ -701,7 +806,9 @@ describe("HealthMonitor", () => {
       );
       vi.mocked(ErrorHandler.logError).mockImplementation(() => {});
 
-      const health = await (monitor as any).performHealthChecks();
+      const health = await (
+        monitor as unknown as HealthMonitorPrivate
+      ).performHealthChecks();
 
       expect(health.checks.database.status).toBe("healthy");
       expect(health.checks.redis.status).toBe("unhealthy");
@@ -711,6 +818,7 @@ describe("HealthMonitor", () => {
       expect(health.checks.queues).toBeDefined();
 
       // Restore original value
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
       (redisConnection as any).host = originalHost;
     });
 
@@ -720,12 +828,13 @@ describe("HealthMonitor", () => {
       const { ErrorHandler } = await import("../error-handler");
 
       // Mock database failure
-      vi
-        .mocked(prisma.$queryRaw)
-        .mockRejectedValue(new Error("Database connection failed")) as any;
+      vi.mocked(prisma.$queryRaw).mockRejectedValue(
+        new Error("Database connection failed")
+      );
 
       // Temporarily modify redisConnection to cause failure
       const originalHost = redisConnection.host;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
       (redisConnection as any).host = undefined;
 
       // Mock ErrorHandler.createJobError to return different messages for each error type
@@ -757,7 +866,9 @@ describe("HealthMonitor", () => {
       );
       vi.mocked(ErrorHandler.logError).mockImplementation(() => {});
 
-      const health = await (monitor as any).performHealthChecks();
+      const health = await (
+        monitor as unknown as HealthMonitorPrivate
+      ).performHealthChecks();
 
       expect(health.checks.database.status).toBe("unhealthy");
       expect(health.checks.database.message).toContain(
@@ -770,6 +881,7 @@ describe("HealthMonitor", () => {
       expect(health.checks.queues).toBeDefined();
 
       // Restore original value
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
       (redisConnection as any).host = originalHost;
     });
   });

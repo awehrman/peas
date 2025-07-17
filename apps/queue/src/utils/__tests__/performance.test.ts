@@ -102,7 +102,7 @@ describe("trackPerformance decorator", () => {
   // Note: TypeScript may warn about the decorator signature, but it works at runtime and is covered.
   it("should track and log performance for decorated async method", async () => {
     class TestClass {
-      async doSomething(arg: any) {
+      async doSomething(arg: Record<string, unknown>) {
         return `done-${JSON.stringify(arg)}`;
       }
     }
@@ -128,7 +128,7 @@ describe("trackPerformance decorator", () => {
 
   it("should still end tracking and log if decorated method throws", async () => {
     class TestClass {
-      async failMethod(_arg: any) {
+      async failMethod(_arg: Record<string, unknown>) {
         throw new Error("fail");
       }
     }

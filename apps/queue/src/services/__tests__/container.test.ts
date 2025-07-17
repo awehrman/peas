@@ -466,34 +466,34 @@ describe("createServiceContainer", () => {
   });
 
   it("should return a new object with overrides when provided", () => {
-    const mockQueues: Partial<IQueueService> = {
-      noteQueue: { close: vi.fn() } as any,
-      imageQueue: { close: vi.fn() } as any,
-      ingredientQueue: { close: vi.fn() } as any,
-      instructionQueue: { close: vi.fn() } as any,
-      categorizationQueue: { close: vi.fn() } as any,
-      sourceQueue: { close: vi.fn() } as any,
+    const mockQueues = {
+      noteQueue: { close: vi.fn() },
+      imageQueue: { close: vi.fn() },
+      ingredientQueue: { close: vi.fn() },
+      instructionQueue: { close: vi.fn() },
+      categorizationQueue: { close: vi.fn() },
+      sourceQueue: { close: vi.fn() },
     };
 
     const container = createServiceContainer({
-      queues: mockQueues as IQueueService,
+      queues: mockQueues as unknown as IQueueService,
     });
     expect(container.queues).toBe(mockQueues);
     expect(container).toHaveProperty("close");
   });
 
   it("should call overridden close methods when provided", async () => {
-    const mockQueues: Partial<IQueueService> = {
-      noteQueue: { close: vi.fn() } as any,
-      imageQueue: { close: vi.fn() } as any,
-      ingredientQueue: { close: vi.fn() } as any,
-      instructionQueue: { close: vi.fn() } as any,
-      categorizationQueue: { close: vi.fn() } as any,
-      sourceQueue: { close: vi.fn() } as any,
+    const mockQueues = {
+      noteQueue: { close: vi.fn() },
+      imageQueue: { close: vi.fn() },
+      ingredientQueue: { close: vi.fn() },
+      instructionQueue: { close: vi.fn() },
+      categorizationQueue: { close: vi.fn() },
+      sourceQueue: { close: vi.fn() },
     };
 
-    const mockDatabase: Partial<IDatabaseService> = {
-      prisma: { $disconnect: vi.fn() } as any,
+    const mockDatabase = {
+      prisma: { $disconnect: vi.fn() },
       createNote: vi.fn(),
     };
 
@@ -512,8 +512,8 @@ describe("createServiceContainer", () => {
     };
 
     const container = createServiceContainer({
-      queues: mockQueues as IQueueService,
-      database: mockDatabase as IDatabaseService,
+      queues: mockQueues as unknown as IQueueService,
+      database: mockDatabase as unknown as IDatabaseService,
       logger: mockLogger,
     });
 
@@ -537,12 +537,12 @@ describe("createServiceContainer", () => {
       getConnectedClientsCount: vi.fn(),
     };
 
-    const mockWebSocket: Partial<IWebSocketService> = {
+    const mockWebSocket = {
       webSocketManager: mockWebSocketManager,
     };
 
     const container = createServiceContainer({
-      webSocket: mockWebSocket as IWebSocketService,
+      webSocket: mockWebSocket as unknown as IWebSocketService,
     });
 
     await container.close();

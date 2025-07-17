@@ -26,13 +26,13 @@ export class ErrorHandler {
   };
 
   /**
-   * Create a structured error from any caught error
+   * Create a job error with structured information
    */
   static createJobError(
     error: Error | string,
     type: ErrorType = ErrorType.UNKNOWN_ERROR,
     severity: ErrorSeverity = ErrorSeverity.MEDIUM,
-    context?: Record<string, any>
+    context?: Record<string, unknown>
   ): JobError {
     const message = typeof error === "string" ? error : error.message;
 
@@ -52,8 +52,8 @@ export class ErrorHandler {
   static createValidationError(
     message: string,
     field?: string,
-    value?: any,
-    context?: Record<string, any>
+    value?: unknown,
+    context?: Record<string, unknown>
   ): ValidationError {
     return {
       ...this.createJobError(
@@ -74,7 +74,7 @@ export class ErrorHandler {
     error: Error,
     operation?: string,
     table?: string,
-    context?: Record<string, any>
+    context?: Record<string, unknown>
   ): DatabaseError {
     return {
       ...this.createJobError(
@@ -135,7 +135,7 @@ export class ErrorHandler {
    */
   static logError(
     error: JobError,
-    additionalContext?: Record<string, any>
+    additionalContext?: Record<string, unknown>
   ): void {
     const logData = {
       timestamp: error.timestamp.toISOString(),
@@ -246,11 +246,11 @@ export class ErrorHandler {
   }
 
   /**
-   * Wrap async operations with error handling
+   * Execute an operation with error handling
    */
   static async withErrorHandling<T>(
     operation: () => Promise<T>,
-    context?: Record<string, any>
+    context?: Record<string, unknown>
   ): Promise<T> {
     try {
       return await operation();
@@ -263,10 +263,10 @@ export class ErrorHandler {
   }
 
   /**
-   * Validate job data structure
+   * Validate job data against required fields
    */
-  static validateJobData<T>(
-    data: any,
+  static validateJobData<T extends Record<string, unknown>>(
+    data: T,
     requiredFields: (keyof T)[]
   ): ValidationError | null {
     for (const field of requiredFields) {
@@ -282,7 +282,7 @@ export class ErrorHandler {
   }
 }
 
-export function validateJobData(data: any) {
+export function validateJobData(data: Record<string, unknown>) {
   if (!data || !data.note) {
     return {
       message: "Invalid job data: missing note",

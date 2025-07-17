@@ -110,18 +110,18 @@ describe("ValidatedAction", () => {
       const data = { value: 123 }; // number instead of string
       const deps = { logger: mockLogger };
 
-      await expect(action.execute(data as any, deps, context)).rejects.toThrow(
-        "Invalid input: expected string, received number"
-      );
+      await expect(
+        action.execute(data as unknown as { value: string }, deps, context)
+      ).rejects.toThrow("Invalid input: expected string, received number");
     });
 
     it("should throw error for missing required field", async () => {
       const data = {}; // missing value field
       const deps = { logger: mockLogger };
 
-      await expect(action.execute(data as any, deps, context)).rejects.toThrow(
-        "Invalid input: expected string, received undefined"
-      );
+      await expect(
+        action.execute(data as unknown as { value: string }, deps, context)
+      ).rejects.toThrow("Invalid input: expected string, received undefined");
     });
 
     it("should throw error for extra fields", async () => {
@@ -161,7 +161,11 @@ describe("ValidatedAction", () => {
       const deps = { logger: mockLogger };
 
       await expect(
-        complexAction.execute(data as any, deps, context)
+        complexAction.execute(
+          data as unknown as { value: string; count: number; active: boolean },
+          deps,
+          context
+        ) // Intentional: negative test for validation
       ).rejects.toThrow();
     });
   });

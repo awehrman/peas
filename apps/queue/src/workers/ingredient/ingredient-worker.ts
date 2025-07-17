@@ -93,7 +93,10 @@ export function createIngredientWorker(
     // Ingredient-specific dependencies
     categorizationQueue: container.queues.categorizationQueue,
     database: {
-      updateIngredientLine: async (id: string, data: any) => {
+      updateIngredientLine: async (
+        id: string,
+        data: Record<string, unknown>
+      ) => {
         container.logger.log(
           `[INGREDIENT] Updating ingredient line ${id} with data: ${JSON.stringify(data)}`
         );
@@ -104,7 +107,9 @@ export function createIngredientWorker(
         );
         return result;
       },
-      createParsedSegments: async (segments: any[]) => {
+      createParsedSegments: async (
+        segments: Array<Record<string, unknown>>
+      ) => {
         container.logger.log(
           `[INGREDIENT] Creating ${segments.length} parsed segments`
         );

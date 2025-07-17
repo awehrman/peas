@@ -1,10 +1,10 @@
-import { Router } from "express";
+import { Router, Request, Response } from "express";
 import { serviceContainer } from "../../services/container";
 
 const router = Router();
 
 // Test ingredient processing
-router.post("/", async (req: any, res: any) => {
+router.post("/", async (req: Request, res: Response): Promise<void> => {
   try {
     const { ingredientLineId, reference, blockIndex, lineIndex, noteId } =
       req.body;
@@ -14,10 +14,11 @@ router.post("/", async (req: any, res: any) => {
         "Ingredient test endpoint: Missing required fields",
         "warn"
       );
-      return res.status(400).json({
+      res.status(400).json({
         error: "Missing required fields",
         message: "ingredientLineId, reference, and noteId are required",
       });
+      return;
     }
 
     serviceContainer.logger.log(
@@ -59,7 +60,7 @@ router.post("/", async (req: any, res: any) => {
 });
 
 // Get ingredient test info
-router.get("/", (req: any, res: any) => {
+router.get("/", (req: Request, res: Response): void => {
   serviceContainer.logger.log("Ingredient test endpoint: Info request");
   res.json({
     message: "Ingredient Worker Test Endpoint",

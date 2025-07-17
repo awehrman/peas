@@ -13,7 +13,8 @@ export interface AddCompletedStatusDeps {
 
 export interface AddCompletedStatusData {
   sourceId?: string;
-  [key: string]: any;
+  savedSource?: { id: string; [key: string]: unknown };
+  [key: string]: unknown;
 }
 
 /**

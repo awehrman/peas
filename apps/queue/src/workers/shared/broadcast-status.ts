@@ -132,11 +132,13 @@ export class BroadcastFailedAction extends BaseAction<
  */
 export function createStatusAction(
   status: string,
-  message: string | ((data: any, context: ActionContext) => string)
+  message:
+    | string
+    | ((data: BroadcastStatusData, context: ActionContext) => string)
 ): typeof BroadcastStatusAction {
   return class extends BroadcastStatusAction {
     async execute(
-      data: any,
+      data: BroadcastStatusData,
       deps: BroadcastStatusDeps,
       context: ActionContext
     ) {

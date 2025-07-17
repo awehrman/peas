@@ -1,4 +1,5 @@
 import { vi, type MockedFunction, expect } from "vitest";
+import type { Queue } from "bullmq";
 import type { IServiceContainer } from "../../services/container";
 import type { ActionContext } from "../core/types";
 
@@ -12,27 +13,27 @@ export function createMockServiceContainer(): IServiceContainer {
       noteQueue: {
         add: vi.fn().mockResolvedValue({ id: "test-note-job" }),
         close: vi.fn().mockResolvedValue(undefined),
-      } as any,
+      } as unknown as Queue,
       imageQueue: {
         add: vi.fn().mockResolvedValue({ id: "test-image-job" }),
         close: vi.fn().mockResolvedValue(undefined),
-      } as any,
+      } as unknown as Queue,
       ingredientQueue: {
         add: vi.fn().mockResolvedValue({ id: "test-ingredient-job" }),
         close: vi.fn().mockResolvedValue(undefined),
-      } as any,
+      } as unknown as Queue,
       instructionQueue: {
         add: vi.fn().mockResolvedValue({ id: "test-instruction-job" }),
         close: vi.fn().mockResolvedValue(undefined),
-      } as any,
+      } as unknown as Queue,
       categorizationQueue: {
         add: vi.fn().mockResolvedValue({ id: "test-categorization-job" }),
         close: vi.fn().mockResolvedValue(undefined),
-      } as any,
+      } as unknown as Queue,
       sourceQueue: {
         add: vi.fn().mockResolvedValue({ id: "test-source-job" }),
         close: vi.fn().mockResolvedValue(undefined),
-      } as any,
+      } as unknown as Queue,
     },
     database: {
       createNote: vi.fn().mockResolvedValue({
@@ -46,7 +47,7 @@ export function createMockServiceContainer(): IServiceContainer {
       }),
       prisma: {
         $disconnect: vi.fn().mockResolvedValue(undefined),
-      } as any,
+      } as unknown as typeof import("@peas/database").prisma,
     },
     errorHandler: {
       errorHandler: {
@@ -70,7 +71,7 @@ export function createMockServiceContainer(): IServiceContainer {
           timestamp: new Date(),
         })),
         logError: vi.fn(),
-      } as any,
+      } as any, // eslint-disable-line @typescript-eslint/no-explicit-any -- Test mock - intentionally partial implementation
     },
     healthMonitor: {
       healthMonitor: {
@@ -78,7 +79,7 @@ export function createMockServiceContainer(): IServiceContainer {
           status: "healthy",
           timestamp: new Date().toISOString(),
         }),
-      } as any,
+      } as any, // eslint-disable-line @typescript-eslint/no-explicit-any -- Test mock - intentionally partial implementation
     },
     webSocket: {
       webSocketManager: null,
@@ -187,7 +188,7 @@ export function createMockStatusBroadcaster() {
 // TEST DATA HELPERS
 // ============================================================================
 
-export function createMockNoteJobData(overrides: Record<string, any> = {}) {
+export function createMockNoteJobData(overrides: Record<string, unknown> = {}) {
   return {
     content: "<html><body><h1>Test Recipe</h1></body></html>",
     noteId: "test-note-123",
@@ -204,7 +205,9 @@ export function createMockNoteJobData(overrides: Record<string, any> = {}) {
   };
 }
 
-export function createMockParsedHtmlFile(overrides: Record<string, any> = {}) {
+export function createMockParsedHtmlFile(
+  overrides: Record<string, unknown> = {}
+) {
   return {
     title: "Test Recipe",
     contents: "Test recipe content",
@@ -228,10 +231,10 @@ export function createMockParsedHtmlFile(overrides: Record<string, any> = {}) {
 // ============================================================================
 
 export function expectActionToHaveBeenCalledWith(
-  mockAction: MockedFunction<any>,
-  expectedData: any,
-  expectedDeps: any,
-  expectedContext: any
+  mockAction: MockedFunction<(...args: unknown[]) => unknown>,
+  expectedData: unknown,
+  expectedDeps: unknown,
+  expectedContext: unknown
 ) {
   expect(mockAction).toHaveBeenCalledWith(
     expectedData,
@@ -241,23 +244,23 @@ export function expectActionToHaveBeenCalledWith(
 }
 
 export function expectActionToHaveBeenCalledTimes(
-  mockAction: MockedFunction<any>,
+  mockAction: MockedFunction<(...args: unknown[]) => unknown>,
   times: number
 ) {
   expect(mockAction).toHaveBeenCalledTimes(times);
 }
 
 export function expectActionToHaveBeenCalledOnce(
-  mockAction: MockedFunction<any>
+  mockAction: MockedFunction<(...args: unknown[]) => unknown>
 ) {
   expect(mockAction).toHaveBeenCalledTimes(1);
 }
 
 export function expectActionToHaveBeenCalledWithMatch(
-  mockAction: MockedFunction<any>,
-  expectedData: any,
-  expectedDeps: any,
-  expectedContext: any
+  mockAction: MockedFunction<(...args: unknown[]) => unknown>,
+  expectedData: unknown,
+  expectedDeps: unknown,
+  expectedContext: unknown
 ) {
   expect(mockAction).toHaveBeenCalledWith(
     expect.objectContaining(expectedData),

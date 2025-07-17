@@ -1,10 +1,10 @@
-import { Router } from "express";
+import { Router, Request, Response } from "express";
 import { serviceContainer } from "../../services/container";
 
 const router = Router();
 
 // Test source processing
-router.post("/", async (req: any, res: any) => {
+router.post("/", async (req: Request, res: Response): Promise<void> => {
   try {
     const { noteId, title, content, url } = req.body;
 
@@ -13,10 +13,11 @@ router.post("/", async (req: any, res: any) => {
         "Source test endpoint: Missing required fields",
         "warn"
       );
-      return res.status(400).json({
+      res.status(400).json({
         error: "Missing required fields",
         message: "noteId is required",
       });
+      return;
     }
 
     serviceContainer.logger.log(
@@ -57,7 +58,7 @@ router.post("/", async (req: any, res: any) => {
 });
 
 // Get source test info
-router.get("/", (req: any, res: any) => {
+router.get("/", (req: Request, res: Response): void => {
   serviceContainer.logger.log("Source test endpoint: Info request");
   res.json({
     message: "Source Worker Test Endpoint",

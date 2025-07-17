@@ -27,10 +27,12 @@ import { createIngredientWorker } from "../ingredient";
 import { createInstructionWorker } from "../instruction";
 import { createCategorizationWorker } from "../categorization";
 import { createSourceWorker } from "../source";
-
 describe("startWorkers", () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
   let mockQueues: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
   let mockServiceContainer: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
   let mockLogger: any;
 
   beforeEach(() => {
@@ -59,17 +61,23 @@ describe("startWorkers", () => {
     };
 
     // Mock worker factory returns
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
     (createNoteWorker as any).mockReturnValue({ name: "note-worker" });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
     (createImageWorker as any).mockReturnValue({ name: "image-worker" });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
     (createIngredientWorker as any).mockReturnValue({
       name: "ingredient-worker",
     });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
     (createInstructionWorker as any).mockReturnValue({
       name: "instruction-worker",
     });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
     (createCategorizationWorker as any).mockReturnValue({
       name: "categorization-worker",
     });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
     (createSourceWorker as any).mockReturnValue({ name: "source-worker" });
   });
 
@@ -143,6 +151,7 @@ describe("startWorkers", () => {
 
   it("should handle errors during worker creation", () => {
     const error = new Error("Failed to create note worker");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
     (createNoteWorker as any).mockImplementation(() => {
       throw error;
     });
@@ -161,6 +170,7 @@ describe("startWorkers", () => {
 
   it("should handle errors during any worker creation", () => {
     const error = new Error("Failed to create image worker");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
     (createImageWorker as any).mockImplementation(() => {
       throw error;
     });
@@ -179,6 +189,7 @@ describe("startWorkers", () => {
 
   it("should handle non-Error exceptions", () => {
     const error = "String error";
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
     (createIngredientWorker as any).mockImplementation(() => {
       throw error;
     });
@@ -198,26 +209,32 @@ describe("startWorkers", () => {
   it("should call worker factories in the correct order", () => {
     const callOrder: string[] = [];
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
     (createNoteWorker as any).mockImplementation(() => {
       callOrder.push("note");
       return { name: "note-worker" };
     });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
     (createImageWorker as any).mockImplementation(() => {
       callOrder.push("image");
       return { name: "image-worker" };
     });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
     (createIngredientWorker as any).mockImplementation(() => {
       callOrder.push("ingredient");
       return { name: "ingredient-worker" };
     });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
     (createInstructionWorker as any).mockImplementation(() => {
       callOrder.push("instruction");
       return { name: "instruction-worker" };
     });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
     (createCategorizationWorker as any).mockImplementation(() => {
       callOrder.push("categorization");
       return { name: "categorization-worker" };
     });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
     (createSourceWorker as any).mockImplementation(() => {
       callOrder.push("source");
       return { name: "source-worker" };
@@ -238,6 +255,7 @@ describe("startWorkers", () => {
 
   it("should not store workers if an error occurs", () => {
     const error = new Error("Failed to create worker");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
     (createNoteWorker as any).mockImplementation(() => {
       throw error;
     });

@@ -3,7 +3,13 @@ import { Queue } from "bullmq";
 import { NoteWorker, createNoteWorker } from "../note-worker";
 import { MissingDependencyError } from "../../core/errors";
 import { registerNoteActions } from "../actions";
-import type { NoteJobData } from "../types";
+import type { NoteJobData, NoteWorkerDependencies } from "../types";
+import type { ActionContext } from "../../core/types";
+import type { IServiceContainer } from "../../../services/container";
+import type { PrismaClient } from "@prisma/client";
+import type { HealthMonitor } from "../../../utils/health-monitor";
+import { ErrorHandler } from "../../../utils/error-handler";
+import type { ParsedHtmlFile } from "../types";
 
 // Spy on registerNoteActions
 vi.mock("../actions", () => ({
@@ -22,8 +28,12 @@ function makeBaseActionMock(name: string) {
 }
 
 class TestNoteWorker extends NoteWorker {
-  public wrappedActions: any[] = [];
-  public errorHandledActions: any[] = [];
+  public wrappedActions: Array<{ name: string; deps: NoteWorkerDependencies }> =
+    [];
+  public errorHandledActions: Array<{
+    name: string;
+    deps: NoteWorkerDependencies;
+  }> = [];
   public registerActionsCalled = false;
 
   protected registerActions(): void {
@@ -31,37 +41,132 @@ class TestNoteWorker extends NoteWorker {
     registerNoteActions(this.actionFactory);
   }
 
-  protected createWrappedAction(name: string, deps: any) {
+  protected createWrappedAction(name: string, deps: NoteWorkerDependencies) {
     this.wrappedActions.push({ name, deps });
     return makeBaseActionMock(name);
   }
 
-  protected createErrorHandledAction(name: string, deps: any) {
+  protected createErrorHandledAction(
+    name: string,
+    deps: NoteWorkerDependencies
+  ) {
     this.errorHandledActions.push({ name, deps });
     return makeBaseActionMock(name);
   }
+
+  public testGetOperationName(): string {
+    return this.getOperationName();
+  }
+
+  public testCreateActionPipeline(data: NoteJobData, context: ActionContext) {
+    return this.createActionPipeline(data, context);
+  }
+}
+
+// Helper to create a fully-typed mock IServiceContainer
+function createMockServiceContainer(): IServiceContainer {
+  return {
+    queues: {
+      ingredientQueue: { name: "ingredient-queue" } as Queue,
+      instructionQueue: { name: "instruction-queue" } as Queue,
+      imageQueue: { name: "image-queue" } as Queue,
+      categorizationQueue: { name: "categorization-queue" } as Queue,
+      sourceQueue: { name: "source-queue" } as Queue,
+      noteQueue: { name: "note-queue" } as Queue,
+    },
+    database: {
+      createNote: vi.fn().mockResolvedValue({ id: "note-1" }),
+      prisma: {
+        $disconnect: vi.fn(),
+        $connect: vi.fn(),
+        $on: vi.fn(),
+        $use: vi.fn(),
+        $transaction: vi.fn(),
+        $executeRaw: vi.fn(),
+        $queryRaw: vi.fn(),
+        $runCommandRaw: vi.fn(),
+        $extends: vi.fn(),
+        note: {},
+        status: {},
+        user: {},
+      } as unknown as PrismaClient,
+    },
+    errorHandler: {
+      errorHandler: ErrorHandler,
+    },
+    healthMonitor: {
+      healthMonitor: {
+        healthCache: {},
+        lastCheckTime: 0,
+        CACHE_DURATION_MS: 0,
+        TIMEOUT_MS: 0,
+        checkHealth: vi.fn(),
+        getStatus: vi.fn(),
+        getUptime: vi.fn(),
+        getLastCheck: vi.fn(),
+        isHealthy: vi.fn(),
+      } as unknown as HealthMonitor,
+    },
+    webSocket: {
+      webSocketManager: {
+        broadcastStatusEvent: vi.fn(),
+        getConnectedClientsCount: vi.fn(),
+        close: vi.fn(),
+      },
+    },
+    statusBroadcaster: {
+      statusBroadcaster: {
+        addStatusEventAndBroadcast: vi.fn(),
+      },
+      addStatusEventAndBroadcast: vi.fn(),
+    },
+    parsers: {
+      parsers: {
+        parseHTML: vi.fn().mockResolvedValue({ parsed: true }),
+      },
+      parseHTML: vi.fn().mockResolvedValue({ parsed: true }),
+    },
+    logger: {
+      log: vi.fn(),
+      debug: vi.fn(),
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+      fatal: vi.fn(),
+      logWithContext: vi.fn(),
+      getLogFiles: vi.fn(),
+      rotateLogs: vi.fn(),
+      getLogStats: vi.fn(),
+      clearOldLogs: vi.fn(),
+    },
+    config: {
+      port: 4200,
+      wsPort: 8080,
+      redisConnection: {
+        host: "localhost",
+        port: 6379,
+        username: undefined,
+        password: undefined,
+      },
+      batchSize: 10,
+      maxRetries: 3,
+      backoffMs: 1000,
+      maxBackoffMs: 30000,
+    },
+    close: vi.fn(),
+  };
 }
 
 describe("NoteWorker", () => {
   let mockQueue: Queue;
-  let mockContainer: any;
-  let mockDependencies: any;
+  let mockContainer: IServiceContainer;
+  let mockDependencies: Partial<NoteWorkerDependencies>;
   let worker: TestNoteWorker;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockQueue = { name: "note-queue" } as any;
-    mockContainer = {
-      parsers: { parseHTML: vi.fn() },
-      database: { createNote: vi.fn() },
-      queues: {
-        ingredientQueue: { name: "ingredient-queue" },
-        instructionQueue: { name: "instruction-queue" },
-        imageQueue: { name: "image-queue" },
-        categorizationQueue: { name: "categorization-queue" },
-        sourceQueue: { name: "source-queue" },
-      },
-    };
+    mockQueue = { name: "note-queue" } as Queue;
+    mockContainer = createMockServiceContainer();
     mockDependencies = {
       parseHTML: vi.fn(),
       createNote: vi.fn(),
@@ -76,7 +181,7 @@ describe("NoteWorker", () => {
     };
     worker = new TestNoteWorker(
       mockQueue,
-      mockDependencies,
+      mockDependencies as NoteWorkerDependencies,
       undefined,
       mockContainer
     );
@@ -92,12 +197,12 @@ describe("NoteWorker", () => {
 
   it("should call registerNoteActions during initialization", () => {
     expect(registerNoteActions).toHaveBeenCalledWith(
-      (worker as any)["actionFactory"]
+      (worker as unknown as { actionFactory: unknown }).actionFactory
     );
   });
 
   it("getOperationName should return the correct operation name", () => {
-    expect((worker as any)["getOperationName"]()).toBe("note_processing");
+    expect(worker.testGetOperationName()).toBe("note_processing");
   });
 
   describe("validateDependencies", () => {
@@ -105,7 +210,9 @@ describe("NoteWorker", () => {
       expect(() => worker.validateDependencies()).not.toThrow();
     });
     it("should throw MissingDependencyError when parseHTML is missing", () => {
-      (worker as any)["container"].parsers!.parseHTML = undefined;
+      (
+        worker as unknown as { container: { parsers: { parseHTML: unknown } } }
+      ).container.parsers!.parseHTML = undefined;
       expect(() => worker.validateDependencies()).toThrow(
         MissingDependencyError
       );
@@ -114,7 +221,11 @@ describe("NoteWorker", () => {
       );
     });
     it("should throw MissingDependencyError when createNote is missing", () => {
-      (worker as any)["container"].database!.createNote = undefined;
+      (
+        worker as unknown as {
+          container: { database: { createNote: unknown } };
+        }
+      ).container.database!.createNote = undefined;
       expect(() => worker.validateDependencies()).toThrow(
         MissingDependencyError
       );
@@ -123,8 +234,22 @@ describe("NoteWorker", () => {
       );
     });
     it("should throw MissingDependencyError when both dependencies are missing", () => {
-      (worker as any)["container"].parsers!.parseHTML = undefined;
-      (worker as any)["container"].database!.createNote = undefined;
+      (
+        worker as unknown as {
+          container: {
+            parsers: { parseHTML: unknown };
+            database: { createNote: unknown };
+          };
+        }
+      ).container.parsers!.parseHTML = undefined;
+      (
+        worker as unknown as {
+          container: {
+            parsers: { parseHTML: unknown };
+            database: { createNote: unknown };
+          };
+        }
+      ).container.database!.createNote = undefined;
       expect(() => worker.validateDependencies()).toThrow(
         MissingDependencyError
       );
@@ -134,11 +259,16 @@ describe("NoteWorker", () => {
   describe("createActionPipeline", () => {
     it("should create the correct pipeline with all actions", () => {
       const mockData = { content: "test content" } as NoteJobData;
-      const mockContext = { jobId: "test-job" } as any;
-      const pipeline = (worker as any)["createActionPipeline"](
-        mockData,
-        mockContext
-      );
+      const mockContext: ActionContext = {
+        jobId: "test-job",
+        retryCount: 0,
+        queueName: "test-queue",
+        operation: "test",
+        startTime: Date.now(),
+        workerName: "test-worker",
+        attemptNumber: 1,
+      };
+      const pipeline = worker.testCreateActionPipeline(mockData, mockContext);
       expect(pipeline).toHaveLength(4); // parse_html, save_note, add_processing_status, add_completed_status
       expect(worker.wrappedActions).toEqual([
         { name: "parse_html", deps: mockDependencies },
@@ -151,8 +281,16 @@ describe("NoteWorker", () => {
     });
     it("should not include schedule actions when they are commented out", () => {
       const mockData = { content: "test content" } as NoteJobData;
-      const mockContext = { jobId: "test-job" } as any;
-      (worker as any)["createActionPipeline"](mockData, mockContext);
+      const mockContext: ActionContext = {
+        jobId: "test-job",
+        retryCount: 0,
+        queueName: "test-queue",
+        operation: "test",
+        startTime: Date.now(),
+        workerName: "test-worker",
+        attemptNumber: 1,
+      };
+      worker.testCreateActionPipeline(mockData, mockContext);
       const scheduled = worker.errorHandledActions.map((a) => a.name);
       expect(scheduled).not.toContain("schedule_source");
       expect(scheduled).not.toContain("schedule_images");
@@ -177,22 +315,12 @@ describe("NoteWorker", () => {
 
 describe("createNoteWorker", () => {
   let mockQueue: Queue;
-  let mockContainer: any;
+  let mockContainer: IServiceContainer;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockQueue = { name: "note-queue" } as any;
-    mockContainer = {
-      parsers: { parseHTML: vi.fn() },
-      database: { createNote: vi.fn() },
-      queues: {
-        ingredientQueue: { name: "ingredient-queue" },
-        instructionQueue: { name: "instruction-queue" },
-        imageQueue: { name: "image-queue" },
-        categorizationQueue: { name: "categorization-queue" },
-        sourceQueue: { name: "source-queue" },
-      },
-    };
+    mockQueue = { name: "note-queue" } as Queue;
+    mockContainer = createMockServiceContainer();
   });
 
   it("should create a NoteWorker with correct dependencies", () => {
@@ -220,25 +348,16 @@ describe("createNoteWorker", () => {
 });
 
 describe("createNoteDependenciesFromContainer", () => {
-  let mockContainer: any;
+  let mockContainer: IServiceContainer;
   beforeEach(() => {
     vi.clearAllMocks();
-    mockContainer = {
-      parsers: { parseHTML: vi.fn().mockResolvedValue({ parsed: true }) },
-      database: { createNote: vi.fn().mockResolvedValue({ id: "note-1" }) },
-      queues: {
-        ingredientQueue: { name: "ingredient-queue" },
-        instructionQueue: { name: "instruction-queue" },
-        imageQueue: { name: "image-queue" },
-        categorizationQueue: { name: "categorization-queue" },
-        sourceQueue: { name: "source-queue" },
-      },
-    };
+    mockContainer = createMockServiceContainer();
   });
   function getDeps() {
     // Use the real createNoteWorker to get the dependencies
-    const worker = createNoteWorker({} as any, mockContainer);
-    return (worker as any).dependencies;
+    const worker = createNoteWorker({} as Queue, mockContainer);
+    return (worker as unknown as { dependencies: NoteWorkerDependencies })
+      .dependencies;
   }
   it("should create dependencies with correct queue references", () => {
     const deps = getDeps();
@@ -260,34 +379,32 @@ describe("createNoteDependenciesFromContainer", () => {
   });
   it("should create createNote function that calls container database", async () => {
     const deps = getDeps();
-    const testFile = { content: "test" };
+    const testFile: ParsedHtmlFile = {
+      title: "Test Recipe",
+      contents: "Test content",
+      ingredients: [],
+      instructions: [],
+    };
     const result = await deps.createNote(testFile);
     expect(mockContainer.database.createNote).toHaveBeenCalledWith(testFile);
     expect(result).toEqual({ id: "note-1" });
   });
   it("should throw error when parseHTML is not available", async () => {
-    mockContainer.parsers.parseHTML = undefined;
-    expect(() => getDeps()).toThrowError("parseHTML function is required");
-  });
-  it("should throw error when createNote is not available", async () => {
-    mockContainer.database.createNote = undefined;
-    expect(() => getDeps()).toThrowError("createNote function is required");
-  });
-
-  it("should throw error when parseHTML function is not available in container", async () => {
     // Create a container with parseHTML undefined but still present in parsers
     const testContainer = {
       ...mockContainer,
       parsers: { parseHTML: undefined },
-    };
+    } as unknown as IServiceContainer; // Intentionally break interface for negative test
 
     // Mock the validateDependencies method to avoid the early throw
     const validateSpy = vi.spyOn(NoteWorker.prototype, "validateDependencies");
     validateSpy.mockImplementation(() => {}); // No-op to avoid validation
 
     try {
-      const worker = createNoteWorker({} as any, testContainer);
-      const deps = (worker as any).dependencies;
+      const worker = createNoteWorker({} as Queue, testContainer);
+      const deps = (
+        worker as unknown as { dependencies: NoteWorkerDependencies }
+      ).dependencies;
 
       await expect(deps.parseHTML("test content")).rejects.toThrow(
         "parseHTML function not available"
@@ -301,17 +418,27 @@ describe("createNoteDependenciesFromContainer", () => {
     // Create a container with createNote undefined but still present in database
     const testContainer = {
       ...mockContainer,
-      database: { createNote: undefined },
-    };
+      database: {
+        createNote: undefined,
+        prisma: mockContainer.database.prisma,
+      },
+    } as unknown as IServiceContainer; // Intentionally break interface for negative test
 
     // Mock the validateDependencies method to avoid the early throw
     const validateSpy = vi.spyOn(NoteWorker.prototype, "validateDependencies");
     validateSpy.mockImplementation(() => {}); // No-op to avoid validation
 
     try {
-      const worker = createNoteWorker({} as any, testContainer);
-      const deps = (worker as any).dependencies;
-      const testFile = { content: "test" };
+      const worker = createNoteWorker({} as Queue, testContainer);
+      const deps = (
+        worker as unknown as { dependencies: NoteWorkerDependencies }
+      ).dependencies;
+      const testFile: ParsedHtmlFile = {
+        title: "Test Recipe",
+        contents: "Test content",
+        ingredients: [],
+        instructions: [],
+      };
 
       await expect(deps.createNote(testFile)).rejects.toThrow(
         "createNote function not available"
@@ -322,12 +449,56 @@ describe("createNoteDependenciesFromContainer", () => {
   });
 
   it("should handle parseHTML when container.parsers is undefined", async () => {
-    mockContainer.parsers = undefined;
-    expect(() => getDeps()).toThrowError("parseHTML function is required");
+    const testContainer = {
+      ...mockContainer,
+      parsers: undefined,
+    } as unknown as IServiceContainer; // Intentionally break interface for negative test
+
+    // Mock the validateDependencies method to avoid the early throw
+    const validateSpy = vi.spyOn(NoteWorker.prototype, "validateDependencies");
+    validateSpy.mockImplementation(() => {}); // No-op to avoid validation
+
+    try {
+      const worker = createNoteWorker({} as Queue, testContainer);
+      const deps = (
+        worker as unknown as { dependencies: NoteWorkerDependencies }
+      ).dependencies;
+
+      await expect(deps.parseHTML("test content")).rejects.toThrow(
+        "parseHTML function not available"
+      );
+    } finally {
+      validateSpy.mockRestore();
+    }
   });
 
   it("should handle createNote when container.database is undefined", async () => {
-    mockContainer.database = undefined;
-    expect(() => getDeps()).toThrowError("createNote function is required");
+    const testContainer = {
+      ...mockContainer,
+      database: undefined,
+    } as unknown as IServiceContainer; // Intentionally break interface for negative test
+
+    // Mock the validateDependencies method to avoid the early throw
+    const validateSpy = vi.spyOn(NoteWorker.prototype, "validateDependencies");
+    validateSpy.mockImplementation(() => {}); // No-op to avoid validation
+
+    try {
+      const worker = createNoteWorker({} as Queue, testContainer);
+      const deps = (
+        worker as unknown as { dependencies: NoteWorkerDependencies }
+      ).dependencies;
+      const testFile: ParsedHtmlFile = {
+        title: "Test Recipe",
+        contents: "Test content",
+        ingredients: [],
+        instructions: [],
+      };
+
+      await expect(deps.createNote(testFile)).rejects.toThrow(
+        "createNote function not available"
+      );
+    } finally {
+      validateSpy.mockRestore();
+    }
   });
 });

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import type { NoteStatus } from "@peas/database";
 
 // Mock modules before importing the function under test
 vi.doMock("@peas/database", () => ({
@@ -6,12 +7,12 @@ vi.doMock("@peas/database", () => ({
 }));
 
 let addStatusEventAndBroadcast: typeof import("../status-broadcaster").addStatusEventAndBroadcast;
-let addStatusEvent: any;
+let addStatusEvent: unknown;
 
 describe("addStatusEventAndBroadcast", () => {
   const baseArgs = {
     noteId: "note-1",
-    status: "PROCESSING" as any, // Use 'any' for NoteStatus for test
+    status: "PROCESSING" as NoteStatus,
     message: "Test message",
     context: "test-context",
     currentCount: 2,
@@ -38,7 +39,8 @@ describe("addStatusEventAndBroadcast", () => {
 
   it("calls addStatusEvent with correct args and returns dbEvent", async () => {
     const fakeDbEvent = { createdAt: new Date(), ...baseArgs };
-    addStatusEvent.mockResolvedValue(fakeDbEvent);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
+    (addStatusEvent as any).mockResolvedValue(fakeDbEvent);
 
     const result = await addStatusEventAndBroadcast(baseArgs);
 
@@ -57,7 +59,8 @@ describe("addStatusEventAndBroadcast", () => {
 
   it("rethrows and logs error from addStatusEvent", async () => {
     const error = new Error("DB fail");
-    addStatusEvent.mockRejectedValue(error);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
+    (addStatusEvent as any).mockRejectedValue(error);
 
     await expect(addStatusEventAndBroadcast(baseArgs)).rejects.toThrow(
       "DB fail"
@@ -69,9 +72,10 @@ describe("addStatusEventAndBroadcast", () => {
   });
 
   it("works with minimal args (only required)", async () => {
-    const minimalArgs = { noteId: "n2", status: "COMPLETE" as any };
+    const minimalArgs = { noteId: "n2", status: "COMPLETE" as NoteStatus };
     const fakeDbEvent = { createdAt: new Date(), ...minimalArgs };
-    addStatusEvent.mockResolvedValue(fakeDbEvent);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
+    (addStatusEvent as any).mockResolvedValue(fakeDbEvent);
 
     const result = await addStatusEventAndBroadcast(minimalArgs);
     expect(addStatusEvent).toHaveBeenCalledWith(minimalArgs);

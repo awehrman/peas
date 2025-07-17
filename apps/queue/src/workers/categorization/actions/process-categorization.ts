@@ -24,13 +24,13 @@ export interface ProcessCategorizationOutput {
 
 export class ProcessCategorizationAction extends BaseAction<
   ProcessCategorizationInput,
-  any
+  ProcessCategorizationOutput
 > {
   name = "process-categorization";
 
   async execute(
     input: ProcessCategorizationInput,
-    _deps: any,
+    _deps: object,
     _context: ActionContext
   ): Promise<ProcessCategorizationOutput> {
     try {
@@ -116,7 +116,7 @@ export class ProcessCategorizationAction extends BaseAction<
     return tags;
   }
 
-  private analyzeRecipeDetails() {
+  private analyzeRecipeDetails(): ProcessCategorizationOutput["analysis"] {
     // TODO: Implement detailed recipe analysis
     // This would extract cooking times, difficulty, servings, etc.
 

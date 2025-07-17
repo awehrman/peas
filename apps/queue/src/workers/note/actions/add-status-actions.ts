@@ -17,9 +17,9 @@ export interface AddStatusActionsDeps {
 export interface AddStatusActionsData {
   note?: {
     id: string;
-    [key: string]: any;
+    [key: string]: unknown;
   };
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**

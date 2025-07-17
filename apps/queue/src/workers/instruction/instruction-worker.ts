@@ -79,7 +79,10 @@ export function createInstructionWorker(
 
     // Instruction-specific dependencies
     database: {
-      updateInstructionLine: async (id: string, data: any) => {
+      updateInstructionLine: async (
+        id: string,
+        data: Record<string, unknown>
+      ) => {
         container.logger.log(
           `[INSTRUCTION] Updating instruction line ${id} with data: ${JSON.stringify(data)}`
         );
@@ -90,7 +93,7 @@ export function createInstructionWorker(
         );
         return result;
       },
-      createInstructionSteps: async (steps: any[]) => {
+      createInstructionSteps: async (steps: Array<Record<string, unknown>>) => {
         container.logger.log(
           `[INSTRUCTION] Creating ${steps.length} instruction steps`
         );

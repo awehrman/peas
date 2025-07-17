@@ -234,10 +234,10 @@ describe("ErrorHandler", () => {
     it("should return ValidationError if a field is missing", () => {
       const data = { a: 1 };
       // Use a generic object type to avoid type error
-      const err = ErrorHandler.validateJobData<{ [key: string]: any }>(data, [
-        "a",
-        "b",
-      ]);
+      const err = ErrorHandler.validateJobData<{ [key: string]: unknown }>(
+        data,
+        ["a", "b"]
+      );
       expect(err).not.toBeNull();
       if (err) {
         expect((err as ValidationError).field).toBe("b");

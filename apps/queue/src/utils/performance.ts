@@ -54,14 +54,18 @@ export const performanceTracker = new PerformanceTracker();
 // Decorator for tracking function performance
 export function trackPerformance(operation: string) {
   return function (
-    target: any,
+    target: object,
     propertyName: string,
     descriptor: PropertyDescriptor
   ) {
     const method = descriptor.value;
 
-    descriptor.value = async function (...args: any[]) {
-      const noteId = args[0]?.data?.noteId || args[0]?.data?.note?.id;
+    descriptor.value = async function (...args: unknown[]) {
+      const noteId =
+        (args[0] as { data?: { noteId?: string; note?: { id?: string } } })
+          ?.data?.noteId ||
+        (args[0] as { data?: { noteId?: string; note?: { id?: string } } })
+          ?.data?.note?.id;
       const id = performanceTracker.start(operation, noteId);
 
       try {

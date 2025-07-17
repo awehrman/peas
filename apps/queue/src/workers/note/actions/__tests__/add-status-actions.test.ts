@@ -230,7 +230,7 @@ describe("AddStatusActionsAction", () => {
 
     it("should handle note without id gracefully", async () => {
       const inputData: AddStatusActionsData = {
-        note: { title: "Test Recipe" } as any,
+        note: undefined,
         message: "Processing completed",
       };
 
@@ -385,11 +385,11 @@ describe("AddStatusActionsAction", () => {
 
       // Add a small delay to ensure duration > 0
       const processingExecute = vi.fn().mockImplementation(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 1));
+        await new Promise((resolve) => setTimeout(resolve, 10));
         return { noteId: "note-123", message: "Processing completed" };
       });
       const completedExecute = vi.fn().mockImplementation(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 1));
+        await new Promise((resolve) => setTimeout(resolve, 10));
         return { noteId: "note-123", message: "Processing completed" };
       });
 
@@ -426,11 +426,11 @@ describe("AddStatusActionsAction", () => {
 
       const processingError = new Error("Processing status failed");
       const processingExecute = vi.fn().mockImplementation(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 1));
+        await new Promise((resolve) => setTimeout(resolve, 10));
         throw processingError;
       });
       const completedExecute = vi.fn().mockImplementation(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 1));
+        await new Promise((resolve) => setTimeout(resolve, 10));
         return { noteId: "note-123", message: "Processing completed" };
       });
 

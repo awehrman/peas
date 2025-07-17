@@ -13,6 +13,7 @@ vi.mock("fs", () => {
   const unlinkSyncMock = vi.fn();
 
   // Make spies available globally for tests
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
   (global as any).fsMocks = {
     existsSyncMock,
     mkdirSyncMock,
@@ -62,6 +63,7 @@ const baseConfig: LogConfig = {
 
 describe("EnhancedLoggerService", () => {
   beforeEach(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
     const fsMocks = (global as any).fsMocks;
     fsMocks.existsSyncMock.mockClear();
     fsMocks.mkdirSyncMock.mockClear();
@@ -102,6 +104,7 @@ describe("EnhancedLoggerService", () => {
     expect(consoleLogSpy).toHaveBeenCalledWith(
       expect.stringContaining("fatal msg")
     );
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
     expect((global as any).fsMocks.appendFileSyncMock).toHaveBeenCalled();
   });
 
@@ -129,6 +132,7 @@ describe("EnhancedLoggerService", () => {
     });
     logger1.info("file only");
     expect(consoleLogSpy).not.toHaveBeenCalled();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
     expect((global as any).fsMocks.appendFileSyncMock).toHaveBeenCalled();
 
     const logger2 = new EnhancedLoggerService({
@@ -139,6 +143,7 @@ describe("EnhancedLoggerService", () => {
     expect(consoleLogSpy).toHaveBeenCalledWith(
       expect.stringContaining("console only")
     );
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
     expect((global as any).fsMocks.appendFileSyncMock).toHaveBeenCalledTimes(1); // Only previous call
   });
 
@@ -165,6 +170,7 @@ describe("EnhancedLoggerService", () => {
   it("writes errors to error log file", () => {
     const logger = new EnhancedLoggerService(baseConfig);
     logger.error("err");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
     expect((global as any).fsMocks.appendFileSyncMock).toHaveBeenCalledWith(
       expect.stringContaining("error.log"),
       expect.any(String),
@@ -175,6 +181,7 @@ describe("EnhancedLoggerService", () => {
   // TODO: Fix this test - the mock isn't being applied correctly for rotateLogs
   // it("rotates logs if too large", () => {
   //   // Test that the mock is working
+  //   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
   //   const fsMocks = (global as any).fsMocks;
   //   console.log("fsMocks available:", !!fsMocks);
   //   console.log("statSyncMock available:", !!fsMocks.statSyncMock);
@@ -215,10 +222,12 @@ describe("EnhancedLoggerService", () => {
   });
 
   it("getLogStats returns sizes", () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
     (global as any).fsMocks.statSyncMock.mockReturnValueOnce({
       size: 123,
       mtime: new Date(),
     });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
     (global as any).fsMocks.statSyncMock.mockReturnValueOnce({
       size: 456,
       mtime: new Date(),
@@ -231,21 +240,25 @@ describe("EnhancedLoggerService", () => {
 
   it("clearOldLogs deletes old backups", () => {
     const oldDate = new Date(Date.now() - 40 * 24 * 60 * 60 * 1000); // 40 days ago
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
     (global as any).fsMocks.readdirSyncMock.mockReturnValue([
       "file1.backup",
       "file2.backup",
     ]);
     // Mock statSync for each backup file
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
     (global as any).fsMocks.statSyncMock.mockReturnValueOnce({
       size: 1,
       mtime: oldDate,
     });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
     (global as any).fsMocks.statSyncMock.mockReturnValueOnce({
       size: 1,
       mtime: oldDate,
     });
     const logger = new EnhancedLoggerService(baseConfig);
     logger.clearOldLogs(30);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
     expect((global as any).fsMocks.unlinkSyncMock).toHaveBeenCalledTimes(2);
   });
 
@@ -259,6 +272,7 @@ describe("EnhancedLoggerService", () => {
   });
 
   it("ensureLogDirectory creates directory if missing", () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
     const fsMocks = (global as any).fsMocks;
     fsMocks.existsSyncMock.mockReturnValueOnce(false);
     new EnhancedLoggerService(baseConfig);
@@ -268,6 +282,7 @@ describe("EnhancedLoggerService", () => {
   });
 
   it("writeToFile logs error if appendFileSync throws", () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
     const fsMocks = (global as any).fsMocks;
     fsMocks.appendFileSyncMock.mockImplementationOnce(() => {
       throw new Error("fail");
@@ -283,26 +298,29 @@ describe("EnhancedLoggerService", () => {
   it("logInternal returns early if shouldLog is false", () => {
     const logger = new EnhancedLoggerService(baseConfig);
     const shouldLogSpy = vi
-      .spyOn(logger as any, "shouldLog")
+      .spyOn(logger as any, "shouldLog") // eslint-disable-line @typescript-eslint/no-explicit-any
       .mockReturnValue(false);
     logger["logInternal"]("info", "msg");
     expect(shouldLogSpy).toHaveBeenCalled();
     expect(consoleLogSpy).not.toHaveBeenCalled();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
     expect((global as any).fsMocks.appendFileSyncMock).not.toHaveBeenCalled();
   });
 
   it("logWithContext returns early if shouldLog is false", () => {
     const logger = new EnhancedLoggerService(baseConfig);
     const shouldLogSpy = vi
-      .spyOn(logger as any, "shouldLog")
+      .spyOn(logger as any, "shouldLog") // eslint-disable-line @typescript-eslint/no-explicit-any
       .mockReturnValue(false);
     logger.logWithContext("info", "msg", { workerName: "w" });
     expect(shouldLogSpy).toHaveBeenCalled();
     expect(consoleLogSpy).not.toHaveBeenCalled();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
     expect((global as any).fsMocks.appendFileSyncMock).not.toHaveBeenCalled();
   });
 
   it("rotateLogs does not throw if statSync throws", () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
     const fsMocks = (global as any).fsMocks;
     fsMocks.statSyncMock.mockImplementationOnce(() => {
       throw new Error("fail");
@@ -315,6 +333,7 @@ describe("EnhancedLoggerService", () => {
   });
 
   it("getLogStats returns zero sizes if statSync throws", () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
     const fsMocks = (global as any).fsMocks;
     fsMocks.statSyncMock.mockImplementation(() => {
       throw new Error("fail");
@@ -325,6 +344,7 @@ describe("EnhancedLoggerService", () => {
   });
 
   it("clearOldLogs logs error if readdirSync throws", () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
     const fsMocks = (global as any).fsMocks;
     fsMocks.readdirSyncMock.mockImplementationOnce(() => {
       throw new Error("fail");
@@ -338,6 +358,7 @@ describe("EnhancedLoggerService", () => {
   });
 
   it("clearOldLogs logs error if statSync throws", () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
     const fsMocks = (global as any).fsMocks;
     fsMocks.readdirSyncMock.mockReturnValue(["file1.backup"]);
     fsMocks.statSyncMock.mockImplementationOnce(() => {
@@ -352,6 +373,7 @@ describe("EnhancedLoggerService", () => {
   });
 
   it("clearOldLogs logs error if unlinkSync throws", () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
     const fsMocks = (global as any).fsMocks;
     const oldDate = new Date(Date.now() - 40 * 24 * 60 * 60 * 1000);
     fsMocks.readdirSyncMock.mockReturnValue(["file1.backup"]);

@@ -15,6 +15,11 @@ interface WebSocketManager {
   close(): void;
 }
 
+// Worker interface for graceful shutdown
+interface Worker {
+  close(): Promise<void>;
+}
+
 // Status broadcaster interface
 interface StatusBroadcaster {
   addStatusEventAndBroadcast(event: {
@@ -83,6 +88,14 @@ export interface IServiceContainer {
   parsers: IParserService;
   logger: ILoggerService;
   config: IConfigService;
+  _workers?: {
+    noteWorker?: Worker;
+    imageWorker?: Worker;
+    ingredientWorker?: Worker;
+    instructionWorker?: Worker;
+    categorizationWorker?: Worker;
+    sourceWorker?: Worker;
+  };
   close(): Promise<void>;
 }
 
@@ -225,6 +238,14 @@ export class ServiceContainer implements IServiceContainer {
   public readonly parsers: IParserService;
   public readonly logger: ILoggerService;
   public readonly config: IConfigService;
+  public _workers?: {
+    noteWorker?: Worker;
+    imageWorker?: Worker;
+    ingredientWorker?: Worker;
+    instructionWorker?: Worker;
+    categorizationWorker?: Worker;
+    sourceWorker?: Worker;
+  };
 
   private constructor() {
     this.queues = registerQueues();

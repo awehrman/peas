@@ -9,8 +9,13 @@ import {
   createMockServiceContainer,
   createMockActionContext,
 } from "../../__tests__/test-utils";
-import type { ActionContext } from "../types";
+import type {
+  ActionContext,
+  BaseJobData,
+  BaseWorkerDependencies,
+} from "../types";
 import type { IServiceContainer } from "../../../services/container";
+
 import { WorkerMetrics } from "../metrics";
 import { ErrorHandlingWrapperAction } from "../../shared/error-handling";
 import { RetryWrapperAction } from "../../shared/retry";
@@ -25,7 +30,9 @@ class TestWorker extends BaseWorker<
   { value: string; noteId?: string },
   {
     logger: { log: (msg: string) => void };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
     addStatusEventAndBroadcast: (event: any) => Promise<void>;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
     ErrorHandler: { withErrorHandling: (operation: () => any) => Promise<any> };
   }
 > {
@@ -117,6 +124,7 @@ const createMockQueue = () =>
     name: "test-queue",
     add: vi.fn().mockResolvedValue({ id: "test-job-id" }),
     close: vi.fn().mockResolvedValue(undefined),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
   }) as any;
 
 // ============================================================================
@@ -128,7 +136,9 @@ describe("BaseWorker", () => {
   let mockQueue: ReturnType<typeof createMockQueue>;
   let mockDependencies: {
     logger: { log: ReturnType<typeof vi.fn> };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
     addStatusEventAndBroadcast: (event: any) => Promise<void>;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
     ErrorHandler: { withErrorHandling: (operation: () => any) => Promise<any> };
   };
   let mockContainer: IServiceContainer;
@@ -233,6 +243,7 @@ describe("BaseWorker", () => {
 
     it("should resolve when status broadcaster not available", async () => {
       mockContainer.statusBroadcaster.addStatusEventAndBroadcast =
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
         undefined as any;
       const broadcaster = worker.testCreateStatusBroadcaster();
 
@@ -264,6 +275,7 @@ describe("BaseWorker", () => {
     });
 
     it("should provide fallback error handler when container error handler not available", () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
       mockContainer.errorHandler.errorHandler = undefined as any;
       const errorHandler = worker.testCreateErrorHandler();
       expect(errorHandler).toBeDefined();
@@ -390,14 +402,25 @@ describe("BaseWorker", () => {
   });
 
   it("default createActionPipeline returns empty array", () => {
-    class DefaultPipelineWorker extends BaseWorker<any, any> {
+    class DefaultPipelineWorker extends BaseWorker<
+      BaseJobData,
+      BaseWorkerDependencies
+    > {
       name = "default_pipeline_worker";
       protected registerActions() {}
       protected getOperationName() {
         return this.name;
       }
     }
-    const defaultWorker = new DefaultPipelineWorker(createMockQueue(), {});
+    const minimalDeps: BaseWorkerDependencies = {
+      logger: { log: vi.fn() },
+      addStatusEventAndBroadcast: vi.fn(),
+      ErrorHandler: { withErrorHandling: vi.fn() },
+    };
+    const defaultWorker = new DefaultPipelineWorker(
+      createMockQueue(),
+      minimalDeps
+    );
 
     const actions = defaultWorker["createActionPipeline"](
       {},
@@ -413,6 +436,7 @@ describe("BaseWorker", () => {
       isRunning: vi.fn().mockReturnValue(true),
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test access to private property
     worker["worker"] = mockWorker as any;
 
     await expect(worker["close"]!()).resolves.toBeUndefined();
@@ -427,6 +451,7 @@ describe("BaseWorker", () => {
       isRunning: vi.fn().mockReturnValue(true),
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test access to private property
     worker["worker"] = mockWorker as any;
 
     const status = worker["getStatus"]();
@@ -490,14 +515,17 @@ describe("BaseWorker", () => {
   });
 
   it("job processor handles action failure and throws ActionExecutionError", async () => {
-    class FailingAction extends BaseAction<any, any> {
+    class FailingAction extends BaseAction<BaseJobData, unknown> {
       name = "failing_action";
-      async execute(_data: any, _deps: any, _context: any) {
+      async execute(_data: BaseJobData, _deps: unknown, _context: unknown) {
         throw new Error("fail!");
       }
     }
     class FailingWorker extends TestWorker {
-      protected createActionPipeline(_data: any, _context: ActionContext) {
+      protected createActionPipeline(
+        _data: BaseJobData,
+        _context: ActionContext
+      ) {
         return [new FailingAction()];
       }
     }
@@ -558,6 +586,7 @@ describe("createBaseDependenciesFromContainer", () => {
 
   it("should handle missing status broadcaster gracefully", async () => {
     mockContainer.statusBroadcaster.addStatusEventAndBroadcast =
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
       undefined as any;
     const deps = createBaseDependenciesFromContainer(mockContainer);
     await expect(
@@ -569,6 +598,7 @@ describe("createBaseDependenciesFromContainer", () => {
   });
 
   it("should provide fallback error handler when container error handler not available", () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
     mockContainer.errorHandler.errorHandler = undefined as any;
     const deps = createBaseDependenciesFromContainer(mockContainer);
     expect(deps.ErrorHandler).toBeDefined();
@@ -579,6 +609,7 @@ describe("createBaseDependenciesFromContainer", () => {
 describe("BaseWorker advanced coverage", () => {
   let worker: TestWorker;
   let mockQueue: ReturnType<typeof createMockQueue>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
   let mockDependencies: any;
   let mockContainer: IServiceContainer;
   let mockActionFactory: ActionFactory;
@@ -620,6 +651,7 @@ describe("BaseWorker advanced coverage", () => {
     const action = new NoOpAction();
     const wrapped = worker.testWrapWithRetryAndErrorHandling(action);
     expect(wrapped).toBeInstanceOf(ErrorHandlingWrapperAction);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test access to private property
     expect((wrapped as any).wrappedAction).toBeInstanceOf(RetryWrapperAction);
   });
 
@@ -627,6 +659,7 @@ describe("BaseWorker advanced coverage", () => {
     const action = new NoOpAction();
     const wrapped = worker.testWrapWithErrorHandling(action);
     expect(wrapped).toBeInstanceOf(ErrorHandlingWrapperAction);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test access to private property
     expect((wrapped as any).wrappedAction).toBe(action);
   });
 
@@ -634,9 +667,11 @@ describe("BaseWorker advanced coverage", () => {
     mockActionFactory.register("test_action", () => new NoOpAction());
     const wrapped = worker.testCreateWrappedAction("test_action");
     expect(wrapped).toBeInstanceOf(ErrorHandlingWrapperAction);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test access to private property
     expect((wrapped as any).wrappedAction).toBeInstanceOf(RetryWrapperAction);
     const errorHandled = worker.testCreateErrorHandledAction("test_action");
     expect(errorHandled).toBeInstanceOf(ErrorHandlingWrapperAction);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test access to private property
     expect((errorHandled as any).wrappedAction).toBeInstanceOf(NoOpAction);
   });
 
@@ -675,6 +710,7 @@ describe("BaseWorker advanced coverage", () => {
     const mockWorker = {
       isRunning: vi.fn().mockReturnValue(true),
     };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test access to private property
     worker["worker"] = mockWorker as any;
     worker["getStatus"]!();
     expect(metricsSpy).toHaveBeenCalledWith("test_worker", true);

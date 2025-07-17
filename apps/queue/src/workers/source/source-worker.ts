@@ -6,6 +6,7 @@ import { AddProcessingStatusAction, AddCompletedStatusAction } from "./actions";
 import { IServiceContainer } from "../../services/container";
 import type { SourceWorkerDependencies, SourceJobData } from "./types";
 import type { BaseAction } from "../core/base-action";
+import type { NoteStatus } from "@peas/database";
 
 /**
  * Source Worker that extends BaseWorker for source processing
@@ -70,7 +71,14 @@ export function createSourceWorker(
 ): SourceWorker {
   const dependencies: SourceWorkerDependencies = {
     // Base dependencies
-    addStatusEventAndBroadcast: async (event: any) => {
+    addStatusEventAndBroadcast: async (event: {
+      noteId: string;
+      status: NoteStatus;
+      message?: string;
+      context?: string;
+      currentCount?: number;
+      totalCount?: number;
+    }) => {
       console.log(
         "[SOURCE_WORKER] addStatusEventAndBroadcast called with:",
         event
@@ -98,16 +106,16 @@ export function createSourceWorker(
 
     // Source-specific dependencies
     sourceProcessor: {
-      processSource: async (data: any) => {
+      processSource: async (data: Record<string, unknown>) => {
         container.logger.log(
-          `[SOURCE] Processing source for note ${data.noteId || "unknown"}`
+          `[SOURCE] Processing source for note ${(data.noteId as string) || "unknown"}`
         );
         // TODO: Implement actual source processing
         const result = {
           success: true,
           processedData: {
-            title: data.title || "Untitled Source",
-            content: data.content || "",
+            title: (data.title as string) || "Untitled Source",
+            content: (data.content as string) || "",
             metadata: {
               type: "source",
               processedAt: new Date().toISOString(),
@@ -122,15 +130,15 @@ export function createSourceWorker(
       },
     },
     database: {
-      saveSource: async (data: any) => {
+      saveSource: async (data: Record<string, unknown>) => {
         container.logger.log(
-          `[SOURCE] Saving source: ${data.title || "Untitled"}`
+          `[SOURCE] Saving source: ${(data.title as string) || "Untitled"}`
         );
         // TODO: Implement actual source saving
         const savedSource = {
           id: `source_${Date.now()}`,
-          title: data.title || "Untitled Source",
-          content: data.content || "",
+          title: (data.title as string) || "Untitled Source",
+          content: (data.content as string) || "",
           createdAt: new Date(),
           updatedAt: new Date(),
         };

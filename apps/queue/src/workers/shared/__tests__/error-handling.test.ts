@@ -40,13 +40,16 @@ describe("ErrorHandlingWrapperAction", () => {
   let mockErrorHandler: { withErrorHandling: ReturnType<typeof vi.fn> };
   let context: ActionContext;
   let data: { value: string; noteId?: string };
-  let deps: any;
+  let deps: {
+    ErrorHandler: { withErrorHandling: ReturnType<typeof vi.fn> };
+    logger: { log: ReturnType<typeof vi.fn> };
+  };
 
   beforeEach(() => {
     dummyAction = new DummyAction();
     wrapper = new ErrorHandlingWrapperAction(dummyAction);
     mockErrorHandler = {
-      withErrorHandling: vi.fn().mockImplementation(async (op, ctx) => op()),
+      withErrorHandling: vi.fn().mockImplementation(async (op) => op()),
     };
     context = createMockActionContext();
     data = { value: "test", noteId: "note-123" };
@@ -69,7 +72,7 @@ describe("ErrorHandlingWrapperAction", () => {
   it("should pass correct context to error handler", async () => {
     await wrapper.execute(data, deps, context);
     const call = mockErrorHandler.withErrorHandling.mock.calls[0];
-    expect(call[1]).toMatchObject({
+    expect(call?.[1]).toMatchObject({
       jobId: context.jobId,
       operation: expect.stringContaining("dummy_action"),
       noteId: data.noteId,
@@ -81,11 +84,7 @@ describe("ErrorHandlingWrapperAction", () => {
     mockErrorHandler.withErrorHandling = vi
       .fn()
       .mockImplementation(async (op) => {
-        try {
-          return await op();
-        } catch (e) {
-          throw e;
-        }
+        return await op();
       });
     await expect(wrapper.execute(data, deps, context)).rejects.toThrow("fail!");
   });

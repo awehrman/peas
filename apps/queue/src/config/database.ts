@@ -21,10 +21,10 @@ process.on("beforeExit", async () => {
 
 process.on("SIGINT", async () => {
   await prisma.$disconnect();
-  process.exit(0);
+  throw new Error("Process terminated by SIGINT");
 });
 
 process.on("SIGTERM", async () => {
   await prisma.$disconnect();
-  process.exit(0);
+  throw new Error("Process terminated by SIGTERM");
 });

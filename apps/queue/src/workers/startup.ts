@@ -52,7 +52,7 @@ export function startWorkers(
     serviceContainer.logger.log("✅ Source worker created and started");
 
     // Store workers for graceful shutdown (if needed)
-    (serviceContainer as any)._workers = {
+    serviceContainer._workers = {
       noteWorker,
       imageWorker,
       ingredientWorker,
