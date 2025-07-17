@@ -26,5 +26,7 @@ process.on("SIGINT", async () => {
 
 process.on("SIGTERM", async () => {
   await prisma.$disconnect();
-  throw new Error("Process terminated by SIGTERM");
+  if (process.env.NODE_ENV !== "test") {
+    throw new Error("Process terminated by SIGTERM");
+  }
 });

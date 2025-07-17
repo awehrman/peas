@@ -16,6 +16,7 @@ export default defineConfig({
         "src/services/**/*.ts",
         "src/utils/**/*.ts",
         "src/workers/**/*.ts",
+        "src/parsers/**/*.ts",
       ],
       exclude: [
         "node_modules/",

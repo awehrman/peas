@@ -9,7 +9,25 @@ import {
 export function parseHTML(note: string): ParsedHTMLFile {
   const $ = load(note);
   const enNote = $("en-note");
-  const title = $('meta[itemprop="title"]').attr("content");
+  const metaTitle = $('meta[itemprop="title"]').attr("content");
+  const h1 = enNote.find("h1");
+
+  let title: string | undefined;
+  let contents: string[];
+
+  if (h1.length > 0) {
+    title = h1.text().trim();
+    contents = h1
+      .nextAll()
+      .map((i, el) => $(el).html())
+      .get();
+  } else {
+    title = metaTitle;
+    contents = enNote
+      .children()
+      .map((i, el) => $(el).html())
+      .get();
+  }
 
   if (title === undefined) {
     throw new Error("This file doesn't have a title!");
@@ -29,18 +47,12 @@ export function parseHTML(note: string): ParsedHTMLFile {
 
   const sourceUrl = $('meta[itemprop="source-url"]').attr("content");
 
-  const contents = enNote
-    .find("h1")
-    .nextAll()
-    .map((i, el) => $(el).html())
-    .get();
-
   const ingredients: string[][] = [];
   const instructions: ParsedInstructionLine[] = [];
   let currentChunk: string[] = [];
 
   contents.forEach((line, lineIndex) => {
-    if (line === "<br>") {
+    if (line === "") {
       if (currentChunk.length > 0) {
         ingredients.push(currentChunk);
         currentChunk = [];
@@ -48,8 +60,8 @@ export function parseHTML(note: string): ParsedHTMLFile {
     } else if (
       line.length > 0 &&
       lineIndex > 0 &&
-      contents[lineIndex - 1] === "<br>" &&
-      contents[lineIndex + 1] === "<br>"
+      contents[lineIndex - 1] === "" &&
+      contents[lineIndex + 1] === ""
     ) {
       instructions.push({
         reference: line,
@@ -76,8 +88,6 @@ export function parseHTML(note: string): ParsedHTMLFile {
   );
 
   const contentsString = contents.join("\n");
-
-  console.log(`Finished parsing "${title}."`);
 
   return {
     title,
