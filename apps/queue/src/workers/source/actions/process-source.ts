@@ -21,7 +21,7 @@ export class ProcessSourceAction extends BaseAction<
     const processedSource = await deps.sourceProcessor.processSource(data);
 
     console.log(
-      `[${context.operation.toUpperCase()}] Source processing completed: ${processedSource.processedData.title}`
+      `[${context.operation.toUpperCase()}] Source processing completed: ${(processedSource.processedData as any)?.title || "Unknown"}` // eslint-disable-line @typescript-eslint/no-explicit-any -- Access unknown processed data structure
     );
 
     return {

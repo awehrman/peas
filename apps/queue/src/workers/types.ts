@@ -145,12 +145,13 @@ export interface StatusEvent {
 /**
  * Error context type for better type safety
  */
-export interface ErrorContext {
-  jobId: string;
-  operation: string;
+export interface ErrorContext extends Record<string, unknown> {
+  jobId?: string;
+  operation?: string;
   noteId?: string;
   workerName?: string;
   attemptNumber?: number;
+  [key: string]: unknown;
 }
 
 /**

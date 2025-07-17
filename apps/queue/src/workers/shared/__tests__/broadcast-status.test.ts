@@ -96,14 +96,10 @@ describe("BroadcastProcessingAction", () => {
     );
   });
 
-  it("logs and skips if noteId missing", async () => {
+  it("skips if noteId missing", async () => {
     delete data.noteId;
     await action.execute(data, deps, context);
     expect(deps.addStatusEventAndBroadcast).not.toHaveBeenCalled();
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining("Skipping processing broadcast")
-      // message may be split, so just check substring
-    );
   });
 });
 
@@ -145,13 +141,10 @@ describe("BroadcastCompletedAction", () => {
     );
   });
 
-  it("logs and skips if noteId missing", async () => {
+  it("skips if noteId missing", async () => {
     delete data.noteId;
     await action.execute(data, deps, context);
     expect(deps.addStatusEventAndBroadcast).not.toHaveBeenCalled();
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining("Skipping completed broadcast")
-    );
   });
 });
 

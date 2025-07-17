@@ -2,6 +2,7 @@ import { Queue } from "bullmq";
 import type { ParsedHTMLFile } from "../../types";
 import type { NoteStatus } from "@peas/database";
 import type { BaseAction } from "../core/base-action";
+import type { ErrorContext } from "../types";
 
 // ============================================================================
 // NOTE WORKER TYPES
@@ -280,22 +281,6 @@ export interface StatusEvent {
   totalCount?: number;
   /** Additional metadata about the status event */
   metadata?: Record<string, unknown>;
-}
-
-/**
- * Error context for debugging and error handling
- */
-export interface ErrorContext {
-  /** ID of the job that encountered the error */
-  jobId: string;
-  /** Name of the operation being performed */
-  operation: string;
-  /** ID of the note being processed (if applicable) */
-  noteId?: string;
-  /** Name of the worker that encountered the error */
-  workerName?: string;
-  /** Which attempt number this is (for retries) */
-  attemptNumber?: number;
 }
 
 /**

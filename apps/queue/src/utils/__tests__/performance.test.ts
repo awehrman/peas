@@ -13,7 +13,7 @@ afterEach(() => {
 describe("PerformanceTracker", () => {
   beforeEach(() => {
     // Clear private metrics for test isolation
-    performanceTracker.metrics.clear();
+    (performanceTracker as any).metrics.clear(); // eslint-disable-line @typescript-eslint/no-explicit-any -- Access private property for test
   });
 
   it("start() should return a unique id and store metrics", () => {
@@ -47,7 +47,7 @@ describe("PerformanceTracker", () => {
       expect.stringContaining("endOp took ")
     );
     // Entry should be deleted
-    expect(performanceTracker.metrics.has(id)).toBe(false);
+    expect((performanceTracker as any).metrics.has(id)).toBe(false); // eslint-disable-line @typescript-eslint/no-explicit-any -- Access private property for test
   });
 
   it("end() should return null if id not found", () => {
@@ -88,7 +88,6 @@ describe("PerformanceTracker", () => {
 
 describe("performanceTracker singleton", () => {
   it("should be an instance of PerformanceTracker", () => {
-    // @ts-expect-error: class is not exported
     expect(performanceTracker.constructor.name).toBe("PerformanceTracker");
   });
 });

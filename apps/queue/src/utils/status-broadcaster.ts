@@ -22,6 +22,8 @@ export async function addStatusEventAndBroadcast({
     status,
     message,
     context,
+    currentCount,
+    totalCount,
   });
   try {
     // Add to database
@@ -34,6 +36,8 @@ export async function addStatusEventAndBroadcast({
       totalCount,
     });
 
+    console.log("[addStatusEventAndBroadcast] DB event created:", dbEvent);
+
     // Broadcast to WebSocket clients
     broadcastStatusEvent({
       noteId,
@@ -45,6 +49,8 @@ export async function addStatusEventAndBroadcast({
       totalCount,
       createdAt: dbEvent.createdAt,
     });
+
+    console.log("[addStatusEventAndBroadcast] Broadcasted to websocket");
 
     return dbEvent;
   } catch (error) {

@@ -9,11 +9,8 @@ import {
   createMockServiceContainer,
   createMockActionContext,
 } from "../../__tests__/test-utils";
-import type {
-  ActionContext,
-  BaseJobData,
-  BaseWorkerDependencies,
-} from "../types";
+import type { ActionContext, BaseJobData } from "../types";
+import type { BaseWorkerDependencies } from "../../types";
 import type { IServiceContainer } from "../../../services/container";
 
 import { WorkerMetrics } from "../metrics";
@@ -365,6 +362,8 @@ describe("BaseWorker", () => {
       worker.testAddStatusActions(actions, data);
 
       expect(actions).toHaveLength(2);
+      if (!actions[0]) throw new Error("First action should exist");
+      if (!actions[1]) throw new Error("Second action should exist");
       expect(actions[0].name).toBe("broadcast_processing");
       expect(actions[1].name).toBe("broadcast_completed");
     });
@@ -376,6 +375,8 @@ describe("BaseWorker", () => {
       worker.testAddStatusActions(actions, data);
 
       expect(actions).toHaveLength(2);
+      if (!actions[0]) throw new Error("First action should exist");
+      if (!actions[1]) throw new Error("Second action should exist");
       expect(actions[0].name).toBe("broadcast_processing");
       expect(actions[1].name).toBe("broadcast_completed");
     });
@@ -395,6 +396,9 @@ describe("BaseWorker", () => {
       const actions = worker["createActionPipeline"](data, context);
 
       expect(actions).toHaveLength(3); // test_action + 2 status actions
+      if (!actions[0]) throw new Error("First action should exist");
+      if (!actions[1]) throw new Error("Second action should exist");
+      if (!actions[2]) throw new Error("Third action should exist");
       expect(actions[0].name).toBe("broadcast_processing");
       expect(actions[1].name).toBe("no_op");
       expect(actions[2].name).toBe("broadcast_completed");
@@ -415,7 +419,9 @@ describe("BaseWorker", () => {
     const minimalDeps: BaseWorkerDependencies = {
       logger: { log: vi.fn() },
       addStatusEventAndBroadcast: vi.fn(),
-      ErrorHandler: { withErrorHandling: vi.fn() },
+      ErrorHandler: {
+        withErrorHandling: vi.fn().mockImplementation(async (op) => op()),
+      },
     };
     const defaultWorker = new DefaultPipelineWorker(
       createMockQueue(),

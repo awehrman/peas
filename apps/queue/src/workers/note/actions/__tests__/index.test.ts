@@ -83,7 +83,7 @@ describe("Note Actions Index", () => {
 
       registerNoteActions(factory);
 
-      expect(registerSpy).toHaveBeenCalledTimes(7);
+      expect(registerSpy).toHaveBeenCalledTimes(9);
 
       // Verify the order of registrations
       const calls = registerSpy.mock.calls;
@@ -94,6 +94,11 @@ describe("Note Actions Index", () => {
       expect(calls[4]).toEqual(["schedule_ingredients", expect.any(Function)]);
       expect(calls[5]).toEqual(["schedule_instructions", expect.any(Function)]);
       expect(calls[6]).toEqual(["add_status_actions", expect.any(Function)]);
+      expect(calls[7]).toEqual([
+        "note_processing_status",
+        expect.any(Function),
+      ]);
+      expect(calls[8]).toEqual(["note_completed_status", expect.any(Function)]);
     });
 
     it("should create actions with proper dependencies when needed", () => {

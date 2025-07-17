@@ -200,6 +200,9 @@ export abstract class BaseWorker<
           this.dependencies.logger.log(
             `[${this.getOperationName().toUpperCase()}] ▶️ ${cleanActionName}`
           );
+          this.dependencies.logger.log(
+            `[${this.getOperationName().toUpperCase()}] Data for action ${cleanActionName}: ${JSON.stringify(result)}`
+          );
           try {
             result = (await this.executeActionWithCaching(
               action,

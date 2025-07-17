@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { parseHTML } from "../html";
 
+// TODO i need to pull some more examples from evernote to properly test this
 describe("parseHTML", () => {
   it("should parse valid HTML with all required elements", () => {
     const html = `

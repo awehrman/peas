@@ -139,6 +139,7 @@ describe("SaveNoteAction", () => {
       expect(result).toEqual({
         ...inputData,
         note: mockNote,
+        noteId: "note-123",
       });
     });
 
@@ -271,7 +272,7 @@ describe("SaveNoteAction", () => {
 
       // Add a small delay to ensure duration > 0
       vi.mocked(mockDeps.createNote).mockImplementation(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 1));
+        await new Promise((resolve) => setTimeout(resolve, 10));
         return mockNote;
       });
 
@@ -286,6 +287,7 @@ describe("SaveNoteAction", () => {
         expect(result.data).toEqual({
           ...inputData,
           note: mockNote,
+          noteId: "note-123",
         });
         expect(result.duration).toBeGreaterThan(0);
       }
@@ -299,7 +301,7 @@ describe("SaveNoteAction", () => {
       const saveError = new Error("Database save failed");
       // Add a small delay to ensure duration > 0
       vi.mocked(mockDeps.createNote).mockImplementation(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 1));
+        await new Promise((resolve) => setTimeout(resolve, 10));
         throw saveError;
       });
 

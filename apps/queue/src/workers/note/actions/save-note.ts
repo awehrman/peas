@@ -17,7 +17,7 @@ export class SaveNoteAction extends ValidatedAction<
     data: SaveNoteData,
     deps: SaveNoteDeps,
     context: ActionContext
-  ): Promise<SaveNoteData & { note: NoteWithParsedLines }> {
+  ): Promise<SaveNoteData & { note: NoteWithParsedLines; noteId: string }> {
     deps.logger.log(
       `[SAVE_NOTE] Starting note creation for job ${context.jobId}`
     );
@@ -28,6 +28,6 @@ export class SaveNoteAction extends ValidatedAction<
       `[SAVE_NOTE] Successfully created note for job ${context.jobId}, noteId: "${note.id}"`
     );
 
-    return { ...data, note };
+    return { ...data, note, noteId: note.id };
   }
 }

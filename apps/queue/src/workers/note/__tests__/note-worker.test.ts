@@ -275,8 +275,8 @@ describe("NoteWorker", () => {
         { name: "save_note", deps: mockDependencies },
       ]);
       expect(worker.errorHandledActions).toEqual([
-        { name: "add_processing_status", deps: mockDependencies },
-        { name: "add_completed_status", deps: mockDependencies },
+        { name: "note_processing_status", deps: mockDependencies },
+        { name: "note_completed_status", deps: mockDependencies },
       ]);
     });
     it("should not include schedule actions when they are commented out", () => {

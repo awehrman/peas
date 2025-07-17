@@ -398,7 +398,7 @@ describe("HealthMonitor", () => {
         () =>
           new Promise((resolve) =>
             setTimeout(() => resolve([{ "1": 1 }] as unknown), 1100)
-          )
+          ) as any // eslint-disable-line @typescript-eslint/no-explicit-any -- Mock PrismaPromise
       );
       vi.mocked(prisma.note.count).mockResolvedValue(10);
 

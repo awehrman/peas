@@ -71,7 +71,7 @@ export class NoteWorker extends BaseWorker<
     // 3. Add "PROCESSING" status after note is created
     // Input: NotePipelineStage3 -> Output: NotePipelineStage3
     actions.push(
-      this.createErrorHandledAction("add_processing_status", this.dependencies)
+      this.createErrorHandledAction("note_processing_status", this.dependencies)
     );
 
     // 4. Schedule follow-up processing tasks (COMMENTED OUT FOR SIMPLIFIED TESTING)
@@ -91,7 +91,7 @@ export class NoteWorker extends BaseWorker<
     // 5. Add "COMPLETED" status at the very end
     // Input: NotePipelineStage3 -> Output: NotePipelineStage3
     actions.push(
-      this.createErrorHandledAction("add_completed_status", this.dependencies)
+      this.createErrorHandledAction("note_completed_status", this.dependencies)
     );
 
     return actions;

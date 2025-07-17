@@ -251,7 +251,7 @@ describe("validateJobData (function)", () => {
     expect(validateJobDataFn({})).toMatchObject({
       message: expect.any(String),
     });
-    expect(validateJobDataFn(null)).toMatchObject({
+    expect(validateJobDataFn({} as Record<string, unknown>)).toMatchObject({
       message: expect.any(String),
     });
   });

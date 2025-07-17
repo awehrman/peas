@@ -1,6 +1,8 @@
 import type { SourceJobData } from "../types";
 
-export interface ProcessSourceData extends SourceJobData {
+export interface ProcessSourceData
+  extends SourceJobData,
+    Record<string, unknown> {
   title?: string;
   content?: string;
 }

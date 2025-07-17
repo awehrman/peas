@@ -15,6 +15,10 @@ import { ScheduleImagesAction } from "./schedule-images";
 import { ScheduleIngredientsAction } from "./schedule-ingredients";
 import { ScheduleInstructionsAction } from "./schedule-instructions";
 import { AddStatusActionsAction } from "./add-status-actions";
+import {
+  BroadcastProcessingAction,
+  BroadcastCompletedAction,
+} from "../../shared/broadcast-status";
 
 /**
  * Register all note actions in the given ActionFactory
@@ -33,4 +37,12 @@ export function registerNoteActions(factory: ActionFactory) {
     () => new ScheduleInstructionsAction()
   );
   factory.register("add_status_actions", () => new AddStatusActionsAction());
+  factory.register(
+    "note_processing_status",
+    () => new BroadcastProcessingAction()
+  );
+  factory.register(
+    "note_completed_status",
+    () => new BroadcastCompletedAction()
+  );
 }

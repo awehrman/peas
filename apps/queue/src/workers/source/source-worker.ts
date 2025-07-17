@@ -23,11 +23,11 @@ export class SourceWorker extends BaseWorker<
     );
     this.actionFactory.register("save_source", () => new SaveSourceAction());
     this.actionFactory.register(
-      "add_processing_status",
+      "source_processing_status",
       () => new AddProcessingStatusAction()
     );
     this.actionFactory.register(
-      "add_completed_status",
+      "source_completed_status",
       () => new AddCompletedStatusAction()
     );
   }
@@ -50,12 +50,18 @@ export class SourceWorker extends BaseWorker<
 
     // 3. Add "PROCESSING" status after source is created
     actions.push(
-      this.createErrorHandledAction("add_processing_status", this.dependencies)
+      this.createErrorHandledAction(
+        "source_processing_status",
+        this.dependencies
+      )
     );
 
     // 4. Add "COMPLETED" status at the very end
     actions.push(
-      this.createErrorHandledAction("add_completed_status", this.dependencies)
+      this.createErrorHandledAction(
+        "source_completed_status",
+        this.dependencies
+      )
     );
 
     return actions;

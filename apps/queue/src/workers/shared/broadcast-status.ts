@@ -55,7 +55,6 @@ export class BroadcastProcessingAction extends BaseAction<
     deps: BroadcastStatusDeps,
     context: ActionContext
   ) {
-    // Only broadcast if we have a noteId
     if (data.noteId) {
       await deps.addStatusEventAndBroadcast({
         noteId: data.noteId,
@@ -63,10 +62,6 @@ export class BroadcastProcessingAction extends BaseAction<
         message: data.message || `${context.operation} in progress`,
         context: context.operation,
       });
-    } else {
-      console.log(
-        `[${context.operation.toUpperCase()}] Skipping processing broadcast - no noteId available`
-      );
     }
     return data;
   }
@@ -86,7 +81,6 @@ export class BroadcastCompletedAction extends BaseAction<
     deps: BroadcastStatusDeps,
     context: ActionContext
   ) {
-    // Only broadcast if we have a noteId
     if (data.noteId) {
       await deps.addStatusEventAndBroadcast({
         noteId: data.noteId,
@@ -94,10 +88,6 @@ export class BroadcastCompletedAction extends BaseAction<
         message: data.message || `${context.operation} completed successfully`,
         context: context.operation,
       });
-    } else {
-      console.log(
-        `[${context.operation.toUpperCase()}] Skipping completed broadcast - no noteId available`
-      );
     }
     return data;
   }
