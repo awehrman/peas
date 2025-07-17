@@ -257,4 +257,113 @@ describe("EnhancedLoggerService", () => {
   it("logger default export is an EnhancedLoggerService", () => {
     expect(logger).toBeInstanceOf(EnhancedLoggerService);
   });
+
+  it("ensureLogDirectory creates directory if missing", () => {
+    const fsMocks = (global as any).fsMocks;
+    fsMocks.existsSyncMock.mockReturnValueOnce(false);
+    new EnhancedLoggerService(baseConfig);
+    expect(fsMocks.mkdirSyncMock).toHaveBeenCalledWith(baseConfig.logDir, {
+      recursive: true,
+    });
+  });
+
+  it("writeToFile logs error if appendFileSync throws", () => {
+    const fsMocks = (global as any).fsMocks;
+    fsMocks.appendFileSyncMock.mockImplementationOnce(() => {
+      throw new Error("fail");
+    });
+    const logger = new EnhancedLoggerService(baseConfig);
+    logger["writeToFile"]("/tmp/file", "msg");
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Failed to write to log file"),
+      expect.any(Error)
+    );
+  });
+
+  it("logInternal returns early if shouldLog is false", () => {
+    const logger = new EnhancedLoggerService(baseConfig);
+    const shouldLogSpy = vi
+      .spyOn(logger as any, "shouldLog")
+      .mockReturnValue(false);
+    logger["logInternal"]("info", "msg");
+    expect(shouldLogSpy).toHaveBeenCalled();
+    expect(consoleLogSpy).not.toHaveBeenCalled();
+    expect((global as any).fsMocks.appendFileSyncMock).not.toHaveBeenCalled();
+  });
+
+  it("logWithContext returns early if shouldLog is false", () => {
+    const logger = new EnhancedLoggerService(baseConfig);
+    const shouldLogSpy = vi
+      .spyOn(logger as any, "shouldLog")
+      .mockReturnValue(false);
+    logger.logWithContext("info", "msg", { workerName: "w" });
+    expect(shouldLogSpy).toHaveBeenCalled();
+    expect(consoleLogSpy).not.toHaveBeenCalled();
+    expect((global as any).fsMocks.appendFileSyncMock).not.toHaveBeenCalled();
+  });
+
+  it("rotateLogs does not throw if statSync throws", () => {
+    const fsMocks = (global as any).fsMocks;
+    fsMocks.statSyncMock.mockImplementationOnce(() => {
+      throw new Error("fail");
+    });
+    fsMocks.statSyncMock.mockImplementationOnce(() => {
+      throw new Error("fail");
+    });
+    const logger = new EnhancedLoggerService(baseConfig);
+    expect(() => logger.rotateLogs()).not.toThrow();
+  });
+
+  it("getLogStats returns zero sizes if statSync throws", () => {
+    const fsMocks = (global as any).fsMocks;
+    fsMocks.statSyncMock.mockImplementation(() => {
+      throw new Error("fail");
+    });
+    const logger = new EnhancedLoggerService(baseConfig);
+    const stats = logger.getLogStats();
+    expect(stats).toEqual({ mainLogSize: 0, errorLogSize: 0 });
+  });
+
+  it("clearOldLogs logs error if readdirSync throws", () => {
+    const fsMocks = (global as any).fsMocks;
+    fsMocks.readdirSyncMock.mockImplementationOnce(() => {
+      throw new Error("fail");
+    });
+    const logger = new EnhancedLoggerService(baseConfig);
+    logger.clearOldLogs(30);
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Failed to clear old logs:"),
+      expect.any(Error)
+    );
+  });
+
+  it("clearOldLogs logs error if statSync throws", () => {
+    const fsMocks = (global as any).fsMocks;
+    fsMocks.readdirSyncMock.mockReturnValue(["file1.backup"]);
+    fsMocks.statSyncMock.mockImplementationOnce(() => {
+      throw new Error("fail");
+    });
+    const logger = new EnhancedLoggerService(baseConfig);
+    logger.clearOldLogs(30);
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Failed to clear old logs:"),
+      expect.any(Error)
+    );
+  });
+
+  it("clearOldLogs logs error if unlinkSync throws", () => {
+    const fsMocks = (global as any).fsMocks;
+    const oldDate = new Date(Date.now() - 40 * 24 * 60 * 60 * 1000);
+    fsMocks.readdirSyncMock.mockReturnValue(["file1.backup"]);
+    fsMocks.statSyncMock.mockReturnValueOnce({ size: 1, mtime: oldDate });
+    fsMocks.unlinkSyncMock.mockImplementationOnce(() => {
+      throw new Error("fail");
+    });
+    const logger = new EnhancedLoggerService(baseConfig);
+    logger.clearOldLogs(30);
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Failed to clear old logs:"),
+      expect.any(Error)
+    );
+  });
 });

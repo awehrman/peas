@@ -335,15 +335,35 @@ describe("HealthMonitor", () => {
       const { prisma } = await import("../../config/database");
       const { ErrorHandler } = await import("../error-handler");
 
-      vi.mocked(prisma.$queryRaw).mockRejectedValue(
-        new Error("Database connection failed")
+      vi
+        .mocked(prisma.$queryRaw)
+        .mockRejectedValue(new Error("Database connection failed")) as any;
+      vi.mocked(ErrorHandler.createJobError).mockImplementation(
+        (err: string | Error, type?: ErrorType, _severity?: ErrorSeverity) => {
+          if (type === ErrorType.DATABASE_ERROR) {
+            return {
+              type: ErrorType.DATABASE_ERROR,
+              severity: ErrorSeverity.HIGH,
+              message: "Database connection failed",
+              timestamp: new Date(),
+            };
+          }
+          if (type === ErrorType.REDIS_ERROR) {
+            return {
+              type: ErrorType.REDIS_ERROR,
+              severity: ErrorSeverity.HIGH,
+              message: "Redis host not configured",
+              timestamp: new Date(),
+            };
+          }
+          return {
+            type: ErrorType.DATABASE_ERROR,
+            severity: ErrorSeverity.HIGH,
+            message: "Unknown error",
+            timestamp: new Date(),
+          };
+        }
       );
-      vi.mocked(ErrorHandler.createJobError).mockReturnValue({
-        type: ErrorType.DATABASE_ERROR,
-        severity: ErrorSeverity.HIGH,
-        message: "Database connection failed",
-        timestamp: new Date(),
-      });
       vi.mocked(ErrorHandler.logError).mockImplementation(() => {});
 
       const health = await (monitor as any).checkDatabaseHealth();
@@ -365,6 +385,29 @@ describe("HealthMonitor", () => {
       expect(health.lastChecked).toBeInstanceOf(Date);
     });
 
+    it("should return degraded status for slow Redis configuration check", async () => {
+      // Mock a slow response by adding a delay
+      const originalDateNow = Date.now;
+      let callCount = 0;
+      Date.now = vi.fn(() => {
+        callCount++;
+        if (callCount === 1) {
+          return originalDateNow();
+        } else {
+          return originalDateNow() + 600; // 600ms delay to trigger degraded status
+        }
+      });
+
+      const health = await (monitor as any).checkRedisHealth();
+
+      expect(health.status).toBe("degraded");
+      expect(health.message).toContain("configuration check is slow");
+      expect(health.responseTime).toBeGreaterThanOrEqual(500);
+
+      // Restore original Date.now
+      Date.now = originalDateNow;
+    });
+
     it("should return unhealthy status for missing Redis host", async () => {
       const { redisConnection } = await import("../../config/redis");
       const { ErrorHandler } = await import("../error-handler");
@@ -373,12 +416,32 @@ describe("HealthMonitor", () => {
       const originalHost = redisConnection.host;
       (redisConnection as any).host = undefined;
 
-      vi.mocked(ErrorHandler.createJobError).mockReturnValue({
-        type: ErrorType.REDIS_ERROR,
-        severity: ErrorSeverity.HIGH,
-        message: "Redis host not configured",
-        timestamp: new Date(),
-      });
+      vi.mocked(ErrorHandler.createJobError).mockImplementation(
+        (err: string | Error, type?: ErrorType, _severity?: ErrorSeverity) => {
+          if (type === ErrorType.DATABASE_ERROR) {
+            return {
+              type: ErrorType.DATABASE_ERROR,
+              severity: ErrorSeverity.HIGH,
+              message: "Database connection failed",
+              timestamp: new Date(),
+            };
+          }
+          if (type === ErrorType.REDIS_ERROR) {
+            return {
+              type: ErrorType.REDIS_ERROR,
+              severity: ErrorSeverity.HIGH,
+              message: "Redis host not configured",
+              timestamp: new Date(),
+            };
+          }
+          return {
+            type: ErrorType.DATABASE_ERROR,
+            severity: ErrorSeverity.HIGH,
+            message: "Unknown error",
+            timestamp: new Date(),
+          };
+        }
+      );
       vi.mocked(ErrorHandler.logError).mockImplementation(() => {});
 
       const health = await (monitor as any).checkRedisHealth();
@@ -416,12 +479,32 @@ describe("HealthMonitor", () => {
       const originalHost = redisConnection.host;
       (redisConnection as any).host = undefined;
 
-      vi.mocked(ErrorHandler.createJobError).mockReturnValue({
-        type: ErrorType.REDIS_ERROR,
-        severity: ErrorSeverity.HIGH,
-        message: "Redis host not configured",
-        timestamp: new Date(),
-      });
+      vi.mocked(ErrorHandler.createJobError).mockImplementation(
+        (err: string | Error, type?: ErrorType, _severity?: ErrorSeverity) => {
+          if (type === ErrorType.DATABASE_ERROR) {
+            return {
+              type: ErrorType.DATABASE_ERROR,
+              severity: ErrorSeverity.HIGH,
+              message: "Database connection failed",
+              timestamp: new Date(),
+            };
+          }
+          if (type === ErrorType.REDIS_ERROR) {
+            return {
+              type: ErrorType.REDIS_ERROR,
+              severity: ErrorSeverity.HIGH,
+              message: "Redis host not configured",
+              timestamp: new Date(),
+            };
+          }
+          return {
+            type: ErrorType.DATABASE_ERROR,
+            severity: ErrorSeverity.HIGH,
+            message: "Unknown error",
+            timestamp: new Date(),
+          };
+        }
+      );
       vi.mocked(ErrorHandler.logError).mockImplementation(() => {});
 
       const queues = await (monitor as any).checkQueueHealth();
@@ -527,6 +610,167 @@ describe("HealthMonitor", () => {
       expect(failedCheck.status).toBe("unhealthy");
       expect(failedCheck.message).toBe("Test failure");
       expect(failedCheck.lastChecked).toBeInstanceOf(Date);
+    });
+  });
+
+  describe("Perform Health Checks", () => {
+    it("should handle database health check failure in performHealthChecks", async () => {
+      const { prisma } = await import("../../config/database");
+      const { ErrorHandler } = await import("../error-handler");
+
+      // Mock database failure
+      vi
+        .mocked(prisma.$queryRaw)
+        .mockRejectedValue(new Error("Database connection failed")) as any;
+      vi.mocked(ErrorHandler.createJobError).mockImplementation(
+        (err: string | Error, type?: ErrorType, _severity?: ErrorSeverity) => {
+          if (type === ErrorType.DATABASE_ERROR) {
+            return {
+              type: ErrorType.DATABASE_ERROR,
+              severity: ErrorSeverity.HIGH,
+              message: "Database connection failed",
+              timestamp: new Date(),
+            };
+          }
+          if (type === ErrorType.REDIS_ERROR) {
+            return {
+              type: ErrorType.REDIS_ERROR,
+              severity: ErrorSeverity.HIGH,
+              message: "Redis host not configured",
+              timestamp: new Date(),
+            };
+          }
+          return {
+            type: ErrorType.DATABASE_ERROR,
+            severity: ErrorSeverity.HIGH,
+            message: "Unknown error",
+            timestamp: new Date(),
+          };
+        }
+      );
+      vi.mocked(ErrorHandler.logError).mockImplementation(() => {});
+
+      const health = await (monitor as any).performHealthChecks();
+
+      expect(health.checks.database.status).toBe("unhealthy");
+      expect(health.checks.database.message).toContain(
+        "Database connection failed"
+      );
+      expect(health.checks.redis.status).toBe("healthy");
+      expect(health.checks.queues).toBeDefined();
+    });
+
+    it("should handle Redis health check failure in performHealthChecks", async () => {
+      const { prisma } = await import("../../config/database");
+      const { redisConnection } = await import("../../config/redis");
+      const { ErrorHandler } = await import("../error-handler");
+
+      // Mock database health check to succeed
+      vi.mocked(prisma.$queryRaw).mockResolvedValue([{ "1": 1 }] as any) as any;
+      vi.mocked(prisma.note.count).mockResolvedValue(10);
+
+      // Temporarily modify redisConnection to cause failure
+      const originalHost = redisConnection.host;
+      (redisConnection as any).host = undefined;
+
+      vi.mocked(ErrorHandler.createJobError).mockImplementation(
+        (err: string | Error, type?: ErrorType, _severity?: ErrorSeverity) => {
+          if (type === ErrorType.DATABASE_ERROR) {
+            return {
+              type: ErrorType.DATABASE_ERROR,
+              severity: ErrorSeverity.HIGH,
+              message: "Database connection failed",
+              timestamp: new Date(),
+            };
+          }
+          if (type === ErrorType.REDIS_ERROR) {
+            return {
+              type: ErrorType.REDIS_ERROR,
+              severity: ErrorSeverity.HIGH,
+              message: "Redis host not configured",
+              timestamp: new Date(),
+            };
+          }
+          return {
+            type: ErrorType.DATABASE_ERROR,
+            severity: ErrorSeverity.HIGH,
+            message: "Unknown error",
+            timestamp: new Date(),
+          };
+        }
+      );
+      vi.mocked(ErrorHandler.logError).mockImplementation(() => {});
+
+      const health = await (monitor as any).performHealthChecks();
+
+      expect(health.checks.database.status).toBe("healthy");
+      expect(health.checks.redis.status).toBe("unhealthy");
+      expect(health.checks.redis.message).toContain(
+        "Redis host not configured"
+      );
+      expect(health.checks.queues).toBeDefined();
+
+      // Restore original value
+      (redisConnection as any).host = originalHost;
+    });
+
+    it("should handle both database and Redis health check failures", async () => {
+      const { prisma } = await import("../../config/database");
+      const { redisConnection } = await import("../../config/redis");
+      const { ErrorHandler } = await import("../error-handler");
+
+      // Mock database failure
+      vi
+        .mocked(prisma.$queryRaw)
+        .mockRejectedValue(new Error("Database connection failed")) as any;
+
+      // Temporarily modify redisConnection to cause failure
+      const originalHost = redisConnection.host;
+      (redisConnection as any).host = undefined;
+
+      // Mock ErrorHandler.createJobError to return different messages for each error type
+      vi.mocked(ErrorHandler.createJobError).mockImplementation(
+        (err: string | Error, type?: ErrorType, _severity?: ErrorSeverity) => {
+          if (type === ErrorType.DATABASE_ERROR) {
+            return {
+              type: ErrorType.DATABASE_ERROR,
+              severity: ErrorSeverity.HIGH,
+              message: "Database connection failed",
+              timestamp: new Date(),
+            };
+          }
+          if (type === ErrorType.REDIS_ERROR) {
+            return {
+              type: ErrorType.REDIS_ERROR,
+              severity: ErrorSeverity.HIGH,
+              message: "Redis host not configured",
+              timestamp: new Date(),
+            };
+          }
+          return {
+            type: ErrorType.DATABASE_ERROR,
+            severity: ErrorSeverity.HIGH,
+            message: "Unknown error",
+            timestamp: new Date(),
+          };
+        }
+      );
+      vi.mocked(ErrorHandler.logError).mockImplementation(() => {});
+
+      const health = await (monitor as any).performHealthChecks();
+
+      expect(health.checks.database.status).toBe("unhealthy");
+      expect(health.checks.database.message).toContain(
+        "Database connection failed"
+      );
+      expect(health.checks.redis.status).toBe("unhealthy");
+      expect(health.checks.redis.message).toContain(
+        "Redis host not configured"
+      );
+      expect(health.checks.queues).toBeDefined();
+
+      // Restore original value
+      (redisConnection as any).host = originalHost;
     });
   });
 });

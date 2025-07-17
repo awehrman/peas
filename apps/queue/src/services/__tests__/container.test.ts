@@ -237,6 +237,27 @@ describe("ServiceContainer", () => {
 
       expect(mockWebSocketManager.close).toHaveBeenCalled();
     });
+
+    it("should handle errors during close and throw them", async () => {
+      const container = ServiceContainer.getInstance();
+      const mockError = new Error("Database disconnect failed");
+      const mockLogger = vi.mocked(container.logger.log);
+
+      // Mock a failure in database disconnect
+      vi.mocked(container.database.prisma.$disconnect).mockRejectedValue(
+        mockError
+      );
+
+      await expect(container.close()).rejects.toThrow(
+        "Database disconnect failed"
+      );
+
+      // Verify error was logged
+      expect(mockLogger).toHaveBeenCalledWith(
+        "Error closing ServiceContainer: Error: Database disconnect failed",
+        "error"
+      );
+    });
   });
 });
 
@@ -504,6 +525,53 @@ describe("createServiceContainer", () => {
     expect(mockQueues.instructionQueue?.close).toHaveBeenCalled();
     expect(mockQueues.categorizationQueue?.close).toHaveBeenCalled();
     expect(mockDatabase.prisma?.$disconnect).toHaveBeenCalled();
+    expect(mockLogger.log).toHaveBeenCalledWith(
+      "ServiceContainer closed successfully"
+    );
+  });
+
+  it("should handle web socket manager close when provided in overrides", async () => {
+    const mockWebSocketManager = {
+      close: vi.fn(),
+      broadcastStatusEvent: vi.fn(),
+      getConnectedClientsCount: vi.fn(),
+    };
+
+    const mockWebSocket: Partial<IWebSocketService> = {
+      webSocketManager: mockWebSocketManager,
+    };
+
+    const container = createServiceContainer({
+      webSocket: mockWebSocket as IWebSocketService,
+    });
+
+    await container.close();
+
+    expect(mockWebSocketManager.close).toHaveBeenCalled();
+  });
+
+  it("should handle partial overrides without all services", async () => {
+    const mockLogger = {
+      log: vi.fn(),
+      debug: vi.fn(),
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+      fatal: vi.fn(),
+      logWithContext: vi.fn(),
+      getLogFiles: vi.fn(),
+      rotateLogs: vi.fn(),
+      getLogStats: vi.fn(),
+      clearOldLogs: vi.fn(),
+    };
+
+    const container = createServiceContainer({
+      logger: mockLogger,
+    });
+
+    await container.close();
+
+    // Should only call the overridden logger's log method
     expect(mockLogger.log).toHaveBeenCalledWith(
       "ServiceContainer closed successfully"
     );

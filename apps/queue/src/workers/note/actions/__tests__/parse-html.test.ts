@@ -257,7 +257,7 @@ describe("ParseHtmlAction", () => {
 
       // Add a small delay to ensure duration > 0
       vi.mocked(mockDeps.parseHTML).mockImplementation(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 1));
+        await new Promise((resolve) => setTimeout(resolve, 10));
         throw parseError;
       });
 

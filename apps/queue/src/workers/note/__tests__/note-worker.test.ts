@@ -273,4 +273,61 @@ describe("createNoteDependenciesFromContainer", () => {
     mockContainer.database.createNote = undefined;
     expect(() => getDeps()).toThrowError("createNote function is required");
   });
+
+  it("should throw error when parseHTML function is not available in container", async () => {
+    // Create a container with parseHTML undefined but still present in parsers
+    const testContainer = {
+      ...mockContainer,
+      parsers: { parseHTML: undefined },
+    };
+
+    // Mock the validateDependencies method to avoid the early throw
+    const validateSpy = vi.spyOn(NoteWorker.prototype, "validateDependencies");
+    validateSpy.mockImplementation(() => {}); // No-op to avoid validation
+
+    try {
+      const worker = createNoteWorker({} as any, testContainer);
+      const deps = (worker as any).dependencies;
+
+      await expect(deps.parseHTML("test content")).rejects.toThrow(
+        "parseHTML function not available"
+      );
+    } finally {
+      validateSpy.mockRestore();
+    }
+  });
+
+  it("should throw error when createNote function is not available in container", async () => {
+    // Create a container with createNote undefined but still present in database
+    const testContainer = {
+      ...mockContainer,
+      database: { createNote: undefined },
+    };
+
+    // Mock the validateDependencies method to avoid the early throw
+    const validateSpy = vi.spyOn(NoteWorker.prototype, "validateDependencies");
+    validateSpy.mockImplementation(() => {}); // No-op to avoid validation
+
+    try {
+      const worker = createNoteWorker({} as any, testContainer);
+      const deps = (worker as any).dependencies;
+      const testFile = { content: "test" };
+
+      await expect(deps.createNote(testFile)).rejects.toThrow(
+        "createNote function not available"
+      );
+    } finally {
+      validateSpy.mockRestore();
+    }
+  });
+
+  it("should handle parseHTML when container.parsers is undefined", async () => {
+    mockContainer.parsers = undefined;
+    expect(() => getDeps()).toThrowError("parseHTML function is required");
+  });
+
+  it("should handle createNote when container.database is undefined", async () => {
+    mockContainer.database = undefined;
+    expect(() => getDeps()).toThrowError("createNote function is required");
+  });
 });

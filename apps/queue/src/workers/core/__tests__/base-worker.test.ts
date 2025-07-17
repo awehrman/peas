@@ -11,6 +11,10 @@ import {
 } from "../../__tests__/test-utils";
 import type { ActionContext } from "../types";
 import type { IServiceContainer } from "../../../services/container";
+import { WorkerMetrics } from "../metrics";
+import { ErrorHandlingWrapperAction } from "../../shared/error-handling";
+import { RetryWrapperAction } from "../../shared/retry";
+import { globalActionCache, createCacheKey } from "../cache";
 
 // ============================================================================
 // TEST HELPERS
@@ -569,5 +573,110 @@ describe("createBaseDependenciesFromContainer", () => {
     const deps = createBaseDependenciesFromContainer(mockContainer);
     expect(deps.ErrorHandler).toBeDefined();
     expect(typeof deps.ErrorHandler.withErrorHandling).toBe("function");
+  });
+});
+
+describe("BaseWorker advanced coverage", () => {
+  let worker: TestWorker;
+  let mockQueue: ReturnType<typeof createMockQueue>;
+  let mockDependencies: any;
+  let mockContainer: IServiceContainer;
+  let mockActionFactory: ActionFactory;
+
+  beforeEach(() => {
+    mockQueue = createMockQueue();
+    mockDependencies = {
+      logger: { log: vi.fn() },
+      addStatusEventAndBroadcast: vi.fn().mockResolvedValue(undefined),
+      ErrorHandler: {
+        withErrorHandling: vi.fn().mockImplementation(async (op) => op()),
+      },
+    };
+    mockContainer = createMockServiceContainer();
+    mockActionFactory = new ActionFactory();
+    worker = new TestWorker(
+      mockQueue,
+      mockDependencies,
+      mockActionFactory,
+      mockContainer
+    );
+    vi.clearAllMocks();
+  });
+
+  it("addStatusActions logs expected messages", () => {
+    const loggerSpy = mockDependencies.logger.log;
+    const actions: BaseAction<unknown, unknown>[] = [];
+    const data = { value: "test", noteId: "test-note" };
+    worker.testAddStatusActions(actions, data);
+    expect(loggerSpy).toHaveBeenCalledWith(
+      expect.stringContaining("addStatusActions called with data")
+    );
+    expect(loggerSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Adding status actions")
+    );
+  });
+
+  it("wrapWithRetryAndErrorHandling returns correct wrapper", () => {
+    const action = new NoOpAction();
+    const wrapped = worker.testWrapWithRetryAndErrorHandling(action);
+    expect(wrapped).toBeInstanceOf(ErrorHandlingWrapperAction);
+    expect((wrapped as any).wrappedAction).toBeInstanceOf(RetryWrapperAction);
+  });
+
+  it("wrapWithErrorHandling returns correct wrapper", () => {
+    const action = new NoOpAction();
+    const wrapped = worker.testWrapWithErrorHandling(action);
+    expect(wrapped).toBeInstanceOf(ErrorHandlingWrapperAction);
+    expect((wrapped as any).wrappedAction).toBe(action);
+  });
+
+  it("createWrappedAction and createErrorHandledAction wrap as expected", () => {
+    mockActionFactory.register("test_action", () => new NoOpAction());
+    const wrapped = worker.testCreateWrappedAction("test_action");
+    expect(wrapped).toBeInstanceOf(ErrorHandlingWrapperAction);
+    expect((wrapped as any).wrappedAction).toBeInstanceOf(RetryWrapperAction);
+    const errorHandled = worker.testCreateErrorHandledAction("test_action");
+    expect(errorHandled).toBeInstanceOf(ErrorHandlingWrapperAction);
+    expect((errorHandled as any).wrappedAction).toBeInstanceOf(NoOpAction);
+  });
+
+  it("executeActionWithCaching sets cache and logs cache hit", async () => {
+    const action = new NoOpAction();
+    action.name = "parse_html";
+    const context = createMockActionContext();
+    const data = { value: "foo" };
+    const cacheKey = createCacheKey(
+      "action",
+      action.name,
+      context.jobId,
+      JSON.stringify(data)
+    );
+    globalActionCache.delete(cacheKey);
+    const loggerSpy = mockDependencies.logger.log;
+    // First call: should set cache
+    await worker["executeActionWithCaching"]!(action, data, context);
+    expect(globalActionCache.get(cacheKey)).toBe(undefined); // NoOpAction returns undefined
+    // Manually set cache for next call
+    globalActionCache.set(cacheKey, "cached-value", 300000);
+    const result = await worker["executeActionWithCaching"]!(
+      action,
+      data,
+      context
+    );
+    expect(result).toBe("cached-value");
+    expect(loggerSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Cache hit for action parse_html")
+    );
+    globalActionCache.delete(cacheKey);
+  });
+
+  it("getStatus calls WorkerMetrics.recordWorkerStatus", () => {
+    const metricsSpy = vi.spyOn(WorkerMetrics, "recordWorkerStatus");
+    const mockWorker = {
+      isRunning: vi.fn().mockReturnValue(true),
+    };
+    worker["worker"] = mockWorker as any;
+    worker["getStatus"]!();
+    expect(metricsSpy).toHaveBeenCalledWith("test_worker", true);
   });
 });
