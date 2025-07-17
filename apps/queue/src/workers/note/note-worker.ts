@@ -60,11 +60,15 @@ export class NoteWorker extends BaseWorker<
   ): NotePipelineAction[] {
     const actions: NotePipelineAction[] = [];
 
-    // 1. Parse HTML (with retry and error handling)
+    // 1. Clean HTML (remove style and icons tags)
+    // Input: NotePipelineStage1 -> Output: NotePipelineStage1 (cleaned)
+    actions.push(this.createWrappedAction("clean_html", this.dependencies));
+
+    // 2. Parse HTML (with retry and error handling)
     // Input: NotePipelineStage1 -> Output: NotePipelineStage2
     actions.push(this.createWrappedAction("parse_html", this.dependencies));
 
-    // 2. Save note (with retry and error handling)
+    // 3. Save note (with retry and error handling)
     // Input: NotePipelineStage2 -> Output: NotePipelineStage3
     actions.push(this.createWrappedAction("save_note", this.dependencies));
 

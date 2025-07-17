@@ -197,11 +197,9 @@ export abstract class BaseWorker<
               .replace("retry_wrapper(", "")
               .replace(")", "");
           }
+
           this.dependencies.logger.log(
-            `[${this.getOperationName().toUpperCase()}] ▶️ ${cleanActionName}`
-          );
-          this.dependencies.logger.log(
-            `[${this.getOperationName().toUpperCase()}] Data for action ${cleanActionName}: ${JSON.stringify(result)}`
+            `[${this.getOperationName().toUpperCase()}] Data for action ${cleanActionName}: ${this.truncateResultForLogging(result)}`
           );
           try {
             result = (await this.executeActionWithCaching(
@@ -277,6 +275,33 @@ export abstract class BaseWorker<
    */
   protected getConcurrency(): number {
     return 5;
+  }
+
+  /**
+   * Truncate result data for logging to prevent overly long log messages
+   */
+  private truncateResultForLogging(result: unknown): string {
+    const truncate = (str: string) =>
+      str.length > 25 ? str.slice(0, 25) + "..." : str;
+
+    try {
+      const jsonStr = JSON.stringify(result);
+      if (jsonStr.length <= 100) {
+        return jsonStr;
+      }
+
+      // For longer results, truncate individual string values
+      const truncated = JSON.stringify(result, (key, value) => {
+        if (typeof value === "string" && value.length > 25) {
+          return truncate(value);
+        }
+        return value;
+      });
+
+      return truncated.length > 200 ? truncate(truncated) : truncated;
+    } catch {
+      return `[Object - ${typeof result}]`;
+    }
   }
 
   /**

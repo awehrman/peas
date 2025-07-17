@@ -1,5 +1,6 @@
 export * from "./save-note";
 export * from "./parse-html";
+export * from "./clean-html";
 export * from "./schedule-source";
 export * from "./schedule-images";
 export * from "./schedule-ingredients";
@@ -10,6 +11,7 @@ export * from "../schema";
 import { ActionFactory } from "../../core/action-factory";
 import { SaveNoteAction } from "./save-note";
 import { ParseHtmlAction } from "./parse-html";
+import { CleanHtmlAction } from "./clean-html";
 import { ScheduleSourceAction } from "./schedule-source";
 import { ScheduleImagesAction } from "./schedule-images";
 import { ScheduleIngredientsAction } from "./schedule-ingredients";
@@ -25,6 +27,7 @@ import {
  */
 export function registerNoteActions(factory: ActionFactory) {
   factory.register("parse_html", () => new ParseHtmlAction());
+  factory.register("clean_html", () => new CleanHtmlAction());
   factory.register("save_note", () => new SaveNoteAction());
   factory.register("schedule_images", () => new ScheduleImagesAction());
   factory.register("schedule_source", () => new ScheduleSourceAction());

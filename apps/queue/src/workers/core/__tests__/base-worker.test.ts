@@ -721,4 +721,70 @@ describe("BaseWorker advanced coverage", () => {
     worker["getStatus"]!();
     expect(metricsSpy).toHaveBeenCalledWith("test_worker", true);
   });
+
+  describe("truncateResultForLogging", () => {
+    it("should truncate long strings to 25 characters", () => {
+      const longString = "This is a very long string that should be truncated";
+      const result = worker["truncateResultForLogging"]({
+        content: longString,
+        additionalField:
+          "This is additional content that makes the JSON longer than 100 characters so it triggers the truncation logic",
+      });
+      expect(result).toContain("This is a very long strin");
+      expect(result).toContain("...");
+      expect(result).not.toContain("that should be truncated");
+    });
+
+    it("should not truncate short strings", () => {
+      const shortString = "Short";
+      const result = worker["truncateResultForLogging"]({
+        content: shortString,
+      });
+      expect(result).toContain("Short");
+      expect(result).not.toContain("...");
+    });
+
+    it("should handle objects with multiple long strings", () => {
+      const data = {
+        title: "This is a very long title that should be truncated",
+        content: "This is also a very long content that should be truncated",
+        shortField: "Short",
+      };
+      const result = worker["truncateResultForLogging"](data);
+      expect(result).toContain("This is a very long title");
+      expect(result).toContain("This is also a very long");
+      expect(result).toContain("...");
+      expect(result).toContain("Short");
+    });
+
+    it("should handle non-string values without truncation", () => {
+      const data = {
+        number: 12345,
+        boolean: true,
+        array: [1, 2, 3],
+        nullValue: null,
+      };
+      const result = worker["truncateResultForLogging"](data);
+      expect(result).toContain("12345");
+      expect(result).toContain("true");
+      expect(result).toContain("[1,2,3]");
+      expect(result).toContain("null");
+    });
+
+    it("should truncate very long JSON strings", () => {
+      const veryLongString = "x".repeat(1000);
+      const result = worker["truncateResultForLogging"]({
+        content: veryLongString,
+      });
+      expect(result.length).toBeLessThan(250);
+      expect(result).toContain("...");
+    });
+
+    it("should handle circular references gracefully", () => {
+      const circular: any = { name: "test" };
+      circular.self = circular;
+      const result = worker["truncateResultForLogging"](circular);
+      expect(result).toContain("[Object - object]");
+    });
+  });
 });

@@ -269,8 +269,9 @@ describe("NoteWorker", () => {
         attemptNumber: 1,
       };
       const pipeline = worker.testCreateActionPipeline(mockData, mockContext);
-      expect(pipeline).toHaveLength(4); // parse_html, save_note, add_processing_status, add_completed_status
+      expect(pipeline).toHaveLength(5); // clean_html, parse_html, save_note, note_processing_status, note_completed_status
       expect(worker.wrappedActions).toEqual([
+        { name: "clean_html", deps: mockDependencies },
         { name: "parse_html", deps: mockDependencies },
         { name: "save_note", deps: mockDependencies },
       ]);
