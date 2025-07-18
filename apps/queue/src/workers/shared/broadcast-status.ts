@@ -8,6 +8,7 @@ export interface BroadcastStatusDeps {
     status: string;
     message: string;
     context: string;
+    indentLevel?: number;
   }) => Promise<void>;
 }
 

@@ -2,6 +2,7 @@ export interface Item {
   text: string;
   indentLevel: number;
   id: string;
+  importId: string; // Add importId to support grouping by import
 }
 
 export interface GroupedItem {
@@ -9,6 +10,15 @@ export interface GroupedItem {
   title: string;
   status: "pending" | "processing" | "completed" | "error";
   children: Item[];
+  timestamp: Date;
+  importId?: string; // Add importId to support import-level grouping
+}
+
+// New interface for import-level grouping
+export interface ImportGroup {
+  importId: string;
+  operations: GroupedItem[];
+  overallStatus: "pending" | "processing" | "completed" | "error";
   timestamp: Date;
 }
 
@@ -180,32 +190,23 @@ export function groupStatusItems(items: Item[]): GroupedItem[] {
       group.status = newStatus;
     }
 
-    // Check if this is a progress update or detailed message
-    const lowerText = item.text.toLowerCase();
-    const isProgressUpdate =
-      lowerText.includes("%") ||
-      lowerText.includes("step") ||
-      lowerText.includes("extracting") ||
-      lowerText.includes("compressing") ||
-      lowerText.includes("generating") ||
-      lowerText.includes("processed") ||
-      lowerText.includes("finished") ||
-      lowerText.includes("uploaded successfully");
-
-    if (isProgressUpdate) {
-      // Add progress updates and detailed messages as children
+    // Use explicit indentLevel to determine if this is a child item
+    if (item.indentLevel > 0) {
+      // Add as child item (indented)
       group.children.push(item);
     } else {
-      // Only update group title for main status messages
+      // Only update group title for main status messages (indentLevel 0)
+      const lowerText = item.text.toLowerCase();
       if (
         lowerText.includes("added note") ||
         lowerText.includes("categorized as") ||
         lowerText.includes("finished") ||
-        lowerText.includes("uploaded successfully")
+        lowerText.includes("uploaded successfully") ||
+        lowerText.includes("completed")
       ) {
         group.title = item.text;
       } else {
-        // Add other messages as children
+        // Add other main-level messages as children
         group.children.push(item);
       }
     }
@@ -238,4 +239,71 @@ export function groupStatusItems(items: Item[]): GroupedItem[] {
   }
 
   return sortedGroups;
+}
+
+/**
+ * Group items by import ID first, then by operation type within each import
+ */
+export function groupStatusItemsByImport(items: Item[]): ImportGroup[] {
+  // First, group items by importId
+  const importGroups = items.reduce(
+    (imports: Map<string, Item[]>, item: Item) => {
+      if (!imports.has(item.importId)) {
+        imports.set(item.importId, []);
+      }
+      imports.get(item.importId)!.push(item);
+      return imports;
+    },
+    new Map<string, Item[]>()
+  );
+
+  // Convert to ImportGroup array
+  return Array.from(importGroups.entries())
+    .map(([importId, importItems]) => {
+      // Group the items within this import by operation type
+      const operations = groupStatusItems(importItems);
+
+      // Determine overall status for this import
+      const overallStatus = determineOverallStatus(operations);
+
+      // Get the earliest timestamp from all operations
+      const timestamp = new Date(
+        Math.min(...operations.map((op) => op.timestamp.getTime()))
+      );
+
+      return {
+        importId,
+        operations,
+        overallStatus,
+        timestamp,
+      };
+    })
+    .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()); // Sort by newest first
+}
+
+/**
+ * Determine the overall status of an import based on its operations
+ */
+function determineOverallStatus(
+  operations: GroupedItem[]
+): "pending" | "processing" | "completed" | "error" {
+  if (operations.length === 0) return "pending";
+
+  // If any operation has an error, the overall status is error
+  if (operations.some((op) => op.status === "error")) {
+    return "error";
+  }
+
+  // If all operations are completed, the overall status is completed
+  if (operations.every((op) => op.status === "completed")) {
+    return "completed";
+  }
+
+  // If any operation is processing, the overall status is processing
+  if (operations.some((op) => op.status === "processing")) {
+    return "processing";
+  }
+
+  // Otherwise, it's pending
+  return "pending";
 }

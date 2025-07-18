@@ -30,6 +30,7 @@ interface StatusBroadcaster {
     context?: string;
     currentCount?: number;
     totalCount?: number;
+    indentLevel?: number;
   }): Promise<unknown>;
 }
 
@@ -60,6 +61,7 @@ export interface IStatusBroadcasterService {
     context?: string;
     currentCount?: number;
     totalCount?: number;
+    indentLevel?: number;
   }) => Promise<unknown>;
 }
 
@@ -194,6 +196,7 @@ class StatusBroadcasterService implements IStatusBroadcasterService {
     context?: string;
     currentCount?: number;
     totalCount?: number;
+    indentLevel?: number;
   }) => Promise<unknown> {
     return async (event: {
       importId: string;
@@ -203,6 +206,7 @@ class StatusBroadcasterService implements IStatusBroadcasterService {
       context?: string;
       currentCount?: number;
       totalCount?: number;
+      indentLevel?: number;
     }) => {
       const { addStatusEventAndBroadcast } = await import(
         "../utils/status-broadcaster.js"

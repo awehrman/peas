@@ -27,6 +27,7 @@ export interface CleanHtmlDeps {
     status: string;
     message: string;
     context: string;
+    indentLevel?: number;
   }) => Promise<void>;
 }
 
@@ -78,6 +79,7 @@ export class CleanHtmlAction extends BaseAction<CleanHtmlData, CleanHtmlDeps> {
           status: "PROCESSING",
           message: "Cleaning HTML file...",
           context: "clean_html",
+          indentLevel: 0,
         });
       } catch (error) {
         console.error(
@@ -135,6 +137,7 @@ export class CleanHtmlAction extends BaseAction<CleanHtmlData, CleanHtmlDeps> {
           status: "COMPLETED",
           message: "HTML cleaning completed",
           context: "clean_html",
+          indentLevel: 0,
         });
       } catch (error) {
         console.error(

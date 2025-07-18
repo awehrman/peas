@@ -12,8 +12,8 @@ notesRouter.post("/", async (req: Request, res: Response) => {
   }
 
   // Generate a temporary importId for frontend grouping
-  const importId = `import-${randomUUID()}`;
-
+  const importId = `${randomUUID()}`;
+  console.log("importId", importId);
   await noteQueue.add("process-note", { content, importId });
   res.json({ queued: true, importId });
 });

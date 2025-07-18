@@ -362,12 +362,14 @@ describe("CleanHtmlAction", () => {
         status: "PROCESSING",
         message: "Cleaning HTML file...",
         context: "clean_html",
+        indentLevel: 0,
       });
       expect(mockDeps.addStatusEventAndBroadcast).toHaveBeenCalledWith({
         importId: "test-import-123",
         status: "COMPLETED",
         message: "HTML cleaning completed",
         context: "clean_html",
+        indentLevel: 0,
       });
     });
 

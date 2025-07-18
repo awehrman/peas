@@ -140,6 +140,7 @@ export interface StatusEvent {
   context?: string;
   currentCount?: number;
   totalCount?: number;
+  indentLevel?: number;
   metadata?: Record<string, unknown>;
 }
 

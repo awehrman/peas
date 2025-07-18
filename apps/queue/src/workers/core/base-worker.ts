@@ -92,6 +92,7 @@ export abstract class BaseWorker<
       context?: string;
       currentCount?: number;
       totalCount?: number;
+      indentLevel?: number;
     }) => {
       if (this.container?.statusBroadcaster?.addStatusEventAndBroadcast) {
         return this.container.statusBroadcaster.addStatusEventAndBroadcast(
@@ -465,6 +466,7 @@ export function createBaseDependenciesFromContainer(
       context?: string;
       currentCount?: number;
       totalCount?: number;
+      indentLevel?: number;
     }) => {
       if (container.statusBroadcaster?.addStatusEventAndBroadcast) {
         return container.statusBroadcaster.addStatusEventAndBroadcast(event);

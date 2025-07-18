@@ -10,6 +10,7 @@ interface StatusEvent {
   currentCount?: number;
   totalCount?: number;
   createdAt: string | Date;
+  indentLevel?: number; // Explicit indentation level (0 = main, 1+ = nested)
 }
 
 interface WebSocketMessage {
@@ -69,10 +70,12 @@ export function useStatusWebSocket(options: UseStatusWebSocketOptions = {}) {
       ws.onmessage = (event) => {
         try {
           const message: WebSocketMessage = JSON.parse(event.data);
+          console.log("🔌 WebSocket: Received message:", message);
 
           switch (message.type) {
             case "status_update": {
               const statusEvent = message.data as StatusEvent;
+              console.log("📊 WebSocket: Status update received:", statusEvent);
               // Parse createdAt string back to Date object
               const parsedEvent = {
                 ...statusEvent,
@@ -83,13 +86,16 @@ export function useStatusWebSocket(options: UseStatusWebSocketOptions = {}) {
             }
 
             case "connection_established":
+              console.log("🔌 WebSocket: Connection established");
               // Connection established - no action needed
               break;
 
             case "pong":
+              console.log("🏓 WebSocket: Pong received");
               break;
 
             default:
+              console.log("❓ WebSocket: Unknown message type:", message.type);
               // Unknown message type - ignore
               break;
           }

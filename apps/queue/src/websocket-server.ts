@@ -15,6 +15,7 @@ interface StatusEvent {
     currentCount?: number;
     totalCount?: number;
     createdAt: Date;
+    indentLevel?: number; // Explicit indentation level (0 = main, 1+ = nested)
   };
 }
 
