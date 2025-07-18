@@ -1,143 +1,52 @@
 # Note Worker
 
-The Note Worker is responsible for processing HTML content and creating notes in the database. It's the primary entry point for note processing in the queue system.
+The Note Worker is responsible for processing HTML content and creating notes in the database. It follows a pipeline-based architecture where each step transforms the data and passes it to the next step.
 
-## Overview
+## Pipeline Stages
 
-The Note Worker handles the complete lifecycle of note creation:
+The note processing pipeline consists of the following stages:
 
-1. **HTML Parsing** - Converts raw HTML content into structured data
-2. **Note Creation** - Saves the parsed content to the database
-3. **Status Management** - Tracks processing status and broadcasts updates
-4. **Follow-up Scheduling** - Queues additional processing tasks (categorization, image processing, etc.)
+1. **Stage 1 (NoteJobData)**: Initial job data containing HTML content and metadata
+2. **Stage 2 (NotePipelineStage2)**: After HTML parsing, contains parsed HTML structure
+3. **Stage 3 (NotePipelineStage3)**: After note creation, contains the created note
 
-## Architecture
+## Actions
 
-```text
-src/workers/note/
-├── note-worker.ts          # Main worker class
-├── types.ts                # Note-specific type definitions
-├── schema.ts               # Zod schemas and validation utilities for note processing
-├── index.ts                # Barrel exports
-├── actions/                # Note processing actions
-│   ├── index.ts            # Action registration
-│   ├── parse-html.ts       # HTML parsing action
-│   ├── save-note.ts        # Database save action
-│   ├── add-status-actions.ts # Status management
-│   ├── schedule-*.ts       # Follow-up task scheduling
-└── tests/                  # Unit tests (TODO)
-```
+The worker uses the following actions in sequence:
 
-## Key Components
-
-### NoteWorker Class
-
-- Extends `BaseWorker` for common functionality
-- Manages the note processing pipeline
-- Handles dependency injection and validation
-- Provides type-safe action creation
-
-### Actions
-
-Each action is a single responsibility unit that handles one aspect of note processing:
-
-- **ParseHtmlAction**: Converts HTML content to structured data
-- **SaveNoteAction**: Persists the note to the database
-- **AddStatusActionsAction**: Manages processing status and broadcasts updates
-- **ScheduleActions**: Queue follow-up processing tasks
-
-### Types
-
-Comprehensive type definitions for:
-
-- Worker dependencies
-- Job data structures
-- Action inputs/outputs
-- Database models
-
-### Schemas & Validation
-
-All Zod schemas and validation utilities for note processing are defined in `schema.ts` at the root of the `note/` directory. These schemas are used to validate job data, parsed files, and action inputs/outputs throughout the note processing pipeline.
-
-**Example usage in an action:**
-
-```typescript
-import { ZodNoteValidation } from "../schema";
-
-// ... inside an action class ...
-const validationResult = ZodNoteValidation.validateSaveNoteData(data);
-if (!validationResult.success) {
-  throw new Error(validationResult.error);
-}
-```
-
-## Usage
-
-### Creating a Note Worker
-
-```typescript
-import { createNoteWorker } from "./workers/note";
-import { Queue } from "bullmq";
-
-const noteQueue = new Queue("note-processing");
-const worker = createNoteWorker(noteQueue, serviceContainer);
-```
-
-### Adding a Job
-
-```typescript
-await noteQueue.add("process-note", {
-  content: "<html>...</html>",
-  noteId: "optional-note-id",
-  source: {
-    url: "https://example.com/recipe",
-    filename: "recipe.html",
-  },
-  options: {
-    skipCategorization: false,
-    skipImageProcessing: false,
-  },
-});
-```
-
-## Data Flow
-
-1. **Input**: `NoteJobData` with HTML content
-2. **Parse HTML**: Convert to `ParsedHTMLFile`
-3. **Save Note**: Create `NoteWithParsedLines` in database
-4. **Add Status**: Broadcast "PROCESSING" status
-5. **Schedule Tasks**: Queue follow-up processing
-6. **Complete**: Broadcast "COMPLETED" status
-
-## Dependencies
-
-The Note Worker requires these services from the container:
-
-- `parsers.parseHTML`: HTML parsing function
-- `database.createNote`: Database note creation
-- Queue instances for follow-up processing
-- Status broadcasting and error handling utilities
+- **NoteStartProcessingStatusAction**: Broadcasts processing status at the start using importId
+- **CleanHtmlAction**: Removes style and icon tags from HTML content
+- **ParseHtmlAction**: Parses HTML content into structured data
+- **SaveNoteAction**: Saves the parsed note to the database
+- **ScheduleImagesAction**: Schedules image processing tasks
+- **ScheduleSourceAction**: Schedules source processing tasks
+- **ScheduleIngredientsAction**: Schedules ingredient processing tasks
+- **ScheduleInstructionsAction**: Schedules instruction processing tasks
+- **ScheduleAllFollowupTasksAction**: Schedules all follow-up processing tasks
 
 ## Error Handling
 
-- Each action has built-in retry logic for transient failures
-- Comprehensive error context for debugging
-- Graceful degradation for optional processing steps
-- Status updates on failures for user feedback
+The worker implements comprehensive error handling:
 
-## Testing
+- **Retry Logic**: Failed actions are retried with exponential backoff
+- **Error Logging**: All errors are logged with context information
+- **Graceful Degradation**: Non-critical failures don't stop the entire pipeline
+- **Status Updates**: Processing status is broadcast throughout the pipeline
 
-Unit tests should cover:
+## Dependencies
 
-- Individual action behavior
-- Worker pipeline integration
-- Error scenarios and recovery
-- Type safety validation
+The worker requires the following dependencies:
 
-## Future Enhancements
+- **parseHTML**: Function to parse HTML content
+- **createNote**: Function to create notes in the database
+- **addStatusEventAndBroadcast**: Function to broadcast status updates
+- **Queues**: Various queues for scheduling follow-up tasks
 
-- [ ] Add comprehensive unit tests
-- [ ] Implement processing metrics
-- [ ] Add support for batch processing
-- [ ] Enhance error recovery strategies
-- [ ] Add processing priority levels
+## Usage
+
+```typescript
+import { createNoteWorker } from "./note-worker";
+
+const worker = createNoteWorker(queue, serviceContainer);
+await worker.process(jobData);
+```

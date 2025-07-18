@@ -8,7 +8,7 @@ import { ScheduleSourceAction } from "../schedule-source";
 import { ScheduleImagesAction } from "../schedule-images";
 import { ScheduleIngredientsAction } from "../schedule-ingredients";
 import { ScheduleInstructionsAction } from "../schedule-instructions";
-import { AddStatusActionsAction } from "../add-status-actions";
+import { ScheduleAllFollowupTasksAction } from "../schedule-all-followup-tasks";
 
 describe("Note Actions Index", () => {
   let factory: ActionFactory;
@@ -18,10 +18,9 @@ describe("Note Actions Index", () => {
   });
 
   describe("registerNoteActions", () => {
-    it("should register all note actions with correct names", () => {
+    it("should register all note actions", () => {
       registerNoteActions(factory);
 
-      // Verify all actions are registered
       expect(factory.isRegistered("parse_html")).toBe(true);
       expect(factory.isRegistered("clean_html")).toBe(true);
       expect(factory.isRegistered("save_note")).toBe(true);
@@ -29,13 +28,12 @@ describe("Note Actions Index", () => {
       expect(factory.isRegistered("schedule_source")).toBe(true);
       expect(factory.isRegistered("schedule_ingredients")).toBe(true);
       expect(factory.isRegistered("schedule_instructions")).toBe(true);
-      expect(factory.isRegistered("add_status_actions")).toBe(true);
+      expect(factory.isRegistered("schedule_all_followup_tasks")).toBe(true);
     });
 
     it("should create correct action instances", () => {
       registerNoteActions(factory);
 
-      // Verify correct action types are created
       const parseHtmlAction = factory.create("parse_html");
       const cleanHtmlAction = factory.create("clean_html");
       const saveNoteAction = factory.create("save_note");
@@ -45,7 +43,9 @@ describe("Note Actions Index", () => {
       const scheduleInstructionsAction = factory.create(
         "schedule_instructions"
       );
-      const addStatusActionsAction = factory.create("add_status_actions");
+      const scheduleAllFollowupTasksAction = factory.create(
+        "schedule_all_followup_tasks"
+      );
 
       expect(parseHtmlAction).toBeInstanceOf(ParseHtmlAction);
       expect(cleanHtmlAction).toBeInstanceOf(CleanHtmlAction);
@@ -58,7 +58,9 @@ describe("Note Actions Index", () => {
       expect(scheduleInstructionsAction).toBeInstanceOf(
         ScheduleInstructionsAction
       );
-      expect(addStatusActionsAction).toBeInstanceOf(AddStatusActionsAction);
+      expect(scheduleAllFollowupTasksAction).toBeInstanceOf(
+        ScheduleAllFollowupTasksAction
+      );
     });
 
     it("should create new instances for each factory call", () => {
@@ -87,7 +89,7 @@ describe("Note Actions Index", () => {
 
       registerNoteActions(factory);
 
-      expect(registerSpy).toHaveBeenCalledTimes(11);
+      expect(registerSpy).toHaveBeenCalledTimes(9);
 
       // Verify the order of registrations
       const calls = registerSpy.mock.calls;
@@ -98,16 +100,11 @@ describe("Note Actions Index", () => {
       expect(calls[4]).toEqual(["schedule_source", expect.any(Function)]);
       expect(calls[5]).toEqual(["schedule_ingredients", expect.any(Function)]);
       expect(calls[6]).toEqual(["schedule_instructions", expect.any(Function)]);
-      expect(calls[7]).toEqual(["add_status_actions", expect.any(Function)]);
-      expect(calls[8]).toEqual([
-        "note_processing_status",
-        expect.any(Function),
-      ]);
-      expect(calls[9]).toEqual(["note_completed_status", expect.any(Function)]);
-      expect(calls[10]).toEqual([
+      expect(calls[7]).toEqual([
         "schedule_all_followup_tasks",
         expect.any(Function),
       ]);
+      expect(calls[8]).toEqual(["note_completed_status", expect.any(Function)]);
     });
 
     it("should create actions with proper dependencies when needed", () => {
@@ -135,7 +132,7 @@ describe("Note Actions Index", () => {
       expect(ScheduleImagesAction).toBeDefined();
       expect(ScheduleIngredientsAction).toBeDefined();
       expect(ScheduleInstructionsAction).toBeDefined();
-      expect(AddStatusActionsAction).toBeDefined();
+      expect(ScheduleAllFollowupTasksAction).toBeDefined();
       expect(registerNoteActions).toBeDefined();
     });
   });

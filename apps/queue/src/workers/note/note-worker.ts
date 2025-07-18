@@ -61,46 +61,32 @@ export class NoteWorker extends BaseWorker<
   ): NotePipelineAction[] {
     const actions: NotePipelineAction[] = [];
 
-    // ============================================================================
-    // SYNCHRONOUS PHASE - Execute sequentially, wait for each to complete
-    // ============================================================================
-
     // 1. Clean HTML (remove style and icons tags)
     // Input: NotePipelineStage1 -> Output: NotePipelineStage1 (cleaned)
     actions.push(this.createWrappedAction("clean_html", this.dependencies));
 
     // 2. Parse HTML (with retry and error handling)
     // Input: NotePipelineStage1 -> Output: NotePipelineStage2
-    actions.push(this.createWrappedAction("parse_html", this.dependencies));
+    // actions.push(this.createWrappedAction("parse_html", this.dependencies));
 
     // 3. Save note (with retry and error handling)
     // Input: NotePipelineStage2 -> Output: NotePipelineStage3
-    actions.push(this.createWrappedAction("save_note", this.dependencies));
+    // actions.push(this.createWrappedAction("save_note", this.dependencies));
 
-    // 4. Add "PROCESSING" status after note is created
-    // Input: NotePipelineStage3 -> Output: NotePipelineStage3
-    actions.push(
-      this.createErrorHandledAction("note_processing_status", this.dependencies)
-    );
-
-    // ============================================================================
-    // CONCURRENT PHASE - Schedule all follow-up tasks simultaneously
-    // ============================================================================
-
-    // 5. Schedule all follow-up processing tasks concurrently
+    // 4. Schedule all follow-up processing tasks concurrently
     // This action will schedule multiple jobs to different queues at once
-    actions.push(
-      this.createErrorHandledAction(
-        "schedule_all_followup_tasks",
-        this.dependencies
-      )
-    );
+    // actions.push(
+    //   this.createErrorHandledAction(
+    //     "schedule_all_followup_tasks",
+    //     this.dependencies
+    //   )
+    // );
 
-    // 6. Add "COMPLETED" status at the very end
+    // 5. Add "COMPLETED" status at the very end
     // Input: NotePipelineStage3 -> Output: NotePipelineStage3
-    actions.push(
-      this.createErrorHandledAction("note_completed_status", this.dependencies)
-    );
+    // actions.push(
+    //   this.createErrorHandledAction("note_completed_status", this.dependencies)
+    // );
 
     return actions;
   }

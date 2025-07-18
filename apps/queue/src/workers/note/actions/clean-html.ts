@@ -3,7 +3,7 @@ import { ActionContext } from "../../core/types";
 
 export interface CleanHtmlData {
   content: string;
-  noteId?: string;
+  importId?: string;
   source?: {
     url?: string;
     filename?: string;
@@ -23,7 +23,7 @@ export interface CleanHtmlData {
 
 export interface CleanHtmlDeps {
   addStatusEventAndBroadcast: (event: {
-    noteId: string;
+    importId: string;
     status: string;
     message: string;
     context: string;
@@ -70,15 +70,13 @@ export class CleanHtmlAction extends BaseAction<CleanHtmlData, CleanHtmlDeps> {
       title = this.extractTitle(data.content) ?? "Untitled";
     }
 
-    const truncatedContent = truncate(data.content);
-
-    // Broadcast start status if we have a noteId
-    if (data.noteId) {
+    // Broadcast start status if we have an importId
+    if (data.importId) {
       try {
         await deps.addStatusEventAndBroadcast({
-          noteId: data.noteId,
+          importId: data.importId,
           status: "PROCESSING",
-          message: `HTML cleaning started: ${truncatedContent}`,
+          message: "Cleaning HTML file...",
           context: "clean_html",
         });
       } catch (error) {
@@ -115,7 +113,6 @@ export class CleanHtmlAction extends BaseAction<CleanHtmlData, CleanHtmlDeps> {
     );
 
     const totalRemoved = originalLength - cleanedContent.length;
-    const truncatedCleanedContent = truncate(cleanedContent);
 
     console.log(
       `[${context.operation.toUpperCase()}] HTML cleaning completed: ${title}`
@@ -127,16 +124,16 @@ export class CleanHtmlAction extends BaseAction<CleanHtmlData, CleanHtmlDeps> {
       `[${context.operation.toUpperCase()}] Final content length: ${cleanedContent.length}`
     );
     console.log(
-      `[${context.operation.toUpperCase()}] Final content preview: ${truncatedCleanedContent}`
+      `[${context.operation.toUpperCase()}] Final content preview: ${truncate(cleanedContent)}`
     );
 
-    // Broadcast completion status if we have a noteId
-    if (data.noteId) {
+    // Broadcast completion status if we have an importId
+    if (data.importId) {
       try {
         await deps.addStatusEventAndBroadcast({
-          noteId: data.noteId,
+          importId: data.importId,
           status: "COMPLETED",
-          message: `HTML cleaning completed: ${truncatedCleanedContent}`,
+          message: "HTML cleaning completed",
           context: "clean_html",
         });
       } catch (error) {

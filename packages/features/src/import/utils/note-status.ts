@@ -20,18 +20,13 @@ export function getOperationType(text: string): {
   isChild: boolean;
 } {
   const lowerText = text.toLowerCase();
-
-  if (lowerText.includes("added note") || lowerText.includes("note")) {
+  if (lowerText.includes("clean")) {
+    return { operationType: "cleaning", isChild: false };
+  } else if (lowerText.includes("added note") || lowerText.includes("note")) {
     return { operationType: "note", isChild: false };
-  } else if (
-    lowerText.includes("ingredient") ||
-    lowerText.includes("parsed ingredient")
-  ) {
+  } else if (lowerText.includes("ingredient")) {
     return { operationType: "ingredients", isChild: false };
-  } else if (
-    lowerText.includes("instruction") ||
-    lowerText.includes("parsed instruction")
-  ) {
+  } else if (lowerText.includes("instruction")) {
     return { operationType: "instructions", isChild: false };
   } else if (
     lowerText.includes("image") ||
@@ -42,7 +37,6 @@ export function getOperationType(text: string): {
   } else if (
     lowerText.includes("categoriz") ||
     lowerText.includes("analyzing") ||
-    lowerText.includes("beverages") ||
     lowerText.includes("tags")
   ) {
     return { operationType: "categorization", isChild: false };
@@ -56,6 +50,8 @@ export function getOperationType(text: string): {
  */
 export function getGroupTitle(operationType: string): string {
   switch (operationType) {
+    case "cleaning":
+      return "HTML Cleaning";
     case "note":
       return "Note Processing";
     case "ingredients":

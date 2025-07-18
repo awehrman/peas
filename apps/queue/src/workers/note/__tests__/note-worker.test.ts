@@ -269,16 +269,9 @@ describe("NoteWorker", () => {
         attemptNumber: 1,
       };
       const pipeline = worker.testCreateActionPipeline(mockData, mockContext);
-      expect(pipeline).toHaveLength(6); // clean_html, parse_html, save_note, note_processing_status, schedule_all_followup_tasks, note_completed_status
+      expect(pipeline).toHaveLength(1); // clean_html (parse_html and save_note are commented out, note_start_processing_status was removed)
       expect(worker.wrappedActions).toEqual([
         { name: "clean_html", deps: mockDependencies },
-        { name: "parse_html", deps: mockDependencies },
-        { name: "save_note", deps: mockDependencies },
-      ]);
-      expect(worker.errorHandledActions).toEqual([
-        { name: "note_processing_status", deps: mockDependencies },
-        { name: "schedule_all_followup_tasks", deps: mockDependencies },
-        { name: "note_completed_status", deps: mockDependencies },
       ]);
     });
     it("should not include schedule actions when they are commented out", () => {
