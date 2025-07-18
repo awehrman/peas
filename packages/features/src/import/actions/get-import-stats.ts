@@ -4,7 +4,7 @@ import { prisma } from "@peas/database";
 
 export async function getImportStats() {
   const noteCount = await prisma.note.count();
-  const ingredientCount = await prisma.parsedIngredientLine.count();
+  const ingredientCount = await prisma.parsedIngredientLine.count(); // TODO replace with ingredient
 
   const { _sum } = await prisma.note.aggregate({
     _sum: { parsingErrorCount: true },

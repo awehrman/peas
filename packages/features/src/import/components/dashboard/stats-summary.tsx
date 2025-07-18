@@ -1,23 +1,23 @@
 "use client";
 import { ReactNode } from "react";
 
-export interface PendingReviewProps {
+export interface StatsSummaryProps {
   noteCount?: number;
   ingredientCount?: number;
   parsingErrorCount?: number;
   className?: string;
 }
 
-export function PendingReview({
+export function StatsSummary({
   noteCount = 0,
   ingredientCount = 0,
   parsingErrorCount = 0,
   className = "",
-}: PendingReviewProps): ReactNode {
+}: StatsSummaryProps): ReactNode {
   return (
     <div className={className}>
       <h2 className="text-2xl font-semibold text-gray-900 mb-4">
-        Pending Review
+        Import Summary
       </h2>
       <div className="space-y-3">
         <div className="p-1">

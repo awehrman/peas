@@ -12,7 +12,7 @@ interface Props {
 const QUEUE_API_BASE =
   process.env.NEXT_PUBLIC_QUEUE_API_URL ?? "http://localhost:4200";
 
-export function FileUploadWithQueue({
+export function ImportFileUpload({
   maxFileSize = "10MB",
   acceptedFileTypes = "HTML",
   className,

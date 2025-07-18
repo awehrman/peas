@@ -1,0 +1,50 @@
+// Helper function to determine indentation level for group titles
+export function getGroupIndentLevel(title: string): number {
+  const titleLower = title.toLowerCase();
+
+  // Main operations (no indentation)
+  if (
+    titleLower.includes("added note") ||
+    titleLower.includes("note processing") ||
+    titleLower.includes("cleaning")
+  ) {
+    return 0;
+  }
+
+  // Sub-operations (indent level 1)
+  if (
+    titleLower.includes("ingredient") ||
+    titleLower.includes("instruction") ||
+    titleLower.includes("image") ||
+    titleLower.includes("categorization") ||
+    titleLower.includes("categorized as")
+  ) {
+    return 1;
+  }
+
+  return 0;
+}
+
+// Helper function to get status indicators
+export function getStatusIndicator(status: string): string {
+  switch (status) {
+    case "processing":
+      return "⏳";
+    case "completed":
+      return "✅";
+    case "error":
+      return "❌";
+    default:
+      return "⏸️";
+  }
+}
+
+// Helper function to filter out cleaning messages
+export function filterCleaningMessages(event: any): boolean {
+  const message =
+    event.errorMessage ||
+    event.message ||
+    event.context ||
+    `Status ${event.status}`;
+  return !message.toLowerCase().includes("cleaning html file");
+}

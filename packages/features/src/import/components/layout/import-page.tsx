@@ -1,7 +1,8 @@
 import { ReactNode } from "react";
-import { PendingReview, RecentlyImported } from "./index";
-import { getImportStats } from "../actions";
-import { FileUploadWithQueue } from "./file-upload-with-queue";
+import { StatsSummary } from "../dashboard/stats-summary";
+import { ActivityLog } from "../activity-log/activity-log";
+import { getImportStats } from "../../actions";
+import { ImportFileUpload } from "../file-upload/file-upload";
 
 export async function ImportPageContent(): Promise<ReactNode> {
   const { noteCount, ingredientCount, parsingErrorCount } =
@@ -12,18 +13,18 @@ export async function ImportPageContent(): Promise<ReactNode> {
       <div className="flex justify-between items-start gap-8">
         {/* Left Column */}
         <div className="flex-1">
-          <PendingReview
+          <StatsSummary
             noteCount={noteCount}
             ingredientCount={ingredientCount}
             parsingErrorCount={parsingErrorCount}
             className="mb-8"
           />
-          <RecentlyImported className="mb-8" />
+          <ActivityLog className="mb-8" />
         </div>
 
         {/* Right Column */}
         <div className="flex-1">
-          <FileUploadWithQueue maxFileSize="10MB" />
+          <ImportFileUpload maxFileSize="10MB" />
         </div>
       </div>
     </>
