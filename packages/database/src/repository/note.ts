@@ -7,6 +7,7 @@ import type {
 
 export type NoteWithParsedLines = {
   id: string;
+  title: string | null;
   parsedIngredientLines: {
     id: string;
     reference: string;
@@ -67,6 +68,7 @@ export async function createNote(
       },
       select: {
         id: true,
+        title: true,
         parsedIngredientLines: {
           select: {
             id: true,

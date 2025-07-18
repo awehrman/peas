@@ -31,7 +31,7 @@ export type ParsedHTMLFile = {
   contents: string;
   ingredients: ParsedIngredientLine[];
   instructions: ParsedInstructionLine[];
-  sourceUrl?: string;
+  source?: string;
   image?: string;
 };
 

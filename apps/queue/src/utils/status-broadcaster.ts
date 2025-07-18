@@ -11,6 +11,7 @@ export async function addStatusEventAndBroadcast({
   currentCount,
   totalCount,
   indentLevel,
+  metadata,
 }: {
   importId: string;
   noteId?: string;
@@ -20,6 +21,7 @@ export async function addStatusEventAndBroadcast({
   currentCount?: number;
   totalCount?: number;
   indentLevel?: number;
+  metadata?: Record<string, unknown>;
 }) {
   console.log("[addStatusEventAndBroadcast] called with:", {
     importId,
@@ -30,6 +32,7 @@ export async function addStatusEventAndBroadcast({
     currentCount,
     totalCount,
     indentLevel,
+    metadata,
   });
   try {
     // Add to database (only if we have a noteId)
@@ -58,6 +61,7 @@ export async function addStatusEventAndBroadcast({
       totalCount,
       createdAt: dbEvent?.createdAt || new Date(),
       indentLevel,
+      metadata,
     });
 
     console.log("[addStatusEventAndBroadcast] Broadcasted to websocket");

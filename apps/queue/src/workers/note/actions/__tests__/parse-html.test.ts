@@ -12,6 +12,7 @@ describe("ParseHtmlAction", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.spyOn(console, "error").mockImplementation(() => {});
     action = new ParseHtmlAction();
     mockDeps = {
       parseHTML: vi.fn(),
@@ -317,6 +318,99 @@ describe("ParseHtmlAction", () => {
       await action.run(inputData, mockDeps, mockContext);
 
       expect(mockDeps.addStatusEventAndBroadcast).not.toHaveBeenCalled();
+    });
+
+    it("should handle broadcast start status errors gracefully", async () => {
+      const inputData: ParseHtmlData = {
+        content: "<html><body>Test content</body></html>",
+        importId: "test-import-123",
+      };
+
+      const mockParsedFile: ParsedHtmlFile = {
+        title: "Test Recipe",
+        contents: "Test content",
+        ingredients: [],
+        instructions: [],
+      };
+
+      vi.mocked(mockDeps.parseHTML).mockResolvedValue(mockParsedFile);
+
+      // Mock the start broadcast to fail
+      vi.mocked(mockDeps.addStatusEventAndBroadcast)
+        .mockRejectedValueOnce(new Error("Broadcast failed"))
+        .mockResolvedValue(undefined);
+
+      const result = await action.run(inputData, mockDeps, mockContext);
+
+      // Should still complete successfully despite broadcast error
+      expect(result).toEqual({
+        ...inputData,
+        file: mockParsedFile,
+      });
+
+      // Should log the broadcast error
+      expect(mockDeps.logger.log).toHaveBeenCalledWith(
+        "[PARSE_HTML] Failed to broadcast start status: Error: Broadcast failed"
+      );
+
+      // Should still attempt the completion broadcasts
+      expect(mockDeps.addStatusEventAndBroadcast).toHaveBeenCalledTimes(4);
+    });
+
+    it("should handle broadcast completion status errors gracefully", async () => {
+      const inputData: ParseHtmlData = {
+        content: "<html><body>Test content</body></html>",
+        importId: "test-import-123",
+      };
+
+      const mockParsedFile: ParsedHtmlFile = {
+        title: "Test Recipe",
+        contents: "Test content",
+        ingredients: [
+          {
+            reference: "2 cups flour",
+            blockIndex: 0,
+            lineIndex: 0,
+          },
+        ],
+        instructions: [
+          {
+            reference: "Mix ingredients",
+            lineIndex: 0,
+          },
+        ],
+      };
+
+      vi.mocked(mockDeps.parseHTML).mockResolvedValue(mockParsedFile);
+
+      // Mock the 4th broadcast call (completion broadcast) to fail
+      let callCount = 0;
+      vi.mocked(mockDeps.addStatusEventAndBroadcast).mockImplementation(
+        async () => {
+          callCount++;
+          if (callCount === 4) {
+            throw new Error("Broadcast failed");
+          }
+          return undefined;
+        }
+      );
+
+      const result = await action.run(inputData, mockDeps, mockContext);
+
+      // Should still complete successfully despite broadcast error
+      expect(result).toEqual({
+        ...inputData,
+        file: mockParsedFile,
+      });
+
+      // Should log the broadcast error
+      expect(console.error).toHaveBeenCalledWith(
+        "[PARSE_HTML] Failed to broadcast completion status:",
+        expect.any(Error)
+      );
+
+      // Should still attempt all broadcasts
+      expect(mockDeps.addStatusEventAndBroadcast).toHaveBeenCalledTimes(4);
     });
   });
 

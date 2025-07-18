@@ -45,7 +45,7 @@ export function parseHTML(note: string): ParsedHTMLFile {
     }
   }
 
-  const sourceUrl = $('meta[itemprop="source-url"]').attr("content");
+  const source = $('meta[itemprop="source-url"]').attr("content");
 
   const ingredients: string[][] = [];
   const instructions: ParsedInstructionLine[] = [];
@@ -107,7 +107,7 @@ export function parseHTML(note: string): ParsedHTMLFile {
   return {
     title,
     historicalCreatedAt,
-    sourceUrl,
+    source,
     ingredients: parsedIngredients,
     instructions,
     contents: contentsString,

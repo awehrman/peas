@@ -135,5 +135,13 @@ describe("Note Actions Index", () => {
       expect(ScheduleAllFollowupTasksAction).toBeDefined();
       expect(registerNoteActions).toBeDefined();
     });
+
+    it("should create note_completed_status action that uses note title", () => {
+      registerNoteActions(factory);
+
+      const action = factory.create("note_completed_status");
+      expect(action).toBeDefined();
+      expect(action.name).toBe("note_completed_status");
+    });
   });
 });

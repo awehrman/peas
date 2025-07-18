@@ -68,6 +68,7 @@ export const ParsedHtmlFileSchema = z.object({
  */
 export const SaveNoteDataSchema = z.object({
   file: ParsedHtmlFileSchema,
+  importId: z.string().optional(),
 });
 
 /**

@@ -30,10 +30,7 @@ export function ActivityGroup({
         className={`flex items-center gap-2 text-sm font-medium ${getStatusColor(overallStatus)} mb-1 flex-shrink-0`}
       >
         <span>{getStatusIcon(overallStatus)}</span>
-        <span>
-          {overallStatus !== "completed" ? "Importing" : "Imported"} {title}
-          {overallStatus !== "completed" ? "..." : ""}
-        </span>
+        <span>{title}</span>
       </div>
 
       {/* Operations within this import - display at same level as import title */}

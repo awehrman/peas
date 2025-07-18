@@ -199,6 +199,107 @@ describe("SaveNoteAction", () => {
       );
     });
 
+    it("should broadcast status events when importId is provided", async () => {
+      const inputData = {
+        file: mockParsedFile,
+        importId: "import-123",
+      };
+
+      const mockNote: NoteWithParsedLines = {
+        id: "note-123",
+        title: "Test Recipe",
+        content: "Test content",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        parsedIngredientLines: [],
+        parsedInstructionLines: [],
+      };
+
+      vi.mocked(mockDeps.createNote).mockResolvedValue(mockNote);
+
+      await action.run(inputData, mockDeps, mockContext);
+
+      // Check that start status was broadcast
+      expect(mockDeps.addStatusEventAndBroadcast).toHaveBeenCalledWith({
+        importId: "import-123",
+        status: "PROCESSING",
+        message: "Saving note to database",
+        context: "save_note_start",
+        indentLevel: 1,
+      });
+
+      // Check that completion status was broadcast
+      expect(mockDeps.addStatusEventAndBroadcast).toHaveBeenCalledWith({
+        importId: "import-123",
+        noteId: "note-123",
+        status: "COMPLETED",
+        message: "Note saved successfully",
+        context: "save_note_complete",
+        indentLevel: 1,
+        metadata: {
+          noteTitle: "Test Recipe",
+        },
+      });
+    });
+
+    it("should not broadcast status events when importId is not provided", async () => {
+      const inputData = {
+        file: mockParsedFile,
+      };
+
+      const mockNote: NoteWithParsedLines = {
+        id: "note-123",
+        title: "Test Recipe",
+        content: "Test content",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        parsedIngredientLines: [],
+        parsedInstructionLines: [],
+      };
+
+      vi.mocked(mockDeps.createNote).mockResolvedValue(mockNote);
+
+      await action.run(inputData, mockDeps, mockContext);
+
+      // Should not call addStatusEventAndBroadcast
+      expect(mockDeps.addStatusEventAndBroadcast).not.toHaveBeenCalled();
+    });
+
+    it("should handle broadcast errors gracefully", async () => {
+      const inputData = {
+        file: mockParsedFile,
+        importId: "import-123",
+      };
+
+      const mockNote: NoteWithParsedLines = {
+        id: "note-123",
+        title: "Test Recipe",
+        content: "Test content",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        parsedIngredientLines: [],
+        parsedInstructionLines: [],
+      };
+
+      vi.mocked(mockDeps.createNote).mockResolvedValue(mockNote);
+      vi.mocked(mockDeps.addStatusEventAndBroadcast).mockRejectedValue(
+        new Error("Broadcast failed")
+      );
+
+      await action.run(inputData, mockDeps, mockContext);
+
+      // Should log broadcast errors but continue execution
+      expect(mockDeps.logger.log).toHaveBeenCalledWith(
+        "[SAVE_NOTE] Failed to broadcast start status: Error: Broadcast failed"
+      );
+      expect(mockDeps.logger.log).toHaveBeenCalledWith(
+        "[SAVE_NOTE] Failed to broadcast completion status: Error: Broadcast failed"
+      );
+
+      // Should still return the result
+      expect(mockDeps.createNote).toHaveBeenCalledWith(inputData.file);
+    });
+
     it("should preserve all input data in output", async () => {
       const inputData = {
         file: mockParsedFile,

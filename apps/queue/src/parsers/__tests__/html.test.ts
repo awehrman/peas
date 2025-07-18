@@ -35,7 +35,7 @@ describe("parseHTML", () => {
     expect(result.historicalCreatedAt).toEqual(
       new Date("2023-01-15T10:30:00Z")
     );
-    expect(result.sourceUrl).toBe("https://example.com/recipe");
+    expect(result.source).toBe("https://example.com/recipe");
     expect(result.ingredients).toHaveLength(4);
     expect(result.instructions).toHaveLength(2);
 
@@ -100,7 +100,7 @@ describe("parseHTML", () => {
 
     expect(result.title).toBe("Simple Recipe");
     expect(result.historicalCreatedAt).toBeUndefined();
-    expect(result.sourceUrl).toBeUndefined();
+    expect(result.source).toBeUndefined();
     expect(result.ingredients).toHaveLength(0);
     expect(result.instructions).toHaveLength(2);
 
@@ -574,7 +574,7 @@ describe("parseHTML", () => {
   //   expect(result.historicalCreatedAt).toEqual(
   //     new Date("2023-01-15T10:30:00Z")
   //   );
-  //   expect(result.sourceUrl).toBe("https://example.com/recipe");
+  //   expect(result.source).toBe("https://example.com/recipe");
   //   expect(result.ingredients).toHaveLength(4);
   //   expect(result.instructions).toHaveLength(2);
   // });
@@ -728,7 +728,7 @@ describe("parseHTML", () => {
     // Test minimal structure with no ingredients or instructions
     expect(result.title).toBe("Empty Recipe");
     expect(result.historicalCreatedAt).toBeUndefined();
-    expect(result.sourceUrl).toBeUndefined();
+    expect(result.source).toBeUndefined();
     expect(result.ingredients).toHaveLength(0);
     expect(result.instructions).toHaveLength(0);
     expect(result.contents).toBeDefined();

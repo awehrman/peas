@@ -16,6 +16,7 @@ interface StatusEvent {
     totalCount?: number;
     createdAt: Date;
     indentLevel?: number; // Explicit indentation level (0 = main, 1+ = nested)
+    metadata?: Record<string, unknown>; // Additional metadata like note title
   };
 }
 

@@ -27,65 +27,6 @@ export interface ImportGroup {
 }
 
 /**
- * Determine the operation type based on the message content
- */
-export function getOperationType(text: string): {
-  operationType: string;
-  isChild: boolean;
-} {
-  const lowerText = text.toLowerCase();
-  if (lowerText.includes("clean")) {
-    return { operationType: "cleaning", isChild: false };
-  } else if (
-    lowerText.includes("added note") ||
-    lowerText.includes("note") ||
-    lowerText.includes("html parsing")
-  ) {
-    return { operationType: "note", isChild: false };
-  } else if (lowerText.includes("ingredient")) {
-    return { operationType: "ingredients", isChild: false };
-  } else if (lowerText.includes("instruction")) {
-    return { operationType: "instructions", isChild: false };
-  } else if (
-    lowerText.includes("image") ||
-    lowerText.includes("upload") ||
-    lowerText.includes("thumbnail")
-  ) {
-    return { operationType: "image", isChild: false };
-  } else if (
-    lowerText.includes("categoriz") ||
-    lowerText.includes("analyzing") ||
-    lowerText.includes("tags")
-  ) {
-    return { operationType: "categorization", isChild: false };
-  } else {
-    return { operationType: "other", isChild: false };
-  }
-}
-
-/**
- * Get a human-readable title for an operation type
- */
-export function getGroupTitle(operationType: string): string {
-  switch (operationType) {
-    case "cleaning":
-      return "HTML Cleaning";
-    case "note":
-      return "Note Processing";
-    case "ingredients":
-      return "Ingredient Parsing";
-    case "instructions":
-      return "Instruction Parsing";
-    case "image":
-      return "Image Processing";
-    case "categorization":
-      return "Categorization";
-    default:
-      return "Other Operations";
-  }
-}
-
-/**
  * Determine the status based on message content
  */
 export function getStatusFromText(
@@ -247,16 +188,59 @@ export function groupStatusItems(items: Item[]): GroupedItem[] {
       return aOrder - bOrder;
     });
 
-    // Use note title from metadata if available, otherwise use import ID
-    const noteTitleEvent = sortedMessages.find(
-      (item) => item.metadata?.noteTitle
+    // Use note title from metadata if available, prioritizing import_complete events
+    // First look for import_complete events with note title
+    let noteTitleEvent = sortedMessages.find(
+      (item) => item.context === "import_complete" && item.metadata?.noteTitle
     );
-    const title =
-      (noteTitleEvent?.metadata?.noteTitle as string) ||
-      `Import ${importId.slice(0, 8)}`;
 
-    // Determine overall status
-    const status = determineOverallStatus(sortedMessages);
+    // If no import_complete event with title, look for any event with note title
+    if (!noteTitleEvent) {
+      noteTitleEvent = sortedMessages.find((item) => item.metadata?.noteTitle);
+    }
+
+    // Determine overall status based on the three states
+    let status: "pending" | "processing" | "completed" | "error";
+
+    if (
+      noteTitleEvent?.context === "import_complete" &&
+      noteTitleEvent?.metadata?.noteTitle
+    ) {
+      // State 3: Completion
+      status = "completed";
+    } else if (noteTitleEvent?.metadata?.noteTitle) {
+      // State 2: Note title received but not completed yet
+      status = "processing";
+    } else {
+      // State 1: Initial state - check if there are any processing items
+      const hasProcessingItems = sortedMessages.some((item) => {
+        const itemStatus = getStatusFromText(item.text);
+        return itemStatus === "processing" || itemStatus === "completed";
+      });
+      status = hasProcessingItems ? "processing" : "pending";
+    }
+
+    // Determine the title based on the three states:
+    // 1. Initial: Show import ID (no emoji, status icon will show 🔄)
+    // 2. After note title received: Show note title (no emoji, status icon will show ⏳)
+    // 3. After completion: Show completion message with note title (no emoji, status icon will show ✅)
+    let title: string;
+
+    if (
+      noteTitleEvent?.context === "import_complete" &&
+      noteTitleEvent?.metadata?.noteTitle
+    ) {
+      // State 3: Completion - show completion message with note title (no emoji, status icon will show ✅)
+      const noteTitle = noteTitleEvent.metadata.noteTitle as string;
+      title = `Imported ${noteTitle}`;
+    } else if (noteTitleEvent?.metadata?.noteTitle) {
+      // State 2: Note title received but not completed yet (no emoji, status icon will show ⏳)
+      const noteTitle = noteTitleEvent.metadata.noteTitle as string;
+      title = noteTitle;
+    } else {
+      // State 1: Initial state - show import ID (no emoji, status icon will show 🔄)
+      title = `Import ${importId.slice(0, 8)}`;
+    }
 
     // Create a flat list of all messages (both start and completion) at the same level
     // Each operation (cleaning, parsing) should show its current status
@@ -322,34 +306,4 @@ export function groupStatusItemsByImport(items: Item[]): ImportGroup[] {
     overallStatus: group.status,
     timestamp: group.timestamp,
   }));
-}
-
-/**
- * Determine the overall status of an import based on its items
- */
-function determineOverallStatus(
-  items: Item[]
-): "pending" | "processing" | "completed" | "error" {
-  if (items.length === 0) return "pending";
-
-  // Get status from text content
-  const statuses = items.map((item) => getStatusFromText(item.text));
-
-  // If any item has an error, the overall status is error
-  if (statuses.some((status) => status === "error")) {
-    return "error";
-  }
-
-  // If all items are completed, the overall status is completed
-  if (statuses.every((status) => status === "completed")) {
-    return "completed";
-  }
-
-  // If any item is processing, the overall status is processing
-  if (statuses.some((status) => status === "processing")) {
-    return "processing";
-  }
-
-  // Otherwise, it's pending
-  return "pending";
 }

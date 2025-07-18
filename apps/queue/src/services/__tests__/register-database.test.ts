@@ -87,7 +87,7 @@ describe("DatabaseService", () => {
         contents: "<html><body>Test</body></html>",
         ingredients: [],
         instructions: [],
-        sourceUrl: "https://example.com/test.html",
+        source: "https://example.com/test.html",
       };
 
       const result = await createNoteFn(mockFile);
@@ -107,7 +107,7 @@ describe("DatabaseService", () => {
         contents: "<html><body>Test</body></html>",
         ingredients: [],
         instructions: [],
-        sourceUrl: "https://example.com/test.html",
+        source: "https://example.com/test.html",
       };
 
       await expect(createNoteFn(mockFile)).rejects.toThrow("Database error");

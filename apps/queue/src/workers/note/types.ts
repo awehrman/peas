@@ -112,7 +112,7 @@ export interface Note {
   /** Unique identifier for the note */
   id: string;
   /** Title of the note */
-  title: string;
+  title: string | null;
   /** Full content of the note */
   content: string;
   /** When the note was created */
