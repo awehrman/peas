@@ -24,7 +24,9 @@ export function StatsSummary({
           <p className="text-sm text-gray-600">{noteCount} Notes</p>
         </div>
         <div className="p-1">
-          <p className="text-sm text-gray-600">{ingredientCount} Ingredients</p>
+          <p className="text-sm text-gray-600">
+            {ingredientCount} Ingredient Lines
+          </p>
         </div>
         <div className="p-1">
           <p className="text-sm text-gray-600">

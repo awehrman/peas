@@ -12,14 +12,16 @@ export async function ImportPageContent(): Promise<ReactNode> {
     <>
       <div className="flex justify-between items-start gap-8">
         {/* Left Column */}
-        <div className="flex-1">
+        <div className="flex-1 flex flex-col">
           <StatsSummary
             noteCount={noteCount}
             ingredientCount={ingredientCount}
             parsingErrorCount={parsingErrorCount}
             className="mb-8"
           />
-          <ActivityLog className="mb-8" />
+          <div className="flex-1">
+            <ActivityLog className="mb-8" />
+          </div>
         </div>
 
         {/* Right Column */}

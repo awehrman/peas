@@ -171,9 +171,18 @@ export function groupStatusItems(items: Item[]): GroupedItem[] {
     // Group items by context (clean_html, parse_html, import_complete) and status (start vs completion)
     const operationGroups = importItems.reduce(
       (groups: Map<string, Item[]>, item: Item) => {
-        const isStart = item.text.toLowerCase().includes("started");
         const context = item.context || "unknown";
-        const status = isStart ? "start" : "completion";
+        let status = "completion"; // Default to completion
+
+        // Check for start messages based on context patterns
+        if (
+          context.includes("_start") ||
+          context === "parse_html_start" ||
+          context === "clean_html_start"
+        ) {
+          status = "start";
+        }
+
         const key = `${context}-${status}`;
 
         if (!groups.has(key)) {
@@ -199,8 +208,35 @@ export function groupStatusItems(items: Item[]): GroupedItem[] {
       }
     }
 
+    // Filter out start messages if we have completion messages for the same operation
+    const filteredMessages: Item[] = [];
+    const completionContexts = new Set<string>();
+
+    // First, collect all completion contexts
+    for (const item of latestMessages) {
+      const context = item.context || "unknown";
+      if (!context.includes("_start")) {
+        // Remove "_complete" suffix to get base context
+        const baseContext = context.replace("_complete", "");
+        completionContexts.add(baseContext);
+      }
+    }
+
+    // Then, only include start messages if we don't have a completion for that operation
+    for (const item of latestMessages) {
+      const context = item.context || "unknown";
+      if (context.includes("_start")) {
+        const baseContext = context.replace("_start", "");
+        if (!completionContexts.has(baseContext)) {
+          filteredMessages.push(item);
+        }
+      } else {
+        filteredMessages.push(item);
+      }
+    }
+
     // Sort by context (clean_html first, then parse_html, then import_complete)
-    const sortedMessages = latestMessages.sort((a, b) => {
+    const sortedMessages = filteredMessages.sort((a, b) => {
       const contextOrder: Record<string, number> = {
         clean_html: 1,
         parse_html: 2,
@@ -213,8 +249,7 @@ export function groupStatusItems(items: Item[]): GroupedItem[] {
 
     // Use note title from metadata if available, otherwise use import ID
     const noteTitleEvent = sortedMessages.find(
-      (item) =>
-        item.text.toLowerCase().includes("note:") && item.metadata?.noteTitle
+      (item) => item.metadata?.noteTitle
     );
     const title =
       (noteTitleEvent?.metadata?.noteTitle as string) ||
@@ -247,11 +282,11 @@ export function groupStatusItems(items: Item[]): GroupedItem[] {
       }
     }
 
-    // Add operation messages at level 1 (same level as import title)
+    // Add operation messages with their original indentLevel
     for (const [, item] of operationStatuses) {
       operationMessages.push({
         ...item,
-        indentLevel: 1, // Same level as import title
+        indentLevel: item.indentLevel ?? 1, // Use original indentLevel or default to 1
       });
     }
 

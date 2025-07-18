@@ -32,8 +32,8 @@ export class ParseHtmlAction extends ValidatedAction<
         await deps.addStatusEventAndBroadcast({
           importId: data.importId,
           status: "PROCESSING",
-          message: "HTML parsing started",
-          context: "parse_html",
+          message: "Parsing HTML",
+          context: "parse_html_start",
           indentLevel: 1, // Slightly indented for main operations
         });
       } catch (error) {
@@ -54,23 +54,37 @@ export class ParseHtmlAction extends ValidatedAction<
         await deps.addStatusEventAndBroadcast({
           importId: data.importId,
           status: "COMPLETED",
-          message: `HTML parsing completed (${file.ingredients.length} ingredients and ${file.instructions.length} instructions)`,
-          context: "parse_html",
+          message: "Finished parsing HTML file.",
+          context: "parse_html_complete",
           indentLevel: 1, // Slightly indented for main operations
           metadata: {
             noteTitle: file.title, // Include the note title in metadata
           },
         });
 
-        // Also broadcast the note title for the import header
+        // Broadcast ingredient count status
         await deps.addStatusEventAndBroadcast({
           importId: data.importId,
-          status: "COMPLETED",
-          message: `Note: ${file.title}`,
-          context: "import_complete",
-          indentLevel: 0, // Top level for the import header
+          status: "PENDING",
+          message: `0/${file.ingredients.length} ingredients`,
+          context: "parse_html_ingredients",
+          indentLevel: 2, // Additional indentation for ingredients
           metadata: {
-            noteTitle: file.title,
+            totalIngredients: file.ingredients.length,
+            processedIngredients: 0,
+          },
+        });
+
+        // Broadcast instruction count status
+        await deps.addStatusEventAndBroadcast({
+          importId: data.importId,
+          status: "PENDING",
+          message: `0/${file.instructions.length} instructions`,
+          context: "parse_html_instructions",
+          indentLevel: 2, // Additional indentation for instructions
+          metadata: {
+            totalInstructions: file.instructions.length,
+            processedInstructions: 0,
           },
         });
       } catch (error) {

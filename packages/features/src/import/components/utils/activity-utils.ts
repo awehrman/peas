@@ -13,13 +13,15 @@ export function getGroupIndentLevel(title: string): number {
 
   // Sub-operations (indent level 1)
   if (
-    titleLower.includes("ingredient") ||
-    titleLower.includes("instruction") ||
     titleLower.includes("image") ||
     titleLower.includes("categorization") ||
     titleLower.includes("categorized as")
   ) {
     return 1;
+  }
+
+  if (titleLower.includes("ingredient") || titleLower.includes("instruction")) {
+    return 2;
   }
 
   return 0;

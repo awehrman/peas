@@ -252,14 +252,14 @@ describe("ParseHtmlAction", () => {
 
       await action.run(inputData, mockDeps, mockContext);
 
-      expect(mockDeps.addStatusEventAndBroadcast).toHaveBeenCalledTimes(3);
+      expect(mockDeps.addStatusEventAndBroadcast).toHaveBeenCalledTimes(4);
 
       // Check start broadcast
       expect(mockDeps.addStatusEventAndBroadcast).toHaveBeenCalledWith({
         importId: "test-import-123",
         status: "PROCESSING",
-        message: "HTML parsing started",
-        context: "parse_html",
+        message: "Parsing HTML",
+        context: "parse_html_start",
         indentLevel: 1,
       });
 
@@ -267,20 +267,36 @@ describe("ParseHtmlAction", () => {
       expect(mockDeps.addStatusEventAndBroadcast).toHaveBeenCalledWith({
         importId: "test-import-123",
         status: "COMPLETED",
-        message: "HTML parsing completed (1 ingredients and 1 instructions)",
-        context: "parse_html",
+        message: "Finished parsing HTML file.",
+        context: "parse_html_complete",
         indentLevel: 1,
         metadata: { noteTitle: "Test Recipe" },
       });
 
-      // Check import complete broadcast
+      // Check ingredient count broadcast
       expect(mockDeps.addStatusEventAndBroadcast).toHaveBeenCalledWith({
         importId: "test-import-123",
-        status: "COMPLETED",
-        message: "Note: Test Recipe",
-        context: "import_complete",
-        indentLevel: 0,
-        metadata: { noteTitle: "Test Recipe" },
+        status: "PENDING",
+        message: "0/1 ingredients",
+        context: "parse_html_ingredients",
+        indentLevel: 2,
+        metadata: {
+          totalIngredients: 1,
+          processedIngredients: 0,
+        },
+      });
+
+      // Check instruction count broadcast
+      expect(mockDeps.addStatusEventAndBroadcast).toHaveBeenCalledWith({
+        importId: "test-import-123",
+        status: "PENDING",
+        message: "0/1 instructions",
+        context: "parse_html_instructions",
+        indentLevel: 2,
+        metadata: {
+          totalInstructions: 1,
+          processedInstructions: 0,
+        },
       });
     });
 

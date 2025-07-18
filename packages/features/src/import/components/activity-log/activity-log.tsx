@@ -64,7 +64,7 @@ export function ActivityLog({ className }: Props): ReactNode {
       <h3 className="text-lg font-semibold text-gray-900 mb-4">
         Recently Added
       </h3>
-      <div className="space-y-3">
+      <div className="space-y-1 max-h-[300px] overflow-y-auto">
         {importGroups.map((importGroup) => (
           <ActivityGroup
             key={importGroup.importId}
