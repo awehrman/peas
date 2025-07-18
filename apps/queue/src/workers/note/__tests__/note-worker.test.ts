@@ -9,7 +9,7 @@ import type { IServiceContainer } from "../../../services/container";
 import type { PrismaClient } from "@prisma/client";
 import type { HealthMonitor } from "../../../utils/health-monitor";
 import { ErrorHandler } from "../../../utils/error-handler";
-import type { ParsedHtmlFile } from "../types";
+import type { ParsedHtmlFile } from "../schema";
 
 // Spy on registerNoteActions
 vi.mock("../actions", () => ({
@@ -269,9 +269,10 @@ describe("NoteWorker", () => {
         attemptNumber: 1,
       };
       const pipeline = worker.testCreateActionPipeline(mockData, mockContext);
-      expect(pipeline).toHaveLength(1); // clean_html (parse_html and save_note are commented out, note_start_processing_status was removed)
+      expect(pipeline).toHaveLength(2); // clean_html and parse_html (save_note and others are commented out)
       expect(worker.wrappedActions).toEqual([
         { name: "clean_html", deps: mockDependencies },
+        { name: "parse_html", deps: mockDependencies },
       ]);
     });
     it("should not include schedule actions when they are commented out", () => {

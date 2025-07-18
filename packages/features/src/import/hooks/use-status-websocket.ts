@@ -11,6 +11,7 @@ interface StatusEvent {
   totalCount?: number;
   createdAt: string | Date;
   indentLevel?: number; // Explicit indentation level (0 = main, 1+ = nested)
+  metadata?: Record<string, unknown>; // Additional metadata like note title
 }
 
 interface WebSocketMessage {

@@ -15,7 +15,7 @@ export function ActivityItem({
 }: ActivityItemProps): ReactNode {
   return (
     <div
-      className="text-sm text-gray-600"
+      className="text-sm text-gray-600 pb-1"
       style={{
         paddingLeft: (indentLevel + 1) * 16 + 10,
       }}

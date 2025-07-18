@@ -1,5 +1,6 @@
 import { BaseAction } from "../../core/base-action";
 import { ActionContext } from "../../core/types";
+import { NoteWorkerDependencies } from "../types";
 
 export interface CleanHtmlData {
   content: string;
@@ -21,20 +22,13 @@ export interface CleanHtmlData {
   timeout?: number;
 }
 
-export interface CleanHtmlDeps {
-  addStatusEventAndBroadcast: (event: {
-    importId: string;
-    status: string;
-    message: string;
-    context: string;
-    indentLevel?: number;
-  }) => Promise<void>;
-}
-
 /**
  * Action that cleans HTML content by removing style and icons tags
  */
-export class CleanHtmlAction extends BaseAction<CleanHtmlData, CleanHtmlDeps> {
+export class CleanHtmlAction extends BaseAction<
+  CleanHtmlData,
+  NoteWorkerDependencies
+> {
   name = "clean_html";
 
   // Helper to extract title from H1 tag or meta itemprop="title"
@@ -58,7 +52,7 @@ export class CleanHtmlAction extends BaseAction<CleanHtmlData, CleanHtmlDeps> {
 
   async execute(
     data: CleanHtmlData,
-    deps: CleanHtmlDeps,
+    deps: NoteWorkerDependencies,
     context: ActionContext
   ) {
     // Helper function to truncate content to 50 characters
@@ -77,9 +71,9 @@ export class CleanHtmlAction extends BaseAction<CleanHtmlData, CleanHtmlDeps> {
         await deps.addStatusEventAndBroadcast({
           importId: data.importId,
           status: "PROCESSING",
-          message: "Cleaning HTML file...",
+          message: "HTML cleaning started",
           context: "clean_html",
-          indentLevel: 0,
+          indentLevel: 1, // Slightly indented for main operations
         });
       } catch (error) {
         console.error(
@@ -115,12 +109,20 @@ export class CleanHtmlAction extends BaseAction<CleanHtmlData, CleanHtmlDeps> {
     );
 
     const totalRemoved = originalLength - cleanedContent.length;
+    const removedKB = totalRemoved / 1024;
+    const removedMB = totalRemoved / (1024 * 1024);
+
+    // Format size string - show KB if < 1MB, otherwise show MB
+    const sizeString =
+      removedKB >= 1024
+        ? `${removedMB.toFixed(2)}MB`
+        : `${removedKB.toFixed(1)}KB`;
 
     console.log(
       `[${context.operation.toUpperCase()}] HTML cleaning completed: ${title}`
     );
     console.log(
-      `[${context.operation.toUpperCase()}] Total characters removed: ${totalRemoved}`
+      `[${context.operation.toUpperCase()}] Total characters removed: ${totalRemoved} (${sizeString})`
     );
     console.log(
       `[${context.operation.toUpperCase()}] Final content length: ${cleanedContent.length}`
@@ -135,9 +137,9 @@ export class CleanHtmlAction extends BaseAction<CleanHtmlData, CleanHtmlDeps> {
         await deps.addStatusEventAndBroadcast({
           importId: data.importId,
           status: "COMPLETED",
-          message: "HTML cleaning completed",
+          message: `HTML cleaning completed (${sizeString} removed)`,
           context: "clean_html",
-          indentLevel: 0,
+          indentLevel: 1, // Slightly indented for main operations
         });
       } catch (error) {
         console.error(

@@ -1,11 +1,11 @@
 import { ValidatedAction } from "../../core/validated-action";
 import { ActionContext } from "../../core/types";
-import { SaveNoteDeps, NoteWithParsedLines } from "../types";
+import { NoteWorkerDependencies, NoteWithParsedLines } from "../types";
 import { SaveNoteDataSchema, type SaveNoteData } from "../schema";
 
 export class SaveNoteAction extends ValidatedAction<
   typeof SaveNoteDataSchema,
-  SaveNoteDeps,
+  NoteWorkerDependencies,
   SaveNoteData & { note: NoteWithParsedLines }
 > {
   name = "save_note";
@@ -15,7 +15,7 @@ export class SaveNoteAction extends ValidatedAction<
 
   async run(
     data: SaveNoteData,
-    deps: SaveNoteDeps,
+    deps: NoteWorkerDependencies,
     context: ActionContext
   ): Promise<SaveNoteData & { note: NoteWithParsedLines; noteId: string }> {
     deps.logger.log(

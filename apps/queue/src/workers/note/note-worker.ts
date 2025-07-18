@@ -12,7 +12,6 @@ import type {
   NoteWorkerDependencies,
   NoteJobData,
   NoteWithParsedLines,
-  ParsedHtmlFile,
   NotePipelineStage1,
   NotePipelineStage2,
   NotePipelineStage3,
@@ -20,6 +19,7 @@ import type {
   NotePipelineAction,
   StatusEvent,
 } from "./types";
+import type { ParsedHtmlFile } from "./schema";
 
 // ============================================================================
 // ENHANCED WORKER CLASS
@@ -67,7 +67,7 @@ export class NoteWorker extends BaseWorker<
 
     // 2. Parse HTML (with retry and error handling)
     // Input: NotePipelineStage1 -> Output: NotePipelineStage2
-    // actions.push(this.createWrappedAction("parse_html", this.dependencies));
+    actions.push(this.createWrappedAction("parse_html", this.dependencies));
 
     // 3. Save note (with retry and error handling)
     // Input: NotePipelineStage2 -> Output: NotePipelineStage3

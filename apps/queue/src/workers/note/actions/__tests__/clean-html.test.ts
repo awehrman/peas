@@ -1,17 +1,32 @@
+import { Queue } from "bullmq";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { CleanHtmlAction } from "../clean-html";
-import type { CleanHtmlData, CleanHtmlDeps } from "../clean-html";
+import type { CleanHtmlData } from "../clean-html";
+import type { NoteWorkerDependencies } from "../../types";
 import type { ActionContext } from "../../../core/types";
 
 describe("CleanHtmlAction", () => {
   let action: CleanHtmlAction;
-  let mockDeps: CleanHtmlDeps;
+  let mockDeps: NoteWorkerDependencies;
   let mockContext: ActionContext;
 
   beforeEach(() => {
     action = new CleanHtmlAction();
     mockDeps = {
+      parseHTML: vi.fn(),
+      createNote: vi.fn(),
+      ingredientQueue: {} as Queue,
+      instructionQueue: {} as Queue,
+      imageQueue: {} as Queue,
+      categorizationQueue: {} as Queue,
+      sourceQueue: {} as Queue,
       addStatusEventAndBroadcast: vi.fn().mockResolvedValue(undefined),
+      ErrorHandler: {
+        withErrorHandling: vi.fn(),
+      },
+      logger: {
+        log: vi.fn(),
+      },
     };
     mockContext = {
       operation: "test_operation",
@@ -360,16 +375,16 @@ describe("CleanHtmlAction", () => {
       expect(mockDeps.addStatusEventAndBroadcast).toHaveBeenCalledWith({
         importId: "test-import-123",
         status: "PROCESSING",
-        message: "Cleaning HTML file...",
+        message: "HTML cleaning started",
         context: "clean_html",
-        indentLevel: 0,
+        indentLevel: 1,
       });
       expect(mockDeps.addStatusEventAndBroadcast).toHaveBeenCalledWith({
         importId: "test-import-123",
         status: "COMPLETED",
-        message: "HTML cleaning completed",
+        message: "HTML cleaning completed (0.0KB removed)",
         context: "clean_html",
-        indentLevel: 0,
+        indentLevel: 1,
       });
     });
 
@@ -384,10 +399,23 @@ describe("CleanHtmlAction", () => {
     });
 
     it("should handle broadcast errors gracefully", async () => {
-      const mockErrorDeps: CleanHtmlDeps = {
+      const mockErrorDeps: NoteWorkerDependencies = {
+        parseHTML: vi.fn(),
+        createNote: vi.fn(),
+        ingredientQueue: {} as Queue,
+        instructionQueue: {} as Queue,
+        imageQueue: {} as Queue,
+        categorizationQueue: {} as Queue,
+        sourceQueue: {} as Queue,
         addStatusEventAndBroadcast: vi
           .fn()
           .mockRejectedValue(new Error("Broadcast failed")),
+        ErrorHandler: {
+          withErrorHandling: vi.fn(),
+        },
+        logger: {
+          log: vi.fn(),
+        },
       };
 
       const inputData: CleanHtmlData = {

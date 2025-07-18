@@ -18,8 +18,6 @@ export function ActivityLog({ className }: Props): ReactNode {
     maxReconnectAttempts: 5,
   });
 
-  console.log("🔄 RecentlyImported: Raw WebSocket events:", events);
-
   // Convert WebSocket events to Item format, filtering out "Cleaning HTML file..." messages
   const items: Item[] = events
     .filter((event) => {
@@ -39,20 +37,19 @@ export function ActivityLog({ className }: Props): ReactNode {
         `Status ${event.status}`,
       indentLevel: event.indentLevel ?? 0, // Use explicit indentLevel from WebSocket, default to 0
       importId: event.importId, // Include importId for grouping
+      timestamp: new Date(event.createdAt), // Include timestamp for sorting
+      metadata: event.metadata, // Include metadata for additional info like note title
+      context: event.context, // Include context for operation type
     }));
-
-  console.log("📝 RecentlyImported: Converted items:", items);
 
   // Group items by import ID first, then by operation type within each import
   const importGroups = groupStatusItemsByImport(items);
-
-  console.log("📊 RecentlyImported: Import groups:", importGroups);
 
   if (importGroups.length === 0) {
     return (
       <div className={className}>
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          Recently Imported
+          Activity Log
         </h3>
         <ConnectionStatus
           connectionStatus={connectionStatus}
@@ -64,12 +61,14 @@ export function ActivityLog({ className }: Props): ReactNode {
 
   return (
     <div className={className}>
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">Activity Log</h3>
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">
+        Recently Added
+      </h3>
       <div className="space-y-3">
         {importGroups.map((importGroup) => (
           <ActivityGroup
             key={importGroup.importId}
-            importId={importGroup.importId}
+            title={importGroup.title}
             overallStatus={importGroup.overallStatus}
             operations={importGroup.operations}
           />

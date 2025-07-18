@@ -1,11 +1,13 @@
+import { Queue } from "bullmq";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { ParseHtmlAction } from "../parse-html";
-import type { ParseHtmlData, ParseHtmlDeps, ParsedHtmlFile } from "../../types";
+import type { NoteWorkerDependencies } from "../../types";
+import type { ParseHtmlData, ParsedHtmlFile } from "../../schema";
 import type { ActionContext } from "../../../core/types";
 
 describe("ParseHtmlAction", () => {
   let action: ParseHtmlAction;
-  let mockDeps: ParseHtmlDeps;
+  let mockDeps: NoteWorkerDependencies;
   let mockContext: ActionContext;
 
   beforeEach(() => {
@@ -13,6 +15,16 @@ describe("ParseHtmlAction", () => {
     action = new ParseHtmlAction();
     mockDeps = {
       parseHTML: vi.fn(),
+      createNote: vi.fn(),
+      ingredientQueue: {} as Queue,
+      instructionQueue: {} as Queue,
+      imageQueue: {} as Queue,
+      categorizationQueue: {} as Queue,
+      sourceQueue: {} as Queue,
+      addStatusEventAndBroadcast: vi.fn(),
+      ErrorHandler: {
+        withErrorHandling: vi.fn(),
+      },
       logger: {
         log: vi.fn(),
       },
@@ -210,6 +222,85 @@ describe("ParseHtmlAction", () => {
       expect(mockDeps.logger.log).toHaveBeenCalledWith(
         '[PARSE_HTML] Successfully parsed HTML for job test-job-123, title: "Test Recipe, ingredients: 0, instructions: 0"'
       );
+    });
+
+    it("should broadcast start and completion status when importId is provided", async () => {
+      const inputData: ParseHtmlData = {
+        content: "<html><body>Test content</body></html>",
+        importId: "test-import-123",
+      };
+
+      const mockParsedFile: ParsedHtmlFile = {
+        title: "Test Recipe",
+        contents: "Test content",
+        ingredients: [
+          {
+            reference: "2 cups flour",
+            blockIndex: 0,
+            lineIndex: 0,
+          },
+        ],
+        instructions: [
+          {
+            reference: "Mix ingredients",
+            lineIndex: 0,
+          },
+        ],
+      };
+
+      vi.mocked(mockDeps.parseHTML).mockResolvedValue(mockParsedFile);
+
+      await action.run(inputData, mockDeps, mockContext);
+
+      expect(mockDeps.addStatusEventAndBroadcast).toHaveBeenCalledTimes(3);
+
+      // Check start broadcast
+      expect(mockDeps.addStatusEventAndBroadcast).toHaveBeenCalledWith({
+        importId: "test-import-123",
+        status: "PROCESSING",
+        message: "HTML parsing started",
+        context: "parse_html",
+        indentLevel: 1,
+      });
+
+      // Check completion broadcast
+      expect(mockDeps.addStatusEventAndBroadcast).toHaveBeenCalledWith({
+        importId: "test-import-123",
+        status: "COMPLETED",
+        message: "HTML parsing completed (1 ingredients and 1 instructions)",
+        context: "parse_html",
+        indentLevel: 1,
+        metadata: { noteTitle: "Test Recipe" },
+      });
+
+      // Check import complete broadcast
+      expect(mockDeps.addStatusEventAndBroadcast).toHaveBeenCalledWith({
+        importId: "test-import-123",
+        status: "COMPLETED",
+        message: "Note: Test Recipe",
+        context: "import_complete",
+        indentLevel: 0,
+        metadata: { noteTitle: "Test Recipe" },
+      });
+    });
+
+    it("should not broadcast status when importId is not provided", async () => {
+      const inputData: ParseHtmlData = {
+        content: "<html><body>Test content</body></html>",
+      };
+
+      const mockParsedFile: ParsedHtmlFile = {
+        title: "Test Recipe",
+        contents: "Test content",
+        ingredients: [],
+        instructions: [],
+      };
+
+      vi.mocked(mockDeps.parseHTML).mockResolvedValue(mockParsedFile);
+
+      await action.run(inputData, mockDeps, mockContext);
+
+      expect(mockDeps.addStatusEventAndBroadcast).not.toHaveBeenCalled();
     });
   });
 

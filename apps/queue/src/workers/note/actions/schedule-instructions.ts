@@ -1,6 +1,7 @@
 import { BaseAction } from "../../core/base-action";
 import { ActionContext } from "../../core/types";
-import { ScheduleInstructionsData, ScheduleInstructionsDeps } from "../types";
+import { ScheduleInstructionsDeps } from "../types";
+import { type ScheduleInstructionsData } from "../schema";
 
 export class ScheduleInstructionsAction extends BaseAction<
   ScheduleInstructionsData,

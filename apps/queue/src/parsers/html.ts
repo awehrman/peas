@@ -52,24 +52,39 @@ export function parseHTML(note: string): ParsedHTMLFile {
   let currentChunk: string[] = [];
 
   contents.forEach((line, lineIndex) => {
-    if (line === "") {
+    if (line === "" || line.includes("<br")) {
+      // End current ingredient block if we have one
       if (currentChunk.length > 0) {
         ingredients.push(currentChunk);
         currentChunk = [];
       }
-    } else if (
-      line.length > 0 &&
-      lineIndex > 0 &&
-      contents[lineIndex - 1] === "" &&
-      contents[lineIndex + 1] === ""
-    ) {
-      instructions.push({
-        reference: line,
-        lineIndex,
-        parseStatus: "PENDING",
-      });
     } else if (line.length > 0) {
-      currentChunk.push(line);
+      // Check if this line is surrounded by empty lines or <br> tags (instruction)
+      const prevLine = lineIndex > 0 ? contents[lineIndex - 1] || "" : "";
+      const nextLine =
+        lineIndex < contents.length - 1 ? contents[lineIndex + 1] || "" : "";
+      const isPrevEmpty = prevLine === "" || prevLine.includes("<br");
+      const isNextEmpty = nextLine === "" || nextLine.includes("<br");
+
+      if (isPrevEmpty && isNextEmpty) {
+        // Single line surrounded by empty lines - this is an instruction
+        // Strip HTML tags for clean text
+        const cleanText = line.replace(/<[^>]*>/g, "").trim();
+        if (cleanText) {
+          instructions.push({
+            reference: cleanText,
+            lineIndex,
+            parseStatus: "PENDING",
+          });
+        }
+      } else {
+        // Line is part of a block - this is an ingredient
+        // Strip HTML tags for clean text
+        const cleanText = line.replace(/<[^>]*>/g, "").trim();
+        if (cleanText) {
+          currentChunk.push(cleanText);
+        }
+      }
     }
   });
 

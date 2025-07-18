@@ -126,77 +126,12 @@ export interface Note {
 // ============================================================================
 
 /**
- * Parse HTML Action Dependencies
- */
-export interface ParseHtmlDeps {
-  parseHTML: (content: string) => Promise<ParsedHtmlFile>;
-  logger: {
-    log: (message: string, level?: LogLevel) => void;
-  };
-}
-
-/**
- * Save Note Action Dependencies
- */
-export interface SaveNoteDeps {
-  createNote: (file: ParsedHtmlFile) => Promise<NoteWithParsedLines>;
-  logger: {
-    log: (message: string, level?: LogLevel) => void;
-  };
-}
-
-/**
- * Schedule Action Dependencies
- */
-export interface ScheduleActionDeps {
-  queue: {
-    add: (name: string, data: Record<string, unknown>) => Promise<unknown>;
-  };
-}
-
-/**
- * Parse HTML Action Data
- */
-export interface ParseHtmlData {
-  content: string;
-}
-
-/**
- * Save Note Action Data
- */
-export interface SaveNoteData {
-  file: ParsedHtmlFile;
-}
-
-/**
- * Schedule Action Data
- */
-export interface ScheduleActionData {
-  noteId: string;
-  file: ParsedHtmlFile;
-}
-
-/**
- * Schedule Categorization Action Data
- */
-export interface ScheduleCategorizationData {
-  noteId: string;
-}
-
-/**
  * Schedule Categorization Action Dependencies
  */
 export interface ScheduleCategorizationDeps {
   categorizationQueue: {
     add: (name: string, data: Record<string, unknown>) => Promise<unknown>;
   };
-}
-
-/**
- * Schedule Images Action Data
- */
-export interface ScheduleImagesData {
-  noteId: string;
 }
 
 /**
@@ -209,13 +144,6 @@ export interface ScheduleImagesDeps {
 }
 
 /**
- * Schedule Ingredients Action Data
- */
-export interface ScheduleIngredientsData {
-  noteId: string;
-}
-
-/**
  * Schedule Ingredients Action Dependencies
  */
 export interface ScheduleIngredientsDeps {
@@ -225,26 +153,12 @@ export interface ScheduleIngredientsDeps {
 }
 
 /**
- * Schedule Instructions Action Data
- */
-export interface ScheduleInstructionsData {
-  noteId: string;
-}
-
-/**
  * Schedule Instructions Action Dependencies
  */
 export interface ScheduleInstructionsDeps {
   instructionQueue: {
     add: (name: string, data: Record<string, unknown>) => Promise<unknown>;
   };
-}
-
-/**
- * Schedule Source Action Data
- */
-export interface ScheduleSourceData {
-  noteId: string;
 }
 
 /**
@@ -259,11 +173,6 @@ export interface ScheduleSourceDeps {
 // ============================================================================
 // UTILITY TYPES
 // ============================================================================
-
-/**
- * Alias for ParsedHTMLFile for consistency
- */
-export type ParsedHtmlFile = ParsedHTMLFile;
 
 /**
  * Status event for tracking note processing progress
@@ -283,6 +192,8 @@ export interface StatusEvent {
   currentCount?: number;
   /** Total count for progress tracking */
   totalCount?: number;
+  /** Indentation level for UI display */
+  indentLevel?: number;
   /** Additional metadata about the status event */
   metadata?: Record<string, unknown>;
 }
@@ -403,14 +314,14 @@ export type NotePipelineStage1 = NoteJobData;
  * Stage 2: After HTML parsing (NoteJobData + ParsedHTMLFile)
  */
 export type NotePipelineStage2 = NoteJobData & {
-  file: ParsedHtmlFile;
+  file: ParsedHTMLFile;
 };
 
 /**
  * Stage 3: After note creation (NoteJobData + ParsedHTMLFile + NoteWithParsedLines)
  */
 export type NotePipelineStage3 = NoteJobData & {
-  file: ParsedHtmlFile;
+  file: ParsedHTMLFile;
   note: NoteWithParsedLines;
 };
 
@@ -418,7 +329,7 @@ export type NotePipelineStage3 = NoteJobData & {
  * Stage 4: After status updates and scheduling (final output)
  */
 export type NotePipelineStage4 = NoteJobData & {
-  file: ParsedHtmlFile;
+  file: ParsedHTMLFile;
   note: NoteWithParsedLines;
   statusEvents: StatusEvent[];
   scheduledJobs: {

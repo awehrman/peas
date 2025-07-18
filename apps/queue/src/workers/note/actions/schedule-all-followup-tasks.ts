@@ -1,6 +1,7 @@
 import { BaseAction } from "../../core/base-action";
 import { ActionContext } from "../../core/types";
-import type { NotePipelineStage3, StatusEvent, ParsedHtmlFile } from "../types";
+import type { NotePipelineStage3, StatusEvent } from "../types";
+import type { ParsedHtmlFile } from "../schema";
 
 export interface ScheduleAllFollowupTasksDeps {
   ingredientQueue: {

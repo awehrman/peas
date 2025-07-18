@@ -1,11 +1,10 @@
 "use client";
 
 import { ReactNode } from "react";
-import { getStatusColor, getStatusIcon } from "../../utils";
-import { ActivityOperation } from "./activity-operation";
+import { getStatusColor, getStatusIcon, getStatusFromText } from "../../utils";
 
 interface ActivityGroupProps {
-  importId: string;
+  title: string; // Add title prop
   overallStatus: string;
   operations: Array<{
     id: string;
@@ -20,31 +19,46 @@ interface ActivityGroupProps {
 }
 
 export function ActivityGroup({
-  importId,
+  title,
   overallStatus,
   operations,
 }: ActivityGroupProps): ReactNode {
   return (
-    <div className="border-l-2 border-gray-200 pl-4">
+    <div className="border-l-2 border-gray-200 pl-4 mb-4">
       {/* Import Group Header */}
       <div
-        className={`flex items-center gap-2 text-sm font-medium ${getStatusColor(overallStatus)}`}
+        className={`flex items-center gap-2 text-sm font-medium ${getStatusColor(overallStatus)} mb-2`}
       >
         <span>{getStatusIcon(overallStatus)}</span>
-        <span>Importing file {importId.slice(0, 8)}...</span>
+        <span>
+          {overallStatus !== "completed" ? "Importing" : "Imported"} {title}
+          {overallStatus !== "completed" ? "..." : ""}
+        </span>
       </div>
 
-      {/* Operations within this import */}
+      {/* Operations within this import - display at same level as import title */}
       {operations.length > 0 && (
-        <div className="mt-2 space-y-2 pl-2.5">
+        <div className="mt-2 space-y-1">
           {operations.map((operation) => (
-            <ActivityOperation
-              key={operation.id}
-              id={operation.id}
-              title={operation.title}
-              status={operation.status}
-              children={operation.children}
-            />
+            <div key={operation.id}>
+              {/* Display operation children directly (these are the main operations like cleaning/parsing) */}
+              {operation.children.map((child) => {
+                // Get the status from the child's text content
+                const childStatus = getStatusFromText(child.text);
+                return (
+                  <div
+                    key={child.id}
+                    className={`flex items-center gap-2 text-sm ${getStatusColor(childStatus)}`}
+                    style={{
+                      paddingLeft: child.indentLevel * 16 + 10,
+                    }}
+                  >
+                    <span>{getStatusIcon(childStatus)}</span>
+                    <span>{child.text}</span>
+                  </div>
+                );
+              })}
+            </div>
           ))}
         </div>
       )}

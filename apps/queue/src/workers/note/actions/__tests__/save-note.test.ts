@@ -1,12 +1,13 @@
+import type { Queue } from "bullmq";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { SaveNoteAction } from "../save-note";
-import type { SaveNoteDeps, NoteWithParsedLines } from "../../types";
+import type { NoteWorkerDependencies, NoteWithParsedLines } from "../../types";
 import type { ActionContext } from "../../../core/types";
-import type { ParsedHtmlFile } from "../../types";
+import type { ParsedHtmlFile } from "../../schema";
 
 describe("SaveNoteAction", () => {
   let action: SaveNoteAction;
-  let mockDeps: SaveNoteDeps;
+  let mockDeps: NoteWorkerDependencies;
   let mockContext: ActionContext;
   let mockParsedFile: ParsedHtmlFile;
 
@@ -14,7 +15,17 @@ describe("SaveNoteAction", () => {
     vi.clearAllMocks();
     action = new SaveNoteAction();
     mockDeps = {
+      parseHTML: vi.fn(),
       createNote: vi.fn(),
+      ingredientQueue: {} as Queue,
+      instructionQueue: {} as Queue,
+      imageQueue: {} as Queue,
+      categorizationQueue: {} as Queue,
+      sourceQueue: {} as Queue,
+      addStatusEventAndBroadcast: vi.fn(),
+      ErrorHandler: {
+        withErrorHandling: vi.fn(),
+      },
       logger: {
         log: vi.fn(),
       },

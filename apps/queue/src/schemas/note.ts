@@ -33,6 +33,7 @@ export const NoteJobDataSchema = BaseJobDataSchema.extend({
  */
 export const ParseHtmlDataSchema = z.object({
   content: z.string().min(1, "Content cannot be empty"),
+  importId: z.string().optional(),
 });
 
 /**
