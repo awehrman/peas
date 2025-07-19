@@ -3,5 +3,5 @@
 import { prisma } from "@peas/database";
 
 export async function getIngredientCount() {
-  return prisma.parsedIngredientLine.count();
+  return prisma.ingredient.count();
 }

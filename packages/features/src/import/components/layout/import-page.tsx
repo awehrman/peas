@@ -5,7 +5,7 @@ import { StatsSummary } from "../dashboard/stats-summary";
 import { ActivityLog } from "../activity-log/activity-log";
 import { ImportFileUpload } from "../file-upload/file-upload";
 import { useIngredientCountUpdater } from "../../hooks/use-ingredient-count-updater";
-import { useInstructionCountUpdater } from "../../hooks/use-instruction-count-updater";
+import { getWebSocketUrl } from "../../../utils/websocket-config";
 
 interface ImportPageContentProps {
   initialNoteCount: number;
@@ -19,13 +19,8 @@ export function ImportPageContent({
   initialParsingErrorCount,
 }: ImportPageContentProps): ReactNode {
   const { ingredientCount } = useIngredientCountUpdater({
-    wsUrl: "ws://localhost:8080",
+    wsUrl: getWebSocketUrl(),
     initialCount: initialIngredientCount,
-  });
-
-  const { instructionCount, totalInstructions } = useInstructionCountUpdater({
-    wsUrl: "ws://localhost:8080",
-    initialCount: 0,
   });
 
   return (
@@ -36,8 +31,6 @@ export function ImportPageContent({
           <StatsSummary
             noteCount={initialNoteCount}
             ingredientCount={ingredientCount}
-            instructionCount={instructionCount}
-            totalInstructions={totalInstructions}
             parsingErrorCount={initialParsingErrorCount}
             className="mb-8"
           />

@@ -5,6 +5,7 @@ import { Item, groupStatusItemsByImport } from "../../utils";
 import { useStatusWebSocket } from "../../hooks/use-status-websocket";
 import { ActivityGroup } from "./activity-group";
 import { ConnectionStatus } from "./connection-status";
+import { getWebSocketUrl } from "../../../utils/websocket-config";
 
 interface Props {
   className?: string;
@@ -12,7 +13,7 @@ interface Props {
 
 export function ActivityLog({ className }: Props): ReactNode {
   const { events, connectionStatus, error } = useStatusWebSocket({
-    wsUrl: "ws://localhost:8080",
+    wsUrl: getWebSocketUrl(),
     autoReconnect: true,
     reconnectInterval: 3000,
     maxReconnectAttempts: 5,

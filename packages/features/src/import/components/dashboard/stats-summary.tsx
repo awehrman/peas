@@ -4,8 +4,6 @@ import { ReactNode } from "react";
 export interface StatsSummaryProps {
   noteCount?: number;
   ingredientCount?: number;
-  instructionCount?: number;
-  totalInstructions?: number;
   parsingErrorCount?: number;
   className?: string;
 }
@@ -13,8 +11,6 @@ export interface StatsSummaryProps {
 export function StatsSummary({
   noteCount = 0,
   ingredientCount = 0,
-  instructionCount = 0,
-  totalInstructions = 0,
   parsingErrorCount = 0,
   className = "",
 }: StatsSummaryProps): ReactNode {
@@ -28,17 +24,7 @@ export function StatsSummary({
           <p className="text-sm text-gray-600">{noteCount} Notes</p>
         </div>
         <div className="p-1">
-          <p className="text-sm text-gray-600">
-            {ingredientCount} Ingredient Lines
-          </p>
-        </div>
-        <div className="p-1">
-          <p className="text-sm text-gray-600">
-            {totalInstructions > 0
-              ? `${instructionCount}/${totalInstructions}`
-              : instructionCount}{" "}
-            Instructions
-          </p>
+          <p className="text-sm text-gray-600">{ingredientCount} Ingredients</p>
         </div>
         <div className="p-1">
           <p className="text-sm text-gray-600">

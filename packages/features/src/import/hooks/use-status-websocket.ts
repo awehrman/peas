@@ -1,4 +1,12 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { getWebSocketUrl } from "../../utils/websocket-config";
+
+export interface UseStatusWebSocketOptions {
+  wsUrl?: string;
+  autoReconnect?: boolean;
+  reconnectInterval?: number;
+  maxReconnectAttempts?: number;
+}
 
 interface StatusEvent {
   importId: string; // Temporary ID for frontend grouping
@@ -22,16 +30,9 @@ interface WebSocketMessage {
     | { timestamp: number };
 }
 
-interface UseStatusWebSocketOptions {
-  wsUrl?: string;
-  autoReconnect?: boolean;
-  reconnectInterval?: number;
-  maxReconnectAttempts?: number;
-}
-
 export function useStatusWebSocket(options: UseStatusWebSocketOptions = {}) {
   const {
-    wsUrl = "ws://localhost:8080",
+    wsUrl = getWebSocketUrl(),
     autoReconnect = true,
     reconnectInterval = 3000,
     maxReconnectAttempts = 5,
