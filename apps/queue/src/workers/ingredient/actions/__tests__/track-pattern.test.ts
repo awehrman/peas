@@ -4,7 +4,7 @@ import { TrackPatternAction, TrackPatternInput } from "../track-pattern";
 describe("TrackPatternAction", () => {
   let trackPatternAction: TrackPatternAction;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let mockDbOps: any;
+  let mockDeps: any;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let mockPatternTracker: any;
 
@@ -17,9 +17,14 @@ describe("TrackPatternAction", () => {
       trackPattern: vi.fn().mockResolvedValue(undefined),
     };
 
-    // Create mock database operations
-    mockDbOps = {
-      patternTracker: mockPatternTracker,
+    // Create mock dependencies that match IngredientWorkerDependencies
+    mockDeps = {
+      database: {
+        patternTracker: mockPatternTracker,
+      },
+      logger: {
+        log: vi.fn(),
+      },
     };
 
     trackPatternAction = new TrackPatternAction();
@@ -53,28 +58,25 @@ describe("TrackPatternAction", () => {
     };
 
     it("should track pattern successfully", async () => {
-      const result = await trackPatternAction.execute(mockInput, mockDbOps);
+      const result = await trackPatternAction.execute(mockInput, mockDeps);
 
       // Should return the input unchanged
       expect(result).toEqual(mockInput);
 
-      // Should call pattern tracker with correct parameters
+      // Should call pattern tracker with correct parameters (PatternRule format)
       expect(mockPatternTracker.trackPattern).toHaveBeenCalledWith(
         [
           {
             rule: mockInput.parsedSegments![0]!.rule,
-            type: mockInput.parsedSegments![0]!.type,
-            value: mockInput.parsedSegments![0]!.value,
+            ruleNumber: 0,
           },
           {
             rule: mockInput.parsedSegments![1]!.rule,
-            type: mockInput.parsedSegments![1]!.type,
-            value: mockInput.parsedSegments![1]!.value,
+            ruleNumber: 1,
           },
           {
             rule: mockInput.parsedSegments![2]!.rule,
-            type: mockInput.parsedSegments![2]!.type,
-            value: mockInput.parsedSegments![2]!.value,
+            ruleNumber: 2,
           },
         ],
         mockInput.reference
@@ -82,47 +84,37 @@ describe("TrackPatternAction", () => {
     });
 
     it("should handle pattern tracker errors gracefully", async () => {
-      const consoleSpy = vi
-        .spyOn(console, "error")
-        .mockImplementation(() => {});
       mockPatternTracker.trackPattern.mockRejectedValue(
         new Error("Tracking failed")
       );
 
-      const result = await trackPatternAction.execute(mockInput, mockDbOps);
+      const result = await trackPatternAction.execute(mockInput, mockDeps);
 
       // Should still return the input unchanged
       expect(result).toEqual(mockInput);
 
-      // Should log the error
-      expect(consoleSpy).toHaveBeenCalledWith(
-        "[TRACK_PATTERN] Error tracking pattern:",
-        expect.any(Error)
-      );
+      // Should log the error (but it's now in a .catch() block, so we need to wait)
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
-      consoleSpy.mockRestore();
+      expect(mockDeps.logger.log).toHaveBeenCalledWith(
+        "[TRACK_PATTERN] Error tracking pattern: Tracking failed"
+      );
     });
 
     it("should handle action execution errors gracefully", async () => {
-      const consoleSpy = vi
-        .spyOn(console, "error")
-        .mockImplementation(() => {});
       mockPatternTracker.trackPattern.mockImplementation(() => {
         throw new Error("Unexpected error");
       });
 
-      const result = await trackPatternAction.execute(mockInput, mockDbOps);
+      const result = await trackPatternAction.execute(mockInput, mockDeps);
 
       // Should still return the input unchanged
       expect(result).toEqual(mockInput);
 
       // Should log the error
-      expect(consoleSpy).toHaveBeenCalledWith(
-        "[TRACK_PATTERN] Error in track pattern action:",
-        expect.any(Error)
+      expect(mockDeps.logger.log).toHaveBeenCalledWith(
+        "[TRACK_PATTERN] Error in track pattern action: Unexpected error"
       );
-
-      consoleSpy.mockRestore();
     });
 
     it("should work with empty segments", async () => {
@@ -133,15 +125,12 @@ describe("TrackPatternAction", () => {
 
       const result = await trackPatternAction.execute(
         inputWithEmptySegments,
-        mockDbOps
+        mockDeps
       );
 
       expect(result).toEqual(inputWithEmptySegments);
-      // Empty array should still call trackPattern with empty array
-      expect(mockPatternTracker.trackPattern).toHaveBeenCalledWith(
-        [],
-        mockInput.reference
-      );
+      // Empty array should be skipped and trackPattern should not be called
+      expect(mockPatternTracker.trackPattern).not.toHaveBeenCalled();
     });
 
     it("should work with single segment", async () => {
@@ -152,7 +141,7 @@ describe("TrackPatternAction", () => {
 
       const result = await trackPatternAction.execute(
         inputWithSingleSegment,
-        mockDbOps
+        mockDeps
       );
 
       expect(result).toEqual(inputWithSingleSegment);
@@ -160,8 +149,7 @@ describe("TrackPatternAction", () => {
         [
           {
             rule: mockInput.parsedSegments![0]!.rule,
-            type: mockInput.parsedSegments![0]!.type,
-            value: mockInput.parsedSegments![0]!.value,
+            ruleNumber: 0,
           },
         ],
         mockInput.reference
@@ -169,8 +157,6 @@ describe("TrackPatternAction", () => {
     });
 
     it("should handle undefined parsedSegments gracefully", async () => {
-      const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-
       const inputWithUndefinedSegments: TrackPatternInput = {
         ...mockInput,
         parsedSegments: undefined,
@@ -178,16 +164,14 @@ describe("TrackPatternAction", () => {
 
       const result = await trackPatternAction.execute(
         inputWithUndefinedSegments,
-        mockDbOps
+        mockDeps
       );
 
       expect(result).toEqual(inputWithUndefinedSegments);
       expect(mockPatternTracker.trackPattern).not.toHaveBeenCalled();
-      expect(consoleSpy).toHaveBeenCalledWith(
+      expect(mockDeps.logger.log).toHaveBeenCalledWith(
         "[TRACK_PATTERN] No parsed segments to track, skipping pattern tracking"
       );
-
-      consoleSpy.mockRestore();
     });
   });
 

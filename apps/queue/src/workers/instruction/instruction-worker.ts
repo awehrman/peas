@@ -73,6 +73,11 @@ export class InstructionWorker extends BaseWorker<
       this.createWrappedAction("save_instruction_line", this.dependencies)
     );
 
+    // 3. Check completion status and broadcast if all jobs are done
+    actions.push(
+      this.createErrorHandledAction("completion_status", this.dependencies)
+    );
+
     return actions;
   }
 }
@@ -124,7 +129,10 @@ export function createInstructionWorker(
       // Add job completion tracker methods from the container's database service
       updateNoteCompletionTracker:
         container.database.updateNoteCompletionTracker,
+      incrementNoteCompletionTracker:
+        container.database.incrementNoteCompletionTracker,
       checkNoteCompletion: container.database.checkNoteCompletion,
+      getNoteTitle: container.database.getNoteTitle,
     },
     parseInstruction: async (text: string) => {
       container.logger.log(

@@ -2,12 +2,14 @@ export * from "./process-instruction-line";
 export * from "./save-instruction-line";
 export * from "./update-instruction-count";
 export * from "./instruction-completed-status";
+export * from "./completion-status";
 
 import { ActionFactory } from "../../core/action-factory";
 import { ProcessInstructionLineAction } from "./process-instruction-line";
 import { SaveInstructionLineAction } from "./save-instruction-line";
 import { UpdateInstructionCountAction } from "./update-instruction-count";
 import { InstructionCompletedStatusAction } from "./instruction-completed-status";
+import { CompletionStatusAction } from "./completion-status";
 import {
   registerActions,
   createActionRegistration,
@@ -34,5 +36,6 @@ export function registerInstructionActions(factory: ActionFactory): void {
       "instruction_completed_status",
       InstructionCompletedStatusAction
     ),
+    createActionRegistration("completion_status", CompletionStatusAction),
   ]);
 }

@@ -79,20 +79,24 @@ describe("ProcessIngredientLineAction", () => {
             rule: "#1_ingredientLine >> #2_quantities >> #1_quantityWithSpace >> #3_amounts >> #4_amountExpression >> #5_amount",
             type: "amount",
             value: "3",
+            processingTime: 150,
           },
           {
             index: 1,
             rule: "#1_ingredientLine >> #2_quantities >> #1_quantityWithSpace >> #1_units >> #2_unitExpression >> #13_unit",
             type: "unit",
             value: "tbsp",
+            processingTime: 150,
           },
           {
             index: 2,
             rule: "#1_ingredientLine >> #3_ingredients >> #1_ingredientExpression >> #2_ingredient",
             type: "ingredient",
             value: "canola oil",
+            processingTime: 150,
           },
         ],
+        errorMessage: undefined,
         processingTime: 150,
       });
 
@@ -245,8 +249,13 @@ describe("ProcessIngredientLineAction", () => {
       } as any);
 
       expect(result.parsedSegments).toBeDefined();
-      expect(result.parsedSegments).toHaveLength(1); // Only the valid ingredient
-      expect(result.parsedSegments![0]!.value).toBe("valid ingredient");
+      expect(result.parsedSegments).toHaveLength(3); // All segments including empty ones
+      expect(result.parsedSegments![0]!.value).toBe("");
+      expect(result.parsedSegments![0]!.processingTime).toBe(50);
+      expect(result.parsedSegments![1]!.value).toBe("   ");
+      expect(result.parsedSegments![1]!.processingTime).toBe(50);
+      expect(result.parsedSegments![2]!.value).toBe("valid ingredient");
+      expect(result.parsedSegments![2]!.processingTime).toBe(50);
     });
 
     it("should handle parser failure gracefully", async () => {
@@ -320,11 +329,12 @@ describe("ProcessIngredientLineAction", () => {
         reference: "Invalid ingredient",
         blockIndex: 0,
         lineIndex: 0,
+        importId: undefined,
+        currentIngredientIndex: undefined,
+        totalIngredients: undefined,
         success: false,
         parseStatus: "ERROR",
-        parsedSegments: undefined,
-        errorMessage: "Parsing failed: Error: Parser crashed",
-        processingTime: 0,
+        errorMessage: "Parser crashed",
       });
     });
 

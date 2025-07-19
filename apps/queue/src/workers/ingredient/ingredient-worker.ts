@@ -73,7 +73,12 @@ export class IngredientWorker extends BaseWorker<
     // 3. Track unique line pattern (low priority, non-blocking)
     actions.push(this.createWrappedAction("track_pattern", this.dependencies));
 
-    // 4. Schedule categorization (COMMENTED OUT FOR SIMPLIFIED TESTING)
+    // 4. Check completion status and broadcast if all jobs are done
+    actions.push(
+      this.createErrorHandledAction("completion_status", this.dependencies)
+    );
+
+    // 5. Schedule categorization (COMMENTED OUT FOR SIMPLIFIED TESTING)
     // Note: This will schedule categorization after each ingredient line.
     // In a production system, you might want to track when ALL ingredient lines
     // for a note are completed before scheduling categorization.
@@ -253,6 +258,11 @@ export function createIngredientWorker(
 
       return result;
     },
+    // Add job completion tracker methods from the container's database service
+    updateNoteCompletionTracker: container.database.updateNoteCompletionTracker,
+    incrementNoteCompletionTracker:
+      container.database.incrementNoteCompletionTracker,
+    checkNoteCompletion: container.database.checkNoteCompletion,
   };
 
   return new IngredientWorker(queue, dependencies);

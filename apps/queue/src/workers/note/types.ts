@@ -44,6 +44,7 @@ export interface NoteWorkerDependencies {
       noteId: string,
       completedJobs: number
     ) => Promise<unknown>;
+    incrementNoteCompletionTracker: (noteId: string) => Promise<unknown>;
     checkNoteCompletion: (noteId: string) => Promise<{
       isComplete: boolean;
       completedJobs: number;

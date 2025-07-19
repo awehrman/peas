@@ -1,17 +1,19 @@
 import { BaseAction } from "../../core/base-action";
 import { ActionContext } from "../../core/types";
-import type { BaseWorkerDependencies } from "../../types";
-import type { IDatabaseService } from "../../../services";
-
-export interface UpdateIngredientCountDeps extends BaseWorkerDependencies {
-  database: IDatabaseService;
-}
+import type { IngredientWorkerDependencies } from "../types";
 
 export interface UpdateIngredientCountData {
   importId: string;
   noteId?: string;
   currentIngredientIndex: number;
   totalIngredients: number;
+}
+
+export interface UpdateIngredientCountDeps
+  extends IngredientWorkerDependencies {
+  database: IngredientWorkerDependencies["database"] & {
+    incrementNoteCompletionTracker?: (noteId: string) => Promise<unknown>;
+  };
 }
 
 export class UpdateIngredientCountAction extends BaseAction<
@@ -35,14 +37,11 @@ export class UpdateIngredientCountAction extends BaseAction<
     // Update job completion tracker for each ingredient job completion
     if (noteId) {
       try {
-        if (deps.database.updateNoteCompletionTracker) {
-          // Update with the current number of completed jobs
-          await deps.database.updateNoteCompletionTracker(
-            noteId,
-            currentIngredientIndex
-          );
+        if (deps.database.incrementNoteCompletionTracker) {
+          // Increment the completed jobs count by 1
+          await deps.database.incrementNoteCompletionTracker(noteId);
           deps.logger?.log(
-            `[UPDATE_INGREDIENT_COUNT] Updated completion tracker for note ${noteId}: ${currentIngredientIndex}/${totalIngredients} ingredient jobs completed`
+            `[UPDATE_INGREDIENT_COUNT] Incremented completion tracker for note ${noteId}: ingredient ${currentIngredientIndex}/${totalIngredients} completed`
           );
         }
       } catch (error) {

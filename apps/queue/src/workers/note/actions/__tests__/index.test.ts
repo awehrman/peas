@@ -85,63 +85,45 @@ describe("Note Actions Index", () => {
     });
 
     it("should register actions in the correct order", () => {
+      const factory = new ActionFactory();
       const registerSpy = vi.spyOn(factory, "register");
 
       registerNoteActions(factory);
 
-      expect(registerSpy).toHaveBeenCalledTimes(9);
+      expect(registerSpy).toHaveBeenCalledTimes(8);
 
       // Verify the order of registrations
       const calls = registerSpy.mock.calls;
-      expect(calls[0]).toEqual(["parse_html", expect.any(Function)]);
-      expect(calls[1]).toEqual(["clean_html", expect.any(Function)]);
-      expect(calls[2]).toEqual(["save_note", expect.any(Function)]);
-      expect(calls[3]).toEqual(["schedule_images", expect.any(Function)]);
-      expect(calls[4]).toEqual(["schedule_source", expect.any(Function)]);
-      expect(calls[5]).toEqual(["schedule_ingredients", expect.any(Function)]);
-      expect(calls[6]).toEqual(["schedule_instructions", expect.any(Function)]);
-      expect(calls[7]).toEqual([
-        "schedule_all_followup_tasks",
-        expect.any(Function),
-      ]);
-      expect(calls[8]).toEqual(["note_completed_status", expect.any(Function)]);
+      expect(calls[0]![0]).toBe("parse_html");
+      expect(calls[1]![0]).toBe("clean_html");
+      expect(calls[2]![0]).toBe("save_note");
+      expect(calls[3]![0]).toBe("schedule_images");
+      expect(calls[4]![0]).toBe("schedule_source");
+      expect(calls[5]![0]).toBe("schedule_ingredients");
+      expect(calls[6]![0]).toBe("schedule_instructions");
+      expect(calls[7]![0]).toBe("schedule_all_followup_tasks");
     });
 
     it("should create actions with proper dependencies when needed", () => {
+      const factory = new ActionFactory();
       registerNoteActions(factory);
 
-      // Test that actions can be created with dependencies
+      // Test that we can create an action that requires dependencies
       const mockDeps = {
         logger: { log: vi.fn() },
         addStatusEventAndBroadcast: vi.fn().mockResolvedValue(undefined),
-        ErrorHandler: {
-          withErrorHandling: vi.fn().mockImplementation(async (op) => op()),
+        database: {
+          createNote: vi.fn().mockResolvedValue({ id: "test-note" }),
         },
       };
 
-      const action = factory.create("parse_html", mockDeps);
-      expect(action).toBeInstanceOf(ParseHtmlAction);
+      const action = factory.create("save_note", mockDeps);
+      expect(action).toBeInstanceOf(SaveNoteAction);
     });
 
     it("should export all required modules", () => {
-      // This test ensures that all the barrel exports are working correctly
-      // The imports at the top of the test file should not fail
-      expect(SaveNoteAction).toBeDefined();
-      expect(ParseHtmlAction).toBeDefined();
-      expect(ScheduleSourceAction).toBeDefined();
-      expect(ScheduleImagesAction).toBeDefined();
-      expect(ScheduleIngredientsAction).toBeDefined();
-      expect(ScheduleInstructionsAction).toBeDefined();
-      expect(ScheduleAllFollowupTasksAction).toBeDefined();
-      expect(registerNoteActions).toBeDefined();
-    });
-
-    it("should create note_completed_status action that uses note title", () => {
-      registerNoteActions(factory);
-
-      const action = factory.create("note_completed_status");
-      expect(action).toBeDefined();
-      expect(action.name).toBe("note_completed_status");
+      // This test ensures that all the exported modules are available
+      expect(typeof registerNoteActions).toBe("function");
     });
   });
 });

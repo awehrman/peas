@@ -17,75 +17,10 @@ import { ScheduleImagesAction } from "./schedule-images";
 import { ScheduleIngredientsAction } from "./schedule-ingredients";
 import { ScheduleInstructionsAction } from "./schedule-instructions";
 import { ScheduleAllFollowupTasksAction } from "./schedule-all-followup-tasks";
-import { BaseAction } from "../../core/base-action";
-import { ActionContext } from "../../core/types";
-import type { NoteWorkerDependencies, NotePipelineStage3 } from "../types";
 import {
   registerActions,
   createActionRegistration,
 } from "../../shared/action-registry";
-
-/**
- * Custom action that broadcasts note completion with the note title
- * Only broadcasts completion when all scheduled jobs are finished
- */
-class NoteCompletedStatusAction extends BaseAction<
-  NotePipelineStage3,
-  NoteWorkerDependencies
-> {
-  name = "note_completed_status";
-
-  async execute(
-    data: NotePipelineStage3,
-    deps: NoteWorkerDependencies,
-    _context: ActionContext
-  ) {
-    const { note } = data;
-
-    // Check if all scheduled jobs are complete
-    if (note?.id) {
-      try {
-        const completionStatus = await deps.database.checkNoteCompletion(
-          note.id
-        );
-
-        if (!completionStatus.isComplete) {
-          deps.logger.log(
-            `[NOTE_COMPLETED_STATUS] Note ${note.id} not yet complete: ${completionStatus.completedJobs}/${completionStatus.totalJobs} jobs finished. Skipping completion broadcast.`
-          );
-          return data;
-        }
-
-        deps.logger.log(
-          `[NOTE_COMPLETED_STATUS] Note ${note.id} is complete: ${completionStatus.completedJobs}/${completionStatus.totalJobs} jobs finished. Broadcasting completion.`
-        );
-      } catch (error) {
-        deps.logger.log(
-          `[NOTE_COMPLETED_STATUS] Error checking completion status for note ${note.id}: ${error}. Proceeding with completion broadcast.`
-        );
-      }
-    }
-
-    // Use note title if available, otherwise fall back to import ID
-    const title = data.note?.title;
-    const message = title
-      ? `Imported ${title}`
-      : `Import ${data.importId.slice(0, 8)}... completed`;
-
-    await deps.addStatusEventAndBroadcast({
-      importId: data.importId,
-      noteId: data.note?.id,
-      status: "COMPLETED",
-      message,
-      context: "import_complete", // Use import_complete context to update the import title
-      indentLevel: 0, // Top level for completion
-      metadata: {
-        noteTitle: title,
-      },
-    });
-    return data;
-  }
-}
 
 /**
  * Register all note actions in the given ActionFactory
@@ -105,10 +40,6 @@ export function registerNoteActions(factory: ActionFactory) {
     createActionRegistration(
       "schedule_all_followup_tasks",
       ScheduleAllFollowupTasksAction
-    ),
-    createActionRegistration(
-      "note_completed_status",
-      NoteCompletedStatusAction
     ),
   ]);
 }

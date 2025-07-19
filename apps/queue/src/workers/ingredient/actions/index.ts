@@ -4,6 +4,7 @@ export { ProcessIngredientsAction } from "./process-ingredients";
 export { ScheduleCategorizationAfterCompletionAction } from "./schedule-categorization-after-completion";
 export { UpdateIngredientCountAction } from "./update-ingredient-count";
 export { TrackPatternAction } from "./track-pattern";
+export { CompletionStatusAction } from "./completion-status";
 
 import { ActionFactory } from "../../core/action-factory";
 import { ProcessIngredientLineAction } from "./process-ingredient-line";
@@ -12,6 +13,7 @@ import { ProcessIngredientsAction } from "./process-ingredients";
 import { ScheduleCategorizationAfterCompletionAction } from "./schedule-categorization-after-completion";
 import { UpdateIngredientCountAction } from "./update-ingredient-count";
 import { TrackPatternAction } from "./track-pattern";
+import { CompletionStatusAction } from "./completion-status";
 import {
   registerActions,
   createActionRegistration,
@@ -37,5 +39,6 @@ export function registerIngredientActions(factory: ActionFactory): void {
       UpdateIngredientCountAction
     ),
     createActionRegistration("track_pattern", TrackPatternAction),
+    createActionRegistration("completion_status", CompletionStatusAction),
   ]);
 }

@@ -136,11 +136,10 @@ describe("Parsed Segments Flow", () => {
       trackPattern: vi.fn().mockResolvedValue(undefined),
     };
 
-    const mockDbOps = {
-      patternTracker: mockPatternTracker,
-    } as any;
+    // Update mockDeps to include patternTracker
+    mockDeps.database.patternTracker = mockPatternTracker;
 
-    const trackOutput = await trackAction.execute(trackInput, mockDbOps);
+    const trackOutput = await trackAction.execute(trackInput, mockDeps);
 
     // Verify track action receives and processes parsed segments
     expect(trackOutput).toEqual(trackInput);
@@ -148,18 +147,15 @@ describe("Parsed Segments Flow", () => {
       [
         {
           rule: trackInput.parsedSegments![0]!.rule,
-          type: trackInput.parsedSegments![0]!.type,
-          value: trackInput.parsedSegments![0]!.value,
+          ruleNumber: 0,
         },
         {
           rule: trackInput.parsedSegments![1]!.rule,
-          type: trackInput.parsedSegments![1]!.type,
-          value: trackInput.parsedSegments![1]!.value,
+          ruleNumber: 1,
         },
         {
           rule: trackInput.parsedSegments![2]!.rule,
-          type: trackInput.parsedSegments![2]!.type,
-          value: trackInput.parsedSegments![2]!.value,
+          ruleNumber: 2,
         },
       ],
       trackInput.reference

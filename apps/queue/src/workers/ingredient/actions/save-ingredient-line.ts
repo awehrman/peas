@@ -29,6 +29,10 @@ export interface SaveIngredientLineOutput {
     type: string;
     value: string;
   }>;
+  // Tracking information from job data
+  importId?: string;
+  currentIngredientIndex?: number;
+  totalIngredients?: number;
   // Save operation results
   success: boolean;
   segmentsSaved: number;
@@ -78,6 +82,9 @@ export class SaveIngredientLineAction extends BaseAction<
         const dbOps = new DatabaseOperations(deps.database.prisma);
 
         // Create or update the ParsedIngredientLine with parse status
+        deps.logger?.log(
+          `[SAVE_INGREDIENT_LINE] Creating/updating ParsedIngredientLine for ${ingredientLineId}`
+        );
         await dbOps.createOrUpdateParsedIngredientLine(ingredientLineId, {
           blockIndex: input.blockIndex,
           lineIndex: input.lineIndex,
@@ -86,11 +93,24 @@ export class SaveIngredientLineAction extends BaseAction<
           parseStatus: parseStatus as "CORRECT" | "INCORRECT" | "ERROR",
           parsedAt: success ? new Date() : undefined,
         });
+        deps.logger?.log(
+          `[SAVE_INGREDIENT_LINE] Successfully created/updated ParsedIngredientLine for ${ingredientLineId}`
+        );
 
         // If parsing was successful and we have segments, create ParsedSegment records
         if (success && parsedSegments && parsedSegments.length > 0) {
+          deps.logger?.log(
+            `[SAVE_INGREDIENT_LINE] Saving ${parsedSegments.length} parsed segments for ${ingredientLineId}`
+          );
           await dbOps.replaceParsedSegments(ingredientLineId, parsedSegments);
           segmentsSaved = parsedSegments.length;
+          deps.logger?.log(
+            `[SAVE_INGREDIENT_LINE] Successfully saved ${segmentsSaved} parsed segments for ${ingredientLineId}`
+          );
+        } else {
+          deps.logger?.log(
+            `[SAVE_INGREDIENT_LINE] No segments to save: success=${success}, segmentsCount=${parsedSegments?.length || 0}`
+          );
         }
 
         // Track ingredients found in parsed segments
@@ -122,6 +142,10 @@ export class SaveIngredientLineAction extends BaseAction<
         blockIndex: input.blockIndex,
         lineIndex: input.lineIndex,
         parsedSegments: input.parsedSegments,
+        // Tracking information from job data
+        importId: input.importId,
+        currentIngredientIndex: input.currentIngredientIndex,
+        totalIngredients: input.totalIngredients,
         // Save operation results
         success,
         segmentsSaved,

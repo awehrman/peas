@@ -416,7 +416,7 @@ describe("DatabaseOperations", () => {
       });
     });
 
-    it("should create new ingredient when not found", async () => {
+    it("should create new ingredient when not found with plural input", async () => {
       mockPrisma.ingredient.findFirst.mockResolvedValue(null);
 
       const newIngredient = {
@@ -428,7 +428,7 @@ describe("DatabaseOperations", () => {
       mockPrisma.ingredient.create.mockResolvedValue(newIngredient);
 
       const result = await dbOps.findOrCreateIngredient(
-        ingredientName,
+        ingredientName, // "tomatoes" (plural)
         reference
       );
 
@@ -441,8 +441,37 @@ describe("DatabaseOperations", () => {
       expect(mockPrisma.ingredient.create).toHaveBeenCalledWith({
         data: {
           name: "tomatoe", // singular (mocked)
-          plural: "tomatoes", // plural (mocked)
-          description: `Ingredient found in recipe: ${reference}`,
+          plural: "tomatoes", // original plural input
+        },
+      });
+    });
+
+    it("should create new ingredient when not found with singular input", async () => {
+      mockPrisma.ingredient.findFirst.mockResolvedValue(null);
+
+      const newIngredient = {
+        id: "new-ingredient-123",
+        name: "salt",
+        plural: "salts",
+      };
+
+      mockPrisma.ingredient.create.mockResolvedValue(newIngredient);
+
+      const result = await dbOps.findOrCreateIngredient(
+        "salt", // singular input
+        "1 tsp salt"
+      );
+
+      expect(result).toEqual({
+        id: newIngredient.id,
+        name: newIngredient.name,
+        isNew: true,
+      });
+
+      expect(mockPrisma.ingredient.create).toHaveBeenCalledWith({
+        data: {
+          name: "salt", // original singular input
+          plural: "salts", // generated plural
         },
       });
     });

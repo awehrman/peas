@@ -82,11 +82,8 @@ export class NoteWorker extends BaseWorker<
       )
     );
 
-    // 5. Add "COMPLETED" status at the very end
-    // Input: NotePipelineStage3 -> Output: NotePipelineStage3
-    actions.push(
-      this.createErrorHandledAction("note_completed_status", this.dependencies)
-    );
+    // Note: Final completion status is handled by individual completion status actions
+    // in ingredient and instruction workers, so we don't need note_completed_status here
 
     return actions;
   }
@@ -158,6 +155,7 @@ function createNoteDependenciesFromContainer(container: IServiceContainer): {
       noteId: string,
       completedJobs: number
     ) => Promise<unknown>;
+    incrementNoteCompletionTracker: (noteId: string) => Promise<unknown>;
     checkNoteCompletion: (noteId: string) => Promise<{
       isComplete: boolean;
       completedJobs: number;
@@ -214,6 +212,12 @@ function createNoteDependenciesFromContainer(container: IServiceContainer): {
             noteId,
             completedJobs
           );
+        }
+        return Promise.resolve();
+      },
+      incrementNoteCompletionTracker: async (noteId: string) => {
+        if (container.database.incrementNoteCompletionTracker) {
+          return container.database.incrementNoteCompletionTracker(noteId);
         }
         return Promise.resolve();
       },

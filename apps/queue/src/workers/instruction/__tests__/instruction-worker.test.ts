@@ -296,13 +296,14 @@ describe("InstructionWorker", () => {
         }
       ).createActionPipeline(data, context);
 
-      // Should have 3 actions: status actions (0), instruction count update, process, save
-      expect(pipeline).toHaveLength(3);
+      // Should have 4 actions: status actions (0), instruction count update, process, save, completion status
+      expect(pipeline).toHaveLength(4);
 
       // Check that the actions are wrapped (they have wrapped names)
       expect(pipeline[0]?.name).toContain("update_instruction_count");
       expect(pipeline[1]?.name).toContain("process-instruction-line");
       expect(pipeline[2]?.name).toContain("save-instruction-line");
+      expect(pipeline[3]?.name).toContain("completion_status");
     });
 
     it("should create pipeline without instruction count update when tracking info is missing", () => {
@@ -333,11 +334,12 @@ describe("InstructionWorker", () => {
         }
       ).createActionPipeline(data, context);
 
-      // Should have 2 actions: status actions (0), process, save
-      expect(pipeline).toHaveLength(2);
+      // Should have 3 actions: status actions (0), process, save, completion status
+      expect(pipeline).toHaveLength(3);
 
       expect(pipeline[0]?.name).toContain("process-instruction-line");
       expect(pipeline[1]?.name).toContain("save-instruction-line");
+      expect(pipeline[2]?.name).toContain("completion_status");
     });
 
     it("should create pipeline without instruction count update when importId is missing", () => {
@@ -370,9 +372,10 @@ describe("InstructionWorker", () => {
         }
       ).createActionPipeline(data, context);
 
-      expect(pipeline).toHaveLength(2);
+      expect(pipeline).toHaveLength(3);
       expect(pipeline[0]?.name).toContain("process-instruction-line");
       expect(pipeline[1]?.name).toContain("save-instruction-line");
+      expect(pipeline[2]?.name).toContain("completion_status");
     });
 
     it("should create pipeline without instruction count update when currentInstructionIndex is missing", () => {
@@ -405,9 +408,10 @@ describe("InstructionWorker", () => {
         }
       ).createActionPipeline(data, context);
 
-      expect(pipeline).toHaveLength(2);
+      expect(pipeline).toHaveLength(3);
       expect(pipeline[0]?.name).toContain("process-instruction-line");
       expect(pipeline[1]?.name).toContain("save-instruction-line");
+      expect(pipeline[2]?.name).toContain("completion_status");
     });
 
     it("should create pipeline without instruction count update when totalInstructions is missing", () => {
@@ -440,9 +444,10 @@ describe("InstructionWorker", () => {
         }
       ).createActionPipeline(data, context);
 
-      expect(pipeline).toHaveLength(2);
+      expect(pipeline).toHaveLength(3);
       expect(pipeline[0]?.name).toContain("process-instruction-line");
       expect(pipeline[1]?.name).toContain("save-instruction-line");
+      expect(pipeline[2]?.name).toContain("completion_status");
     });
 
     it("should create pipeline without instruction count update when currentInstructionIndex is not a number", () => {
@@ -475,9 +480,10 @@ describe("InstructionWorker", () => {
         }
       ).createActionPipeline(data, context);
 
-      expect(pipeline).toHaveLength(2);
+      expect(pipeline).toHaveLength(3);
       expect(pipeline[0]?.name).toContain("process-instruction-line");
       expect(pipeline[1]?.name).toContain("save-instruction-line");
+      expect(pipeline[2]?.name).toContain("completion_status");
     });
 
     it("should create pipeline without instruction count update when totalInstructions is not a number", () => {
@@ -510,9 +516,10 @@ describe("InstructionWorker", () => {
         }
       ).createActionPipeline(data, context);
 
-      expect(pipeline).toHaveLength(2);
+      expect(pipeline).toHaveLength(3);
       expect(pipeline[0]?.name).toContain("process-instruction-line");
       expect(pipeline[1]?.name).toContain("save-instruction-line");
+      expect(pipeline[2]?.name).toContain("completion_status");
     });
   });
 

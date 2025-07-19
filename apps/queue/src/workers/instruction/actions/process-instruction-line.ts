@@ -1,15 +1,30 @@
 import { BaseAction } from "../../core/base-action";
 import { ActionContext } from "../../core/types";
 import type { InstructionWorkerDependencies } from "../types";
+import { broadcastParsingError } from "../../shared/error-broadcasting";
 
 export interface ProcessInstructionLineInput {
   noteId: string;
   instructionLineId: string;
   originalText: string;
   lineIndex: number;
+  // Tracking information from job data
+  importId?: string;
+  currentInstructionIndex?: number;
+  totalInstructions?: number;
 }
 
 export interface ProcessInstructionLineOutput {
+  // Pass through original input fields
+  noteId: string;
+  instructionLineId: string;
+  originalText: string;
+  lineIndex: number;
+  // Tracking information from job data
+  importId?: string;
+  currentInstructionIndex?: number;
+  totalInstructions?: number;
+  // Processing results
   success: boolean;
   parseStatus: "CORRECT" | "INCORRECT" | "ERROR";
   normalizedText?: string;
@@ -20,7 +35,7 @@ export interface ProcessInstructionLineOutput {
     temperature?: string;
   }>;
   errorMessage?: string;
-  processingTime: number;
+  processingTime?: number;
 }
 
 export class ProcessInstructionLineAction extends BaseAction<
@@ -67,7 +82,29 @@ export class ProcessInstructionLineAction extends BaseAction<
       const steps =
         parseStatus === "CORRECT" ? this.extractSteps(originalText) : undefined;
 
+      // If parsing failed, broadcast the error
+      if (parseStatus === "ERROR") {
+        await broadcastParsingError(deps, {
+          importId: input.importId,
+          noteId: input.noteId,
+          lineId: input.instructionLineId,
+          reference: input.originalText,
+          errorMessage: "Instruction parsing failed",
+          context: "parse_html_instructions",
+        });
+      }
+
       const result: ProcessInstructionLineOutput = {
+        // Pass through original input fields
+        noteId,
+        instructionLineId,
+        originalText,
+        lineIndex,
+        // Tracking information from job data
+        importId: input.importId,
+        currentInstructionIndex: input.currentInstructionIndex,
+        totalInstructions: input.totalInstructions,
+        // Processing results
         success: parseStatus !== "ERROR",
         parseStatus,
         normalizedText,
@@ -77,11 +114,30 @@ export class ProcessInstructionLineAction extends BaseAction<
 
       return result;
     } catch (error) {
+      // Broadcast processing error
+      await broadcastParsingError(deps, {
+        importId: input.importId,
+        noteId: input.noteId,
+        lineId: input.instructionLineId,
+        reference: input.originalText,
+        errorMessage: `Processing error: ${(error as Error).message}`,
+        context: "parse_html_instructions",
+      });
+
       return {
+        // Pass through original input fields
+        noteId: input.noteId,
+        instructionLineId: input.instructionLineId,
+        originalText: input.originalText,
+        lineIndex: input.lineIndex,
+        // Tracking information from job data
+        importId: input.importId,
+        currentInstructionIndex: input.currentInstructionIndex,
+        totalInstructions: input.totalInstructions,
+        // Error results
         success: false,
         parseStatus: "ERROR",
-        errorMessage: `Parsing failed: ${error}`,
-        processingTime: 0,
+        errorMessage: (error as Error).message,
       };
     }
   }

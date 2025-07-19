@@ -78,14 +78,8 @@ model UniqueLinePattern {
   // JSON array of rule strings in order
   ruleSequence Json
 
-  // Human-readable description
-  description String?
-
   // Example line that matches this pattern
   exampleLine String?
-
-  // Example values from the line
-  exampleValues Json?
 
   // Count of times this pattern has been seen
   occurrenceCount Int @default(1)

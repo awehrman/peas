@@ -192,13 +192,13 @@ const gracefulShutdown = async (signal: string) => {
     // Close server
     server.close(() => {
       serviceContainer.logger.log("✅ HTTP server closed");
-      throw new Error("Server closed successfully");
+      process.exit(0); // Exit normally instead of throwing an error
     });
 
     // Force exit after timeout
     setTimeout(() => {
       serviceContainer.logger.log("❌ Forced shutdown after timeout", "error");
-      throw new Error("Forced shutdown after timeout");
+      process.exit(1); // Force exit with error code instead of throwing
     }, SERVER_DEFAULTS.GRACEFUL_SHUTDOWN_TIMEOUT_MS);
   } catch (error) {
     const jobError = serviceContainer.errorHandler.errorHandler.createJobError(
@@ -208,7 +208,7 @@ const gracefulShutdown = async (signal: string) => {
       { operation: "graceful_shutdown" }
     );
     serviceContainer.errorHandler.errorHandler.logError(jobError);
-    throw new Error("Graceful shutdown failed");
+    process.exit(1); // Exit with error code instead of throwing
   }
 };
 
@@ -245,7 +245,7 @@ server.on("error", (error) => {
     { operation: "server_startup" }
   );
   serviceContainer.errorHandler.errorHandler.logError(jobError);
-  throw new Error("Server startup failed");
+  process.exit(1); // Exit with error code instead of throwing
 });
 
 // Register shutdown handlers

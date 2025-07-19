@@ -99,6 +99,9 @@ describe("SaveIngredientLineAction", () => {
         blockIndex: 0,
         lineIndex: 0,
         parsedSegments: input.parsedSegments,
+        importId: "test-import-789",
+        currentIngredientIndex: 1,
+        totalIngredients: 5,
         success: true,
         segmentsSaved: 3,
         parseStatus: "CORRECT",
@@ -199,6 +202,9 @@ describe("SaveIngredientLineAction", () => {
         blockIndex: 0,
         lineIndex: 0,
         parsedSegments: [],
+        importId: "test-import-789",
+        currentIngredientIndex: undefined,
+        totalIngredients: undefined,
         success: true,
         segmentsSaved: 0,
         parseStatus: "CORRECT",
@@ -449,7 +455,6 @@ describe("SaveIngredientLineAction", () => {
         data: {
           name: "exotic spice",
           plural: "exotic spices",
-          description: "Ingredient found in recipe: 2 cups exotic spice",
         },
       });
 

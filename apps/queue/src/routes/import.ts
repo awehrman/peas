@@ -1,6 +1,7 @@
 import { Router } from "express";
 import fs from "fs";
 import path from "path";
+import { randomUUID } from "crypto";
 import { noteQueue } from "../queues";
 import { ErrorHandler, QueueError } from "../utils";
 import { ErrorType, ErrorSeverity } from "../types";
@@ -55,7 +56,8 @@ async function enqueueHtmlFiles() {
         throw new Error(`File is empty: ${file}`);
       }
 
-      const importId = `import-${file}-${Date.now()}`;
+      // Generate unique importId using UUID to prevent collisions
+      const importId = randomUUID();
 
       // Add to queue
       await noteQueue.add(
@@ -72,7 +74,7 @@ async function enqueueHtmlFiles() {
       );
 
       results.queued++;
-      console.log(`✅ Queued file: ${file}`);
+      console.log(`✅ Queued file: ${file} with importId: ${importId}`);
     } catch (error) {
       results.failed++;
       const errorMessage =

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { TrackPatternAction } from "../actions/track-pattern";
-import { DatabaseOperations } from "../../shared/database-operations";
+import { PatternTracker } from "../../shared/pattern-tracker";
 
 // Mock Prisma client
 vi.mock("@peas/database", () => ({
@@ -10,7 +10,7 @@ vi.mock("@peas/database", () => ({
 describe("Pattern Tracking Integration", () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let mockPrisma: any;
-  let dbOps: DatabaseOperations;
+  let mockDeps: any;
   let trackPatternAction: TrackPatternAction;
 
   beforeEach(() => {
@@ -27,7 +27,16 @@ describe("Pattern Tracking Integration", () => {
       },
     };
 
-    dbOps = new DatabaseOperations(mockPrisma);
+    // Create mock dependencies that match IngredientWorkerDependencies
+    mockDeps = {
+      database: {
+        patternTracker: new PatternTracker(mockPrisma),
+      },
+      logger: {
+        log: vi.fn(),
+      },
+    };
+
     trackPatternAction = new TrackPatternAction();
   });
 
@@ -70,27 +79,38 @@ describe("Pattern Tracking Integration", () => {
         parsedSegments: mockSegments,
       };
 
-      const result = await trackPatternAction.execute(input, dbOps);
+      const result = await trackPatternAction.execute(input, mockDeps);
 
       // Verify the action returns the input unchanged
       expect(result).toEqual(input);
 
       // Verify the pattern was tracked
       expect(mockPrisma.uniqueLinePattern.findUnique).toHaveBeenCalledWith({
-        where: { patternCode: "AMOUNT_UNIT_INGREDIENT" },
+        where: {
+          patternCode:
+            "0:#1_ingredientLine >> #2_quantities >> #1_quantityWithSpace >> #3_amounts >> #4_amountExpression >> #5_amount_1:#1_ingredientLine >> #2_quantities >> #1_quantityWithSpace >> #1_units >> #2_unitExpression >> #4_unit_2:#1_ingredientLine >> #3_ingredients >> #1_ingredientExpression >> #2_ingredient",
+        },
       });
 
       expect(mockPrisma.uniqueLinePattern.create).toHaveBeenCalledWith({
         data: {
-          patternCode: "AMOUNT_UNIT_INGREDIENT",
-          ruleSequence: mockSegments.map((s) => s.rule),
-          description: "Standard ingredient with amount and unit",
+          patternCode:
+            "0:#1_ingredientLine >> #2_quantities >> #1_quantityWithSpace >> #3_amounts >> #4_amountExpression >> #5_amount_1:#1_ingredientLine >> #2_quantities >> #1_quantityWithSpace >> #1_units >> #2_unitExpression >> #4_unit_2:#1_ingredientLine >> #3_ingredients >> #1_ingredientExpression >> #2_ingredient",
+          ruleSequence: [
+            {
+              rule: "#1_ingredientLine >> #2_quantities >> #1_quantityWithSpace >> #3_amounts >> #4_amountExpression >> #5_amount",
+              ruleNumber: 0,
+            },
+            {
+              rule: "#1_ingredientLine >> #2_quantities >> #1_quantityWithSpace >> #1_units >> #2_unitExpression >> #4_unit",
+              ruleNumber: 1,
+            },
+            {
+              rule: "#1_ingredientLine >> #3_ingredients >> #1_ingredientExpression >> #2_ingredient",
+              ruleNumber: 2,
+            },
+          ],
           exampleLine: exampleLine,
-          exampleValues: mockSegments.map((s) => ({
-            rule: s.rule,
-            type: s.type,
-            value: s.value,
-          })),
           occurrenceCount: 1,
         },
       });
@@ -123,8 +143,10 @@ describe("Pattern Tracking Integration", () => {
       // Mock that pattern already exists
       const existingPattern = {
         id: "existing-pattern-id",
-        patternCode: "AMOUNT_UNIT_INGREDIENT",
+        patternCode:
+          "0:#1_ingredientLine >> #2_quantities >> #1_quantityWithSpace >> #3_amounts >> #4_amountExpression >> #5_amount_1:#1_ingredientLine >> #2_quantities >> #1_quantityWithSpace >> #1_units >> #2_unitExpression >> #13_unit_2:#1_ingredientLine >> #3_ingredients >> #1_ingredientExpression >> #2_ingredient",
         occurrenceCount: 5,
+        exampleLine: "old example",
       };
 
       mockPrisma.uniqueLinePattern.findUnique.mockResolvedValue(
@@ -143,17 +165,21 @@ describe("Pattern Tracking Integration", () => {
         parsedSegments: mockSegments,
       };
 
-      const result = await trackPatternAction.execute(input, dbOps);
+      const result = await trackPatternAction.execute(input, mockDeps);
 
       // Verify the action returns the input unchanged
       expect(result).toEqual(input);
 
       // Verify the pattern count was incremented
       expect(mockPrisma.uniqueLinePattern.update).toHaveBeenCalledWith({
-        where: { patternCode: "AMOUNT_UNIT_INGREDIENT" },
+        where: {
+          patternCode:
+            "0:#1_ingredientLine >> #2_quantities >> #1_quantityWithSpace >> #3_amounts >> #4_amountExpression >> #5_amount_1:#1_ingredientLine >> #2_quantities >> #1_quantityWithSpace >> #1_units >> #2_unitExpression >> #13_unit_2:#1_ingredientLine >> #3_ingredients >> #1_ingredientExpression >> #2_ingredient",
+        },
         data: {
           occurrenceCount: { increment: 1 },
           lastSeenAt: expect.any(Date),
+          exampleLine: exampleLine,
         },
       });
     });
@@ -175,7 +201,8 @@ describe("Pattern Tracking Integration", () => {
               value: "egg",
             },
           ],
-          expectedPattern: "AMOUNT_INGREDIENT",
+          expectedPattern:
+            "0:#1_ingredientLine >> #2_quantities >> #2_quantityWithSpace >> #3_amounts >> #4_amountExpression >> #5_amount_1:#1_ingredientLine >> #3_ingredients >> #1_ingredientExpression >> #2_ingredient",
           exampleLine: "1 egg",
         },
         {
@@ -205,7 +232,8 @@ describe("Pattern Tracking Integration", () => {
               value: "olive oil",
             },
           ],
-          expectedPattern: "AMOUNT_UNIT_DESC_INGREDIENT",
+          expectedPattern:
+            "0:#1_ingredientLine >> #2_quantities >> #1_quantityWithSpace >> #3_amounts >> #4_amountExpression >> #5_amount_1:#1_ingredientLine >> #2_quantities >> #1_quantityWithSpace >> #1_units >> #2_unitExpression >> #13_unit_2:#1_ingredientLine >> #3_ingredients >> #2_ingredientExpression >> #1_descriptors >> #2_descriptor_3:#1_ingredientLine >> #3_ingredients >> #2_ingredientExpression >> #2_ingredient",
           exampleLine: "1 tbsp extra virgin olive oil",
         },
       ];
@@ -225,7 +253,7 @@ describe("Pattern Tracking Integration", () => {
           parsedSegments: testCase.segments,
         };
 
-        await trackPatternAction.execute(input, dbOps);
+        await trackPatternAction.execute(input, mockDeps);
 
         // Verify the correct pattern code was generated
         expect(mockPrisma.uniqueLinePattern.findUnique).toHaveBeenCalledWith({

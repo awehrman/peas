@@ -1,87 +1,47 @@
-import { PrismaClient } from "@peas/database";
+import type { PrismaClient } from "@peas/database";
+import type { BaseWorkerDependencies } from "../core/types";
 
-export interface ParsedSegment {
+export interface PatternRule {
   rule: string;
-  type: string;
-  value: string;
+  ruleNumber: number;
+}
+
+export interface PatternData {
+  patternCode: string;
+  ruleSequence: PatternRule[];
+  exampleLine?: string;
 }
 
 export class PatternTracker {
-  constructor(private prisma: PrismaClient) {}
+  constructor(
+    private prisma: PrismaClient,
+    private logger?: BaseWorkerDependencies["logger"]
+  ) {}
 
   /**
-   * Generate a short code for a sequence of rules
+   * Generate a pattern code from rule sequence
+   * Includes rule numbers in the pattern code for better identification
    */
-  private generatePatternCode(ruleSequence: string[]): string {
-    return ruleSequence
-      .map((rule) => {
-        // Extract the type from the rule path
-        const parts = rule.split(" >> ");
-        const lastPart = parts[parts.length - 1];
-
-        // Map common rule endings to types
-        if (lastPart?.includes("amount")) return "AMOUNT";
-        if (lastPart?.includes("unit")) return "UNIT";
-        if (lastPart?.includes("ingredient")) return "INGREDIENT";
-        if (lastPart?.includes("descriptor")) return "DESC";
-        if (lastPart?.includes("comment")) return "COMMENT";
-        if (lastPart?.includes("separator")) return "SEP";
-        if (lastPart?.includes("preparation")) return "PREP";
-        if (lastPart?.includes("modifier")) return "MOD";
-
-        return "UNKNOWN";
-      })
-      .join("_");
+  private generatePatternCode(rules: PatternRule[]): string {
+    return rules.map((rule) => `${rule.ruleNumber}:${rule.rule}`).join("_");
   }
 
   /**
-   * Generate a human-readable description for a pattern
-   */
-  private generateDescription(
-    ruleSequence: string[],
-    patternCode: string
-  ): string {
-    const descriptions: Record<string, string> = {
-      AMOUNT_UNIT_INGREDIENT: "Standard ingredient with amount and unit",
-      AMOUNT_INGREDIENT: "Ingredient with amount but no unit",
-      AMOUNT_UNIT_DESC_INGREDIENT:
-        "Ingredient with amount, unit, and descriptor",
-      AMOUNT_SEP_AMOUNT_UNIT_INGREDIENT:
-        "Range amount with unit and ingredient",
-      AMOUNT_UNIT_INGREDIENT_COMMENT:
-        "Ingredient with amount, unit, and comment",
-      AMOUNT_SEP_AMOUNT_UNIT_INGREDIENT_COMMENT:
-        "Range amount with unit, ingredient, and comment",
-    };
-
-    return descriptions[patternCode] || `Pattern: ${patternCode}`;
-  }
-
-  /**
-   * Track a unique line pattern from parsed segments
+   * Track a pattern and save/update it in the database
    */
   async trackPattern(
-    segments: ParsedSegment[],
+    rules: PatternRule[],
     exampleLine?: string
   ): Promise<void> {
     try {
-      // Extract rule sequence from segments
-      const ruleSequence = segments.map((segment) => segment.rule);
+      const patternCode = this.generatePatternCode(rules);
 
-      // Generate pattern code
-      const patternCode = this.generatePatternCode(ruleSequence);
+      this.logger?.log(
+        `[PATTERN_TRACKER] Tracking pattern: ${patternCode}`,
+        "debug"
+      );
 
-      // Generate description
-      const description = this.generateDescription(ruleSequence, patternCode);
-
-      // Extract example values
-      const exampleValues = segments.map((segment) => ({
-        rule: segment.rule,
-        type: segment.type,
-        value: segment.value,
-      }));
-
-      // Check if pattern already exists
+      // Try to find existing pattern
       const existingPattern = await this.prisma.uniqueLinePattern.findUnique({
         where: { patternCode },
       });
@@ -93,49 +53,62 @@ export class PatternTracker {
           data: {
             occurrenceCount: { increment: 1 },
             lastSeenAt: new Date(),
+            // Update example line if provided and different
+            ...(exampleLine && exampleLine !== existingPattern.exampleLine
+              ? { exampleLine }
+              : {}),
           },
         });
+
+        this.logger?.log(
+          `[PATTERN_TRACKER] Updated existing pattern: ${patternCode} (count: ${existingPattern.occurrenceCount + 1})`,
+          "debug"
+        );
       } else {
         // Create new pattern
         await this.prisma.uniqueLinePattern.create({
           data: {
             patternCode,
-            ruleSequence: ruleSequence,
-            description,
-            exampleLine: exampleLine || null,
-            exampleValues: exampleValues,
+            ruleSequence: rules as unknown as any, // Type assertion for JSON field
+            exampleLine,
             occurrenceCount: 1,
           },
         });
+
+        this.logger?.log(
+          `[PATTERN_TRACKER] Created new pattern: ${patternCode}`,
+          "debug"
+        );
       }
     } catch (error) {
-      // Log error but don't fail the main process
-      console.error("[PATTERN_TRACKER] Error tracking pattern:", error);
+      this.logger?.log(
+        `[PATTERN_TRACKER] Error tracking pattern: ${error}`,
+        "error"
+      );
+      throw error;
     }
   }
 
   /**
-   * Get all tracked patterns ordered by occurrence count
+   * Get all patterns ordered by occurrence count
    */
-  async getPatterns(limit: number = 50): Promise<
-    Array<{
-      patternCode: string;
-      description: string | null;
-      occurrenceCount: number;
-      firstSeenAt: Date;
-      lastSeenAt: Date;
-    }>
-  > {
-    return this.prisma.uniqueLinePattern.findMany({
-      select: {
-        patternCode: true,
-        description: true,
-        occurrenceCount: true,
-        firstSeenAt: true,
-        lastSeenAt: true,
-      },
-      orderBy: { occurrenceCount: "desc" },
-      take: limit,
-    });
+  async getPatterns(): Promise<PatternData[]> {
+    try {
+      const patterns = await this.prisma.uniqueLinePattern.findMany({
+        orderBy: { occurrenceCount: "desc" },
+      });
+
+      return patterns.map((pattern) => ({
+        patternCode: pattern.patternCode,
+        ruleSequence: pattern.ruleSequence as unknown as PatternRule[],
+        exampleLine: pattern.exampleLine || undefined,
+      }));
+    } catch (error) {
+      this.logger?.log(
+        `[PATTERN_TRACKER] Error getting patterns: ${error}`,
+        "error"
+      );
+      throw error;
+    }
   }
 }

@@ -1,17 +1,19 @@
 import { BaseAction } from "../../core/base-action";
 import { ActionContext } from "../../core/types";
-import type { BaseWorkerDependencies } from "../../types";
-import type { IDatabaseService } from "../../../services";
-
-export interface UpdateInstructionCountDeps extends BaseWorkerDependencies {
-  database: IDatabaseService;
-}
+import type { InstructionWorkerDependencies } from "../types";
 
 export interface UpdateInstructionCountData {
   importId: string;
   noteId?: string;
   currentInstructionIndex: number;
   totalInstructions: number;
+}
+
+export interface UpdateInstructionCountDeps
+  extends InstructionWorkerDependencies {
+  database: InstructionWorkerDependencies["database"] & {
+    incrementNoteCompletionTracker?: (noteId: string) => Promise<unknown>;
+  };
 }
 
 export class UpdateInstructionCountAction extends BaseAction<
@@ -33,14 +35,11 @@ export class UpdateInstructionCountAction extends BaseAction<
     // Update job completion tracker for each instruction job completion
     if (data.noteId) {
       try {
-        if (deps.database.updateNoteCompletionTracker) {
-          // Update with the current number of completed jobs
-          await deps.database.updateNoteCompletionTracker(
-            data.noteId,
-            data.currentInstructionIndex
-          );
+        if (deps.database.incrementNoteCompletionTracker) {
+          // Increment the completed jobs count by 1
+          await deps.database.incrementNoteCompletionTracker(data.noteId);
           deps.logger?.log(
-            `[UPDATE_INSTRUCTION_COUNT] Updated completion tracker for note ${data.noteId}: ${data.currentInstructionIndex}/${data.totalInstructions} instruction jobs completed`
+            `[UPDATE_INSTRUCTION_COUNT] Incremented completion tracker for note ${data.noteId}: instruction ${data.currentInstructionIndex}/${data.totalInstructions} completed`
           );
         }
       } catch (error) {

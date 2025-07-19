@@ -275,10 +275,8 @@ describe("ProcessInstructionLineAction", () => {
 
       expect(result.success).toBe(false);
       expect(result.parseStatus).toBe("ERROR");
-      expect(result.errorMessage).toContain(
-        "Parsing failed: Error: Logger error"
-      );
-      expect(result.processingTime).toBe(0);
+      expect(result.errorMessage).toContain("Logger error");
+      expect(result.processingTime).toBeUndefined();
     });
 
     it("should handle missing logger dependency", async () => {

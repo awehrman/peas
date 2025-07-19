@@ -14,11 +14,13 @@ export interface InstructionWorkerDependencies extends BaseWorkerDependencies {
       noteId: string,
       completedJobs: number
     ) => Promise<unknown>;
+    incrementNoteCompletionTracker?: (noteId: string) => Promise<unknown>;
     checkNoteCompletion?: (noteId: string) => Promise<{
       isComplete: boolean;
       completedJobs: number;
       totalJobs: number;
     }>;
+    getNoteTitle?: (noteId: string) => Promise<string | null>;
   };
   parseInstruction: (text: string) => Promise<ParsedInstructionResult>;
 }

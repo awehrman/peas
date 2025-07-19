@@ -1,6 +1,7 @@
 import { BaseAction } from "../../core/base-action";
 import { ActionContext } from "../../core/types";
 import type { IngredientWorkerDependencies } from "../types";
+import { broadcastParsingError } from "../../shared/error-broadcasting";
 
 export interface ProcessIngredientLineInput {
   noteId: string;
@@ -8,16 +9,23 @@ export interface ProcessIngredientLineInput {
   reference: string;
   blockIndex: number;
   lineIndex: number;
+  // Tracking information from job data
+  importId?: string;
+  currentIngredientIndex?: number;
+  totalIngredients?: number;
 }
 
 export interface ProcessIngredientLineOutput {
-  // Original input fields (needed by next action)
+  // Pass through original input fields
   noteId: string;
   ingredientLineId: string;
   reference: string;
   blockIndex: number;
   lineIndex: number;
-
+  // Tracking information from job data
+  importId?: string;
+  currentIngredientIndex?: number;
+  totalIngredients?: number;
   // Processing results
   success: boolean;
   parseStatus: "CORRECT" | "INCORRECT" | "ERROR";
@@ -26,9 +34,10 @@ export interface ProcessIngredientLineOutput {
     rule: string;
     type: string;
     value: string;
+    processingTime?: number;
   }>;
   errorMessage?: string;
-  processingTime: number;
+  processingTime?: number;
 }
 
 export class ProcessIngredientLineAction extends BaseAction<
@@ -67,6 +76,18 @@ export class ProcessIngredientLineAction extends BaseAction<
         `[PROCESS_INGREDIENT_LINE] Parser result for "${reference}": ${JSON.stringify(parseResult, null, 2)}`
       );
 
+      // If parsing failed, broadcast the error
+      if (!parseResult.success && parseResult.errorMessage) {
+        await broadcastParsingError(deps, {
+          importId: input.importId,
+          noteId: input.noteId,
+          lineId: input.ingredientLineId,
+          reference: input.reference,
+          errorMessage: parseResult.errorMessage,
+          context: "parse_html_ingredients",
+        });
+      }
+
       const result: ProcessIngredientLineOutput = {
         // Pass through original input fields
         noteId,
@@ -74,12 +95,19 @@ export class ProcessIngredientLineAction extends BaseAction<
         reference,
         blockIndex,
         lineIndex,
+        // Tracking information from job data
+        importId: input.importId,
+        currentIngredientIndex: input.currentIngredientIndex,
+        totalIngredients: input.totalIngredients,
 
         // Processing results
         success: parseResult.success,
         parseStatus: parseResult.parseStatus,
         parsedSegments: parseResult.success
-          ? this.convertParserOutputToSegments(parseResult)
+          ? this.convertParserOutputToSegments(
+              parseResult,
+              parseResult.processingTime
+            )
           : undefined,
         errorMessage: parseResult.errorMessage,
         processingTime: parseResult.processingTime,
@@ -87,24 +115,41 @@ export class ProcessIngredientLineAction extends BaseAction<
 
       return result;
     } catch (error) {
+      // Broadcast processing error
+      await broadcastParsingError(deps, {
+        importId: input.importId,
+        noteId: input.noteId,
+        lineId: input.ingredientLineId,
+        reference: input.reference,
+        errorMessage: `Processing error: ${(error as Error).message}`,
+        context: "parse_html_ingredients",
+      });
+
+      // Return error result
       return {
-        // Pass through original input fields (even on error)
+        // Pass through original input fields
         noteId: input.noteId,
         ingredientLineId: input.ingredientLineId,
         reference: input.reference,
         blockIndex: input.blockIndex,
         lineIndex: input.lineIndex,
+        // Tracking information from job data
+        importId: input.importId,
+        currentIngredientIndex: input.currentIngredientIndex,
+        totalIngredients: input.totalIngredients,
 
         // Error results
         success: false,
         parseStatus: "ERROR",
-        errorMessage: `Parsing failed: ${error}`,
-        processingTime: 0,
+        errorMessage: (error as Error).message,
       };
     }
   }
 
-  private convertParserOutputToSegments(parserOutput: unknown): Array<{
+  private convertParserOutputToSegments(
+    parserOutput: unknown,
+    totalProcessingTime: number
+  ): Array<{
     index: number;
     rule: string;
     type: string;
@@ -120,36 +165,59 @@ export class ProcessIngredientLineAction extends BaseAction<
     }> = [];
     let index = 0;
 
-    // Handle the actual parser output structure (based on test results)
+    // Handle the new parser output structure (with 'segments' property)
     if (
+      parserOutput &&
+      typeof parserOutput === "object" &&
+      parserOutput !== null &&
+      "segments" in parserOutput &&
+      Array.isArray((parserOutput as { segments: unknown }).segments)
+    ) {
+      const segmentsArray = (parserOutput as { segments: unknown[] }).segments;
+      for (const segment of segmentsArray) {
+        if (
+          segment &&
+          typeof segment === "object" &&
+          "rule" in segment &&
+          "type" in segment &&
+          "value" in segment
+        ) {
+          segments.push({
+            index,
+            rule: String(segment.rule),
+            type: String(segment.type),
+            value: String(segment.value),
+            processingTime: totalProcessingTime,
+          });
+          index++;
+        }
+      }
+    }
+    // Handle the old parser output structure (with 'values' property)
+    else if (
       parserOutput &&
       typeof parserOutput === "object" &&
       parserOutput !== null &&
       "values" in parserOutput &&
       Array.isArray((parserOutput as { values: unknown }).values)
     ) {
-      const values = (parserOutput as { values: unknown[] }).values;
-
-      for (const value of values) {
-        if (value && typeof value === "object" && value !== null) {
-          const valueObj = value as Record<string, unknown>;
-
-          // Extract the segment value from the 'value' property
-          const segmentValue =
-            typeof valueObj.value === "string"
-              ? valueObj.value
-              : String(valueObj.value || "");
-
-          // Only add segments with actual values
-          if (segmentValue.trim()) {
-            segments.push({
-              index: index++,
-              rule: (valueObj.rule as string) || "unknown",
-              type: (valueObj.type as string) || "unknown",
-              value: segmentValue.trim(),
-              processingTime: (valueObj.processingTime as number) || undefined,
-            });
-          }
+      const valuesArray = (parserOutput as { values: unknown[] }).values;
+      for (const value of valuesArray) {
+        if (
+          value &&
+          typeof value === "object" &&
+          "rule" in value &&
+          "type" in value &&
+          "value" in value
+        ) {
+          segments.push({
+            index,
+            rule: String(value.rule),
+            type: String(value.type),
+            value: String(value.value),
+            processingTime: totalProcessingTime,
+          });
+          index++;
         }
       }
     }
