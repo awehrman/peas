@@ -27,7 +27,7 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
 
     // Add job to ingredient queue
     const job = await serviceContainer.queues.ingredientQueue.add(
-      "process_ingredient",
+      "process_ingredient_line",
       {
         ingredientLineId,
         reference,

@@ -47,6 +47,19 @@ export class ProcessIngredientsAction extends BaseAction<
     // Process each ingredient line
     for (const line of ingredientLines) {
       try {
+        // Validate line has required fields
+        if (!line.id) {
+          errors.push({
+            lineId: "unknown",
+            error: "Line ID is missing",
+          });
+          deps.logger.log(
+            `[PROCESS_INGREDIENTS] Skipping ingredient line - missing ID`,
+            "error"
+          );
+          continue;
+        }
+
         // Process the ingredient line
         const result = await deps.parseIngredient(line.reference);
 

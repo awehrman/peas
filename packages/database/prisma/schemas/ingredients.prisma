@@ -3,6 +3,8 @@ model Ingredient {
   name             String
   plural           String
   description      String?
+  isReviewed       Boolean              @default(false)
+  reviewedAt       DateTime?
 
   // Alias names (e.g. "Granny Smith")
   aliases          Alias[]

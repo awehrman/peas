@@ -11,6 +11,14 @@ export interface ProcessIngredientLineInput {
 }
 
 export interface ProcessIngredientLineOutput {
+  // Original input fields (needed by next action)
+  noteId: string;
+  ingredientLineId: string;
+  reference: string;
+  blockIndex: number;
+  lineIndex: number;
+
+  // Processing results
   success: boolean;
   parseStatus: "CORRECT" | "INCORRECT" | "ERROR";
   parsedSegments?: Array<{
@@ -60,6 +68,14 @@ export class ProcessIngredientLineAction extends BaseAction<
       );
 
       const result: ProcessIngredientLineOutput = {
+        // Pass through original input fields
+        noteId,
+        ingredientLineId,
+        reference,
+        blockIndex,
+        lineIndex,
+
+        // Processing results
         success: parseResult.success,
         parseStatus: parseResult.parseStatus,
         parsedSegments:
@@ -73,6 +89,14 @@ export class ProcessIngredientLineAction extends BaseAction<
       return result;
     } catch (error) {
       return {
+        // Pass through original input fields (even on error)
+        noteId: input.noteId,
+        ingredientLineId: input.ingredientLineId,
+        reference: input.reference,
+        blockIndex: input.blockIndex,
+        lineIndex: input.lineIndex,
+
+        // Error results
         success: false,
         parseStatus: "ERROR",
         errorMessage: `Parsing failed: ${error}`,
@@ -95,40 +119,51 @@ export class ProcessIngredientLineAction extends BaseAction<
     }> = [];
     let index = 0;
 
-    // Handle the parser output structure with proper type guards
+    // Log the raw parser output for debugging
+    console.log("Raw parser output:", JSON.stringify(parserOutput, null, 2));
+
+    // Handle the actual parser output structure (based on test results)
     if (
       parserOutput &&
       typeof parserOutput === "object" &&
       parserOutput !== null &&
-      "parsed" in parserOutput &&
-      Array.isArray((parserOutput as { parsed: unknown }).parsed)
+      "values" in parserOutput &&
+      Array.isArray((parserOutput as { values: unknown }).values)
     ) {
-      const parsed = (parserOutput as { parsed: unknown[] }).parsed;
-      for (const parsedItem of parsed) {
-        if (
-          parsedItem &&
-          typeof parsedItem === "object" &&
-          "values" in parsedItem &&
-          Array.isArray((parsedItem as { values: unknown }).values)
-        ) {
-          const values = (parsedItem as { values: unknown[] }).values;
-          for (const value of values) {
-            if (value && typeof value === "object" && value !== null) {
-              const valueObj = value as Record<string, unknown>;
-              segments.push({
-                index: index++,
-                rule: (valueObj.rule as string) || "unknown",
-                type: (valueObj.type as string) || "unknown",
-                value: Array.isArray(valueObj.values)
-                  ? (valueObj.values as string[]).join(" ")
-                  : String(valueObj.values || ""),
-              });
-            }
+      const values = (parserOutput as { values: unknown[] }).values;
+      console.log("Values array:", JSON.stringify(values, null, 2));
+
+      for (const value of values) {
+        if (value && typeof value === "object" && value !== null) {
+          const valueObj = value as Record<string, unknown>;
+          console.log("Value object:", JSON.stringify(valueObj, null, 2));
+
+          // Extract the segment value from the 'value' property
+          const segmentValue =
+            typeof valueObj.value === "string"
+              ? valueObj.value
+              : String(valueObj.value || "");
+
+          // Only add segments with actual values
+          if (segmentValue.trim()) {
+            segments.push({
+              index: index++,
+              rule: (valueObj.rule as string) || "unknown",
+              type: (valueObj.type as string) || "unknown",
+              value: segmentValue.trim(),
+            });
+
+            console.log(`Created segment ${index - 1}:`, {
+              rule: (valueObj.rule as string) || "unknown",
+              type: (valueObj.type as string) || "unknown",
+              value: segmentValue.trim(),
+            });
           }
         }
       }
     }
 
+    console.log("Final segments:", JSON.stringify(segments, null, 2));
     return segments;
   }
 }

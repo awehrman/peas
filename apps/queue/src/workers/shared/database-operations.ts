@@ -7,7 +7,59 @@ export class DatabaseOperations {
   constructor(private prisma: PrismaClient) {}
 
   /**
-   * Update parsed ingredient line with parse status
+   * Create or update parsed ingredient line
+   */
+  async createOrUpdateParsedIngredientLine(
+    lineId: string,
+    data: {
+      blockIndex: number;
+      lineIndex: number;
+      reference: string;
+      noteId?: string;
+      parseStatus: "CORRECT" | "INCORRECT" | "ERROR";
+      parsedAt?: Date;
+    }
+  ): Promise<void> {
+    if (!lineId) {
+      throw new Error(
+        "lineId is required for createOrUpdateParsedIngredientLine"
+      );
+    }
+
+    try {
+      // Try to update first
+      await this.prisma.parsedIngredientLine.update({
+        where: { id: lineId },
+        data: {
+          parseStatus: data.parseStatus,
+          parsedAt: data.parsedAt || new Date(),
+        },
+      });
+    } catch (error) {
+      // If record doesn't exist, create it
+      if (
+        error instanceof Error &&
+        error.message.includes("No record was found")
+      ) {
+        await this.prisma.parsedIngredientLine.create({
+          data: {
+            id: lineId,
+            blockIndex: data.blockIndex,
+            lineIndex: data.lineIndex,
+            reference: data.reference,
+            noteId: data.noteId || null, // Make noteId optional
+            parseStatus: data.parseStatus,
+            parsedAt: data.parsedAt || new Date(),
+          },
+        });
+      } else {
+        throw error;
+      }
+    }
+  }
+
+  /**
+   * Update parsed ingredient line with parse status (deprecated - use createOrUpdateParsedIngredientLine)
    */
   async updateParsedIngredientLine(
     lineId: string,
@@ -16,6 +68,10 @@ export class DatabaseOperations {
       parsedAt?: Date;
     }
   ): Promise<void> {
+    if (!lineId) {
+      throw new Error("lineId is required for updateParsedIngredientLine");
+    }
+
     await this.prisma.parsedIngredientLine.update({
       where: { id: lineId },
       data: {
@@ -37,6 +93,10 @@ export class DatabaseOperations {
       value: string;
     }>
   ): Promise<void> {
+    if (!ingredientLineId) {
+      throw new Error("ingredientLineId is required for replaceParsedSegments");
+    }
+
     // Delete existing segments first
     await this.prisma.parsedSegment.deleteMany({
       where: { ingredientLineId },
@@ -70,6 +130,13 @@ export class DatabaseOperations {
     confidence?: number;
     context?: string;
   }): Promise<void> {
+    if (!data.ingredientId) {
+      throw new Error("ingredientId is required for createIngredientReference");
+    }
+    if (!data.parsedLineId) {
+      throw new Error("parsedLineId is required for createIngredientReference");
+    }
+
     try {
       await this.prisma.ingredientReference.create({
         data: {

@@ -43,6 +43,16 @@ export class SaveIngredientLineAction extends BaseAction<
         reference,
       } = input;
 
+      // Validate required fields
+      if (!ingredientLineId) {
+        throw new Error(
+          "ingredientLineId is required for SaveIngredientLineAction"
+        );
+      }
+      if (!noteId) {
+        throw new Error("noteId is required for SaveIngredientLineAction");
+      }
+
       // Log the parsed segments that will be saved
       deps.logger?.log(
         `[SAVE_INGREDIENT_LINE] Saving parsed segments for note ${noteId}, ingredientLineId=${ingredientLineId}: ${JSON.stringify(parsedSegments, null, 2)}`
@@ -54,8 +64,12 @@ export class SaveIngredientLineAction extends BaseAction<
       try {
         const dbOps = new DatabaseOperations(deps.database.prisma);
 
-        // Update the ParsedIngredientLine with parse status
-        await dbOps.updateParsedIngredientLine(ingredientLineId, {
+        // Create or update the ParsedIngredientLine with parse status
+        await dbOps.createOrUpdateParsedIngredientLine(ingredientLineId, {
+          blockIndex: input.blockIndex,
+          lineIndex: input.lineIndex,
+          reference: input.reference,
+          noteId: input.noteId,
           parseStatus: parseStatus as "CORRECT" | "INCORRECT" | "ERROR",
           parsedAt: success ? new Date() : undefined,
         });
@@ -115,6 +129,13 @@ export class SaveIngredientLineAction extends BaseAction<
     noteId?: string
   ): Promise<void> {
     try {
+      if (!ingredientLineId) {
+        deps.logger?.log(
+          `[TRACK_INGREDIENTS] Skipping ingredient tracking - ingredientLineId is undefined`
+        );
+        return;
+      }
+
       const dbOps = new DatabaseOperations(deps.database.prisma);
 
       // Find all segments with type "ingredient"
