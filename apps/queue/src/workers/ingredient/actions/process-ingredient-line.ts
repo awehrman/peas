@@ -78,10 +78,9 @@ export class ProcessIngredientLineAction extends BaseAction<
         // Processing results
         success: parseResult.success,
         parseStatus: parseResult.parseStatus,
-        parsedSegments:
-          parseResult.success && parseResult.segments
-            ? this.convertParserOutputToSegments(parseResult.segments)
-            : undefined,
+        parsedSegments: parseResult.success
+          ? this.convertParserOutputToSegments(parseResult)
+          : undefined,
         errorMessage: parseResult.errorMessage,
         processingTime: parseResult.processingTime,
       };
@@ -119,9 +118,6 @@ export class ProcessIngredientLineAction extends BaseAction<
     }> = [];
     let index = 0;
 
-    // Log the raw parser output for debugging
-    console.log("Raw parser output:", JSON.stringify(parserOutput, null, 2));
-
     // Handle the actual parser output structure (based on test results)
     if (
       parserOutput &&
@@ -131,12 +127,10 @@ export class ProcessIngredientLineAction extends BaseAction<
       Array.isArray((parserOutput as { values: unknown }).values)
     ) {
       const values = (parserOutput as { values: unknown[] }).values;
-      console.log("Values array:", JSON.stringify(values, null, 2));
 
       for (const value of values) {
         if (value && typeof value === "object" && value !== null) {
           const valueObj = value as Record<string, unknown>;
-          console.log("Value object:", JSON.stringify(valueObj, null, 2));
 
           // Extract the segment value from the 'value' property
           const segmentValue =
@@ -152,18 +146,11 @@ export class ProcessIngredientLineAction extends BaseAction<
               type: (valueObj.type as string) || "unknown",
               value: segmentValue.trim(),
             });
-
-            console.log(`Created segment ${index - 1}:`, {
-              rule: (valueObj.rule as string) || "unknown",
-              type: (valueObj.type as string) || "unknown",
-              value: segmentValue.trim(),
-            });
           }
         }
       }
     }
 
-    console.log("Final segments:", JSON.stringify(segments, null, 2));
     return segments;
   }
 }

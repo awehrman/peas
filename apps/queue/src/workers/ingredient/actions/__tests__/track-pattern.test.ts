@@ -30,7 +30,7 @@ describe("TrackPatternAction", () => {
       noteId: "test-note-123",
       ingredientLineId: "test-line-456",
       reference: "2 cups kosher salt",
-      segments: [
+      parsedSegments: [
         {
           index: 0,
           rule: "#1_ingredientLine >> #2_quantities >> #1_quantityWithSpace >> #3_amounts >> #4_amountExpression >> #5_amount",
@@ -62,19 +62,19 @@ describe("TrackPatternAction", () => {
       expect(mockPatternTracker.trackPattern).toHaveBeenCalledWith(
         [
           {
-            rule: mockInput.segments[0]!.rule,
-            type: mockInput.segments[0]!.type,
-            value: mockInput.segments[0]!.value,
+            rule: mockInput.parsedSegments![0]!.rule,
+            type: mockInput.parsedSegments![0]!.type,
+            value: mockInput.parsedSegments![0]!.value,
           },
           {
-            rule: mockInput.segments[1]!.rule,
-            type: mockInput.segments[1]!.type,
-            value: mockInput.segments[1]!.value,
+            rule: mockInput.parsedSegments![1]!.rule,
+            type: mockInput.parsedSegments![1]!.type,
+            value: mockInput.parsedSegments![1]!.value,
           },
           {
-            rule: mockInput.segments[2]!.rule,
-            type: mockInput.segments[2]!.type,
-            value: mockInput.segments[2]!.value,
+            rule: mockInput.parsedSegments![2]!.rule,
+            type: mockInput.parsedSegments![2]!.type,
+            value: mockInput.parsedSegments![2]!.value,
           },
         ],
         mockInput.reference
@@ -128,7 +128,7 @@ describe("TrackPatternAction", () => {
     it("should work with empty segments", async () => {
       const inputWithEmptySegments: TrackPatternInput = {
         ...mockInput,
-        segments: [],
+        parsedSegments: [],
       };
 
       const result = await trackPatternAction.execute(
@@ -137,6 +137,7 @@ describe("TrackPatternAction", () => {
       );
 
       expect(result).toEqual(inputWithEmptySegments);
+      // Empty array should still call trackPattern with empty array
       expect(mockPatternTracker.trackPattern).toHaveBeenCalledWith(
         [],
         mockInput.reference
@@ -146,7 +147,7 @@ describe("TrackPatternAction", () => {
     it("should work with single segment", async () => {
       const inputWithSingleSegment: TrackPatternInput = {
         ...mockInput,
-        segments: [mockInput.segments[0]!],
+        parsedSegments: [mockInput.parsedSegments![0]!],
       };
 
       const result = await trackPatternAction.execute(
@@ -158,13 +159,35 @@ describe("TrackPatternAction", () => {
       expect(mockPatternTracker.trackPattern).toHaveBeenCalledWith(
         [
           {
-            rule: mockInput.segments[0]!.rule,
-            type: mockInput.segments[0]!.type,
-            value: mockInput.segments[0]!.value,
+            rule: mockInput.parsedSegments![0]!.rule,
+            type: mockInput.parsedSegments![0]!.type,
+            value: mockInput.parsedSegments![0]!.value,
           },
         ],
         mockInput.reference
       );
+    });
+
+    it("should handle undefined parsedSegments gracefully", async () => {
+      const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+      const inputWithUndefinedSegments: TrackPatternInput = {
+        ...mockInput,
+        parsedSegments: undefined,
+      };
+
+      const result = await trackPatternAction.execute(
+        inputWithUndefinedSegments,
+        mockDbOps
+      );
+
+      expect(result).toEqual(inputWithUndefinedSegments);
+      expect(mockPatternTracker.trackPattern).not.toHaveBeenCalled();
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "[TRACK_PATTERN] No parsed segments to track, skipping pattern tracking"
+      );
+
+      consoleSpy.mockRestore();
     });
   });
 

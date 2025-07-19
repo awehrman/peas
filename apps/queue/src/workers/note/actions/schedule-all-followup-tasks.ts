@@ -18,6 +18,21 @@ export interface ScheduleAllFollowupTasksDeps {
   };
   addStatusEventAndBroadcast: (event: StatusEvent) => Promise<unknown>;
   logger: { log: (message: string, level?: string) => void };
+  database: {
+    createNoteCompletionTracker: (
+      noteId: string,
+      totalJobs: number
+    ) => Promise<unknown>;
+    updateNoteCompletionTracker: (
+      noteId: string,
+      completedJobs: number
+    ) => Promise<unknown>;
+    checkNoteCompletion: (noteId: string) => Promise<{
+      isComplete: boolean;
+      completedJobs: number;
+      totalJobs: number;
+    }>;
+  };
 }
 
 export interface ScheduleAllFollowupTasksData {
@@ -46,6 +61,24 @@ export class ScheduleAllFollowupTasksAction extends BaseAction<
     deps.logger.log(
       `[SCHEDULE_ALL_FOLLOWUP] Scheduling all follow-up tasks for note ${note.id}`
     );
+
+    // Calculate total number of jobs to track
+    const ingredientLines = note?.parsedIngredientLines || [];
+    const instructionLines = note?.parsedInstructionLines || [];
+    const totalJobs = ingredientLines.length + instructionLines.length;
+
+    deps.logger.log(
+      `[SCHEDULE_ALL_FOLLOWUP] Total jobs to track: ${totalJobs} (${ingredientLines.length} ingredients, ${instructionLines.length} instructions)`
+    );
+
+    // Create completion tracker if we have jobs to track
+    if (totalJobs > 0) {
+      await deps.database.createNoteCompletionTracker(note.id, totalJobs);
+
+      deps.logger.log(
+        `[SCHEDULE_ALL_FOLLOWUP] Created completion tracker for note ${note.id} with ${totalJobs} total jobs`
+      );
+    }
 
     // Schedule all follow-up tasks concurrently
     const schedulePromises: Promise<unknown>[] = [];

@@ -34,6 +34,22 @@ export interface NoteWorkerDependencies {
   logger: {
     log: (message: string, level?: LogLevel) => void;
   };
+  /** Database methods for job completion tracking */
+  database: {
+    createNoteCompletionTracker: (
+      noteId: string,
+      totalJobs: number
+    ) => Promise<unknown>;
+    updateNoteCompletionTracker: (
+      noteId: string,
+      completedJobs: number
+    ) => Promise<unknown>;
+    checkNoteCompletion: (noteId: string) => Promise<{
+      isComplete: boolean;
+      completedJobs: number;
+      totalJobs: number;
+    }>;
+  };
 }
 
 /**

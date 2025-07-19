@@ -67,7 +67,7 @@ describe("Pattern Tracking Integration", () => {
         noteId: "test-note-123",
         ingredientLineId: "test-line-456",
         reference: exampleLine,
-        segments: mockSegments,
+        parsedSegments: mockSegments,
       };
 
       const result = await trackPatternAction.execute(input, dbOps);
@@ -140,7 +140,7 @@ describe("Pattern Tracking Integration", () => {
         noteId: "test-note-123",
         ingredientLineId: "test-line-789",
         reference: exampleLine,
-        segments: mockSegments,
+        parsedSegments: mockSegments,
       };
 
       const result = await trackPatternAction.execute(input, dbOps);
@@ -222,7 +222,7 @@ describe("Pattern Tracking Integration", () => {
           noteId: "test-note-123",
           ingredientLineId: "test-line-456",
           reference: testCase.exampleLine,
-          segments: testCase.segments,
+          parsedSegments: testCase.segments,
         };
 
         await trackPatternAction.execute(input, dbOps);

@@ -152,6 +152,21 @@ function createNoteDependenciesFromContainer(container: IServiceContainer): {
   categorizationQueue: Queue;
   sourceQueue: Queue;
   addStatusEventAndBroadcast: (event: StatusEvent) => Promise<unknown>;
+  database: {
+    createNoteCompletionTracker: (
+      noteId: string,
+      totalJobs: number
+    ) => Promise<unknown>;
+    updateNoteCompletionTracker: (
+      noteId: string,
+      completedJobs: number
+    ) => Promise<unknown>;
+    checkNoteCompletion: (noteId: string) => Promise<{
+      isComplete: boolean;
+      completedJobs: number;
+      totalJobs: number;
+    }>;
+  };
 } {
   return {
     parseHTML: async (content: string): Promise<ParsedHtmlFile> => {
@@ -179,6 +194,40 @@ function createNoteDependenciesFromContainer(container: IServiceContainer): {
       } else {
         return Promise.resolve();
       }
+    },
+    database: {
+      createNoteCompletionTracker: async (
+        noteId: string,
+        totalJobs: number
+      ) => {
+        // TODO: Implement actual database tracking
+        container.logger?.log(
+          `[DATABASE] Creating completion tracker for note ${noteId} with ${totalJobs} jobs`
+        );
+        return Promise.resolve();
+      },
+      updateNoteCompletionTracker: async (
+        noteId: string,
+        completedJobs: number
+      ) => {
+        // TODO: Implement actual database tracking
+        container.logger?.log(
+          `[DATABASE] Updating completion tracker for note ${noteId}: ${completedJobs} jobs completed`
+        );
+        return Promise.resolve();
+      },
+      checkNoteCompletion: async (noteId: string) => {
+        // TODO: Implement actual database tracking
+        container.logger?.log(
+          `[DATABASE] Checking completion status for note ${noteId}`
+        );
+        // For now, always return complete to avoid blocking
+        return Promise.resolve({
+          isComplete: true,
+          completedJobs: 1,
+          totalJobs: 1,
+        });
+      },
     },
   };
 }

@@ -25,6 +25,11 @@ describe("ScheduleAllFollowupTasksAction", () => {
       sourceQueue: {
         add: vi.fn().mockResolvedValue({ id: "source-job-123" }),
       },
+      database: {
+        createNoteCompletionTracker: vi.fn().mockResolvedValue(undefined),
+        updateNoteCompletionTracker: vi.fn().mockResolvedValue(undefined),
+        checkNoteCompletion: vi.fn().mockResolvedValue(true),
+      },
       addStatusEventAndBroadcast: vi.fn().mockResolvedValue(undefined),
       logger: {
         log: vi.fn(),

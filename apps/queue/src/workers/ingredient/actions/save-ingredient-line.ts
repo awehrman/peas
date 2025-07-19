@@ -17,6 +17,19 @@ export interface SaveIngredientLineInput extends ProcessIngredientLineOutput {
 }
 
 export interface SaveIngredientLineOutput {
+  // Pass through original input fields needed by next actions
+  noteId: string;
+  ingredientLineId: string;
+  reference: string;
+  blockIndex: number;
+  lineIndex: number;
+  parsedSegments?: Array<{
+    index: number;
+    rule: string;
+    type: string;
+    value: string;
+  }>;
+  // Save operation results
   success: boolean;
   segmentsSaved: number;
   parseStatus: string;
@@ -96,12 +109,20 @@ export class SaveIngredientLineAction extends BaseAction<
         );
       } catch (dbError) {
         deps.logger?.log(
-          `[SAVE_INGREDIENT_LINE] Database save failed: ${dbError instanceof Error ? dbError.message : String(dbError)}`
+          `[SAVE_INGREDIENT_LINE] Database save failed: ${dbError instanceof Error ? dbError.toString() : String(dbError)}`
         );
         throw new Error(`Database save failed: ${dbError}`);
       }
 
       const result: SaveIngredientLineOutput = {
+        // Pass through original input fields needed by next actions
+        noteId: input.noteId,
+        ingredientLineId: input.ingredientLineId,
+        reference: input.reference,
+        blockIndex: input.blockIndex,
+        lineIndex: input.lineIndex,
+        parsedSegments: input.parsedSegments,
+        // Save operation results
         success,
         segmentsSaved,
         parseStatus,
@@ -109,7 +130,9 @@ export class SaveIngredientLineAction extends BaseAction<
 
       return result;
     } catch (error) {
-      throw new Error(`Failed to save ingredient line: ${error}`);
+      throw new Error(
+        `Failed to save ingredient line: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 

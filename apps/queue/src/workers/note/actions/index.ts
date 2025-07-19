@@ -27,6 +27,7 @@ import {
 
 /**
  * Custom action that broadcasts note completion with the note title
+ * Only broadcasts completion when all scheduled jobs are finished
  */
 class NoteCompletedStatusAction extends BaseAction<
   NotePipelineStage3,
@@ -39,6 +40,32 @@ class NoteCompletedStatusAction extends BaseAction<
     deps: NoteWorkerDependencies,
     _context: ActionContext
   ) {
+    const { note } = data;
+
+    // Check if all scheduled jobs are complete
+    if (note?.id) {
+      try {
+        const completionStatus = await deps.database.checkNoteCompletion(
+          note.id
+        );
+
+        if (!completionStatus.isComplete) {
+          deps.logger.log(
+            `[NOTE_COMPLETED_STATUS] Note ${note.id} not yet complete: ${completionStatus.completedJobs}/${completionStatus.totalJobs} jobs finished. Skipping completion broadcast.`
+          );
+          return data;
+        }
+
+        deps.logger.log(
+          `[NOTE_COMPLETED_STATUS] Note ${note.id} is complete: ${completionStatus.completedJobs}/${completionStatus.totalJobs} jobs finished. Broadcasting completion.`
+        );
+      } catch (error) {
+        deps.logger.log(
+          `[NOTE_COMPLETED_STATUS] Error checking completion status for note ${note.id}: ${error}. Proceeding with completion broadcast.`
+        );
+      }
+    }
+
     // Use note title if available, otherwise fall back to import ID
     const title = data.note?.title;
     const message = title

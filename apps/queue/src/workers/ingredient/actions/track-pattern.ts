@@ -5,7 +5,7 @@ export interface TrackPatternInput {
   noteId: string;
   ingredientLineId: string;
   reference: string; // The original ingredient line text
-  segments: Array<{
+  parsedSegments?: Array<{
     index: number;
     rule: string;
     type: string;
@@ -28,8 +28,16 @@ export class TrackPatternAction extends BaseAction<
     deps: DatabaseOperations
   ): Promise<TrackPatternInput> {
     try {
+      // Check if we have parsed segments to track
+      if (!input.parsedSegments) {
+        console.log(
+          "[TRACK_PATTERN] No parsed segments to track, skipping pattern tracking"
+        );
+        return input;
+      }
+
       // Convert segments to the format expected by PatternTracker
-      const parsedSegments = input.segments.map((segment) => ({
+      const parsedSegments = input.parsedSegments.map((segment) => ({
         rule: segment.rule,
         type: segment.type,
         value: segment.value,
