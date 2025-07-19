@@ -1,13 +1,7 @@
 import { Queue } from "bullmq";
 import { BaseWorker } from "../core/base-worker";
 import { ActionContext } from "../core/types";
-import {
-  ProcessIngredientLineAction,
-  SaveIngredientLineAction,
-  ProcessIngredientsAction,
-  ScheduleCategorizationAfterCompletionAction,
-  UpdateIngredientCountAction,
-} from "./actions";
+import { registerIngredientActions } from "./actions";
 import { IServiceContainer } from "../../services/container";
 import type { IngredientWorkerDependencies, IngredientJobData } from "./types";
 import type { BaseAction } from "../core/base-action";
@@ -22,27 +16,7 @@ export class IngredientWorker extends BaseWorker<
   IngredientWorkerDependencies
 > {
   protected registerActions(): void {
-    // Register ingredient actions
-    this.actionFactory.register(
-      "process_ingredient_line",
-      () => new ProcessIngredientLineAction()
-    );
-    this.actionFactory.register(
-      "save_ingredient_line",
-      () => new SaveIngredientLineAction()
-    );
-    this.actionFactory.register(
-      "process_ingredients",
-      () => new ProcessIngredientsAction()
-    );
-    this.actionFactory.register(
-      "schedule_categorization_after_completion",
-      () => new ScheduleCategorizationAfterCompletionAction()
-    );
-    this.actionFactory.register(
-      "update_ingredient_count",
-      () => new UpdateIngredientCountAction()
-    );
+    registerIngredientActions(this.actionFactory);
   }
 
   protected getOperationName(): string {

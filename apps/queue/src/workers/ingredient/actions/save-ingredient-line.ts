@@ -2,7 +2,7 @@ import { BaseAction } from "../../core/base-action";
 import { ActionContext } from "../../core/types";
 import type { IngredientWorkerDependencies } from "../types";
 import { ProcessIngredientLineOutput } from "./process-ingredient-line";
-import pluralize from "pluralize";
+import { DatabaseOperations } from "../../shared/database-operations";
 
 export interface SaveIngredientLineInput extends ProcessIngredientLineOutput {
   noteId: string;
@@ -52,35 +52,17 @@ export class SaveIngredientLineAction extends BaseAction<
       let segmentsSaved = 0;
 
       try {
+        const dbOps = new DatabaseOperations(deps.database.prisma);
+
         // Update the ParsedIngredientLine with parse status
-        await deps.database.prisma.parsedIngredientLine.update({
-          where: { id: ingredientLineId },
-          data: {
-            parseStatus: parseStatus as "CORRECT" | "INCORRECT" | "ERROR", // Cast to ParseStatus enum
-            parsedAt: success ? new Date() : null,
-          },
+        await dbOps.updateParsedIngredientLine(ingredientLineId, {
+          parseStatus: parseStatus as "CORRECT" | "INCORRECT" | "ERROR",
+          parsedAt: success ? new Date() : undefined,
         });
 
         // If parsing was successful and we have segments, create ParsedSegment records
         if (success && parsedSegments && parsedSegments.length > 0) {
-          // Delete existing segments first (in case of re-parsing)
-          await deps.database.prisma.parsedSegment.deleteMany({
-            where: { ingredientLineId },
-          });
-
-          // Create new segments
-          const segmentData = parsedSegments.map((segment) => ({
-            index: segment.index,
-            rule: segment.rule,
-            type: segment.type,
-            value: segment.value,
-            ingredientLineId,
-          }));
-
-          await deps.database.prisma.parsedSegment.createMany({
-            data: segmentData,
-          });
-
+          await dbOps.replaceParsedSegments(ingredientLineId, parsedSegments);
           segmentsSaved = parsedSegments.length;
         }
 
@@ -133,6 +115,8 @@ export class SaveIngredientLineAction extends BaseAction<
     noteId?: string
   ): Promise<void> {
     try {
+      const dbOps = new DatabaseOperations(deps.database.prisma);
+
       // Find all segments with type "ingredient"
       const ingredientSegments = parsedSegments.filter(
         (segment) => segment.type === "ingredient"
@@ -156,52 +140,30 @@ export class SaveIngredientLineAction extends BaseAction<
           continue;
         }
 
-        // Get singular and plural forms
-        const singular = pluralize.singular(ingredientName);
-        const plural = pluralize.plural(ingredientName);
+        // Find or create ingredient using DatabaseOperations
+        const {
+          id: ingredientId,
+          name: name,
+          isNew,
+        } = await dbOps.findOrCreateIngredient(ingredientName, reference);
 
         deps.logger?.log(
-          `[TRACK_INGREDIENTS] Processing ingredient: "${ingredientName}" (singular: "${singular}", plural: "${plural}")`
+          `[TRACK_INGREDIENTS] ${isNew ? "Created new" : "Found existing"} ingredient: "${name}" (ID: ${ingredientId})`
         );
 
-        // Try to find existing ingredient by name or plural
-        let ingredient = await deps.database.prisma.ingredient.findFirst({
-          where: {
-            OR: [
-              { name: singular },
-              { name: plural },
-              { name: ingredientName },
-              {
-                aliases: {
-                  some: { name: { in: [singular, plural, ingredientName] } },
-                },
-              },
-            ],
-          },
+        // Create ingredient reference using DatabaseOperations
+        await dbOps.createIngredientReference({
+          ingredientId,
+          parsedLineId: ingredientLineId,
+          segmentIndex: segment.index,
+          reference,
+          noteId,
+          confidence: 1.0,
+          context: "main_ingredient",
         });
 
-        if (!ingredient) {
-          // Create new ingredient
-          ingredient = await deps.database.prisma.ingredient.create({
-            data: {
-              name: singular,
-              plural: plural,
-              description: `Ingredient found in recipe: ${reference}`,
-            },
-          });
-
-          deps.logger?.log(
-            `[TRACK_INGREDIENTS] Created new ingredient: "${ingredient.name}" (ID: ${ingredient.id})`
-          );
-        } else {
-          deps.logger?.log(
-            `[TRACK_INGREDIENTS] Found existing ingredient: "${ingredient.name}" (ID: ${ingredient.id})`
-          );
-        }
-
-        // TODO: Create ingredient reference when IngredientReference model is migrated
         deps.logger?.log(
-          `[TRACK_INGREDIENTS] Would create reference for "${ingredient.name}" in line "${reference}" (noteId: ${noteId}, model not migrated yet)`
+          `[TRACK_INGREDIENTS] Created reference for "${name}" in line "${reference}"`
         );
       }
     } catch (error) {

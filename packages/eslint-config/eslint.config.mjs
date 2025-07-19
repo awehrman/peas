@@ -16,6 +16,12 @@ export default [
       "**/dist/**",
       "**/*.peggy",
       "**/*.pegjs",
+      "dist/",
+      "build/",
+      "*.min.js",
+      "schema.prisma",
+      "prisma/migrations/",
+      "node_modules/",
     ],
   },
 

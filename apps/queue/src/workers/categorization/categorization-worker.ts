@@ -1,10 +1,7 @@
 import { Queue } from "bullmq";
 import { BaseWorker } from "../core/base-worker";
 import { ActionContext } from "../core/types";
-import {
-  ProcessCategorizationAction,
-  SaveCategorizationAction,
-} from "./actions";
+import { registerCategorizationActions } from "./actions";
 import { IServiceContainer } from "../../services/container";
 import type {
   CategorizationWorkerDependencies,
@@ -23,15 +20,7 @@ export class CategorizationWorker extends BaseWorker<
   CategorizationWorkerDependencies
 > {
   protected registerActions(): void {
-    // Register categorization actions
-    this.actionFactory.register(
-      "process_categorization",
-      () => new ProcessCategorizationAction()
-    );
-    this.actionFactory.register(
-      "save_categorization",
-      () => new SaveCategorizationAction()
-    );
+    registerCategorizationActions(this.actionFactory);
   }
 
   protected getOperationName(): string {

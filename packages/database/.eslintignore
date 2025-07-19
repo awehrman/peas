@@ -1,9 +1,0 @@
-# Generated schema file
-schema.prisma
-
-# Prisma migrations
-prisma/migrations/
-
-# Build outputs
-dist/
-node_modules/ 

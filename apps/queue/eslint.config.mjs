@@ -15,6 +15,9 @@ export default [
       "**/dist/**",
       "**/*.peggy",
       "**/*.pegjs",
+      "dist/",
+      "build/",
+      "*.min.js",
     ],
   },
 

@@ -1,8 +1,7 @@
 import { Queue } from "bullmq";
 import { BaseWorker } from "../core/base-worker";
 import { ActionContext } from "../core/types";
-import { ProcessSourceAction, SaveSourceAction } from "./actions";
-import { AddProcessingStatusAction, AddCompletedStatusAction } from "./actions";
+import { registerSourceActions } from "./actions";
 import { IServiceContainer } from "../../services/container";
 import type { SourceWorkerDependencies, SourceJobData } from "./types";
 import type { BaseAction } from "../core/base-action";
@@ -16,20 +15,7 @@ export class SourceWorker extends BaseWorker<
   SourceWorkerDependencies
 > {
   protected registerActions(): void {
-    // Register source actions
-    this.actionFactory.register(
-      "process_source",
-      () => new ProcessSourceAction()
-    );
-    this.actionFactory.register("save_source", () => new SaveSourceAction());
-    this.actionFactory.register(
-      "source_processing_status",
-      () => new AddProcessingStatusAction()
-    );
-    this.actionFactory.register(
-      "source_completed_status",
-      () => new AddCompletedStatusAction()
-    );
+    registerSourceActions(this.actionFactory);
   }
 
   protected getOperationName(): string {

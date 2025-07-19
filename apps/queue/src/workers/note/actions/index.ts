@@ -20,6 +20,10 @@ import { ScheduleAllFollowupTasksAction } from "./schedule-all-followup-tasks";
 import { BaseAction } from "../../core/base-action";
 import { ActionContext } from "../../core/types";
 import type { NoteWorkerDependencies, NotePipelineStage3 } from "../types";
+import {
+  registerActions,
+  createActionRegistration,
+} from "../../shared/action-registry";
 
 /**
  * Custom action that broadcasts note completion with the note title
@@ -60,25 +64,24 @@ class NoteCompletedStatusAction extends BaseAction<
  * Register all note actions in the given ActionFactory
  */
 export function registerNoteActions(factory: ActionFactory) {
-  factory.register("parse_html", () => new ParseHtmlAction());
-  factory.register("clean_html", () => new CleanHtmlAction());
-  factory.register("save_note", () => new SaveNoteAction());
-  factory.register("schedule_images", () => new ScheduleImagesAction());
-  factory.register("schedule_source", () => new ScheduleSourceAction());
-  factory.register(
-    "schedule_ingredients",
-    () => new ScheduleIngredientsAction()
-  );
-  factory.register(
-    "schedule_instructions",
-    () => new ScheduleInstructionsAction()
-  );
-  factory.register(
-    "schedule_all_followup_tasks",
-    () => new ScheduleAllFollowupTasksAction()
-  );
-  factory.register(
-    "note_completed_status",
-    () => new NoteCompletedStatusAction()
-  );
+  registerActions(factory, [
+    createActionRegistration("parse_html", ParseHtmlAction),
+    createActionRegistration("clean_html", CleanHtmlAction),
+    createActionRegistration("save_note", SaveNoteAction),
+    createActionRegistration("schedule_images", ScheduleImagesAction),
+    createActionRegistration("schedule_source", ScheduleSourceAction),
+    createActionRegistration("schedule_ingredients", ScheduleIngredientsAction),
+    createActionRegistration(
+      "schedule_instructions",
+      ScheduleInstructionsAction
+    ),
+    createActionRegistration(
+      "schedule_all_followup_tasks",
+      ScheduleAllFollowupTasksAction
+    ),
+    createActionRegistration(
+      "note_completed_status",
+      NoteCompletedStatusAction
+    ),
+  ]);
 }

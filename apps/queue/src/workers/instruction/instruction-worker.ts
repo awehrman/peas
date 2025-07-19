@@ -1,12 +1,7 @@
 import { Queue } from "bullmq";
 import { BaseWorker } from "../core/base-worker";
 import { ActionContext } from "../core/types";
-import {
-  ProcessInstructionLineAction,
-  SaveInstructionLineAction,
-  UpdateInstructionCountAction,
-  InstructionCompletedStatusAction,
-} from "./actions";
+import { registerInstructionActions } from "./actions";
 import { IServiceContainer } from "../../services/container";
 import type {
   InstructionWorkerDependencies,
@@ -22,23 +17,7 @@ export class InstructionWorker extends BaseWorker<
   InstructionWorkerDependencies
 > {
   protected registerActions(): void {
-    // Register instruction actions
-    this.actionFactory.register(
-      "process_instruction_line",
-      () => new ProcessInstructionLineAction()
-    );
-    this.actionFactory.register(
-      "save_instruction_line",
-      () => new SaveInstructionLineAction()
-    );
-    this.actionFactory.register(
-      "update_instruction_count",
-      () => new UpdateInstructionCountAction()
-    );
-    this.actionFactory.register(
-      "instruction_completed_status",
-      () => new InstructionCompletedStatusAction()
-    );
+    registerInstructionActions(this.actionFactory);
   }
 
   protected getOperationName(): string {

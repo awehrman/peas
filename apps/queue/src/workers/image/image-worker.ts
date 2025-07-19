@@ -1,7 +1,7 @@
 import { Queue } from "bullmq";
 import { BaseWorker } from "../core/base-worker";
 import { ActionContext } from "../core/types";
-import { ProcessImageAction, SaveImageAction } from "./actions";
+import { registerImageActions } from "./actions";
 import { IServiceContainer } from "../../services/container";
 import type {
   ImageWorkerDependencies,
@@ -21,12 +21,7 @@ export class ImageWorker extends BaseWorker<
   ImageWorkerDependencies
 > {
   protected registerActions(): void {
-    // Register image actions
-    this.actionFactory.register(
-      "process_image",
-      () => new ProcessImageAction()
-    );
-    this.actionFactory.register("save_image", () => new SaveImageAction());
+    registerImageActions(this.actionFactory);
   }
 
   protected getOperationName(): string {

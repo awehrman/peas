@@ -1,6 +1,7 @@
 import { BaseAction } from "../../core/base-action";
 import { ActionContext } from "../../core/types";
 import type { IngredientWorkerDependencies } from "../types";
+import { DatabaseOperations } from "../../shared/database-operations";
 
 export interface ProcessIngredientsInput {
   noteId: string;
@@ -50,24 +51,21 @@ export class ProcessIngredientsAction extends BaseAction<
         const result = await deps.parseIngredient(line.reference);
 
         if (result.success) {
-          // Save the parsed segments
-          await deps.database.createParsedSegments(
-            result.segments.map((segment, index) => ({
-              ingredientLineId: line.id,
-              index,
-              rule: segment.rule,
-              type: segment.type,
-              value: segment.value,
-              confidence: segment.confidence,
-            }))
-          );
+          const dbOps = new DatabaseOperations(deps.database.prisma);
 
-          // Update the ingredient line with parsing results
-          await deps.database.updateIngredientLine(line.id, {
-            parseStatus: result.parseStatus,
-            processingTime: result.processingTime,
+          // Update the ParsedIngredientLine with parse status
+          await dbOps.updateParsedIngredientLine(line.id, {
+            parseStatus: result.parseStatus as
+              | "CORRECT"
+              | "INCORRECT"
+              | "ERROR",
             parsedAt: new Date(),
           });
+
+          // If we have segments, create ParsedSegment records
+          if (result.segments && result.segments.length > 0) {
+            await dbOps.replaceParsedSegments(line.id, result.segments);
+          }
 
           processedCount++;
           deps.logger.log(
