@@ -220,6 +220,9 @@ model ParsedIngredientLine {
   parsed                ParsedSegment[]
   queueJobs QueueJob[]
 
+  // References to ingredients found in this line
+  ingredientReferences IngredientReference[]
+
   Note   Note?   @relation(fields: [noteId], references: [id], onDelete: Cascade)
   noteId String?
 
@@ -374,6 +377,9 @@ model Ingredient {
   // Tags (flexible labeling like "low-carb", "breakfast")
   tags             IngredientTag[]
 
+  // References to where this ingredient was found
+  references       IngredientReference[]
+
   createdAt        DateTime             @default(now())
   updatedAt        DateTime             @updatedAt
 }
@@ -391,6 +397,38 @@ model IngredientProperty {
   ingredient    Ingredient    @relation(fields: [ingredientId], references: [id])
   ingredientId  String
   propertyType  PropertyType
+}
+
+// Track where ingredients are found in parsed lines
+model IngredientReference {
+  id                String      @id @default(cuid())
+  
+  // The ingredient that was found
+  ingredient        Ingredient  @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+  ingredientId      String
+  
+  // The parsed line where it was found
+  parsedLine        ParsedIngredientLine @relation(fields: [parsedLineId], references: [id], onDelete: Cascade)
+  parsedLineId      String
+  
+  // The segment within the line where it was found
+  segmentIndex      Int         // Index within the parsed segments
+  
+  // Context from the original line
+  reference         String      // The full original text (e.g., "2 cups flour")
+  noteId            String?     // Optional link to the note
+  
+  // Metadata
+  confidence        Float?      // Confidence score (0-1) if available
+  context           String?     // Additional context (e.g., "main ingredient", "garnish")
+  
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  @@unique([ingredientId, parsedLineId, segmentIndex])
+  @@index([ingredientId])
+  @@index([parsedLineId])
+  @@index([noteId])
 }
 
 enum PropertyType {

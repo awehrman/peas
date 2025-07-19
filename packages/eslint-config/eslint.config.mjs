@@ -8,6 +8,17 @@ export default [
   // Base JavaScript recommended rules
   js.configs.recommended,
 
+  // Ignore large parser files and dist folders
+  {
+    ignores: [
+      "**/packages/parser/**",
+      "**/node_modules/@peas/parser/**",
+      "**/dist/**",
+      "**/*.peggy",
+      "**/*.pegjs",
+    ],
+  },
+
   // TypeScript configuration
   {
     files: ["**/*.ts", "**/*.tsx"],

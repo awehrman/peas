@@ -1,0 +1,11 @@
+# Ignore large parser files that cause stack overflow
+**/packages/parser/**
+**/node_modules/@peas/parser/**
+**/dist/**
+**/*.peggy
+**/*.pegjs
+
+# Ignore build outputs
+dist/
+build/
+*.min.js 

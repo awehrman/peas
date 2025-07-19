@@ -130,49 +130,49 @@ export function createIngredientWorker(
 
     // Ingredient-specific dependencies
     categorizationQueue: container.queues.categorizationQueue,
-    database: {
-      updateIngredientLine: async (
-        id: string,
-        data: Record<string, unknown>
-      ) => {
-        container.logger.log(
-          `[INGREDIENT] Updating ingredient line ${id} with data: ${JSON.stringify(data)}`
-        );
-        // TODO: Implement actual database update
-        const result = { id, ...data };
-        container.logger.log(
-          `[INGREDIENT] Successfully updated ingredient line ${id}`
-        );
-        return result;
-      },
-      createParsedSegments: async (
-        segments: Array<Record<string, unknown>>
-      ) => {
-        container.logger.log(
-          `[INGREDIENT] Creating ${segments.length} parsed segments`
-        );
-        // TODO: Implement actual segment creation
-        const result = segments;
-        container.logger.log(
-          `[INGREDIENT] Successfully created ${segments.length} parsed segments`
-        );
-        return result;
-      },
-    },
+    database: container.database,
     parseIngredient: async (text: string) => {
       container.logger.log(
         `[INGREDIENT] Parsing ingredient text: "${text.substring(0, 50)}${text.length > 50 ? "..." : ""}"`
       );
-      // TODO: Implement actual ingredient parsing
-      const result = {
-        success: true,
-        parseStatus: "CORRECT" as const,
-        segments: [],
-        processingTime: 0,
-      };
-      container.logger.log(
-        `[INGREDIENT] Parsing completed with status: ${result.parseStatus}`
-      );
+
+      const startTime = Date.now();
+      let result;
+
+      try {
+        // Dynamically import the v2 parser to avoid circular dependency issues
+        const { v1: parser } = await import("@peas/parser");
+        const parsedResult = parser.parse(text);
+
+        result = {
+          success: true,
+          parseStatus: "CORRECT" as const,
+          segments: parsedResult || [],
+          processingTime: Date.now() - startTime,
+        };
+
+        container.logger.log(
+          `[INGREDIENT] Parsing completed with status: ${result.parseStatus}, segments: ${result.segments.length}`
+        );
+
+        // Log the detailed parsed result
+        container.logger.log(
+          `[INGREDIENT] Parsed result details: ${JSON.stringify(parsedResult, null, 2)}`
+        );
+      } catch (error) {
+        container.logger.log(
+          `[INGREDIENT] Parsing failed: ${error instanceof Error ? error.message : String(error)}`
+        );
+
+        result = {
+          success: false,
+          parseStatus: "ERROR" as const,
+          segments: [],
+          processingTime: Date.now() - startTime,
+          errorMessage: error instanceof Error ? error.message : String(error),
+        };
+      }
+
       return result;
     },
   };

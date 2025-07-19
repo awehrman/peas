@@ -21,6 +21,9 @@ model ParsedIngredientLine {
   parsed                ParsedSegment[]
   queueJobs QueueJob[]
 
+  // References to ingredients found in this line
+  ingredientReferences IngredientReference[]
+
   Note   Note?   @relation(fields: [noteId], references: [id], onDelete: Cascade)
   noteId String?
 

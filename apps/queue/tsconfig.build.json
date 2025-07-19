@@ -1,0 +1,25 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "skipLibCheck": true,
+    "noEmitOnError": false,
+    "incremental": false,
+    "tsBuildInfoFile": null,
+    "maxNodeModuleJsDepth": 0,
+    "disableSourceOfProjectReferenceRedirect": true,
+    "noResolve": false,
+    "isolatedModules": false
+  },
+  "exclude": [
+    "node_modules",
+    "**/*.peggy",
+    "**/*.pegjs",
+    "**/packages/parser/**",
+    "**/packages/parser/dist/**",
+    "**/node_modules/@peas/parser/**",
+    "**/dist/**",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "vitest.config.ts"
+  ]
+}

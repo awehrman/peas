@@ -1,17 +1,10 @@
 import type { BaseWorkerDependencies, BaseJobData } from "../types";
+import type { IDatabaseService } from "../../services";
 import { Queue } from "bullmq";
 
 // Ingredient Worker Dependencies
 export interface IngredientWorkerDependencies extends BaseWorkerDependencies {
-  database: {
-    updateIngredientLine: (
-      id: string,
-      data: Record<string, unknown>
-    ) => Promise<unknown>;
-    createParsedSegments: (
-      segments: Array<Record<string, unknown>>
-    ) => Promise<unknown>;
-  };
+  database: IDatabaseService;
   parseIngredient: (text: string) => Promise<ParsedIngredientResult>;
   categorizationQueue: Queue; // Add categorization queue for scheduling
 }

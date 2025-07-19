@@ -6,7 +6,7 @@
         .join(' ');
 	return result;
   }
-  /Users/awehrman/Library/Application Support/CleanShot/media/media_KI8lr2EZwK/CleanShot 2024-10-21 at 05.24.18@2x.png
+
   function getIngredients(parsed = []) {
   	const result = parsed
     	.filter((p) => p.type === 'ingredient')

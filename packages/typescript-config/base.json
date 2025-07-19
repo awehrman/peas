@@ -15,5 +15,6 @@
     "skipLibCheck": true,
     "strict": true,
     "target": "ES2022"
-  }
+  },
+  "exclude": ["**/packages/parser/dist/**", "**/node_modules/@peas/parser/**"]
 }

@@ -2427,6 +2427,7 @@ __metadata:
     "@types/cors": "npm:^2.8.13"
     "@types/express": "npm:^5.0.3"
     "@types/find-up": "npm:^4.0.2"
+    "@types/pluralize": "npm:^0.0.33"
     "@types/ws": "npm:^8.5.10"
     "@vitest/coverage-v8": "npm:^3.2.4"
     "@vitest/ui": "npm:^3.2.4"
@@ -2439,8 +2440,10 @@ __metadata:
     eslint: "npm:^9.0.0"
     express: "npm:^5.1.0"
     find-up: "npm:^7.0.0"
+    pluralize: "npm:^8.0.0"
     ts-node: "npm:^10.9.2"
     ts-node-dev: "npm:^2.0.0"
+    tsup: "npm:^8.5.0"
     tsx: "npm:^4.7.0"
     typescript: "npm:^5.8.3"
     vitest: "npm:^3.2.4"
@@ -4917,6 +4920,13 @@ __metadata:
   version: 2.4.4
   resolution: "@types/normalize-package-data@npm:2.4.4"
   checksum: 10c0/aef7bb9b015883d6f4119c423dd28c4bdc17b0e8a0ccf112c78b4fe0e91fbc4af7c6204b04bba0e199a57d2f3fbbd5b4a14bf8739bf9d2a39b2a0aad545e0f86
+  languageName: node
+  linkType: hard
+
+"@types/pluralize@npm:^0.0.33":
+  version: 0.0.33
+  resolution: "@types/pluralize@npm:0.0.33"
+  checksum: 10c0/24899caf85b79dd291a6b6e9b9f3b67b452b18d578d0ac0d531a705bf5ee0361d9386ea1f8532c64de9e22c6e9606c5497787bb5e31bd299c487980436c59785
   languageName: node
   linkType: hard
 

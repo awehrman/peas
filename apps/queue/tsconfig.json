@@ -12,8 +12,18 @@
     "forceConsistentCasingInFileNames": true,
     "allowJs": true,
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
+    "emitDecoratorMetadata": true,
+    "maxNodeModuleJsDepth": 0,
+    "disableSourceOfProjectReferenceRedirect": true
   },
   "include": ["src/**/*.ts", "vitest.config.ts"],
-  "exclude": ["node_modules", "packages/parser/src/index.js"]
+  "exclude": [
+    "node_modules",
+    "packages/parser/src/index.js",
+    "**/*.peggy",
+    "**/*.pegjs",
+    "**/packages/parser/**",
+    "**/packages/parser/dist/**",
+    "**/node_modules/@peas/parser/**"
+  ]
 }
