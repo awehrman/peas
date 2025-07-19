@@ -7,6 +7,7 @@ import {
   ScheduleCategorizationAction,
   ProcessIngredientsAction,
   ScheduleCategorizationAfterCompletionAction,
+  UpdateIngredientCountAction,
 } from "./actions";
 import { IServiceContainer } from "../../services/container";
 import type { IngredientWorkerDependencies, IngredientJobData } from "./types";
@@ -43,10 +44,31 @@ export class IngredientWorker extends BaseWorker<
       "schedule_categorization_after_completion",
       () => new ScheduleCategorizationAfterCompletionAction()
     );
+    this.actionFactory.register(
+      "update_ingredient_count",
+      () => new UpdateIngredientCountAction()
+    );
   }
 
   protected getOperationName(): string {
     return "ingredient_processing";
+  }
+
+  /**
+   * Override addStatusActions to prevent generic status messages when we have ingredient tracking
+   */
+  protected addStatusActions(
+    actions: BaseAction<unknown, unknown>[],
+    data: IngredientJobData
+  ): void {
+    this.dependencies.logger.log(
+      `[${this.getOperationName().toUpperCase()}] addStatusActions called with data: noteId=${data.noteId}, hasNoteId=${!!data.noteId}, dataKeys=${Object.keys(data).join(", ")}`
+    );
+
+    // Skip both processing and completion status actions since we handle them specifically
+    this.dependencies.logger.log(
+      `[${this.getOperationName().toUpperCase()}] Skipping generic status actions - using custom ingredient progress tracking`
+    );
   }
 
   protected createActionPipeline(
@@ -57,6 +79,17 @@ export class IngredientWorker extends BaseWorker<
 
     // Add standard status actions if we have a noteId
     this.addStatusActions(actions, data);
+
+    // Add ingredient count update if we have tracking information
+    if (
+      data.importId &&
+      typeof data.currentIngredientIndex === "number" &&
+      typeof data.totalIngredients === "number"
+    ) {
+      actions.push(
+        this.createWrappedAction("update_ingredient_count", this.dependencies)
+      );
+    }
 
     // 1. Process ingredient line (with retry and error handling)
     actions.push(

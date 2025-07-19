@@ -150,6 +150,9 @@ export interface ScheduleIngredientsDeps {
   ingredientQueue: {
     add: (name: string, data: Record<string, unknown>) => Promise<unknown>;
   };
+  logger: {
+    log: (message: string, level?: LogLevel) => void;
+  };
 }
 
 /**

@@ -14,9 +14,32 @@ export class ScheduleIngredientsAction extends BaseAction<
     deps: ScheduleIngredientsDeps,
     _context: ActionContext
   ): Promise<ScheduleIngredientsData> {
-    await deps.ingredientQueue.add("process-ingredient-line", {
-      noteId: data.noteId,
-    });
+    const { noteId, importId, note } = data;
+
+    // Extract ingredient lines from the note
+    const ingredientLines = note?.parsedIngredientLines || [];
+
+    // Schedule each ingredient line individually with tracking information
+    for (let i = 0; i < ingredientLines.length; i++) {
+      const ingredientLine = ingredientLines[i];
+      if (!ingredientLine) continue; // Skip undefined ingredient lines
+
+      await deps.ingredientQueue.add("process_ingredient_line", {
+        noteId,
+        importId,
+        ingredientLineId: ingredientLine.id,
+        reference: ingredientLine.reference,
+        blockIndex: ingredientLine.blockIndex,
+        lineIndex: ingredientLine.lineIndex,
+        currentIngredientIndex: i + 1, // 1-based for display
+        totalIngredients: ingredientLines.length,
+      });
+    }
+
+    deps.logger.log(
+      `[SCHEDULE_INGREDIENTS] Scheduled ${ingredientLines.length} ingredient jobs for note ${noteId}`
+    );
+
     return data;
   }
 }

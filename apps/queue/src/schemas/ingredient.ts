@@ -14,6 +14,10 @@ export const IngredientJobDataSchema = BaseJobDataSchema.extend({
   blockIndex: z.number().int().min(0, "Block index must be non-negative"),
   lineIndex: z.number().int().min(0, "Line index must be non-negative"),
   noteId: z.string().uuid("Note ID must be a valid UUID"),
+  // Tracking information for progress display
+  importId: z.string().optional(),
+  currentIngredientIndex: z.number().int().min(1).optional(),
+  totalIngredients: z.number().int().min(1).optional(),
   options: z
     .object({
       strictMode: z.boolean().default(false),
@@ -161,9 +165,7 @@ export class IngredientValidation extends BaseValidation {
   /**
    * Validate schedule categorization output
    */
-  static validateScheduleCategorizationOutput(
-    data: unknown
-  ):
+  static validateScheduleCategorizationOutput(data: unknown):
     | {
         success: true;
         data: z.infer<typeof ScheduleCategorizationOutputSchema>;

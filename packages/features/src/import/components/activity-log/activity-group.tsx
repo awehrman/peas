@@ -21,7 +21,20 @@ interface ActivityGroupProps {
 // Helper function to check if text already contains an emoji
 function hasEmoji(text: string): boolean {
   // Check for common emojis used in status messages
-  const commonEmojis = ["⏳", "✅", "❌", "🔄", "📊", "🔌", "🏓", "❓"];
+  const commonEmojis = [
+    "⏳",
+    "✅",
+    "❌",
+    "🔄",
+    "📊",
+    "🔌",
+    "🏓",
+    "❓",
+    "🥕",
+    "🍎",
+    "🥩",
+    "🥖",
+  ];
   return commonEmojis.some((emoji) => text.includes(emoji));
 }
 

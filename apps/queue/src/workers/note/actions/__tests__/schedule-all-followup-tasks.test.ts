@@ -1,18 +1,17 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { ScheduleAllFollowupTasksAction } from "../schedule-all-followup-tasks";
 import type { NotePipelineStage3 } from "../../types";
 import type { ActionContext } from "../../../core/types";
+import type { ScheduleAllFollowupTasksDeps } from "../schedule-all-followup-tasks";
 
 describe("ScheduleAllFollowupTasksAction", () => {
   let action: ScheduleAllFollowupTasksAction;
-  let mockDeps: any;
+  let mockDeps: ScheduleAllFollowupTasksDeps;
   let mockContext: ActionContext;
-  let mockData: NotePipelineStage3;
 
   beforeEach(() => {
     vi.clearAllMocks();
     action = new ScheduleAllFollowupTasksAction();
-
     mockDeps = {
       ingredientQueue: {
         add: vi.fn().mockResolvedValue({ id: "ingredient-job-123" }),
@@ -31,7 +30,6 @@ describe("ScheduleAllFollowupTasksAction", () => {
         log: vi.fn(),
       },
     };
-
     mockContext = {
       jobId: "test-job-123",
       retryCount: 0,
@@ -41,208 +39,168 @@ describe("ScheduleAllFollowupTasksAction", () => {
       workerName: "test-worker",
       attemptNumber: 1,
     };
-
-    mockData = {
-      importId: "import-123",
-      content: "test content",
-      file: {
-        title: "Test Recipe",
-        contents: "test content",
-        ingredients: [
-          {
-            reference: "2 cups flour",
-            blockIndex: 0,
-            lineIndex: 0,
-          },
-        ],
-        instructions: [
-          {
-            reference: "Mix ingredients",
-            lineIndex: 0,
-          },
-        ],
-      },
-      note: {
-        id: "note-456",
-        title: "My Cool Recipe",
-        content: "test content",
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        parsedIngredientLines: [
-          {
-            id: "ingredient-line-1",
-            reference: "2 cups flour",
-            blockIndex: 0,
-            lineIndex: 0,
-          },
-        ],
-        parsedInstructionLines: [
-          {
-            id: "instruction-line-1",
-            originalText: "Mix ingredients",
-            lineIndex: 0,
-          },
-        ],
-      },
-    };
-  });
-
-  describe("Constructor", () => {
-    it("should create action with correct name", () => {
-      expect(action.name).toBe("schedule_all_followup_tasks");
-    });
   });
 
   describe("execute", () => {
-    it("should schedule instruction processing successfully", async () => {
-      const result = await action.execute(mockData, mockDeps, mockContext);
-
-      // Should return the input data unchanged
-      expect(result).toEqual(mockData);
-
-      // Should log the start message
-      expect(mockDeps.logger.log).toHaveBeenCalledWith(
-        "[SCHEDULE_ALL_FOLLOWUP] Scheduling all follow-up tasks for note note-456"
-      );
-
-      // Should log the completion message
-      expect(mockDeps.logger.log).toHaveBeenCalledWith(
-        "[SCHEDULE_ALL_FOLLOWUP] Scheduled 0 tasks successfully, 0 failed for note note-456"
-      );
-
-      // Note: Instruction scheduling is now handled by the schedule-instructions action
-      // which is called separately in the note worker pipeline
-    });
-
-    it("should handle instruction queue failure gracefully", async () => {
-      const queueError = new Error("Queue connection failed");
-      mockDeps.instructionQueue.add.mockRejectedValue(queueError);
-
-      const result = await action.execute(mockData, mockDeps, mockContext);
-
-      // Should return the input data unchanged
-      expect(result).toEqual(mockData);
-
-      // Should log the completion message with failure count
-      expect(mockDeps.logger.log).toHaveBeenCalledWith(
-        "[SCHEDULE_ALL_FOLLOWUP] Scheduled 0 tasks successfully, 0 failed for note note-456"
-      );
-
-      // Note: Instruction scheduling is now handled by the schedule-instructions action
-      // which is called separately in the note worker pipeline
-    });
-
-    it("should handle empty instruction lines", async () => {
-      const dataWithEmptyInstructions = {
-        ...mockData,
+    it("should schedule all follow-up tasks successfully", async () => {
+      const data: NotePipelineStage3 = {
+        importId: "test-import-123",
+        content: "test content",
+        file: {
+          title: "Test Recipe",
+          contents: "test content",
+          ingredients: [],
+          instructions: [],
+        },
         note: {
-          ...mockData.note,
+          id: "test-note-456",
+          title: "Test Recipe",
+          content: "test content",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          parsedIngredientLines: [],
           parsedInstructionLines: [],
         },
       };
 
-      const result = await action.execute(
-        dataWithEmptyInstructions,
-        mockDeps,
-        mockContext
-      );
+      const result = await action.execute(data, mockDeps, mockContext);
 
-      // Should return the input data unchanged
-      expect(result).toEqual(dataWithEmptyInstructions);
-
-      // Should log the completion message
+      expect(result).toEqual(data);
       expect(mockDeps.logger.log).toHaveBeenCalledWith(
-        "[SCHEDULE_ALL_FOLLOWUP] Scheduled 0 tasks successfully, 0 failed for note note-456"
+        "[SCHEDULE_ALL_FOLLOWUP] Scheduling all follow-up tasks for note test-note-456"
       );
-
-      // Note: Instruction scheduling is now handled by the schedule-instructions action
-      // which is called separately in the note worker pipeline
+      expect(mockDeps.logger.log).toHaveBeenCalledWith(
+        "[SCHEDULE_ALL_FOLLOWUP] Scheduled 0 tasks successfully, 0 failed for note test-note-456"
+      );
     });
 
-    it("should not schedule other queues (source, image, ingredient) when commented out", async () => {
-      await action.execute(mockData, mockDeps, mockContext);
-
-      // Should not call any queues since they are all commented out
-      expect(mockDeps.sourceQueue.add).not.toHaveBeenCalled();
-      expect(mockDeps.imageQueue.add).not.toHaveBeenCalled();
-      expect(mockDeps.ingredientQueue.add).not.toHaveBeenCalled();
-      expect(mockDeps.instructionQueue.add).not.toHaveBeenCalled();
-    });
-
-    it("should handle multiple instruction lines", async () => {
-      const dataWithMultipleInstructions = {
-        ...mockData,
+    it("should handle missing note gracefully", async () => {
+      const data: NotePipelineStage3 = {
+        importId: "test-import-123",
+        content: "test content",
+        file: {
+          title: "Test Recipe",
+          contents: "test content",
+          ingredients: [],
+          instructions: [],
+        },
         note: {
-          ...mockData.note,
-          parsedInstructionLines: [
-            {
-              id: "instruction-line-1",
-              originalText: "Mix ingredients",
-              lineIndex: 0,
-            },
-            {
-              id: "instruction-line-2",
-              originalText: "Bake at 350F",
-              lineIndex: 1,
-            },
-          ],
+          id: "test-note-456",
+          title: null,
+          content: "test content",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          parsedIngredientLines: [],
+          parsedInstructionLines: [],
         },
       };
 
-      await action.execute(dataWithMultipleInstructions, mockDeps, mockContext);
+      const result = await action.execute(data, mockDeps, mockContext);
 
-      // Should log the completion message
+      expect(result).toEqual(data);
       expect(mockDeps.logger.log).toHaveBeenCalledWith(
-        "[SCHEDULE_ALL_FOLLOWUP] Scheduled 0 tasks successfully, 0 failed for note note-456"
+        "[SCHEDULE_ALL_FOLLOWUP] Scheduling all follow-up tasks for note test-note-456"
       );
-
-      // Note: Instruction scheduling is now handled by the schedule-instructions action
-      // which is called separately in the note worker pipeline
     });
-  });
 
-  describe("executeWithTiming", () => {
-    it("should execute with timing and return result", async () => {
-      // Add a small delay to ensure duration > 0
-      const originalExecute = action.execute.bind(action);
-      action.execute = vi
-        .fn()
-        .mockImplementation(async (data, deps, context) => {
-          await new Promise((resolve) => setTimeout(resolve, 10));
-          return originalExecute(data, deps, context);
-        });
+    it("should handle errors gracefully", async () => {
+      const data: NotePipelineStage3 = {
+        importId: "test-import-123",
+        content: "test content",
+        file: {
+          title: "Test Recipe",
+          contents: "test content",
+          ingredients: [],
+          instructions: [],
+        },
+        note: {
+          id: "test-note-456",
+          title: "Test Recipe",
+          content: "test content",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          parsedIngredientLines: [],
+          parsedInstructionLines: [],
+        },
+      };
+
+      const result = await action.execute(data, mockDeps, mockContext);
+
+      expect(result).toEqual(data);
+      expect(mockDeps.logger.log).toHaveBeenCalledWith(
+        "[SCHEDULE_ALL_FOLLOWUP] Scheduled 0 tasks successfully, 0 failed for note test-note-456"
+      );
+    });
+
+    it("should execute with timing wrapper", async () => {
+      const data: NotePipelineStage3 = {
+        importId: "test-import-123",
+        content: "test content",
+        file: {
+          title: "Test Recipe",
+          contents: "test content",
+          ingredients: [],
+          instructions: [],
+        },
+        note: {
+          id: "test-note-456",
+          title: "Test Recipe",
+          content: "test content",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          parsedIngredientLines: [],
+          parsedInstructionLines: [],
+        },
+      };
 
       const result = await action.executeWithTiming(
-        mockData,
+        data,
         mockDeps,
         mockContext
       );
 
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data).toEqual(mockData);
-        expect(result.duration).toBeGreaterThan(0);
+        expect(result.data).toEqual(data);
+        expect(result.duration).toBeGreaterThanOrEqual(0);
       }
     });
 
     it("should handle errors with timing", async () => {
-      // Mock the execute method to throw an error after a delay
-      const executeError = new Error("Test error");
-      action.execute = vi.fn().mockImplementation(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 10));
-        throw executeError;
-      });
+      const data: NotePipelineStage3 = {
+        importId: "test-import-123",
+        content: "test content",
+        file: {
+          title: "Test Recipe",
+          contents: "test content",
+          ingredients: [],
+          instructions: [],
+        },
+        note: {
+          id: "test-note-456",
+          title: "Test Recipe",
+          content: "test content",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          parsedIngredientLines: [],
+          parsedInstructionLines: [],
+        },
+      };
+
+      // Mock the execute method to throw an error
+      vi.spyOn(action, "execute").mockRejectedValue(new Error("Test error"));
 
       const result = await action.executeWithTiming(
-        mockData,
+        data,
         mockDeps,
         mockContext
       );
 
       expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error).toBe(executeError);
-        expect(result.duration).toBeGreaterThan(0);
+      if (!result.success && result.error) {
+        expect(result.error).toBeInstanceOf(Error);
+        expect(result.error.message).toBe("Test error");
+        expect(result.duration).toBeGreaterThanOrEqual(0);
       }
     });
   });

@@ -135,6 +135,14 @@ export const ScheduleImagesDataSchema = ScheduleActionDataSchema.extend({
  */
 export const ScheduleIngredientsDataSchema = z.object({
   noteId: z.string().uuid("Note ID must be a valid UUID"),
+  importId: z.string().optional(),
+  note: z
+    .object({
+      id: z.string(),
+      title: z.string().nullable(),
+      parsedIngredientLines: z.array(ParsedIngredientLineSchema).optional(),
+    })
+    .optional(),
 });
 
 /**

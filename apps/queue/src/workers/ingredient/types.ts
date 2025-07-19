@@ -23,6 +23,10 @@ export interface IngredientJobData extends BaseJobData {
   blockIndex: number;
   lineIndex: number;
   noteId: string;
+  // Tracking information for progress display
+  importId?: string;
+  currentIngredientIndex?: number;
+  totalIngredients?: number;
   options?: {
     strictMode?: boolean;
     allowPartial?: boolean;

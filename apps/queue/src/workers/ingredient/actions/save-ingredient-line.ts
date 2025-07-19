@@ -3,10 +3,16 @@ import { ActionContext } from "../../core/types";
 import type { IngredientWorkerDependencies } from "../types";
 import { ProcessIngredientLineOutput } from "./process-ingredient-line";
 
-export interface SaveIngredientLineInput {
+export interface SaveIngredientLineInput extends ProcessIngredientLineOutput {
   noteId: string;
   ingredientLineId: string;
-  parseResult: ProcessIngredientLineOutput;
+  reference: string;
+  blockIndex: number;
+  lineIndex: number;
+  // Tracking information from job data
+  importId?: string;
+  currentIngredientIndex?: number;
+  totalIngredients?: number;
 }
 
 export interface SaveIngredientLineOutput {
@@ -27,7 +33,8 @@ export class SaveIngredientLineAction extends BaseAction<
     _context: ActionContext
   ): Promise<SaveIngredientLineOutput> {
     try {
-      const { noteId, ingredientLineId, parseResult } = input;
+      const { noteId, ingredientLineId, success, parseStatus, parsedSegments } =
+        input;
 
       // TODO: Implement actual database save logic
       // This would typically involve:
@@ -39,22 +46,22 @@ export class SaveIngredientLineAction extends BaseAction<
       // Stub implementation for now
       if (deps.logger) {
         deps.logger.log(
-          `Saving ingredient line data for note ${noteId}: ingredientLineId=${ingredientLineId}, parseStatus=${parseResult.parseStatus}, segmentsCount=${parseResult.parsedSegments?.length || 0}`
+          `Saving ingredient line data for note ${noteId}: ingredientLineId=${ingredientLineId}, parseStatus=${parseStatus}, segmentsCount=${parsedSegments?.length || 0}`
         );
       } else {
         console.log(`Saving ingredient line data for note ${noteId}:`, {
           ingredientLineId,
-          parseStatus: parseResult.parseStatus,
-          segmentsCount: parseResult.parsedSegments?.length || 0,
+          parseStatus,
+          segmentsCount: parsedSegments?.length || 0,
         });
       }
 
-      const segmentsSaved = parseResult.parsedSegments?.length || 0;
+      const segmentsSaved = parsedSegments?.length || 0;
 
       const result: SaveIngredientLineOutput = {
-        success: parseResult.success,
+        success,
         segmentsSaved,
-        parseStatus: parseResult.parseStatus,
+        parseStatus,
       };
 
       return result;

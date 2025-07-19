@@ -1,9 +1,9 @@
-import type { Queue } from "bullmq";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { ActionFactory } from "../../../core/action-factory";
 import { registerNoteActions } from "../index";
 import type { NoteWorkerDependencies, NotePipelineStage3 } from "../../types";
 import type { ActionContext } from "../../../core/types";
+import type { Queue } from "bullmq";
 
 describe("NoteCompletedStatusAction", () => {
   let factory: ActionFactory;
@@ -134,7 +134,7 @@ describe("NoteCompletedStatusAction", () => {
         },
         note: {
           id: "note-456",
-          title: undefined as any, // Simulate missing title
+          title: null, // Simulate missing title
           content: "test content",
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -153,7 +153,7 @@ describe("NoteCompletedStatusAction", () => {
         context: "import_complete",
         indentLevel: 0,
         metadata: {
-          noteTitle: undefined,
+          noteTitle: null,
         },
       });
     });

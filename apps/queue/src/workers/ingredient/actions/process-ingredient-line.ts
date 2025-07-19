@@ -27,7 +27,7 @@ export class ProcessIngredientLineAction extends BaseAction<
   ProcessIngredientLineInput,
   IngredientWorkerDependencies
 > {
-  name = "process-ingredient-line";
+  name = "process_ingredient_line";
 
   async execute(
     input: ProcessIngredientLineInput,
