@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-env node */
 
 import fs from "fs";
 import path from "path";
@@ -6,10 +7,6 @@ import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-// Check if we're in Railway environment
-const isRailway =
-  process.env.RAILWAY_ENVIRONMENT || process.env.NODE_ENV === "production";
 
 // Core schema content (generator and datasource)
 const coreSchema = `// This is your Prisma schema file,
@@ -38,6 +35,7 @@ const schemaFiles = [
   "prisma/schemas/parsing.prisma",
   "prisma/schemas/meta.prisma",
   "prisma/schemas/source.prisma",
+  "prisma/schemas/ingredients.prisma",
 ];
 
 // Combine all schema files

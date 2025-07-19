@@ -72,6 +72,8 @@ model EvernoteMetadata {
 
   evernoteGUID        String?
   source              String?
+  notebook            String?
+  evernoteTags        String[]
 
   evernoteCreatedAt DateTime?
   evernoteUpdatedAt DateTime?
@@ -340,3 +342,93 @@ model Book {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 } 
+
+// prisma/schemas/ingredients.prisma
+model Ingredient {
+  id               String               @id @default(cuid())
+  name             String
+  plural           String
+  description      String?
+
+  // Alias names (e.g. "Granny Smith")
+  aliases          Alias[]
+
+  // Tag-style properties (e.g. dairy, nut, vegan, etc.)
+  properties       IngredientProperty[]
+
+  // Optional substitutions (self-relations)
+  substitutions    Ingredient[]         @relation("Substitutions")
+  substitutedBy    Ingredient[]         @relation("Substitutions")
+
+  // Variant system (self-relation to parent ingredient)
+  variants         Ingredient[]         @relation("Variants")
+  parentIngredient Ingredient?          @relation("Variants", fields: [parentIngredientId], references: [id])
+  parentIngredientId String?
+
+  isChildVariant   Boolean              @default(false) // true if this is a variant of another
+
+  // Category (e.g. "fruit", "meat")
+  categoryId       String?
+  category         IngredientCategory?  @relation(fields: [categoryId], references: [id])
+
+  // Tags (flexible labeling like "low-carb", "breakfast")
+  tags             IngredientTag[]
+
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+}
+
+model Alias {
+  id           String     @id @default(cuid())
+  name         String
+  plural       String
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
+  ingredientId String
+}
+
+model IngredientProperty {
+  id            String        @id @default(cuid())
+  ingredient    Ingredient    @relation(fields: [ingredientId], references: [id])
+  ingredientId  String
+  propertyType  PropertyType
+}
+
+enum PropertyType {
+  // Dietary
+  VEGAN
+  VEGETARIAN
+  GLUTEN_FREE
+
+  // Core types
+  MEAT
+  FISH
+  DAIRY
+  EGG
+  GRAIN
+  LEGUME
+  FRUIT
+  VEGETABLE
+  HERB
+  SPICE
+
+  // Allergens
+  NUTS
+  SHELLFISH
+  SOY
+  SESAME
+  CORN
+  ALCOHOL
+}
+
+model IngredientCategory {
+  id          String       @id @default(cuid())
+  name        String
+  ingredients Ingredient[]
+}
+
+model IngredientTag {
+  id           String       @id @default(cuid())
+  name         String       @unique
+  ingredients  Ingredient[] // Many-to-many relation
+}
+

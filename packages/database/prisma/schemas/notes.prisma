@@ -22,6 +22,8 @@ model EvernoteMetadata {
 
   evernoteGUID        String?
   source              String?
+  notebook            String?
+  evernoteTags        String[]
 
   evernoteCreatedAt DateTime?
   evernoteUpdatedAt DateTime?

@@ -14,6 +14,7 @@
     "db:migrate": "yarn build:schema && dotenv -e ../../.env.local -- prisma migrate dev",
     "db:sync": "yarn build:schema && dotenv -e ../../.env.local -- prisma generate && dotenv -e ../../.env.local -- prisma migrate dev",
     "db:studio": "yarn build:schema && dotenv -e ../../.env.local -- prisma studio",
+    "db:seed": "yarn build:schema && dotenv -e ../../.env.local -- node scripts/seed.js",
     "lint:prisma": "npm run build:schema && prisma validate",
     "format:prisma": "npm run build:schema && prisma format",
     "prisma:generate": "dotenv -e ../../.env.local -- prisma generate"
