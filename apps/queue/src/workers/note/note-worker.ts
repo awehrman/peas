@@ -73,20 +73,8 @@ export class NoteWorker extends BaseWorker<
     // Input: NotePipelineStage2 -> Output: NotePipelineStage3
     actions.push(this.createWrappedAction("save_note", this.dependencies));
 
-    // 4. Schedule instruction processing
-    // Input: NotePipelineStage3 -> Output: NotePipelineStage3
-    actions.push(
-      this.createErrorHandledAction("schedule_instructions", this.dependencies)
-    );
-
-    // 5. Schedule ingredient processing
-    // Input: NotePipelineStage3 -> Output: NotePipelineStage3
-    actions.push(
-      this.createErrorHandledAction("schedule_ingredients", this.dependencies)
-    );
-
-    // 6. Schedule all follow-up processing tasks concurrently
-    // This action will schedule multiple jobs to different queues at once
+    // 4. Schedule all follow-up processing tasks concurrently
+    // This action will schedule instruction and ingredient processing jobs
     actions.push(
       this.createErrorHandledAction(
         "schedule_all_followup_tasks",
@@ -94,7 +82,7 @@ export class NoteWorker extends BaseWorker<
       )
     );
 
-    // 7. Add "COMPLETED" status at the very end
+    // 5. Add "COMPLETED" status at the very end
     // Input: NotePipelineStage3 -> Output: NotePipelineStage3
     actions.push(
       this.createErrorHandledAction("note_completed_status", this.dependencies)

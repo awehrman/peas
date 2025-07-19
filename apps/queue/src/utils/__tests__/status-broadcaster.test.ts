@@ -28,7 +28,12 @@ describe("addStatusEventAndBroadcast", () => {
         id: "event-123",
         noteId: "note-456",
         status: "PROCESSING" as const,
-        message: "Processing started",
+        errorMessage: null,
+        errorCode: null,
+        errorDetails: null,
+        context: null,
+        currentCount: null,
+        totalCount: null,
         createdAt: new Date("2024-01-01T00:00:00Z"),
       };
 
@@ -149,13 +154,24 @@ describe("addStatusEventAndBroadcast", () => {
       const { addStatusEvent } = await import("@peas/database");
       const { broadcastStatusEvent } = await import("../../websocket-server");
 
-      vi.mocked(addStatusEvent).mockResolvedValue(null);
+      vi.mocked(addStatusEvent).mockResolvedValue({
+        id: "event-123",
+        noteId: "note-456",
+        status: "FAILED" as const,
+        errorMessage: "Something went wrong",
+        errorCode: null,
+        errorDetails: null,
+        context: null,
+        currentCount: null,
+        totalCount: null,
+        createdAt: new Date("2024-01-01T00:00:00Z"),
+      });
       vi.mocked(broadcastStatusEvent).mockImplementation(() => {});
 
       const event = {
         importId: "import-789",
         noteId: "note-456",
-        status: "ERROR" as const,
+        status: "FAILED" as const,
         message: "Something went wrong",
       };
 
@@ -163,7 +179,7 @@ describe("addStatusEventAndBroadcast", () => {
 
       expect(addStatusEvent).toHaveBeenCalledWith({
         noteId: "note-456",
-        status: "ERROR",
+        status: "FAILED",
         message: "Something went wrong",
         context: undefined,
         currentCount: undefined,
@@ -173,7 +189,7 @@ describe("addStatusEventAndBroadcast", () => {
       expect(broadcastStatusEvent).toHaveBeenCalledWith({
         importId: "import-789",
         noteId: "note-456",
-        status: "ERROR",
+        status: "FAILED",
         message: "Something went wrong",
         context: undefined,
         errorMessage: "Something went wrong",
@@ -184,7 +200,8 @@ describe("addStatusEventAndBroadcast", () => {
         metadata: undefined,
       });
 
-      expect(result).toBeNull();
+      expect(result).toBeDefined();
+      expect(result?.id).toBe("event-123");
     });
   });
 
@@ -217,7 +234,18 @@ describe("addStatusEventAndBroadcast", () => {
       const { broadcastStatusEvent } = await import("../../websocket-server");
 
       const broadcastError = new Error("WebSocket broadcast failed");
-      vi.mocked(addStatusEvent).mockResolvedValue(null);
+      vi.mocked(addStatusEvent).mockResolvedValue({
+        id: "event-123",
+        noteId: "note-456",
+        status: "PROCESSING" as const,
+        errorMessage: "Processing started",
+        errorCode: null,
+        errorDetails: null,
+        context: null,
+        currentCount: null,
+        totalCount: null,
+        createdAt: new Date("2024-01-01T00:00:00Z"),
+      });
       vi.mocked(broadcastStatusEvent).mockImplementation(() => {
         throw broadcastError;
       });
@@ -300,7 +328,12 @@ describe("addStatusEventAndBroadcast", () => {
         id: "event-123",
         noteId: "note-456",
         status: "PROCESSING" as const,
-        message: "Processing started",
+        errorMessage: null,
+        errorCode: null,
+        errorDetails: null,
+        context: null,
+        currentCount: null,
+        totalCount: null,
         createdAt: new Date("2024-01-01T00:00:00Z"),
       };
 
@@ -359,7 +392,18 @@ describe("addStatusEventAndBroadcast", () => {
       const { addStatusEvent } = await import("@peas/database");
       const { broadcastStatusEvent } = await import("../../websocket-server");
 
-      vi.mocked(addStatusEvent).mockResolvedValue(null);
+      vi.mocked(addStatusEvent).mockResolvedValue({
+        id: "event-123",
+        noteId: "note-456",
+        status: "PROCESSING" as const,
+        errorMessage: "Processing started",
+        errorCode: null,
+        errorDetails: null,
+        context: "test-context",
+        currentCount: 5,
+        totalCount: 20,
+        createdAt: new Date("2024-01-01T00:00:00Z"),
+      });
       vi.mocked(broadcastStatusEvent).mockImplementation(() => {});
 
       const event = {
@@ -394,7 +438,12 @@ describe("addStatusEventAndBroadcast", () => {
         id: "event-123",
         noteId: "note-456",
         status: "PROCESSING" as const,
-        message: "Processing started",
+        errorMessage: null,
+        errorCode: null,
+        errorDetails: null,
+        context: null,
+        currentCount: null,
+        totalCount: null,
         createdAt: new Date("2024-01-01T00:00:00Z"),
       };
 
@@ -445,8 +494,9 @@ describe("addStatusEventAndBroadcast", () => {
 
       const afterCall = new Date();
 
-      const broadcastCall = vi.mocked(broadcastStatusEvent).mock.calls[0][0];
-      const broadcastTime = broadcastCall.createdAt;
+      const broadcastCall = vi.mocked(broadcastStatusEvent).mock.calls[0]?.[0];
+      expect(broadcastCall).toBeDefined();
+      const broadcastTime = broadcastCall!.createdAt;
 
       expect(broadcastTime).toBeInstanceOf(Date);
       expect(broadcastTime.getTime()).toBeGreaterThanOrEqual(
@@ -461,7 +511,18 @@ describe("addStatusEventAndBroadcast", () => {
       const { addStatusEvent } = await import("@peas/database");
       const { broadcastStatusEvent } = await import("../../websocket-server");
 
-      vi.mocked(addStatusEvent).mockResolvedValue(null);
+      vi.mocked(addStatusEvent).mockResolvedValue({
+        id: "event-123",
+        noteId: "note-456",
+        status: "PROCESSING" as const,
+        errorMessage: "",
+        errorCode: null,
+        errorDetails: null,
+        context: "",
+        currentCount: null,
+        totalCount: null,
+        createdAt: new Date("2024-01-01T00:00:00Z"),
+      });
       vi.mocked(broadcastStatusEvent).mockImplementation(() => {});
 
       const event = {
@@ -502,7 +563,18 @@ describe("addStatusEventAndBroadcast", () => {
       const { addStatusEvent } = await import("@peas/database");
       const { broadcastStatusEvent } = await import("../../websocket-server");
 
-      vi.mocked(addStatusEvent).mockResolvedValue(null);
+      vi.mocked(addStatusEvent).mockResolvedValue({
+        id: "event-123",
+        noteId: "note-456",
+        status: "PROCESSING" as const,
+        errorMessage: null,
+        errorCode: null,
+        errorDetails: null,
+        context: null,
+        currentCount: 0,
+        totalCount: 0,
+        createdAt: new Date("2024-01-01T00:00:00Z"),
+      });
       vi.mocked(broadcastStatusEvent).mockImplementation(() => {});
 
       const event = {
@@ -544,7 +616,18 @@ describe("addStatusEventAndBroadcast", () => {
       const { addStatusEvent } = await import("@peas/database");
       const { broadcastStatusEvent } = await import("../../websocket-server");
 
-      vi.mocked(addStatusEvent).mockResolvedValue(null);
+      vi.mocked(addStatusEvent).mockResolvedValue({
+        id: "event-123",
+        noteId: "note-456",
+        status: "PROCESSING" as const,
+        errorMessage: null,
+        errorCode: null,
+        errorDetails: null,
+        context: null,
+        currentCount: 999999,
+        totalCount: 1000000,
+        createdAt: new Date("2024-01-01T00:00:00Z"),
+      });
       vi.mocked(broadcastStatusEvent).mockImplementation(() => {});
 
       const event = {

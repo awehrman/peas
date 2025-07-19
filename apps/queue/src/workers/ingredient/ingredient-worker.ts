@@ -4,7 +4,6 @@ import { ActionContext } from "../core/types";
 import {
   ProcessIngredientLineAction,
   SaveIngredientLineAction,
-  ScheduleCategorizationAction,
   ProcessIngredientsAction,
   ScheduleCategorizationAfterCompletionAction,
   UpdateIngredientCountAction,
@@ -31,10 +30,6 @@ export class IngredientWorker extends BaseWorker<
     this.actionFactory.register(
       "save_ingredient_line",
       () => new SaveIngredientLineAction()
-    );
-    this.actionFactory.register(
-      "schedule_categorization",
-      () => new ScheduleCategorizationAction()
     );
     this.actionFactory.register(
       "process_ingredients",

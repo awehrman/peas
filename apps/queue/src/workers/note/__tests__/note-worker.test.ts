@@ -269,15 +269,13 @@ describe("NoteWorker", () => {
         attemptNumber: 1,
       };
       const pipeline = worker.testCreateActionPipeline(mockData, mockContext);
-      expect(pipeline).toHaveLength(7); // clean_html, parse_html, save_note, schedule_instructions, schedule_ingredients, schedule_all_followup_tasks, and note_completed_status
+      expect(pipeline).toHaveLength(5); // clean_html, parse_html, save_note, schedule_all_followup_tasks, and note_completed_status
       expect(worker.wrappedActions).toEqual([
         { name: "clean_html", deps: mockDependencies },
         { name: "parse_html", deps: mockDependencies },
         { name: "save_note", deps: mockDependencies },
       ]);
       expect(worker.errorHandledActions).toEqual([
-        { name: "schedule_instructions", deps: mockDependencies },
-        { name: "schedule_ingredients", deps: mockDependencies },
         { name: "schedule_all_followup_tasks", deps: mockDependencies },
         { name: "note_completed_status", deps: mockDependencies },
       ]);
@@ -297,9 +295,8 @@ describe("NoteWorker", () => {
       const scheduled = worker.errorHandledActions.map((a) => a.name);
       expect(scheduled).not.toContain("schedule_source");
       expect(scheduled).not.toContain("schedule_images");
-      // schedule_instructions and schedule_ingredients are now enabled, so they should be included
-      expect(scheduled).toContain("schedule_instructions");
-      expect(scheduled).toContain("schedule_ingredients");
+      // schedule_instructions and schedule_ingredients are now consolidated into schedule_all_followup_tasks
+      expect(scheduled).toContain("schedule_all_followup_tasks");
     });
   });
 
