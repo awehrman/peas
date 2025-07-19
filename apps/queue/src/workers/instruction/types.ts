@@ -20,6 +20,9 @@ export interface InstructionJobData extends BaseJobData {
   originalText: string;
   lineIndex: number;
   noteId: string;
+  importId?: string; // Add importId for status updates
+  currentInstructionIndex?: number; // Current instruction being processed (0-based)
+  totalInstructions?: number; // Total number of instructions to process
   options?: {
     normalizeText?: boolean;
     extractTiming?: boolean;

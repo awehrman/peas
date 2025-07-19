@@ -142,6 +142,8 @@ export const ScheduleIngredientsDataSchema = z.object({
  */
 export const ScheduleInstructionsDataSchema = z.object({
   noteId: z.string().uuid("Note ID must be a valid UUID"),
+  importId: z.string().optional(),
+  instructionLines: z.array(ParsedInstructionLineSchema).optional(),
 });
 
 /**

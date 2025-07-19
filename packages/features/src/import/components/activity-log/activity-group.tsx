@@ -18,6 +18,13 @@ interface ActivityGroupProps {
   }>;
 }
 
+// Helper function to check if text already contains an emoji
+function hasEmoji(text: string): boolean {
+  // Check for common emojis used in status messages
+  const commonEmojis = ["⏳", "✅", "❌", "🔄", "📊", "🔌", "🏓", "❓"];
+  return commonEmojis.some((emoji) => text.includes(emoji));
+}
+
 export function ActivityGroup({
   title,
   overallStatus,
@@ -42,6 +49,9 @@ export function ActivityGroup({
               {operation.children.map((child, index) => {
                 // Get the status from the child's text content
                 const childStatus = getStatusFromText(child.text);
+                // Check if the text already contains an emoji
+                const textHasEmoji = hasEmoji(child.text);
+
                 return (
                   <div
                     key={`${operation.id}_${child.id}_${index}`}
@@ -50,7 +60,8 @@ export function ActivityGroup({
                       paddingLeft: child.indentLevel * 24 + 16,
                     }}
                   >
-                    <span>{getStatusIcon(childStatus)}</span>
+                    {/* Only show status icon if the text doesn't already have an emoji */}
+                    {!textHasEmoji && <span>{getStatusIcon(childStatus)}</span>}
                     <span>{child.text}</span>
                   </div>
                 );

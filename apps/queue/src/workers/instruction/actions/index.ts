@@ -1,2 +1,4 @@
-export { ProcessInstructionLineAction } from "./process-instruction-line";
-export { SaveInstructionLineAction } from "./save-instruction-line";
+export * from "./process-instruction-line";
+export * from "./save-instruction-line";
+export * from "./update-instruction-count";
+export * from "./instruction-completed-status";

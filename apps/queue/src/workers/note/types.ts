@@ -159,6 +159,9 @@ export interface ScheduleInstructionsDeps {
   instructionQueue: {
     add: (name: string, data: Record<string, unknown>) => Promise<unknown>;
   };
+  logger: {
+    log: (message: string, level?: LogLevel) => void;
+  };
 }
 
 /**

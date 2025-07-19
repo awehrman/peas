@@ -88,11 +88,14 @@ export class ProcessInstructionLineAction extends BaseAction<
 
   private normalizeText(text: string): string {
     // TODO: Implement proper text normalization
-    return text
+    const normalized = text
       .trim()
       .replace(/\s+/g, " ") // Normalize whitespace
       .replace(/^\d+\.\s*/, "") // Remove step numbers
       .toLowerCase();
+
+    // Add period only if no ending punctuation exists
+    return normalized.match(/[.!?]$/) ? normalized : normalized + ".";
   }
 
   private validateInstruction(text: string): "CORRECT" | "INCORRECT" | "ERROR" {

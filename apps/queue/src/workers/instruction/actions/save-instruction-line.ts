@@ -3,16 +3,27 @@ import { ActionContext } from "../../core/types";
 import type { InstructionWorkerDependencies } from "../types";
 import { ProcessInstructionLineOutput } from "./process-instruction-line";
 
-export interface SaveInstructionLineInput {
+export interface SaveInstructionLineInput extends ProcessInstructionLineOutput {
   noteId: string;
   instructionLineId: string;
-  parseResult: ProcessInstructionLineOutput;
+  originalText: string;
+  lineIndex: number;
+  // Tracking information from job data
+  importId?: string;
+  currentInstructionIndex?: number;
+  totalInstructions?: number;
 }
 
 export interface SaveInstructionLineOutput {
   success: boolean;
   stepsSaved: number;
   parseStatus: string;
+  // Tracking information for completion broadcast
+  importId?: string;
+  noteId?: string;
+  currentInstructionIndex?: number;
+  totalInstructions?: number;
+  instructionLineId?: string;
 }
 
 export class SaveInstructionLineAction extends BaseAction<
@@ -27,7 +38,17 @@ export class SaveInstructionLineAction extends BaseAction<
     _context: ActionContext
   ): Promise<SaveInstructionLineOutput> {
     try {
-      const { noteId, instructionLineId, parseResult } = input;
+      const {
+        noteId,
+        instructionLineId,
+        success,
+        parseStatus,
+        normalizedText,
+        steps,
+        importId,
+        currentInstructionIndex,
+        totalInstructions,
+      } = input;
 
       // TODO: Implement actual database save logic
       // This would typically involve:
@@ -39,23 +60,29 @@ export class SaveInstructionLineAction extends BaseAction<
       // Stub implementation for now
       if (deps.logger) {
         deps.logger.log(
-          `Saving instruction line data for note ${noteId}: instructionLineId=${instructionLineId}, parseStatus=${parseResult.parseStatus}, stepsCount=${parseResult.steps?.length || 0}`
+          `Saving instruction line data for note ${noteId}: instructionLineId=${instructionLineId}, parseStatus=${parseStatus}, stepsCount=${steps?.length || 0}`
         );
       } else {
         console.log(`Saving instruction line data for note ${noteId}:`, {
           instructionLineId,
-          parseStatus: parseResult.parseStatus,
-          normalizedText: parseResult.normalizedText,
-          stepsCount: parseResult.steps?.length || 0,
+          parseStatus,
+          normalizedText,
+          stepsCount: steps?.length || 0,
         });
       }
 
-      const stepsSaved = parseResult.steps?.length || 0;
+      const stepsSaved = steps?.length || 0;
 
       const result: SaveInstructionLineOutput = {
-        success: parseResult.success,
+        success,
         stepsSaved,
-        parseStatus: parseResult.parseStatus,
+        parseStatus,
+        // Pass through tracking information for completion broadcast
+        importId,
+        noteId,
+        currentInstructionIndex,
+        totalInstructions,
+        instructionLineId,
       };
 
       return result;

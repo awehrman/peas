@@ -269,13 +269,15 @@ describe("NoteWorker", () => {
         attemptNumber: 1,
       };
       const pipeline = worker.testCreateActionPipeline(mockData, mockContext);
-      expect(pipeline).toHaveLength(4); // clean_html, parse_html, save_note, and note_completed_status
+      expect(pipeline).toHaveLength(6); // clean_html, parse_html, save_note, schedule_instructions, schedule_all_followup_tasks, and note_completed_status
       expect(worker.wrappedActions).toEqual([
         { name: "clean_html", deps: mockDependencies },
         { name: "parse_html", deps: mockDependencies },
         { name: "save_note", deps: mockDependencies },
       ]);
       expect(worker.errorHandledActions).toEqual([
+        { name: "schedule_instructions", deps: mockDependencies },
+        { name: "schedule_all_followup_tasks", deps: mockDependencies },
         { name: "note_completed_status", deps: mockDependencies },
       ]);
     });
@@ -295,7 +297,8 @@ describe("NoteWorker", () => {
       expect(scheduled).not.toContain("schedule_source");
       expect(scheduled).not.toContain("schedule_images");
       expect(scheduled).not.toContain("schedule_ingredients");
-      expect(scheduled).not.toContain("schedule_instructions");
+      // schedule_instructions is now enabled, so it should be included
+      expect(scheduled).toContain("schedule_instructions");
     });
   });
 

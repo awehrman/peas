@@ -4,6 +4,8 @@ import { ActionContext } from "../core/types";
 import {
   ProcessInstructionLineAction,
   SaveInstructionLineAction,
+  UpdateInstructionCountAction,
+  InstructionCompletedStatusAction,
 } from "./actions";
 import { IServiceContainer } from "../../services/container";
 import type {
@@ -11,8 +13,6 @@ import type {
   InstructionJobData,
 } from "./types";
 import type { BaseAction } from "../core/base-action";
-
-// Using imported types from ./types.ts
 
 /**
  * Instruction Worker that extends BaseWorker for instruction processing
@@ -31,10 +31,37 @@ export class InstructionWorker extends BaseWorker<
       "save_instruction_line",
       () => new SaveInstructionLineAction()
     );
+    this.actionFactory.register(
+      "update_instruction_count",
+      () => new UpdateInstructionCountAction()
+    );
+    this.actionFactory.register(
+      "instruction_completed_status",
+      () => new InstructionCompletedStatusAction()
+    );
   }
 
   protected getOperationName(): string {
     return "instruction_processing";
+  }
+
+  /**
+   * Override addStatusActions to prevent generic status messages when we have instruction tracking
+   */
+  protected addStatusActions(
+    actions: BaseAction<unknown, unknown>[],
+    data: InstructionJobData
+  ): void {
+    this.dependencies.logger.log(
+      `[${this.getOperationName().toUpperCase()}] addStatusActions called with data: noteId=${data.noteId}, hasNoteId=${!!data.noteId}, dataKeys=${Object.keys(data).join(", ")}`
+    );
+
+    // Skip both processing and completion status actions since we handle them specifically
+    this.dependencies.logger.log(
+      `[${this.getOperationName().toUpperCase()}] Skipping generic status actions - using custom instruction tracking`
+    );
+    // Note: We don't add BroadcastProcessingAction or BroadcastCompletedAction here because we handle
+    // status updates specifically with UpdateInstructionCountAction and InstructionCompletedStatusAction
   }
 
   protected createActionPipeline(
@@ -45,6 +72,17 @@ export class InstructionWorker extends BaseWorker<
 
     // Add standard status actions if we have a noteId
     this.addStatusActions(actions, data);
+
+    // Add instruction count update if we have tracking information
+    if (
+      data.importId &&
+      typeof data.currentInstructionIndex === "number" &&
+      typeof data.totalInstructions === "number"
+    ) {
+      actions.push(
+        this.createWrappedAction("update_instruction_count", this.dependencies)
+      );
+    }
 
     // 1. Process instruction line (with retry and error handling)
     actions.push(

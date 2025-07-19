@@ -39,76 +39,61 @@ export class ScheduleAllFollowupTasksAction extends BaseAction<
   async execute(
     data: NotePipelineStage3,
     deps: ScheduleAllFollowupTasksDeps,
-    context: ActionContext
+    _context: ActionContext
   ): Promise<NotePipelineStage3> {
-    const { note, importId } = data;
+    const { note } = data;
 
     deps.logger.log(
       `[SCHEDULE_ALL_FOLLOWUP] Scheduling all follow-up tasks for note ${note.id}`
     );
 
     // Schedule all follow-up tasks concurrently (except categorization)
-    const schedulePromises = [
+    const schedulePromises: Promise<unknown>[] = [
       // Schedule source processing
-      deps.sourceQueue
-        .add("process-source", {
-          noteId: note.id,
-          importId,
-          title: note.title,
-          content: note.content,
-        })
-        .catch((error) => {
-          deps.logger.log(
-            `[SCHEDULE_ALL_FOLLOWUP] Failed to schedule source: ${error}`,
-            "error"
-          );
-          return null;
-        }),
-
+      // deps.sourceQueue
+      //   .add("process-source", {
+      //     noteId: note.id,
+      //     importId,
+      //     title: note.title,
+      //     content: note.content,
+      //   })
+      //   .catch((error) => {
+      //     deps.logger.log(
+      //       `[SCHEDULE_ALL_FOLLOWUP] Failed to schedule source: ${error}`,
+      //       "error"
+      //     );
+      //     return null;
+      //   }),
       // Schedule image processing
-      deps.imageQueue
-        .add("process-images", {
-          noteId: note.id,
-          importId,
-          content: note.content,
-        })
-        .catch((error) => {
-          deps.logger.log(
-            `[SCHEDULE_ALL_FOLLOWUP] Failed to schedule images: ${error}`,
-            "error"
-          );
-          return null;
-        }),
-
+      // deps.imageQueue
+      //   .add("process-images", {
+      //     noteId: note.id,
+      //     importId,
+      //     content: note.content,
+      //   })
+      //   .catch((error) => {
+      //     deps.logger.log(
+      //       `[SCHEDULE_ALL_FOLLOWUP] Failed to schedule images: ${error}`,
+      //       "error"
+      //     );
+      //     return null;
+      //   }),
       // Schedule ingredient processing (categorization will be scheduled after completion)
-      deps.ingredientQueue
-        .add("process-ingredients", {
-          noteId: note.id,
-          importId,
-          ingredientLines: note.parsedIngredientLines,
-        })
-        .catch((error) => {
-          deps.logger.log(
-            `[SCHEDULE_ALL_FOLLOWUP] Failed to schedule ingredients: ${error}`,
-            "error"
-          );
-          return null;
-        }),
-
-      // Schedule instruction processing
-      deps.instructionQueue
-        .add("process-instructions", {
-          noteId: note.id,
-          importId,
-          instructionLines: note.parsedInstructionLines,
-        })
-        .catch((error) => {
-          deps.logger.log(
-            `[SCHEDULE_ALL_FOLLOWUP] Failed to schedule instructions: ${error}`,
-            "error"
-          );
-          return null;
-        }),
+      // deps.ingredientQueue
+      //   .add("process-ingredients", {
+      //     noteId: note.id,
+      //     importId,
+      //     ingredientLines: note.parsedIngredientLines,
+      //   })
+      //   .catch((error) => {
+      //     deps.logger.log(
+      //       `[SCHEDULE_ALL_FOLLOWUP] Failed to schedule ingredients: ${error}`,
+      //       "error"
+      //     );
+      //     return null;
+      //   }),
+      // Note: Instruction scheduling is handled by the schedule-instructions action
+      // which is called separately in the note worker pipeline
     ];
 
     // Wait for all scheduling operations to complete
@@ -121,15 +106,6 @@ export class ScheduleAllFollowupTasksAction extends BaseAction<
     deps.logger.log(
       `[SCHEDULE_ALL_FOLLOWUP] Scheduled ${successful} tasks successfully, ${failed} failed for note ${note.id}`
     );
-
-    // Broadcast status update
-    await deps.addStatusEventAndBroadcast({
-      importId,
-      noteId: note.id,
-      status: "PROCESSING",
-      message: `Scheduled ${successful} follow-up processing tasks`,
-      context: context.operation,
-    });
 
     return data;
   }
