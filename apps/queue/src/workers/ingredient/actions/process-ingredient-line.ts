@@ -109,12 +109,14 @@ export class ProcessIngredientLineAction extends BaseAction<
     rule: string;
     type: string;
     value: string;
+    processingTime?: number;
   }> {
     const segments: Array<{
       index: number;
       rule: string;
       type: string;
       value: string;
+      processingTime?: number;
     }> = [];
     let index = 0;
 
@@ -145,6 +147,7 @@ export class ProcessIngredientLineAction extends BaseAction<
               rule: (valueObj.rule as string) || "unknown",
               type: (valueObj.type as string) || "unknown",
               value: segmentValue.trim(),
+              processingTime: (valueObj.processingTime as number) || undefined,
             });
           }
         }

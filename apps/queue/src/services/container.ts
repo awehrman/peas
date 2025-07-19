@@ -74,6 +74,8 @@ export interface IParserService {
 export interface IConfigService {
   port: number;
   wsPort: number;
+  wsHost: string;
+  wsUrl: string;
   redisConnection: typeof redisConnection;
   batchSize: number;
   maxRetries: number;
@@ -114,6 +116,23 @@ class ConfigService implements IConfigService {
       process.env.WS_PORT || SERVER_DEFAULTS.WS_PORT.toString(),
       10
     );
+  }
+
+  get wsHost(): string {
+    return process.env.WS_HOST || SERVER_DEFAULTS.WS_HOST;
+  }
+
+  get wsUrl(): string {
+    // Allow direct WS_URL override, or construct from host and port
+    if (process.env.WS_URL) {
+      return process.env.WS_URL;
+    }
+
+    const host = this.wsHost;
+    const port = this.wsPort;
+    const protocol = process.env.NODE_ENV === "production" ? "wss" : "ws";
+
+    return `${protocol}://${host}:${port}`;
   }
 
   get redisConnection() {

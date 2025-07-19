@@ -1,16 +1,10 @@
 import { BaseAction } from "../../core/base-action";
 import { ActionContext } from "../../core/types";
+import type { BaseWorkerDependencies } from "../../types";
+import type { IDatabaseService } from "../../../services";
 
-export interface UpdateInstructionCountDeps {
-  addStatusEventAndBroadcast: (event: {
-    importId: string;
-    noteId?: string;
-    status: string;
-    message: string;
-    context: string;
-    indentLevel?: number;
-    metadata?: Record<string, unknown>;
-  }) => Promise<void>;
+export interface UpdateInstructionCountDeps extends BaseWorkerDependencies {
+  database: IDatabaseService;
 }
 
 export interface UpdateInstructionCountData {
@@ -35,6 +29,27 @@ export class UpdateInstructionCountAction extends BaseAction<
     const isComplete = data.currentInstructionIndex === data.totalInstructions;
     const status = isComplete ? "COMPLETED" : "PROCESSING";
     const emoji = isComplete ? "✅" : "⏳";
+
+    // Update job completion tracker for each instruction job completion
+    if (data.noteId) {
+      try {
+        if (deps.database.updateNoteCompletionTracker) {
+          // Update with the current number of completed jobs
+          await deps.database.updateNoteCompletionTracker(
+            data.noteId,
+            data.currentInstructionIndex
+          );
+          deps.logger?.log(
+            `[UPDATE_INSTRUCTION_COUNT] Updated completion tracker for note ${data.noteId}: ${data.currentInstructionIndex}/${data.totalInstructions} instruction jobs completed`
+          );
+        }
+      } catch (error) {
+        deps.logger?.log(
+          `[UPDATE_INSTRUCTION_COUNT] Failed to update completion tracker for note ${data.noteId}: ${error}`,
+          "error"
+        );
+      }
+    }
 
     await deps.addStatusEventAndBroadcast({
       importId: data.importId,

@@ -10,6 +10,15 @@ export interface InstructionWorkerDependencies extends BaseWorkerDependencies {
     createInstructionSteps: (
       steps: Array<Record<string, unknown>>
     ) => Promise<unknown>;
+    updateNoteCompletionTracker?: (
+      noteId: string,
+      completedJobs: number
+    ) => Promise<unknown>;
+    checkNoteCompletion?: (noteId: string) => Promise<{
+      isComplete: boolean;
+      completedJobs: number;
+      totalJobs: number;
+    }>;
   };
   parseInstruction: (text: string) => Promise<ParsedInstructionResult>;
 }

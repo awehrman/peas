@@ -99,6 +99,7 @@ export class DatabaseOperations {
       rule: string;
       type: string;
       value: string;
+      processingTime?: number; // Processing time in milliseconds
     }>
   ): Promise<void> {
     if (!ingredientLineId) {
@@ -117,6 +118,7 @@ export class DatabaseOperations {
         rule: segment.rule,
         type: segment.type,
         value: segment.value,
+        processingTime: segment.processingTime || null,
         ingredientLineId,
       }));
 

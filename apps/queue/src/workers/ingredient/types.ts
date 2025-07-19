@@ -35,6 +35,7 @@ export interface ParsedIngredientResult {
     rule: string;
     type: "amount" | "unit" | "ingredient" | "modifier";
     value: string;
+    processingTime?: number; // Processing time in milliseconds
     confidence?: number;
   }>;
   errorMessage?: string;

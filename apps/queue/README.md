@@ -409,6 +409,8 @@ REDISPASSWORD=
 # Server
 PORT=4200
 WS_PORT=8080
+WS_HOST=localhost
+WS_URL=ws://localhost:8080
 
 # Queue Configuration
 BATCH_SIZE=10
@@ -416,6 +418,22 @@ MAX_RETRIES=3
 BACKOFF_MS=1000
 MAX_BACKOFF_MS=30000
 ```
+
+### WebSocket Configuration
+
+The queue service supports configurable WebSocket URLs through environment variables:
+
+- `WS_URL`: Full WebSocket URL (e.g., `wss://example.com:8080`)
+- `WS_HOST`: WebSocket host (defaults to `localhost`)
+- `WS_PORT`: WebSocket port (defaults to `8080`)
+
+If `WS_URL` is provided, it takes precedence. Otherwise, the URL is constructed from `WS_HOST` and `WS_PORT` with the appropriate protocol (`wss` in production, `ws` in development).
+
+For frontend applications, use these Next.js environment variables:
+
+- `NEXT_PUBLIC_WEBSOCKET_URL`: Full WebSocket URL
+- `NEXT_PUBLIC_WEBSOCKET_HOST`: WebSocket host
+- `NEXT_PUBLIC_WEBSOCKET_PORT`: WebSocket port
 
 ## 📝 Type Safety & Linter Notes
 

@@ -175,6 +175,8 @@ describe("ServiceContainer", () => {
     it("should have config service with all required properties", () => {
       expect(container.config).toHaveProperty("port");
       expect(container.config).toHaveProperty("wsPort");
+      expect(container.config).toHaveProperty("wsHost");
+      expect(container.config).toHaveProperty("wsUrl");
       expect(container.config).toHaveProperty("redisConnection");
       expect(container.config).toHaveProperty("batchSize");
       expect(container.config).toHaveProperty("maxRetries");
@@ -288,6 +290,45 @@ describe("ConfigService", () => {
     expect(container.config.wsPort).toBe(8081);
   });
 
+  it("should return default wsHost when WS_HOST env var is not set", () => {
+    delete process.env.WS_HOST;
+    expect(container.config.wsHost).toBe("localhost");
+  });
+
+  it("should return environment WS_HOST when set", () => {
+    process.env.WS_HOST = "example.com";
+    expect(container.config.wsHost).toBe("example.com");
+  });
+
+  it("should return default wsUrl when WS_URL env var is not set", () => {
+    delete process.env.WS_URL;
+    delete process.env.WS_HOST;
+    delete process.env.WS_PORT;
+    delete process.env.NODE_ENV;
+    expect(container.config.wsUrl).toBe("ws://localhost:8080");
+  });
+
+  it("should return environment WS_URL when set", () => {
+    process.env.WS_URL = "wss://example.com:8081";
+    expect(container.config.wsUrl).toBe("wss://example.com:8081");
+  });
+
+  it("should construct wsUrl with wss protocol in production", () => {
+    delete process.env.WS_URL;
+    process.env.NODE_ENV = "production";
+    process.env.WS_HOST = "example.com";
+    process.env.WS_PORT = "8081";
+    expect(container.config.wsUrl).toBe("wss://example.com:8081");
+  });
+
+  it("should construct wsUrl with ws protocol in development", () => {
+    delete process.env.WS_URL;
+    process.env.NODE_ENV = "development";
+    process.env.WS_HOST = "localhost";
+    process.env.WS_PORT = "8080";
+    expect(container.config.wsUrl).toBe("ws://localhost:8080");
+  });
+
   it("should return redis connection", () => {
     expect(container.config.redisConnection).toBeDefined();
   });
@@ -337,6 +378,8 @@ describe("ConfigService", () => {
     expect(config).toBeDefined();
     expect(typeof config.port).toBe("number");
     expect(typeof config.wsPort).toBe("number");
+    expect(typeof config.wsHost).toBe("string");
+    expect(typeof config.wsUrl).toBe("string");
     expect(typeof config.batchSize).toBe("number");
     expect(typeof config.maxRetries).toBe("number");
     expect(typeof config.backoffMs).toBe("number");

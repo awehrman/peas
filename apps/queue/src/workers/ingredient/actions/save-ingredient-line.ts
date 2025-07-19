@@ -146,6 +146,7 @@ export class SaveIngredientLineAction extends BaseAction<
       rule: string;
       type: string;
       value: string;
+      processingTime?: number;
     }>,
     ingredientLineId: string,
     reference: string,

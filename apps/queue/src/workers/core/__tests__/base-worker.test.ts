@@ -726,6 +726,101 @@ describe("BaseWorker advanced coverage", () => {
     expect(metricsSpy).toHaveBeenCalledWith("test_worker", true);
   });
 
+  it("should test createBaseDependenciesFromContainer with missing logger", () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
+    const containerWithoutLogger: any = {
+      statusBroadcaster: {
+        addStatusEventAndBroadcast: vi.fn().mockResolvedValue(undefined),
+      },
+      errorHandler: {
+        errorHandler: {
+          withErrorHandling: vi.fn().mockImplementation(async (op) => op()),
+        },
+      },
+    };
+
+    const deps = createBaseDependenciesFromContainer(containerWithoutLogger);
+    expect(deps).toHaveProperty("addStatusEventAndBroadcast");
+    expect(deps).toHaveProperty("ErrorHandler");
+    expect(deps.logger).toBeUndefined();
+  });
+
+  it("should test createBaseDependenciesFromContainer with missing error handler", () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
+    const containerWithoutErrorHandler: any = {
+      statusBroadcaster: {
+        addStatusEventAndBroadcast: vi.fn().mockResolvedValue(undefined),
+      },
+      logger: { log: vi.fn() },
+    };
+
+    const deps = createBaseDependenciesFromContainer(
+      containerWithoutErrorHandler
+    );
+    expect(deps).toHaveProperty("addStatusEventAndBroadcast");
+    expect(deps).toHaveProperty("ErrorHandler");
+    expect(deps).toHaveProperty("logger");
+    expect(typeof deps.ErrorHandler.withErrorHandling).toBe("function");
+  });
+
+  it("should test createBaseDependenciesFromContainer with missing status broadcaster", async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
+    const containerWithoutStatusBroadcaster: any = {
+      errorHandler: {
+        errorHandler: {
+          withErrorHandling: vi.fn().mockImplementation(async (op) => op()),
+        },
+      },
+      logger: { log: vi.fn() },
+    };
+
+    const deps = createBaseDependenciesFromContainer(
+      containerWithoutStatusBroadcaster
+    );
+    expect(deps).toHaveProperty("addStatusEventAndBroadcast");
+    expect(deps).toHaveProperty("ErrorHandler");
+    expect(deps).toHaveProperty("logger");
+
+    // Test that the status broadcaster function resolves when broadcaster is missing
+    await expect(
+      deps.addStatusEventAndBroadcast({
+        importId: "test",
+        status: "PROCESSING",
+      })
+    ).resolves.toBeUndefined();
+  });
+
+  it("should test createBaseDependenciesFromContainer with complete container", async () => {
+    const mockAddStatusEvent = vi.fn().mockResolvedValue(undefined);
+    const mockContainer = {
+      statusBroadcaster: {
+        addStatusEventAndBroadcast: mockAddStatusEvent,
+      },
+      errorHandler: {
+        errorHandler: {
+          withErrorHandling: vi.fn().mockImplementation(async (op) => op()),
+        },
+      },
+      logger: { log: vi.fn() },
+    } as unknown as IServiceContainer;
+
+    const deps = createBaseDependenciesFromContainer(mockContainer);
+
+    await deps.addStatusEventAndBroadcast({
+      importId: "test-import",
+      noteId: "test-note",
+      status: "PROCESSING",
+      message: "Test message",
+    });
+
+    expect(mockAddStatusEvent).toHaveBeenCalledWith({
+      importId: "test-import",
+      noteId: "test-note",
+      status: "PROCESSING",
+      message: "Test message",
+    });
+  });
+
   describe("truncateResultForLogging", () => {
     it("should truncate long strings to 25 characters", () => {
       const longString = "This is a very long string that should be truncated";
@@ -790,6 +885,41 @@ describe("BaseWorker advanced coverage", () => {
       circular.self = circular;
       const result = worker["truncateResultForLogging"](circular);
       expect(result).toContain("[Object - object]");
+    });
+
+    it("should handle JSON stringify errors", () => {
+      // Create an object that will cause JSON.stringify to fail
+      const problematicObject = {
+        get toJSON() {
+          throw new Error("JSON stringify error");
+        },
+      };
+
+      const result = worker["truncateResultForLogging"](problematicObject);
+      expect(result).toContain("[Object - object]");
+    });
+
+    it("should handle very short JSON strings", () => {
+      const shortData = { value: "test" };
+      const result = worker["truncateResultForLogging"](shortData);
+      expect(result).toBe('{"value":"test"}');
+    });
+
+    it("should handle JSON strings exactly 100 characters", () => {
+      const data = { value: "x".repeat(85) }; // This will create JSON exactly 100 chars
+      const result = worker["truncateResultForLogging"](data);
+      expect(result).toBe(`{"value":"${"x".repeat(85)}"}`);
+    });
+
+    it("should handle JSON strings over 200 characters after truncation", () => {
+      const data = {
+        field1: "x".repeat(50),
+        field2: "y".repeat(50),
+        field3: "z".repeat(50),
+      };
+      const result = worker["truncateResultForLogging"](data);
+      expect(result.length).toBeLessThan(250);
+      expect(result).toContain("...");
     });
   });
 });

@@ -1,16 +1,10 @@
 import { BaseAction } from "../../core/base-action";
 import { ActionContext } from "../../core/types";
+import type { BaseWorkerDependencies } from "../../types";
+import type { IDatabaseService } from "../../../services";
 
-export interface UpdateIngredientCountDeps {
-  addStatusEventAndBroadcast: (event: {
-    importId: string;
-    noteId?: string;
-    status: string;
-    message: string;
-    context: string;
-    indentLevel?: number;
-    metadata?: Record<string, unknown>;
-  }) => Promise<void>;
+export interface UpdateIngredientCountDeps extends BaseWorkerDependencies {
+  database: IDatabaseService;
 }
 
 export interface UpdateIngredientCountData {
@@ -37,6 +31,27 @@ export class UpdateIngredientCountAction extends BaseAction<
     const isComplete = currentIngredientIndex === totalIngredients;
     const status = isComplete ? "COMPLETED" : "PROCESSING";
     const emoji = isComplete ? "✅" : "⏳";
+
+    // Update job completion tracker for each ingredient job completion
+    if (noteId) {
+      try {
+        if (deps.database.updateNoteCompletionTracker) {
+          // Update with the current number of completed jobs
+          await deps.database.updateNoteCompletionTracker(
+            noteId,
+            currentIngredientIndex
+          );
+          deps.logger?.log(
+            `[UPDATE_INGREDIENT_COUNT] Updated completion tracker for note ${noteId}: ${currentIngredientIndex}/${totalIngredients} ingredient jobs completed`
+          );
+        }
+      } catch (error) {
+        deps.logger?.log(
+          `[UPDATE_INGREDIENT_COUNT] Failed to update completion tracker for note ${noteId}: ${error}`,
+          "error"
+        );
+      }
+    }
 
     await deps.addStatusEventAndBroadcast({
       importId,

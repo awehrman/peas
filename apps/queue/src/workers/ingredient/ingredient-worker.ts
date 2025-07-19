@@ -117,52 +117,137 @@ export function createIngredientWorker(
       let result;
 
       try {
-        // Dynamically import the v2 parser to avoid circular dependency issues
+        // Handle empty or whitespace-only input
+        if (!text || text.trim().length === 0) {
+          container.logger.log(
+            `[INGREDIENT] Empty or whitespace-only input received`
+          );
+          result = {
+            success: false,
+            parseStatus: "ERROR" as const,
+            segments: [],
+            processingTime: Date.now() - startTime,
+            errorMessage: "Empty or invalid input text",
+          };
+          return result;
+        }
+
+        // Dynamically import the v1 parser to avoid circular dependency issues
         const { v1: parser } = await import("@peas/parser");
         const parsedResult = parser.parse(text);
+        container.logger.log(
+          `[INGREDIENT] Parsed result: ${JSON.stringify(parsedResult, null, 2)}`
+        );
+
+        // Check if we have valid parsed data
+        // The v1 parser returns a single object with values, not a parsed array
+        if (
+          !parsedResult?.values ||
+          !Array.isArray(parsedResult.values) ||
+          parsedResult.values.length === 0
+        ) {
+          container.logger.log(`[INGREDIENT] Parser returned no valid data`);
+          result = {
+            success: false,
+            parseStatus: "ERROR" as const,
+            segments: [],
+            processingTime: Date.now() - startTime,
+            errorMessage: "Parser returned no valid data",
+          };
+          return result;
+        }
 
         // Convert parser output to expected format
-        const segments = parsedResult?.parsed?.[0]?.values
-          ? parsedResult.parsed[0].values.map(
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              (segment: any, index: number) => ({
+        const segments = parsedResult.values
+          .filter(
+            (segment: {
+              rule?: string;
+              type?: string;
+              value?: string;
+              values?: string[] | string;
+            }) => segment && (segment.values || segment.value)
+          ) // Filter out empty segments
+          .map(
+            (
+              segment: {
+                rule?: string;
+                type?: string;
+                value?: string;
+                values?: string[] | string;
+              },
+              index: number
+            ) => {
+              const segmentStartTime = Date.now();
+
+              // Handle different possible formats of segment.values
+              let value: string;
+              if (Array.isArray(segment.values)) {
+                value = segment.values.join(" ");
+              } else if (typeof segment.values === "string") {
+                value = segment.values;
+              } else if (segment.value) {
+                value =
+                  typeof segment.value === "string"
+                    ? segment.value
+                    : String(segment.value);
+              } else {
+                value = "";
+              }
+
+              const segmentProcessingTime = Date.now() - segmentStartTime;
+
+              return {
                 index,
                 rule: segment.rule || "",
-                type: segment.type || "ingredient",
-                value: Array.isArray(segment.values)
-                  ? segment.values.join(" ")
-                  : segment.values || "",
+                type:
+                  (segment.type as
+                    | "amount"
+                    | "unit"
+                    | "ingredient"
+                    | "modifier") || "ingredient",
+                value: value.trim(),
+                processingTime: segmentProcessingTime,
                 confidence: 1.0,
-              })
-            )
-          : [];
+              };
+            }
+          )
+          .filter((segment) => segment.value.length > 0); // Filter out segments with empty values
+
+        // Only consider successful if we have valid segments
+        const hasValidSegments = segments.length > 0;
 
         result = {
-          success: true,
-          parseStatus: "CORRECT" as const,
+          success: hasValidSegments,
+          parseStatus: hasValidSegments
+            ? ("CORRECT" as const)
+            : ("ERROR" as const),
           segments,
           processingTime: Date.now() - startTime,
+          ...(hasValidSegments
+            ? {}
+            : { errorMessage: "No valid ingredient segments found" }),
         };
 
         container.logger.log(
           `[INGREDIENT] Parsing completed with status: ${result.parseStatus}, segments: ${segments.length}`
         );
 
-        // Log the detailed parsed result
+        // Log the detailed parsed result for debugging
         container.logger.log(
           `[INGREDIENT] Parsed result details: ${JSON.stringify(parsedResult, null, 2)}`
         );
       } catch (error) {
-        container.logger.log(
-          `[INGREDIENT] Parsing failed: ${error instanceof Error ? error.message : String(error)}`
-        );
+        // Preserve the original error message
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        container.logger.log(`[INGREDIENT] Parsing failed: ${errorMessage}`);
 
         result = {
           success: false,
           parseStatus: "ERROR" as const,
           segments: [],
           processingTime: Date.now() - startTime,
-          errorMessage: error instanceof Error ? error.message : String(error),
+          errorMessage: errorMessage,
         };
       }
 

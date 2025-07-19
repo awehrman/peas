@@ -220,7 +220,6 @@ model ParsedIngredientLine {
   parsed                ParsedSegment[]
   queueJobs QueueJob[]
 
-  // References to ingredients found in this line
   ingredientReferences IngredientReference[]
 
   Note   Note?   @relation(fields: [noteId], references: [id], onDelete: Cascade)
@@ -258,6 +257,7 @@ model ParsedSegment {
   rule  String
   type  String
   value String
+  processingTime Int? // Processing time in milliseconds
 
   ingredientLine   ParsedIngredientLine @relation(fields: [ingredientLineId], references: [id], onDelete: Cascade)
   ingredientLineId String
@@ -279,6 +279,12 @@ model UniqueLinePattern {
 
   // Human-readable description
   description String?
+
+  // Example line that matches this pattern
+  exampleLine String?
+
+  // Example values from the line
+  exampleValues Json?
 
   // Count of times this pattern has been seen
   occurrenceCount Int @default(1)
@@ -382,6 +388,7 @@ model Ingredient {
   description      String?
   isReviewed       Boolean              @default(false)
   reviewedAt       DateTime?
+  isComposedIngredient Boolean           @default(false) // Indicates if this ingredient can also be a recipe
 
   // Alias names (e.g. "Granny Smith")
   aliases          Alias[]

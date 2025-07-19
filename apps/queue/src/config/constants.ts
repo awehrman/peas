@@ -12,6 +12,10 @@ export const SERVER_CONSTANTS = {
   DEFAULT_PORT: 4200,
   /** Default WebSocket port */
   DEFAULT_WS_PORT: 8080,
+  /** Default WebSocket host */
+  DEFAULT_WS_HOST: "localhost",
+  /** Default WebSocket URL */
+  DEFAULT_WS_URL: "ws://localhost:8080",
   /** Request size limit */
   REQUEST_SIZE_LIMIT: "10mb",
   /** Graceful shutdown timeout */

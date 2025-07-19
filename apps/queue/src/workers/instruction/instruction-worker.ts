@@ -121,6 +121,10 @@ export function createInstructionWorker(
         );
         return result;
       },
+      // Add job completion tracker methods from the container's database service
+      updateNoteCompletionTracker:
+        container.database.updateNoteCompletionTracker,
+      checkNoteCompletion: container.database.checkNoteCompletion,
     },
     parseInstruction: async (text: string) => {
       container.logger.log(

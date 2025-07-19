@@ -18,5 +18,3 @@ export const prisma = global.prisma || new PrismaClient();
 if (process.env.NODE_ENV !== "production") global.prisma = prisma;
 
 export * from "@prisma/client";
-
-console.log("[database] DATABASE_URL at runtime ->", process.env.DATABASE_URL);

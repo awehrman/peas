@@ -234,6 +234,7 @@ describe("DatabaseOperations", () => {
         data: mockSegments.map((segment) => ({
           ...segment,
           ingredientLineId,
+          processingTime: null,
         })),
       });
     });

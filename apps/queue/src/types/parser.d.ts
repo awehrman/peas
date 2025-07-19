@@ -1,5 +1,13 @@
 declare module "@peas/parser" {
   interface ParsedResult {
+    rule?: string;
+    type?: string;
+    values?: Array<{
+      rule?: string;
+      type?: string;
+      value?: string;
+      values?: string[] | string;
+    }>;
     parsed?: Array<{
       values?: Array<{
         rule?: string;

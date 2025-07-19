@@ -5,6 +5,7 @@ model Ingredient {
   description      String?
   isReviewed       Boolean              @default(false)
   reviewedAt       DateTime?
+  isComposedIngredient Boolean           @default(false) // Indicates if this ingredient can also be a recipe
 
   // Alias names (e.g. "Granny Smith")
   aliases          Alias[]

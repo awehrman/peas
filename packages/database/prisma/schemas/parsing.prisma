@@ -58,6 +58,7 @@ model ParsedSegment {
   rule  String
   type  String
   value String
+  processingTime Int? // Processing time in milliseconds
 
   ingredientLine   ParsedIngredientLine @relation(fields: [ingredientLineId], references: [id], onDelete: Cascade)
   ingredientLineId String

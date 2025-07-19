@@ -101,6 +101,7 @@ export const ParsedSegmentSchema = z.object({
     "note",
   ]),
   value: z.string().min(1, "Value is required"),
+  processingTime: z.number().int().min(0).optional(), // Processing time in milliseconds
   confidence: z.number().min(0).max(1).optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
 });

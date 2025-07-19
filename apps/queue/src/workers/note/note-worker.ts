@@ -140,9 +140,6 @@ export function createNoteWorker(
 // ENHANCED DEPENDENCY CREATION
 // ============================================================================
 
-/**
- * Static helper to create note-specific dependencies from a container
- */
 function createNoteDependenciesFromContainer(container: IServiceContainer): {
   parseHTML: (content: string) => Promise<ParsedHtmlFile>;
   createNote: (file: ParsedHtmlFile) => Promise<NoteWithParsedLines>;
@@ -200,33 +197,36 @@ function createNoteDependenciesFromContainer(container: IServiceContainer): {
         noteId: string,
         totalJobs: number
       ) => {
-        // TODO: Implement actual database tracking
-        container.logger?.log(
-          `[DATABASE] Creating completion tracker for note ${noteId} with ${totalJobs} jobs`
-        );
+        if (container.database.createNoteCompletionTracker) {
+          return container.database.createNoteCompletionTracker(
+            noteId,
+            totalJobs
+          );
+        }
         return Promise.resolve();
       },
       updateNoteCompletionTracker: async (
         noteId: string,
         completedJobs: number
       ) => {
-        // TODO: Implement actual database tracking
-        container.logger?.log(
-          `[DATABASE] Updating completion tracker for note ${noteId}: ${completedJobs} jobs completed`
-        );
+        if (container.database.updateNoteCompletionTracker) {
+          return container.database.updateNoteCompletionTracker(
+            noteId,
+            completedJobs
+          );
+        }
         return Promise.resolve();
       },
       checkNoteCompletion: async (noteId: string) => {
-        // TODO: Implement actual database tracking
-        container.logger?.log(
-          `[DATABASE] Checking completion status for note ${noteId}`
-        );
-        // For now, always return complete to avoid blocking
-        return Promise.resolve({
+        if (container.database.checkNoteCompletion) {
+          return container.database.checkNoteCompletion(noteId);
+        }
+        // Fallback if database service doesn't have the method
+        return {
           isComplete: true,
-          completedJobs: 1,
-          totalJobs: 1,
-        });
+          completedJobs: 0,
+          totalJobs: 0,
+        };
       },
     },
   };

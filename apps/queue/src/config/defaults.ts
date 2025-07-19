@@ -24,6 +24,10 @@ export const SERVER_DEFAULTS = {
   PORT: SERVER_CONSTANTS.DEFAULT_PORT,
   /** WebSocket port */
   WS_PORT: SERVER_CONSTANTS.DEFAULT_WS_PORT,
+  /** WebSocket host */
+  WS_HOST: SERVER_CONSTANTS.DEFAULT_WS_HOST,
+  /** WebSocket URL */
+  WS_URL: SERVER_CONSTANTS.DEFAULT_WS_URL,
   /** Request size limit */
   REQUEST_SIZE_LIMIT: SERVER_CONSTANTS.REQUEST_SIZE_LIMIT,
   /** Graceful shutdown timeout */

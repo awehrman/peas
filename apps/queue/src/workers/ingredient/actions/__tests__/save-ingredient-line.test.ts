@@ -131,6 +131,7 @@ describe("SaveIngredientLineAction", () => {
             type: "amount",
             value: "3",
             ingredientLineId: "test-line-456",
+            processingTime: null,
           },
           {
             index: 1,
@@ -138,6 +139,7 @@ describe("SaveIngredientLineAction", () => {
             type: "unit",
             value: "tbsp",
             ingredientLineId: "test-line-456",
+            processingTime: null,
           },
           {
             index: 2,
@@ -145,6 +147,7 @@ describe("SaveIngredientLineAction", () => {
             type: "ingredient",
             value: "canola oil",
             ingredientLineId: "test-line-456",
+            processingTime: null,
           },
         ],
       });
