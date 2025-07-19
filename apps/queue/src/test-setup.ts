@@ -2,6 +2,9 @@
 import { beforeAll, afterAll, vi } from "vitest";
 import { SERVER_DEFAULTS, QUEUE_DEFAULTS } from "./config";
 
+// Suppress dotenv logs during testing
+process.env.DOTENV_QUIET = "true";
+
 // Mock environment variables for testing
 process.env.NODE_ENV = "test";
 process.env.PORT = SERVER_DEFAULTS.PORT.toString();
@@ -50,11 +53,11 @@ vi.mock("../queues/createQueue", () => ({
 // Global test setup
 beforeAll(() => {
   // Any global setup before tests
-  console.log("🧪 Setting up test environment...");
+  // console.log("🧪 Setting up test environment...");
 });
 
 // Global test teardown
 afterAll(() => {
   // Any global cleanup after tests
-  console.log("🧹 Cleaning up test environment...");
+  // console.log("🧹 Cleaning up test environment...");
 });

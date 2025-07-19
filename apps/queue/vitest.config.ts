@@ -28,6 +28,14 @@ export default defineConfig({
         "**/coverage/**",
       ],
     },
+    // Suppress console output from dotenv
+    silent: false,
+    onConsoleLog(log, _type) {
+      if (log.includes("dotenv@")) {
+        return false; // Suppress dotenv logs
+      }
+      return true; // Allow other logs
+    },
   },
   resolve: {
     alias: {

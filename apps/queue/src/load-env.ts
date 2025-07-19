@@ -15,7 +15,7 @@ export function loadEnv(): void {
 
     if (envPath) {
       console.log(`[env] Loading environment from: ${envPath}`);
-      config({ path: envPath });
+      config({ path: envPath, quiet: true });
 
       // Log key environment variables for debugging (without sensitive values)
       const envVars = {

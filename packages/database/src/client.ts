@@ -2,10 +2,10 @@ import { join } from "path";
 import { config } from "dotenv";
 
 // Load .env from the *current working directory* (repo root) only if
-// DATABASE_URL isn’t already set by the host.
+// DATABASE_URL isn't already set by the host.
 if (!process.env.DATABASE_URL) {
   // resolve from cwd (apps/web) up to the repo root
-  config({ path: join(process.cwd(), "../../.env.local") });
+  config({ path: join(process.cwd(), "../../.env.local"), quiet: true });
 }
 
 import { PrismaClient } from "@prisma/client";

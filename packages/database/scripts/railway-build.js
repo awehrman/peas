@@ -21,11 +21,11 @@ const rootEnv = path.resolve(__dirname, "../../..", ".env");
 const packageEnv = path.join(__dirname, "..", ".env");
 
 if (fs.existsSync(rootEnvLocal)) {
-  config({ path: rootEnvLocal });
+  config({ path: rootEnvLocal, quiet: true });
 } else if (fs.existsSync(rootEnv)) {
-  config({ path: rootEnv });
+  config({ path: rootEnv, quiet: true });
 } else {
-  config({ path: packageEnv });
+  config({ path: packageEnv, quiet: true });
 }
 
 // Check if we're in Railway environment
