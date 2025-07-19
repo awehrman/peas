@@ -38,14 +38,6 @@ export class ProcessIngredientLineAction extends BaseAction<
       const { noteId, ingredientLineId, reference, blockIndex, lineIndex } =
         input;
 
-      // TODO: Implement actual ingredient parsing logic
-      // This would typically involve:
-      // 1. Using the parser grammar to parse the ingredient line
-      // 2. Validating the parsed segments
-      // 3. Extracting amounts, units, ingredients, etc.
-      // 4. Normalizing ingredient names
-      // 5. Storing parsed segments in the database
-
       // Stub implementation for now
       if (deps.logger) {
         deps.logger.log(

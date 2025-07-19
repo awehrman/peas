@@ -289,7 +289,12 @@ describe("ScheduleAllFollowupTasksAction", () => {
               blockIndex: 0,
               lineIndex: 0,
             },
-            null as any, // This should be skipped
+            null as unknown as {
+              id: string;
+              reference: string;
+              blockIndex: number;
+              lineIndex: number;
+            }, // This should be skipped
             {
               id: "ingredient-3",
               reference: "1 cup sugar",
@@ -303,7 +308,11 @@ describe("ScheduleAllFollowupTasksAction", () => {
               originalText: "Mix ingredients",
               lineIndex: 0,
             },
-            null as any, // This should be skipped
+            null as unknown as {
+              id: string;
+              originalText: string;
+              lineIndex: number;
+            }, // This should be skipped
           ],
         },
       };

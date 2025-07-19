@@ -2,11 +2,28 @@
   "name": "@peas/parser",
   "version": "0.0.0",
   "private": true,
-  "main": "src/index.js",
+  "main": "dist/index.js",
+  "exports": {
+    ".": "./dist/index.js",
+    "./v1": "./dist/v1/index.js",
+    "./v1/minified": "./dist/v1/index.min.js",
+    "./v2": "./dist/v2/index.js",
+    "./v2/minified": "./dist/v2/index.min.js"
+  },
   "scripts": {
-    "parser": "peggy -o src/index.js --format es src/grammar.peggy"
+    "build": "node scripts/build.js",
+    "build:v1": "peggy -o dist/v1/parser.js --format es src/v1/parser.peggy && node -e \"require('fs').writeFileSync('dist/v1/index.js', 'export { parse } from \\'./parser.js\\';')\"",
+    "build:v2": "peggy -o dist/v2/grammar.js --format es src/v2/grammar.peggy && node -e \"require('fs').writeFileSync('dist/v2/index.js', 'export { parse } from \\'./grammar.js\\';')\"",
+    "build:minified": "yarn build && yarn minify:v1 && yarn minify:v2",
+    "minify:v1": "npx terser dist/v1/index.js --compress --mangle -o dist/v1/index.min.js",
+    "minify:v2": "npx terser dist/v2/index.js --compress --mangle -o dist/v2/index.min.js",
+    "clean": "rm -rf dist",
+    "prebuild": "yarn clean && mkdir -p dist/v1 dist/v2"
   },
   "dependencies": {
     "peggy": "^5.0.5"
+  },
+  "devDependencies": {
+    "terser": "^5.43.1"
   }
 }
