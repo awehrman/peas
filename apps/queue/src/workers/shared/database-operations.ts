@@ -1,10 +1,18 @@
 import type { PrismaClient } from "@peas/database";
+import { PatternTracker } from "./pattern-tracker";
 
 /**
  * Shared database operations for workers
  */
 export class DatabaseOperations {
   constructor(private prisma: PrismaClient) {}
+
+  /**
+   * Get pattern tracker instance
+   */
+  get patternTracker(): PatternTracker {
+    return new PatternTracker(this.prisma);
+  }
 
   /**
    * Create or update parsed ingredient line

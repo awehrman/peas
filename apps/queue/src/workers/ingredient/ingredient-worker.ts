@@ -70,7 +70,10 @@ export class IngredientWorker extends BaseWorker<
       this.createWrappedAction("save_ingredient_line", this.dependencies)
     );
 
-    // 3. Schedule categorization (COMMENTED OUT FOR SIMPLIFIED TESTING)
+    // 3. Track unique line pattern (low priority, non-blocking)
+    actions.push(this.createWrappedAction("track_pattern", this.dependencies));
+
+    // 4. Schedule categorization (COMMENTED OUT FOR SIMPLIFIED TESTING)
     // Note: This will schedule categorization after each ingredient line.
     // In a production system, you might want to track when ALL ingredient lines
     // for a note are completed before scheduling categorization.
@@ -118,15 +121,31 @@ export function createIngredientWorker(
         const { v1: parser } = await import("@peas/parser");
         const parsedResult = parser.parse(text);
 
+        // Convert parser output to expected format
+        const segments = parsedResult?.parsed?.[0]?.values
+          ? parsedResult.parsed[0].values.map(
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              (segment: any, index: number) => ({
+                index,
+                rule: segment.rule || "",
+                type: segment.type || "ingredient",
+                value: Array.isArray(segment.values)
+                  ? segment.values.join(" ")
+                  : segment.values || "",
+                confidence: 1.0,
+              })
+            )
+          : [];
+
         result = {
           success: true,
           parseStatus: "CORRECT" as const,
-          segments: parsedResult || [],
+          segments,
           processingTime: Date.now() - startTime,
         };
 
         container.logger.log(
-          `[INGREDIENT] Parsing completed with status: ${result.parseStatus}, segments: ${result.segments.length}`
+          `[INGREDIENT] Parsing completed with status: ${result.parseStatus}, segments: ${segments.length}`
         );
 
         // Log the detailed parsed result

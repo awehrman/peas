@@ -266,6 +266,34 @@ model ParsedSegment {
   updatedAt DateTime @updatedAt
 
   @@index([ingredientLineId])
+}
+
+model UniqueLinePattern {
+  id String @id @default(cuid())
+
+  // Short code for the pattern (e.g., "AMOUNT_UNIT_INGREDIENT")
+  patternCode String @unique
+
+  // JSON array of rule strings in order
+  ruleSequence Json
+
+  // Human-readable description
+  description String?
+
+  // Count of times this pattern has been seen
+  occurrenceCount Int @default(1)
+
+  // First time this pattern was seen
+  firstSeenAt DateTime @default(now())
+
+  // Last time this pattern was seen
+  lastSeenAt DateTime @updatedAt
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([patternCode])
+  @@index([occurrenceCount])
 } 
 
 // prisma/schemas/meta.prisma
