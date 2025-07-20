@@ -1,7 +1,9 @@
 import { redisConnection } from "../config/redis";
 import { ErrorHandler } from "../utils/error-handler";
 import { HealthMonitor } from "../utils/health-monitor";
-import { IQueueService, ILoggerService, IDatabaseService } from "./index";
+import { IQueueService } from "./register-queues";
+import { ILoggerService } from "./register-logger";
+import { IDatabaseService } from "./register-database";
 import { registerQueues } from "./register-queues";
 import { registerDatabase } from "./register-database";
 import { registerLogger } from "./register-logger";

@@ -11,7 +11,7 @@ import {
   generateUuid,
   measureExecutionTime,
   createQueueStatusResponse,
-} from "../utils";
+} from "../utils/utils";
 import {
   FILE_CONSTANTS,
   WORKER_CONSTANTS,

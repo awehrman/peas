@@ -2,7 +2,7 @@ import { load, CheerioAPI, Cheerio } from "cheerio";
 import { Element } from "domhandler";
 import { parseISO } from "date-fns";
 import { PROCESSING_CONSTANTS, LOG_MESSAGES } from "../config/constants";
-import { formatLogMessage } from "../utils";
+import { formatLogMessage } from "../utils/utils";
 import {
   ParsedHTMLFile,
   ParsedIngredientLine,

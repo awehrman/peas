@@ -3,7 +3,7 @@ import type { IServiceContainer } from "../../services/container";
 import type { BaseWorker } from "../core/base-worker";
 import type { BaseJobData, BaseWorkerDependencies } from "../types";
 import { LOG_MESSAGES } from "../../config/constants";
-import { formatLogMessage } from "../../utils";
+import { formatLogMessage } from "../../utils/utils";
 
 /**
  * Worker factory function type

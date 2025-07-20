@@ -7,7 +7,7 @@ import { ActionContext } from "../core/types";
 import { registerImageActions } from "./actions";
 import { IServiceContainer } from "../../services/container";
 import { WORKER_CONSTANTS, LOG_MESSAGES } from "../../config/constants";
-import { formatLogMessage, measureExecutionTime } from "../../utils";
+import { formatLogMessage, measureExecutionTime } from "../../utils/utils";
 import type {
   ImageWorkerDependencies,
   ImageJobData,

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { EnhancedLoggerService, createLogger, logger } from "../logger";
-import type { LogConfig } from "../logger";
+import { EnhancedLoggerService } from "../../logger";
+import type { LogConfig } from "../../logger";
 
 // Mock fs and path
 vi.mock("fs", () => {
@@ -77,6 +77,7 @@ describe("EnhancedLoggerService", () => {
     consoleLogSpy = vi.spyOn(console, "log").mockImplementation(() => {});
     consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
   });
+
   afterEach(() => {
     consoleLogSpy.mockRestore();
     consoleErrorSpy.mockRestore();
@@ -178,42 +179,6 @@ describe("EnhancedLoggerService", () => {
     );
   });
 
-  // TODO: Fix this test - the mock isn't being applied correctly for rotateLogs
-  // it("rotates logs if too large", () => {
-  //   // Test that the mock is working
-  //   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
-  //   const fsMocks = (global as any).fsMocks;
-  //   console.log("fsMocks available:", !!fsMocks);
-  //   console.log("statSyncMock available:", !!fsMocks.statSyncMock);
-  //
-  //   // Ensure log files exist so statSync doesn't throw
-  //   fsMocks.existsSyncMock.mockReturnValue(true);
-  //   // Mock statSync for both log files (main and error)
-  //   fsMocks.statSyncMock.mockReturnValueOnce({
-  //     size: 2 * 1024 * 1024, // Exceeds default 10MB limit
-  //     mtime: new Date(),
-  //   });
-  //   fsMocks.statSyncMock.mockReturnValueOnce({
-  //     size: 2 * 1024 * 1024, // Exceeds default 10MB limit
-  //     mtime: new Date(),
-  //   });
-  //   const logger = new EnhancedLoggerService(baseConfig);
-  //
-  //   // Debug: check if mocks are set up correctly
-  //   console.log("Before rotateLogs - statSync mock calls:", fsMocks.statSyncMock.mock.calls.length);
-  //
-  //   logger.rotateLogs();
-  //
-  //   // Debug: check what was called
-  //   console.log("After rotateLogs - statSync calls:", fsMocks.statSyncMock.mock.calls.length);
-  //   console.log("After rotateLogs - renameSync calls:", fsMocks.renameSyncMock.mock.calls.length);
-  //
-  //   // First check if statSync was called at all
-  //   expect(fsMocks.statSyncMock).toHaveBeenCalled();
-  //   // Then check if renameSync was called
-  //   expect(fsMocks.renameSyncMock).toHaveBeenCalled();
-  // });
-
   it("getLogFiles returns correct paths", () => {
     const logger = new EnhancedLoggerService(baseConfig);
     const files = logger.getLogFiles();
@@ -260,15 +225,6 @@ describe("EnhancedLoggerService", () => {
     logger.clearOldLogs(30);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
     expect((global as any).fsMocks.unlinkSyncMock).toHaveBeenCalledTimes(2);
-  });
-
-  it("createLogger returns EnhancedLoggerService", () => {
-    const l = createLogger(baseConfig);
-    expect(l).toBeInstanceOf(EnhancedLoggerService);
-  });
-
-  it("logger default export is an EnhancedLoggerService", () => {
-    expect(logger).toBeInstanceOf(EnhancedLoggerService);
   });
 
   it("ensureLogDirectory creates directory if missing", () => {

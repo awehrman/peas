@@ -9,7 +9,7 @@ import { registerNoteActions } from "./actions";
 import { IServiceContainer } from "../../services/container";
 import { MissingDependencyError } from "../core/errors";
 import { WORKER_CONSTANTS, LOG_MESSAGES } from "../../config/constants";
-import { formatLogMessage, measureExecutionTime } from "../../utils";
+import { formatLogMessage, measureExecutionTime } from "../../utils/utils";
 import type {
   NoteWorkerDependencies,
   NoteJobData,

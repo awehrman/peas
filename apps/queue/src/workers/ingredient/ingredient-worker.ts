@@ -11,7 +11,7 @@ import {
   formatLogMessage,
   measureExecutionTime,
   truncateString,
-} from "../../utils";
+} from "../../utils/utils";
 import type { IngredientWorkerDependencies, IngredientJobData } from "./types";
 import type { BaseAction } from "../core/base-action";
 

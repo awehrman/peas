@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { ErrorHandler } from "./error-handler";
-import { measureExecutionTime } from "./index";
+import { measureExecutionTime } from "./utils";
 import { HTTP_CONSTANTS } from "../config/constants";
 import { ErrorType, ErrorSeverity } from "../types";
 

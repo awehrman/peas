@@ -11,7 +11,7 @@ import {
   formatLogMessage,
   measureExecutionTime,
   truncateString,
-} from "../../utils";
+} from "../../utils/utils";
 import type {
   InstructionWorkerDependencies,
   InstructionJobData,
