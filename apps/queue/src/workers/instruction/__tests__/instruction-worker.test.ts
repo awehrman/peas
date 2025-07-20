@@ -79,10 +79,10 @@ describe("InstructionWorker", () => {
       );
       expect(result).toEqual({ id: "test-id", status: "completed" });
       expect(mockContainer.logger.log).toHaveBeenCalledWith(
-        '[INSTRUCTION] Updating instruction line test-id with data: {"status":"completed"}'
+        '🗄️ Updating instruction line test-id with data: {"status":"completed"}'
       );
       expect(mockContainer.logger.log).toHaveBeenCalledWith(
-        "[INSTRUCTION] Successfully updated instruction line test-id"
+        "✅ Successfully updated instruction line test-id"
       );
     });
 
@@ -106,10 +106,10 @@ describe("InstructionWorker", () => {
       const result = await dependencies.database.createInstructionSteps(steps);
       expect(result).toEqual(steps);
       expect(mockContainer.logger.log).toHaveBeenCalledWith(
-        "[INSTRUCTION] Creating 1 instruction steps"
+        "📋 Creating 1 instruction steps"
       );
       expect(mockContainer.logger.log).toHaveBeenCalledWith(
-        "[INSTRUCTION] Successfully created 1 instruction steps"
+        "✅ Successfully created 1 instruction steps"
       );
     });
 
@@ -136,10 +136,10 @@ describe("InstructionWorker", () => {
         processingTime: 0,
       });
       expect(mockContainer.logger.log).toHaveBeenCalledWith(
-        '[INSTRUCTION] Parsing instruction text: "Mix ingredients in a bowl"'
+        "📝 Parsing instruction: Mix ingredients in a bowl"
       );
       expect(mockContainer.logger.log).toHaveBeenCalledWith(
-        "[INSTRUCTION] Parsing completed with status: CORRECT"
+        "✅ Instruction parsing completed: CORRECT"
       );
     });
 
@@ -158,7 +158,7 @@ describe("InstructionWorker", () => {
       await dependencies.parseInstruction(longText);
 
       expect(mockContainer.logger.log).toHaveBeenCalledWith(
-        '[INSTRUCTION] Parsing instruction text: "This is a very long instruction text that should b..."'
+        "📝 Parsing instruction: This is a very long instruction text that shoul..."
       );
     });
 
@@ -175,7 +175,7 @@ describe("InstructionWorker", () => {
       await dependencies.parseInstruction("");
 
       expect(mockContainer.logger.log).toHaveBeenCalledWith(
-        '[INSTRUCTION] Parsing instruction text: ""'
+        "📝 Parsing instruction: {text}"
       );
     });
   });

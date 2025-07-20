@@ -156,7 +156,7 @@ describe("Worker Factory", () => {
 
       expect(mockFactory).toHaveBeenCalledWith(mockQueue, mockContainer);
       expect(mockLogger.log).toHaveBeenCalledWith(
-        "❌ Failed to create failing-worker worker: Error: Factory failed",
+        "❌ Failed to create failing-worker worker: Factory failed",
         "error"
       );
     });
@@ -194,7 +194,7 @@ describe("Worker Factory", () => {
         "✅ worker-1 worker created and started"
       );
       expect(mockLogger.log).toHaveBeenCalledWith(
-        "❌ Failed to create worker-2 worker: Error: Second factory failed",
+        "❌ Failed to create worker-2 worker: Second factory failed",
         "error"
       );
     });
@@ -220,7 +220,7 @@ describe("Worker Factory", () => {
       );
 
       expect(mockLogger.log).toHaveBeenCalledWith(
-        "❌ Failed to create string-error-worker worker: String error",
+        "❌ Failed to create string-error-worker worker: Unknown error",
         "error"
       );
     });
@@ -243,7 +243,7 @@ describe("Worker Factory", () => {
       expect(() => createWorkers(configs, mockContainer)).toThrow();
 
       expect(mockLogger.log).toHaveBeenCalledWith(
-        "❌ Failed to create null-error-worker worker: null",
+        "❌ Failed to create null-error-worker worker: Unknown error",
         "error"
       );
     });
@@ -266,7 +266,7 @@ describe("Worker Factory", () => {
       expect(() => createWorkers(configs, mockContainer)).toThrow();
 
       expect(mockLogger.log).toHaveBeenCalledWith(
-        "❌ Failed to create undefined-error-worker worker: undefined",
+        "❌ Failed to create undefined-error-worker worker: Unknown error",
         "error"
       );
     });
@@ -317,7 +317,7 @@ describe("Worker Factory", () => {
       });
 
       expect(mockLogger.log).toHaveBeenCalledWith(
-        "✅  worker created and started"
+        "✅ {workerName} worker created and started"
       );
     });
 
@@ -476,7 +476,7 @@ describe("Worker Factory", () => {
         "✅ success-1 worker created and started"
       );
       expect(mockLogger.log).toHaveBeenCalledWith(
-        "❌ Failed to create failure worker: Error: Second worker failed",
+        "❌ Failed to create failure worker: Second worker failed",
         "error"
       );
     });
@@ -539,7 +539,7 @@ describe("Worker Factory", () => {
       );
 
       expect(mockLogger.log).toHaveBeenCalledWith(
-        "❌ Failed to create circular-error-worker worker: Error: Circular error",
+        "❌ Failed to create circular-error-worker worker: Circular error",
         "error"
       );
     });
@@ -567,7 +567,7 @@ describe("Worker Factory", () => {
       expect(() => createWorkers(configs, mockContainer)).toThrow();
 
       expect(mockLogger.log).toHaveBeenCalledWith(
-        "❌ Failed to create custom-error-worker worker: Custom error message",
+        "❌ Failed to create custom-error-worker worker: Unknown error",
         "error"
       );
     });

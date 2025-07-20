@@ -263,6 +263,87 @@ export class ErrorHandler {
   }
 
   /**
+   * Create standardized HTTP error response
+   */
+  static createHttpErrorResponse(
+    error: JobError,
+    additionalContext?: Record<string, unknown>
+  ) {
+    return {
+      success: false,
+      error: {
+        message: error.message,
+        type: error.type,
+        code: error.code,
+      },
+      context: { ...error.context, ...additionalContext },
+      timestamp: error.timestamp.toISOString(),
+    };
+  }
+
+  /**
+   * Create standardized HTTP success response
+   */
+  static createHttpSuccessResponse<T>(
+    data: T,
+    message?: string,
+    additionalContext?: Record<string, unknown>
+  ) {
+    return {
+      success: true,
+      message,
+      data,
+      context: additionalContext,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  /**
+   * Handle route errors with consistent response format
+   */
+  static handleRouteError(
+    error: unknown,
+    operation: string,
+    additionalContext?: Record<string, unknown>
+  ) {
+    const jobError =
+      error instanceof QueueError
+        ? error.jobError
+        : this.createJobError(
+            error as Error,
+            ErrorType.UNKNOWN_ERROR,
+            ErrorSeverity.HIGH,
+            { operation, ...additionalContext }
+          );
+
+    this.logError(jobError);
+    return this.createHttpErrorResponse(jobError, additionalContext);
+  }
+
+  /**
+   * Create worker-specific error with consistent context
+   */
+  static createWorkerError(
+    error: Error,
+    workerName: string,
+    jobId?: string,
+    operation?: string,
+    additionalContext?: Record<string, unknown>
+  ): JobError {
+    return this.createJobError(
+      error,
+      ErrorType.WORKER_ERROR,
+      ErrorSeverity.MEDIUM,
+      {
+        workerName,
+        jobId,
+        operation,
+        ...additionalContext,
+      }
+    );
+  }
+
+  /**
    * Validate job data against required fields
    */
   static validateJobData<T extends Record<string, unknown>>(

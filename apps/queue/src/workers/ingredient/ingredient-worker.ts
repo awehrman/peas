@@ -1,8 +1,17 @@
 import { Queue } from "bullmq";
-import { BaseWorker } from "../core/base-worker";
+import {
+  BaseWorker,
+  createBaseDependenciesFromContainer,
+} from "../core/base-worker";
 import { ActionContext } from "../core/types";
 import { registerIngredientActions } from "./actions";
 import { IServiceContainer } from "../../services/container";
+import { WORKER_CONSTANTS, LOG_MESSAGES } from "../../config/constants";
+import {
+  formatLogMessage,
+  measureExecutionTime,
+  truncateString,
+} from "../../utils";
 import type { IngredientWorkerDependencies, IngredientJobData } from "./types";
 import type { BaseAction } from "../core/base-action";
 
@@ -20,7 +29,7 @@ export class IngredientWorker extends BaseWorker<
   }
 
   protected getOperationName(): string {
-    return "ingredient_processing";
+    return WORKER_CONSTANTS.NAMES.INGREDIENT;
   }
 
   /**
@@ -101,159 +110,153 @@ export function createIngredientWorker(
   container: IServiceContainer
 ): IngredientWorker {
   const dependencies: IngredientWorkerDependencies = {
-    // Base dependencies
-    addStatusEventAndBroadcast:
-      container.statusBroadcaster?.addStatusEventAndBroadcast ||
-      (() => Promise.resolve()),
-    ErrorHandler: container.errorHandler?.errorHandler || {
-      withErrorHandling: async (operation) => operation(),
-    },
-    logger: container.logger,
+    // Base dependencies from helper methods
+    ...createBaseDependenciesFromContainer(container),
 
     // Ingredient-specific dependencies
     categorizationQueue: container.queues.categorizationQueue,
     database: container.database,
     parseIngredient: async (text: string) => {
-      container.logger.log(
-        `[INGREDIENT] Parsing ingredient text: "${text.substring(0, 50)}${text.length > 50 ? "..." : ""}"`
-      );
+      const { result } = await measureExecutionTime(async () => {
+        const truncatedText = truncateString(text, 50);
+        container.logger.log(
+          formatLogMessage(LOG_MESSAGES.INFO.INGREDIENT_PARSING_START, {
+            text: truncatedText,
+          })
+        );
 
-      const startTime = Date.now();
-      let result;
-
-      try {
         // Handle empty or whitespace-only input
         if (!text || text.trim().length === 0) {
           container.logger.log(
-            `[INGREDIENT] Empty or whitespace-only input received`
+            formatLogMessage(LOG_MESSAGES.ERROR.INGREDIENT_EMPTY_INPUT, {})
           );
-          result = {
+          return {
             success: false,
             parseStatus: "ERROR" as const,
             segments: [],
-            processingTime: Date.now() - startTime,
+            processingTime: 0,
             errorMessage: "Empty or invalid input text",
           };
-          return result;
         }
 
-        // Dynamically import the v1 parser to avoid circular dependency issues
-        const { v1: parser } = await import("@peas/parser");
-        const parsedResult = parser.parse(text);
-        container.logger.log(
-          `[INGREDIENT] Parsed result: ${JSON.stringify(parsedResult, null, 2)}`
-        );
+        try {
+          // Dynamically import the v1 parser to avoid circular dependency issues
+          const { v1: parser } = await import("@peas/parser");
+          const parsedResult = parser.parse(text);
 
-        // Check if we have valid parsed data
-        // The v1 parser returns a single object with values, not a parsed array
-        if (
-          !parsedResult?.values ||
-          !Array.isArray(parsedResult.values) ||
-          parsedResult.values.length === 0
-        ) {
-          container.logger.log(`[INGREDIENT] Parser returned no valid data`);
-          result = {
-            success: false,
-            parseStatus: "ERROR" as const,
-            segments: [],
-            processingTime: Date.now() - startTime,
-            errorMessage: "Parser returned no valid data",
-          };
-          return result;
-        }
+          // Check if we have valid parsed data
+          if (
+            !parsedResult?.values ||
+            !Array.isArray(parsedResult.values) ||
+            parsedResult.values.length === 0
+          ) {
+            container.logger.log(
+              formatLogMessage(LOG_MESSAGES.ERROR.INGREDIENT_PARSER_NO_DATA, {})
+            );
+            return {
+              success: false,
+              parseStatus: "ERROR" as const,
+              segments: [],
+              processingTime: 0,
+              errorMessage: "Parser returned no valid data",
+            };
+          }
 
-        // Convert parser output to expected format
-        const segments = parsedResult.values
-          .filter(
-            (segment: {
-              rule?: string;
-              type?: string;
-              value?: string;
-              values?: string[] | string;
-            }) => segment && (segment.values || segment.value)
-          ) // Filter out empty segments
-          .map(
-            (
-              segment: {
+          // Convert parser output to expected format
+          const segments = parsedResult.values
+            .filter(
+              (segment: {
                 rule?: string;
                 type?: string;
                 value?: string;
                 values?: string[] | string;
-              },
-              index: number
-            ) => {
-              const segmentStartTime = Date.now();
+              }) => segment && (segment.values || segment.value)
+            )
+            .map(
+              (
+                segment: {
+                  rule?: string;
+                  type?: string;
+                  value?: string;
+                  values?: string[] | string;
+                },
+                index: number
+              ) => {
+                // Handle different possible formats of segment.values
+                let value: string;
+                if (Array.isArray(segment.values)) {
+                  value = segment.values.join(" ");
+                } else if (typeof segment.values === "string") {
+                  value = segment.values;
+                } else if (segment.value) {
+                  value =
+                    typeof segment.value === "string"
+                      ? segment.value
+                      : String(segment.value);
+                } else {
+                  value = "";
+                }
 
-              // Handle different possible formats of segment.values
-              let value: string;
-              if (Array.isArray(segment.values)) {
-                value = segment.values.join(" ");
-              } else if (typeof segment.values === "string") {
-                value = segment.values;
-              } else if (segment.value) {
-                value =
-                  typeof segment.value === "string"
-                    ? segment.value
-                    : String(segment.value);
-              } else {
-                value = "";
+                return {
+                  index,
+                  rule: segment.rule || "",
+                  type:
+                    (segment.type as
+                      | "amount"
+                      | "unit"
+                      | "ingredient"
+                      | "modifier") || "ingredient",
+                  value: value.trim(),
+                  processingTime: 0,
+                };
               }
+            )
+            .filter((segment) => segment.value.length > 0);
 
-              const segmentProcessingTime = Date.now() - segmentStartTime;
+          // Only consider successful if we have valid segments
+          const hasValidSegments = segments.length > 0;
 
-              return {
-                index,
-                rule: segment.rule || "",
-                type:
-                  (segment.type as
-                    | "amount"
-                    | "unit"
-                    | "ingredient"
-                    | "modifier") || "ingredient",
-                value: value.trim(),
-                processingTime: segmentProcessingTime,
-              };
-            }
-          )
-          .filter((segment) => segment.value.length > 0); // Filter out segments with empty values
+          const result = {
+            success: hasValidSegments,
+            parseStatus: hasValidSegments
+              ? ("CORRECT" as const)
+              : ("ERROR" as const),
+            segments,
+            processingTime: 0,
+            ...(hasValidSegments
+              ? {}
+              : { errorMessage: "No valid ingredient segments found" }),
+          };
 
-        // Only consider successful if we have valid segments
-        const hasValidSegments = segments.length > 0;
+          container.logger.log(
+            formatLogMessage(
+              LOG_MESSAGES.SUCCESS.INGREDIENT_PARSING_COMPLETED,
+              {
+                status: result.parseStatus,
+                segments: segments.length,
+              }
+            )
+          );
 
-        result = {
-          success: hasValidSegments,
-          parseStatus: hasValidSegments
-            ? ("CORRECT" as const)
-            : ("ERROR" as const),
-          segments,
-          processingTime: Date.now() - startTime,
-          ...(hasValidSegments
-            ? {}
-            : { errorMessage: "No valid ingredient segments found" }),
-        };
+          return result;
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
+          container.logger.log(
+            formatLogMessage(LOG_MESSAGES.ERROR.INGREDIENT_PARSING_FAILED, {
+              error: errorMessage,
+            })
+          );
 
-        container.logger.log(
-          `[INGREDIENT] Parsing completed with status: ${result.parseStatus}, segments: ${segments.length}`
-        );
-
-        // Log the detailed parsed result for debugging
-        container.logger.log(
-          `[INGREDIENT] Parsed result details: ${JSON.stringify(parsedResult, null, 2)}`
-        );
-      } catch (error) {
-        // Preserve the original error message
-        const errorMessage =
-          error instanceof Error ? error.message : String(error);
-        container.logger.log(`[INGREDIENT] Parsing failed: ${errorMessage}`);
-
-        result = {
-          success: false,
-          parseStatus: "ERROR" as const,
-          segments: [],
-          processingTime: Date.now() - startTime,
-          errorMessage: errorMessage,
-        };
-      }
+          return {
+            success: false,
+            parseStatus: "ERROR" as const,
+            segments: [],
+            processingTime: 0,
+            errorMessage: errorMessage,
+          };
+        }
+      }, "ingredient_parsing");
 
       return result;
     },

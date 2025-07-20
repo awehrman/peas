@@ -3,6 +3,7 @@ import { createIngredientWorker } from "../ingredient-worker";
 import { Queue } from "bullmq";
 import { PrismaClient } from "@peas/database";
 import { ErrorHandler } from "../../../utils/error-handler";
+import { PatternTracker } from "../../shared/pattern-tracker";
 
 // Mock the parser module
 vi.mock("@peas/parser", () => ({
@@ -32,7 +33,10 @@ const makeContainer = (overrides = {}) => ({
     categorizationQueue: mockQueue,
     sourceQueue: mockQueue,
   },
-  database: { prisma: mockPrisma },
+  database: {
+    prisma: mockPrisma,
+    patternTracker: new PatternTracker(mockPrisma),
+  },
   healthMonitor: { healthMonitor: {} },
   webSocket: { webSocketManager: null },
   parsers: { parsers: null },
@@ -91,14 +95,13 @@ describe("createIngredientWorker", () => {
       expect(result.success).toBe(true);
       expect(result.segments).toHaveLength(2);
       expect(container.logger.log).toHaveBeenCalledWith(
-        expect.stringContaining("Parsing ingredient text")
+        expect.stringContaining("Parsing ingredient")
       );
       expect(container.logger.log).toHaveBeenCalledWith(
-        expect.stringContaining("Parsing completed with status")
+        expect.stringContaining("Ingredient parsing completed: CORRECT")
       );
-      expect(container.logger.log).toHaveBeenCalledWith(
-        expect.stringContaining("Parsed result details")
-      );
+      // The ingredient worker only logs parsing start and completion, not detailed results
+      expect(container.logger.log).toHaveBeenCalledTimes(2);
     });
 
     it("handles parser error and logs it", async () => {
@@ -114,7 +117,7 @@ describe("createIngredientWorker", () => {
       expect(result.segments).toHaveLength(0);
       expect(result.errorMessage).toBe("parse fail");
       expect(container.logger.log).toHaveBeenCalledWith(
-        expect.stringContaining("Parsing failed: parse fail")
+        expect.stringContaining("Ingredient parsing failed: parse fail")
       );
     });
 

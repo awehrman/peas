@@ -1,11 +1,15 @@
 import { Queue } from "bullmq";
-import { BaseWorker } from "../core/base-worker";
+import {
+  BaseWorker,
+  createBaseDependenciesFromContainer,
+} from "../core/base-worker";
 import { ActionContext } from "../core/types";
 import { registerSourceActions } from "./actions";
 import { IServiceContainer } from "../../services/container";
+import { WORKER_CONSTANTS, LOG_MESSAGES } from "../../config/constants";
+import { formatLogMessage, measureExecutionTime } from "../../utils";
 import type { SourceWorkerDependencies, SourceJobData } from "./types";
 import type { BaseAction } from "../core/base-action";
-import type { NoteStatus } from "@peas/database";
 
 /**
  * Source Worker that extends BaseWorker for source processing
@@ -19,7 +23,7 @@ export class SourceWorker extends BaseWorker<
   }
 
   protected getOperationName(): string {
-    return "source_processing";
+    return WORKER_CONSTANTS.NAMES.SOURCE;
   }
 
   protected createActionPipeline(
@@ -62,83 +66,75 @@ export function createSourceWorker(
   container: IServiceContainer
 ): SourceWorker {
   const dependencies: SourceWorkerDependencies = {
-    // Base dependencies
-    addStatusEventAndBroadcast: async (event: {
-      importId: string;
-      noteId?: string;
-      status: NoteStatus;
-      message?: string;
-      context?: string;
-      currentCount?: number;
-      totalCount?: number;
-    }) => {
-      console.log(
-        "[SOURCE_WORKER] addStatusEventAndBroadcast called with:",
-        event
-      );
-      console.log(
-        "[SOURCE_WORKER] container.statusBroadcaster:",
-        container.statusBroadcaster
-      );
-      console.log(
-        "[SOURCE_WORKER] container.statusBroadcaster.addStatusEventAndBroadcast:",
-        container.statusBroadcaster?.addStatusEventAndBroadcast
-      );
-
-      if (container.statusBroadcaster?.addStatusEventAndBroadcast) {
-        return container.statusBroadcaster.addStatusEventAndBroadcast(event);
-      } else {
-        console.log("[SOURCE_WORKER] Using fallback function");
-        return Promise.resolve();
-      }
-    },
-    ErrorHandler: container.errorHandler?.errorHandler || {
-      withErrorHandling: async (operation) => operation(),
-    },
-    logger: container.logger,
+    // Base dependencies from helper methods
+    ...createBaseDependenciesFromContainer(container),
 
     // Source-specific dependencies
     sourceProcessor: {
       processSource: async (data: Record<string, unknown>) => {
-        container.logger.log(
-          `[SOURCE] Processing source for note ${(data.noteId as string) || "unknown"}`
-        );
-        // TODO: Implement actual source processing
-        const result = {
-          success: true,
-          processedData: {
-            title: (data.title as string) || "Untitled Source",
-            content: (data.content as string) || "",
-            metadata: {
-              type: "source",
-              processedAt: new Date().toISOString(),
+        const { result } = await measureExecutionTime(async () => {
+          const noteId = (data.noteId as string) || "unknown";
+          container.logger.log(
+            formatLogMessage(LOG_MESSAGES.INFO.SOURCE_PROCESSING_START, {
+              noteId,
+            })
+          );
+
+          // TODO: Implement actual source processing
+          const result = {
+            success: true,
+            processedData: {
+              title: (data.title as string) || "Untitled Source",
+              content: (data.content as string) || "",
+              metadata: {
+                type: "source",
+                processedAt: new Date().toISOString(),
+              },
             },
-          },
-          processingTime: 50,
-        };
-        container.logger.log(
-          `[SOURCE] Source processing completed: ${result.processedData.title}`
-        );
+            processingTime: 50,
+          };
+
+          container.logger.log(
+            formatLogMessage(LOG_MESSAGES.SUCCESS.SOURCE_PROCESSING_COMPLETED, {
+              title: result.processedData.title,
+            })
+          );
+
+          return result;
+        }, "source_processing");
+
         return result;
       },
     },
     database: {
       saveSource: async (data: Record<string, unknown>) => {
-        container.logger.log(
-          `[SOURCE] Saving source: ${(data.title as string) || "Untitled"}`
-        );
-        // TODO: Implement actual source saving
-        const savedSource = {
-          id: `source_${Date.now()}`,
-          title: (data.title as string) || "Untitled Source",
-          content: (data.content as string) || "",
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        };
-        container.logger.log(
-          `[SOURCE] Source saved successfully: ${savedSource.id}`
-        );
-        return savedSource;
+        const { result } = await measureExecutionTime(async () => {
+          const title = (data.title as string) || "Untitled";
+          container.logger.log(
+            formatLogMessage(LOG_MESSAGES.INFO.SOURCE_SAVING_START, {
+              title,
+            })
+          );
+
+          // TODO: Implement actual source saving
+          const savedSource = {
+            id: `source_${Date.now()}`,
+            title: (data.title as string) || "Untitled Source",
+            content: (data.content as string) || "",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          };
+
+          container.logger.log(
+            formatLogMessage(LOG_MESSAGES.SUCCESS.SOURCE_SAVED, {
+              id: savedSource.id,
+            })
+          );
+
+          return savedSource;
+        }, "source_saving");
+
+        return result;
       },
     },
   };

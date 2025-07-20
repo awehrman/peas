@@ -116,22 +116,22 @@ describe("startWorkers", () => {
 
     // Verify success messages were logged
     expect(mockLogger.log).toHaveBeenCalledWith(
-      "✅ Note worker created and started"
+      "✅ note_processing worker created and started"
     );
     expect(mockLogger.log).toHaveBeenCalledWith(
-      "✅ Image worker created and started"
+      "✅ image_processing worker created and started"
     );
     expect(mockLogger.log).toHaveBeenCalledWith(
-      "✅ Ingredient worker created and started"
+      "✅ ingredient_processing worker created and started"
     );
     expect(mockLogger.log).toHaveBeenCalledWith(
-      "✅ Instruction worker created and started"
+      "✅ instruction_processing worker created and started"
     );
     expect(mockLogger.log).toHaveBeenCalledWith(
-      "✅ Categorization worker created and started"
+      "✅ categorization_processing worker created and started"
     );
     expect(mockLogger.log).toHaveBeenCalledWith(
-      "✅ Source worker created and started"
+      "✅ source_processing worker created and started"
     );
   });
 
@@ -163,7 +163,7 @@ describe("startWorkers", () => {
 
     // Should log the error
     expect(mockLogger.log).toHaveBeenCalledWith(
-      "❌ Failed to start workers: Error: Failed to create note worker",
+      "❌ Failed to create note_processing worker: Failed to create note worker",
       "error"
     );
   });
@@ -182,7 +182,7 @@ describe("startWorkers", () => {
 
     // Should log the error
     expect(mockLogger.log).toHaveBeenCalledWith(
-      "❌ Failed to start workers: Error: Failed to create image worker",
+      "❌ Failed to create image_processing worker: Failed to create image worker",
       "error"
     );
   });
@@ -201,7 +201,7 @@ describe("startWorkers", () => {
 
     // Should log the error
     expect(mockLogger.log).toHaveBeenCalledWith(
-      "❌ Failed to start workers: String error",
+      "❌ Failed to create ingredient_processing worker: Unknown error",
       "error"
     );
   });

@@ -1,8 +1,13 @@
 import { Queue } from "bullmq";
-import { BaseWorker } from "../core/base-worker";
+import {
+  BaseWorker,
+  createBaseDependenciesFromContainer,
+} from "../core/base-worker";
 import { ActionContext } from "../core/types";
 import { registerCategorizationActions } from "./actions";
 import { IServiceContainer } from "../../services/container";
+import { WORKER_CONSTANTS, LOG_MESSAGES } from "../../config/constants";
+import { formatLogMessage, measureExecutionTime } from "../../utils";
 import type {
   CategorizationWorkerDependencies,
   CategorizationJobData,
@@ -24,7 +29,7 @@ export class CategorizationWorker extends BaseWorker<
   }
 
   protected getOperationName(): string {
-    return "categorization_processing";
+    return WORKER_CONSTANTS.NAMES.CATEGORIZATION;
   }
 
   protected createActionPipeline(
@@ -58,55 +63,87 @@ export function createCategorizationWorker(
   container: IServiceContainer
 ): CategorizationWorker {
   const dependencies: CategorizationWorkerDependencies = {
-    // Base dependencies
-    addStatusEventAndBroadcast:
-      container.statusBroadcaster?.addStatusEventAndBroadcast ||
-      (() => Promise.resolve()),
-    ErrorHandler: container.errorHandler?.errorHandler || {
-      withErrorHandling: async (operation) => operation(),
-    },
-    logger: container.logger,
+    // Base dependencies from helper methods
+    ...createBaseDependenciesFromContainer(container),
 
     // Categorization-specific dependencies
     categorizer: {
       categorizeRecipe: async (data: CategorizationInput) => {
-        container.logger.log(
-          `[CATEGORIZATION] Categorizing recipe with title: ${data.title || "untitled"}`
-        );
-        // TODO: Implement actual categorization
-        const result = {
-          success: true,
-          categories: ["main-dish", "dinner"],
-          tags: ["quick", "healthy"],
-          processingTime: 50,
-        };
-        container.logger.log(
-          `[CATEGORIZATION] Categorization completed: ${result.categories.join(", ")}`
-        );
+        const { result } = await measureExecutionTime(async () => {
+          container.logger.log(
+            formatLogMessage(LOG_MESSAGES.INFO.CATEGORIZATION_START, {
+              title: data.title || "untitled",
+            })
+          );
+
+          // TODO: Implement actual categorization
+          const result = {
+            success: true,
+            categories: ["main-dish", "dinner"],
+            tags: ["quick", "healthy"],
+            processingTime: 50,
+          };
+
+          container.logger.log(
+            formatLogMessage(LOG_MESSAGES.SUCCESS.CATEGORIZATION_COMPLETED, {
+              categories: result.categories.join(", "),
+            })
+          );
+
+          return result;
+        }, "categorization_processing");
+
         return result;
       },
     },
     database: {
       updateNoteCategories: async (noteId: string, categories: string[]) => {
-        container.logger.log(
-          `[CATEGORIZATION] Updating note ${noteId} with categories: ${categories.join(", ")}`
-        );
-        // TODO: Implement actual database update
-        const result = { noteId, categories };
-        container.logger.log(
-          `[CATEGORIZATION] Successfully updated note ${noteId} with categories`
-        );
+        const { result } = await measureExecutionTime(async () => {
+          container.logger.log(
+            formatLogMessage(LOG_MESSAGES.INFO.CATEGORIZATION_DATABASE_UPDATE, {
+              noteId,
+              categories: categories.join(", "),
+            })
+          );
+
+          // TODO: Implement actual database update
+          const result = { noteId, categories };
+
+          container.logger.log(
+            formatLogMessage(
+              LOG_MESSAGES.SUCCESS.CATEGORIZATION_DATABASE_UPDATED,
+              {
+                noteId,
+              }
+            )
+          );
+
+          return result;
+        }, "categorization_database_update");
+
         return result;
       },
       updateNoteTags: async (noteId: string, tags: string[]) => {
-        container.logger.log(
-          `[CATEGORIZATION] Updating note ${noteId} with tags: ${tags.join(", ")}`
-        );
-        // TODO: Implement actual database update
-        const result = { noteId, tags };
-        container.logger.log(
-          `[CATEGORIZATION] Successfully updated note ${noteId} with tags`
-        );
+        const { result } = await measureExecutionTime(async () => {
+          container.logger.log(
+            formatLogMessage(LOG_MESSAGES.INFO.CATEGORIZATION_TAGS_UPDATE, {
+              noteId,
+              tags: tags.join(", "),
+            })
+          );
+
+          // TODO: Implement actual database update
+          const result = { noteId, tags };
+
+          container.logger.log(
+            formatLogMessage(LOG_MESSAGES.SUCCESS.CATEGORIZATION_TAGS_UPDATED, {
+              noteId,
+            })
+          );
+
+          return result;
+        }, "categorization_tags_update");
+
         return result;
       },
     },

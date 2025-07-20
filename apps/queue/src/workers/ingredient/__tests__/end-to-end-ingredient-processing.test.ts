@@ -131,10 +131,10 @@ describe("End-to-End Ingredient Processing", () => {
 
     // Verify logging
     expect(container.logger.log).toHaveBeenCalledWith(
-      expect.stringContaining("Parsing ingredient text")
+      expect.stringContaining("Parsing ingredient")
     );
     expect(container.logger.log).toHaveBeenCalledWith(
-      expect.stringContaining("Parsing completed with status: CORRECT")
+      expect.stringContaining("Ingredient parsing completed: CORRECT")
     );
   });
 

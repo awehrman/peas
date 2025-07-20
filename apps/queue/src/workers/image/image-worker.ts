@@ -1,8 +1,13 @@
 import { Queue } from "bullmq";
-import { BaseWorker } from "../core/base-worker";
+import {
+  BaseWorker,
+  createBaseDependenciesFromContainer,
+} from "../core/base-worker";
 import { ActionContext } from "../core/types";
 import { registerImageActions } from "./actions";
 import { IServiceContainer } from "../../services/container";
+import { WORKER_CONSTANTS, LOG_MESSAGES } from "../../config/constants";
+import { formatLogMessage, measureExecutionTime } from "../../utils";
 import type {
   ImageWorkerDependencies,
   ImageJobData,
@@ -25,7 +30,7 @@ export class ImageWorker extends BaseWorker<
   }
 
   protected getOperationName(): string {
-    return "image_processing";
+    return WORKER_CONSTANTS.NAMES.IMAGE;
   }
 
   protected createActionPipeline(
@@ -55,58 +60,90 @@ export function createImageWorker(
   container: IServiceContainer
 ): ImageWorker {
   const dependencies: ImageWorkerDependencies = {
-    // Base dependencies
-    addStatusEventAndBroadcast:
-      container.statusBroadcaster?.addStatusEventAndBroadcast ||
-      (() => Promise.resolve()),
-    ErrorHandler: container.errorHandler?.errorHandler || {
-      withErrorHandling: async (operation) => operation(),
-    },
-    logger: container.logger,
+    // Base dependencies from helper methods
+    ...createBaseDependenciesFromContainer(container),
 
     // Image-specific dependencies
     imageProcessor: {
       processImage: async (data: ImageData) => {
-        container.logger.log(
-          `[IMAGE] Processing image for note ${data.noteId || "unknown"}`
-        );
-        // TODO: Implement actual image processing
-        const result: ProcessedImageResult = {
-          success: true,
-          processedUrl: "processed-image-url",
-          imageMetadata: {
-            width: 800,
-            height: 600,
-            format: "jpeg",
-            size: 1024,
-          },
-          processingTime: 100,
-        };
-        container.logger.log(
-          `[IMAGE] Image processing completed: ${result.processedUrl} (${result.imageMetadata.width}x${result.imageMetadata.height})`
-        );
+        const { result } = await measureExecutionTime(async () => {
+          container.logger.log(
+            formatLogMessage(LOG_MESSAGES.INFO.IMAGE_PROCESSING_START, {
+              noteId: data.noteId || "unknown",
+            })
+          );
+
+          // TODO: Implement actual image processing
+          const result: ProcessedImageResult = {
+            success: true,
+            processedUrl: "processed-image-url",
+            imageMetadata: {
+              width: 800,
+              height: 600,
+              format: "jpeg",
+              size: 1024,
+            },
+            processingTime: 100,
+          };
+
+          container.logger.log(
+            formatLogMessage(LOG_MESSAGES.SUCCESS.IMAGE_PROCESSING_COMPLETED, {
+              processedUrl: result.processedUrl,
+              width: result.imageMetadata.width,
+              height: result.imageMetadata.height,
+            })
+          );
+
+          return result;
+        }, "image_processing");
+
         return result;
       },
       saveImage: async (result: ProcessedImageResult) => {
-        container.logger.log(
-          `[IMAGE] Saving processed image: ${result.processedUrl}`
-        );
-        // TODO: Implement actual image saving
-        const savedUrl = "saved-image-url";
-        container.logger.log(`[IMAGE] Image saved successfully: ${savedUrl}`);
+        const { result: savedUrl } = await measureExecutionTime(async () => {
+          container.logger.log(
+            formatLogMessage(LOG_MESSAGES.INFO.IMAGE_SAVING_START, {
+              processedUrl: result.processedUrl,
+            })
+          );
+
+          // TODO: Implement actual image saving
+          const savedUrl = "saved-image-url";
+
+          container.logger.log(
+            formatLogMessage(LOG_MESSAGES.SUCCESS.IMAGE_SAVED, {
+              savedUrl,
+            })
+          );
+
+          return savedUrl;
+        }, "image_saving");
+
         return savedUrl;
       },
     },
     database: {
       updateNoteImage: async (noteId: string, imageUrl: string) => {
-        container.logger.log(
-          `[IMAGE] Updating note ${noteId} with image URL: ${imageUrl}`
-        );
-        // TODO: Implement actual database update
-        const result = { noteId, imageUrl };
-        container.logger.log(
-          `[IMAGE] Successfully updated note ${noteId} with image`
-        );
+        const { result } = await measureExecutionTime(async () => {
+          container.logger.log(
+            formatLogMessage(LOG_MESSAGES.INFO.IMAGE_DATABASE_UPDATE, {
+              noteId,
+              imageUrl,
+            })
+          );
+
+          // TODO: Implement actual database update
+          const result = { noteId, imageUrl };
+
+          container.logger.log(
+            formatLogMessage(LOG_MESSAGES.SUCCESS.IMAGE_DATABASE_UPDATED, {
+              noteId,
+            })
+          );
+
+          return result;
+        }, "image_database_update");
+
         return result;
       },
     },

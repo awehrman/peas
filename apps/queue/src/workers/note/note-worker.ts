@@ -8,6 +8,8 @@ import type { ActionContext } from "../core/types";
 import { registerNoteActions } from "./actions";
 import { IServiceContainer } from "../../services/container";
 import { MissingDependencyError } from "../core/errors";
+import { WORKER_CONSTANTS, LOG_MESSAGES } from "../../config/constants";
+import { formatLogMessage, measureExecutionTime } from "../../utils";
 import type {
   NoteWorkerDependencies,
   NoteJobData,
@@ -34,7 +36,7 @@ export class NoteWorker extends BaseWorker<
   }
 
   protected getOperationName(): string {
-    return "note_processing";
+    return WORKER_CONSTANTS.NAMES.NOTE;
   }
 
   public validateDependencies(): void {
@@ -165,18 +167,54 @@ function createNoteDependenciesFromContainer(container: IServiceContainer): {
 } {
   return {
     parseHTML: async (content: string): Promise<ParsedHtmlFile> => {
-      if (!container.parsers?.parseHTML) {
-        throw new Error("parseHTML function not available");
-      }
-      const result = await container.parsers.parseHTML(content);
-      return result as ParsedHtmlFile;
+      const { result } = await measureExecutionTime(async () => {
+        if (!container.parsers?.parseHTML) {
+          throw new Error("parseHTML function not available");
+        }
+
+        container.logger.log(
+          formatLogMessage(LOG_MESSAGES.INFO.NOTE_HTML_PARSING_START, {
+            contentLength: content.length,
+          })
+        );
+
+        const result = await container.parsers.parseHTML(content);
+
+        container.logger.log(
+          formatLogMessage(LOG_MESSAGES.SUCCESS.NOTE_HTML_PARSING_COMPLETED, {
+            contentLength: content.length,
+          })
+        );
+
+        return result as ParsedHtmlFile;
+      }, "note_html_parsing");
+
+      return result;
     },
     createNote: async (file: ParsedHtmlFile): Promise<NoteWithParsedLines> => {
-      if (!container.database?.createNote) {
-        throw new Error("createNote function not available");
-      }
-      const result = await container.database.createNote(file);
-      return result as NoteWithParsedLines;
+      const { result } = await measureExecutionTime(async () => {
+        if (!container.database?.createNote) {
+          throw new Error("createNote function not available");
+        }
+
+        container.logger.log(
+          formatLogMessage(LOG_MESSAGES.INFO.NOTE_CREATION_START, {
+            fileName: file.title || "unknown",
+          })
+        );
+
+        const result = await container.database.createNote(file);
+
+        container.logger.log(
+          formatLogMessage(LOG_MESSAGES.SUCCESS.NOTE_CREATION_COMPLETED, {
+            fileName: file.title || "unknown",
+          })
+        );
+
+        return result as NoteWithParsedLines;
+      }, "note_creation");
+
+      return result;
     },
     ingredientQueue: container.queues.ingredientQueue,
     instructionQueue: container.queues.instructionQueue,
@@ -195,42 +233,136 @@ function createNoteDependenciesFromContainer(container: IServiceContainer): {
         noteId: string,
         totalJobs: number
       ) => {
-        if (container.database.createNoteCompletionTracker) {
-          return container.database.createNoteCompletionTracker(
-            noteId,
-            totalJobs
-          );
-        }
-        return Promise.resolve();
+        const { result } = await measureExecutionTime(async () => {
+          if (container.database.createNoteCompletionTracker) {
+            container.logger.log(
+              formatLogMessage(
+                LOG_MESSAGES.INFO.NOTE_COMPLETION_TRACKER_CREATION,
+                {
+                  noteId,
+                  totalJobs,
+                }
+              )
+            );
+
+            const result = await container.database.createNoteCompletionTracker(
+              noteId,
+              totalJobs
+            );
+
+            container.logger.log(
+              formatLogMessage(
+                LOG_MESSAGES.SUCCESS.NOTE_COMPLETION_TRACKER_CREATED,
+                {
+                  noteId,
+                }
+              )
+            );
+
+            return result;
+          }
+          return Promise.resolve();
+        }, "note_completion_tracker_creation");
+
+        return result;
       },
       updateNoteCompletionTracker: async (
         noteId: string,
         completedJobs: number
       ) => {
-        if (container.database.updateNoteCompletionTracker) {
-          return container.database.updateNoteCompletionTracker(
-            noteId,
-            completedJobs
-          );
-        }
-        return Promise.resolve();
+        const { result } = await measureExecutionTime(async () => {
+          if (container.database.updateNoteCompletionTracker) {
+            container.logger.log(
+              formatLogMessage(
+                LOG_MESSAGES.INFO.NOTE_COMPLETION_TRACKER_UPDATE,
+                {
+                  noteId,
+                  completedJobs,
+                }
+              )
+            );
+
+            const result = await container.database.updateNoteCompletionTracker(
+              noteId,
+              completedJobs
+            );
+
+            container.logger.log(
+              formatLogMessage(
+                LOG_MESSAGES.SUCCESS.NOTE_COMPLETION_TRACKER_UPDATED,
+                {
+                  noteId,
+                }
+              )
+            );
+
+            return result;
+          }
+          return Promise.resolve();
+        }, "note_completion_tracker_update");
+
+        return result;
       },
       incrementNoteCompletionTracker: async (noteId: string) => {
-        if (container.database.incrementNoteCompletionTracker) {
-          return container.database.incrementNoteCompletionTracker(noteId);
-        }
-        return Promise.resolve();
+        const { result } = await measureExecutionTime(async () => {
+          if (container.database.incrementNoteCompletionTracker) {
+            container.logger.log(
+              formatLogMessage(
+                LOG_MESSAGES.INFO.NOTE_COMPLETION_TRACKER_INCREMENT,
+                {
+                  noteId,
+                }
+              )
+            );
+
+            const result =
+              await container.database.incrementNoteCompletionTracker(noteId);
+
+            container.logger.log(
+              formatLogMessage(
+                LOG_MESSAGES.SUCCESS.NOTE_COMPLETION_TRACKER_INCREMENTED,
+                {
+                  noteId,
+                }
+              )
+            );
+
+            return result;
+          }
+          return Promise.resolve();
+        }, "note_completion_tracker_increment");
+
+        return result;
       },
       checkNoteCompletion: async (noteId: string) => {
-        if (container.database.checkNoteCompletion) {
-          return container.database.checkNoteCompletion(noteId);
-        }
-        // Fallback if database service doesn't have the method
-        return {
-          isComplete: true,
-          completedJobs: 0,
-          totalJobs: 0,
-        };
+        const { result } = await measureExecutionTime(async () => {
+          if (container.database.checkNoteCompletion) {
+            container.logger.log(
+              formatLogMessage(LOG_MESSAGES.INFO.NOTE_COMPLETION_CHECK, {
+                noteId,
+              })
+            );
+
+            const result = await container.database.checkNoteCompletion(noteId);
+
+            container.logger.log(
+              formatLogMessage(LOG_MESSAGES.SUCCESS.NOTE_COMPLETION_CHECKED, {
+                noteId,
+                isComplete: result.isComplete ? "true" : "false",
+              })
+            );
+
+            return result;
+          }
+          // Fallback if database service doesn't have the method
+          return {
+            isComplete: true,
+            completedJobs: 0,
+            totalJobs: 0,
+          };
+        }, "note_completion_check");
+
+        return result;
       },
     },
   };

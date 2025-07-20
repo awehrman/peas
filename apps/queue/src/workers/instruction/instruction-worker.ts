@@ -1,8 +1,17 @@
 import { Queue } from "bullmq";
-import { BaseWorker } from "../core/base-worker";
+import {
+  BaseWorker,
+  createBaseDependenciesFromContainer,
+} from "../core/base-worker";
 import { ActionContext } from "../core/types";
 import { registerInstructionActions } from "./actions";
 import { IServiceContainer } from "../../services/container";
+import { WORKER_CONSTANTS, LOG_MESSAGES } from "../../config/constants";
+import {
+  formatLogMessage,
+  measureExecutionTime,
+  truncateString,
+} from "../../utils";
 import type {
   InstructionWorkerDependencies,
   InstructionJobData,
@@ -21,7 +30,7 @@ export class InstructionWorker extends BaseWorker<
   }
 
   protected getOperationName(): string {
-    return "instruction_processing";
+    return WORKER_CONSTANTS.NAMES.INSTRUCTION;
   }
 
   /**
@@ -90,14 +99,8 @@ export function createInstructionWorker(
   container: IServiceContainer
 ): InstructionWorker {
   const dependencies: InstructionWorkerDependencies = {
-    // Base dependencies
-    addStatusEventAndBroadcast:
-      container.statusBroadcaster?.addStatusEventAndBroadcast ||
-      (() => Promise.resolve()),
-    ErrorHandler: container.errorHandler?.errorHandler || {
-      withErrorHandling: async (operation) => operation(),
-    },
-    logger: container.logger,
+    // Base dependencies from helper methods
+    ...createBaseDependenciesFromContainer(container),
 
     // Instruction-specific dependencies
     database: {
@@ -105,25 +108,51 @@ export function createInstructionWorker(
         id: string,
         data: Record<string, unknown>
       ) => {
-        container.logger.log(
-          `[INSTRUCTION] Updating instruction line ${id} with data: ${JSON.stringify(data)}`
-        );
-        // TODO: Implement actual database update
-        const result = { id, ...data };
-        container.logger.log(
-          `[INSTRUCTION] Successfully updated instruction line ${id}`
-        );
+        const { result } = await measureExecutionTime(async () => {
+          container.logger.log(
+            formatLogMessage(LOG_MESSAGES.INFO.INSTRUCTION_DATABASE_UPDATE, {
+              id,
+              data: JSON.stringify(data),
+            })
+          );
+
+          // TODO: Implement actual database update
+          const result = { id, ...data };
+
+          container.logger.log(
+            formatLogMessage(
+              LOG_MESSAGES.SUCCESS.INSTRUCTION_DATABASE_UPDATED,
+              {
+                id,
+              }
+            )
+          );
+
+          return result;
+        }, "instruction_database_update");
+
         return result;
       },
       createInstructionSteps: async (steps: Array<Record<string, unknown>>) => {
-        container.logger.log(
-          `[INSTRUCTION] Creating ${steps.length} instruction steps`
-        );
-        // TODO: Implement actual step creation
-        const result = steps;
-        container.logger.log(
-          `[INSTRUCTION] Successfully created ${steps.length} instruction steps`
-        );
+        const { result } = await measureExecutionTime(async () => {
+          container.logger.log(
+            formatLogMessage(LOG_MESSAGES.INFO.INSTRUCTION_STEPS_CREATION, {
+              count: steps.length,
+            })
+          );
+
+          // TODO: Implement actual step creation
+          const result = steps;
+
+          container.logger.log(
+            formatLogMessage(LOG_MESSAGES.SUCCESS.INSTRUCTION_STEPS_CREATED, {
+              count: steps.length,
+            })
+          );
+
+          return result;
+        }, "instruction_steps_creation");
+
         return result;
       },
       // Add job completion tracker methods from the container's database service
@@ -135,20 +164,32 @@ export function createInstructionWorker(
       getNoteTitle: container.database.getNoteTitle,
     },
     parseInstruction: async (text: string) => {
-      container.logger.log(
-        `[INSTRUCTION] Parsing instruction text: "${text.substring(0, 50)}${text.length > 50 ? "..." : ""}"`
-      );
-      // TODO: Implement actual instruction parsing
-      const result = {
-        success: true,
-        parseStatus: "CORRECT" as const,
-        normalizedText: text,
-        steps: [],
-        processingTime: 0,
-      };
-      container.logger.log(
-        `[INSTRUCTION] Parsing completed with status: ${result.parseStatus}`
-      );
+      const { result } = await measureExecutionTime(async () => {
+        const truncatedText = truncateString(text, 50);
+        container.logger.log(
+          formatLogMessage(LOG_MESSAGES.INFO.INSTRUCTION_PARSING_START, {
+            text: truncatedText,
+          })
+        );
+
+        // TODO: Implement actual instruction parsing
+        const result = {
+          success: true,
+          parseStatus: "CORRECT" as const,
+          normalizedText: text,
+          steps: [],
+          processingTime: 0,
+        };
+
+        container.logger.log(
+          formatLogMessage(LOG_MESSAGES.SUCCESS.INSTRUCTION_PARSING_COMPLETED, {
+            status: result.parseStatus,
+          })
+        );
+
+        return result;
+      }, "instruction_parsing");
+
       return result;
     },
   };
