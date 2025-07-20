@@ -9,7 +9,6 @@ describe("SaveCategorizationAction", () => {
   const mockCategorization = {
     categories: ["Italian", "Pasta"],
     tags: ["baking", "vegetarian"],
-    confidence: 0.85,
     analysis: {
       cuisine: "Italian",
       difficulty: "medium" as const,
@@ -58,7 +57,6 @@ describe("SaveCategorizationAction", () => {
         {
           categories: ["Italian", "Pasta"],
           tags: ["baking", "vegetarian"],
-          confidence: 0.85,
         }
       );
     });
@@ -156,7 +154,6 @@ describe("SaveCategorizationAction", () => {
         categorization: {
           categories: ["General"],
           tags: ["quick"],
-          confidence: 0.5,
           analysis: undefined,
         },
       };
@@ -206,7 +203,6 @@ describe("SaveCategorizationAction", () => {
         {
           categories: ["Italian", "Pasta"],
           tags: ["baking", "vegetarian"],
-          confidence: 0.85,
         }
       );
     });
@@ -230,7 +226,6 @@ describe("SaveCategorizationAction", () => {
         {
           categories: ["Italian", "Pasta"],
           tags: ["baking", "vegetarian"],
-          confidence: 0.85,
         }
       );
     });
@@ -240,51 +235,6 @@ describe("SaveCategorizationAction", () => {
       const input = {
         noteId: longNoteId,
         categorization: mockCategorization,
-      };
-
-      const result = await action.execute(input, {}, mockContext);
-
-      expect(result).toEqual({
-        success: true,
-        categoriesSaved: 2,
-        tagsSaved: 2,
-      });
-    });
-
-    it("should handle categorization with high confidence", async () => {
-      const input = {
-        noteId: "test-note-606",
-        categorization: {
-          ...mockCategorization,
-          confidence: 0.99,
-        },
-      };
-
-      const result = await action.execute(input, {}, mockContext);
-
-      expect(result).toEqual({
-        success: true,
-        categoriesSaved: 2,
-        tagsSaved: 2,
-      });
-
-      expect(console.log).toHaveBeenCalledWith(
-        "Saving categorization for note test-note-606:",
-        {
-          categories: ["Italian", "Pasta"],
-          tags: ["baking", "vegetarian"],
-          confidence: 0.99,
-        }
-      );
-    });
-
-    it("should handle categorization with low confidence", async () => {
-      const input = {
-        noteId: "test-note-707",
-        categorization: {
-          ...mockCategorization,
-          confidence: 0.1,
-        },
       };
 
       const result = await action.execute(input, {}, mockContext);
@@ -319,7 +269,6 @@ describe("SaveCategorizationAction", () => {
           categorization: {
             categories: ["Italian"],
             tags: ["pasta"],
-            confidence: 0.9,
             analysis: { cuisine: "Italian", difficulty: "easy" as const },
           },
         },
@@ -328,7 +277,6 @@ describe("SaveCategorizationAction", () => {
           categorization: {
             categories: ["Asian", "Chinese"],
             tags: ["stir-fry", "quick"],
-            confidence: 0.8,
             analysis: { cuisine: "Chinese", difficulty: "medium" as const },
           },
         },
@@ -337,7 +285,6 @@ describe("SaveCategorizationAction", () => {
           categorization: {
             categories: ["Dessert"],
             tags: ["sweet", "baking"],
-            confidence: 0.95,
             analysis: { cuisine: "American", difficulty: "hard" as const },
           },
         },

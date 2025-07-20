@@ -41,7 +41,6 @@ describe("ProcessCategorizationAction", () => {
       expect(result).toEqual({
         categories: ["Italian"],
         tags: [],
-        confidence: 0.85,
         analysis: {
           cuisine: "Unknown",
           difficulty: "medium",
@@ -67,7 +66,6 @@ describe("ProcessCategorizationAction", () => {
       expect(result).toEqual({
         categories: ["Indian"],
         tags: ["grilling"],
-        confidence: 0.85,
         analysis: {
           cuisine: "Unknown",
           difficulty: "medium",
@@ -98,7 +96,6 @@ describe("ProcessCategorizationAction", () => {
       expect(result).toEqual({
         categories: ["Asian"],
         tags: ["frying", "vegetarian"],
-        confidence: 0.85,
         analysis: {
           cuisine: "Unknown",
           difficulty: "medium",
@@ -123,7 +120,6 @@ describe("ProcessCategorizationAction", () => {
       expect(result).toEqual({
         categories: ["General"],
         tags: ["vegetarian", "breakfast"],
-        confidence: 0.85,
         analysis: {
           cuisine: "Unknown",
           difficulty: "medium",
@@ -148,7 +144,6 @@ describe("ProcessCategorizationAction", () => {
       expect(result).toEqual({
         categories: ["General"],
         tags: ["dessert"],
-        confidence: 0.85,
         analysis: {
           cuisine: "Unknown",
           difficulty: "medium",
@@ -170,7 +165,6 @@ describe("ProcessCategorizationAction", () => {
       expect(result).toEqual({
         categories: ["General"],
         tags: [],
-        confidence: 0.85,
         analysis: {
           cuisine: "Unknown",
           difficulty: "medium",
@@ -196,7 +190,6 @@ describe("ProcessCategorizationAction", () => {
       expect(result).toEqual({
         categories: ["General"],
         tags: ["baking", "frying", "grilling"],
-        confidence: 0.85,
         analysis: {
           cuisine: "Unknown",
           difficulty: "medium",
@@ -221,7 +214,6 @@ describe("ProcessCategorizationAction", () => {
       expect(result).toEqual({
         categories: ["General"],
         tags: ["vegetarian"],
-        confidence: 0.85,
         analysis: {
           cuisine: "Unknown",
           difficulty: "medium",
@@ -246,7 +238,6 @@ describe("ProcessCategorizationAction", () => {
       expect(result).toEqual({
         categories: ["Italian"],
         tags: ["baking", "frying", "vegetarian"],
-        confidence: 0.85,
         analysis: {
           cuisine: "Unknown",
           difficulty: "medium",
@@ -292,7 +283,6 @@ describe("ProcessCategorizationAction", () => {
       expect(result).toEqual({
         categories: ["General"],
         tags: [],
-        confidence: 0.85,
         analysis: {
           cuisine: "Unknown",
           difficulty: "medium",

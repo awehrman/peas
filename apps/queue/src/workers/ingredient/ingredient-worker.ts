@@ -212,7 +212,6 @@ export function createIngredientWorker(
                     | "modifier") || "ingredient",
                 value: value.trim(),
                 processingTime: segmentProcessingTime,
-                confidence: 1.0,
               };
             }
           )

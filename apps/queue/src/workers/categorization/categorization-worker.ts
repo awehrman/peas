@@ -78,11 +78,10 @@ export function createCategorizationWorker(
           success: true,
           categories: ["main-dish", "dinner"],
           tags: ["quick", "healthy"],
-          confidence: 0.85,
           processingTime: 50,
         };
         container.logger.log(
-          `[CATEGORIZATION] Categorization completed: ${result.categories.join(", ")} (confidence: ${result.confidence})`
+          `[CATEGORIZATION] Categorization completed: ${result.categories.join(", ")}`
         );
         return result;
       },

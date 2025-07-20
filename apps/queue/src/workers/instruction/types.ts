@@ -52,7 +52,6 @@ export interface ParsedInstructionResult {
     time?: string;
     temperature?: string;
     method?: string;
-    confidence?: number;
   }>;
   errorMessage?: string;
   processingTime: number;

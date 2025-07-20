@@ -227,7 +227,6 @@ export class SaveIngredientLineAction extends BaseAction<
           segmentIndex: segment.index,
           reference,
           noteId,
-          confidence: 1.0,
           context: "main_ingredient",
         });
 

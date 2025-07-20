@@ -74,7 +74,6 @@ await ingredientQueue.add("process_ingredient_line", {
   noteId: "note456",
   metadata: {
     source: "recipe.html",
-    confidence: 0.95,
   },
 });
 ```

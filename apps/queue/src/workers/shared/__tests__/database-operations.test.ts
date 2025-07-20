@@ -265,7 +265,6 @@ describe("DatabaseOperations", () => {
       segmentIndex: 0,
       reference: "2 cups flour",
       noteId: "note-123",
-      confidence: 0.95,
       context: "main_ingredient",
     };
 
@@ -283,7 +282,6 @@ describe("DatabaseOperations", () => {
           segmentIndex: mockData.segmentIndex,
           reference: mockData.reference,
           noteId: mockData.noteId,
-          confidence: mockData.confidence,
           context: mockData.context,
         },
       });
@@ -310,7 +308,6 @@ describe("DatabaseOperations", () => {
           segmentIndex: dataWithoutOptionals.segmentIndex,
           reference: dataWithoutOptionals.reference,
           noteId: undefined,
-          confidence: 1.0,
           context: "main_ingredient",
         },
       });
@@ -452,7 +449,7 @@ describe("DatabaseOperations", () => {
       const newIngredient = {
         id: "new-ingredient-123",
         name: "salt",
-        plural: "salts",
+        plural: null,
       };
 
       mockPrisma.ingredient.create.mockResolvedValue(newIngredient);
@@ -471,7 +468,7 @@ describe("DatabaseOperations", () => {
       expect(mockPrisma.ingredient.create).toHaveBeenCalledWith({
         data: {
           name: "salt", // original singular input
-          plural: "salts", // generated plural
+          plural: null, // null for singular inputs
         },
       });
     });
@@ -480,7 +477,7 @@ describe("DatabaseOperations", () => {
       const existingIngredient = {
         id: "ingredient-123",
         name: "salt",
-        plural: "salts",
+        plural: null,
       };
 
       mockPrisma.ingredient.findFirst.mockResolvedValue(existingIngredient);
@@ -491,6 +488,45 @@ describe("DatabaseOperations", () => {
         id: existingIngredient.id,
         name: existingIngredient.name,
         isNew: false,
+      });
+    });
+
+    it("should find existing ingredient with null plural when searching with plural", async () => {
+      // This simulates the case where we first created "salt" with null plural
+      // and now we're searching for "salts" (plural)
+      const existingIngredient = {
+        id: "ingredient-123",
+        name: "salt",
+        plural: null,
+      };
+
+      mockPrisma.ingredient.findFirst.mockResolvedValue(existingIngredient);
+
+      const result = await dbOps.findOrCreateIngredient(
+        "salts",
+        "2 cups salts"
+      );
+
+      expect(result).toEqual({
+        id: existingIngredient.id,
+        name: existingIngredient.name,
+        isNew: false,
+      });
+
+      // Verify that the search included the singular form
+      expect(mockPrisma.ingredient.findFirst).toHaveBeenCalledWith({
+        where: {
+          OR: [
+            { name: "salt" }, // singular (mocked)
+            { name: "salts" }, // plural (mocked)
+            { name: "salts" }, // original
+            {
+              aliases: {
+                some: { name: { in: ["salt", "salts", "salts"] } },
+              },
+            },
+          ],
+        },
       });
     });
   });

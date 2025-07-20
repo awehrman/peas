@@ -47,7 +47,6 @@ await categorizationQueue.add("process_categorization", {
   ingredients: ["chicken", "pasta", "tomatoes"],
   instructions: ["Cook chicken", "Boil pasta"],
   options: {
-    confidenceThreshold: 0.8,
     maxCategories: 5,
     maxTags: 10,
   },

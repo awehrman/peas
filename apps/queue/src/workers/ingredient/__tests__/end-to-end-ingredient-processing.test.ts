@@ -110,7 +110,6 @@ describe("End-to-End Ingredient Processing", () => {
       rule: "#1_ingredientLine >> #2_quantities >> #1_quantityWithSpace >> #3_amounts >> #4_amountExpression >> #5_amount",
       type: "amount",
       value: "3",
-      confidence: 1.0,
       processingTime: 0,
     });
 
@@ -119,7 +118,6 @@ describe("End-to-End Ingredient Processing", () => {
       rule: "#1_ingredientLine >> #2_quantities >> #1_quantityWithSpace >> #1_units >> #2_unitExpression >> #13_unit",
       type: "unit",
       value: "tbsp",
-      confidence: 1.0,
       processingTime: 0,
     });
 
@@ -128,7 +126,6 @@ describe("End-to-End Ingredient Processing", () => {
       rule: "#1_ingredientLine >> #3_ingredients >> #2_ingredientExpression >> #2_ingredient",
       type: "ingredient",
       value: "oil",
-      confidence: 1.0,
       processingTime: 0,
     });
 

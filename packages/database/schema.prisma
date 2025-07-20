@@ -378,8 +378,7 @@ model Book {
 model Ingredient {
   id               String               @id @default(cuid())
   name             String
-  plural           String
-  description      String?
+  plural           String?
   isReviewed       Boolean              @default(false)
   reviewedAt       DateTime?
   isComposedIngredient Boolean           @default(false) // Indicates if this ingredient can also be a recipe
@@ -421,7 +420,7 @@ model Ingredient {
 model Alias {
   id           String     @id @default(cuid())
   name         String
-  plural       String
+  plural       String?
   ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
   ingredientId String
 }
@@ -453,7 +452,6 @@ model IngredientReference {
   noteId            String?     // Optional link to the note
   
   // Metadata
-  confidence        Float?      // Confidence score (0-1) if available
   context           String?     // Additional context (e.g., "main ingredient", "garnish")
   
   createdAt         DateTime    @default(now())

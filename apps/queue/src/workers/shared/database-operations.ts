@@ -164,7 +164,6 @@ export class DatabaseOperations {
     segmentIndex: number;
     reference: string;
     noteId?: string;
-    confidence?: number;
     context?: string;
   }): Promise<void> {
     if (!data.ingredientId) {
@@ -182,7 +181,6 @@ export class DatabaseOperations {
           segmentIndex: data.segmentIndex,
           reference: data.reference,
           noteId: data.noteId,
-          confidence: data.confidence || 1.0,
           context: data.context || "main_ingredient",
         },
       });
@@ -230,12 +228,18 @@ export class DatabaseOperations {
       // Check if the original name is plural (by comparing with singularized version)
       const isPlural = ingredientName !== singular;
 
-      // Create new ingredient with the singular name
-      // Only set plural if the original name was explicitly plural
-      const createData = {
-        name: isPlural ? singular : ingredientName,
-        plural: isPlural ? ingredientName : plural, // Use original if plural, otherwise use generated plural
-      };
+      // Create new ingredient
+      // If original is plural, save singular as name and original as plural
+      // If original is singular, save singular as name and leave plural as null
+      const createData = isPlural
+        ? {
+            name: singular,
+            plural: ingredientName, // Use original plural
+          }
+        : {
+            name: ingredientName, // Use original singular
+            plural: null, // Leave as null for singular inputs
+          };
 
       ingredient = await this.prisma.ingredient.create({
         data: createData,

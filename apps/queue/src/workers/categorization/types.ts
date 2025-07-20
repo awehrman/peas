@@ -25,7 +25,6 @@ export interface CategorizationJobData extends BaseJobData {
   ingredients?: string[];
   instructions?: string[];
   options?: {
-    confidenceThreshold?: number;
     maxCategories?: number;
     maxTags?: number;
   };
@@ -44,7 +43,6 @@ export interface CategorizationResult {
   success: boolean;
   categories: string[];
   tags: string[];
-  confidence: number;
   errorMessage?: string;
   processingTime: number;
   metadata?: Record<string, unknown>;

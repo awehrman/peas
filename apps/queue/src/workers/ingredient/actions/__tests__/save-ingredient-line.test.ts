@@ -367,7 +367,6 @@ describe("SaveIngredientLineAction", () => {
           segmentIndex: 2,
           reference: "3 tbsp. canola oil",
           noteId: "test-note-123",
-          confidence: 1.0,
           context: "main_ingredient",
         },
       });
@@ -454,7 +453,7 @@ describe("SaveIngredientLineAction", () => {
       expect(mockDeps.database.prisma.ingredient.create).toHaveBeenCalledWith({
         data: {
           name: "exotic spice",
-          plural: "exotic spices",
+          plural: null,
         },
       });
 
@@ -467,7 +466,6 @@ describe("SaveIngredientLineAction", () => {
           segmentIndex: 2,
           reference: "2 cups exotic spice",
           noteId: "test-note-123",
-          confidence: 1.0,
           context: "main_ingredient",
         },
       });

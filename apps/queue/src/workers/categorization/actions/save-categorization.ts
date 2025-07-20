@@ -38,7 +38,6 @@ export class SaveCategorizationAction extends BaseAction<
       console.log(`Saving categorization for note ${noteId}:`, {
         categories: categorization.categories,
         tags: categorization.tags,
-        confidence: categorization.confidence,
       });
 
       // Simulate database operations

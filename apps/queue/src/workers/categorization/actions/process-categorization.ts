@@ -12,7 +12,6 @@ export interface ProcessCategorizationInput {
 export interface ProcessCategorizationOutput {
   categories: string[];
   tags: string[];
-  confidence: number;
   analysis?: {
     cuisine?: string;
     difficulty?: "easy" | "medium" | "hard";
@@ -51,7 +50,6 @@ export class ProcessCategorizationAction extends BaseAction<
       const result: ProcessCategorizationOutput = {
         categories,
         tags,
-        confidence: 0.85, // Placeholder confidence score
         analysis,
       };
 
