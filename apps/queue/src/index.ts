@@ -192,12 +192,14 @@ const gracefulShutdown = async (signal: string) => {
     // Close server
     server.close(() => {
       serviceContainer.logger.log("✅ HTTP server closed");
+      // eslint-disable-next-line no-process-exit
       process.exit(0); // Exit normally instead of throwing an error
     });
 
     // Force exit after timeout
     setTimeout(() => {
       serviceContainer.logger.log("❌ Forced shutdown after timeout", "error");
+      // eslint-disable-next-line no-process-exit
       process.exit(1); // Force exit with error code instead of throwing
     }, SERVER_DEFAULTS.GRACEFUL_SHUTDOWN_TIMEOUT_MS);
   } catch (error) {
@@ -208,6 +210,7 @@ const gracefulShutdown = async (signal: string) => {
       { operation: "graceful_shutdown" }
     );
     serviceContainer.errorHandler.errorHandler.logError(jobError);
+    // eslint-disable-next-line no-process-exit
     process.exit(1); // Exit with error code instead of throwing
   }
 };
@@ -245,6 +248,7 @@ server.on("error", (error) => {
     { operation: "server_startup" }
   );
   serviceContainer.errorHandler.errorHandler.logError(jobError);
+  // eslint-disable-next-line no-process-exit
   process.exit(1); // Exit with error code instead of throwing
 });
 

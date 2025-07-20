@@ -19,6 +19,11 @@ export class CompletionStatusAction extends BaseAction<
 > {
   name = "completion_status";
 
+  // Static method to clear completed notes for testing
+  static clearCompletedNotes(): void {
+    completedNotes.clear();
+  }
+
   async execute(
     input: CompletionStatusInput,
     deps: InstructionWorkerDependencies,

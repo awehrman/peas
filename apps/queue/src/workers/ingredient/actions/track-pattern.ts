@@ -77,6 +77,7 @@ export class TrackPatternAction extends BaseAction<
       );
 
       // Access patternTracker through the database service
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const patternTracker = (deps.database as any).patternTracker;
       if (!patternTracker) {
         deps.logger?.log(

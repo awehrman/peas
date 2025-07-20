@@ -10,6 +10,7 @@ vi.mock("@peas/database", () => ({
 describe("Pattern Tracking Integration", () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let mockPrisma: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let mockDeps: any;
   let trackPatternAction: TrackPatternAction;
 

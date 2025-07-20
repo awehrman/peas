@@ -69,6 +69,7 @@ export class PatternTracker {
         await this.prisma.uniqueLinePattern.create({
           data: {
             patternCode,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             ruleSequence: rules as unknown as any, // Type assertion for JSON field
             exampleLine,
             occurrenceCount: 1,

@@ -23,6 +23,7 @@ process.on("SIGINT", async () => {
   await prisma.$disconnect();
   // Don't throw errors in test environment to avoid unhandled rejections
   if (process.env.NODE_ENV !== "test") {
+    // eslint-disable-next-line no-process-exit
     process.exit(0);
   }
 });
@@ -31,6 +32,7 @@ process.on("SIGTERM", async () => {
   await prisma.$disconnect();
   // Don't throw errors in test environment to avoid unhandled rejections
   if (process.env.NODE_ENV !== "test") {
+    // eslint-disable-next-line no-process-exit
     process.exit(0);
   }
 });
