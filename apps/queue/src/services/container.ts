@@ -274,7 +274,7 @@ export class ServiceContainer implements IServiceContainer {
     sourceWorker?: Worker;
   };
 
-  private constructor() {
+  public constructor() {
     this.queues = registerQueues();
     this.database = registerDatabase();
     this.errorHandler = new ErrorHandlerService();
@@ -309,23 +309,88 @@ export class ServiceContainer implements IServiceContainer {
   // Method to close all resources
   async close(): Promise<void> {
     try {
+      // Close all queues
       await Promise.allSettled([
         this.queues.noteQueue.close(),
         this.queues.imageQueue.close(),
         this.queues.ingredientQueue.close(),
         this.queues.instructionQueue.close(),
         this.queues.categorizationQueue.close(),
+        this.queues.sourceQueue.close(),
       ]);
 
+      // Close workers if they exist
+      if (this._workers) {
+        const workerPromises = [];
+        if (this._workers.noteWorker) {
+          workerPromises.push(
+            this._workers.noteWorker.close().catch((error) => {
+              this.logger.error?.("Failed to close note worker", error);
+            })
+          );
+        }
+        if (this._workers.imageWorker) {
+          workerPromises.push(
+            this._workers.imageWorker.close().catch((error) => {
+              this.logger.error?.("Failed to close image worker", error);
+            })
+          );
+        }
+        if (this._workers.ingredientWorker) {
+          workerPromises.push(
+            this._workers.ingredientWorker.close().catch((error) => {
+              this.logger.error?.("Failed to close ingredient worker", error);
+            })
+          );
+        }
+        if (this._workers.instructionWorker) {
+          workerPromises.push(
+            this._workers.instructionWorker.close().catch((error) => {
+              this.logger.error?.("Failed to close instruction worker", error);
+            })
+          );
+        }
+        if (this._workers.categorizationWorker) {
+          workerPromises.push(
+            this._workers.categorizationWorker.close().catch((error) => {
+              this.logger.error?.(
+                "Failed to close categorization worker",
+                error
+              );
+            })
+          );
+        }
+        if (this._workers.sourceWorker) {
+          workerPromises.push(
+            this._workers.sourceWorker.close().catch((error) => {
+              this.logger.error?.("Failed to close source worker", error);
+            })
+          );
+        }
+        await Promise.allSettled(workerPromises);
+      }
+
+      // Close WebSocket manager if it exists
       if (this.webSocket.webSocketManager) {
         this.webSocket.webSocketManager.close();
       }
 
-      await this.database.prisma.$disconnect();
+      // Disconnect database - handle errors gracefully
+      try {
+        await this.database.prisma.$disconnect();
+      } catch (error) {
+        this.logger.error?.(
+          "Failed to disconnect database",
+          error as Record<string, unknown>
+        );
+      }
 
-      this.logger.log("ServiceContainer closed successfully");
+      this.logger.info?.("ServiceContainer closed successfully");
     } catch (error) {
-      this.logger.log(`Error closing ServiceContainer: ${error}`, "error");
+      this.logger.error?.(
+        `Error closing ServiceContainer: ${error}`,
+        error as Record<string, unknown>
+      );
       throw error;
     }
   }
@@ -335,40 +400,75 @@ export class ServiceContainer implements IServiceContainer {
 export function createServiceContainer(
   overrides?: Partial<IServiceContainer>
 ): IServiceContainer {
-  const serviceContainer = ServiceContainer.getInstance();
+  // Create a new instance instead of using the singleton
+  const baseContainer = new ServiceContainer();
 
   if (overrides) {
     return {
-      ...serviceContainer,
+      ...baseContainer,
       ...overrides,
       close: async () => {
-        // Call the overridden close methods if they exist
-        if (overrides.queues) {
-          await Promise.allSettled([
-            overrides.queues.noteQueue.close(),
-            overrides.queues.imageQueue.close(),
-            overrides.queues.ingredientQueue.close(),
-            overrides.queues.instructionQueue.close(),
-            overrides.queues.categorizationQueue.close(),
-          ]);
+        // If a custom close method is provided, call it directly
+        if (overrides.close) {
+          return overrides.close();
         }
 
-        if (overrides.database?.prisma?.$disconnect) {
-          await overrides.database.prisma.$disconnect();
-        }
+        // Otherwise, use the default close logic
+        try {
+          // Close queues if overridden
+          if (overrides.queues) {
+            await Promise.allSettled([
+              overrides.queues.noteQueue.close(),
+              overrides.queues.imageQueue.close(),
+              overrides.queues.ingredientQueue.close(),
+              overrides.queues.instructionQueue.close(),
+              overrides.queues.categorizationQueue.close(),
+              overrides.queues.sourceQueue.close(),
+            ]);
+          } else {
+            await Promise.allSettled([
+              baseContainer.queues.noteQueue.close(),
+              baseContainer.queues.imageQueue.close(),
+              baseContainer.queues.ingredientQueue.close(),
+              baseContainer.queues.instructionQueue.close(),
+              baseContainer.queues.categorizationQueue.close(),
+              baseContainer.queues.sourceQueue.close(),
+            ]);
+          }
 
-        if (overrides.webSocket?.webSocketManager?.close) {
-          overrides.webSocket.webSocketManager.close();
-        }
+          // Close database if overridden
+          if (overrides.database?.prisma?.$disconnect) {
+            await overrides.database.prisma.$disconnect();
+          } else {
+            await baseContainer.database.prisma.$disconnect();
+          }
 
-        if (overrides.logger?.log) {
-          overrides.logger.log("ServiceContainer closed successfully");
+          // Close WebSocket if overridden
+          if (overrides.webSocket?.webSocketManager?.close) {
+            overrides.webSocket.webSocketManager.close();
+          } else if (baseContainer.webSocket.webSocketManager) {
+            baseContainer.webSocket.webSocketManager.close();
+          }
+
+          // Log success if overridden
+          if (overrides.logger?.info) {
+            overrides.logger.info("ServiceContainer closed successfully");
+          } else {
+            baseContainer.logger.info?.("ServiceContainer closed successfully");
+          }
+        } catch (error) {
+          const logger = overrides.logger?.error || baseContainer.logger.error;
+          logger?.(
+            `Error closing ServiceContainer: ${error}`,
+            error as Record<string, unknown>
+          );
+          throw error;
         }
       },
     };
   }
 
-  return serviceContainer;
+  return baseContainer;
 }
 
 // Export singleton instance
