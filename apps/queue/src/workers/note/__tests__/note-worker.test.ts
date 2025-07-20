@@ -76,6 +76,9 @@ function createMockServiceContainer(): IServiceContainer {
     },
     database: {
       createNote: vi.fn().mockResolvedValue({ id: "note-1" }),
+      patternTracker: vi.fn() as unknown as InstanceType<
+        typeof import("../../shared/pattern-tracker").PatternTracker
+      >,
       prisma: {
         $disconnect: vi.fn(),
         $connect: vi.fn(),
@@ -142,6 +145,8 @@ function createMockServiceContainer(): IServiceContainer {
     config: {
       port: 4200,
       wsPort: 8080,
+      wsHost: "localhost",
+      wsUrl: "ws://localhost:8080",
       redisConnection: {
         host: "localhost",
         port: 6379,
@@ -500,5 +505,290 @@ describe("createNoteDependenciesFromContainer", () => {
     } finally {
       validateSpy.mockRestore();
     }
+  });
+
+  it("should create addStatusEventAndBroadcast function that calls container statusBroadcaster", async () => {
+    const deps = getDeps();
+    const mockEvent = {
+      importId: "test-import",
+      noteId: "test-note",
+      status: "PROCESSING" as const,
+      message: "Test message",
+    };
+
+    await deps.addStatusEventAndBroadcast(mockEvent);
+
+    expect(
+      mockContainer.statusBroadcaster.addStatusEventAndBroadcast
+    ).toHaveBeenCalledWith(mockEvent);
+  });
+
+  it("should handle addStatusEventAndBroadcast when statusBroadcaster is undefined", async () => {
+    const testContainer = {
+      ...mockContainer,
+      statusBroadcaster: undefined,
+    } as unknown as IServiceContainer;
+
+    // Mock the validateDependencies method to avoid the early throw
+    const validateSpy = vi.spyOn(NoteWorker.prototype, "validateDependencies");
+    validateSpy.mockImplementation(() => {}); // No-op to avoid validation
+
+    try {
+      const worker = createNoteWorker({} as Queue, testContainer);
+      const deps = (
+        worker as unknown as { dependencies: NoteWorkerDependencies }
+      ).dependencies;
+      const mockEvent = {
+        importId: "test-import",
+        noteId: "test-note",
+        status: "PROCESSING" as const,
+        message: "Test message",
+      };
+
+      const result = await deps.addStatusEventAndBroadcast(mockEvent);
+      expect(result).toBeUndefined();
+    } finally {
+      validateSpy.mockRestore();
+    }
+  });
+
+  it("should create createNoteCompletionTracker function that calls container database", async () => {
+    const deps = getDeps();
+    const mockCreateTracker = vi.fn().mockResolvedValue({ id: "tracker-1" });
+    mockContainer.database.createNoteCompletionTracker = mockCreateTracker;
+
+    const result = await deps.database.createNoteCompletionTracker(
+      "test-note-123",
+      5
+    );
+
+    expect(mockCreateTracker).toHaveBeenCalledWith("test-note-123", 5);
+    expect(result).toEqual({ id: "tracker-1" });
+    expect(mockContainer.logger.log).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "Creating completion tracker for note test-note-123: 5 jobs"
+      )
+    );
+    expect(mockContainer.logger.log).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "Completion tracker created for note test-note-123"
+      )
+    );
+  });
+
+  it("should handle createNoteCompletionTracker when database method is undefined", async () => {
+    const testContainer = {
+      ...mockContainer,
+      database: {
+        ...mockContainer.database,
+        createNoteCompletionTracker: undefined,
+      },
+    } as unknown as IServiceContainer;
+
+    // Mock the validateDependencies method to avoid the early throw
+    const validateSpy = vi.spyOn(NoteWorker.prototype, "validateDependencies");
+    validateSpy.mockImplementation(() => {}); // No-op to avoid validation
+
+    try {
+      const worker = createNoteWorker({} as Queue, testContainer);
+      const deps = (
+        worker as unknown as { dependencies: NoteWorkerDependencies }
+      ).dependencies;
+
+      const result = await deps.database.createNoteCompletionTracker(
+        "test-note-123",
+        5
+      );
+      expect(result).toBeUndefined();
+    } finally {
+      validateSpy.mockRestore();
+    }
+  });
+
+  it("should create updateNoteCompletionTracker function that calls container database", async () => {
+    const deps = getDeps();
+    const mockUpdateTracker = vi.fn().mockResolvedValue({ updated: true });
+    mockContainer.database.updateNoteCompletionTracker = mockUpdateTracker;
+
+    const result = await deps.database.updateNoteCompletionTracker(
+      "test-note-123",
+      3
+    );
+
+    expect(mockUpdateTracker).toHaveBeenCalledWith("test-note-123", 3);
+    expect(result).toEqual({ updated: true });
+    expect(mockContainer.logger.log).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "Updating completion tracker for note test-note-123: 3 completed"
+      )
+    );
+    expect(mockContainer.logger.log).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "Completion tracker updated for note test-note-123"
+      )
+    );
+  });
+
+  it("should handle updateNoteCompletionTracker when database method is undefined", async () => {
+    const testContainer = {
+      ...mockContainer,
+      database: {
+        ...mockContainer.database,
+        updateNoteCompletionTracker: undefined,
+      },
+    } as unknown as IServiceContainer;
+
+    // Mock the validateDependencies method to avoid the early throw
+    const validateSpy = vi.spyOn(NoteWorker.prototype, "validateDependencies");
+    validateSpy.mockImplementation(() => {}); // No-op to avoid validation
+
+    try {
+      const worker = createNoteWorker({} as Queue, testContainer);
+      const deps = (
+        worker as unknown as { dependencies: NoteWorkerDependencies }
+      ).dependencies;
+
+      const result = await deps.database.updateNoteCompletionTracker(
+        "test-note-123",
+        3
+      );
+      expect(result).toBeUndefined();
+    } finally {
+      validateSpy.mockRestore();
+    }
+  });
+
+  it("should create incrementNoteCompletionTracker function that calls container database", async () => {
+    const deps = getDeps();
+    const mockIncrementTracker = vi
+      .fn()
+      .mockResolvedValue({ incremented: true });
+    mockContainer.database.incrementNoteCompletionTracker =
+      mockIncrementTracker;
+
+    const result =
+      await deps.database.incrementNoteCompletionTracker("test-note-123");
+
+    expect(mockIncrementTracker).toHaveBeenCalledWith("test-note-123");
+    expect(result).toEqual({ incremented: true });
+    expect(mockContainer.logger.log).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "Incrementing completion tracker for note test-note-123"
+      )
+    );
+    expect(mockContainer.logger.log).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "Completion tracker incremented for note test-note-123"
+      )
+    );
+  });
+
+  it("should handle incrementNoteCompletionTracker when database method is undefined", async () => {
+    const testContainer = {
+      ...mockContainer,
+      database: {
+        ...mockContainer.database,
+        incrementNoteCompletionTracker: undefined,
+      },
+    } as unknown as IServiceContainer;
+
+    // Mock the validateDependencies method to avoid the early throw
+    const validateSpy = vi.spyOn(NoteWorker.prototype, "validateDependencies");
+    validateSpy.mockImplementation(() => {}); // No-op to avoid validation
+
+    try {
+      const worker = createNoteWorker({} as Queue, testContainer);
+      const deps = (
+        worker as unknown as { dependencies: NoteWorkerDependencies }
+      ).dependencies;
+
+      const result =
+        await deps.database.incrementNoteCompletionTracker("test-note-123");
+      expect(result).toBeUndefined();
+    } finally {
+      validateSpy.mockRestore();
+    }
+  });
+
+  it("should create checkNoteCompletion function that calls container database", async () => {
+    const deps = getDeps();
+    const mockCheckCompletion = vi.fn().mockResolvedValue({
+      isComplete: true,
+      completedJobs: 5,
+      totalJobs: 5,
+    });
+    mockContainer.database.checkNoteCompletion = mockCheckCompletion;
+
+    const result = await deps.database.checkNoteCompletion("test-note-123");
+
+    expect(mockCheckCompletion).toHaveBeenCalledWith("test-note-123");
+    expect(result).toEqual({
+      isComplete: true,
+      completedJobs: 5,
+      totalJobs: 5,
+    });
+    expect(mockContainer.logger.log).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "Checking completion status for note test-note-123"
+      )
+    );
+    expect(mockContainer.logger.log).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "Completion status checked for note test-note-123: true"
+      )
+    );
+  });
+
+  it("should handle checkNoteCompletion when database method is undefined", async () => {
+    const testContainer = {
+      ...mockContainer,
+      database: {
+        ...mockContainer.database,
+        checkNoteCompletion: undefined,
+      },
+    } as unknown as IServiceContainer;
+
+    // Mock the validateDependencies method to avoid the early throw
+    const validateSpy = vi.spyOn(NoteWorker.prototype, "validateDependencies");
+    validateSpy.mockImplementation(() => {}); // No-op to avoid validation
+
+    try {
+      const worker = createNoteWorker({} as Queue, testContainer);
+      const deps = (
+        worker as unknown as { dependencies: NoteWorkerDependencies }
+      ).dependencies;
+
+      const result = await deps.database.checkNoteCompletion("test-note-123");
+      expect(result).toEqual({
+        isComplete: true,
+        completedJobs: 0,
+        totalJobs: 0,
+      });
+    } finally {
+      validateSpy.mockRestore();
+    }
+  });
+
+  it("should handle checkNoteCompletion with incomplete status", async () => {
+    const deps = getDeps();
+    const mockCheckCompletion = vi.fn().mockResolvedValue({
+      isComplete: false,
+      completedJobs: 2,
+      totalJobs: 5,
+    });
+    mockContainer.database.checkNoteCompletion = mockCheckCompletion;
+
+    const result = await deps.database.checkNoteCompletion("test-note-123");
+
+    expect(result).toEqual({
+      isComplete: false,
+      completedJobs: 2,
+      totalJobs: 5,
+    });
+    expect(mockContainer.logger.log).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "Completion status checked for note test-note-123: false"
+      )
+    );
   });
 });

@@ -16,6 +16,25 @@ describe("UpdateInstructionCountAction", () => {
     action = new UpdateInstructionCountAction();
     mockDeps = {
       addStatusEventAndBroadcast: vi.fn().mockResolvedValue(undefined),
+      database: {
+        updateInstructionLine: vi.fn().mockResolvedValue(undefined),
+        createInstructionSteps: vi.fn().mockResolvedValue(undefined),
+      },
+      parseInstruction: vi.fn().mockResolvedValue({
+        success: true,
+        parseStatus: "CORRECT" as const,
+        normalizedText: "test",
+        steps: [],
+        processingTime: 0,
+      }),
+      ErrorHandler: {
+        withErrorHandling: vi.fn().mockImplementation(async (operation) => {
+          return await operation();
+        }),
+      },
+      logger: {
+        log: vi.fn(),
+      },
     };
     mockContext = {
       jobId: "test-job-123",
@@ -272,6 +291,225 @@ describe("UpdateInstructionCountAction", () => {
           totalInstructions: 0,
           processedInstructions: 0,
           isComplete: true,
+        },
+      });
+    });
+
+    it("should successfully call incrementNoteCompletionTracker when available", async () => {
+      const data: UpdateInstructionCountData = {
+        importId: "test-import-789",
+        noteId: "test-note-123",
+        currentInstructionIndex: 2,
+        totalInstructions: 5,
+      };
+
+      const mockIncrementTracker = vi.fn().mockResolvedValue(undefined);
+      const mockLogger = vi.fn();
+
+      const depsWithTracker: UpdateInstructionCountDeps = {
+        ...mockDeps,
+        database: {
+          ...mockDeps.database,
+          incrementNoteCompletionTracker: mockIncrementTracker,
+        },
+        logger: {
+          log: mockLogger,
+        },
+      };
+
+      const result = await action.execute(data, depsWithTracker, mockContext);
+
+      expect(result).toEqual(data);
+      expect(mockIncrementTracker).toHaveBeenCalledWith("test-note-123");
+      expect(mockLogger).toHaveBeenCalledWith(
+        "[UPDATE_INSTRUCTION_COUNT] Incremented completion tracker for note test-note-123: instruction 2/5 completed"
+      );
+      expect(depsWithTracker.addStatusEventAndBroadcast).toHaveBeenCalledWith({
+        importId: "test-import-789",
+        noteId: "test-note-123",
+        status: "PROCESSING",
+        message: "⏳ 2/5 instructions",
+        context: "parse_html_instructions",
+        indentLevel: 2,
+        metadata: {
+          totalInstructions: 5,
+          processedInstructions: 2,
+          isComplete: false,
+        },
+      });
+    });
+
+    it("should handle error when incrementNoteCompletionTracker throws", async () => {
+      const data: UpdateInstructionCountData = {
+        importId: "test-import-789",
+        noteId: "test-note-123",
+        currentInstructionIndex: 2,
+        totalInstructions: 5,
+      };
+
+      const mockIncrementTracker = vi
+        .fn()
+        .mockRejectedValue(new Error("Database error"));
+      const mockLogger = vi.fn();
+
+      const depsWithTracker: UpdateInstructionCountDeps = {
+        ...mockDeps,
+        database: {
+          ...mockDeps.database,
+          incrementNoteCompletionTracker: mockIncrementTracker,
+        },
+        logger: {
+          log: mockLogger,
+        },
+      };
+
+      const result = await action.execute(data, depsWithTracker, mockContext);
+
+      expect(result).toEqual(data);
+      expect(mockIncrementTracker).toHaveBeenCalledWith("test-note-123");
+      expect(mockLogger).toHaveBeenCalledWith(
+        "[UPDATE_INSTRUCTION_COUNT] Failed to update completion tracker for note test-note-123: Error: Database error",
+        "error"
+      );
+      expect(depsWithTracker.addStatusEventAndBroadcast).toHaveBeenCalledWith({
+        importId: "test-import-789",
+        noteId: "test-note-123",
+        status: "PROCESSING",
+        message: "⏳ 2/5 instructions",
+        context: "parse_html_instructions",
+        indentLevel: 2,
+        metadata: {
+          totalInstructions: 5,
+          processedInstructions: 2,
+          isComplete: false,
+        },
+      });
+    });
+
+    it("should handle incrementNoteCompletionTracker with completed status", async () => {
+      const data: UpdateInstructionCountData = {
+        importId: "test-import-789",
+        noteId: "test-note-123",
+        currentInstructionIndex: 5,
+        totalInstructions: 5,
+      };
+
+      const mockIncrementTracker = vi.fn().mockResolvedValue(undefined);
+      const mockLogger = vi.fn();
+
+      const depsWithTracker: UpdateInstructionCountDeps = {
+        ...mockDeps,
+        database: {
+          ...mockDeps.database,
+          incrementNoteCompletionTracker: mockIncrementTracker,
+        },
+        logger: {
+          log: mockLogger,
+        },
+      };
+
+      const result = await action.execute(data, depsWithTracker, mockContext);
+
+      expect(result).toEqual(data);
+      expect(mockIncrementTracker).toHaveBeenCalledWith("test-note-123");
+      expect(mockLogger).toHaveBeenCalledWith(
+        "[UPDATE_INSTRUCTION_COUNT] Incremented completion tracker for note test-note-123: instruction 5/5 completed"
+      );
+      expect(depsWithTracker.addStatusEventAndBroadcast).toHaveBeenCalledWith({
+        importId: "test-import-789",
+        noteId: "test-note-123",
+        status: "COMPLETED",
+        message: "✅ 5/5 instructions",
+        context: "parse_html_instructions",
+        indentLevel: 2,
+        metadata: {
+          totalInstructions: 5,
+          processedInstructions: 5,
+          isComplete: true,
+        },
+      });
+    });
+
+    it("should handle incrementNoteCompletionTracker when logger is undefined", async () => {
+      const data: UpdateInstructionCountData = {
+        importId: "test-import-789",
+        noteId: "test-note-123",
+        currentInstructionIndex: 2,
+        totalInstructions: 5,
+      };
+
+      const mockIncrementTracker = vi.fn().mockResolvedValue(undefined);
+
+      const depsWithTracker: UpdateInstructionCountDeps = {
+        ...mockDeps,
+        database: {
+          ...mockDeps.database,
+          incrementNoteCompletionTracker: mockIncrementTracker,
+        },
+        logger: {
+          log: vi.fn(),
+        },
+      };
+
+      const result = await action.execute(data, depsWithTracker, mockContext);
+
+      expect(result).toEqual(data);
+      expect(mockIncrementTracker).toHaveBeenCalledWith("test-note-123");
+      // Should not throw when logger is undefined
+      expect(depsWithTracker.addStatusEventAndBroadcast).toHaveBeenCalledWith({
+        importId: "test-import-789",
+        noteId: "test-note-123",
+        status: "PROCESSING",
+        message: "⏳ 2/5 instructions",
+        context: "parse_html_instructions",
+        indentLevel: 2,
+        metadata: {
+          totalInstructions: 5,
+          processedInstructions: 2,
+          isComplete: false,
+        },
+      });
+    });
+
+    it("should handle incrementNoteCompletionTracker error when logger is undefined", async () => {
+      const data: UpdateInstructionCountData = {
+        importId: "test-import-789",
+        noteId: "test-note-123",
+        currentInstructionIndex: 2,
+        totalInstructions: 5,
+      };
+
+      const mockIncrementTracker = vi
+        .fn()
+        .mockRejectedValue(new Error("Database error"));
+
+      const depsWithTracker: UpdateInstructionCountDeps = {
+        ...mockDeps,
+        database: {
+          ...mockDeps.database,
+          incrementNoteCompletionTracker: mockIncrementTracker,
+        },
+        logger: {
+          log: vi.fn(),
+        },
+      };
+
+      const result = await action.execute(data, depsWithTracker, mockContext);
+
+      expect(result).toEqual(data);
+      expect(mockIncrementTracker).toHaveBeenCalledWith("test-note-123");
+      // Should not throw when logger is undefined
+      expect(depsWithTracker.addStatusEventAndBroadcast).toHaveBeenCalledWith({
+        importId: "test-import-789",
+        noteId: "test-note-123",
+        status: "PROCESSING",
+        message: "⏳ 2/5 instructions",
+        context: "parse_html_instructions",
+        indentLevel: 2,
+        metadata: {
+          totalInstructions: 5,
+          processedInstructions: 2,
+          isComplete: false,
         },
       });
     });
