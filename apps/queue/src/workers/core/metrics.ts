@@ -93,7 +93,10 @@ export class MetricsCollector {
    */
   clearOldMetrics(maxValues: number = 100): void {
     for (const metric of this.metrics.values()) {
-      if (metric.values.length > maxValues) {
+      if (maxValues === 0) {
+        // Clear all values if maxValues is 0
+        metric.values = [];
+      } else if (metric.values.length > maxValues) {
         metric.values = metric.values.slice(-maxValues);
       }
     }

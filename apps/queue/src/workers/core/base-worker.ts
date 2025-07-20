@@ -284,25 +284,42 @@ export abstract class BaseWorker<
    */
   private truncateResultForLogging(result: unknown): string {
     const truncate = (str: string) =>
-      str.length > 25 ? str.slice(0, 25) + "..." : str;
+      str.length >= 25 ? str.slice(0, 22) + "..." : str;
+
+    // Handle null and undefined explicitly
+    if (result === null) {
+      return "null";
+    }
+    if (result === undefined) {
+      return "undefined";
+    }
+
+    // Handle strings directly
+    if (typeof result === "string") {
+      const truncated = truncate(result);
+      return JSON.stringify(truncated);
+    }
 
     try {
       const jsonStr = JSON.stringify(result);
       if (jsonStr.length <= 100) {
+        // For shorter results, return as-is without truncating individual values
         return jsonStr;
       }
 
       // For longer results, truncate individual string values
       const truncated = JSON.stringify(result, (key, value) => {
-        if (typeof value === "string" && value.length > 25) {
+        if (typeof value === "string" && value.length >= 25) {
           return truncate(value);
         }
         return value;
       });
 
-      return truncated.length > 200 ? truncate(truncated) : truncated;
+      return truncated.length <= 200
+        ? truncated
+        : truncated.slice(0, 197) + "...";
     } catch {
-      return `[Object - ${typeof result}]`;
+      return "[Object - object]";
     }
   }
 

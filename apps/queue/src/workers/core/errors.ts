@@ -10,6 +10,15 @@ export class WorkerError extends Error {
     super(message);
     this.name = "WorkerError";
   }
+
+  toJSON() {
+    return {
+      name: this.name,
+      message: this.message,
+      operation: this.operation,
+      jobId: this.jobId,
+    };
+  }
 }
 
 /**
@@ -25,6 +34,13 @@ export class NoteProcessingError extends WorkerError {
     super(message, operation, jobId);
     this.name = "NoteProcessingError";
   }
+
+  toJSON() {
+    return {
+      ...super.toJSON(),
+      noteId: this.noteId,
+    };
+  }
 }
 
 /**
@@ -39,6 +55,13 @@ export class ActionValidationError extends WorkerError {
   ) {
     super(message, operation, jobId);
     this.name = "ActionValidationError";
+  }
+
+  toJSON() {
+    return {
+      ...super.toJSON(),
+      actionName: this.actionName,
+    };
   }
 }
 
@@ -56,6 +79,14 @@ export class ActionExecutionError extends WorkerError {
     super(message, operation, jobId);
     this.name = "ActionExecutionError";
   }
+
+  toJSON() {
+    return {
+      ...super.toJSON(),
+      actionName: this.actionName,
+      originalError: this.originalError?.message,
+    };
+  }
 }
 
 /**
@@ -71,6 +102,13 @@ export class MissingDependencyError extends WorkerError {
     super(message, operation, jobId);
     this.name = "MissingDependencyError";
   }
+
+  toJSON() {
+    return {
+      ...super.toJSON(),
+      dependencyName: this.dependencyName,
+    };
+  }
 }
 
 /**
@@ -85,5 +123,12 @@ export class ServiceUnhealthyError extends WorkerError {
   ) {
     super(message, operation, jobId);
     this.name = "ServiceUnhealthyError";
+  }
+
+  toJSON() {
+    return {
+      ...super.toJSON(),
+      healthCheck: this.healthCheck,
+    };
   }
 }

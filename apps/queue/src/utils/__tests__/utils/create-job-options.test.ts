@@ -34,9 +34,11 @@ describe("createJobOptions", () => {
   it("should merge overrides with default options", async () => {
     const overrides = {
       attempts: 5,
-    } as any;
+    };
 
-    const result = await createJobOptions(overrides);
+    const result = await createJobOptions(
+      overrides as Parameters<typeof createJobOptions>[0]
+    );
 
     expect(result).toEqual({
       attempts: 5,
@@ -54,9 +56,11 @@ describe("createJobOptions", () => {
         type: "fixed",
         delay: 1000,
       },
-    } as any;
+    };
 
-    const result = await createJobOptions(overrides);
+    const result = await createJobOptions(
+      overrides as Parameters<typeof createJobOptions>[0]
+    );
 
     expect(result).toEqual({
       attempts: 10,
@@ -70,9 +74,11 @@ describe("createJobOptions", () => {
   it("should handle partial overrides", async () => {
     const overrides = {
       attempts: 1,
-    } as any;
+    };
 
-    const result = await createJobOptions(overrides);
+    const result = await createJobOptions(
+      overrides as Parameters<typeof createJobOptions>[0]
+    );
 
     expect(result).toEqual({
       attempts: 1,
@@ -84,8 +90,9 @@ describe("createJobOptions", () => {
   });
 
   it("should handle empty overrides object", async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
-    const result = await createJobOptions({} as any);
+    const result = await createJobOptions(
+      {} as Parameters<typeof createJobOptions>[0]
+    );
 
     expect(result).toEqual({
       attempts: 3,

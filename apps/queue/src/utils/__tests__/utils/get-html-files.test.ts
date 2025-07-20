@@ -28,7 +28,7 @@ describe("getHtmlFiles", () => {
       "file2.html",
       "file3.txt",
       "file4.json",
-    ] as any);
+    ] as unknown as import("fs").Dirent<Buffer>[]);
 
     const result = await getHtmlFiles("/path/to/directory");
 
@@ -45,7 +45,7 @@ describe("getHtmlFiles", () => {
       "file2.html",
       "file3.html",
       "index.html",
-    ] as any);
+    ] as unknown as import("fs").Dirent<Buffer>[]);
 
     const result = await getHtmlFiles("/path/to/directory", ["index.html"]);
 
@@ -82,7 +82,7 @@ describe("getHtmlFiles", () => {
       "file1.txt",
       "file2.json",
       "file3.xml",
-    ] as any);
+    ] as unknown as import("fs").Dirent<Buffer>[]);
 
     const result = await getHtmlFiles("/path/to/directory");
 
@@ -102,7 +102,7 @@ describe("getHtmlFiles", () => {
       "script.js",
       "image.jpg",
       "data.json",
-    ] as any);
+    ] as unknown as import("fs").Dirent<Buffer>[]);
 
     const result = await getHtmlFiles("/path/to/directory");
 
@@ -120,7 +120,7 @@ describe("getHtmlFiles", () => {
       "file3.Html",
       "file4.htm",
       "file5.HTM",
-    ] as any);
+    ] as unknown as import("fs").Dirent<Buffer>[]);
 
     const result = await getHtmlFiles("/path/to/directory");
 
@@ -131,8 +131,9 @@ describe("getHtmlFiles", () => {
     const fs = await import("fs");
     vi.mocked(fs.existsSync).mockReturnValue(true);
     vi.mocked(fs.promises.access).mockResolvedValue(undefined);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
-    vi.mocked(fs.promises.readdir).mockResolvedValue([] as any);
+    vi.mocked(fs.promises.readdir).mockResolvedValue(
+      [] as unknown as import("fs").Dirent<Buffer>[]
+    );
 
     const result = await getHtmlFiles("/path/to/directory");
 
@@ -147,7 +148,7 @@ describe("getHtmlFiles", () => {
     vi.mocked(fs.promises.readdir).mockResolvedValue([
       "index.html",
       "about.html",
-    ] as any);
+    ] as unknown as import("fs").Dirent<Buffer>[]);
 
     const result = await getHtmlFiles("/path/to/directory", [
       "index.html",

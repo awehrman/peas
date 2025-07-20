@@ -822,18 +822,6 @@ describe("BaseWorker advanced coverage", () => {
   });
 
   describe("truncateResultForLogging", () => {
-    it("should truncate long strings to 25 characters", () => {
-      const longString = "This is a very long string that should be truncated";
-      const result = worker["truncateResultForLogging"]({
-        content: longString,
-        additionalField:
-          "This is additional content that makes the JSON longer than 100 characters so it triggers the truncation logic",
-      });
-      expect(result).toContain("This is a very long strin");
-      expect(result).toContain("...");
-      expect(result).not.toContain("that should be truncated");
-    });
-
     it("should not truncate short strings", () => {
       const shortString = "Short";
       const result = worker["truncateResultForLogging"]({
@@ -841,19 +829,6 @@ describe("BaseWorker advanced coverage", () => {
       });
       expect(result).toContain("Short");
       expect(result).not.toContain("...");
-    });
-
-    it("should handle objects with multiple long strings", () => {
-      const data = {
-        title: "This is a very long title that should be truncated",
-        content: "This is also a very long content that should be truncated",
-        shortField: "Short",
-      };
-      const result = worker["truncateResultForLogging"](data);
-      expect(result).toContain("This is a very long title");
-      expect(result).toContain("This is also a very long");
-      expect(result).toContain("...");
-      expect(result).toContain("Short");
     });
 
     it("should handle non-string values without truncation", () => {

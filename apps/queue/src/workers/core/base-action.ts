@@ -36,6 +36,12 @@ export abstract class BaseAction<TData = unknown, TDeps = unknown>
       const duration = Date.now() - startTime;
       if (this.onError) {
         await this.onError(error as Error, data, deps, context);
+      } else {
+        // Default error logging when no custom handler is provided
+        console.error(
+          `Action ${this.name} failed for job ${context.jobId}:`,
+          error instanceof Error ? error.message : String(error)
+        );
       }
       return { success: false, error: error as Error, duration };
     }
@@ -44,18 +50,12 @@ export abstract class BaseAction<TData = unknown, TDeps = unknown>
   /**
    * Default error handler - can be overridden by subclasses.
    */
-  async onError?(
+  onError?(
     error: Error,
     _data: TData,
     _deps: TDeps,
     context: ActionContext
-  ): Promise<void> {
-    // Default: log to console
-    console.error(
-      `Action ${this.name} failed for job ${context.jobId}:`,
-      error.message
-    );
-  }
+  ): Promise<void>;
 
   /**
    * Validate input data - can be overridden by subclasses.
@@ -84,6 +84,7 @@ export class NoOpAction extends BaseAction<unknown, unknown> {
   async execute(_data?: unknown): Promise<void> {
     // No operation performed
   }
+  validateInput = undefined;
 }
 
 /**
@@ -100,6 +101,7 @@ export class ValidationAction<TData> extends BaseAction<TData, unknown> {
     return data;
   }
   retryable = false;
+  validateInput = undefined;
 }
 
 /**
@@ -126,7 +128,9 @@ export class LoggingAction extends BaseAction<
       typeof this.message === "function"
         ? this.message(data, context)
         : this.message;
-    if (deps.logger) {
+
+    // Check if logger exists and has a proper log method
+    if (deps.logger && typeof deps.logger.log === "function") {
       deps.logger.log(`[${context.jobId}] ${logMessage}`);
     } else {
       console.log(`[${context.jobId}] ${logMessage}`);
@@ -134,4 +138,5 @@ export class LoggingAction extends BaseAction<
     return data;
   }
   retryable = false;
+  validateInput = undefined;
 }
