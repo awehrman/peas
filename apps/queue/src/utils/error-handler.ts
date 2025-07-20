@@ -34,7 +34,16 @@ export class ErrorHandler {
     severity: ErrorSeverity = ErrorSeverity.MEDIUM,
     context?: Record<string, unknown>
   ): JobError {
-    const message = typeof error === "string" ? error : error.message;
+    let message: string;
+    if (error === undefined) {
+      message = "undefined";
+    } else if (error === null) {
+      message = "null";
+    } else if (typeof error === "string") {
+      message = error;
+    } else {
+      message = error.message;
+    }
 
     return {
       type,
@@ -316,7 +325,7 @@ export class ErrorHandler {
             { operation, ...additionalContext }
           );
 
-    this.logError(jobError);
+    this.logError(jobError, additionalContext);
     return this.createHttpErrorResponse(jobError, additionalContext);
   }
 
