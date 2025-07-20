@@ -128,69 +128,6 @@ export async function measureExecutionTime<T>(
 }
 
 /**
- * Retry operation with exponential backoff
- */
-export async function retryWithBackoff<T>(
-  operation: () => Promise<T>,
-  maxRetries: number = 3,
-  baseDelay: number = 1000,
-  maxDelay: number = 30000
-): Promise<T> {
-  let lastError: Error;
-
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      return await operation();
-    } catch (error) {
-      lastError = error as Error;
-
-      if (attempt === maxRetries) {
-        throw lastError;
-      }
-
-      const delay = Math.min(baseDelay * Math.pow(2, attempt), maxDelay);
-
-      await new Promise((resolve) => setTimeout(resolve, delay));
-    }
-  }
-
-  throw lastError!;
-}
-
-/**
- * Create a debounced function
- */
-export function debounce<T extends (...args: unknown[]) => unknown>(
-  func: T,
-  delay: number
-): (...args: Parameters<T>) => void {
-  let timeoutId: ReturnType<typeof setTimeout>;
-
-  return (...args: Parameters<T>) => {
-    clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => func(...args), delay);
-  };
-}
-
-/**
- * Create a throttled function
- */
-export function throttle<T extends (...args: unknown[]) => unknown>(
-  func: T,
-  delay: number
-): (...args: Parameters<T>) => void {
-  let lastCall = 0;
-
-  return (...args: Parameters<T>) => {
-    const now = Date.now();
-    if (now - lastCall >= delay) {
-      lastCall = now;
-      func(...args);
-    }
-  };
-}
-
-/**
  * Deep clone an object
  */
 export function deepClone<T>(obj: T): T {
@@ -220,14 +157,6 @@ export function deepClone<T>(obj: T): T {
 }
 
 /**
- * Check if value is a valid UUID
- */
-export async function isValidUuid(value: string): Promise<boolean> {
-  const { VALIDATION_CONSTANTS } = await import("../config/constants");
-  return VALIDATION_CONSTANTS.PATTERNS.UUID.test(value);
-}
-
-/**
  * Generate a random UUID
  */
 export async function generateUuid(): Promise<string> {
@@ -250,41 +179,8 @@ export function truncateString(
 }
 
 /**
- * Convert bytes to human readable format
- */
-export function formatBytes(bytes: number): string {
-  if (bytes === 0) return "0 Bytes";
-
-  const k = 1024;
-  const sizes = ["Bytes", "KB", "MB", "GB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
-}
-
-/**
  * Sleep for specified milliseconds
  */
 export function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-/**
- * Create a promise that rejects after timeout
- */
-export function timeoutPromise<T>(
-  promise: Promise<T>,
-  timeoutMs: number,
-  errorMessage?: string
-): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<never>((_, reject) => {
-      setTimeout(() => {
-        reject(
-          new Error(errorMessage || `Operation timed out after ${timeoutMs}ms`)
-        );
-      }, timeoutMs);
-    }),
-  ]);
 }

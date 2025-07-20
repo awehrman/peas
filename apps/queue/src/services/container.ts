@@ -17,7 +17,6 @@ interface WebSocketManager {
 
 // Worker interface for graceful shutdown
 interface Worker {
-  git;
   close(): Promise<void>;
 }
 
