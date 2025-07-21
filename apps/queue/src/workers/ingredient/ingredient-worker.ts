@@ -14,6 +14,7 @@ import {
 } from "../../utils/utils";
 import type { IngredientWorkerDependencies, IngredientJobData } from "./types";
 import type { BaseAction } from "../core/base-action";
+import { ActionName } from "../../types";
 
 // Using imported types from ./types.ts
 
@@ -65,26 +66,40 @@ export class IngredientWorker extends BaseWorker<
       typeof data.totalIngredients === "number"
     ) {
       actions.push(
-        this.createWrappedAction("update_ingredient_count", this.dependencies)
+        this.createWrappedAction(
+          ActionName.UPDATE_INGREDIENT_COUNT,
+          this.dependencies
+        )
       );
     }
 
     // 1. Process ingredient line (with retry and error handling)
     actions.push(
-      this.createWrappedAction("process_ingredient_line", this.dependencies)
+      this.createWrappedAction(
+        ActionName.PROCESS_INGREDIENT_LINE,
+        this.dependencies
+      )
     );
 
     // 2. Save ingredient line (with retry and error handling)
     actions.push(
-      this.createWrappedAction("save_ingredient_line", this.dependencies)
+      this.createWrappedAction(
+        ActionName.SAVE_INGREDIENT_LINE,
+        this.dependencies
+      )
     );
 
     // 3. Track unique line pattern (low priority, non-blocking)
-    actions.push(this.createWrappedAction("track_pattern", this.dependencies));
+    actions.push(
+      this.createWrappedAction(ActionName.TRACK_PATTERN, this.dependencies)
+    );
 
     // 4. Check completion status and broadcast if all jobs are done
     actions.push(
-      this.createErrorHandledAction("completion_status", this.dependencies)
+      this.createErrorHandledAction(
+        ActionName.COMPLETION_STATUS,
+        this.dependencies
+      )
     );
 
     // 5. Schedule categorization (COMMENTED OUT FOR SIMPLIFIED TESTING)

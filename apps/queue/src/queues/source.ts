@@ -1,4 +1,12 @@
 import { serviceContainer } from "../services/container";
+import type {
+  TypedQueue,
+  CategorizationJobData,
+  SourceActionName,
+} from "../types";
 
-// Export the service container's sourceQueue
-export const sourceQueue = serviceContainer.queues.sourceQueue;
+export const sourceQueue: TypedQueue<CategorizationJobData, SourceActionName> =
+  serviceContainer.queues.sourceQueue as TypedQueue<
+    CategorizationJobData,
+    SourceActionName
+  >;

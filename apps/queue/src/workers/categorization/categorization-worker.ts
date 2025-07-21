@@ -14,6 +14,7 @@ import type {
   CategorizationInput,
 } from "./types";
 import type { BaseAction } from "../core/base-action";
+import { ActionName } from "../../types";
 
 // Using imported types from ./types.ts
 
@@ -43,12 +44,18 @@ export class CategorizationWorker extends BaseWorker<
 
     // 1. Process categorization (with retry and error handling)
     actions.push(
-      this.createWrappedAction("process_categorization", this.dependencies)
+      this.createWrappedAction(
+        ActionName.PROCESS_CATEGORIZATION,
+        this.dependencies
+      )
     );
 
     // 2. Save categorization (with retry and error handling)
     actions.push(
-      this.createWrappedAction("save_categorization", this.dependencies)
+      this.createWrappedAction(
+        ActionName.SAVE_CATEGORIZATION,
+        this.dependencies
+      )
     );
 
     return actions;

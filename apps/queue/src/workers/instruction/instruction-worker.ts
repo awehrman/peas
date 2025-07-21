@@ -17,6 +17,7 @@ import type {
   InstructionJobData,
 } from "./types";
 import type { BaseAction } from "../core/base-action";
+import { ActionName } from "../../types";
 
 /**
  * Instruction Worker that extends BaseWorker for instruction processing
@@ -68,23 +69,35 @@ export class InstructionWorker extends BaseWorker<
       typeof data.totalInstructions === "number"
     ) {
       actions.push(
-        this.createWrappedAction("update_instruction_count", this.dependencies)
+        this.createWrappedAction(
+          ActionName.UPDATE_INSTRUCTION_COUNT,
+          this.dependencies
+        )
       );
     }
 
     // 1. Process instruction line (with retry and error handling)
     actions.push(
-      this.createWrappedAction("process_instruction_line", this.dependencies)
+      this.createWrappedAction(
+        ActionName.PROCESS_INSTRUCTION_LINE,
+        this.dependencies
+      )
     );
 
     // 2. Save instruction line (with retry and error handling)
     actions.push(
-      this.createWrappedAction("save_instruction_line", this.dependencies)
+      this.createWrappedAction(
+        ActionName.SAVE_INSTRUCTION_LINE,
+        this.dependencies
+      )
     );
 
     // 3. Check completion status and broadcast if all jobs are done
     actions.push(
-      this.createErrorHandledAction("completion_status", this.dependencies)
+      this.createErrorHandledAction(
+        ActionName.COMPLETION_STATUS,
+        this.dependencies
+      )
     );
 
     return actions;

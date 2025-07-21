@@ -6,6 +6,7 @@ import {
 import type { ActionContext } from "../core/types";
 
 import { registerNoteActions } from "./actions";
+import { ActionName } from "../../types";
 import { IServiceContainer } from "../../services/container";
 import { MissingDependencyError } from "../core/errors";
 import { WORKER_CONSTANTS, LOG_MESSAGES } from "../../config/constants";
@@ -65,21 +66,27 @@ export class NoteWorker extends BaseWorker<
 
     // 1. Clean HTML (remove style and icons tags)
     // Input: NotePipelineStage1 -> Output: NotePipelineStage1 (cleaned)
-    actions.push(this.createWrappedAction("clean_html", this.dependencies));
+    actions.push(
+      this.createWrappedAction(ActionName.CLEAN_HTML, this.dependencies)
+    );
 
     // 2. Parse HTML (with retry and error handling)
     // Input: NotePipelineStage1 -> Output: NotePipelineStage2
-    actions.push(this.createWrappedAction("parse_html", this.dependencies));
+    actions.push(
+      this.createWrappedAction(ActionName.PARSE_HTML, this.dependencies)
+    );
 
     // 3. Save note (with retry and error handling)
     // Input: NotePipelineStage2 -> Output: NotePipelineStage3
-    actions.push(this.createWrappedAction("save_note", this.dependencies));
+    actions.push(
+      this.createWrappedAction(ActionName.SAVE_NOTE, this.dependencies)
+    );
 
     // 4. Schedule all follow-up processing tasks concurrently
     // This action will schedule instruction and ingredient processing jobs
     actions.push(
       this.createErrorHandledAction(
-        "schedule_all_followup_tasks",
+        ActionName.SCHEDULE_ALL_FOLLOWUP_TASKS,
         this.dependencies
       )
     );

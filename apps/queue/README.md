@@ -170,7 +170,9 @@ export class MyWorker extends BaseWorker<MyJobData, MyDependencies> {
     this.addStatusActions(actions, data);
 
     // Add your action pipeline with automatic wrapping
-    actions.push(this.createWrappedAction("my_action", this.dependencies));
+    actions.push(
+      this.createWrappedAction(ActionName.MY_ACTION, this.dependencies)
+    );
 
     return actions;
   }

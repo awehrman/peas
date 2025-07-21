@@ -1,4 +1,5 @@
 import { serviceContainer } from "../services/container";
+import type { TypedQueue, NoteJobData, NoteActionName } from "../types";
 
-// Export the service container's noteQueue
-export const noteQueue = serviceContainer.queues.noteQueue;
+export const noteQueue: TypedQueue<NoteJobData, NoteActionName> =
+  serviceContainer.queues.noteQueue as TypedQueue<NoteJobData, NoteActionName>;

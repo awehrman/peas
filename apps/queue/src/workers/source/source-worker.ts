@@ -10,6 +10,7 @@ import { WORKER_CONSTANTS, LOG_MESSAGES } from "../../config/constants";
 import { formatLogMessage, measureExecutionTime } from "../../utils/utils";
 import type { SourceWorkerDependencies, SourceJobData } from "./types";
 import type { BaseAction } from "../core/base-action";
+import { ActionName } from "../../types";
 
 /**
  * Source Worker that extends BaseWorker for source processing
@@ -33,15 +34,19 @@ export class SourceWorker extends BaseWorker<
     const actions: BaseAction<unknown, unknown>[] = [];
 
     // 1. Process source (with retry and error handling)
-    actions.push(this.createWrappedAction("process_source", this.dependencies));
+    actions.push(
+      this.createWrappedAction(ActionName.PROCESS_SOURCE, this.dependencies)
+    );
 
     // 2. Save source (with retry and error handling)
-    actions.push(this.createWrappedAction("save_source", this.dependencies));
+    actions.push(
+      this.createWrappedAction(ActionName.SAVE_SOURCE, this.dependencies)
+    );
 
     // 3. Add "PROCESSING" status after source is created
     actions.push(
       this.createErrorHandledAction(
-        "source_processing_status",
+        ActionName.SOURCE_PROCESSING_STATUS,
         this.dependencies
       )
     );
@@ -49,7 +54,7 @@ export class SourceWorker extends BaseWorker<
     // 4. Add "COMPLETED" status at the very end
     actions.push(
       this.createErrorHandledAction(
-        "source_completed_status",
+        ActionName.SOURCE_COMPLETED_STATUS,
         this.dependencies
       )
     );

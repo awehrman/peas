@@ -103,7 +103,7 @@ interface MyDependencies {
 
 // Create your action
 class MyAction extends BaseAction<MyJobData, MyDependencies> {
-  name = "my_action";
+  name = ACTION.MY_ACTION;
 
   async execute(data: MyJobData, deps: MyDependencies, context: ActionContext) {
     deps.logger.log(`Processing job ${context.jobId}`);
@@ -115,7 +115,7 @@ class MyAction extends BaseAction<MyJobData, MyDependencies> {
 // Create your worker
 export class MyWorker extends BaseWorker<MyJobData, MyDependencies> {
   protected registerActions(): void {
-    this.actionFactory.register("my_action", () => new MyAction());
+    this.actionFactory.register(ACTION.MY_ACTION, () => new MyAction());
   }
 
   protected getOperationName(): string {
@@ -132,7 +132,7 @@ export class MyWorker extends BaseWorker<MyJobData, MyDependencies> {
     this.addStatusActions(actions, data);
 
     // Add your action with automatic retry and error handling
-    actions.push(this.createWrappedAction("my_action", this.dependencies));
+    actions.push(this.createWrappedAction(ACTION.MY_ACTION, this.dependencies));
 
     return actions;
   }
@@ -198,7 +198,7 @@ All actions are automatically wrapped with error handling and retry logic:
 // - Retry logic with exponential backoff
 // - Performance metrics collection
 // - Status broadcasting
-actions.push(this.createWrappedAction("my_action", this.dependencies));
+actions.push(this.createWrappedAction(ACTION.MY_ACTION, this.dependencies));
 ```
 
 ### Real-time Status Updates
@@ -312,7 +312,7 @@ import { WorkerMetrics } from "./core/metrics";
 const metrics = WorkerMetrics.getMetrics();
 
 // Monitor specific actions
-const actionMetrics = metrics.actionExecutionTimes.get("my_action");
+const actionMetrics = metrics.actionExecutionTimes.get(ACTION.MY_ACTION);
 console.log("Average execution time:", actionMetrics?.average);
 ```
 

@@ -1,4 +1,8 @@
 import { serviceContainer } from "../services/container";
+import type { TypedQueue, ImageJobData, ImageActionName } from "../types";
 
-// Export the service container's imageQueue
-export const imageQueue = serviceContainer.queues.imageQueue;
+export const imageQueue: TypedQueue<ImageJobData, ImageActionName> =
+  serviceContainer.queues.imageQueue as TypedQueue<
+    ImageJobData,
+    ImageActionName
+  >;

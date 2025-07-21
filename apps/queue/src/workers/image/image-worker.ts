@@ -15,6 +15,7 @@ import type {
   ProcessedImageResult,
 } from "./types";
 import type { BaseAction } from "../core/base-action";
+import { ActionName } from "../../types";
 
 // Using imported types from ./types.ts
 
@@ -43,10 +44,14 @@ export class ImageWorker extends BaseWorker<
     this.addStatusActions(actions, data);
 
     // 1. Process image (with retry and error handling)
-    actions.push(this.createWrappedAction("process_image", this.dependencies));
+    actions.push(
+      this.createWrappedAction(ActionName.PROCESS_IMAGE, this.dependencies)
+    );
 
     // 2. Save image (with retry and error handling)
-    actions.push(this.createWrappedAction("save_image", this.dependencies));
+    actions.push(
+      this.createWrappedAction(ActionName.SAVE_IMAGE, this.dependencies)
+    );
 
     return actions;
   }
