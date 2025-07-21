@@ -1,11 +1,12 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { createMockActionContext } from "../../__tests__/test-utils";
 import {
   BaseAction,
+  LoggingAction,
   NoOpAction,
   ValidationAction,
-  LoggingAction,
 } from "../base-action";
-import { createMockActionContext } from "../../__tests__/test-utils";
 import type { ActionContext } from "../types";
 
 // ============================================================================
@@ -175,13 +176,13 @@ describe("NoOpAction", () => {
 
   it("should execute without performing any operation", async () => {
     const action = new NoOpAction();
-    const data = { test: "data" };
+    const testData = { test: "data" };
     const deps = {};
 
-    const result = await action.executeWithTiming(data, deps, context);
+    const result = await action.executeWithTiming(testData, deps, context);
 
     expect(result.success).toBe(true);
-    expect(result.data).toBeUndefined();
+    expect(result.data).toEqual(testData); // NoOpAction returns the data
     expect(result.duration).toBeGreaterThanOrEqual(0);
   });
 

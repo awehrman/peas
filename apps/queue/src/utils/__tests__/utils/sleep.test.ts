@@ -1,4 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
 import { sleep } from "../../utils";
 
 describe("sleep", () => {
@@ -100,7 +101,8 @@ describe("sleep", () => {
     const endTime = Date.now();
     const duration = endTime - startTime;
 
-    expect(duration).toBeGreaterThanOrEqual(1000);
+    // Allow for small timing variations due to event loop and system precision
+    expect(duration).toBeGreaterThanOrEqual(999);
   });
 
   it("should not throw errors", async () => {

@@ -1,4 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
 import { measureExecutionTime } from "../../utils";
 
 describe("measureExecutionTime", () => {
@@ -40,15 +41,15 @@ describe("measureExecutionTime", () => {
   });
 
   it("should handle async operations that take time", async () => {
-    const operation = vi.fn().mockImplementation(async () => {
+    const delayedOperation = async () => {
       await new Promise((resolve) => setTimeout(resolve, 10));
       return "delayed result";
-    });
+    };
 
-    const result = await measureExecutionTime(operation);
+    const result = await measureExecutionTime(delayedOperation);
 
     expect(result.result).toBe("delayed result");
-    expect(result.duration).toBeGreaterThanOrEqual(10);
+    expect(result.duration).toBeGreaterThanOrEqual(9); // Allow for timing precision
   });
 
   it("should handle operations that return different types", async () => {

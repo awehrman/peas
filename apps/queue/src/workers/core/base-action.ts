@@ -1,4 +1,4 @@
-import { WorkerAction, ActionContext, ActionResult } from "./types";
+import { ActionContext, ActionResult, WorkerAction } from "./types";
 
 /**
  * Abstract base class for all worker actions.
@@ -81,8 +81,9 @@ export abstract class BaseAction<TData = unknown, TDeps = unknown>
  */
 export class NoOpAction extends BaseAction<unknown, unknown> {
   name = "no_op";
-  async execute(_data?: unknown): Promise<void> {
-    // No operation performed
+  async execute(data?: unknown): Promise<unknown> {
+    // No operation performed, just return the data
+    return data;
   }
   validateInput = undefined;
 }

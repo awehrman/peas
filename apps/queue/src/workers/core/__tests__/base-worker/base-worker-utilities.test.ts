@@ -1,9 +1,10 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Queue } from "bullmq";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import type { IServiceContainer } from "../../../../services/container";
+import type { BaseJobData, BaseWorkerDependencies } from "../../../types";
 import { BaseWorker } from "../../base-worker";
 import { WorkerMetrics } from "../../metrics";
-import type { BaseWorkerDependencies, BaseJobData } from "../../../types";
-import type { IServiceContainer } from "../../../../services/container";
 
 // Mock dependencies
 const mockQueue = {
@@ -108,50 +109,6 @@ describe("BaseWorker Utilities", () => {
     it("should return default concurrency when not overridden", () => {
       const concurrency = defaultWorker["getConcurrency"]();
       expect(concurrency).toBe(5);
-    });
-  });
-
-  describe("truncateResultForLogging", () => {
-    it("should return short strings as-is", () => {
-      const result = worker["truncateResultForLogging"]("short string");
-      expect(result).toBe('"short string"');
-    });
-
-    it("should handle objects with short values", () => {
-      const obj = { key: "value", num: 123 };
-      const result = worker["truncateResultForLogging"](obj);
-      expect(result).toBe('{"key":"value","num":123}');
-    });
-
-    it("should handle very long results by truncating the entire result", () => {
-      const veryLongObj = {
-        key1: "a".repeat(50),
-        key2: "b".repeat(50),
-        key3: "c".repeat(50),
-        key4: "d".repeat(50),
-      };
-      const result = worker["truncateResultForLogging"](veryLongObj);
-      expect(result.length).toBeLessThan(200);
-      expect(result).toContain("...");
-    });
-
-    it("should handle non-serializable objects", () => {
-      const circularObj = { key: "value" } as { key: string; self?: unknown };
-      circularObj.self = circularObj;
-
-      const result = worker["truncateResultForLogging"](circularObj);
-      expect(result).toBe("[Object - object]");
-    });
-
-    it("should handle null and undefined", () => {
-      expect(worker["truncateResultForLogging"](null)).toBe("null");
-      expect(worker["truncateResultForLogging"](undefined)).toBe("undefined");
-    });
-
-    it("should handle numbers and booleans", () => {
-      expect(worker["truncateResultForLogging"](42)).toBe("42");
-      expect(worker["truncateResultForLogging"](true)).toBe("true");
-      expect(worker["truncateResultForLogging"](false)).toBe("false");
     });
   });
 

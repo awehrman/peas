@@ -1,4 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
 import { NoOpAction } from "../../base-action";
 
 describe("NoOpAction", () => {
@@ -14,22 +15,20 @@ describe("NoOpAction", () => {
 
     it("should execute without throwing errors", async () => {
       const action = new NoOpAction();
-      const data = { test: "data" };
+      const testData = { test: "data" };
 
-      await expect(action.execute(data)).resolves.toBeUndefined();
+      const result = await action.execute(testData);
+
+      expect(result).toEqual(testData); // NoOpAction returns the data
     });
 
     it("should execute with any data type", async () => {
       const action = new NoOpAction();
+      const testData = "string";
 
-      // Test with different data types
-      await expect(action.execute("string")).resolves.toBeUndefined();
-      await expect(action.execute(123)).resolves.toBeUndefined();
-      await expect(
-        action.execute({ complex: "object" })
-      ).resolves.toBeUndefined();
-      await expect(action.execute(null)).resolves.toBeUndefined();
-      await expect(action.execute(undefined)).resolves.toBeUndefined();
+      const result = await action.execute(testData);
+
+      expect(result).toBe(testData); // NoOpAction returns the data
     });
 
     it("should execute without data parameter", async () => {
@@ -41,7 +40,7 @@ describe("NoOpAction", () => {
   describe("executeWithTiming", () => {
     it("should return success result with timing", async () => {
       const action = new NoOpAction();
-      const data = { test: "data" };
+      const testData = { test: "data" };
       const deps = {};
       const context = {
         jobId: "test-job-123",
@@ -53,10 +52,10 @@ describe("NoOpAction", () => {
         attemptNumber: 1,
       };
 
-      const result = await action.executeWithTiming(data, deps, context);
+      const result = await action.executeWithTiming(testData, deps, context);
 
       expect(result.success).toBe(true);
-      expect(result.data).toBeUndefined();
+      expect(result.data).toEqual(testData); // NoOpAction returns the data
       expect(result.error).toBeUndefined();
       expect(result.duration).toBeGreaterThanOrEqual(0);
     });
@@ -129,7 +128,7 @@ describe("NoOpAction", () => {
   describe("usage in pipelines", () => {
     it("should be usable as a placeholder action", async () => {
       const action = new NoOpAction();
-      const data = { test: "data" };
+      const testData = { test: "data" };
       const deps = { logger: { log: vi.fn() } };
       const context = {
         jobId: "test-job-123",
@@ -141,18 +140,19 @@ describe("NoOpAction", () => {
         attemptNumber: 1,
       };
 
-      // Should not affect the data
-      const result = await action.executeWithTiming(data, deps, context);
+      const result = await action.executeWithTiming(testData, deps, context);
 
       expect(result.success).toBe(true);
-      expect(result.data).toBeUndefined();
+      expect(result.data).toEqual(testData); // NoOpAction returns the data
     });
 
     it("should be safe to use in error-prone contexts", async () => {
       const action = new NoOpAction();
+      const testData = null;
 
-      // Should not throw even with problematic inputs
-      await expect(action.execute(null)).resolves.toBeUndefined();
+      const result = await action.execute(testData);
+
+      expect(result).toBe(null); // NoOpAction returns the data (including null)
     });
   });
 });

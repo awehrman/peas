@@ -77,4 +77,37 @@ describe("SaveInstructionLineAction", () => {
       /Failed to save instruction line: Test log error/
     );
   });
+
+  it("falls back to console.log when logger is not available", async () => {
+    const depsWithoutLogger = {
+      ...deps,
+      logger: undefined,
+    } as InstructionWorkerDependencies & { logger: undefined };
+    const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    const result = await action.execute(input, depsWithoutLogger, context);
+
+    expect(result).toEqual({
+      success: true,
+      stepsSaved: 2,
+      parseStatus: "CORRECT",
+      importId: input.importId,
+      noteId: input.noteId,
+      currentInstructionIndex: input.currentInstructionIndex,
+      totalInstructions: input.totalInstructions,
+      instructionLineId: input.instructionLineId,
+    });
+
+    expect(consoleSpy).toHaveBeenCalledWith(
+      `Saving instruction line data for note ${input.noteId}:`,
+      {
+        instructionLineId: input.instructionLineId,
+        parseStatus: input.parseStatus,
+        normalizedText: undefined,
+        stepsCount: 2,
+      }
+    );
+
+    consoleSpy.mockRestore();
+  });
 });

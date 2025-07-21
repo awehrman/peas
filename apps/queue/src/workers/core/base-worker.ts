@@ -1,24 +1,25 @@
-import { Worker, Queue, Job } from "bullmq";
-import { redisConnection } from "../../config/redis";
-import { BaseAction } from "../core/base-action";
+import { createCacheKey, globalActionCache } from "./cache";
+import { ActionExecutionError } from "./errors";
+import { WorkerMetrics } from "./metrics";
 
+import type { NoteStatus } from "@peas/database";
+import { Job, Queue, Worker } from "bullmq";
+
+import { redisConnection } from "../../config/redis";
+import type { IServiceContainer } from "../../services/container";
 import { ActionFactory, globalActionFactory } from "../core/action-factory";
+import { BaseAction } from "../core/base-action";
 import {
-  BroadcastProcessingAction,
   BroadcastCompletedAction,
+  BroadcastProcessingAction,
 } from "../shared/broadcast-status";
 import { ErrorHandlingWrapperAction } from "../shared/error-handling";
 import { RetryWrapperAction } from "../shared/retry";
-import { globalActionCache, createCacheKey } from "./cache";
-import { WorkerMetrics } from "./metrics";
-import { ActionExecutionError } from "./errors";
 import type {
-  BaseWorkerDependencies,
-  BaseJobData,
   ActionContext,
+  BaseJobData,
+  BaseWorkerDependencies,
 } from "../types";
-import type { IServiceContainer } from "../../services/container";
-import type { NoteStatus } from "@peas/database";
 
 /**
  * Base worker class that provides common functionality for all workers
@@ -127,6 +128,10 @@ export abstract class BaseWorker<
       throw new Error("Container not available for logger");
     }
 
+    if (!this.container.logger) {
+      throw new Error("Container not available for logger");
+    }
+
     return this.container.logger;
   }
 
@@ -201,7 +206,7 @@ export abstract class BaseWorker<
           }
 
           this.dependencies.logger.log(
-            `[${this.getOperationName().toUpperCase()}] Data for action ${cleanActionName}: ${this.truncateResultForLogging(result)}`
+            `[${this.getOperationName().toUpperCase()}] Data for action ${cleanActionName}: ${JSON.stringify(result)}`
           );
           try {
             result = (await this.executeActionWithCaching(
@@ -226,11 +231,11 @@ export abstract class BaseWorker<
               false
             );
             this.dependencies.logger.log(
-              `[${this.getOperationName().toUpperCase()}] ❌ ${cleanActionName} (${actionDuration}ms) - ${(error as Error).message}`,
+              `[${this.getOperationName().toUpperCase()}] ❌ ${cleanActionName} (${actionDuration}ms) - ${error instanceof Error ? error.message : String(error)}`,
               "error"
             );
             throw new ActionExecutionError(
-              `Action ${action.name} failed: ${(error as Error).message}`,
+              `Action ${action.name} failed: ${error instanceof Error ? error.message : String(error)}`,
               this.getOperationName(),
               action.name,
               error as Error,
@@ -277,50 +282,6 @@ export abstract class BaseWorker<
    */
   protected getConcurrency(): number {
     return 5;
-  }
-
-  /**
-   * Truncate result data for logging to prevent overly long log messages
-   */
-  private truncateResultForLogging(result: unknown): string {
-    const truncate = (str: string) =>
-      str.length >= 25 ? str.slice(0, 22) + "..." : str;
-
-    // Handle null and undefined explicitly
-    if (result === null) {
-      return "null";
-    }
-    if (result === undefined) {
-      return "undefined";
-    }
-
-    // Handle strings directly
-    if (typeof result === "string") {
-      const truncated = truncate(result);
-      return JSON.stringify(truncated);
-    }
-
-    try {
-      const jsonStr = JSON.stringify(result);
-      if (jsonStr.length <= 100) {
-        // For shorter results, return as-is without truncating individual values
-        return jsonStr;
-      }
-
-      // For longer results, truncate individual string values
-      const truncated = JSON.stringify(result, (key, value) => {
-        if (typeof value === "string" && value.length >= 25) {
-          return truncate(value);
-        }
-        return value;
-      });
-
-      return truncated.length <= 200
-        ? truncated
-        : truncated.slice(0, 197) + "...";
-    } catch {
-      return "[Object - object]";
-    }
   }
 
   /**
@@ -407,6 +368,130 @@ export abstract class BaseWorker<
    */
   getWorker(): Worker {
     return this.worker;
+  }
+
+  /**
+   * Test method to process a job (for testing purposes only)
+   */
+  public async testProcessJob(job: Job): Promise<unknown> {
+    const startTime = Date.now();
+    const context: ActionContext = {
+      jobId: job.id ?? "unknown",
+      retryCount: job.attemptsMade,
+      queueName: "test-queue",
+      noteId: (job.data as TData).noteId,
+      operation: this.getOperationName(),
+      startTime,
+      workerName: this.getOperationName(),
+      attemptNumber: job.attemptsMade + 1,
+    };
+
+    const data = job.data as TData;
+
+    this.dependencies.logger.log(
+      `[${this.getOperationName().toUpperCase()}] Starting job ${context.jobId}`
+    );
+
+    try {
+      // Create the action pipeline
+      const actions = this.createActionPipeline(data, context);
+
+      // Execute the pipeline
+      let result: TData = data;
+      const actionNames = actions.map((a) => {
+        // Extract the actual action name from wrapper names
+        if (a.name.includes("error_handling_wrapper(")) {
+          return a.name.replace("error_handling_wrapper(", "").replace(")", "");
+        }
+        if (a.name.includes("retry_wrapper(")) {
+          return a.name.replace("retry_wrapper(", "").replace(")", "");
+        }
+        return a.name;
+      });
+      this.dependencies.logger.log(
+        `[${this.getOperationName().toUpperCase()}] Executing ${actions.length} actions: ${actionNames.join(", ")}`
+      );
+      for (const action of actions) {
+        const actionStartTime = Date.now();
+        // Extract clean action name for logging
+        let cleanActionName = action.name;
+        if (action.name.includes("error_handling_wrapper(")) {
+          cleanActionName = action.name
+            .replace("error_handling_wrapper(", "")
+            .replace(")", "");
+        }
+        if (action.name.includes("retry_wrapper(")) {
+          cleanActionName = action.name
+            .replace("retry_wrapper(", "")
+            .replace(")", "");
+        }
+
+        this.dependencies.logger.log(
+          `[${this.getOperationName().toUpperCase()}] Data for action ${cleanActionName}: ${JSON.stringify(result)}`
+        );
+        try {
+          result = (await this.executeActionWithCaching(
+            action,
+            result,
+            context
+          )) as TData;
+          const actionDuration = Date.now() - actionStartTime;
+          WorkerMetrics.recordActionExecutionTime(
+            action.name,
+            actionDuration,
+            true
+          );
+          this.dependencies.logger.log(
+            `[${this.getOperationName().toUpperCase()}] ✅ ${cleanActionName} (${actionDuration}ms)`
+          );
+        } catch (error) {
+          const actionDuration = Date.now() - actionStartTime;
+          WorkerMetrics.recordActionExecutionTime(
+            action.name,
+            actionDuration,
+            false
+          );
+          this.dependencies.logger.log(
+            `[${this.getOperationName().toUpperCase()}] ❌ ${cleanActionName} (${actionDuration}ms) - ${error instanceof Error ? error.message : String(error)}`,
+            "error"
+          );
+          throw new ActionExecutionError(
+            `Action ${action.name} failed: ${error instanceof Error ? error.message : String(error)}`,
+            this.getOperationName(),
+            action.name,
+            error as Error,
+            context.jobId
+          );
+        }
+      }
+
+      const totalDuration = Date.now() - startTime;
+      WorkerMetrics.recordJobProcessingTime(
+        this.getOperationName(),
+        totalDuration,
+        true
+      );
+
+      this.dependencies.logger.log(
+        `[${this.getOperationName().toUpperCase()}] ✅ Job ${context.jobId} completed successfully (${totalDuration}ms)`
+      );
+
+      return result;
+    } catch (error) {
+      const totalDuration = Date.now() - startTime;
+      WorkerMetrics.recordJobProcessingTime(
+        this.getOperationName(),
+        totalDuration,
+        false
+      );
+
+      this.dependencies.logger.log(
+        `[${this.getOperationName().toUpperCase()}] ❌ Job ${context.jobId} failed (${totalDuration}ms) - ${error instanceof Error ? error.message : String(error)}`,
+        "error"
+      );
+
+      throw error;
+    }
   }
 
   /**

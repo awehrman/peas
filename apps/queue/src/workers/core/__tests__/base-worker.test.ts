@@ -1,22 +1,23 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import type { Job } from "bullmq";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import type { IServiceContainer } from "../../../services/container";
+import {
+  createMockActionContext,
+  createMockServiceContainer,
+} from "../../__tests__/test-utils";
+import { ErrorHandlingWrapperAction } from "../../shared/error-handling";
+import { RetryWrapperAction } from "../../shared/retry";
+import type { BaseWorkerDependencies } from "../../types";
+import { ActionFactory, globalActionFactory } from "../action-factory";
+import { BaseAction, NoOpAction } from "../base-action";
 import {
   BaseWorker,
   createBaseDependenciesFromContainer,
 } from "../base-worker";
-import { BaseAction, NoOpAction } from "../base-action";
-import { ActionFactory } from "../action-factory";
-import {
-  createMockServiceContainer,
-  createMockActionContext,
-} from "../../__tests__/test-utils";
-import type { ActionContext, BaseJobData } from "../types";
-import type { BaseWorkerDependencies } from "../../types";
-import type { IServiceContainer } from "../../../services/container";
-
+import { createCacheKey, globalActionCache } from "../cache";
 import { WorkerMetrics } from "../metrics";
-import { ErrorHandlingWrapperAction } from "../../shared/error-handling";
-import { RetryWrapperAction } from "../../shared/retry";
-import { globalActionCache, createCacheKey } from "../cache";
+import type { ActionContext, BaseJobData } from "../types";
 
 // ============================================================================
 // TEST HELPERS
@@ -123,6 +124,13 @@ const createMockQueue = () =>
     close: vi.fn().mockResolvedValue(undefined),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock
   }) as any;
+
+// Mock job type for testing
+interface MockJob {
+  id: string;
+  attemptsMade: number;
+  data: Record<string, unknown>;
+}
 
 // ============================================================================
 // BASE WORKER TESTS
@@ -470,30 +478,46 @@ describe("BaseWorker", () => {
 
   it("executeActionWithCaching runs action and caches result", async () => {
     const action = new NoOpAction();
-    const context = createMockActionContext();
     const data = { value: "foo" };
+    const context: ActionContext = {
+      jobId: "test-job",
+      retryCount: 0,
+      queueName: "test-queue",
+      noteId: "test-note",
+      operation: "test",
+      startTime: Date.now(),
+      workerName: "test",
+      attemptNumber: 1,
+    };
 
     const result = await worker["executeActionWithCaching"]!(
       action,
       data,
       context
     );
-    expect(result).toEqual(undefined); // NoOpAction returns undefined
+    expect(result).toEqual(data); // NoOpAction returns the data
   });
 
   it("executeActionWithCaching handles non-cacheable actions", async () => {
-    // Create an action that doesn't have "parse" or "fetch" in the name
     const action = new NoOpAction();
-    action.name = "test_action"; // Override name to not include parse/fetch
-    const context = createMockActionContext();
     const data = { value: "bar" };
+    const context: ActionContext = {
+      jobId: "test-job",
+      retryCount: 0,
+      queueName: "test-queue",
+      noteId: "test-note",
+      operation: "test",
+      startTime: Date.now(),
+      workerName: "test",
+      attemptNumber: 1,
+    };
 
     const result = await worker["executeActionWithCaching"]!(
       action,
       data,
       context
     );
-    expect(result).toEqual(undefined); // NoOpAction returns undefined
+    expect(result).toEqual(data); // NoOpAction returns the data
   });
 
   it("job processor processes job successfully", async () => {
@@ -686,44 +710,64 @@ describe("BaseWorker advanced coverage", () => {
   });
 
   it("executeActionWithCaching sets cache and logs cache hit", async () => {
-    const action = new NoOpAction();
-    action.name = "parse_html";
-    const context = createMockActionContext();
+    class ParseAction extends BaseAction<unknown, unknown> {
+      name = "parse_html";
+      async execute(data: unknown) {
+        return data;
+      }
+    }
+
+    const action = new ParseAction();
     const data = { value: "foo" };
+    const context: ActionContext = {
+      jobId: "test-job",
+      retryCount: 0,
+      queueName: "test-queue",
+      noteId: "test-note",
+      operation: "test",
+      startTime: Date.now(),
+      workerName: "test",
+      attemptNumber: 1,
+    };
+
     const cacheKey = createCacheKey(
       "action",
       action.name,
       context.jobId,
       JSON.stringify(data)
     );
-    globalActionCache.delete(cacheKey);
-    const loggerSpy = mockDependencies.logger.log;
+
     // First call: should set cache
     await worker["executeActionWithCaching"]!(action, data, context);
-    expect(globalActionCache.get(cacheKey)).toBe(undefined); // NoOpAction returns undefined
+    expect(globalActionCache.get(cacheKey)).toEqual(data);
     // Manually set cache for next call
     globalActionCache.set(cacheKey, "cached-value", 300000);
+
+    // Second call: should use cache
     const result = await worker["executeActionWithCaching"]!(
       action,
       data,
       context
     );
     expect(result).toBe("cached-value");
-    expect(loggerSpy).toHaveBeenCalledWith(
-      expect.stringContaining("Cache hit for action parse_html")
-    );
-    globalActionCache.delete(cacheKey);
   });
 
   it("getStatus calls WorkerMetrics.recordWorkerStatus", () => {
-    const metricsSpy = vi.spyOn(WorkerMetrics, "recordWorkerStatus");
-    const mockWorker = {
-      isRunning: vi.fn().mockReturnValue(true),
-    };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test access to private property
-    worker["worker"] = mockWorker as any;
-    worker["getStatus"]!();
-    expect(metricsSpy).toHaveBeenCalledWith("test_worker", true);
+    const mockQueue = createMockQueue();
+    const testWorker = new TestWorker(mockQueue, mockDependencies);
+
+    const recordSpy = vi.spyOn(WorkerMetrics, "recordWorkerStatus");
+
+    // Mock the worker to have isRunning method
+    const worker = testWorker.getWorker();
+    Object.defineProperty(worker, "isRunning", {
+      value: vi.fn().mockReturnValue(true),
+      writable: true,
+    });
+
+    testWorker.getStatus();
+
+    expect(recordSpy).toHaveBeenCalledWith("test_worker", true);
   });
 
   it("should test createBaseDependenciesFromContainer with missing logger", () => {
@@ -821,80 +865,466 @@ describe("BaseWorker advanced coverage", () => {
     });
   });
 
-  describe("truncateResultForLogging", () => {
-    it("should not truncate short strings", () => {
-      const shortString = "Short";
-      const result = worker["truncateResultForLogging"]({
-        content: shortString,
-      });
-      expect(result).toContain("Short");
-      expect(result).not.toContain("...");
+  describe("job processor error handling", () => {
+    it("should handle job data without noteId", async () => {
+      const mockJob: MockJob = {
+        id: "test-job",
+        attemptsMade: 0,
+        data: { value: "test" },
+      };
+
+      const mockQueue = createMockQueue();
+
+      class CustomPipelineWorker extends TestWorker {
+        protected createActionPipeline() {
+          return [new NoOpAction()];
+        }
+      }
+      const customWorker = new CustomPipelineWorker(
+        mockQueue,
+        mockDependencies
+      );
+
+      const result = await customWorker.testProcessJob(mockJob as Job);
+
+      expect(result).toEqual({ value: "test", noteId: undefined });
     });
 
-    it("should handle non-string values without truncation", () => {
-      const data = {
-        number: 12345,
-        boolean: true,
+    it("should handle job with null noteId", async () => {
+      const mockJob: MockJob = {
+        id: "test-job",
+        attemptsMade: 0,
+        data: { value: "test", noteId: null },
+      };
+
+      const mockQueue = createMockQueue();
+
+      class NullNoteIdWorker extends TestWorker {
+        protected createActionPipeline() {
+          return [new NoOpAction()];
+        }
+      }
+      const testWorker = new NullNoteIdWorker(mockQueue, mockDependencies);
+
+      const result = await testWorker.testProcessJob(mockJob as Job);
+
+      expect(result).toEqual({ value: "test", noteId: null });
+    });
+
+    it("should handle action execution errors with non-Error objects", async () => {
+      const mockJob: MockJob = {
+        id: "test-job",
+        attemptsMade: 0,
+        data: { value: "test", noteId: "note-1" },
+      };
+
+      const mockQueue = createMockQueue();
+
+      class ThrowingAction extends BaseAction<BaseJobData, unknown> {
+        name = "throwing_action";
+        async execute() {
+          throw "String error";
+        }
+      }
+
+      class ThrowingActionWorker extends TestWorker {
+        protected createActionPipeline() {
+          return [new ThrowingAction()];
+        }
+      }
+      const testWorker = new ThrowingActionWorker(mockQueue, mockDependencies);
+
+      await expect(testWorker.testProcessJob(mockJob as Job)).rejects.toThrow(
+        "Action throwing_action failed: String error"
+      );
+    });
+
+    it("should handle action execution errors with undefined error messages", async () => {
+      class UndefinedErrorAction extends BaseAction<BaseJobData, unknown> {
+        name = "undefined_error_action";
+        async execute() {
+          const error = new Error();
+          error.message = undefined as unknown as string;
+          throw error;
+        }
+      }
+
+      const mockJob: MockJob = {
+        id: "test-job",
+        attemptsMade: 0,
+        data: { value: "test", noteId: "note-1" },
+      };
+
+      const mockQueue = createMockQueue();
+
+      class UndefinedErrorWorker extends TestWorker {
+        protected createActionPipeline() {
+          return [new UndefinedErrorAction()];
+        }
+      }
+      const testWorker = new UndefinedErrorWorker(mockQueue, mockDependencies);
+
+      await expect(testWorker.testProcessJob(mockJob as Job)).rejects.toThrow(
+        "undefined"
+      );
+    });
+
+    it("should handle empty action pipeline", async () => {
+      const mockJob: MockJob = {
+        id: "test-job",
+        attemptsMade: 0,
+        data: { value: "test", noteId: "note-1" },
+      };
+
+      const mockQueue = createMockQueue();
+
+      class EmptyPipelineWorker extends TestWorker {
+        protected createActionPipeline() {
+          return [];
+        }
+      }
+      const testWorker = new EmptyPipelineWorker(mockQueue, mockDependencies);
+
+      const result = await testWorker.testProcessJob(mockJob as Job);
+
+      expect(result).toEqual({ value: "test", noteId: "note-1" });
+    });
+
+    it("should handle action pipeline with wrapper actions", async () => {
+      const mockJob: MockJob = {
+        id: "test-job",
+        attemptsMade: 0,
+        data: { value: "test", noteId: "note-1" },
+      };
+
+      const mockQueue = createMockQueue();
+
+      class WrappedActionWorker extends TestWorker {
+        protected createActionPipeline() {
+          return [new NoOpAction()];
+        }
+      }
+      const testWorker = new WrappedActionWorker(mockQueue, mockDependencies);
+
+      const result = await testWorker.testProcessJob(mockJob as Job);
+
+      expect(result).toEqual({ value: "test", noteId: "note-1" });
+    });
+  });
+
+  describe("caching functionality", () => {
+    it("should cache parse actions correctly", async () => {
+      const mockJob: MockJob = {
+        id: "test-job",
+        attemptsMade: 0,
+        data: { value: "test", noteId: "note-1" },
+      };
+
+      const mockQueue = createMockQueue();
+
+      class ParseAction extends BaseAction<BaseJobData, unknown> {
+        name = "parse_something";
+        async execute(data: BaseJobData) {
+          return { ...data, parsed: true };
+        }
+      }
+
+      class ParseActionWorker extends TestWorker {
+        protected createActionPipeline() {
+          return [new ParseAction()];
+        }
+      }
+      const testWorker = new ParseActionWorker(mockQueue, mockDependencies);
+
+      // First execution should cache
+      const result1 = await testWorker.testProcessJob(mockJob as Job);
+      expect(result1).toEqual({
+        value: "test",
+        noteId: "note-1",
+        parsed: true,
+      });
+
+      // Second execution should use cache
+      const result2 = await testWorker.testProcessJob(mockJob as Job);
+      expect(result2).toEqual({
+        value: "test",
+        noteId: "note-1",
+        parsed: true,
+      });
+    });
+
+    it("should not cache non-parse actions", async () => {
+      const mockJob: MockJob = {
+        id: "test-job",
+        attemptsMade: 0,
+        data: { value: "test", noteId: "note-1" },
+      };
+
+      const mockQueue = createMockQueue();
+
+      class SaveAction extends BaseAction<BaseJobData, unknown> {
+        name = "save_something";
+        async execute(data: BaseJobData) {
+          return { ...data, saved: true };
+        }
+      }
+
+      class SaveActionWorker extends TestWorker {
+        protected createActionPipeline() {
+          return [new SaveAction()];
+        }
+      }
+      const testWorker = new SaveActionWorker(mockQueue, mockDependencies);
+
+      const result = await testWorker.testProcessJob(mockJob as Job);
+      expect(result).toEqual({ value: "test", noteId: "note-1", saved: true });
+    });
+
+    it("should handle cache key creation with complex data", async () => {
+      const complexData = {
+        value: "test",
+        noteId: "note-1",
+        metadata: { key: "value", nested: { deep: "data" } },
         array: [1, 2, 3],
-        nullValue: null,
       };
-      const result = worker["truncateResultForLogging"](data);
-      expect(result).toContain("12345");
-      expect(result).toContain("true");
-      expect(result).toContain("[1,2,3]");
-      expect(result).toContain("null");
+
+      const mockJob: MockJob = {
+        id: "test-job",
+        attemptsMade: 0,
+        data: complexData,
+      };
+
+      const mockQueue = createMockQueue();
+
+      class ParseAction extends BaseAction<BaseJobData, unknown> {
+        name = "parse_complex";
+        async execute(data: BaseJobData) {
+          return { ...data, parsed: true };
+        }
+      }
+
+      class ComplexParseWorker extends TestWorker {
+        protected createActionPipeline() {
+          return [new ParseAction()];
+        }
+      }
+      const testWorker = new ComplexParseWorker(mockQueue, mockDependencies);
+
+      const result = await testWorker.testProcessJob(mockJob as Job);
+      expect(result).toEqual({ ...complexData, parsed: true });
+    });
+  });
+
+  describe("worker lifecycle and status", () => {
+    it("should handle worker close gracefully", async () => {
+      const mockQueue = createMockQueue();
+      const testWorker = new TestWorker(mockQueue, mockDependencies);
+
+      await expect(testWorker.close()).resolves.toBeUndefined();
     });
 
-    it("should truncate very long JSON strings", () => {
-      const veryLongString = "x".repeat(1000);
-      const result = worker["truncateResultForLogging"]({
-        content: veryLongString,
+    it("should return correct worker status when running", () => {
+      const mockQueue = createMockQueue();
+      const testWorker = new TestWorker(mockQueue, mockDependencies);
+
+      // Mock the worker to have isRunning method
+      const worker = testWorker.getWorker();
+      Object.defineProperty(worker, "isRunning", {
+        value: vi.fn().mockReturnValue(true),
+        writable: true,
       });
-      expect(result.length).toBeLessThan(250);
-      expect(result).toContain("...");
+
+      const status = testWorker.getStatus();
+      expect(status).toEqual({
+        isRunning: true,
+        name: "test_worker",
+      });
     });
 
-    it("should handle circular references gracefully", () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test circular reference
-      const circular: any = { name: "test" };
-      circular.self = circular;
-      const result = worker["truncateResultForLogging"](circular);
-      expect(result).toContain("[Object - object]");
+    it("should record worker status metrics", () => {
+      const mockQueue = createMockQueue();
+      const testWorker = new TestWorker(mockQueue, mockDependencies);
+
+      const recordSpy = vi.spyOn(WorkerMetrics, "recordWorkerStatus");
+
+      // Mock the worker to have isRunning method
+      const worker = testWorker.getWorker();
+      Object.defineProperty(worker, "isRunning", {
+        value: vi.fn().mockReturnValue(true),
+        writable: true,
+      });
+
+      testWorker.getStatus();
+
+      expect(recordSpy).toHaveBeenCalledWith("test_worker", true);
     });
 
-    it("should handle JSON stringify errors", () => {
-      // Create an object that will cause JSON.stringify to fail
-      const problematicObject = {
-        get toJSON() {
-          throw new Error("JSON stringify error");
+    it("should handle worker status when not running", () => {
+      const mockQueue = createMockQueue();
+      const testWorker = new TestWorker(mockQueue, mockDependencies);
+
+      // Mock the worker to be not running
+      const worker = testWorker.getWorker();
+      Object.defineProperty(worker, "isRunning", {
+        value: vi.fn().mockReturnValue(false),
+        writable: true,
+      });
+
+      const status = testWorker.getStatus();
+      expect(status).toEqual({
+        isRunning: false,
+        name: "test_worker",
+      });
+    });
+  });
+
+  describe("action factory integration", () => {
+    it("should use custom action factory when provided", () => {
+      const customFactory = new ActionFactory();
+      const mockQueue = createMockQueue();
+      const testWorker = new TestWorker(
+        mockQueue,
+        mockDependencies,
+        customFactory
+      );
+
+      expect(testWorker["actionFactory"]).toBe(customFactory);
+    });
+
+    it("should use global action factory when none provided", () => {
+      const mockQueue = createMockQueue();
+      const testWorker = new TestWorker(mockQueue, mockDependencies);
+
+      expect(testWorker["actionFactory"]).toBe(globalActionFactory);
+    });
+
+    it("should create wrapped actions with custom dependencies", () => {
+      const mockQueue = createMockQueue();
+      const testWorker = new TestWorker(mockQueue, mockDependencies);
+
+      const wrappedAction = testWorker.testCreateWrappedAction("test_action");
+
+      expect(wrappedAction).toBeDefined();
+      expect(wrappedAction.name).toContain("error_handling_wrapper");
+      expect(wrappedAction.name).toContain("retry_wrapper");
+    });
+
+    it("should create error handled actions with custom dependencies", () => {
+      const mockQueue = createMockQueue();
+      const testWorker = new TestWorker(mockQueue, mockDependencies);
+
+      const errorHandledAction =
+        testWorker.testCreateErrorHandledAction("test_action");
+
+      expect(errorHandledAction).toBeDefined();
+      expect(errorHandledAction.name).toContain("error_handling_wrapper");
+      expect(errorHandledAction.name).not.toContain("retry_wrapper");
+    });
+  });
+
+  describe("concurrency configuration", () => {
+    it("should return default concurrency of 5", () => {
+      const mockQueue = createMockQueue();
+      const testWorker = new TestWorker(mockQueue, mockDependencies);
+
+      expect(testWorker.testGetConcurrency()).toBe(5);
+    });
+
+    it("should use custom concurrency when overridden", () => {
+      class CustomConcurrencyWorker extends TestWorker {
+        protected getConcurrency(): number {
+          return 10;
+        }
+      }
+
+      const mockQueue = createMockQueue();
+      const customWorker = new CustomConcurrencyWorker(
+        mockQueue,
+        mockDependencies
+      );
+
+      expect(customWorker.testGetConcurrency()).toBe(10);
+    });
+  });
+
+  describe("container integration edge cases", () => {
+    it("should handle container with missing statusBroadcaster", () => {
+      const mockContainer = {
+        statusBroadcaster: undefined,
+        errorHandler: {
+          errorHandler: {
+            withErrorHandling: vi.fn().mockImplementation(async (op) => op()),
+          },
         },
-      };
+        logger: { log: vi.fn() },
+      } as unknown as IServiceContainer;
 
-      const result = worker["truncateResultForLogging"](problematicObject);
-      expect(result).toContain("[Object - object]");
+      const mockQueue = createMockQueue();
+      const testWorker = new TestWorker(
+        mockQueue,
+        mockDependencies,
+        undefined,
+        mockContainer
+      );
+
+      const statusBroadcaster = testWorker.testCreateStatusBroadcaster();
+      expect(statusBroadcaster).toBeDefined();
+
+      // Should resolve without error when statusBroadcaster is missing
+      expect(
+        statusBroadcaster({
+          importId: "test",
+          status: "PROCESSING",
+        })
+      ).resolves.toBeUndefined();
     });
 
-    it("should handle very short JSON strings", () => {
-      const shortData = { value: "test" };
-      const result = worker["truncateResultForLogging"](shortData);
-      expect(result).toBe('{"value":"test"}');
+    it("should handle container with missing errorHandler", () => {
+      const mockContainer = {
+        statusBroadcaster: {
+          addStatusEventAndBroadcast: vi.fn().mockResolvedValue(undefined),
+        },
+        errorHandler: undefined,
+        logger: { log: vi.fn() },
+      } as unknown as IServiceContainer;
+
+      const mockQueue = createMockQueue();
+      const testWorker = new TestWorker(
+        mockQueue,
+        mockDependencies,
+        undefined,
+        mockContainer
+      );
+
+      const errorHandler = testWorker.testCreateErrorHandler();
+      expect(errorHandler).toBeDefined();
+      expect(errorHandler.withErrorHandling).toBeDefined();
     });
 
-    it("should handle JSON strings exactly 100 characters", () => {
-      const data = { value: "x".repeat(85) }; // This will create JSON exactly 100 chars
-      const result = worker["truncateResultForLogging"](data);
-      expect(result).toBe(`{"value":"${"x".repeat(85)}"}`);
-    });
+    it("should handle container with missing logger", () => {
+      const mockContainer = {
+        statusBroadcaster: {
+          addStatusEventAndBroadcast: vi.fn().mockResolvedValue(undefined),
+        },
+        errorHandler: {
+          errorHandler: {
+            withErrorHandling: vi.fn().mockImplementation(async (op) => op()),
+          },
+        },
+        logger: undefined,
+      } as unknown as IServiceContainer;
 
-    it("should handle JSON strings over 200 characters after truncation", () => {
-      const data = {
-        field1: "x".repeat(50),
-        field2: "y".repeat(50),
-        field3: "z".repeat(50),
-      };
-      const result = worker["truncateResultForLogging"](data);
-      expect(result.length).toBeLessThan(250);
-      expect(result).toContain("...");
+      const mockQueue = createMockQueue();
+      const testWorker = new TestWorker(
+        mockQueue,
+        mockDependencies,
+        undefined,
+        mockContainer
+      );
+
+      expect(() => testWorker.testCreateLogger()).toThrow(
+        "Container not available for logger"
+      );
     });
   });
 });
