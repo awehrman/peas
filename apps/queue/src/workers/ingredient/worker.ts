@@ -1,119 +1,89 @@
 import { registerIngredientActions } from "./actions";
 import { createIngredientWorkerDependencies } from "./dependencies";
+import { createIngredientPipeline } from "./pipeline";
 import type { IngredientJobData, IngredientWorkerDependencies } from "./types";
 
 import { Queue } from "bullmq";
 
 import { WORKER_CONSTANTS } from "../../config/constants";
 import { IServiceContainer } from "../../services/container";
-import { ActionName } from "../../types";
 import type { BaseAction } from "../core/base-action";
 import { BaseWorker } from "../core/base-worker";
-import { ActionContext } from "../core/types";
-
-// Using imported types from ./types.ts
+import type { ActionContext } from "../core/types";
 
 /**
- * Ingredient Worker that extends BaseWorker for ingredient processing
+ * Worker for processing ingredient jobs.
+ * Extends BaseWorker to provide custom ingredient processing logic.
  */
 export class IngredientWorker extends BaseWorker<
   IngredientJobData,
   IngredientWorkerDependencies
 > {
+  /**
+   * Registers all ingredient-specific actions with the action factory.
+   */
   protected registerActions(): void {
     registerIngredientActions(this.actionFactory);
   }
 
+  /**
+   * Returns the operation name for this worker.
+   *
+   * @returns The operation name string.
+   */
   protected getOperationName(): string {
     return WORKER_CONSTANTS.NAMES.INGREDIENT;
   }
 
   /**
-   * Override addStatusActions to prevent generic status messages when we have ingredient tracking
+   * Adds status actions to the pipeline.
+   * Overridden to provide custom ingredient progress tracking.
+   *
+   * @param actions - The array of actions to add to.
+   * @param data - The job data for the ingredient line.
    */
   protected addStatusActions(
-    actions: BaseAction<unknown, unknown>[],
+    actions: BaseAction<IngredientJobData, IngredientJobData>[],
     data: IngredientJobData
   ): void {
     this.dependencies.logger.log(
       `[${this.getOperationName().toUpperCase()}] addStatusActions called with data: noteId=${data.noteId}, hasNoteId=${!!data.noteId}, dataKeys=${Object.keys(data).join(", ")}`
     );
-
-    // Skip both processing and completion status actions since we handle them specifically
     this.dependencies.logger.log(
       `[${this.getOperationName().toUpperCase()}] Skipping generic status actions - using custom ingredient progress tracking`
     );
   }
 
+  /**
+   * Creates the action pipeline for a given ingredient job.
+   *
+   * @param data - The job data for the ingredient line.
+   * @param context - The action context.
+   * @returns An array of actions to execute for the ingredient job.
+   */
   protected createActionPipeline(
     data: IngredientJobData,
-    _context: ActionContext
-  ): BaseAction<unknown, unknown>[] {
-    const actions: BaseAction<unknown, unknown>[] = [];
-
-    // Add standard status actions if we have a noteId
-    this.addStatusActions(actions, data);
-
-    // Add ingredient count update if we have tracking information
-    if (
-      data.importId &&
-      typeof data.currentIngredientIndex === "number" &&
-      typeof data.totalIngredients === "number"
-    ) {
-      actions.push(
-        this.createWrappedAction(
-          ActionName.UPDATE_INGREDIENT_COUNT,
-          this.dependencies
-        )
-      );
-    }
-
-    // 1. Process ingredient line (with retry and error handling)
-    actions.push(
-      this.createWrappedAction(
-        ActionName.PROCESS_INGREDIENT_LINE,
-        this.dependencies
-      )
+    context: ActionContext
+  ): BaseAction<IngredientJobData, IngredientJobData>[] {
+    return createIngredientPipeline(
+      {
+        addStatusActions: this.addStatusActions.bind(this),
+        createWrappedAction: this.createWrappedAction.bind(this),
+        createErrorHandledAction: this.createErrorHandledAction.bind(this),
+        dependencies: this.dependencies,
+      },
+      data,
+      context
     );
-
-    // 2. Save ingredient line (with retry and error handling)
-    actions.push(
-      this.createWrappedAction(
-        ActionName.SAVE_INGREDIENT_LINE,
-        this.dependencies
-      )
-    );
-
-    // 3. Track unique line pattern (low priority, non-blocking)
-    actions.push(
-      this.createWrappedAction(ActionName.TRACK_PATTERN, this.dependencies)
-    );
-
-    // 4. Check completion status and broadcast if all jobs are done
-    actions.push(
-      this.createErrorHandledAction(
-        ActionName.COMPLETION_STATUS,
-        this.dependencies
-      )
-    );
-
-    // 5. Schedule categorization (COMMENTED OUT FOR SIMPLIFIED TESTING)
-    // Note: This will schedule categorization after each ingredient line.
-    // In a production system, you might want to track when ALL ingredient lines
-    // for a note are completed before scheduling categorization.
-    // actions.push(
-    //   this.createErrorHandledAction(
-    //     "schedule_categorization",
-    //     this.dependencies
-    //   )
-    // );
-
-    return actions;
   }
 }
 
 /**
- * Factory function to create an ingredient worker with dependencies from the service container
+ * Factory function to create an ingredient worker with dependencies from the service container.
+ *
+ * @param queue - The BullMQ queue for ingredient jobs.
+ * @param container - The service container providing dependencies.
+ * @returns An instance of IngredientWorker.
  */
 export function createIngredientWorker(
   queue: Queue,

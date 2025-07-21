@@ -1,7 +1,7 @@
 import type { InstructionWorkerDependencies } from "./types";
 
 import type { IServiceContainer } from "../../services/container";
-import { InstructionService } from "../../services/instruction-service";
+import { InstructionService } from "../../services/instruction";
 import { createBaseDependenciesFromContainer } from "../core/base-worker";
 
 /**

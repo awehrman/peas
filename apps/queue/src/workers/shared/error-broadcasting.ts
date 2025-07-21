@@ -1,5 +1,7 @@
-import type { BaseWorkerDependencies } from "../core/types";
 import type { NoteStatus } from "@peas/database";
+
+import type { BaseWorkerDependencies } from "../core/types";
+import type { LogLevel } from "../types";
 
 export interface ErrorBroadcastData {
   importId?: string;
@@ -15,6 +17,9 @@ export interface ErrorBroadcastData {
 }
 
 export interface ErrorBroadcastDependencies extends BaseWorkerDependencies {
+  logger: {
+    log: (message: string, level?: LogLevel) => void;
+  };
   addStatusEventAndBroadcast: (event: {
     importId: string;
     noteId?: string;

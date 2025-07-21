@@ -1,71 +1,88 @@
 import { BaseAction } from "../../core/base-action";
 import { ActionContext } from "../../core/types";
-import type { IngredientWorkerDependencies } from "../types";
+import type {
+  UpdateIngredientCountData,
+  UpdateIngredientCountDeps,
+} from "../types";
 
-export interface UpdateIngredientCountData {
-  importId: string;
-  noteId?: string;
-  currentIngredientIndex: number;
-  totalIngredients: number;
-}
-
-export interface UpdateIngredientCountDeps
-  extends IngredientWorkerDependencies {
-  database: IngredientWorkerDependencies["database"] & {
-    incrementNoteCompletionTracker?: (noteId: string) => Promise<unknown>;
-  };
-}
-
+/**
+ * Action to update the ingredient completion tracker and broadcast status.
+ */
 export class UpdateIngredientCountAction extends BaseAction<
   UpdateIngredientCountData,
   UpdateIngredientCountDeps
 > {
   name = "update_ingredient_count";
 
+  /**
+   * Executes the update ingredient count action.
+   * @param data - The update ingredient count data.
+   * @param deps - The dependencies for updating and broadcasting.
+   * @param _context - The action context (unused).
+   * @returns The original update ingredient count data.
+   */
   async execute(
     data: UpdateIngredientCountData,
     deps: UpdateIngredientCountDeps,
     _context: ActionContext
   ): Promise<UpdateIngredientCountData> {
-    const { importId, noteId, currentIngredientIndex, totalIngredients } = data;
+    const isComplete = this.isFinalIngredient(data);
+    await this.updateCompletionTracker(data, deps);
+    await this.broadcastStatus(data, deps, isComplete);
+    return data;
+  }
 
-    // Determine if this is the final ingredient
-    const isComplete = currentIngredientIndex === totalIngredients;
-    const status = isComplete ? "COMPLETED" : "PROCESSING";
-    const emoji = isComplete ? "✅" : "⏳";
+  /**
+   * Determines if this is the final ingredient.
+   */
+  private isFinalIngredient(data: UpdateIngredientCountData): boolean {
+    return data.currentIngredientIndex === data.totalIngredients;
+  }
 
-    // Update job completion tracker for each ingredient job completion
-    if (noteId) {
+  /**
+   * Updates the job completion tracker for the note.
+   */
+  private async updateCompletionTracker(
+    data: UpdateIngredientCountData,
+    deps: UpdateIngredientCountDeps
+  ): Promise<void> {
+    if (data.noteId && deps.database.incrementNoteCompletionTracker) {
       try {
-        if (deps.database.incrementNoteCompletionTracker) {
-          // Increment the completed jobs count by 1
-          await deps.database.incrementNoteCompletionTracker(noteId);
-          deps.logger?.log(
-            `[UPDATE_INGREDIENT_COUNT] Incremented completion tracker for note ${noteId}: ingredient ${currentIngredientIndex}/${totalIngredients} completed`
-          );
-        }
+        await deps.database.incrementNoteCompletionTracker(data.noteId);
+        deps.logger?.log(
+          `[UPDATE_INGREDIENT_COUNT] Incremented completion tracker for note ${data.noteId}: ingredient ${data.currentIngredientIndex}/${data.totalIngredients} completed`
+        );
       } catch (error) {
         deps.logger?.log(
-          `[UPDATE_INGREDIENT_COUNT] Failed to update completion tracker for note ${noteId}: ${error}`,
+          `[UPDATE_INGREDIENT_COUNT] Failed to update completion tracker for note ${data.noteId}: ${error}`,
           "error"
         );
       }
     }
+  }
 
+  /**
+   * Broadcasts the status update for ingredient processing.
+   */
+  private async broadcastStatus(
+    data: UpdateIngredientCountData,
+    deps: UpdateIngredientCountDeps,
+    isComplete: boolean
+  ): Promise<void> {
+    const status = isComplete ? "COMPLETED" : "PROCESSING";
+    const emoji = isComplete ? "✅" : "⏳";
     await deps.addStatusEventAndBroadcast({
-      importId,
-      noteId,
+      importId: data.importId,
+      noteId: data.noteId,
       status,
-      message: `${emoji} ${currentIngredientIndex}/${totalIngredients} ingredients`,
+      message: `${emoji} ${data.currentIngredientIndex}/${data.totalIngredients} ingredients`,
       context: "parse_html_ingredients",
-      indentLevel: 2, // Additional indentation for ingredients
+      indentLevel: 2,
       metadata: {
-        currentIngredientIndex,
-        totalIngredients,
+        currentIngredientIndex: data.currentIngredientIndex,
+        totalIngredients: data.totalIngredients,
         isComplete,
       },
     });
-
-    return data;
   }
 }

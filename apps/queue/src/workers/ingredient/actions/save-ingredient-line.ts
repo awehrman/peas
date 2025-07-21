@@ -1,158 +1,54 @@
 import { BaseAction } from "../../core/base-action";
 import { ActionContext } from "../../core/types";
-import type { IngredientWorkerDependencies } from "../types";
-import { ProcessIngredientLineOutput } from "./process-ingredient-line";
 import { DatabaseOperations } from "../../shared/database-operations";
+import type {
+  IngredientWorkerDependencies,
+  SaveIngredientLineInput,
+  SaveIngredientLineOutput,
+} from "../types";
+import { IngredientSegmentType } from "../types";
 
-export interface SaveIngredientLineInput extends ProcessIngredientLineOutput {
-  noteId: string;
-  ingredientLineId: string;
-  reference: string;
-  blockIndex: number;
-  lineIndex: number;
-  // Tracking information from job data
-  importId?: string;
-  currentIngredientIndex?: number;
-  totalIngredients?: number;
-}
-
-export interface SaveIngredientLineOutput {
-  // Pass through original input fields needed by next actions
-  noteId: string;
-  ingredientLineId: string;
-  reference: string;
-  blockIndex: number;
-  lineIndex: number;
-  parsedSegments?: Array<{
-    index: number;
-    rule: string;
-    type: string;
-    value: string;
-  }>;
-  // Tracking information from job data
-  importId?: string;
-  currentIngredientIndex?: number;
-  totalIngredients?: number;
-  // Save operation results
-  success: boolean;
-  segmentsSaved: number;
-  parseStatus: string;
-}
-
+/**
+ * Action to save a parsed ingredient line and its segments to the database.
+ * Handles validation, database operations, and ingredient tracking.
+ */
 export class SaveIngredientLineAction extends BaseAction<
   SaveIngredientLineInput,
   IngredientWorkerDependencies
 > {
   name = "save-ingredient-line";
 
+  /**
+   * Executes the save ingredient line action.
+   * @param input - The input data for saving the ingredient line.
+   * @param deps - The ingredient worker dependencies.
+   * @param _context - The action context (unused).
+   * @returns The output of the save operation.
+   */
   async execute(
     input: SaveIngredientLineInput,
     deps: IngredientWorkerDependencies,
     _context: ActionContext
   ): Promise<SaveIngredientLineOutput> {
     try {
-      const {
-        noteId,
-        ingredientLineId,
-        success,
-        parseStatus,
-        parsedSegments,
-        reference,
-      } = input;
-
-      // Validate required fields
-      if (!ingredientLineId) {
-        throw new Error(
-          "ingredientLineId is required for SaveIngredientLineAction"
+      this._validateInput(input);
+      this.logParsedSegments(input, deps);
+      const segmentsSaved = await this.saveToDatabase(input, deps);
+      if (
+        input.success &&
+        input.parsedSegments &&
+        input.parsedSegments.length > 0
+      ) {
+        await this.trackIngredients(
+          deps,
+          input.parsedSegments,
+          input.ingredientLineId,
+          input.reference,
+          input.noteId
         );
       }
-      if (!noteId) {
-        throw new Error("noteId is required for SaveIngredientLineAction");
-      }
-
-      // Log the parsed segments that will be saved
-      deps.logger?.log(
-        `[SAVE_INGREDIENT_LINE] Saving parsed segments for note ${noteId}, ingredientLineId=${ingredientLineId}: ${JSON.stringify(parsedSegments, null, 2)}`
-      );
-
-      // Save to Prisma database
-      let segmentsSaved = 0;
-
-      try {
-        const dbOps = new DatabaseOperations(deps.database.prisma);
-
-        // Create or update the ParsedIngredientLine with parse status
-        deps.logger?.log(
-          `[SAVE_INGREDIENT_LINE] Creating/updating ParsedIngredientLine for ${ingredientLineId}`
-        );
-        await dbOps.createOrUpdateParsedIngredientLine(ingredientLineId, {
-          blockIndex: input.blockIndex,
-          lineIndex: input.lineIndex,
-          reference: input.reference,
-          noteId: input.noteId,
-          parseStatus: parseStatus as "CORRECT" | "INCORRECT" | "ERROR",
-          parsedAt: success ? new Date() : undefined,
-        });
-        deps.logger?.log(
-          `[SAVE_INGREDIENT_LINE] Successfully created/updated ParsedIngredientLine for ${ingredientLineId}`
-        );
-
-        // If parsing was successful and we have segments, create ParsedSegment records
-        if (success && parsedSegments && parsedSegments.length > 0) {
-          deps.logger?.log(
-            `[SAVE_INGREDIENT_LINE] Saving ${parsedSegments.length} parsed segments for ${ingredientLineId}`
-          );
-          await dbOps.replaceParsedSegments(ingredientLineId, parsedSegments);
-          segmentsSaved = parsedSegments.length;
-          deps.logger?.log(
-            `[SAVE_INGREDIENT_LINE] Successfully saved ${segmentsSaved} parsed segments for ${ingredientLineId}`
-          );
-        } else {
-          deps.logger?.log(
-            `[SAVE_INGREDIENT_LINE] No segments to save: success=${success}, segmentsCount=${parsedSegments?.length || 0}`
-          );
-        }
-
-        // Track ingredients found in parsed segments
-        if (success && parsedSegments && parsedSegments.length > 0) {
-          await this.trackIngredients(
-            deps,
-            parsedSegments,
-            ingredientLineId,
-            reference,
-            noteId
-          );
-        }
-
-        deps.logger?.log(
-          `[SAVE_INGREDIENT_LINE] Successfully saved to database: noteId=${noteId}, ingredientLineId=${ingredientLineId}, parseStatus=${parseStatus}, segmentsSaved=${segmentsSaved}`
-        );
-      } catch (dbError) {
-        deps.logger?.log(
-          `[SAVE_INGREDIENT_LINE] Database save failed: ${dbError instanceof Error ? dbError.toString() : String(dbError)}`
-        );
-        throw new Error(`Database save failed: ${dbError}`);
-      }
-
-      const result: SaveIngredientLineOutput = {
-        // Pass through original input fields needed by next actions
-        noteId: input.noteId,
-        ingredientLineId: input.ingredientLineId,
-        reference: input.reference,
-        blockIndex: input.blockIndex,
-        lineIndex: input.lineIndex,
-        parsedSegments: input.parsedSegments,
-        // Tracking information from job data
-        importId: input.importId,
-        currentIngredientIndex: input.currentIngredientIndex,
-        totalIngredients: input.totalIngredients,
-        // Save operation results
-        success,
-        segmentsSaved,
-        parseStatus,
-      };
-
-      return result;
+      this.logSaveSuccess(input, deps, segmentsSaved);
+      return this.buildResult(input, segmentsSaved);
     } catch (error) {
       throw new Error(
         `Failed to save ingredient line: ${error instanceof Error ? error.message : String(error)}`
@@ -161,7 +57,124 @@ export class SaveIngredientLineAction extends BaseAction<
   }
 
   /**
-   * Track ingredients found in parsed segments and upsert them in the database
+   * Validates required input fields.
+   */
+  private _validateInput(input: SaveIngredientLineInput): void {
+    if (!input.ingredientLineId) {
+      throw new Error(
+        "ingredientLineId is required for SaveIngredientLineAction"
+      );
+    }
+    if (!input.noteId) {
+      throw new Error("noteId is required for SaveIngredientLineAction");
+    }
+  }
+
+  /**
+   * Logs the parsed segments that will be saved.
+   */
+  private logParsedSegments(
+    input: SaveIngredientLineInput,
+    deps: IngredientWorkerDependencies
+  ): void {
+    deps.logger?.log(
+      `[SAVE_INGREDIENT_LINE] Saving parsed segments for note ${input.noteId}, ingredientLineId=${input.ingredientLineId}: ${JSON.stringify(input.parsedSegments, null, 2)}`
+    );
+  }
+
+  /**
+   * Saves the parsed ingredient line and segments to the database.
+   * @returns The number of segments saved.
+   */
+  private async saveToDatabase(
+    input: SaveIngredientLineInput,
+    deps: IngredientWorkerDependencies
+  ): Promise<number> {
+    let segmentsSaved = 0;
+    try {
+      const dbOps = new DatabaseOperations(deps.database.prisma);
+      deps.logger?.log(
+        `[SAVE_INGREDIENT_LINE] Creating/updating ParsedIngredientLine for ${input.ingredientLineId}`
+      );
+      await dbOps.createOrUpdateParsedIngredientLine(input.ingredientLineId, {
+        blockIndex: input.blockIndex,
+        lineIndex: input.lineIndex,
+        reference: input.reference,
+        noteId: input.noteId,
+        parseStatus: input.parseStatus as "CORRECT" | "INCORRECT" | "ERROR",
+        parsedAt: input.success ? new Date() : undefined,
+      });
+      deps.logger?.log(
+        `[SAVE_INGREDIENT_LINE] Successfully created/updated ParsedIngredientLine for ${input.ingredientLineId}`
+      );
+      if (
+        input.success &&
+        input.parsedSegments &&
+        input.parsedSegments.length > 0
+      ) {
+        deps.logger?.log(
+          `[SAVE_INGREDIENT_LINE] Saving ${input.parsedSegments.length} parsed segments for ${input.ingredientLineId}`
+        );
+        await dbOps.replaceParsedSegments(
+          input.ingredientLineId,
+          input.parsedSegments
+        );
+        segmentsSaved = input.parsedSegments.length;
+        deps.logger?.log(
+          `[SAVE_INGREDIENT_LINE] Successfully saved ${segmentsSaved} parsed segments for ${input.ingredientLineId}`
+        );
+      } else {
+        deps.logger?.log(
+          `[SAVE_INGREDIENT_LINE] No segments to save: success=${input.success}, segmentsCount=${input.parsedSegments?.length || 0}`
+        );
+      }
+      return segmentsSaved;
+    } catch (dbError) {
+      deps.logger?.log(
+        `[SAVE_INGREDIENT_LINE] Database save failed: ${dbError instanceof Error ? dbError.toString() : String(dbError)}`
+      );
+      throw new Error(`Database save failed: ${dbError}`);
+    }
+  }
+
+  /**
+   * Logs a successful save operation.
+   */
+  private logSaveSuccess(
+    input: SaveIngredientLineInput,
+    deps: IngredientWorkerDependencies,
+    segmentsSaved: number
+  ): void {
+    deps.logger?.log(
+      `[SAVE_INGREDIENT_LINE] Successfully saved to database: noteId=${input.noteId}, ingredientLineId=${input.ingredientLineId}, parseStatus=${input.parseStatus}, segmentsSaved=${segmentsSaved}`
+    );
+  }
+
+  /**
+   * Builds the output object for the save operation.
+   */
+  private buildResult(
+    input: SaveIngredientLineInput,
+    segmentsSaved: number
+  ): SaveIngredientLineOutput {
+    return {
+      noteId: input.noteId,
+      ingredientLineId: input.ingredientLineId,
+      reference: input.reference,
+      blockIndex: input.blockIndex,
+      lineIndex: input.lineIndex,
+      parsedSegments: input.parsedSegments,
+      importId: input.importId,
+      currentIngredientIndex: input.currentIngredientIndex,
+      totalIngredients: input.totalIngredients,
+      success: input.success,
+      segmentsSaved,
+      parseStatus: input.parseStatus,
+    };
+  }
+
+  /**
+   * Track ingredients found in parsed segments and upsert them in the database.
    */
   private async trackIngredients(
     deps: IngredientWorkerDependencies,
@@ -183,44 +196,32 @@ export class SaveIngredientLineAction extends BaseAction<
         );
         return;
       }
-
       const dbOps = new DatabaseOperations(deps.database.prisma);
-
-      // Find all segments with type "ingredient"
       const ingredientSegments = parsedSegments.filter(
-        (segment) => segment.type === "ingredient"
+        (segment) => segment.type === IngredientSegmentType.Ingredient
       );
-
       if (ingredientSegments.length === 0) {
         deps.logger?.log(
           `[TRACK_INGREDIENTS] No ingredient segments found in line: "${reference}"`
         );
         return;
       }
-
       deps.logger?.log(
         `[TRACK_INGREDIENTS] Found ${ingredientSegments.length} ingredient(s) in line: "${reference}"`
       );
-
       for (const segment of ingredientSegments) {
         const ingredientName = segment.value.trim().toLowerCase();
-
         if (!ingredientName) {
           continue;
         }
-
-        // Find or create ingredient using DatabaseOperations
         const {
           id: ingredientId,
           name: name,
           isNew,
         } = await dbOps.findOrCreateIngredient(ingredientName, reference);
-
         deps.logger?.log(
           `[TRACK_INGREDIENTS] ${isNew ? "Created new" : "Found existing"} ingredient: "${name}" (ID: ${ingredientId})`
         );
-
-        // Create ingredient reference using DatabaseOperations
         await dbOps.createIngredientReference({
           ingredientId,
           parsedLineId: ingredientLineId,
@@ -229,7 +230,6 @@ export class SaveIngredientLineAction extends BaseAction<
           noteId,
           context: "main_ingredient",
         });
-
         deps.logger?.log(
           `[TRACK_INGREDIENTS] Created reference for "${name}" in line "${reference}"`
         );

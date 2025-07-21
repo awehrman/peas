@@ -1,5 +1,7 @@
 import { Queue } from "bullmq";
 
+import type { LogLevel } from "../types";
+
 /**
  * Base interface for job data - all job data should extend this
  */
@@ -13,7 +15,7 @@ export interface BaseJobData {
  */
 export interface BaseWorkerDependencies {
   logger: {
-    log: (message: string, level?: string) => void;
+    log: (message: string, level?: LogLevel) => void;
   };
   [key: string]: unknown;
 }

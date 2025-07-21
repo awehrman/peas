@@ -1,9 +1,12 @@
 import { LOG_MESSAGES } from "../config/constants";
 import { formatLogMessage, measureExecutionTime } from "../utils/utils";
-import type { IServiceContainer } from "./container";
+
+export interface InstructionServiceContainer {
+  logger: { log: (msg: string) => void };
+}
 
 export class InstructionService {
-  constructor(private container: IServiceContainer) {}
+  constructor(private container: InstructionServiceContainer) {}
 
   async updateInstructionLine(id: string, data: Record<string, unknown>) {
     const { result } = await measureExecutionTime(async () => {

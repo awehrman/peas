@@ -1,163 +1,161 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  type MockedFunction,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 
-import { mockLogger } from "../../../__tests__/test-utils";
-import type { ActionContext } from "../../../core/types";
 import { CompletionStatusAction } from "../../actions/completion-status";
 import type { CompletionStatusInput } from "../../actions/types";
-import { mockDatabaseService } from "../test-fixtures";
+import type { InstructionWorkerDependencies } from "../../types";
 
-function createDeps(overrides = {}) {
+interface TestContext {
+  jobId: string;
+  retryCount: number;
+  queueName: string;
+  noteId: string;
+  operation: string;
+  startTime: number;
+  workerName: string;
+  attemptNumber: number;
+}
+
+function createDeps(
+  overrides: Partial<InstructionWorkerDependencies> = {}
+): InstructionWorkerDependencies {
   return {
-    logger: mockLogger,
-    database: mockDatabaseService,
+    database: {
+      updateInstructionLine: vi.fn(),
+      createInstructionSteps: vi.fn(),
+      checkNoteCompletion: vi.fn().mockResolvedValue({
+        isComplete: false,
+        completedJobs: 1,
+        totalJobs: 2,
+      }),
+      ...overrides.database,
+    },
     addStatusEventAndBroadcast: vi.fn().mockResolvedValue(undefined),
-    ErrorHandler: { withErrorHandling: vi.fn(async (op) => op()) },
+    logger: { log: vi.fn() },
+    ErrorHandler: {
+      withErrorHandling: vi.fn(async (op) => op()),
+    },
     ...overrides,
   };
 }
 
-describe("CompletionStatusAction", () => {
+describe("CompletionStatusAction (Instruction)", () => {
   let action: CompletionStatusAction;
-  let deps: ReturnType<typeof createDeps>;
+  let deps: InstructionWorkerDependencies;
   let input: CompletionStatusInput;
+  let context: TestContext;
 
   beforeEach(() => {
+    // Clear completed notes between tests
+    CompletionStatusAction.clearCompletedNotes();
+
     action = new CompletionStatusAction();
     deps = createDeps();
     input = {
       noteId: "note-1",
-      instructionLineId: "line-1",
       importId: "import-1",
+      instructionLineId: "line-1",
+      success: true,
+      stepsSaved: 1,
+      parseStatus: "CORRECT",
       currentInstructionIndex: 1,
       totalInstructions: 2,
-      success: true,
-      parseStatus: "CORRECT",
-      stepsSaved: 1,
     };
-    vi.clearAllMocks();
-    CompletionStatusAction.clearCompletedNotes();
-  });
-
-  it("logs and skips if required fields are missing", async () => {
-    const missingInput = { ...input, noteId: undefined };
-    const context: ActionContext = {
+    context = {
       jobId: "job-1",
       retryCount: 0,
-      queueName: "test-queue",
-      noteId: missingInput.noteId,
-      operation: "test_operation",
+      queueName: "test",
+      noteId: "note-1",
+      operation: "test",
       startTime: Date.now(),
-      workerName: "test_worker",
+      workerName: "worker",
       attemptNumber: 1,
     };
-    const result = await action.execute(missingInput, deps, context);
-    expect(result).toBe(missingInput);
-    expect(deps.logger.log).toHaveBeenCalledWith(
-      expect.stringContaining("missing noteId or importId")
-    );
+  });
+
+  it("skips if noteId or importId is missing", async () => {
+    const missing = { ...input, noteId: undefined };
+    const result = await action.execute(missing, deps, context);
+    expect(result).toBe(missing);
+    expect(deps.addStatusEventAndBroadcast).not.toHaveBeenCalled();
   });
 
   it("skips if already completed", async () => {
-    deps.database.checkNoteCompletion = vi
-      .fn()
-      .mockResolvedValue({ isComplete: true, completedJobs: 1, totalJobs: 2 });
-    const context: ActionContext = {
-      jobId: "job-1",
-      retryCount: 0,
-      queueName: "test-queue",
-      noteId: input.noteId,
-      operation: "test_operation",
-      startTime: Date.now(),
-      workerName: "test_worker",
-      attemptNumber: 1,
-    };
+    // Mark as completed first
+    const checkNoteCompletion = deps.database
+      .checkNoteCompletion as MockedFunction<
+      NonNullable<typeof deps.database.checkNoteCompletion>
+    >;
+    checkNoteCompletion.mockResolvedValue({
+      isComplete: true,
+      completedJobs: 2,
+      totalJobs: 2,
+    });
+
     await action.execute(input, deps, context);
-    // Second call should skip
+
+    // Should skip on second call
     const result = await action.execute(input, deps, context);
     expect(result).toBe(input);
-    expect(deps.logger.log).toHaveBeenCalledWith(
-      expect.stringContaining("already marked as complete")
-    );
+    expect(deps.addStatusEventAndBroadcast).toHaveBeenCalledTimes(1);
   });
 
   it("logs and skips if checkNoteCompletion is missing", async () => {
-    const depsNoCheck = createDeps({
-      database: { ...mockDatabaseService, checkNoteCompletion: undefined },
+    deps = createDeps({
+      database: {
+        updateInstructionLine: async () => undefined,
+        createInstructionSteps: async () => undefined,
+      },
     });
-    const context: ActionContext = {
-      jobId: "job-1",
-      retryCount: 0,
-      queueName: "test-queue",
-      noteId: input.noteId,
-      operation: "test_operation",
-      startTime: Date.now(),
-      workerName: "test_worker",
-      attemptNumber: 1,
-    };
-    const result = await action.execute(input, depsNoCheck, context);
+    const result = await action.execute(input, deps, context);
     expect(result).toBe(input);
-    expect(depsNoCheck.logger.log).toHaveBeenCalledWith(
-      expect.stringContaining("checkNoteCompletion method not available")
-    );
+    expect(deps.addStatusEventAndBroadcast).not.toHaveBeenCalled();
   });
 
   it("logs and skips if checkNoteCompletion throws", async () => {
-    deps.database.checkNoteCompletion = vi
-      .fn()
-      .mockRejectedValue(new Error("fail"));
-    const context: ActionContext = {
-      jobId: "job-1",
-      retryCount: 0,
-      queueName: "test-queue",
-      noteId: input.noteId,
-      operation: "test_operation",
-      startTime: Date.now(),
-      workerName: "test_worker",
-      attemptNumber: 1,
-    };
+    deps = createDeps({
+      database: {
+        updateInstructionLine: async () => undefined,
+        createInstructionSteps: async () => undefined,
+        checkNoteCompletion: vi.fn().mockRejectedValue(new Error("fail")),
+      },
+    });
     const result = await action.execute(input, deps, context);
     expect(result).toBe(input);
-    expect(deps.logger.log).toHaveBeenCalledWith(
-      expect.stringContaining("Error checking completion status")
-    );
+    expect(deps.addStatusEventAndBroadcast).not.toHaveBeenCalled();
   });
 
-  it("logs not complete if isComplete is false", async () => {
-    deps.database.checkNoteCompletion = vi
-      .fn()
-      .mockResolvedValue({ isComplete: false, completedJobs: 1, totalJobs: 2 });
-    const context: ActionContext = {
-      jobId: "job-1",
-      retryCount: 0,
-      queueName: "test-queue",
-      noteId: input.noteId,
-      operation: "test_operation",
-      startTime: Date.now(),
-      workerName: "test_worker",
-      attemptNumber: 1,
-    };
+  it("does not broadcast when not complete", async () => {
+    const checkNoteCompletion = deps.database
+      .checkNoteCompletion as MockedFunction<
+      NonNullable<typeof deps.database.checkNoteCompletion>
+    >;
+    checkNoteCompletion.mockResolvedValue({
+      isComplete: false,
+      completedJobs: 1,
+      totalJobs: 2,
+    });
     const result = await action.execute(input, deps, context);
     expect(result).toBe(input);
-    expect(deps.logger.log).toHaveBeenCalledWith(
-      expect.stringContaining("not yet complete")
-    );
+    expect(deps.addStatusEventAndBroadcast).not.toHaveBeenCalled();
   });
 
-  it("broadcasts and logs if isComplete is true", async () => {
-    deps.database.checkNoteCompletion = vi
-      .fn()
-      .mockResolvedValue({ isComplete: true, completedJobs: 2, totalJobs: 2 });
-    deps.database.getNoteTitle = vi.fn().mockResolvedValue("Test Note");
-    const context: ActionContext = {
-      jobId: "job-1",
-      retryCount: 0,
-      queueName: "test-queue",
-      noteId: input.noteId,
-      operation: "test_operation",
-      startTime: Date.now(),
-      workerName: "test_worker",
-      attemptNumber: 1,
-    };
+  it("broadcasts COMPLETED if complete", async () => {
+    const checkNoteCompletion = deps.database
+      .checkNoteCompletion as MockedFunction<
+      NonNullable<typeof deps.database.checkNoteCompletion>
+    >;
+    checkNoteCompletion.mockResolvedValue({
+      isComplete: true,
+      completedJobs: 2,
+      totalJobs: 2,
+    });
     const result = await action.execute(input, deps, context);
     expect(result).toBe(input);
     expect(deps.addStatusEventAndBroadcast).toHaveBeenCalledWith(
@@ -166,42 +164,92 @@ describe("CompletionStatusAction", () => {
         noteId: input.noteId,
         status: "COMPLETED",
         message: expect.any(String),
+        context: expect.any(String),
         metadata: expect.objectContaining({
           completedJobs: 2,
           totalJobs: 2,
+        }),
+      })
+    );
+  });
+
+  it("enriches metadata with noteTitle if getNoteTitle is present", async () => {
+    const checkNoteCompletion = deps.database
+      .checkNoteCompletion as MockedFunction<
+      NonNullable<typeof deps.database.checkNoteCompletion>
+    >;
+    checkNoteCompletion.mockResolvedValue({
+      isComplete: true,
+      completedJobs: 2,
+      totalJobs: 2,
+    });
+
+    deps = createDeps({
+      database: {
+        ...deps.database,
+        getNoteTitle: vi.fn().mockResolvedValue("Test Note"),
+      },
+    });
+
+    const result = await action.execute(input, deps, context);
+    expect(result).toBe(input);
+    expect(deps.addStatusEventAndBroadcast).toHaveBeenCalledWith(
+      expect.objectContaining({
+        metadata: expect.objectContaining({
           noteTitle: "Test Note",
         }),
       })
     );
-    expect(deps.logger.log).toHaveBeenCalledWith(
-      expect.stringContaining("Successfully broadcast completion")
-    );
   });
 
   it("handles error in getNoteTitle gracefully", async () => {
-    deps.database.checkNoteCompletion = vi
-      .fn()
-      .mockResolvedValue({ isComplete: true, completedJobs: 2, totalJobs: 2 });
-    deps.database.getNoteTitle = vi.fn().mockRejectedValue(new Error("fail"));
-    const context: ActionContext = {
-      jobId: "job-1",
-      retryCount: 0,
-      queueName: "test-queue",
-      noteId: input.noteId,
-      operation: "test_operation",
-      startTime: Date.now(),
-      workerName: "test_worker",
-      attemptNumber: 1,
-    };
+    const checkNoteCompletion = deps.database
+      .checkNoteCompletion as MockedFunction<
+      NonNullable<typeof deps.database.checkNoteCompletion>
+    >;
+    checkNoteCompletion.mockResolvedValue({
+      isComplete: true,
+      completedJobs: 2,
+      totalJobs: 2,
+    });
+
+    deps = createDeps({
+      database: {
+        ...deps.database,
+        getNoteTitle: vi.fn().mockRejectedValue(new Error("fail")),
+      },
+    });
+
     const result = await action.execute(input, deps, context);
     expect(result).toBe(input);
-    expect(deps.logger.log).toHaveBeenCalledWith(
-      expect.stringContaining("Error getting note title")
-    );
     expect(deps.addStatusEventAndBroadcast).toHaveBeenCalledWith(
       expect.objectContaining({
-        status: "COMPLETED",
+        metadata: expect.not.objectContaining({
+          noteTitle: expect.anything(),
+        }),
       })
+    );
+  });
+
+  it("logs error if addStatusEventAndBroadcast throws", async () => {
+    const checkNoteCompletion = deps.database
+      .checkNoteCompletion as MockedFunction<
+      NonNullable<typeof deps.database.checkNoteCompletion>
+    >;
+    checkNoteCompletion.mockResolvedValue({
+      isComplete: true,
+      completedJobs: 2,
+      totalJobs: 2,
+    });
+
+    deps.addStatusEventAndBroadcast = vi
+      .fn()
+      .mockRejectedValue(new Error("fail"));
+    await action.execute(input, deps, context);
+    expect(deps.logger.log).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "Error checking completion status for note note-1: Error: fail"
+      )
     );
   });
 });
