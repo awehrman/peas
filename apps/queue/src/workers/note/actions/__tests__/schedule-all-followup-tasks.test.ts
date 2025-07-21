@@ -75,6 +75,9 @@ describe("ScheduleAllFollowupTasksAction", () => {
         "[SCHEDULE_ALL_FOLLOWUP] Scheduling all follow-up tasks for note test-note-456"
       );
       expect(mockDeps.logger.log).toHaveBeenCalledWith(
+        "[SCHEDULE_ALL_FOLLOWUP] Total jobs to track: 0 (0 ingredients, 0 instructions)"
+      );
+      expect(mockDeps.logger.log).toHaveBeenCalledWith(
         "[SCHEDULE_ALL_FOLLOWUP] Scheduled 0 tasks successfully, 0 failed for note test-note-456"
       );
     });
@@ -184,6 +187,15 @@ describe("ScheduleAllFollowupTasksAction", () => {
         }
       );
 
+      expect(mockDeps.logger.log).toHaveBeenCalledWith(
+        "[SCHEDULE_ALL_FOLLOWUP] Total jobs to track: 4 (2 ingredients, 2 instructions)"
+      );
+      expect(
+        mockDeps.database.createNoteCompletionTracker
+      ).toHaveBeenCalledWith("test-note-456", 4);
+      expect(mockDeps.logger.log).toHaveBeenCalledWith(
+        "[SCHEDULE_ALL_FOLLOWUP] Created completion tracker for note test-note-456 with 4 total jobs"
+      );
       expect(mockDeps.logger.log).toHaveBeenCalledWith(
         "[SCHEDULE_ALL_FOLLOWUP] Scheduled 4 tasks successfully, 0 failed for note test-note-456"
       );
@@ -334,6 +346,222 @@ describe("ScheduleAllFollowupTasksAction", () => {
 
       expect(mockDeps.logger.log).toHaveBeenCalledWith(
         "[SCHEDULE_ALL_FOLLOWUP] Scheduled 3 tasks successfully, 0 failed for note test-note-456"
+      );
+    });
+
+    it("should handle instruction queue failures", async () => {
+      const data: NotePipelineStage3 = {
+        importId: "test-import-123",
+        content: "test content",
+        file: {
+          title: "Test Recipe",
+          contents: "test content",
+          ingredients: [],
+          instructions: [],
+        },
+        note: {
+          id: "test-note-456",
+          title: "Test Recipe",
+          content: "test content",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          parsedIngredientLines: [],
+          parsedInstructionLines: [
+            {
+              id: "instruction-1",
+              originalText: "Mix ingredients",
+              lineIndex: 0,
+            },
+            {
+              id: "instruction-2",
+              originalText: "Bake at 350F",
+              lineIndex: 1,
+            },
+          ],
+        },
+      };
+
+      // Mock instruction queue to fail on first call, succeed on second
+      const mockInstructionAdd = vi
+        .fn()
+        .mockRejectedValueOnce(new Error("Instruction queue error"))
+        .mockResolvedValueOnce({ id: "instruction-job-123" });
+      mockDeps.instructionQueue.add = mockInstructionAdd;
+
+      const result = await action.execute(data, mockDeps, mockContext);
+
+      expect(result).toEqual(data);
+      expect(mockDeps.logger.log).toHaveBeenCalledWith(
+        "[SCHEDULE_ALL_FOLLOWUP] Failed to schedule instruction 1: Error: Instruction queue error",
+        "error"
+      );
+      expect(mockDeps.logger.log).toHaveBeenCalledWith(
+        "[SCHEDULE_ALL_FOLLOWUP] Scheduled 1 tasks successfully, 1 failed for note test-note-456"
+      );
+    });
+
+    it("should handle both ingredient and instruction queue failures", async () => {
+      const data: NotePipelineStage3 = {
+        importId: "test-import-123",
+        content: "test content",
+        file: {
+          title: "Test Recipe",
+          contents: "test content",
+          ingredients: [],
+          instructions: [],
+        },
+        note: {
+          id: "test-note-456",
+          title: "Test Recipe",
+          content: "test content",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          parsedIngredientLines: [
+            {
+              id: "ingredient-1",
+              reference: "2 cups flour",
+              blockIndex: 0,
+              lineIndex: 0,
+            },
+          ],
+          parsedInstructionLines: [
+            {
+              id: "instruction-1",
+              originalText: "Mix ingredients",
+              lineIndex: 0,
+            },
+          ],
+        },
+      };
+
+      // Mock both queues to fail
+      mockDeps.ingredientQueue.add = vi
+        .fn()
+        .mockRejectedValue(new Error("Ingredient queue error"));
+      mockDeps.instructionQueue.add = vi
+        .fn()
+        .mockRejectedValue(new Error("Instruction queue error"));
+
+      const result = await action.execute(data, mockDeps, mockContext);
+
+      expect(result).toEqual(data);
+      expect(mockDeps.logger.log).toHaveBeenCalledWith(
+        "[SCHEDULE_ALL_FOLLOWUP] Failed to schedule ingredient 1: Error: Ingredient queue error",
+        "error"
+      );
+      expect(mockDeps.logger.log).toHaveBeenCalledWith(
+        "[SCHEDULE_ALL_FOLLOWUP] Failed to schedule instruction 1: Error: Instruction queue error",
+        "error"
+      );
+      expect(mockDeps.logger.log).toHaveBeenCalledWith(
+        "[SCHEDULE_ALL_FOLLOWUP] Scheduled 0 tasks successfully, 2 failed for note test-note-456"
+      );
+    });
+
+    it("should handle note with undefined parsedIngredientLines", async () => {
+      const data: NotePipelineStage3 = {
+        importId: "test-import-123",
+        content: "test content",
+        file: {
+          title: "Test Recipe",
+          contents: "test content",
+          ingredients: [],
+          instructions: [],
+        },
+        note: {
+          id: "test-note-456",
+          title: "Test Recipe",
+          content: "test content",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          parsedIngredientLines: undefined as unknown as [],
+          parsedInstructionLines: [
+            {
+              id: "instruction-1",
+              originalText: "Mix ingredients",
+              lineIndex: 0,
+            },
+          ],
+        },
+      };
+
+      const result = await action.execute(data, mockDeps, mockContext);
+
+      expect(result).toEqual(data);
+      expect(mockDeps.ingredientQueue.add).not.toHaveBeenCalled();
+      expect(mockDeps.instructionQueue.add).toHaveBeenCalledTimes(1);
+      expect(mockDeps.logger.log).toHaveBeenCalledWith(
+        "[SCHEDULE_ALL_FOLLOWUP] Total jobs to track: 1 (0 ingredients, 1 instructions)"
+      );
+    });
+
+    it("should handle note with undefined parsedInstructionLines", async () => {
+      const data: NotePipelineStage3 = {
+        importId: "test-import-123",
+        content: "test content",
+        file: {
+          title: "Test Recipe",
+          contents: "test content",
+          ingredients: [],
+          instructions: [],
+        },
+        note: {
+          id: "test-note-456",
+          title: "Test Recipe",
+          content: "test content",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          parsedIngredientLines: [
+            {
+              id: "ingredient-1",
+              reference: "2 cups flour",
+              blockIndex: 0,
+              lineIndex: 0,
+            },
+          ],
+          parsedInstructionLines: undefined as unknown as [],
+        },
+      };
+
+      const result = await action.execute(data, mockDeps, mockContext);
+
+      expect(result).toEqual(data);
+      expect(mockDeps.ingredientQueue.add).toHaveBeenCalledTimes(1);
+      expect(mockDeps.instructionQueue.add).not.toHaveBeenCalled();
+      expect(mockDeps.logger.log).toHaveBeenCalledWith(
+        "[SCHEDULE_ALL_FOLLOWUP] Total jobs to track: 1 (1 ingredients, 0 instructions)"
+      );
+    });
+
+    it("should not create completion tracker when totalJobs is 0", async () => {
+      const data: NotePipelineStage3 = {
+        importId: "test-import-123",
+        content: "test content",
+        file: {
+          title: "Test Recipe",
+          contents: "test content",
+          ingredients: [],
+          instructions: [],
+        },
+        note: {
+          id: "test-note-456",
+          title: "Test Recipe",
+          content: "test content",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          parsedIngredientLines: [],
+          parsedInstructionLines: [],
+        },
+      };
+
+      const result = await action.execute(data, mockDeps, mockContext);
+
+      expect(result).toEqual(data);
+      expect(
+        mockDeps.database.createNoteCompletionTracker
+      ).not.toHaveBeenCalled();
+      expect(mockDeps.logger.log).toHaveBeenCalledWith(
+        "[SCHEDULE_ALL_FOLLOWUP] Total jobs to track: 0 (0 ingredients, 0 instructions)"
       );
     });
 
@@ -531,6 +759,103 @@ describe("ScheduleAllFollowupTasksAction", () => {
 
       expect(mockDeps.logger.log).toHaveBeenCalledWith(
         "[SCHEDULE_ALL_FOLLOWUP] Scheduled 3 tasks successfully, 2 failed for note test-note-456"
+      );
+    });
+
+    it("should handle ingredient scheduling promise rejection", async () => {
+      const note = {
+        id: "test-note-456",
+        title: "Test Recipe",
+        content: "test content",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        parsedIngredientLines: [
+          {
+            id: "ingredient-1",
+            reference: "2 cups flour",
+            blockIndex: 0,
+            lineIndex: 0,
+          },
+        ],
+        parsedInstructionLines: [],
+      };
+
+      const importId = "test-import-123";
+
+      // Mock ingredient queue to reject
+      mockDeps.ingredientQueue.add = vi
+        .fn()
+        .mockRejectedValue(new Error("Ingredient queue error"));
+
+      // Access private method using type assertion
+      const createPromises = (
+        action as unknown as {
+          createIngredientSchedulingPromises: (
+            note: NotePipelineStage3["note"],
+            importId: string,
+            deps: ScheduleAllFollowupTasksDeps
+          ) => Promise<unknown>[];
+        }
+      ).createIngredientSchedulingPromises.bind(action);
+      const promises = createPromises(note, importId, mockDeps);
+
+      expect(promises).toHaveLength(1);
+
+      // Execute the promise to verify error handling
+      const results = await Promise.all(promises);
+      expect(results).toHaveLength(1);
+      expect(results[0]).toBe(null);
+      expect(mockDeps.logger.log).toHaveBeenCalledWith(
+        "[SCHEDULE_ALL_FOLLOWUP] Failed to schedule ingredient 1: Error: Ingredient queue error",
+        "error"
+      );
+    });
+
+    it("should handle instruction scheduling promise rejection", async () => {
+      const note = {
+        id: "test-note-456",
+        title: "Test Recipe",
+        content: "test content",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        parsedIngredientLines: [],
+        parsedInstructionLines: [
+          {
+            id: "instruction-1",
+            originalText: "Mix ingredients",
+            lineIndex: 0,
+          },
+        ],
+      };
+
+      const importId = "test-import-123";
+
+      // Mock instruction queue to reject
+      mockDeps.instructionQueue.add = vi
+        .fn()
+        .mockRejectedValue(new Error("Instruction queue error"));
+
+      // Access private method using type assertion
+      const createPromises = (
+        action as unknown as {
+          createInstructionSchedulingPromises: (
+            note: NotePipelineStage3["note"],
+            importId: string,
+            deps: ScheduleAllFollowupTasksDeps
+          ) => Promise<unknown>[];
+        }
+      ).createInstructionSchedulingPromises.bind(action);
+      const promises = createPromises(note, importId, mockDeps);
+
+      expect(promises).toHaveLength(1);
+
+      // Execute the promise to verify error handling
+      const results = await Promise.all(promises);
+      expect(results).toHaveLength(1);
+      expect(results[0]).toBe(null);
+      expect(mockDeps.logger.log).toHaveBeenCalledWith(
+        "[SCHEDULE_ALL_FOLLOWUP] Failed to schedule instruction 1: Error: Instruction queue error",
+        "error"
       );
     });
   });
