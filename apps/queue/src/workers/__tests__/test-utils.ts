@@ -1,7 +1,12 @@
-import { vi, type MockedFunction, expect } from "vitest";
+import { PrismaClient } from "@peas/database";
 import type { Queue } from "bullmq";
+import { type MockedFunction, expect, vi } from "vitest";
+
 import type { IServiceContainer } from "../../services/container";
+import { HealthMonitor } from "../../utils/health-monitor";
+import { ActionFactory } from "../core/action-factory";
 import type { ActionContext } from "../core/types";
+import { PatternTracker } from "../shared/pattern-tracker";
 
 // ============================================================================
 // MOCK SERVICE CONTAINER
@@ -48,6 +53,13 @@ export function createMockServiceContainer(): IServiceContainer {
       prisma: {
         $disconnect: vi.fn().mockResolvedValue(undefined),
       } as unknown as typeof import("@peas/database").prisma,
+      patternTracker: new PatternTracker({} as PrismaClient),
+      updateInstructionLine: vi.fn(),
+      createInstructionSteps: vi.fn(),
+      updateNoteCompletionTracker: vi.fn(),
+      incrementNoteCompletionTracker: vi.fn(),
+      checkNoteCompletion: vi.fn(),
+      getNoteTitle: vi.fn(),
     },
     errorHandler: {
       errorHandler: {
@@ -110,6 +122,8 @@ export function createMockServiceContainer(): IServiceContainer {
     config: {
       port: 4200,
       wsPort: 8080,
+      wsHost: "localhost",
+      wsUrl: "ws://localhost:8080",
       redisConnection: {
         host: "localhost",
         port: 6379,
@@ -149,27 +163,20 @@ export function createMockActionContext(
 // MOCK DEPENDENCIES
 // ============================================================================
 
-export function createMockLogger() {
-  return {
-    log: vi.fn(),
-  };
-}
-
+/**
+ * Generic mock for ErrorHandler (reusable for all worker/queue tests)
+ */
 export function createMockErrorHandler() {
   return {
-    withErrorHandling: vi.fn().mockImplementation(async (operation) => {
-      return await operation();
-    }),
-    createJobError: vi
-      .fn()
-      .mockImplementation((error, type, severity, context) => ({
-        message: error.message,
-        type,
-        severity,
-        context,
-        timestamp: new Date(),
-      })),
-    classifyError: vi.fn().mockImplementation((error) => ({
+    withErrorHandling: vi.fn(async (operation) => await operation()),
+    createJobError: vi.fn((error, type, severity, context) => ({
+      message: error.message,
+      type,
+      severity,
+      context,
+      timestamp: new Date(),
+    })),
+    classifyError: vi.fn((error) => ({
       message: error.message,
       type: "UNKNOWN_ERROR",
       severity: "MEDIUM",
@@ -179,6 +186,58 @@ export function createMockErrorHandler() {
     logError: vi.fn(),
   };
 }
+
+/**
+ * Generic mock for HealthMonitor (reusable for all worker/queue tests)
+ */
+export function createMockHealthMonitor(): HealthMonitor {
+  return {
+    healthCache: {},
+    lastCheckTime: 0,
+    CACHE_DURATION_MS: 0,
+    TIMEOUT_MS: 0,
+    getInstance: vi.fn(),
+    check: vi.fn(),
+    getStatus: vi.fn(),
+    updateStatus: vi.fn(),
+    getHealth: vi.fn(),
+    performHealthChecks: vi.fn(),
+    checkDatabaseHealth: vi.fn(),
+    checkRedisHealth: vi.fn(),
+    checkQueueHealth: vi.fn(),
+    checkWebSocketHealth: vi.fn(),
+    checkConfigHealth: vi.fn(),
+    checkMetricsHealth: vi.fn(),
+    checkParsersHealth: vi.fn(),
+    checkWorkersHealth: vi.fn(),
+    checkLoggerHealth: vi.fn(),
+  } as unknown as HealthMonitor;
+}
+
+/**
+ * Generic mock for logger (reusable for all worker/queue tests)
+ */
+export function createMockLogger() {
+  return { log: vi.fn() };
+}
+export const mockLogger = createMockLogger();
+
+/**
+ * Generic mock for QueueService (reusable for all worker/queue tests)
+ */
+export const mockQueueService = {
+  noteQueue: {} as Queue,
+  imageQueue: {} as Queue,
+  ingredientQueue: {} as Queue,
+  instructionQueue: {} as Queue,
+  categorizationQueue: {} as Queue,
+  sourceQueue: {} as Queue,
+};
+
+/**
+ * Generic mock for ActionFactory (reusable for all worker/queue tests)
+ */
+export const mockActionFactory = new ActionFactory();
 
 export function createMockStatusBroadcaster() {
   return vi.fn().mockResolvedValue(undefined);

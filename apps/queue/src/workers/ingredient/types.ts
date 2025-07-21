@@ -2,9 +2,19 @@ import type { BaseWorkerDependencies, BaseJobData } from "../types";
 import type { IDatabaseService } from "../../services";
 import { Queue } from "bullmq";
 
-// Ingredient Worker Dependencies
 export interface IngredientWorkerDependencies extends BaseWorkerDependencies {
-  database: IDatabaseService;
+  database: IDatabaseService & {
+    updateNoteCompletionTracker?: (
+      noteId: string,
+      completedJobs: number
+    ) => Promise<unknown>;
+    incrementNoteCompletionTracker?: (noteId: string) => Promise<unknown>;
+    checkNoteCompletion?: (noteId: string) => Promise<{
+      isComplete: boolean;
+      completedJobs: number;
+      totalJobs: number;
+    }>;
+  };
   parseIngredient: (text: string) => Promise<ParsedIngredientResult>;
   categorizationQueue: Queue; // Add categorization queue for scheduling
 }

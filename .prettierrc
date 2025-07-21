@@ -4,5 +4,17 @@
   "singleQuote": false,
   "printWidth": 80,
   "tabWidth": 2,
-  "useTabs": false
+  "useTabs": false,
+  "plugins": ["@trivago/prettier-plugin-sort-imports"],
+  "importOrder": [
+    "^react$",
+    "^next",
+    "^@?\\w",
+    "^\\.\\.(?!/?$)",
+    "^\\./(?=.*/)(?!/?$)",
+    "^\\./?$",
+    "^.+\\.s?css$"
+  ],
+  "importOrderSeparation": true,
+  "importOrderSortSpecifiers": true
 }

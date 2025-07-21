@@ -1,8 +1,9 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
-import { createIngredientWorker } from "../ingredient-worker";
-import { Queue } from "bullmq";
 import { PrismaClient } from "@peas/database";
+import { Queue } from "bullmq";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
 import { ErrorHandler } from "../../../utils/error-handler";
+import { createIngredientWorker } from "../worker";
 
 // Mock the parser module
 vi.mock("@peas/parser", () => ({

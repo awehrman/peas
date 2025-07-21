@@ -1,18 +1,20 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { ErrorType, ErrorSeverity } from "../../types";
 import {
-  createMockServiceContainer,
   createMockActionContext,
-  createMockLogger,
   createMockErrorHandler,
-  createMockStatusBroadcaster,
+  createMockLogger,
   createMockNoteJobData,
   createMockParsedHtmlFile,
-  expectActionToHaveBeenCalledWith,
-  expectActionToHaveBeenCalledTimes,
+  createMockServiceContainer,
+  createMockStatusBroadcaster,
   expectActionToHaveBeenCalledOnce,
+  expectActionToHaveBeenCalledTimes,
+  expectActionToHaveBeenCalledWith,
   expectActionToHaveBeenCalledWithMatch,
 } from "./test-utils";
+
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { ErrorSeverity, ErrorType } from "../../types";
 
 describe("test-utils", () => {
   beforeEach(() => {
@@ -189,6 +191,8 @@ describe("test-utils", () => {
       expect(container.config).toEqual({
         port: 4200,
         wsPort: 8080,
+        wsHost: "localhost",
+        wsUrl: "ws://localhost:8080",
         redisConnection: {
           host: "localhost",
           port: 6379,

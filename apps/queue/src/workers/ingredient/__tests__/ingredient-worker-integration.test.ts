@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { describe, it, expect, beforeEach, vi } from "vitest";
-import { IngredientWorker } from "../ingredient-worker";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
 import type { IngredientWorkerDependencies } from "../types";
+import { IngredientWorker } from "../worker";
 
 describe("IngredientWorker Integration", () => {
   let worker: IngredientWorker;

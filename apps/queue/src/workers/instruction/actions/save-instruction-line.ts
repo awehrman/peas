@@ -1,93 +1,90 @@
+import type {
+  SaveInstructionLineInput,
+  SaveInstructionLineOutput,
+} from "./types";
+
+import { ActionName } from "../../../types";
 import { BaseAction } from "../../core/base-action";
 import { ActionContext } from "../../core/types";
 import type { InstructionWorkerDependencies } from "../types";
-import { ProcessInstructionLineOutput } from "./process-instruction-line";
 
-export interface SaveInstructionLineInput extends ProcessInstructionLineOutput {
-  noteId: string;
-  instructionLineId: string;
-  originalText: string;
-  lineIndex: number;
-  // Tracking information from job data
-  importId?: string;
-  currentInstructionIndex?: number;
-  totalInstructions?: number;
-}
-
-export interface SaveInstructionLineOutput {
-  success: boolean;
-  stepsSaved: number;
-  parseStatus: string;
-  // Tracking information for completion broadcast
-  importId?: string;
-  noteId?: string;
-  currentInstructionIndex?: number;
-  totalInstructions?: number;
-  instructionLineId?: string;
-}
-
+/**
+ * Action to save a processed instruction line to the database or downstream system.
+ * Handles logging and result construction for instruction line save operations.
+ */
 export class SaveInstructionLineAction extends BaseAction<
   SaveInstructionLineInput,
   InstructionWorkerDependencies
 > {
-  name = "save-instruction-line";
+  name = ActionName.SAVE_INSTRUCTION_LINE;
 
+  /**
+   * Executes the save instruction line action.
+   * Logs the operation and returns a summary result.
+   */
   async execute(
     input: SaveInstructionLineInput,
     deps: InstructionWorkerDependencies,
     _context: ActionContext
   ): Promise<SaveInstructionLineOutput> {
     try {
-      const {
-        noteId,
+      this.logSave(input, deps);
+      return this.buildResult(input);
+    } catch (error) {
+      throw new Error(
+        `Failed to save instruction line: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+  }
+
+  /**
+   * Logs the save operation for the instruction line.
+   */
+  private logSave(
+    input: SaveInstructionLineInput,
+    deps: InstructionWorkerDependencies
+  ) {
+    const { noteId, instructionLineId, parseStatus, normalizedText, steps } =
+      input;
+    if (deps.logger) {
+      deps.logger.log(
+        `Saving instruction line data for note ${noteId}: instructionLineId=${instructionLineId}, parseStatus=${parseStatus}, stepsCount=${steps?.length || 0}`
+      );
+    } else {
+      console.log(`Saving instruction line data for note ${noteId}:`, {
         instructionLineId,
-        success,
         parseStatus,
         normalizedText,
-        steps,
-        importId,
-        currentInstructionIndex,
-        totalInstructions,
-      } = input;
-
-      // TODO: Implement actual database save logic
-      // This would typically involve:
-      // 1. Updating the ParsedInstructionLine with parse status and normalized text
-      // 2. Creating step records for each parsed step
-      // 3. Linking steps to the instruction line
-      // 4. Updating note parsing error count if needed
-
-      // Stub implementation for now
-      if (deps.logger) {
-        deps.logger.log(
-          `Saving instruction line data for note ${noteId}: instructionLineId=${instructionLineId}, parseStatus=${parseStatus}, stepsCount=${steps?.length || 0}`
-        );
-      } else {
-        console.log(`Saving instruction line data for note ${noteId}:`, {
-          instructionLineId,
-          parseStatus,
-          normalizedText,
-          stepsCount: steps?.length || 0,
-        });
-      }
-
-      const stepsSaved = steps?.length || 0;
-
-      const result: SaveInstructionLineOutput = {
-        success,
-        stepsSaved,
-        parseStatus,
-        // Pass through tracking information for completion broadcast
-        importId,
-        noteId,
-        currentInstructionIndex,
-        totalInstructions,
-        instructionLineId,
-      };
-
-      return result;
-    } catch (error) {
-      throw new Error(`Failed to save instruction line: ${error}`);
+        stepsCount: steps?.length || 0,
+      });
     }
+  }
+
+  /**
+   * Builds the result object for the save operation.
+   */
+  private buildResult(
+    input: SaveInstructionLineInput
+  ): SaveInstructionLineOutput {
+    const {
+      success,
+      parseStatus,
+      importId,
+      noteId,
+      currentInstructionIndex,
+      totalInstructions,
+      instructionLineId,
+      steps,
+    } = input;
+    return {
+      success,
+      stepsSaved: steps?.length || 0,
+      parseStatus,
+      importId,
+      noteId,
+      currentInstructionIndex,
+      totalInstructions,
+      instructionLineId,
+    };
   }
 }

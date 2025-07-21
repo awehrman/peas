@@ -1,5 +1,6 @@
-import { prisma } from "../config/database";
 import type { ParsedHTMLFile } from "@peas/database";
+
+import { prisma } from "../config/database";
 import { PatternTracker } from "../workers/shared/pattern-tracker";
 
 export interface IDatabaseService {
@@ -21,6 +22,13 @@ export interface IDatabaseService {
     totalJobs: number;
   }>;
   getNoteTitle?: (noteId: string) => Promise<string | null>;
+  updateInstructionLine?: (
+    id: string,
+    data: Record<string, unknown>
+  ) => Promise<unknown>;
+  createInstructionSteps?: (
+    steps: Array<Record<string, unknown>>
+  ) => Promise<unknown>;
 }
 
 // In-memory job completion tracker

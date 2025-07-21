@@ -1,68 +1,75 @@
+import type {
+  InstructionCompletedStatusData,
+  InstructionCompletedStatusDeps,
+} from "./types";
+
+import { ActionName } from "../../../types";
 import { BaseAction } from "../../core/base-action";
 import { ActionContext } from "../../core/types";
 
-export interface InstructionCompletedStatusDeps {
-  addStatusEventAndBroadcast: (event: {
-    importId: string;
-    noteId?: string;
-    status: string;
-    message: string;
-    context: string;
-    indentLevel?: number;
-    metadata?: Record<string, unknown>;
-  }) => Promise<void>;
-}
-
-export interface InstructionCompletedStatusData {
-  // Original job data
-  noteId: string;
-  instructionLineId: string;
-  originalText: string;
-  lineIndex: number;
-  importId?: string;
-  currentInstructionIndex?: number;
-  totalInstructions?: number;
-  options?: {
-    normalizeText?: boolean;
-    extractTiming?: boolean;
-  };
-  // Data from previous actions in pipeline
-  parseStatus?: string;
-  success?: boolean;
-  stepsSaved?: number;
-}
-
+/**
+ * Action to broadcast the completion or progress status of instruction processing.
+ * Handles status/emoji logic and event broadcasting for instruction completion.
+ */
 export class InstructionCompletedStatusAction extends BaseAction<
   InstructionCompletedStatusData,
   InstructionCompletedStatusDeps
 > {
-  name = "instruction_completed_status";
+  name = ActionName.INSTRUCTION_COMPLETED_STATUS;
 
+  /**
+   * Executes the instruction completed status action.
+   * Broadcasts status if tracking information is present.
+   */
   async execute(
     data: InstructionCompletedStatusData,
     deps: InstructionCompletedStatusDeps,
     _context: ActionContext
   ): Promise<InstructionCompletedStatusData> {
-    // Only broadcast if we have tracking information
-    if (
-      !data.importId ||
-      typeof data.currentInstructionIndex !== "number" ||
-      typeof data.totalInstructions !== "number"
-    ) {
+    if (!this.hasTrackingInfo(data)) {
       return data;
     }
+    const { status, emoji } = this.getStatusAndEmoji(data);
+    await this.broadcastStatus(data, deps, status, emoji);
+    return data;
+  }
 
-    // Use the same context as the initial count so frontend can update the existing line
-    // Change status to indicate progress and use a different emoji
-    const status =
-      data.currentInstructionIndex === data.totalInstructions
-        ? "COMPLETED"
-        : "PROCESSING";
-    const emoji =
-      data.currentInstructionIndex === data.totalInstructions ? "✅" : "⏳";
+  /**
+   * Checks if the data has the required tracking information.
+   */
+  private hasTrackingInfo(data: InstructionCompletedStatusData): boolean {
+    return (
+      !!data.importId &&
+      typeof data.currentInstructionIndex === "number" &&
+      typeof data.totalInstructions === "number"
+    );
+  }
 
+  /**
+   * Determines the status and emoji based on progress.
+   */
+  private getStatusAndEmoji(data: InstructionCompletedStatusData): {
+    status: string;
+    emoji: string;
+  } {
+    const isComplete = data.currentInstructionIndex === data.totalInstructions;
+    return {
+      status: isComplete ? "COMPLETED" : "PROCESSING",
+      emoji: isComplete ? "✅" : "⏳",
+    };
+  }
+
+  /**
+   * Broadcasts the status event.
+   */
+  private async broadcastStatus(
+    data: InstructionCompletedStatusData,
+    deps: InstructionCompletedStatusDeps,
+    status: string,
+    emoji: string
+  ) {
     await deps.addStatusEventAndBroadcast({
-      importId: data.importId,
+      importId: data.importId!,
       noteId: data.noteId,
       status,
       message: `${emoji} ${data.currentInstructionIndex}/${data.totalInstructions} instructions`,
@@ -76,7 +83,5 @@ export class InstructionCompletedStatusAction extends BaseAction<
         isComplete: data.currentInstructionIndex === data.totalInstructions,
       },
     });
-
-    return data;
   }
 }

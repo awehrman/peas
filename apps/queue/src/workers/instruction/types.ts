@@ -1,46 +1,91 @@
-import type { BaseWorkerDependencies, BaseJobData } from "../types";
+import type { NoteStatus } from "@peas/database";
 
-// Instruction Worker Dependencies
+import type { BaseJobData, BaseWorkerDependencies } from "../types";
+
+/**
+ * Dependencies required by the InstructionWorker, including database methods for instruction processing.
+ */
 export interface InstructionWorkerDependencies extends BaseWorkerDependencies {
   database: {
+    /**
+     * Updates an instruction line in the database.
+     */
     updateInstructionLine: (
       id: string,
       data: Record<string, unknown>
     ) => Promise<unknown>;
+    /**
+     * Creates instruction steps in the database.
+     */
     createInstructionSteps: (
       steps: Array<Record<string, unknown>>
     ) => Promise<unknown>;
+    /**
+     * Updates the note completion tracker (optional).
+     */
     updateNoteCompletionTracker?: (
       noteId: string,
       completedJobs: number
     ) => Promise<unknown>;
+    /**
+     * Increments the note completion tracker (optional).
+     */
     incrementNoteCompletionTracker?: (noteId: string) => Promise<unknown>;
+    /**
+     * Checks if a note is complete (optional).
+     */
     checkNoteCompletion?: (noteId: string) => Promise<{
       isComplete: boolean;
       completedJobs: number;
       totalJobs: number;
     }>;
+    /**
+     * Gets the title of a note (optional).
+     */
     getNoteTitle?: (noteId: string) => Promise<string | null>;
   };
-  parseInstruction: (text: string) => Promise<ParsedInstructionResult>;
+  addStatusEventAndBroadcast: (event: {
+    importId: string;
+    noteId?: string;
+    status: NoteStatus;
+    message?: string;
+    context?: string;
+    currentCount?: number;
+    totalCount?: number;
+    indentLevel?: number;
+    metadata?: Record<string, unknown>;
+  }) => Promise<unknown>;
 }
 
-// Instruction Job Data
+/**
+ * Data structure for jobs processed by the InstructionWorker.
+ */
 export interface InstructionJobData extends BaseJobData {
   instructionLineId: string;
   originalText: string;
   lineIndex: number;
   noteId: string;
-  importId?: string; // Add importId for status updates
-  currentInstructionIndex?: number; // Current instruction being processed (0-based)
-  totalInstructions?: number; // Total number of instructions to process
+  /**
+   * Import ID for status updates (optional).
+   */
+  importId?: string;
+  /**
+   * Current instruction being processed (0-based, optional).
+   */
+  currentInstructionIndex?: number;
+  /**
+   * Total number of instructions to process (optional).
+   */
+  totalInstructions?: number;
   options?: {
     normalizeText?: boolean;
     extractTiming?: boolean;
   };
 }
 
-// Parsed Instruction Result
+/**
+ * Result of parsing an instruction line.
+ */
 export interface ParsedInstructionResult {
   success: boolean;
   parseStatus: "CORRECT" | "INCORRECT" | "ERROR";
