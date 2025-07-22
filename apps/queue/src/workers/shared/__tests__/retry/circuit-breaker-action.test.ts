@@ -1,7 +1,8 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { CircuitBreakerAction, type RetryDeps } from "../../retry";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
 import { BaseAction } from "../../../core/base-action";
 import { ActionContext } from "../../../core/types";
+import { CircuitBreakerAction, type RetryDeps } from "../../retry";
 
 // Mock timers for testing delays
 vi.useFakeTimers();
@@ -195,6 +196,33 @@ describe("CircuitBreakerAction", () => {
       for (let i = 0; i < 5; i++) {
         try {
           await circuitBreaker.execute({ test: "data" }, {}, context);
+        } catch {
+          // Expected to fail
+        }
+      }
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "Circuit breaker opened for test-operation after 5 failures"
+      );
+
+      consoleSpy.mockRestore();
+    });
+
+    it("should use console.error when logger is undefined", async () => {
+      const consoleSpy = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+      const error = new Error("Test error");
+      vi.mocked(mockAction.execute).mockRejectedValue(error);
+
+      // Execute enough times to trigger circuit breaker with undefined logger
+      for (let i = 0; i < 5; i++) {
+        try {
+          await circuitBreaker.execute(
+            { test: "data" },
+            { logger: undefined },
+            context
+          );
         } catch {
           // Expected to fail
         }

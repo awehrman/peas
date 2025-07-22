@@ -13,8 +13,9 @@ function createDeps(
     database: {
       prisma:
         {} as unknown as IngredientWorkerDependencies["database"]["prisma"],
-      patternTracker:
-        {} as unknown as IngredientWorkerDependencies["database"]["patternTracker"],
+      patternTracker: {
+        trackPattern: vi.fn().mockResolvedValue(undefined),
+      } as unknown as IngredientWorkerDependencies["database"]["patternTracker"],
       updateNoteCompletionTracker: vi.fn(),
       incrementNoteCompletionTracker: vi.fn(),
       checkNoteCompletion: vi.fn(),
@@ -22,7 +23,29 @@ function createDeps(
     parseIngredient: vi.fn().mockResolvedValue({
       success: true,
       parseStatus: "CORRECT",
-      segments: [],
+      segments: [
+        {
+          index: 0,
+          rule: "amount",
+          type: "amount",
+          value: "2",
+          processingTime: 50,
+        },
+        {
+          index: 1,
+          rule: "unit",
+          type: "unit",
+          value: "cups",
+          processingTime: 30,
+        },
+        {
+          index: 2,
+          rule: "ingredient",
+          type: "ingredient",
+          value: "flour",
+          processingTime: 20,
+        },
+      ],
       processingTime: 100,
     }),
     categorizationQueue: {
@@ -124,6 +147,8 @@ describe("TrackPatternAction", () => {
         { rule: "ingredient", ruleNumber: 2 },
       ];
 
+      // The implementation accesses patternTracker through (deps.database as any).patternTracker
+      // So we need to check that it was called on the database object's patternTracker
       expect(deps.database.patternTracker.trackPattern).toHaveBeenCalledWith(
         patternRules,
         "2 cups flour"
@@ -167,11 +192,9 @@ describe("TrackPatternAction", () => {
     });
 
     it("handles missing patternTracker", async () => {
-      const mockPatternTracker = {
-        trackPattern: vi.fn().mockResolvedValue(undefined),
-      } as unknown as IngredientWorkerDependencies["database"]["patternTracker"];
-
-      deps.database.patternTracker = mockPatternTracker;
+      // Set patternTracker to undefined to test the missing case
+      deps.database.patternTracker =
+        undefined as unknown as IngredientWorkerDependencies["database"]["patternTracker"];
 
       const result = await action.execute(input, deps);
 

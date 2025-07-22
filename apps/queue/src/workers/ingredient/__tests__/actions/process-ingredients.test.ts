@@ -43,7 +43,29 @@ function createDeps(
     parseIngredient: vi.fn().mockResolvedValue({
       success: true,
       parseStatus: "CORRECT",
-      segments: [],
+      segments: [
+        {
+          index: 0,
+          rule: "amount",
+          type: "amount",
+          value: "2",
+          processingTime: 50,
+        },
+        {
+          index: 1,
+          rule: "unit",
+          type: "unit",
+          value: "cups",
+          processingTime: 30,
+        },
+        {
+          index: 2,
+          rule: "ingredient",
+          type: "ingredient",
+          value: "flour",
+          processingTime: 20,
+        },
+      ],
       processingTime: 100,
     }),
     categorizationQueue: {

@@ -1,10 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Queue } from "bullmq";
-import { SourceWorker, createSourceWorker } from "../source-worker";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
 import { IServiceContainer } from "../../../services/container";
 import { BaseAction } from "../../core/base-action";
-import { ActionContext } from "../../core/types";
-import type { SourceWorkerDependencies, SourceJobData } from "../types";
+import type { ActionContext } from "../../core/types";
+import { SourceWorker, createSourceWorker } from "../source-worker";
+import type { SourceJobData, SourceWorkerDependencies } from "../types";
 
 // Mock the base worker dependencies
 vi.mock("../../core/base-worker", () => {
@@ -238,7 +239,9 @@ describe("SourceWorker", () => {
     });
 
     it("should return correct operation name", () => {
-      const operationName = worker["getOperationName"]();
+      // Create a real SourceWorker instance to test the actual getOperationName method
+      const realWorker = new SourceWorker(mockQueue, mockDependencies);
+      const operationName = realWorker["getOperationName"]();
       expect(operationName).toBe("source");
     });
 

@@ -1,8 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
 import {
-  broadcastError,
   type ErrorBroadcastData,
   type ErrorBroadcastDependencies,
+  broadcastError,
 } from "../../error-broadcasting";
 
 describe("Error Broadcasting - broadcastError", () => {
@@ -110,6 +111,44 @@ describe("Error Broadcasting - broadcastError", () => {
     );
 
     expect(mockAddStatusEventAndBroadcast).not.toHaveBeenCalled();
+  });
+
+  it("should handle logger failure during no importId warning", async () => {
+    // Arrange
+    const failingLogger = {
+      log: vi.fn().mockImplementation((message: string) => {
+        if (message.includes("Skipping error broadcast")) {
+          throw new Error("Logger failed during warning");
+        }
+        // Don't throw for other messages
+      }),
+    };
+
+    const depsWithFailingLogger: ErrorBroadcastDependencies = {
+      ...mockDeps,
+      logger: failingLogger,
+    } as unknown as ErrorBroadcastDependencies;
+
+    const errorData: ErrorBroadcastData = {
+      errorType: "VALIDATION_ERROR",
+      errorMessage: "Invalid input data",
+      context: "validation",
+    };
+
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    // Act
+    await broadcastError(depsWithFailingLogger, errorData);
+
+    // Assert
+    expect(consoleSpy).toHaveBeenCalledWith(
+      "[ERROR_BROADCAST] Logger failed: Error: Logger failed during warning"
+    );
+
+    // Should not attempt to broadcast
+    expect(mockAddStatusEventAndBroadcast).not.toHaveBeenCalled();
+
+    consoleSpy.mockRestore();
   });
 
   it("should handle all error types", async () => {

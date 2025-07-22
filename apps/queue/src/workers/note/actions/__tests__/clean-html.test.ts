@@ -1,9 +1,10 @@
 import { Queue } from "bullmq";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import type { ActionContext } from "../../../core/types";
+import type { NoteWorkerDependencies } from "../../types";
 import { CleanHtmlAction } from "../clean-html";
 import type { CleanHtmlData } from "../clean-html";
-import type { NoteWorkerDependencies } from "../../types";
-import type { ActionContext } from "../../../core/types";
 
 describe("CleanHtmlAction", () => {
   let action: CleanHtmlAction;
@@ -26,6 +27,16 @@ describe("CleanHtmlAction", () => {
       },
       logger: {
         log: vi.fn(),
+      },
+      database: {
+        createNoteCompletionTracker: vi.fn().mockResolvedValue(undefined),
+        updateNoteCompletionTracker: vi.fn().mockResolvedValue(undefined),
+        incrementNoteCompletionTracker: vi.fn().mockResolvedValue(undefined),
+        checkNoteCompletion: vi.fn().mockResolvedValue({
+          isComplete: false,
+          completedJobs: 0,
+          totalJobs: 0,
+        }),
       },
     };
     mockContext = {
@@ -416,6 +427,16 @@ describe("CleanHtmlAction", () => {
         logger: {
           log: vi.fn(),
         },
+        database: {
+          createNoteCompletionTracker: vi.fn().mockResolvedValue(undefined),
+          updateNoteCompletionTracker: vi.fn().mockResolvedValue(undefined),
+          incrementNoteCompletionTracker: vi.fn().mockResolvedValue(undefined),
+          checkNoteCompletion: vi.fn().mockResolvedValue({
+            isComplete: false,
+            completedJobs: 0,
+            totalJobs: 0,
+          }),
+        },
       };
 
       const inputData: CleanHtmlData = {
@@ -467,6 +488,141 @@ describe("CleanHtmlAction", () => {
         '<meta itemprop="title" content="Meta Title" />'
       );
       expect(result.content).toContain("<p>No H1 tag here</p>");
+    });
+
+    it("should return undefined when no title can be extracted", async () => {
+      const inputData: CleanHtmlData = {
+        content: `
+          <html>
+            <head>
+              <meta name="description" content="No title here" />
+            </head>
+            <body>
+              <p>No H1 tag or title meta here</p>
+            </body>
+          </html>
+        `,
+        importId: "test-import-123",
+      };
+
+      const result = await action.execute(inputData, mockDeps, mockContext);
+
+      expect(result.content).toContain("<p>No H1 tag or title meta here</p>");
+      // The title should fall back to "Untitled" when extractTitle returns undefined
+    });
+
+    it("should handle start status broadcast failure specifically", async () => {
+      const mockErrorDeps: NoteWorkerDependencies = {
+        parseHTML: vi.fn(),
+        createNote: vi.fn(),
+        ingredientQueue: {} as Queue,
+        instructionQueue: {} as Queue,
+        imageQueue: {} as Queue,
+        categorizationQueue: {} as Queue,
+        sourceQueue: {} as Queue,
+        addStatusEventAndBroadcast: vi
+          .fn()
+          .mockRejectedValueOnce(new Error("Start broadcast failed")) // First call fails
+          .mockResolvedValueOnce(undefined), // Second call succeeds
+        ErrorHandler: {
+          withErrorHandling: vi.fn(),
+        },
+        logger: {
+          log: vi.fn(),
+        },
+        database: {
+          createNoteCompletionTracker: vi.fn().mockResolvedValue(undefined),
+          updateNoteCompletionTracker: vi.fn().mockResolvedValue(undefined),
+          incrementNoteCompletionTracker: vi.fn().mockResolvedValue(undefined),
+          checkNoteCompletion: vi.fn().mockResolvedValue({
+            isComplete: false,
+            completedJobs: 0,
+            totalJobs: 0,
+          }),
+        },
+      };
+
+      const inputData: CleanHtmlData = {
+        content: "<html><body><h1>Test</h1></body></html>",
+        importId: "test-import-123",
+      };
+
+      const consoleSpy = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+
+      const result = await action.execute(
+        inputData,
+        mockErrorDeps,
+        mockContext
+      );
+
+      expect(result.content).toBe("<html><body><h1>Test</h1></body></html>");
+      expect(mockErrorDeps.addStatusEventAndBroadcast).toHaveBeenCalledTimes(2);
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "[TEST_OPERATION] Failed to broadcast start status:",
+        expect.any(Error)
+      );
+
+      consoleSpy.mockRestore();
+    });
+
+    it("should handle completion status broadcast failure specifically", async () => {
+      const mockErrorDeps: NoteWorkerDependencies = {
+        parseHTML: vi.fn(),
+        createNote: vi.fn(),
+        ingredientQueue: {} as Queue,
+        instructionQueue: {} as Queue,
+        imageQueue: {} as Queue,
+        categorizationQueue: {} as Queue,
+        sourceQueue: {} as Queue,
+        addStatusEventAndBroadcast: vi
+          .fn()
+          .mockResolvedValueOnce(undefined) // First call succeeds
+          .mockRejectedValueOnce(new Error("Completion broadcast failed")), // Second call fails
+        ErrorHandler: {
+          withErrorHandling: vi.fn(),
+        },
+        logger: {
+          log: vi.fn(),
+        },
+        database: {
+          createNoteCompletionTracker: vi.fn().mockResolvedValue(undefined),
+          updateNoteCompletionTracker: vi.fn().mockResolvedValue(undefined),
+          incrementNoteCompletionTracker: vi.fn().mockResolvedValue(undefined),
+          checkNoteCompletion: vi.fn().mockResolvedValue({
+            isComplete: false,
+            completedJobs: 0,
+            totalJobs: 0,
+          }),
+        },
+      };
+
+      const inputData: CleanHtmlData = {
+        content: "<html><body><h1>Test</h1></body></html>",
+        importId: "test-import-123",
+      };
+
+      const consoleSpy = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+
+      const result = await action.execute(
+        inputData,
+        mockErrorDeps,
+        mockContext
+      );
+
+      expect(result.content).toBe("<html><body><h1>Test</h1></body></html>");
+      expect(mockErrorDeps.addStatusEventAndBroadcast).toHaveBeenCalledTimes(2);
+
+      // Verify that the console.error was called for the completion status failure
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "[TEST_OPERATION] Failed to broadcast completion status:",
+        expect.any(Error)
+      );
+
+      consoleSpy.mockRestore();
     });
   });
 });
