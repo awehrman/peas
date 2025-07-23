@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+
 import type { ILoggerService } from "../services";
 
 export interface LogConfig {
@@ -140,11 +141,8 @@ export class EnhancedLoggerService implements ILoggerService {
   }
 
   // Public log method to implement ILoggerService interface
-  log(
-    message: string,
-    level: "debug" | "info" | "warn" | "error" | "fatal" = "info"
-  ): void {
-    this.logInternal(level, message);
+  log(message: string, level?: string, meta?: Record<string, unknown>): void {
+    this.logInternal(level ?? "info", message, meta);
   }
 
   debug(message: string, context?: Record<string, unknown>): void {

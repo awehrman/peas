@@ -1,97 +1,70 @@
-import { Queue } from "bullmq";
+import type { NoteJobData } from "../../services/actions/note/types";
 import type { ParsedHTMLFile } from "../../types";
-import type { NoteStatus } from "@peas/database";
 import type { BaseAction } from "../core/base-action";
-import type { ErrorContext } from "../types";
+import type { StructuredLogger } from "../core/types";
+import type { LogLevel } from "../core/types";
+import type {
+  BaseWorkerDependencies,
+  DatabaseCreateResult,
+  DatabaseOperationResult,
+  DatabaseUpdateResult,
+  ErrorContext,
+  StatusEvent,
+} from "../types";
 
 // ============================================================================
 // NOTE WORKER TYPES
 // ============================================================================
 
 /**
- * Note Worker Dependencies
- * Contains all the functions and services required by the note worker
+ * Dependencies required by the NoteWorker, including HTML parsing and database methods.
  */
-export interface NoteWorkerDependencies {
-  /** HTML parsing function that converts raw HTML to structured data */
-  parseHTML: (content: string) => Promise<ParsedHTMLFile>;
-  /** Database note creation function that persists parsed data */
-  createNote: (file: ParsedHTMLFile) => Promise<NoteWithParsedLines>;
-  /** Queue instances for follow-up processing */
-  ingredientQueue: Queue;
-  instructionQueue: Queue;
-  imageQueue: Queue;
-  categorizationQueue: Queue;
-  sourceQueue: Queue;
-  /** Base dependencies (from BaseWorkerDependencies) */
-  addStatusEventAndBroadcast: (event: StatusEvent) => Promise<unknown>;
-  ErrorHandler: {
-    withErrorHandling: <T>(
-      operation: () => Promise<T>,
-      context: ErrorContext
-    ) => Promise<T>;
-  };
-  logger: {
-    log: (message: string, level?: LogLevel) => void;
-  };
-  /** Database methods for job completion tracking */
-  database: {
-    createNoteCompletionTracker: (
-      noteId: string,
-      totalJobs: number
-    ) => Promise<unknown>;
-    updateNoteCompletionTracker: (
-      noteId: string,
-      completedJobs: number
-    ) => Promise<unknown>;
-    incrementNoteCompletionTracker: (noteId: string) => Promise<unknown>;
-    checkNoteCompletion: (noteId: string) => Promise<{
-      isComplete: boolean;
-      completedJobs: number;
-      totalJobs: number;
+export interface NoteWorkerDependencies extends BaseWorkerDependencies {
+  /** HTML parsing utilities */
+  htmlParser: {
+    /**
+     * Parse HTML content and extract structured data.
+     */
+    parseHtml: (data: NoteJobData) => Promise<{
+      success: boolean;
+      parsedData?: {
+        title?: string;
+        ingredients?: string[];
+        instructions?: string[];
+        images?: string[];
+        metadata?: Record<string, unknown>;
+      };
+      errorMessage?: string;
+      processingTime: number;
     }>;
   };
-}
-
-/**
- * Note Job Data
- * The input data structure for note processing jobs
- */
-export interface NoteJobData {
-  /** HTML content to process - required */
-  content: string;
-  /** Temporary ID for frontend grouping - required */
-  importId: string;
-  /** Optional note ID for status tracking and correlation */
-  noteId?: string;
-  /** Optional source information about where the content came from */
-  source?: {
-    /** URL where the content was originally found */
-    url?: string;
-    /** Original filename if from a file upload */
-    filename?: string;
-    /** MIME type of the original content */
-    contentType?: string;
-    /** Additional metadata about the source */
-    metadata?: Record<string, unknown>;
+  /** Database operations for notes */
+  database: {
+    /**
+     * Create a new note in the database.
+     */
+    createNote: (
+      data: Record<string, unknown>
+    ) => Promise<DatabaseCreateResult>;
+    /**
+     * Update an existing note in the database.
+     */
+    updateNote: (
+      noteId: string,
+      data: Record<string, unknown>
+    ) => Promise<DatabaseUpdateResult>;
+    /**
+     * Save note metadata.
+     */
+    saveNoteMetadata: (
+      noteId: string,
+      metadata: Record<string, unknown>
+    ) => Promise<DatabaseOperationResult>;
   };
-  /** Processing options to control what gets processed */
-  options?: {
-    /** Skip HTML parsing step */
-    skipParsing?: boolean;
-    /** Skip categorization processing */
-    skipCategorization?: boolean;
-    /** Skip image processing */
-    skipImageProcessing?: boolean;
-  };
-  /** Job metadata for tracking and debugging */
-  metadata?: Record<string, unknown>;
-  /** Job creation timestamp */
-  createdAt?: Date;
-  /** Job priority (1-10, lower = higher priority) */
-  priority?: number;
-  /** Job timeout in milliseconds */
-  timeout?: number;
+  /** Status event broadcaster */
+  addStatusEventAndBroadcast: (event: StatusEvent) => Promise<void>;
+  /** Structured logger for all logging */
+  logger: StructuredLogger;
 }
 
 /**
@@ -200,31 +173,6 @@ export interface ScheduleSourceDeps {
 /**
  * Status event for tracking note processing progress
  */
-export interface StatusEvent {
-  /** Temporary ID for frontend grouping */
-  importId: string;
-  /** ID of the note being processed (optional until saved) */
-  noteId?: string;
-  /** Current status of the note */
-  status: NoteStatus;
-  /** Optional message describing the status */
-  message?: string;
-  /** Context about what was being processed */
-  context?: string;
-  /** Current count for progress tracking */
-  currentCount?: number;
-  /** Total count for progress tracking */
-  totalCount?: number;
-  /** Indentation level for UI display */
-  indentLevel?: number;
-  /** Additional metadata about the status event */
-  metadata?: Record<string, unknown>;
-}
-
-/**
- * Log levels for consistent logging throughout the system
- */
-export type LogLevel = "debug" | "info" | "warn" | "error" | "fatal";
 
 /**
  * Generic pipeline configuration with validation
@@ -388,9 +336,37 @@ export type StatusActionReturn = NotePipelineStage3;
 export type ScheduleActionReturn = NotePipelineStage3;
 
 /**
- * Union type for all note pipeline action input/output combinations
+ * Note pipeline action type compatible with BaseWorker generics.
  */
-export type NotePipelineAction =
-  | BaseAction<NotePipelineStage1, NotePipelineStage2> // parse_html
-  | BaseAction<NotePipelineStage2, NotePipelineStage3> // save_note
-  | BaseAction<NotePipelineStage3, NotePipelineStage3>; // status & schedule actions
+export type NotePipelineAction = BaseAction<
+  NoteJobData,
+  NoteWorkerDependencies,
+  unknown
+>;
+
+/**
+ * (Legacy) Union type for all note pipeline action input/output combinations (for tests or migration)
+ */
+export type LegacyNotePipelineAction =
+  | BaseAction<NotePipelineStage1, NotePipelineStage2>
+  | BaseAction<NotePipelineStage2, NotePipelineStage3>
+  | BaseAction<NotePipelineStage3, NotePipelineStage3>;
+
+// Type-checking-only utility types
+/**
+ * Type-safe method to get the expected output type of the pipeline
+ * Usage: type Output = GetExpectedOutputType<NotePipelineStage3>;
+ */
+export type GetExpectedOutputType = NotePipelineStage3;
+
+/**
+ * Get the current pipeline stage type for a given stage number
+ * Usage: type StageType = GetPipelineStageType<2>;
+ */
+export type GetPipelineStageType<T extends 1 | 2 | 3 | 4> = T extends 1
+  ? NotePipelineStage1
+  : T extends 2
+    ? NotePipelineStage2
+    : T extends 3
+      ? NotePipelineStage3
+      : NotePipelineStage4;

@@ -1,8 +1,10 @@
 import type { NoteStatus } from "@peas/database";
 
-import type { BaseWorkerDependencies } from "../core/types";
-import type { LogLevel } from "../types";
+import type { BaseWorkerDependencies, StructuredLogger } from "../core/types";
 
+/**
+ * Data required to broadcast an error event.
+ */
 export interface ErrorBroadcastData {
   importId?: string;
   noteId?: string;
@@ -16,10 +18,11 @@ export interface ErrorBroadcastData {
   metadata?: Record<string, unknown>;
 }
 
+/**
+ * Dependencies required for error broadcasting, including a structured logger and status broadcaster.
+ */
 export interface ErrorBroadcastDependencies extends BaseWorkerDependencies {
-  logger: {
-    log: (message: string, level?: LogLevel) => void;
-  };
+  logger: StructuredLogger;
   addStatusEventAndBroadcast: (event: {
     importId: string;
     noteId?: string;
@@ -34,7 +37,11 @@ export interface ErrorBroadcastDependencies extends BaseWorkerDependencies {
 }
 
 /**
- * Broadcast error events for real-time error reporting
+ * Broadcast error events for real-time error reporting.
+ * Logs the error and sends a status event if importId is present.
+ *
+ * @param deps - Error broadcasting dependencies
+ * @param errorData - Error event data
  */
 export async function broadcastError(
   deps: ErrorBroadcastDependencies,
@@ -47,7 +54,8 @@ export async function broadcastError(
   try {
     deps.logger?.log(
       `[ERROR_BROADCAST] Broadcasting ${errorType} for ${context}: ${errorMessage}`,
-      "error"
+      "error",
+      { errorType, errorMessage, context, noteId, importId, metadata }
     );
   } catch (loggerError) {
     // If logger fails, just continue - don't let logger errors break error broadcasting
@@ -59,7 +67,8 @@ export async function broadcastError(
     try {
       deps.logger?.log(
         `[ERROR_BROADCAST] Skipping error broadcast - no importId provided`,
-        "warn"
+        "warn",
+        { errorType, errorMessage, context, noteId, metadata }
       );
     } catch (loggerError) {
       console.error(`[ERROR_BROADCAST] Logger failed: ${loggerError}`);
@@ -73,7 +82,7 @@ export async function broadcastError(
       importId,
       noteId,
       status: "FAILED" as NoteStatus,
-      message: `❌ ${errorMessage}`,
+      message: ` 274c ${errorMessage}`,
       context,
       indentLevel: 2,
       metadata: {
@@ -87,7 +96,8 @@ export async function broadcastError(
     try {
       deps.logger?.log(
         `[ERROR_BROADCAST] Failed to broadcast error: ${broadcastError}`,
-        "error"
+        "error",
+        { errorType, errorMessage, context, noteId, importId, metadata }
       );
     } catch (loggerError) {
       console.error(
@@ -98,7 +108,10 @@ export async function broadcastError(
 }
 
 /**
- * Broadcast parsing errors specifically
+ * Broadcast parsing errors specifically.
+ *
+ * @param deps - Error broadcasting dependencies
+ * @param data - Parsing error data
  */
 export async function broadcastParsingError(
   deps: ErrorBroadcastDependencies,
@@ -125,7 +138,10 @@ export async function broadcastParsingError(
 }
 
 /**
- * Broadcast processing errors
+ * Broadcast processing errors.
+ *
+ * @param deps - Error broadcasting dependencies
+ * @param data - Processing error data
  */
 export async function broadcastProcessingError(
   deps: ErrorBroadcastDependencies,

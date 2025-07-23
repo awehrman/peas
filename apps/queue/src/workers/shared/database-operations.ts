@@ -1,21 +1,28 @@
-import type { PrismaClient } from "@peas/database";
 import { PatternTracker } from "./pattern-tracker";
 
+import type { PrismaClient } from "@peas/database";
+
 /**
- * Shared database operations for workers
+ * Shared database operations for workers.
+ * Handles parsed ingredient lines, segments, ingredient references, and ingredient lookup/creation.
+ *
+ * @template TPrisma - The Prisma client type
  */
-export class DatabaseOperations {
-  constructor(private prisma: PrismaClient) {}
+export class DatabaseOperations<TPrisma extends PrismaClient = PrismaClient> {
+  constructor(private prisma: TPrisma) {}
 
   /**
-   * Get pattern tracker instance
+   * Get pattern tracker instance.
+   * @returns PatternTracker instance
    */
   get patternTracker(): PatternTracker {
     return new PatternTracker(this.prisma);
   }
 
   /**
-   * Create or update parsed ingredient line
+   * Create or update parsed ingredient line.
+   * @param lineId - The line ID
+   * @param data - Parsed line data
    */
   async createOrUpdateParsedIngredientLine(
     lineId: string,
@@ -67,7 +74,9 @@ export class DatabaseOperations {
   }
 
   /**
-   * Update parsed ingredient line with parse status (deprecated - use createOrUpdateParsedIngredientLine)
+   * Update parsed ingredient line with parse status (deprecated - use createOrUpdateParsedIngredientLine).
+   * @param lineId - The line ID
+   * @param data - Status update data
    */
   async updateParsedIngredientLine(
     lineId: string,
@@ -90,7 +99,9 @@ export class DatabaseOperations {
   }
 
   /**
-   * Replace parsed segments for an ingredient line
+   * Replace parsed segments for an ingredient line.
+   * @param ingredientLineId - The ingredient line ID
+   * @param segments - Array of segment data
    */
   async replaceParsedSegments(
     ingredientLineId: string,
@@ -106,26 +117,13 @@ export class DatabaseOperations {
       throw new Error("ingredientLineId is required for replaceParsedSegments");
     }
 
-    console.log(
-      `[DB_OPS] Starting replaceParsedSegments for ${ingredientLineId}`
-    );
-    console.log(
-      `[DB_OPS] Segments to save:`,
-      JSON.stringify(segments, null, 2)
-    );
-
     // Delete existing segments first
-    console.log(
-      `[DB_OPS] Deleting existing segments for ${ingredientLineId}...`
-    );
-    const deleteResult = await this.prisma.parsedSegment.deleteMany({
+    await this.prisma.parsedSegment.deleteMany({
       where: { ingredientLineId },
     });
-    console.log(`[DB_OPS] Deleted ${deleteResult.count} existing segments`);
 
     // Create new segments
     if (segments.length > 0) {
-      console.log(`[DB_OPS] Creating ${segments.length} new segments...`);
       const segmentData = segments.map((segment) => ({
         index: segment.index,
         rule: segment.rule,
@@ -135,28 +133,15 @@ export class DatabaseOperations {
         ingredientLineId,
       }));
 
-      console.log(
-        `[DB_OPS] Segment data to insert:`,
-        JSON.stringify(segmentData, null, 2)
-      );
-
-      const createResult = await this.prisma.parsedSegment.createMany({
+      await this.prisma.parsedSegment.createMany({
         data: segmentData,
       });
-      console.log(
-        `[DB_OPS] Successfully created ${createResult.count} segments`
-      );
-    } else {
-      console.log(`[DB_OPS] No segments to create`);
     }
-
-    console.log(
-      `[DB_OPS] Completed replaceParsedSegments for ${ingredientLineId}`
-    );
   }
 
   /**
-   * Create ingredient reference
+   * Create ingredient reference.
+   * @param data - Ingredient reference data
    */
   async createIngredientReference(data: {
     ingredientId: string;
@@ -198,7 +183,10 @@ export class DatabaseOperations {
   }
 
   /**
-   * Find or create ingredient with pluralize support
+   * Find or create ingredient with pluralize support.
+   * @param ingredientName - Ingredient name
+   * @param _reference - Reference string
+   * @returns Ingredient ID, name, and isNew flag
    */
   async findOrCreateIngredient(
     ingredientName: string,

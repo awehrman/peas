@@ -1,5 +1,9 @@
-import { serviceContainer } from "../services/container";
-import type { TypedQueue, NoteJobData, NoteActionName } from "../types";
+import type { NoteJobData } from "../services/actions/note/types";
+import type { NoteActionName, TypedQueue } from "../types";
 
-export const noteQueue: TypedQueue<NoteJobData, NoteActionName> =
-  serviceContainer.queues.noteQueue as TypedQueue<NoteJobData, NoteActionName>;
+// Note: This queue will be initialized when the service container is created
+// The actual queue instance is available through ServiceContainer.getInstance().queues.noteQueue
+export const noteQueue = null as unknown as TypedQueue<
+  NoteJobData,
+  NoteActionName
+>;

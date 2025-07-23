@@ -1,14 +1,14 @@
 // Import Prisma types for better type safety
 import type {
-  ParsedIngredientLine,
-  ParsedInstructionLine,
+  ErrorCode,
   Note,
   NoteStatus,
   NoteStatusEvent,
+  ParsedIngredientLine,
+  ParsedInstructionLine,
   QueueJob,
   QueueJobStatus,
   QueueJobType,
-  ErrorCode,
 } from "@peas/database";
 import type { Queue } from "bullmq";
 
@@ -202,30 +202,7 @@ export interface RetryConfig {
   maxBackoffMs: number;
 }
 
-// Job data validation interfaces
-export interface NoteJobData {
-  content: string;
-}
-
-export interface ImageJobData {
-  noteId: string;
-  file: ParsedHTMLFile;
-}
-
-export interface IngredientJobData {
-  note: Note; // Use Prisma Note type
-}
-
-export interface InstructionJobData {
-  note: Note; // Use Prisma Note type
-}
-
-export interface CategorizationJobData {
-  noteId: string;
-  file: ParsedHTMLFile;
-}
-
-// Health check types
+// Health check types with discriminated unions
 export interface ServiceHealth {
   status: "healthy" | "degraded" | "unhealthy";
   checks: {
@@ -236,12 +213,40 @@ export interface ServiceHealth {
   timestamp: Date;
 }
 
-export interface HealthCheck {
-  status: "healthy" | "degraded" | "unhealthy";
+// Base health check interface
+interface BaseHealthCheck {
   message?: string;
-  responseTime?: number;
   lastChecked: Date;
 }
+
+// Healthy status with performance metrics
+export interface HealthyCheck extends BaseHealthCheck {
+  status: "healthy";
+  responseTime?: number;
+  performance?: number; // 0-100 performance score
+}
+
+// Degraded status with warnings
+export interface DegradedCheck extends BaseHealthCheck {
+  status: "degraded";
+  warnings: string[];
+  performance: number; // 0-100 performance score
+  responseTime?: number;
+  retryAfter?: number; // seconds to wait before retry
+}
+
+// Unhealthy status with error details
+export interface UnhealthyCheck extends BaseHealthCheck {
+  status: "unhealthy";
+  error: string;
+  errorCode?: string;
+  retryAfter?: number; // seconds to wait before retry
+  critical?: boolean; // whether this is a critical failure
+  responseTime?: number; // response time in milliseconds
+}
+
+// Union type for all health check states
+export type HealthCheck = HealthyCheck | DegradedCheck | UnhealthyCheck;
 
 // TypedQueue generic for BullMQ queues
 export interface TypedQueue<JobData, Action extends string = string>
@@ -255,11 +260,3 @@ export interface TypedQueue<JobData, Action extends string = string>
 
 // ActionName type aliases for each queue
 export type NoteActionName = (typeof QUEUE_ACTIONS)[QueueName.NOTES][number];
-export type IngredientActionName =
-  (typeof QUEUE_ACTIONS)[QueueName.INGREDIENTS][number];
-export type InstructionActionName =
-  (typeof QUEUE_ACTIONS)[QueueName.INSTRUCTION][number];
-export type ImageActionName = (typeof QUEUE_ACTIONS)[QueueName.IMAGE][number];
-export type CategorizationActionName =
-  (typeof QUEUE_ACTIONS)[QueueName.CATEGORIZATION][number];
-export type SourceActionName = (typeof QUEUE_ACTIONS)[QueueName.SOURCE][number];

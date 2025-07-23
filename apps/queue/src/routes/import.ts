@@ -1,32 +1,32 @@
 import { Router } from "express";
 import path from "path";
+
+import { FILE_CONSTANTS, LOG_MESSAGES } from "../config/constants";
 import { noteQueue } from "../queues";
 import {
-  ErrorHandler,
-  formatLogMessage,
-  createJobOptions,
-  validateFile,
-  validateFileContent,
-  getHtmlFiles,
-  generateUuid,
-  measureExecutionTime,
-  createQueueStatusResponse,
-} from "../utils/utils";
+  FileProcessingOptions,
+  processFilesWithStreaming,
+} from "../utils/file-processor";
 import {
-  FILE_CONSTANTS,
-  WORKER_CONSTANTS,
-  LOG_MESSAGES,
-} from "../config/constants";
-import { ErrorType, ErrorSeverity } from "../types";
+  ErrorHandler,
+  createQueueStatusResponse,
+  formatLogMessage,
+  getHtmlFiles,
+  measureExecutionTime,
+} from "../utils/utils";
 
 export const importRouter = Router();
+
+// TODO: Apply security middleware when integration issues are resolved
+// importRouter.use(SecurityMiddleware.rateLimit(15 * 60 * 1000, 50)); // 50 requests per 15 minutes for import
+// importRouter.use(SecurityMiddleware.addSecurityHeaders);
 
 const directoryPath = path.join(
   process.cwd(),
   FILE_CONSTANTS.PATHS.PUBLIC_FILES
 );
 
-async function enqueueHtmlFiles() {
+async function enqueueHtmlFilesWithStreaming() {
   const htmlFiles = await getHtmlFiles(directoryPath, [
     FILE_CONSTANTS.PATHS.EVERNOTE_INDEX_FILE,
   ]);
@@ -35,70 +35,44 @@ async function enqueueHtmlFiles() {
     throw new Error(`No HTML files found in directory: ${directoryPath}`);
   }
 
-  const results = {
-    total: htmlFiles.length,
-    queued: 0,
-    failed: 0,
-    errors: [] as string[],
+  // Convert file names to full paths
+  const filePaths = htmlFiles.map((file) => path.join(directoryPath, file));
+
+  // Configure streaming processor options
+  const processingOptions: FileProcessingOptions = {
+    maxConcurrentFiles: 3, // Process 3 files at a time
+    maxFileSize: 50 * 1024 * 1024, // 50MB limit
+    chunkSize: 64 * 1024, // 64KB chunks
+    cleanupAfterProcessing: true,
+    validateContent: true,
+    cacheResults: true,
   };
 
-  // Process files with individual error handling
-  for (const file of htmlFiles) {
-    try {
-      const filePath = path.join(directoryPath, file);
+  // Process files with streaming
+  const processingStats = await processFilesWithStreaming(
+    filePaths,
+    processingOptions
+  );
 
-      // Validate file exists and is readable
-      await validateFile(filePath, file);
+  const results = {
+    total: processingStats.totalFiles,
+    queued: processingStats.processedFiles,
+    failed: processingStats.failedFiles,
+    skipped: processingStats.skippedFiles,
+    errors: [] as string[],
+    processingTime: processingStats.endTime
+      ? processingStats.endTime.getTime() - processingStats.startTime.getTime()
+      : 0,
+    totalSize: processingStats.totalSize,
+  };
 
-      // Read file content
-      const fs = await import("fs");
-      const content = await fs.promises.readFile(filePath, "utf-8");
-
-      // Validate content is not empty
-      validateFileContent(content, file);
-
-      // Generate unique importId using UUID to prevent collisions
-      const importId = generateUuid();
-
-      // Add to queue with standardized job options
-      await noteQueue.add(
-        WORKER_CONSTANTS.JOB_TYPES.PROCESS_NOTE,
-        { content, importId },
-        {
-          jobId: importId,
-          ...createJobOptions(),
-        }
-      );
-
-      results.queued++;
-      console.log(
-        formatLogMessage(LOG_MESSAGES.SUCCESS.FILE_QUEUED, {
-          fileName: file,
-          importId,
-        })
-      );
-    } catch (error) {
-      results.failed++;
-      const errorMessage =
-        error instanceof Error ? error.message : "Unknown error";
-      results.errors.push(`${file}: ${errorMessage}`);
-
-      const jobError = ErrorHandler.createJobError(
-        error as Error,
-        ErrorType.VALIDATION_ERROR,
-        ErrorSeverity.MEDIUM,
-        { file, operation: "enqueue_file" }
-      );
-      ErrorHandler.logError(jobError);
-
-      console.error(
-        formatLogMessage(LOG_MESSAGES.ERROR.FILE_FAILED, {
-          fileName: file,
-          error: errorMessage,
-        })
-      );
-    }
-  }
+  console.log(
+    `📊 Processing completed: ${results.queued}/${results.total} files processed successfully`
+  );
+  console.log(`⏱️ Total processing time: ${results.processingTime}ms`);
+  console.log(
+    `📦 Total size processed: ${(results.totalSize / 1024 / 1024).toFixed(2)}MB`
+  );
 
   return results;
 }
@@ -106,7 +80,7 @@ async function enqueueHtmlFiles() {
 // Kick off import for all HTML files in the directory
 importRouter.post("/", async (req, res) => {
   const { result: results, duration } = await measureExecutionTime(
-    enqueueHtmlFiles,
+    enqueueHtmlFilesWithStreaming,
     "Import process"
   );
 

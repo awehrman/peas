@@ -1,7 +1,18 @@
-import { prisma } from "../config/database";
-import { redisConnection } from "../config/redis";
-import { ServiceHealth, HealthCheck, ErrorType, ErrorSeverity } from "../types";
 import { ErrorHandler } from "./error-handler";
+
+import { cacheManager } from "../config/cache";
+import { prisma } from "../config/database";
+import { databaseManager } from "../config/database-manager";
+import { redisConnection } from "../config/redis";
+import {
+  DegradedCheck,
+  ErrorSeverity,
+  ErrorType,
+  HealthCheck,
+  HealthyCheck,
+  ServiceHealth,
+  UnhealthyCheck,
+} from "../types";
 
 export class HealthMonitor {
   private static instance: HealthMonitor;
@@ -83,26 +94,44 @@ export class HealthMonitor {
     const startTime = Date.now();
 
     try {
-      // Test basic connectivity
-      await prisma.$queryRaw`SELECT 1`;
+      // Use database manager for enhanced health checks
+      const isHealthy = await databaseManager.checkConnectionHealth();
 
-      // Test a simple query
-      await prisma.note.count();
+      if (!isHealthy) {
+        throw new Error("Database health check failed");
+      }
+
+      // Test a simple query with retry logic
+      await databaseManager.executeWithRetry(async () => {
+        await prisma.note.count();
+      });
 
       const responseTime = Date.now() - startTime;
+      const performance = this.calculatePerformance(responseTime);
 
-      return {
-        status: responseTime < 1000 ? "healthy" : "degraded",
-        message:
-          responseTime < 1000
-            ? "Database is responding normally"
-            : "Database is slow to respond",
-        responseTime,
-        lastChecked: new Date(),
-      };
+      if (responseTime < 500) {
+        return {
+          status: "healthy",
+          message: "Database is responding normally",
+          responseTime,
+          performance,
+          lastChecked: new Date(),
+        } as HealthyCheck;
+      } else {
+        return {
+          status: "degraded",
+          message: "Database is slow to respond",
+          warnings: [`Response time ${responseTime}ms exceeds threshold`],
+          performance,
+          responseTime,
+          lastChecked: new Date(),
+        } as DegradedCheck;
+      }
     } catch (error) {
       const jobError = ErrorHandler.createJobError(
-        error as Error,
+        error instanceof Error
+          ? error
+          : new Error("Database connection failed"),
         ErrorType.DATABASE_ERROR,
         ErrorSeverity.HIGH,
         { operation: "health_check" }
@@ -111,9 +140,13 @@ export class HealthMonitor {
 
       return {
         status: "unhealthy",
-        message: `Database connection failed: ${jobError.message}`,
+        message: jobError.message,
+        error: jobError.message,
+        errorCode: "DB_CONNECTION_ERROR",
+        critical: true,
         lastChecked: new Date(),
-      };
+        responseTime: Date.now() - startTime,
+      } as UnhealthyCheck;
     }
   }
 
@@ -124,26 +157,38 @@ export class HealthMonitor {
     const startTime = Date.now();
 
     try {
-      // For now, just check if Redis connection config is available
-      // In a real implementation, you'd test actual Redis connectivity
-      if (!redisConnection.host) {
-        throw new Error("Redis host not configured");
+      // Test cache manager connectivity
+      if (!cacheManager.isReady()) {
+        await cacheManager.connect();
       }
 
-      const responseTime = Date.now() - startTime;
+      // Test basic Redis connectivity by checking if we can get a simple key
+      await redisConnection.get("health_check_test");
 
-      return {
-        status: responseTime < 500 ? "healthy" : "degraded",
-        message:
-          responseTime < 500
-            ? "Redis configuration is valid"
-            : "Redis configuration check is slow",
-        responseTime,
-        lastChecked: new Date(),
-      };
+      const responseTime = Date.now() - startTime;
+      const performance = this.calculatePerformance(responseTime);
+
+      if (responseTime < 500) {
+        return {
+          status: "healthy",
+          message: "Redis configuration is valid",
+          responseTime,
+          performance,
+          lastChecked: new Date(),
+        } as HealthyCheck;
+      } else {
+        return {
+          status: "degraded",
+          message: "Redis configuration check is slow",
+          warnings: [`Response time ${responseTime}ms exceeds threshold`],
+          performance,
+          responseTime,
+          lastChecked: new Date(),
+        } as DegradedCheck;
+      }
     } catch (error) {
       const jobError = ErrorHandler.createJobError(
-        error as Error,
+        error instanceof Error ? error : new Error("Redis connection failed"),
         ErrorType.REDIS_ERROR,
         ErrorSeverity.HIGH,
         { operation: "health_check" }
@@ -152,9 +197,13 @@ export class HealthMonitor {
 
       return {
         status: "unhealthy",
-        message: `Redis connection failed: ${jobError.message}`,
+        message: jobError.message,
+        error: jobError.message,
+        errorCode: "REDIS_CONNECTION_ERROR",
+        critical: true,
         lastChecked: new Date(),
-      };
+        responseTime: Date.now() - startTime,
+      } as UnhealthyCheck;
     }
   }
 
@@ -166,57 +215,47 @@ export class HealthMonitor {
 
     try {
       // For now, just check if Redis connection config is available
-      // In a real implementation, you'd test actual Redis connectivity
+      // In a real implementation, you'd test actual queue connectivity
       if (!redisConnection.host) {
-        throw new Error("Redis host not configured");
+        throw new Error("Queue system failed");
       }
 
       const responseTime = Date.now() - startTime;
+      const performance = this.calculatePerformance(responseTime);
+
+      const healthyQueueCheck: HealthyCheck = {
+        status: "healthy",
+        message: "Queue system is operational",
+        responseTime,
+        performance,
+        lastChecked: new Date(),
+      };
 
       return {
-        noteQueue: {
-          status: "healthy",
-          message: "Queue system is operational",
-          responseTime,
-          lastChecked: new Date(),
-        },
-        imageQueue: {
-          status: "healthy",
-          message: "Queue system is operational",
-          responseTime,
-          lastChecked: new Date(),
-        },
-        ingredientQueue: {
-          status: "healthy",
-          message: "Queue system is operational",
-          responseTime,
-          lastChecked: new Date(),
-        },
-        instructionQueue: {
-          status: "healthy",
-          message: "Queue system is operational",
-          responseTime,
-          lastChecked: new Date(),
-        },
-        categorizationQueue: {
-          status: "healthy",
-          message: "Queue system is operational",
-          responseTime,
-          lastChecked: new Date(),
-        },
+        noteQueue: healthyQueueCheck,
+        imageQueue: healthyQueueCheck,
+        ingredientQueue: healthyQueueCheck,
+        instructionQueue: healthyQueueCheck,
+        categorizationQueue: healthyQueueCheck,
       };
     } catch (error) {
       const jobError = ErrorHandler.createJobError(
-        error as Error,
+        error instanceof Error ? error : new Error("Queue system failed"),
         ErrorType.REDIS_ERROR,
         ErrorSeverity.HIGH,
         { operation: "queue_health_check" }
       );
       ErrorHandler.logError(jobError);
 
-      const failedCheck = this.createFailedHealthCheck(
-        `Queue system failed: ${jobError.message}`
-      );
+      const failedCheck: UnhealthyCheck = {
+        status: "unhealthy",
+        message: jobError.message,
+        error: jobError.message,
+        errorCode: "QUEUE_CONNECTION_ERROR",
+        critical: false,
+        lastChecked: new Date(),
+        responseTime: Date.now() - startTime,
+      };
 
       return {
         noteQueue: failedCheck,
@@ -229,12 +268,27 @@ export class HealthMonitor {
   }
 
   /**
+   * Calculate performance score based on response time
+   */
+  private calculatePerformance(responseTime: number): number {
+    if (responseTime < 100) return 100;
+    if (responseTime < 500) return 90;
+    if (responseTime < 1000) return 75;
+    if (responseTime < 2000) return 50;
+    if (responseTime < 5000) return 25;
+    return 0;
+  }
+
+  /**
    * Create a failed health check
    */
-  private createFailedHealthCheck(message: string): HealthCheck {
+  private createFailedHealthCheck(message: string): UnhealthyCheck {
     return {
       status: "unhealthy",
-      message,
+      message: message,
+      error: message,
+      errorCode: "HEALTH_CHECK_FAILED",
+      critical: false,
       lastChecked: new Date(),
     };
   }

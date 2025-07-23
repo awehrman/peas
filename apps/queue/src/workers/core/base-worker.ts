@@ -1,51 +1,137 @@
-import { createCacheKey, globalActionCache } from "./cache";
-import { ActionExecutionError } from "./errors";
-import { WorkerMetrics } from "./metrics";
-
-import type { NoteStatus } from "@peas/database";
-import { Job, Queue, Worker } from "bullmq";
-
-import { redisConnection } from "../../config/redis";
-import type { IServiceContainer } from "../../services/container";
-import { ActionFactory, globalActionFactory } from "../core/action-factory";
-import { BaseAction } from "../core/base-action";
+import { ActionFactory, globalActionFactory } from "./action-factory";
 import {
-  BroadcastCompletedAction,
-  BroadcastProcessingAction,
-} from "../shared/broadcast-status";
-import { ErrorHandlingWrapperAction } from "../shared/error-handling";
-import { RetryWrapperAction } from "../shared/retry";
-import type {
-  ActionContext,
-  BaseJobData,
-  BaseWorkerDependencies,
-} from "../types";
+  wrapActionWithErrorHandlingOnly,
+  wrapActionWithRetryAndErrorHandling,
+} from "./action-wrappers";
+import { BaseAction } from "./base-action";
+import { processJob } from "./job-processor";
+import { WorkerMetrics } from "./metrics";
+import { injectStandardStatusActions } from "./status-actions";
+import type { ActionContext, LogLevel, WorkerAction } from "./types";
+import {
+  buildErrorHandlerDependency,
+  buildLoggerDependency,
+  buildStatusBroadcasterDependency,
+} from "./worker-dependencies";
+
+import type { IServiceContainer } from "../../services/container";
+import type { BaseJobData } from "../../workers/types";
+
+// BullMQ abstraction interfaces for testability
+export interface IQueue {
+  name: string;
+}
+
+export interface IWorker {
+  isRunning(): boolean;
+}
+
+// Type constraints for worker dependencies
+interface WorkerLogger {
+  log: (
+    message: string,
+    level?: LogLevel | undefined,
+    meta?: Record<string, unknown>
+  ) => void;
+}
+
+// Remove WorkerData interface and use BaseJobData instead
+
+// Improved type aliases for better readability
+type DefaultDeps = { logger: WorkerLogger };
+
+type WorkerJob<T> = {
+  id?: string;
+  attemptsMade?: number;
+  data: T;
+};
+
+type JobProcessor<TData> = (
+  job: WorkerJob<TData>
+) => Promise<Record<string, unknown>>;
+
+type WorkerImpl<TData> = (
+  queue: IQueue,
+  jobProcessor: JobProcessor<TData>,
+  concurrency: number
+) => IWorker;
+
+type WorkerAct<T, D, R> = WorkerAction<T, D, R>;
+type ActionFact<T, D, R> = ActionFactory<T, D, R>;
+
+// Worker configuration interface
+interface WorkerConfig {
+  concurrency: number;
+}
 
 /**
  * Base worker class that provides common functionality for all workers
  */
 export abstract class BaseWorker<
   TData extends BaseJobData = BaseJobData,
-  TDeps extends BaseWorkerDependencies = BaseWorkerDependencies,
+  TDeps extends DefaultDeps = DefaultDeps,
+  TResult = unknown,
 > {
-  protected worker: Worker;
-  protected actionFactory: ActionFactory;
+  protected worker!: IWorker;
+  protected actionFactory: ActionFact<TData, TDeps, TResult>;
   protected dependencies: TDeps;
   protected container?: IServiceContainer;
+  protected config: Partial<WorkerConfig> = {};
 
+  /**
+   * @param queue The queue to process jobs from (BullMQ Queue or compatible interface)
+   * @param dependencies Worker dependencies (logger, status broadcaster, etc.)
+   * @param actionFactory Optional action factory for creating actions
+   * @param container Optional service container for dependency injection
+   * @param config Optional configuration (e.g., concurrency)
+   * @param workerImpl Optional custom worker implementation for testability
+   */
   constructor(
-    queue: Queue,
+    queue: IQueue,
     dependencies: TDeps,
-    actionFactory?: ActionFactory,
-    container?: IServiceContainer
+    actionFactory?: ActionFact<TData, TDeps, TResult>,
+    container?: IServiceContainer,
+    config?: Partial<WorkerConfig>,
+    workerImpl?: WorkerImpl<TData>
   ) {
     this.dependencies = dependencies;
-    this.actionFactory = actionFactory || globalActionFactory;
+    this.actionFactory =
+      actionFactory ||
+      (globalActionFactory as unknown as ActionFact<TData, TDeps, TResult>);
     this.container = container;
-
+    if (config) this.config = config;
     this.registerActions();
-    this.worker = this.createWorker(queue);
+    // Initialize worker asynchronously
+    this.createWorker(queue, workerImpl).then((worker) => {
+      this.worker = worker;
+    });
   }
+
+  /**
+   * Lifecycle hook: called before job processing starts
+   */
+  protected async onBeforeJob(
+    _data: TData,
+    _context: ActionContext
+  ): Promise<void> {}
+
+  /**
+   * Lifecycle hook: called after job processing completes
+   */
+  protected async onAfterJob(
+    _data: TData,
+    _context: ActionContext,
+    _result: TResult
+  ): Promise<void> {}
+
+  /**
+   * Lifecycle hook: called if job processing throws
+   */
+  protected async onJobError(
+    _error: Error,
+    _data: TData,
+    _context: ActionContext
+  ): Promise<void> {}
 
   /**
    * Create a typed action pipeline for this worker
@@ -54,9 +140,7 @@ export abstract class BaseWorker<
   protected createActionPipeline(
     _data: TData,
     _context: ActionContext
-  ): BaseAction<unknown, unknown>[] {
-    // Default implementation returns empty array
-    // Subclasses should override this method for better type safety
+  ): WorkerAct<TData, TDeps, TResult>[] {
     return [];
   }
 
@@ -78,183 +162,111 @@ export abstract class BaseWorker<
   }
 
   /**
-   * Create standard status broadcasting dependency
+   * Inject standard status actions into the pipeline
    */
-  protected createStatusBroadcaster() {
-    if (!this.container) {
-      throw new Error("Container not available for status broadcaster");
-    }
-
-    return async (event: {
-      importId: string;
-      noteId?: string;
-      status: NoteStatus;
-      message?: string;
-      context?: string;
-      currentCount?: number;
-      totalCount?: number;
-      indentLevel?: number;
-    }) => {
-      if (this.container?.statusBroadcaster?.addStatusEventAndBroadcast) {
-        return this.container.statusBroadcaster.addStatusEventAndBroadcast(
-          event
-        );
-      } else {
-        return Promise.resolve();
-      }
-    };
-  }
-
-  /**
-   * Create standard error handler dependency
-   */
-  protected createErrorHandler() {
-    if (!this.container) {
-      throw new Error("Container not available for error handler");
-    }
-
-    return (
-      this.container.errorHandler?.errorHandler || {
-        withErrorHandling: async (operation) => operation(),
-      }
+  protected injectStandardStatusActions(
+    actions: WorkerAct<TData, TDeps, TResult>[],
+    _data: TData
+  ): void {
+    injectStandardStatusActions(
+      actions as BaseAction<TData, TDeps, TResult | void>[],
+      this.getOperationName.bind(this),
+      this.dependencies.logger
     );
   }
 
   /**
-   * Create standard logger dependency
+   * Create an action from the factory and wrap it with retry and error handling
    */
-  protected createLogger() {
-    if (!this.container) {
-      throw new Error("Container not available for logger");
-    }
+  protected createRetryableErrorHandledAction(
+    actionName: string,
+    deps?: TDeps
+  ): WorkerAct<TData, TDeps, TResult> {
+    const action = this.actionFactory.create(actionName, deps);
+    return wrapActionWithRetryAndErrorHandling(
+      action as BaseAction<TData, TDeps>
+    ) as WorkerAct<TData, TDeps, TResult>;
+  }
 
-    if (!this.container.logger) {
-      throw new Error("Container not available for logger");
-    }
-
-    return this.container.logger;
+  /**
+   * Create an action from the factory and wrap it with just error handling
+   */
+  protected createErrorHandledActionOnly(
+    actionName: string,
+    deps?: TDeps
+  ): WorkerAct<TData, TDeps, TResult> {
+    const action = this.actionFactory.create(actionName, deps);
+    return wrapActionWithErrorHandlingOnly(
+      action as BaseAction<TData, TDeps>
+    ) as WorkerAct<TData, TDeps, TResult>;
   }
 
   /**
    * Create base dependencies that all workers need
    */
-  public createBaseDependencies() {
+  public buildBaseWorkerDependencies() {
     return {
-      addStatusEventAndBroadcast: this.createStatusBroadcaster(),
-      ErrorHandler: this.createErrorHandler(),
-      logger: this.createLogger(),
+      addStatusEventAndBroadcast: buildStatusBroadcasterDependency(
+        this.container!
+      ),
+      ErrorHandler: buildErrorHandlerDependency(this.container!),
+      logger: buildLoggerDependency(this.container!),
     };
   }
 
   /**
-   * Create the BullMQ worker with action-based job processing
+   * Create the worker with action-based job processing. Allows custom worker implementation for testability.
    */
-  private createWorker(queue: Queue): Worker {
-    const jobProcessor = async (job: Job) => {
+  private async createWorker(
+    queue: IQueue,
+    workerImpl?: WorkerImpl<TData>
+  ): Promise<IWorker> {
+    const jobProcessor: JobProcessor<TData> = async (job) => {
       const startTime = Date.now();
       const context: ActionContext = {
         jobId: job.id ?? "unknown",
-        retryCount: job.attemptsMade,
+        retryCount: job.attemptsMade ?? 0,
         queueName: queue.name,
-        noteId: (job.data as TData).noteId,
+        // noteId: job.data.noteId,
         operation: this.getOperationName(),
         startTime,
         workerName: this.getOperationName(),
-        attemptNumber: job.attemptsMade + 1,
+        attemptNumber: (job.attemptsMade ?? 0) + 1,
       };
-
-      const data = job.data as TData;
-
+      const data = job.data;
+      await this.onBeforeJob(data, context);
       this.dependencies.logger.log(
         `[${this.getOperationName().toUpperCase()}] Starting job ${context.jobId}`
       );
-
       try {
-        // Create the action pipeline
         const actions = this.createActionPipeline(data, context);
-
-        // Execute the pipeline
-        let result: TData = data;
-        const actionNames = actions.map((a) => {
-          // Extract the actual action name from wrapper names
-          if (a.name.includes("error_handling_wrapper(")) {
-            return a.name
-              .replace("error_handling_wrapper(", "")
-              .replace(")", "");
-          }
-          if (a.name.includes("retry_wrapper(")) {
-            return a.name.replace("retry_wrapper(", "").replace(")", "");
-          }
-          return a.name;
-        });
-        this.dependencies.logger.log(
-          `[${this.getOperationName().toUpperCase()}] Executing ${actions.length} actions: ${actionNames.join(", ")}`
+        const result = await processJob(
+          actions,
+          data,
+          context,
+          {
+            log: (
+              msg: string,
+              level?: string,
+              meta?: Record<string, unknown>
+            ) => this.dependencies.logger.log(msg, level as LogLevel, meta),
+          },
+          this.getOperationName.bind(this),
+          this.dependencies
         );
-        for (const action of actions) {
-          const actionStartTime = Date.now();
-          // Extract clean action name for logging
-          let cleanActionName = action.name;
-          if (action.name.includes("error_handling_wrapper(")) {
-            cleanActionName = action.name
-              .replace("error_handling_wrapper(", "")
-              .replace(")", "");
-          }
-          if (action.name.includes("retry_wrapper(")) {
-            cleanActionName = action.name
-              .replace("retry_wrapper(", "")
-              .replace(")", "");
-          }
-
-          this.dependencies.logger.log(
-            `[${this.getOperationName().toUpperCase()}] Data for action ${cleanActionName}: ${JSON.stringify(result)}`
-          );
-          try {
-            result = (await this.executeActionWithCaching(
-              action,
-              result,
-              context
-            )) as TData;
-            const actionDuration = Date.now() - actionStartTime;
-            WorkerMetrics.recordActionExecutionTime(
-              action.name,
-              actionDuration,
-              true
-            );
-            this.dependencies.logger.log(
-              `[${this.getOperationName().toUpperCase()}] ✅ ${cleanActionName} (${actionDuration}ms)`
-            );
-          } catch (error) {
-            const actionDuration = Date.now() - actionStartTime;
-            WorkerMetrics.recordActionExecutionTime(
-              action.name,
-              actionDuration,
-              false
-            );
-            this.dependencies.logger.log(
-              `[${this.getOperationName().toUpperCase()}] ❌ ${cleanActionName} (${actionDuration}ms) - ${error instanceof Error ? error.message : String(error)}`,
-              "error"
-            );
-            throw new ActionExecutionError(
-              `Action ${action.name} failed: ${error instanceof Error ? error.message : String(error)}`,
-              this.getOperationName(),
-              action.name,
-              error as Error,
-              context.jobId
-            );
-          }
-        }
-
         const totalDuration = Date.now() - startTime;
         WorkerMetrics.recordJobProcessingTime(
           this.getOperationName(),
           totalDuration,
           true
         );
-
         this.dependencies.logger.log(
-          `${this.getOperationName()} completed for job ${context.jobId} in ${totalDuration}ms`
+          `${this.getOperationName()} completed for job ${context.jobId} in ${totalDuration}ms`,
+          "info",
+          { duration: totalDuration, jobId: context.jobId }
         );
-        return result;
+        await this.onAfterJob(data, context, result as TResult);
+        return result as Record<string, unknown>;
       } catch (error) {
         const totalDuration = Date.now() - startTime;
         WorkerMetrics.recordJobProcessingTime(
@@ -262,19 +274,42 @@ export abstract class BaseWorker<
           totalDuration,
           false
         );
-
         this.dependencies.logger.log(
           `${this.getOperationName()} failed for job ${context.jobId}: ${error}`,
-          "error"
+          "error",
+          { duration: totalDuration, jobId: context.jobId, error }
         );
+        await this.onJobError(error as Error, data, context);
         throw error;
       }
     };
+    if (workerImpl) {
+      return workerImpl(
+        queue,
+        jobProcessor,
+        this.config.concurrency ?? this.getConcurrency()
+      );
+    }
+    // Default: BullMQ Worker
+    // Use dynamic imports instead of require
+    const { Worker } = await import("bullmq");
+    const { redisConfig } = await import("../../config/redis");
 
-    return new Worker(queue.name, jobProcessor, {
-      connection: redisConnection,
-      concurrency: this.getConcurrency(),
-    });
+    // Create the worker with proper typing
+    // Use type assertion that's compatible with BullMQ's expected Processor type
+    const bullMQWorker = new Worker(
+      queue.name,
+      jobProcessor as unknown as (job: unknown) => Promise<unknown>,
+      {
+        connection: redisConfig,
+        concurrency: this.config.concurrency ?? this.getConcurrency(),
+      }
+    );
+
+    // Return a wrapper that implements IWorker interface
+    return {
+      isRunning: () => bullMQWorker.isRunning(),
+    };
   }
 
   /**
@@ -282,259 +317,6 @@ export abstract class BaseWorker<
    */
   protected getConcurrency(): number {
     return 5;
-  }
-
-  /**
-   * Add standard status broadcasting actions to the pipeline
-   */
-  protected addStatusActions(
-    actions: BaseAction<unknown, unknown>[],
-    data: TData
-  ): void {
-    this.dependencies.logger.log(
-      `[${this.getOperationName().toUpperCase()}] addStatusActions called with data: noteId=${data.noteId}, hasNoteId=${!!data.noteId}, dataKeys=${Object.keys(data).join(", ")}`
-    );
-
-    // Add status actions regardless of noteId - they will handle missing noteId gracefully
-    this.dependencies.logger.log(
-      `[${this.getOperationName().toUpperCase()}] Adding status actions`
-    );
-    actions.unshift(new BroadcastProcessingAction());
-    actions.push(new BroadcastCompletedAction());
-  }
-
-  /**
-   * Wrap an action with retry and error handling
-   */
-  protected wrapWithRetryAndErrorHandling<TInput, TOutput>(
-    action: BaseAction<TInput, TOutput>
-  ): BaseAction<TInput, TOutput> {
-    const withRetry = new RetryWrapperAction(action);
-    return new ErrorHandlingWrapperAction(withRetry) as BaseAction<
-      TInput,
-      TOutput
-    >;
-  }
-
-  /**
-   * Wrap an action with just error handling (no retry)
-   */
-  protected wrapWithErrorHandling<TInput, TOutput>(
-    action: BaseAction<TInput, TOutput>
-  ): BaseAction<TInput, TOutput> {
-    return new ErrorHandlingWrapperAction(action) as BaseAction<
-      TInput,
-      TOutput
-    >;
-  }
-
-  /**
-   * Create an action from the factory and wrap it with retry and error handling
-   */
-  protected createWrappedAction(
-    actionName: string,
-    deps?: TDeps
-  ): BaseAction<TData, TData> {
-    const action = this.actionFactory.create(
-      actionName,
-      deps
-    ) as unknown as BaseAction<TData, TData>;
-    return this.wrapWithRetryAndErrorHandling(action);
-  }
-
-  /**
-   * Create an action from the factory and wrap it with just error handling
-   */
-  protected createErrorHandledAction(
-    actionName: string,
-    deps?: TDeps
-  ): BaseAction<TData, TData> {
-    const action = this.actionFactory.create(
-      actionName,
-      deps
-    ) as unknown as BaseAction<TData, TData>;
-    return this.wrapWithErrorHandling(action);
-  }
-
-  /**
-   * Close the worker
-   */
-  async close(): Promise<void> {
-    await this.worker.close();
-  }
-
-  /**
-   * Get the underlying BullMQ worker
-   */
-  getWorker(): Worker {
-    return this.worker;
-  }
-
-  /**
-   * Test method to process a job (for testing purposes only)
-   */
-  public async testProcessJob(job: Job): Promise<unknown> {
-    const startTime = Date.now();
-    const context: ActionContext = {
-      jobId: job.id ?? "unknown",
-      retryCount: job.attemptsMade,
-      queueName: "test-queue",
-      noteId: (job.data as TData).noteId,
-      operation: this.getOperationName(),
-      startTime,
-      workerName: this.getOperationName(),
-      attemptNumber: job.attemptsMade + 1,
-    };
-
-    const data = job.data as TData;
-
-    this.dependencies.logger.log(
-      `[${this.getOperationName().toUpperCase()}] Starting job ${context.jobId}`
-    );
-
-    try {
-      // Create the action pipeline
-      const actions = this.createActionPipeline(data, context);
-
-      // Execute the pipeline
-      let result: TData = data;
-      const actionNames = actions.map((a) => {
-        // Extract the actual action name from wrapper names
-        if (a.name.includes("error_handling_wrapper(")) {
-          return a.name.replace("error_handling_wrapper(", "").replace(")", "");
-        }
-        if (a.name.includes("retry_wrapper(")) {
-          return a.name.replace("retry_wrapper(", "").replace(")", "");
-        }
-        return a.name;
-      });
-      this.dependencies.logger.log(
-        `[${this.getOperationName().toUpperCase()}] Executing ${actions.length} actions: ${actionNames.join(", ")}`
-      );
-      for (const action of actions) {
-        const actionStartTime = Date.now();
-        // Extract clean action name for logging
-        let cleanActionName = action.name;
-        if (action.name.includes("error_handling_wrapper(")) {
-          cleanActionName = action.name
-            .replace("error_handling_wrapper(", "")
-            .replace(")", "");
-        }
-        if (action.name.includes("retry_wrapper(")) {
-          cleanActionName = action.name
-            .replace("retry_wrapper(", "")
-            .replace(")", "");
-        }
-
-        this.dependencies.logger.log(
-          `[${this.getOperationName().toUpperCase()}] Data for action ${cleanActionName}: ${JSON.stringify(result)}`
-        );
-        try {
-          result = (await this.executeActionWithCaching(
-            action,
-            result,
-            context
-          )) as TData;
-          const actionDuration = Date.now() - actionStartTime;
-          WorkerMetrics.recordActionExecutionTime(
-            action.name,
-            actionDuration,
-            true
-          );
-          this.dependencies.logger.log(
-            `[${this.getOperationName().toUpperCase()}] ✅ ${cleanActionName} (${actionDuration}ms)`
-          );
-        } catch (error) {
-          const actionDuration = Date.now() - actionStartTime;
-          WorkerMetrics.recordActionExecutionTime(
-            action.name,
-            actionDuration,
-            false
-          );
-          this.dependencies.logger.log(
-            `[${this.getOperationName().toUpperCase()}] ❌ ${cleanActionName} (${actionDuration}ms) - ${error instanceof Error ? error.message : String(error)}`,
-            "error"
-          );
-          throw new ActionExecutionError(
-            `Action ${action.name} failed: ${error instanceof Error ? error.message : String(error)}`,
-            this.getOperationName(),
-            action.name,
-            error as Error,
-            context.jobId
-          );
-        }
-      }
-
-      const totalDuration = Date.now() - startTime;
-      WorkerMetrics.recordJobProcessingTime(
-        this.getOperationName(),
-        totalDuration,
-        true
-      );
-
-      this.dependencies.logger.log(
-        `[${this.getOperationName().toUpperCase()}] ✅ Job ${context.jobId} completed successfully (${totalDuration}ms)`
-      );
-
-      return result;
-    } catch (error) {
-      const totalDuration = Date.now() - startTime;
-      WorkerMetrics.recordJobProcessingTime(
-        this.getOperationName(),
-        totalDuration,
-        false
-      );
-
-      this.dependencies.logger.log(
-        `[${this.getOperationName().toUpperCase()}] ❌ Job ${context.jobId} failed (${totalDuration}ms) - ${error instanceof Error ? error.message : String(error)}`,
-        "error"
-      );
-
-      throw error;
-    }
-  }
-
-  /**
-   * Execute an action with caching support
-   */
-  private async executeActionWithCaching(
-    action: BaseAction<unknown, unknown>,
-    data: unknown,
-    context: ActionContext
-  ): Promise<unknown> {
-    // Check if action supports caching
-    if (action.name.includes("parse") || action.name.includes("fetch")) {
-      const cacheKey = createCacheKey(
-        "action",
-        action.name,
-        context.jobId,
-        JSON.stringify(data)
-      );
-
-      const cached = globalActionCache.get<unknown>(cacheKey);
-      if (cached) {
-        this.dependencies.logger.log(
-          `Cache hit for action ${action.name} in job ${context.jobId}`
-        );
-        return cached;
-      }
-
-      const result = await action.execute(
-        data,
-        this.dependencies as unknown,
-        context
-      );
-      globalActionCache.set(cacheKey, result, 300000); // Cache for 5 minutes
-      return result;
-    }
-
-    // No caching for other actions
-    const result = await action.execute(
-      data,
-      this.dependencies as unknown,
-      context
-    );
-    return result;
   }
 
   /**
@@ -551,34 +333,4 @@ export abstract class BaseWorker<
 
     return status;
   }
-}
-
-/**
- * Static helper to create base dependencies from a container
- */
-export function createBaseDependenciesFromContainer(
-  container: IServiceContainer
-) {
-  return {
-    addStatusEventAndBroadcast: async (event: {
-      importId: string;
-      noteId?: string;
-      status: NoteStatus;
-      message?: string;
-      context?: string;
-      currentCount?: number;
-      totalCount?: number;
-      indentLevel?: number;
-    }) => {
-      if (container.statusBroadcaster?.addStatusEventAndBroadcast) {
-        return container.statusBroadcaster.addStatusEventAndBroadcast(event);
-      } else {
-        return Promise.resolve();
-      }
-    },
-    ErrorHandler: container.errorHandler?.errorHandler || {
-      withErrorHandling: async (operation) => operation(),
-    },
-    logger: container.logger,
-  };
 }

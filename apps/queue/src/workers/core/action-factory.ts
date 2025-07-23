@@ -3,28 +3,30 @@ import { WorkerAction } from "./types";
 /**
  * Type for action creators that can create actions with dependencies
  */
-export type ActionCreator<TData = unknown, TDeps = unknown> = (
-  deps?: TDeps
-) => WorkerAction<TData, TDeps>;
+export type ActionCreator<
+  TData = unknown,
+  TDeps = unknown,
+  TResult = unknown,
+> = (deps?: TDeps) => WorkerAction<TData, TDeps, TResult>;
 
 /**
  * ActionFactory allows registering and creating actions by name.
  * Supports dependency injection and singleton/per-job instantiation.
  */
-export class ActionFactory {
-  private registry = new Map<string, ActionCreator<unknown, unknown>>();
+export class ActionFactory<
+  TData = unknown,
+  TDeps = unknown,
+  TResult = unknown,
+> {
+  private registry = new Map<string, ActionCreator<TData, TDeps, TResult>>();
 
   /**
    * Register an action constructor by name.
    * @param name Unique action name
    * @param creator Function that returns a new action instance
    */
-  register<TData = unknown, TDeps = unknown>(
-    name: string,
-    creator: ActionCreator<TData, TDeps>
-  ): void {
-    // Allow re-registration - this is safe for multiple worker instances
-    this.registry.set(name, creator as ActionCreator<unknown, unknown>);
+  register(name: string, creator: ActionCreator<TData, TDeps, TResult>): void {
+    this.registry.set(name, creator);
   }
 
   /**
@@ -32,17 +34,15 @@ export class ActionFactory {
    * @param name Action name
    * @param deps Dependencies to inject
    */
-  create<TData = unknown, TDeps = unknown>(
-    name: string,
-    deps?: TDeps
-  ): WorkerAction<TData, TDeps> {
+  create(name: string, deps?: TDeps): WorkerAction<TData, TDeps, TResult> {
     const creator = this.registry.get(name);
     if (!creator) {
+      const available = Array.from(this.registry.keys()).join(", ");
       throw new Error(
-        `Action '${name}' is not registered in the ActionFactory.`
+        `Action '${name}' is not registered in the ActionFactory. Registered actions: [${available}]`
       );
     }
-    return creator(deps) as WorkerAction<TData, TDeps>;
+    return creator(deps);
   }
 
   /**

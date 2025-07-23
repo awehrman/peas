@@ -172,20 +172,10 @@ export const WORKER_CONSTANTS = {
   /** Worker names */
   NAMES: {
     NOTE: "note_processing",
-    IMAGE: "image_processing",
-    INGREDIENT: "ingredient_processing",
-    INSTRUCTION: "instruction_processing",
-    CATEGORIZATION: "categorization_processing",
-    SOURCE: "source_processing",
   },
   /** Job types */
   JOB_TYPES: {
     PROCESS_NOTE: "process-note",
-    PROCESS_IMAGE: "process-image",
-    PROCESS_INGREDIENT: "process-ingredient",
-    PROCESS_INSTRUCTION: "process-instruction",
-    PROCESS_CATEGORIZATION: "process-categorization",
-    PROCESS_SOURCE: "process-source",
   },
   /** Default job options */
   DEFAULT_JOB_OPTIONS: {
@@ -232,23 +222,6 @@ export const LOG_MESSAGES = {
     QUEUE_CLOSED: "✅ {queueName} queue closed successfully",
     IMPORT_COMPLETED: "✅ Import completed in {duration}ms",
     FILE_QUEUED: "✅ Queued file: {fileName} with importId: {importId}",
-    IMAGE_PROCESSING_COMPLETED:
-      "✅ Image processing completed: {processedUrl} ({width}x{height})",
-    IMAGE_SAVED: "✅ Image saved successfully: {savedUrl}",
-    IMAGE_DATABASE_UPDATED: "✅ Successfully updated note {noteId} with image",
-    INGREDIENT_PARSING_COMPLETED: "✅ Ingredient parsing completed: {status}",
-    INSTRUCTION_PARSING_COMPLETED: "✅ Instruction parsing completed: {status}",
-    INSTRUCTION_DATABASE_UPDATED:
-      "✅ Successfully updated instruction line {id}",
-    INSTRUCTION_STEPS_CREATED:
-      "✅ Successfully created {count} instruction steps",
-    CATEGORIZATION_COMPLETED: "✅ Categorization completed: {categories}",
-    CATEGORIZATION_DATABASE_UPDATED:
-      "✅ Successfully updated note {noteId} with categories",
-    CATEGORIZATION_TAGS_UPDATED:
-      "✅ Successfully updated note {noteId} with tags",
-    SOURCE_PROCESSING_COMPLETED: "✅ Source processing completed: {title}",
-    SOURCE_SAVED: "✅ Source saved successfully: {id}",
     NOTE_HTML_PARSING_COMPLETED:
       "✅ HTML parsing completed: {contentLength} characters",
     NOTE_CREATION_COMPLETED: "✅ Note created successfully: {fileName}",
@@ -268,12 +241,6 @@ export const LOG_MESSAGES = {
     FILE_FAILED: "❌ Failed to queue file {fileName}: {error}",
     IMPORT_FAILED: "❌ Import failed: {error}",
     GRACEFUL_SHUTDOWN_TIMEOUT: "❌ Forced shutdown after timeout",
-    INGREDIENT_EMPTY_INPUT: "❌ Empty or whitespace-only input received",
-    INGREDIENT_PARSER_NO_DATA: "❌ Parser returned no valid data",
-    INGREDIENT_PARSING_FAILED: "❌ Ingredient parsing failed: {error}",
-    INSTRUCTION_PARSING_FAILED: "❌ Instruction parsing failed: {error}",
-    CATEGORIZATION_FAILED: "❌ Categorization failed: {error}",
-    SOURCE_PROCESSING_FAILED: "❌ Source processing failed: {error}",
   },
   /** Info messages */
   INFO: {
@@ -289,21 +256,6 @@ export const LOG_MESSAGES = {
     WEBSOCKET_STARTED: "🔌 WebSocket server running on port {port}",
     WORKERS_STARTED: "👷 All workers started successfully",
     HTTP_SERVER_CLOSED: "✅ HTTP server closed",
-    IMAGE_PROCESSING_START: "🖼️ Processing image for note {noteId}",
-    IMAGE_SAVING_START: "💾 Saving processed image: {processedUrl}",
-    IMAGE_DATABASE_UPDATE:
-      "🗄️ Updating note {noteId} with image URL: {imageUrl}",
-    INGREDIENT_PARSING_START: "🥕 Parsing ingredient: {text}",
-    INSTRUCTION_PARSING_START: "📝 Parsing instruction: {text}",
-    INSTRUCTION_DATABASE_UPDATE:
-      "🗄️ Updating instruction line {id} with data: {data}",
-    INSTRUCTION_STEPS_CREATION: "📋 Creating {count} instruction steps",
-    CATEGORIZATION_START: "🏷️ Categorizing recipe: {title}",
-    CATEGORIZATION_DATABASE_UPDATE:
-      "🗄️ Updating note {noteId} with categories: {categories}",
-    CATEGORIZATION_TAGS_UPDATE: "🏷️ Updating note {noteId} with tags: {tags}",
-    SOURCE_PROCESSING_START: "📚 Processing source for note {noteId}",
-    SOURCE_SAVING_START: "💾 Saving source: {title}",
     NOTE_HTML_PARSING_START:
       "📄 Parsing HTML content: {contentLength} characters",
     NOTE_CREATION_START: "📝 Creating note: {fileName}",

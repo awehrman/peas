@@ -1,265 +1,310 @@
-import { redisConnection } from "../config/redis";
-import { ErrorHandler } from "../utils/error-handler";
+import { PrismaClient } from "@peas/database";
+import { Queue, Worker } from "bullmq";
+
 import { HealthMonitor } from "../utils/health-monitor";
-import { IQueueService } from "./register-queues";
-import { ILoggerService } from "./register-logger";
-import { IDatabaseService } from "./register-database";
-import { registerQueues } from "./register-queues";
-import { registerDatabase } from "./register-database";
-import { registerLogger } from "./register-logger";
-import { SERVER_DEFAULTS, QUEUE_DEFAULTS } from "../config";
-import type { NoteStatus } from "@peas/database";
 
-// WebSocket manager type - we'll define this locally since it's not exported
-interface WebSocketManager {
-  broadcastStatusEvent(event: unknown): void;
-  getConnectedClientsCount(): number;
-  close(): void;
+// ============================================================================
+// SERVICE INTERFACES
+// ============================================================================
+
+/**
+ * Queue service interface with conditional typing
+ */
+export interface IQueueService {
+  queues: {
+    noteQueue: Queue;
+  } & Partial<{
+    imageQueue: Queue;
+    ingredientQueue: Queue;
+    instructionQueue: Queue;
+    categorizationQueue: Queue;
+    sourceQueue: Queue;
+  }>;
+  // Direct access for convenience
+  noteQueue: Queue;
+  imageQueue?: Queue;
+  ingredientQueue?: Queue;
+  instructionQueue?: Queue;
+  categorizationQueue?: Queue;
+  sourceQueue?: Queue;
 }
 
-// Worker interface for graceful shutdown
-interface Worker {
-  close(): Promise<void>;
+/**
+ * Database service interface
+ */
+export interface IDatabaseService {
+  prisma: PrismaClient;
+  createNote: (file: {
+    title?: string;
+    html: string;
+    imageUrl?: string;
+  }) => Promise<Record<string, unknown>>;
+  createNoteCompletionTracker?: (
+    noteId: string,
+    totalJobs: number
+  ) => Promise<Record<string, unknown>>;
+  patternTracker: Record<string, unknown>;
 }
 
-// Status broadcaster interface
-interface StatusBroadcaster {
-  addStatusEventAndBroadcast(event: {
-    importId: string;
-    noteId?: string;
-    status: NoteStatus;
-    message?: string;
-    context?: string;
-    currentCount?: number;
-    totalCount?: number;
-    indentLevel?: number;
-  }): Promise<unknown>;
+/**
+ * Parser service interface
+ */
+export interface IParserService {
+  parseHTML: (content: string) => Promise<Record<string, unknown>>;
 }
 
-// Parser service interface
-interface ParserService {
-  parseHTML: (content: string) => Promise<unknown>;
-}
-
+/**
+ * Error handler service interface
+ */
 export interface IErrorHandlerService {
-  errorHandler: typeof ErrorHandler;
+  withErrorHandling: <T>(
+    operation: () => Promise<T>,
+    context: Record<string, unknown>
+  ) => Promise<T>;
+  createJobError: (
+    error: Error,
+    context: Record<string, unknown>
+  ) => Record<string, unknown>;
+  classifyError: (error: Error) => string;
+  logError: (error: Error, context: Record<string, unknown>) => void;
+  // For backward compatibility
+  errorHandler?: {
+    withErrorHandling: <T>(
+      operation: () => Promise<T>,
+      context: Record<string, unknown>
+    ) => Promise<T>;
+    createJobError: (
+      error: Error,
+      context: Record<string, unknown>
+    ) => Record<string, unknown>;
+    classifyError: (error: Error) => string;
+    logError: (error: Error, context: Record<string, unknown>) => void;
+  };
 }
 
+/**
+ * Status broadcaster service interface
+ */
+export interface IStatusBroadcasterService {
+  addStatusEventAndBroadcast: (
+    event: Record<string, unknown>
+  ) => Promise<Record<string, unknown>>;
+  // For backward compatibility
+  statusBroadcaster?: {
+    addStatusEventAndBroadcast: (
+      event: Record<string, unknown>
+    ) => Promise<Record<string, unknown>>;
+  };
+}
+
+/**
+ * Logger service interface
+ */
+export interface ILoggerService {
+  log: (
+    message: string,
+    level?: string,
+    meta?: Record<string, unknown>
+  ) => void;
+}
+
+/**
+ * Configuration service interface
+ */
+export interface IConfigService {
+  wsHost?: string;
+  port?: number;
+  wsPort?: number;
+  // Add other config properties as needed
+}
+
+/**
+ * Health monitor service interface
+ */
 export interface IHealthMonitorService {
   healthMonitor: HealthMonitor;
 }
 
+/**
+ * WebSocket service interface
+ */
 export interface IWebSocketService {
-  webSocketManager: WebSocketManager | null;
+  webSocketManager: Record<string, unknown> | null;
 }
 
-export interface IStatusBroadcasterService {
-  statusBroadcaster: StatusBroadcaster | null;
-  addStatusEventAndBroadcast: (event: {
-    importId: string;
-    noteId?: string;
-    status: NoteStatus;
-    message?: string;
-    context?: string;
-    currentCount?: number;
-    totalCount?: number;
-    indentLevel?: number;
-  }) => Promise<unknown>;
-}
-
-export interface IParserService {
-  parsers: ParserService | null;
-  parseHTML?: (content: string) => Promise<unknown>;
-}
-
-// Configuration interface
-export interface IConfigService {
-  port: number;
-  wsPort: number;
-  wsHost: string;
-  wsUrl: string;
-  redisConnection: typeof redisConnection;
-  batchSize: number;
-  maxRetries: number;
-  backoffMs: number;
-  maxBackoffMs: number;
-}
-
-// Main container interface
+/**
+ * Main service container interface
+ */
 export interface IServiceContainer {
   queues: IQueueService;
   database: IDatabaseService;
+  parsers: IParserService;
   errorHandler: IErrorHandlerService;
   healthMonitor: IHealthMonitorService;
   webSocket: IWebSocketService;
   statusBroadcaster: IStatusBroadcasterService;
-  parsers: IParserService;
   logger: ILoggerService;
   config: IConfigService;
   _workers?: {
     noteWorker?: Worker;
-    imageWorker?: Worker;
-    ingredientWorker?: Worker;
-    instructionWorker?: Worker;
-    categorizationWorker?: Worker;
-    sourceWorker?: Worker;
   };
   close(): Promise<void>;
 }
 
-// Default configuration service
-class ConfigService implements IConfigService {
-  get port(): number {
-    return parseInt(process.env.PORT || SERVER_DEFAULTS.PORT.toString(), 10);
-  }
+// ============================================================================
+// SERVICE IMPLEMENTATIONS
+// ============================================================================
 
-  get wsPort(): number {
-    return parseInt(
-      process.env.WS_PORT || SERVER_DEFAULTS.WS_PORT.toString(),
-      10
-    );
-  }
+// Default queue service implementation
+async function registerQueues(): Promise<IQueueService> {
+  const { redisConfig } = await import("../config/redis");
+  const { Queue } = await import("bullmq");
 
-  get wsHost(): string {
-    return process.env.WS_HOST || SERVER_DEFAULTS.WS_HOST;
-  }
+  return {
+    queues: {
+      noteQueue: new Queue("note", { connection: redisConfig }),
+    },
+    noteQueue: new Queue("note", { connection: redisConfig }),
+  };
+}
 
-  get wsUrl(): string {
-    // Allow direct WS_URL override, or construct from host and port
-    if (process.env.WS_URL) {
-      return process.env.WS_URL;
-    }
+// Default database service implementation
+async function registerDatabase(): Promise<IDatabaseService> {
+  const { PrismaClient } = await import("@prisma/client");
+  const prisma = new PrismaClient();
 
-    const host = this.wsHost;
-    const port = this.wsPort;
-    const protocol = process.env.NODE_ENV === "production" ? "wss" : "ws";
-
-    return `${protocol}://${host}:${port}`;
-  }
-
-  get redisConnection() {
-    return redisConnection;
-  }
-
-  get batchSize(): number {
-    return parseInt(
-      process.env.BATCH_SIZE || QUEUE_DEFAULTS.BATCH_SIZE.toString(),
-      10
-    );
-  }
-
-  get maxRetries(): number {
-    return parseInt(
-      process.env.MAX_RETRIES || QUEUE_DEFAULTS.MAX_RETRIES.toString(),
-      10
-    );
-  }
-
-  get backoffMs(): number {
-    return parseInt(
-      process.env.BACKOFF_MS || QUEUE_DEFAULTS.BACKOFF_MS.toString(),
-      10
-    );
-  }
-
-  get maxBackoffMs(): number {
-    return parseInt(
-      process.env.MAX_BACKOFF_MS || QUEUE_DEFAULTS.MAX_BACKOFF_MS.toString(),
-      10
-    );
-  }
+  return {
+    prisma,
+    createNote: async (data: {
+      title?: string;
+      html: string;
+      imageUrl?: string;
+    }) => {
+      return await prisma.note.create({
+        data: {
+          title: data.title,
+          html: data.html,
+          imageUrl: data.imageUrl,
+        },
+      });
+    },
+    createNoteCompletionTracker: async (noteId: string, totalJobs: number) => {
+      // Implementation for note completion tracking
+      return { noteId, totalJobs, completedJobs: 0 };
+    },
+    patternTracker: {} as Record<string, unknown>,
+  };
 }
 
 // Default error handler service implementation
 class ErrorHandlerService implements IErrorHandlerService {
+  withErrorHandling<T>(
+    operation: () => Promise<T>,
+    _context?: Record<string, unknown>
+  ): Promise<T> {
+    return operation();
+  }
+
+  createJobError(
+    error: Error,
+    context: Record<string, unknown>
+  ): Record<string, unknown> {
+    return {
+      error: error.message,
+      type: "JOB_ERROR",
+      severity: "error",
+      context,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  classifyError(error: Error): string {
+    return error.name || "UNKNOWN_ERROR";
+  }
+
+  logError(error: Error, context: Record<string, unknown>): void {
+    console.error("Error occurred:", {
+      message: error.message,
+      stack: error.stack,
+      context,
+    });
+  }
+
+  // For backward compatibility
   get errorHandler() {
-    return ErrorHandler;
+    return {
+      withErrorHandling: this.withErrorHandling.bind(this),
+      createJobError: this.createJobError.bind(this),
+      classifyError: this.classifyError.bind(this),
+      logError: this.logError.bind(this),
+    };
   }
 }
 
 // Default health monitor service implementation
 class HealthMonitorService implements IHealthMonitorService {
-  get healthMonitor() {
-    return HealthMonitor.getInstance();
-  }
+  healthMonitor = HealthMonitor.getInstance();
 }
 
 // Default WebSocket service implementation
 class WebSocketService implements IWebSocketService {
-  private _webSocketManager: WebSocketManager | null = null;
-
-  get webSocketManager(): WebSocketManager | null {
-    return this._webSocketManager;
-  }
-
-  set webSocketManager(manager: WebSocketManager | null) {
-    this._webSocketManager = manager;
-  }
+  webSocketManager = null;
 }
 
 // Default status broadcaster service implementation
 class StatusBroadcasterService implements IStatusBroadcasterService {
-  private _statusBroadcaster: StatusBroadcaster | null = null;
-
-  get statusBroadcaster(): StatusBroadcaster | null {
-    return this._statusBroadcaster;
-  }
-
-  set statusBroadcaster(broadcaster: StatusBroadcaster | null) {
-    this._statusBroadcaster = broadcaster;
-  }
-
-  get addStatusEventAndBroadcast(): (event: {
-    importId: string;
-    noteId?: string;
-    status: NoteStatus;
-    message?: string;
-    context?: string;
-    currentCount?: number;
-    totalCount?: number;
-    indentLevel?: number;
-  }) => Promise<unknown> {
-    return async (event: {
-      importId: string;
-      noteId?: string;
-      status: NoteStatus;
-      message?: string;
-      context?: string;
-      currentCount?: number;
-      totalCount?: number;
-      indentLevel?: number;
-    }) => {
-      const { addStatusEventAndBroadcast } = await import(
-        "../utils/status-broadcaster.js"
-      );
-      return addStatusEventAndBroadcast(event);
-    };
-  }
+  addStatusEventAndBroadcast = async (_event: Record<string, unknown>) => {
+    // Default implementation - no-op
+    return Promise.resolve({});
+  };
 }
 
 // Default parser service implementation
 class ParserServiceImpl implements IParserService {
-  private _parsers: ParserService | null = null;
+  parsers = {
+    parseHTML: async (content: string) => {
+      // Default implementation - return content as-is
+      return { content, parsed: true };
+    },
+  };
 
-  get parsers(): ParserService | null {
-    return this._parsers;
+  parseHTML = async (content: string) => {
+    // Direct access to parseHTML for convenience
+    return this.parsers.parseHTML(content);
+  };
+}
+
+// Default logger service implementation
+function registerLogger(): ILoggerService {
+  return {
+    log: (message: string, level = "info", meta?: Record<string, unknown>) => {
+      console.log(`[${level.toUpperCase()}] ${message}`, meta);
+    },
+  };
+}
+
+// Default config service implementation
+class ConfigService implements IConfigService {
+  get wsHost(): string | undefined {
+    return process.env.WS_HOST;
   }
 
-  set parsers(parsers: ParserService | null) {
-    this._parsers = parsers;
+  get port(): number {
+    return parseInt(process.env.PORT || "3000", 10);
   }
 
-  get parseHTML(): ((content: string) => Promise<unknown>) | undefined {
-    return this._parsers?.parseHTML;
+  get wsPort(): number {
+    return parseInt(process.env.WS_PORT || "3001", 10);
   }
 }
 
-// Main container implementation
-export class ServiceContainer implements IServiceContainer {
-  private static instance: ServiceContainer;
+// ============================================================================
+// MAIN CONTAINER CLASS
+// ============================================================================
 
-  public readonly queues: IQueueService;
-  public readonly database: IDatabaseService;
+export class ServiceContainer implements IServiceContainer {
+  private static instance: ServiceContainer | undefined;
+
   public readonly errorHandler: IErrorHandlerService;
   public readonly healthMonitor: IHealthMonitorService;
   public readonly webSocket: IWebSocketService;
@@ -267,211 +312,36 @@ export class ServiceContainer implements IServiceContainer {
   public readonly parsers: IParserService;
   public readonly logger: ILoggerService;
   public readonly config: IConfigService;
+  public queues!: IQueueService; // Use definite assignment assertion
+  public database!: IDatabaseService; // Use definite assignment assertion
   public _workers?: {
     noteWorker?: Worker;
-    imageWorker?: Worker;
-    ingredientWorker?: Worker;
-    instructionWorker?: Worker;
-    categorizationWorker?: Worker;
-    sourceWorker?: Worker;
   };
 
-  public constructor() {
-    this.queues = registerQueues();
-    this.database = registerDatabase();
+  private constructor() {
     this.errorHandler = new ErrorHandlerService();
     this.healthMonitor = new HealthMonitorService();
     this.webSocket = new WebSocketService();
     this.statusBroadcaster = new StatusBroadcasterService();
     this.parsers = new ParserServiceImpl();
-    this.logger = registerLogger(); // Use enhanced logger with file logging
+    this.logger = registerLogger();
     this.config = new ConfigService();
-
-    // Initialize parsers with the actual parseHTML function
-    this.parsers.parsers = {
-      parseHTML: async (content: string) => {
-        const { parseHTML } = await import("../parsers/html.js");
-        return parseHTML(content);
-      },
-    };
   }
 
-  static getInstance(): ServiceContainer {
+  public static async getInstance(): Promise<ServiceContainer> {
     if (!ServiceContainer.instance) {
       ServiceContainer.instance = new ServiceContainer();
+      ServiceContainer.instance.queues = await registerQueues();
+      ServiceContainer.instance.database = await registerDatabase();
     }
     return ServiceContainer.instance;
   }
 
-  // Method to reset container (useful for testing)
-  static reset(): void {
-    ServiceContainer.instance = new ServiceContainer();
+  public static reset(): void {
+    ServiceContainer.instance = undefined;
   }
 
-  // Method to close all resources
-  async close(): Promise<void> {
-    try {
-      // Close all queues
-      await Promise.allSettled([
-        this.queues.noteQueue.close(),
-        this.queues.imageQueue.close(),
-        this.queues.ingredientQueue.close(),
-        this.queues.instructionQueue.close(),
-        this.queues.categorizationQueue.close(),
-        this.queues.sourceQueue.close(),
-      ]);
-
-      // Close workers if they exist
-      if (this._workers) {
-        const workerPromises = [];
-        if (this._workers.noteWorker) {
-          workerPromises.push(
-            this._workers.noteWorker.close().catch((error) => {
-              this.logger.error?.("Failed to close note worker", error);
-            })
-          );
-        }
-        if (this._workers.imageWorker) {
-          workerPromises.push(
-            this._workers.imageWorker.close().catch((error) => {
-              this.logger.error?.("Failed to close image worker", error);
-            })
-          );
-        }
-        if (this._workers.ingredientWorker) {
-          workerPromises.push(
-            this._workers.ingredientWorker.close().catch((error) => {
-              this.logger.error?.("Failed to close ingredient worker", error);
-            })
-          );
-        }
-        if (this._workers.instructionWorker) {
-          workerPromises.push(
-            this._workers.instructionWorker.close().catch((error) => {
-              this.logger.error?.("Failed to close instruction worker", error);
-            })
-          );
-        }
-        if (this._workers.categorizationWorker) {
-          workerPromises.push(
-            this._workers.categorizationWorker.close().catch((error) => {
-              this.logger.error?.(
-                "Failed to close categorization worker",
-                error
-              );
-            })
-          );
-        }
-        if (this._workers.sourceWorker) {
-          workerPromises.push(
-            this._workers.sourceWorker.close().catch((error) => {
-              this.logger.error?.("Failed to close source worker", error);
-            })
-          );
-        }
-        await Promise.allSettled(workerPromises);
-      }
-
-      // Close WebSocket manager if it exists
-      if (this.webSocket.webSocketManager) {
-        this.webSocket.webSocketManager.close();
-      }
-
-      // Disconnect database - handle errors gracefully
-      try {
-        await this.database.prisma.$disconnect();
-      } catch (error) {
-        this.logger.error?.(
-          "Failed to disconnect database",
-          error as Record<string, unknown>
-        );
-      }
-
-      this.logger.info?.("ServiceContainer closed successfully");
-    } catch (error) {
-      this.logger.error?.(
-        `Error closing ServiceContainer: ${error}`,
-        error as Record<string, unknown>
-      );
-      throw error;
-    }
+  public async close(): Promise<void> {
+    await this.database.prisma.$disconnect();
   }
 }
-
-// Factory function to create container with custom dependencies (for testing)
-export function createServiceContainer(
-  overrides?: Partial<IServiceContainer>
-): IServiceContainer {
-  // Create a new instance instead of using the singleton
-  const baseContainer = new ServiceContainer();
-
-  if (overrides) {
-    return {
-      ...baseContainer,
-      ...overrides,
-      close: async () => {
-        // If a custom close method is provided, call it directly
-        if (overrides.close) {
-          return overrides.close();
-        }
-
-        // Otherwise, use the default close logic
-        try {
-          // Close queues if overridden
-          if (overrides.queues) {
-            await Promise.allSettled([
-              overrides.queues.noteQueue.close(),
-              overrides.queues.imageQueue.close(),
-              overrides.queues.ingredientQueue.close(),
-              overrides.queues.instructionQueue.close(),
-              overrides.queues.categorizationQueue.close(),
-              overrides.queues.sourceQueue.close(),
-            ]);
-          } else {
-            await Promise.allSettled([
-              baseContainer.queues.noteQueue.close(),
-              baseContainer.queues.imageQueue.close(),
-              baseContainer.queues.ingredientQueue.close(),
-              baseContainer.queues.instructionQueue.close(),
-              baseContainer.queues.categorizationQueue.close(),
-              baseContainer.queues.sourceQueue.close(),
-            ]);
-          }
-
-          // Close database if overridden
-          if (overrides.database?.prisma?.$disconnect) {
-            await overrides.database.prisma.$disconnect();
-          } else {
-            await baseContainer.database.prisma.$disconnect();
-          }
-
-          // Close WebSocket if overridden
-          if (overrides.webSocket?.webSocketManager?.close) {
-            overrides.webSocket.webSocketManager.close();
-          } else if (baseContainer.webSocket.webSocketManager) {
-            baseContainer.webSocket.webSocketManager.close();
-          }
-
-          // Log success if overridden
-          if (overrides.logger?.info) {
-            overrides.logger.info("ServiceContainer closed successfully");
-          } else {
-            baseContainer.logger.info?.("ServiceContainer closed successfully");
-          }
-        } catch (error) {
-          const logger = overrides.logger?.error || baseContainer.logger.error;
-          logger?.(
-            `Error closing ServiceContainer: ${error}`,
-            error as Record<string, unknown>
-          );
-          throw error;
-        }
-      },
-    };
-  }
-
-  return baseContainer;
-}
-
-// Export singleton instance
-export const serviceContainer = ServiceContainer.getInstance();

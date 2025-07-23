@@ -1,6 +1,6 @@
 import { PrismaClient } from "@peas/database";
 
-// Configure Prisma with connection pooling for better performance
+// Enhanced Prisma configuration with connection pooling and performance optimizations
 export const prisma = new PrismaClient({
   datasources: {
     db: {

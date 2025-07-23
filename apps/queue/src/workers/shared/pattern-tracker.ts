@@ -1,17 +1,27 @@
 import type { PrismaClient } from "@peas/database";
+
 import type { BaseWorkerDependencies } from "../core/types";
 
+/**
+ * Represents a single pattern rule.
+ */
 export interface PatternRule {
   rule: string;
   ruleNumber: number;
 }
 
+/**
+ * Data for a tracked pattern.
+ */
 export interface PatternData {
   patternCode: string;
   ruleSequence: PatternRule[];
   exampleLine?: string;
 }
 
+/**
+ * PatternTracker provides utilities for tracking and retrieving unique line patterns in the database.
+ */
 export class PatternTracker {
   constructor(
     private prisma: PrismaClient,
@@ -19,15 +29,19 @@ export class PatternTracker {
   ) {}
 
   /**
-   * Generate a pattern code from rule sequence
-   * Includes rule numbers in the pattern code for better identification
+   * Generate a pattern code from rule sequence.
+   * Includes rule numbers in the pattern code for better identification.
+   * @param rules - Array of pattern rules
+   * @returns Pattern code string
    */
   private generatePatternCode(rules: PatternRule[]): string {
     return rules.map((rule) => `${rule.ruleNumber}:${rule.rule}`).join("_");
   }
 
   /**
-   * Track a pattern and save/update it in the database
+   * Track a pattern and save/update it in the database.
+   * @param rules - Array of pattern rules
+   * @param exampleLine - Optional example line
    */
   async trackPattern(
     rules: PatternRule[],
@@ -91,7 +105,8 @@ export class PatternTracker {
   }
 
   /**
-   * Get all patterns ordered by occurrence count
+   * Get all patterns ordered by occurrence count.
+   * @returns Array of pattern data
    */
   async getPatterns(): Promise<PatternData[]> {
     try {

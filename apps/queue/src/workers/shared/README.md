@@ -1,24 +1,33 @@
 # Shared Worker Utilities
 
-The Shared Worker Utilities provide common functionality that is used across all workers in the queue processing system. These utilities handle cross-cutting concerns like error handling, retry logic, and status broadcasting.
+The Shared Worker Utilities provide common functionality that is used across all workers in the queue processing system. These utilities handle cross-cutting concerns like error handling, retry logic, status broadcasting, and database operations with comprehensive type safety and structured logging.
 
 ## Overview
 
 The shared utilities provide:
 
-- **Error Handling**: Wrapper actions for consistent error handling
-- **Retry Logic**: Configurable retry mechanisms with exponential backoff
-- **Status Broadcasting**: Real-time status updates via WebSocket
-- **Common Patterns**: Reusable patterns for worker actions
+- **Error Handling**: Wrapper actions for consistent error handling with context preservation
+- **Retry Logic**: Configurable retry mechanisms with exponential backoff and jitter
+- **Status Broadcasting**: Real-time status updates via WebSocket with structured events
+- **Database Operations**: Shared database interaction patterns with type safety
+- **Worker Management**: Factory functions for creating and managing workers
+- **Pattern Tracking**: Utilities for tracking unique patterns across jobs
+- **Action Registration**: Helper functions for registering actions with type safety
 
 ## Architecture
 
 ```text
 src/workers/shared/
-├── error-handling.ts     # Error handling wrapper actions
-├── retry.ts             # Retry logic with exponential backoff
-├── broadcast-status.ts  # WebSocket status broadcasting
-└── index.ts             # Barrel exports
+├── error-handling.ts           # Error handling wrapper actions
+├── retry.ts                   # Retry logic with exponential backoff
+├── error-broadcasting.ts      # Error broadcasting utilities
+├── worker-factory.ts          # Worker creation and management
+├── database-operations.ts     # Shared database operations
+├── pattern-tracker.ts         # Pattern tracking utilities
+├── status-utils.ts           # Status event utilities
+├── action-registry.ts        # Action registration helpers
+├── completion-status-action.ts # Completion status actions
+└── index.ts                  # Barrel exports
 ```
 
 ## Key Components
@@ -28,8 +37,12 @@ src/workers/shared/
 The `ErrorHandlingWrapperAction` provides consistent error handling for all actions:
 
 ```typescript
-export class ErrorHandlingWrapperAction extends BaseAction<TInput, TOutput> {
-  constructor(private wrappedAction: BaseAction<TInput, TOutput>) {
+export class ErrorHandlingWrapperAction<
+  TInput,
+  TDeps,
+  TOutput,
+> extends BaseAction<TInput, TDeps, TOutput> {
+  constructor(private wrappedAction: BaseAction<TInput, TDeps, TOutput>) {
     super();
   }
 }
@@ -39,9 +52,9 @@ export class ErrorHandlingWrapperAction extends BaseAction<TInput, TOutput> {
 
 - **Automatic Wrapping**: Wraps any action with error handling
 - **Context Preservation**: Maintains error context for debugging
-- **Logging**: Automatic error logging with structured data
+- **Structured Logging**: Automatic error logging with metadata
 - **Recovery**: Graceful error recovery and cleanup
-- **Metrics**: Error tracking and monitoring
+- **Type Safety**: Full TypeScript support with generics
 
 **Usage:**
 
@@ -52,12 +65,16 @@ const wrappedAction = new ErrorHandlingWrapperAction(action);
 
 ### Retry Logic
 
-The `RetryWrapperAction` provides configurable retry mechanisms:
+The `RetryWrapperAction` provides configurable retry mechanisms with circuit breaker patterns:
 
 ```typescript
-export class RetryWrapperAction extends BaseAction<TInput, TOutput> {
+export class RetryWrapperAction<TInput, TDeps, TOutput> extends BaseAction<
+  TInput,
+  TDeps,
+  TOutput
+> {
   constructor(
-    private wrappedAction: BaseAction<TInput, TOutput>,
+    private wrappedAction: BaseAction<TInput, TDeps, TOutput>,
     private config: RetryConfig = {}
   ) {
     super();
@@ -71,7 +88,8 @@ export class RetryWrapperAction extends BaseAction<TInput, TOutput> {
 - **Configurable Limits**: Maximum attempts and delays
 - **Conditional Retry**: Retry only on specific error types
 - **Jitter**: Random delay variation to prevent thundering herd
-- **Metrics**: Retry attempt tracking
+- **Circuit Breaker**: Prevents repeated failures against unstable services
+- **Type Safety**: Full TypeScript support with generics
 
 **Configuration:**
 
@@ -82,6 +100,10 @@ interface RetryConfig {
   maxDelay?: number; // Default: 30000ms
   retryableErrors?: string[]; // Error types to retry
   jitter?: boolean; // Default: true
+  circuitBreaker?: {
+    failureThreshold: number;
+    resetTimeout: number;
+  };
 }
 ```
 
@@ -93,190 +115,395 @@ const retryConfig = {
   maxAttempts: 5,
   baseDelay: 2000,
   maxDelay: 60000,
+  circuitBreaker: {
+    failureThreshold: 5,
+    resetTimeout: 60000,
+  },
 };
 const retryAction = new RetryWrapperAction(action, retryConfig);
 ```
 
 ### Status Broadcasting
 
-The status broadcasting system provides real-time updates:
+The status broadcasting utilities provide real-time status updates:
 
 ```typescript
-export class BroadcastProcessingAction extends BaseAction<any, any> {
-  async execute(data: any, deps: any, context: ActionContext): Promise<any> {
-    // Broadcast "PROCESSING" status
-  }
-}
-
-export class BroadcastCompletedAction extends BaseAction<any, any> {
-  async execute(data: any, deps: any, context: ActionContext): Promise<any> {
-    // Broadcast "COMPLETED" status
-  }
+export interface StatusEvent {
+  importId: string;
+  noteId?: string;
+  status: NoteStatus;
+  message?: string;
+  context?: string;
+  currentCount?: number;
+  totalCount?: number;
+  indentLevel?: number;
+  metadata?: Record<string, unknown>;
 }
 ```
 
 **Features:**
 
 - **Real-time Updates**: WebSocket-based status broadcasting
-- **Automatic Integration**: Automatically added to worker pipelines
-- **Context Awareness**: Includes job and worker context
-- **Error Handling**: Graceful handling of broadcast failures
-- **Performance**: Non-blocking status updates
-
-**Status Types:**
-
-- `PENDING`: Job is queued but not yet processing
-- `PROCESSING`: Job is currently being processed
-- `COMPLETED`: Job completed successfully
-- `FAILED`: Job failed with an error
+- **Progress Tracking**: Current/total count for progress bars
+- **Context Awareness**: Rich context information
+- **Metadata Support**: Additional structured data
+- **Type Safety**: Strong typing for all status events
 
 **Usage:**
 
 ```typescript
-// Automatically added by BaseWorker.addStatusActions()
-this.addStatusActions(actions, data);
-```
-
-## Common Patterns
-
-### Action Composition
-
-Combine multiple wrappers for comprehensive action handling:
-
-```typescript
-// Create base action
-const baseAction = new MyAction();
-
-// Add retry logic
-const retryAction = new RetryWrapperAction(baseAction, {
-  maxAttempts: 3,
-  baseDelay: 1000,
+await addStatusEventAndBroadcast({
+  importId: "import-123",
+  noteId: "note-456",
+  status: "PROCESSING",
+  message: "Processing ingredient line",
+  context: "parse_ingredients",
+  currentCount: 5,
+  totalCount: 10,
+  indentLevel: 1,
 });
-
-// Add error handling
-const finalAction = new ErrorHandlingWrapperAction(retryAction);
 ```
 
-### Dependency Injection
+### Database Operations
 
-Shared utilities support dependency injection:
-
-```typescript
-interface SharedDeps {
-  logger: {
-    log: (message: string, level?: string) => void;
-  };
-  addStatusEventAndBroadcast: (event: StatusEvent) => Promise<void>;
-}
-```
-
-### Configuration
-
-Shared utilities use centralized configuration:
+The `DatabaseOperations` class provides shared database interaction patterns:
 
 ```typescript
-import { RETRY_DEFAULTS, WEBSOCKET_DEFAULTS } from "../../config";
+export class DatabaseOperations<TPrisma extends PrismaClient = PrismaClient> {
+  constructor(private prisma: TPrisma) {}
 
-const retryConfig = {
-  maxAttempts: RETRY_DEFAULTS.MAX_ATTEMPTS,
-  baseDelay: RETRY_DEFAULTS.BASE_DELAY_MS,
-  maxDelay: RETRY_DEFAULTS.MAX_DELAY_MS,
-};
+  async createOrUpdateParsedIngredientLine(
+    lineId: string,
+    data: ParsedIngredientLineData
+  ): Promise<void> {
+    /* ... */
+  }
 
-const broadcastConfig = {
-  maxClients: WEBSOCKET_DEFAULTS.MAX_CLIENTS,
-  rateLimitMs: WEBSOCKET_DEFAULTS.RATE_LIMIT_MS,
-};
-```
+  async replaceParsedSegments(
+    ingredientLineId: string,
+    segments: ParsedSegment[]
+  ): Promise<void> {
+    /* ... */
+  }
 
-## Error Handling Strategy
-
-The shared utilities implement a comprehensive error handling strategy:
-
-1. **Prevention**: Input validation and pre-flight checks
-2. **Detection**: Automatic error detection and classification
-3. **Recovery**: Retry logic for transient failures
-4. **Reporting**: Structured error reporting and logging
-5. **Monitoring**: Error metrics and alerting
-
-### Error Classification
-
-Errors are classified for appropriate handling:
-
-- **Transient Errors**: Network timeouts, temporary service unavailability
-- **Permanent Errors**: Invalid input, missing dependencies
-- **System Errors**: Memory issues, configuration problems
-- **Business Logic Errors**: Domain-specific validation failures
-
-### Retry Strategy
-
-The retry strategy is designed for reliability:
-
-- **Exponential Backoff**: Increasing delays between attempts
-- **Jitter**: Random delay variation to prevent thundering herd
-- **Maximum Limits**: Configurable attempt and delay limits
-- **Conditional Retry**: Retry only on appropriate error types
-
-## Performance Considerations
-
-The shared utilities are optimized for performance:
-
-- **Non-blocking**: Status broadcasting doesn't block job processing
-- **Efficient Caching**: Retry state is cached for performance
-- **Memory Management**: Automatic cleanup of retry state
-- **Metrics**: Performance monitoring for optimization
-
-## Testing
-
-The shared utilities are designed for comprehensive testing:
-
-```typescript
-// Test error handling
-const mockAction = new MockAction();
-const errorHandler = new ErrorHandlingWrapperAction(mockAction);
-await errorHandler.execute(data, deps, context);
-
-// Test retry logic
-const retryAction = new RetryWrapperAction(mockAction, {
-  maxAttempts: 2,
-  baseDelay: 100,
-});
-await retryAction.execute(data, deps, context);
-
-// Test status broadcasting
-const broadcastAction = new BroadcastProcessingAction();
-await broadcastAction.execute(data, deps, context);
-```
-
-## Integration
-
-The shared utilities integrate seamlessly with the core system:
-
-```typescript
-export class MyWorker extends BaseWorker<MyJobData, MyDependencies> {
-  protected createActionPipeline(
-    data: MyJobData,
-    context: ActionContext
-  ): BaseAction<unknown, unknown>[] {
-    const actions: BaseAction<unknown, unknown>[] = [];
-
-    // Add status broadcasting (automatic)
-    this.addStatusActions(actions, data);
-
-    // Add wrapped action with retry and error handling
-    const baseAction = this.createWrappedAction("my_action", this.dependencies);
-    actions.push(baseAction);
-
-    return actions;
+  async findOrCreateIngredient(
+    ingredientName: string,
+    reference: string
+  ): Promise<{ id: string; name: string; isNew: boolean }> {
+    /* ... */
   }
 }
 ```
 
-## Future Enhancements
+**Features:**
 
-- [ ] Add circuit breaker pattern
-- [ ] Implement distributed tracing
-- [ ] Add more sophisticated retry strategies
-- [ ] Support for custom error handlers
-- [ ] Add performance profiling tools
-- [ ] Implement dead letter queue support
+- **Type Safety**: Generic Prisma client support
+- **Pattern Tracking**: Automatic pattern tracking for ingredients
+- **Batch Operations**: Efficient batch database operations
+- **Error Handling**: Comprehensive error handling
+- **Performance**: Optimized database queries
+
+### Worker Factory
+
+The worker factory utilities provide functions for creating and managing workers:
+
+```typescript
+export function createWorker<TWorker extends BaseWorker>(
+  queue: IQueue,
+  dependencies: unknown,
+  WorkerClass: new (queue: IQueue, deps: unknown) => TWorker
+): TWorker {
+  /* ... */
+}
+
+export function closeWorkers(workers: BaseWorker[]): Promise<void> {
+  /* ... */
+}
+
+export function getWorkerStatus(worker: BaseWorker): WorkerStatus {
+  /* ... */
+}
+```
+
+**Features:**
+
+- **Type Safety**: Generic worker creation with proper typing
+- **Lifecycle Management**: Worker creation and cleanup
+- **Status Monitoring**: Worker status tracking
+- **Error Handling**: Graceful worker shutdown
+
+### Action Registry
+
+The action registry provides helper functions for registering actions:
+
+```typescript
+export interface ActionRegistration<
+  TData = unknown,
+  TDeps = unknown,
+  TResult = unknown,
+> {
+  name: string;
+  factory: () => BaseAction<TData, TDeps, TResult>;
+}
+
+export function registerActions<
+  TData = unknown,
+  TDeps = unknown,
+  TResult = unknown,
+>(
+  factory: ActionFactory<TData, TDeps, TResult>,
+  actions: ActionRegistration<TData, TDeps, TResult>[]
+): void {
+  /* ... */
+}
+```
+
+**Features:**
+
+- **Type Safety**: Full TypeScript support with generics
+- **Factory Integration**: Seamless integration with ActionFactory
+- **Batch Registration**: Register multiple actions at once
+- **Validation**: Action registration validation
+
+## Usage Examples
+
+### Error Handling with Retry
+
+```typescript
+import { ErrorHandlingWrapperAction } from "./error-handling";
+import { RetryWrapperAction } from "./retry";
+
+const action = new MyAction();
+const errorHandledAction = new ErrorHandlingWrapperAction(action);
+const retryableAction = new RetryWrapperAction(errorHandledAction, {
+  maxAttempts: 3,
+  baseDelay: 1000,
+});
+```
+
+### Database Operations
+
+```typescript
+import { DatabaseOperations } from "./database-operations";
+
+const dbOps = new DatabaseOperations(prisma);
+
+await dbOps.createOrUpdateParsedIngredientLine("line-123", {
+  blockIndex: 0,
+  lineIndex: 1,
+  reference: "2 cups flour",
+  noteId: "note-456",
+  parseStatus: "CORRECT",
+});
+
+await dbOps.replaceParsedSegments("line-123", [
+  { index: 0, rule: "amount", type: "amount", value: "2" },
+  { index: 1, rule: "unit", type: "unit", value: "cups" },
+  { index: 2, rule: "ingredient", type: "ingredient", value: "flour" },
+]);
+```
+
+### Status Broadcasting
+
+```typescript
+import { addStatusEventAndBroadcast } from "./error-broadcasting";
+
+await addStatusEventAndBroadcast(deps, {
+  importId: "import-123",
+  noteId: "note-456",
+  status: "PROCESSING",
+  message: "Processing ingredient line",
+  context: "parse_ingredients",
+  currentCount: 5,
+  totalCount: 10,
+});
+```
+
+### Worker Management
+
+```typescript
+import { closeWorkers, createWorker } from "./worker-factory";
+
+const workers = [
+  createWorker(queue, deps, NoteWorker),
+  createWorker(queue, deps, IngredientWorker),
+  createWorker(queue, deps, InstructionWorker),
+];
+
+// Later...
+await closeWorkers(workers);
+```
+
+### Action Registration
+
+```typescript
+import { createActionRegistration, registerActions } from "./action-registry";
+
+registerActions(actionFactory, [
+  createActionRegistration("process-ingredient", ProcessIngredientAction),
+  createActionRegistration("save-ingredient", SaveIngredientAction),
+  createActionRegistration("broadcast-status", BroadcastStatusAction),
+]);
+```
+
+## Configuration
+
+### Retry Configuration
+
+```typescript
+interface RetryConfig {
+  maxAttempts?: number;
+  baseDelay?: number;
+  maxDelay?: number;
+  retryableErrors?: string[];
+  jitter?: boolean;
+  circuitBreaker?: {
+    failureThreshold: number;
+    resetTimeout: number;
+  };
+}
+```
+
+### Database Configuration
+
+```typescript
+interface DatabaseConfig {
+  connectionLimit?: number;
+  timeout?: number;
+  retryAttempts?: number;
+  batchSize?: number;
+}
+```
+
+### Status Configuration
+
+```typescript
+interface StatusConfig {
+  broadcastInterval?: number;
+  maxRetries?: number;
+  timeout?: number;
+  batchSize?: number;
+}
+```
+
+## Testing
+
+The shared utilities are designed for easy testing:
+
+### Mocking Dependencies
+
+```typescript
+const mockDeps = {
+  logger: {
+    log: vi.fn(),
+  },
+  addStatusEventAndBroadcast: vi.fn().mockResolvedValue(undefined),
+};
+```
+
+### Testing Error Handling
+
+```typescript
+const action = new ErrorHandlingWrapperAction(new FailingAction());
+const result = await action.execute(input, mockDeps, context);
+
+expect(mockDeps.logger.log).toHaveBeenCalledWith(
+  expect.stringContaining("Action execution failed"),
+  "error"
+);
+```
+
+### Testing Retry Logic
+
+```typescript
+const action = new RetryWrapperAction(new FailingAction(), {
+  maxAttempts: 2,
+  baseDelay: 100,
+});
+
+const startTime = Date.now();
+await action.execute(input, mockDeps, context);
+const endTime = Date.now();
+
+expect(endTime - startTime).toBeGreaterThan(100);
+```
+
+## Best Practices
+
+### Error Handling
+
+1. **Always wrap actions** with error handling
+2. **Preserve context** in error messages
+3. **Log errors** with structured data
+4. **Handle specific errors** appropriately
+5. **Provide fallback mechanisms**
+
+### Retry Logic
+
+1. **Use exponential backoff** for transient failures
+2. **Implement circuit breakers** for unstable services
+3. **Add jitter** to prevent thundering herd
+4. **Monitor retry metrics** for optimization
+5. **Set appropriate limits** to prevent infinite retries
+
+### Status Broadcasting
+
+1. **Broadcast frequently** for long-running operations
+2. **Include progress information** when available
+3. **Use consistent status codes** across workers
+4. **Add context information** for debugging
+5. **Handle broadcast failures** gracefully
+
+### Database Operations
+
+1. **Use batch operations** for efficiency
+2. **Implement proper error handling** for database failures
+3. **Use transactions** for related operations
+4. **Monitor performance** and optimize queries
+5. **Handle connection issues** gracefully
+
+## Performance Considerations
+
+### Caching
+
+- **Cache expensive operations** when possible
+- **Use appropriate TTL** for cache entries
+- **Monitor cache hit rates** for optimization
+- **Implement cache invalidation** strategies
+
+### Batch Processing
+
+- **Group related operations** into batches
+- **Use appropriate batch sizes** for your use case
+- **Monitor memory usage** with large batches
+- **Handle partial failures** in batches
+
+### Connection Management
+
+- **Reuse connections** when possible
+- **Implement connection pooling** for databases
+- **Monitor connection usage** and limits
+- **Handle connection failures** gracefully
+
+## Monitoring and Observability
+
+### Metrics
+
+- **Retry attempt counts** and success rates
+- **Error rates** by error type
+- **Database operation** performance
+- **Status broadcast** success rates
+
+### Logging
+
+- **Structured logging** with metadata
+- **Error context** preservation
+- **Performance timing** for operations
+- **Debug information** for troubleshooting
+
+### Health Checks
+
+- **Worker status** monitoring
+- **Database connectivity** checks
+- **WebSocket connection** health
+- **Queue depth** monitoring

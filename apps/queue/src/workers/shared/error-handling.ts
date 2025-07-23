@@ -1,5 +1,6 @@
 import { BaseAction } from "../core/base-action";
 import { ActionContext } from "../core/types";
+import type { BaseJobData } from "../types";
 
 export interface ErrorHandlingDeps {
   ErrorHandler: {
@@ -12,29 +13,30 @@ export interface ErrorHandlingDeps {
 
 export interface ErrorHandlingData {
   noteId?: string;
-  [key: string]: unknown;
+  context?: Record<string, unknown>;
+}
+
+export interface ErrorJobData extends BaseJobData {
+  error: Error;
+  noteId?: string;
 }
 
 /**
- * Action that wraps another action with error handling
+ * Action that wraps another action with error handling.
+ * @template TData - The data type
+ * @template TDeps - The dependencies type
  */
-export class ErrorHandlingWrapperAction extends BaseAction<
-  ErrorHandlingData,
-  ErrorHandlingDeps
-> {
+export class ErrorHandlingWrapperAction<
+  TData extends BaseJobData = BaseJobData,
+  TDeps extends ErrorHandlingDeps = ErrorHandlingDeps,
+> extends BaseAction<TData, TDeps> {
   name: string;
-
-  constructor(private wrappedAction: BaseAction<unknown, unknown>) {
+  constructor(private wrappedAction: BaseAction<BaseJobData, object>) {
     super();
     this.name = `error_handling_wrapper(${wrappedAction.name})`;
   }
-
-  async execute(
-    data: ErrorHandlingData,
-    deps: ErrorHandlingDeps,
-    context: ActionContext
-  ) {
-    return deps.ErrorHandler.withErrorHandling(
+  async execute(data: TData, deps: TDeps, context: ActionContext) {
+    return await deps.ErrorHandler.withErrorHandling(
       async () => {
         const result = await this.wrappedAction.execute(data, deps, context);
         return result;
@@ -42,50 +44,64 @@ export class ErrorHandlingWrapperAction extends BaseAction<
       {
         jobId: context.jobId,
         operation: `${context.operation} (${this.wrappedAction.name})`,
-        noteId: data.noteId,
+        noteId: (data as Record<string, unknown>).noteId as string | undefined,
       }
     );
   }
 }
 
 /**
- * Action that logs errors and continues processing
+ * Action that logs errors and continues processing.
  */
 export class LogErrorAction extends BaseAction<
-  { error: Error; noteId?: string },
-  unknown
+  ErrorJobData,
+  {
+    logger?: {
+      log: (
+        message: string,
+        level?: string,
+        meta?: Record<string, unknown>
+      ) => void;
+    };
+  }
 > {
   name = "log_error";
-
   async execute(
-    data: { error: Error; noteId?: string },
-    _deps: unknown,
+    data: ErrorJobData,
+    deps: {
+      logger?: {
+        log: (
+          message: string,
+          level?: string,
+          meta?: Record<string, unknown>
+        ) => void;
+      };
+    },
     context: ActionContext
   ) {
-    console.error(
-      `Error in ${context.operation} for job ${context.jobId}${data.noteId ? ` (note: ${data.noteId})` : ""}:`,
-      data.error.message
-    );
+    if (deps.logger) {
+      deps.logger.log(
+        `Error in ${context.operation} for job ${context.jobId}${data.noteId ? ` (note: ${data.noteId})` : ""}: ${data.error.message}`,
+        "error",
+        { error: data.error, noteId: data.noteId, jobId: context.jobId }
+      );
+    } else {
+      console.error(
+        `Error in ${context.operation} for job ${context.jobId}${data.noteId ? ` (note: ${data.noteId})` : ""}:`,
+        data.error.message
+      );
+    }
     return data;
   }
-
   retryable = false;
 }
 
 /**
- * Action that captures and stores errors for later analysis
+ * Action that captures and stores errors for later analysis.
  */
-export class CaptureErrorAction extends BaseAction<
-  { error: Error; noteId?: string },
-  unknown
-> {
+export class CaptureErrorAction extends BaseAction<ErrorJobData, object> {
   name = "capture_error";
-
-  async execute(
-    data: { error: Error; noteId?: string },
-    _deps: unknown,
-    context: ActionContext
-  ) {
+  async execute(data: ErrorJobData, _deps: object, context: ActionContext) {
     // Store error information for monitoring/alerting
     const errorInfo = {
       timestamp: new Date().toISOString(),
@@ -98,30 +114,19 @@ export class CaptureErrorAction extends BaseAction<
         name: data.error.name,
       },
     };
-
     // TODO: Send to error tracking service (e.g., Sentry, DataDog)
     console.error("Captured error:", JSON.stringify(errorInfo, null, 2));
-
     return data;
   }
-
   retryable = false;
 }
 
 /**
- * Action that attempts to recover from errors
+ * Action that attempts to recover from errors.
  */
-export class ErrorRecoveryAction extends BaseAction<
-  { error: Error; noteId?: string },
-  unknown
-> {
+export class ErrorRecoveryAction extends BaseAction<ErrorJobData, object> {
   name = "error_recovery";
-
-  async execute(
-    data: { error: Error; noteId?: string },
-    _deps: unknown,
-    context: ActionContext
-  ) {
+  async execute(data: ErrorJobData, _deps: object, context: ActionContext) {
     // Attempt to recover based on error type
     if (data.error.name === "ValidationError") {
       console.log(`Recovering from validation error in ${context.operation}`);
@@ -132,32 +137,37 @@ export class ErrorRecoveryAction extends BaseAction<
     } else {
       console.log(`No recovery strategy for error type: ${data.error.name}`);
     }
-
     return data;
   }
-
   retryable = true;
 }
 
 /**
- * Helper function to create an error handling wrapper for any action
+ * Helper function to create an error handling wrapper for any action.
+ * @template T - The action type
+ * @param action - The action to wrap
+ * @param errorHandler - Optional error handler
+ * @returns ErrorHandlingWrapperAction
  */
-export function withErrorHandling<T extends BaseAction<unknown, unknown>>(
+export function withErrorHandling<T extends BaseAction<BaseJobData, object>>(
   action: T,
   errorHandler?: (error: Error, context: ActionContext) => Promise<void>
 ): ErrorHandlingWrapperAction {
   if (errorHandler) {
-    action.onError = errorHandler;
+    action.onError = (error, _data, _deps, context) =>
+      errorHandler(error, context);
   }
   return new ErrorHandlingWrapperAction(action);
 }
 
 /**
- * Helper function to create a chain of error handling actions
+ * Helper function to create a chain of error handling actions.
+ * @param _noteId - Optional note ID
+ * @returns Array of error handling actions
  */
 export function createErrorHandlingChain(
   _noteId?: string
-): BaseAction<{ error: Error; noteId?: string }, unknown>[] {
+): BaseAction<ErrorJobData, object>[] {
   return [
     new LogErrorAction(),
     new CaptureErrorAction(),

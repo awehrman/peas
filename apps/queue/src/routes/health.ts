@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { noteQueue, ingredientQueue } from "../queues";
+
 import { performanceTracker } from "../utils/performance";
 
 export const healthRouter = Router();
@@ -7,8 +7,9 @@ export const healthRouter = Router();
 healthRouter.get("/", (req, res) => {
   res.json({
     queues: {
-      note: noteQueue.name,
-      ingredient: ingredientQueue.name,
+      note: "note_processing",
+      // TODO: Add back other queues as needed
+      // ingredient: "ingredient_processing",
     },
     // redis: {
     //   connected: true, // TODO: Add actual Redis health check
@@ -16,12 +17,11 @@ healthRouter.get("/", (req, res) => {
     performance: {
       averageProcessingTimes: {
         note: performanceTracker.getAverageDuration("note-processing"),
-        ingredient: performanceTracker.getAverageDuration("ingredient-parsing"),
-        instruction: performanceTracker.getAverageDuration(
-          "instruction-parsing"
-        ),
-        image: performanceTracker.getAverageDuration("image-processing"),
-        categorization: performanceTracker.getAverageDuration("categorization"),
+        // TODO: Add back other performance metrics as needed
+        // ingredient: performanceTracker.getAverageDuration("ingredient-parsing"),
+        // instruction: performanceTracker.getAverageDuration("instruction-parsing"),
+        // image: performanceTracker.getAverageDuration("image-processing"),
+        // categorization: performanceTracker.getAverageDuration("categorization"),
       },
     },
     uptime: process.uptime(),

@@ -1,16 +1,8 @@
 // Export the main note worker
-export { NoteWorker, createNoteWorker } from "./note-worker";
+export { NoteWorker, createNoteWorker } from "./worker";
 
-// Export note-specific types (these are the primary types)
-export * from "./types";
+// Export note-specific types from services
+export * from "../../services/actions/note/types";
 
-// Export note actions (but avoid type conflicts by being selective)
-export {
-  ParseHtmlAction,
-  SaveNoteAction,
-  ScheduleImagesAction,
-  ScheduleIngredientsAction,
-  ScheduleInstructionsAction,
-  ScheduleSourceAction,
-  registerNoteActions,
-} from "./actions";
+// Export note actions from services
+export { registerNoteActions } from "../../services/actions/note";

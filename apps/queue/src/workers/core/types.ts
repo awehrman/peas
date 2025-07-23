@@ -1,29 +1,42 @@
 import { Queue } from "bullmq";
 
-import type { LogLevel } from "../types";
+/**
+ * Log levels for structured logging
+ */
+export type LogLevel = "debug" | "info" | "warn" | "error" | "fatal";
 
 /**
  * Base interface for job data - all job data should extend this
  */
 export interface BaseJobData {
   noteId?: string;
-  [key: string]: unknown;
+  metadata?: Record<string, unknown>;
+}
+
+export interface StructuredLogger {
+  log: (
+    message: string,
+    level?: LogLevel,
+    meta?: Record<string, unknown>
+  ) => void;
 }
 
 /**
  * Base interface for worker dependencies - all dependencies should extend this
  */
 export interface BaseWorkerDependencies {
-  logger: {
-    log: (message: string, level?: LogLevel) => void;
-  };
+  logger: StructuredLogger;
   [key: string]: unknown;
 }
 
 /**
  * Represents a single action that can be performed by a worker
  */
-export interface WorkerAction<TData = unknown, TDeps = unknown> {
+export interface WorkerAction<
+  TData = unknown,
+  TDeps = unknown,
+  TResult = unknown,
+> {
   /** Unique identifier for this action */
   name: string;
   /** Function that performs the action */
@@ -31,7 +44,7 @@ export interface WorkerAction<TData = unknown, TDeps = unknown> {
     data: TData,
     deps: TDeps,
     context: ActionContext
-  ) => Promise<unknown>;
+  ) => Promise<TResult>;
   /** Whether this action should be retried on failure */
   retryable?: boolean;
   /** Custom error handling for this action */
@@ -44,15 +57,17 @@ export interface WorkerAction<TData = unknown, TDeps = unknown> {
   /** Priority of this action (lower numbers = higher priority) */
   priority?: number;
   /** Execute the action with timing and error handling */
-  executeWithTiming?: (
+  executeWithTiming: (
     data: TData,
     deps: TDeps,
     context: ActionContext
-  ) => Promise<ActionResult<unknown>>;
+  ) => Promise<ActionResult<TResult>>;
   /** Create a new action instance with custom configuration */
   withConfig?: (
-    config: Partial<Pick<WorkerAction<TData, TDeps>, "retryable" | "priority">>
-  ) => WorkerAction<TData, TDeps>;
+    config: Partial<
+      Pick<WorkerAction<TData, TDeps, TResult>, "retryable" | "priority">
+    >
+  ) => WorkerAction<TData, TDeps, TResult>;
 }
 
 /**
@@ -102,7 +117,7 @@ export interface ActionResult<T = unknown> {
   success: boolean;
   data?: T;
   error?: Error;
-  duration: number;
+  duration?: number; // Duration is now optional for flexibility
 }
 
 /**

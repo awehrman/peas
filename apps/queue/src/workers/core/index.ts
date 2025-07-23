@@ -3,6 +3,8 @@ export * from "./cache";
 export * from "./errors";
 export * from "./metrics";
 export * from "./base-worker";
+export * from "./job-processor";
+export * from "./status-actions";
 
 // Action system
 export * from "./types";
