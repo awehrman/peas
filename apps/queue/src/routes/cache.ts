@@ -1,8 +1,9 @@
 import { Router } from "express";
 
 import { ManagerFactory } from "../config/factory";
-import { actionCache } from "../workers/core/cache/action-cache";
 import { CachedIngredientParser } from "../services/ingredient/cached-ingredient-parser";
+import { HttpStatus } from "../types";
+import { actionCache } from "../workers/core/cache/action-cache";
 
 const cacheRouter = Router();
 
@@ -50,7 +51,7 @@ cacheRouter.get("/stats", async (req, res) => {
     });
   } catch (error) {
     console.error("Failed to get cache stats:", error);
-    res.status(500).json({
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: "Failed to retrieve cache statistics",
     });
@@ -72,7 +73,7 @@ cacheRouter.post("/clear", async (req, res) => {
     });
   } catch (error) {
     console.error("Failed to clear caches:", error);
-    res.status(500).json({
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: "Failed to clear caches",
     });
@@ -88,7 +89,7 @@ cacheRouter.post("/invalidate", async (req, res) => {
     const { pattern } = req.body;
 
     if (!pattern || typeof pattern !== "string") {
-      return res.status(400).json({
+      return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         error: "Pattern is required and must be a string",
       });
@@ -105,7 +106,7 @@ cacheRouter.post("/invalidate", async (req, res) => {
     });
   } catch (error) {
     console.error("Failed to invalidate cache:", error);
-    res.status(500).json({
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: "Failed to invalidate cache",
     });
@@ -121,7 +122,7 @@ cacheRouter.get("/keys", async (req, res) => {
     const { pattern = "*" } = req.query;
 
     if (typeof pattern !== "string") {
-      return res.status(400).json({
+      return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         error: "Pattern must be a string",
       });
@@ -144,7 +145,7 @@ cacheRouter.get("/keys", async (req, res) => {
     });
   } catch (error) {
     console.error("Failed to get cache keys:", error);
-    res.status(500).json({
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: "Failed to retrieve cache keys",
     });
@@ -160,7 +161,7 @@ cacheRouter.delete("/keys/:key", async (req, res) => {
     const { key } = req.params;
 
     if (!key) {
-      return res.status(400).json({
+      return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         error: "Cache key is required",
       });
@@ -176,7 +177,7 @@ cacheRouter.delete("/keys/:key", async (req, res) => {
     });
   } catch (error) {
     console.error("Failed to delete cache key:", error);
-    res.status(500).json({
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: "Failed to delete cache key",
     });
@@ -190,16 +191,19 @@ cacheRouter.delete("/keys/:key", async (req, res) => {
 cacheRouter.post("/ingredient/parse", async (req, res) => {
   try {
     const { lines, options = {} } = req.body;
-    
+
     if (!lines || !Array.isArray(lines)) {
-      return res.status(400).json({
+      return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         error: "Lines array is required",
       });
     }
 
-    const results = await CachedIngredientParser.parseIngredientLines(lines, options);
-    
+    const results = await CachedIngredientParser.parseIngredientLines(
+      lines,
+      options
+    );
+
     res.json({
       success: true,
       data: {
@@ -212,7 +216,7 @@ cacheRouter.post("/ingredient/parse", async (req, res) => {
     });
   } catch (error) {
     console.error("Failed to parse ingredient lines:", error);
-    res.status(500).json({
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: "Failed to parse ingredient lines",
     });
@@ -226,7 +230,7 @@ cacheRouter.post("/ingredient/parse", async (req, res) => {
 cacheRouter.get("/ingredient/stats", async (req, res) => {
   try {
     const stats = CachedIngredientParser.getCacheStats();
-    
+
     res.json({
       success: true,
       data: stats,
@@ -234,7 +238,7 @@ cacheRouter.get("/ingredient/stats", async (req, res) => {
     });
   } catch (error) {
     console.error("Failed to get ingredient cache stats:", error);
-    res.status(500).json({
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: "Failed to get ingredient cache stats",
     });
@@ -248,9 +252,10 @@ cacheRouter.get("/ingredient/stats", async (req, res) => {
 cacheRouter.post("/ingredient/invalidate", async (req, res) => {
   try {
     const { pattern } = req.body;
-    
-    const clearedCount = await CachedIngredientParser.invalidateIngredientCache(pattern);
-    
+
+    const clearedCount =
+      await CachedIngredientParser.invalidateIngredientCache(pattern);
+
     res.json({
       success: true,
       message: `Invalidated ${clearedCount} ingredient cache entries${pattern ? ` matching pattern: ${pattern}` : ""}`,
@@ -260,7 +265,7 @@ cacheRouter.post("/ingredient/invalidate", async (req, res) => {
     });
   } catch (error) {
     console.error("Failed to invalidate ingredient cache:", error);
-    res.status(500).json({
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: "Failed to invalidate ingredient cache",
     });

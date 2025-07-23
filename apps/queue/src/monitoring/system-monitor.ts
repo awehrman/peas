@@ -26,12 +26,17 @@ export class SystemMonitor extends EventEmitter {
   private jobMetrics: Map<string, JobMetrics> = new Map();
   private queueMetrics: Map<string, QueueMetrics> = new Map();
   private systemMetrics: SystemMetrics = {
+    totalWorkers: 0,
+    totalQueues: 0,
     totalJobsProcessed: 0,
     totalJobsFailed: 0,
     averageJobDuration: 0,
     totalErrors: 0,
     uptime: 0,
     lastUpdated: new Date(),
+    systemUptime: 0,
+    memoryUsage: 0,
+    cpuUsage: 0,
   };
   private readonly MAX_METRICS_HISTORY = 1000;
   private readonly CLEANUP_INTERVAL_MS = 300000; // 5 minutes

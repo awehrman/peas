@@ -16,6 +16,22 @@ import type { Queue } from "bullmq";
 export * from "./types/common";
 
 // ============================================================================
+// BASE INTERFACES
+// ============================================================================
+
+/**
+ * Base interface for all job data
+ */
+export interface BaseJobData {
+  jobId?: string;
+  noteId?: string;
+  importId?: string;
+  userId?: string;
+  metadata?: Record<string, unknown>;
+  [key: string]: unknown;
+}
+
+// ============================================================================
 // CORE ENUMS
 // ============================================================================
 
@@ -106,6 +122,27 @@ export enum ActionCategory {
 }
 
 /**
+ * HTTP status codes for consistent response handling
+ */
+export enum HttpStatus {
+  OK = 200,
+  CREATED = 201,
+  NO_CONTENT = 204,
+  BAD_REQUEST = 400,
+  UNAUTHORIZED = 401,
+  FORBIDDEN = 403,
+  NOT_FOUND = 404,
+  METHOD_NOT_ALLOWED = 405,
+  CONFLICT = 409,
+  UNPROCESSABLE_ENTITY = 422,
+  TOO_MANY_REQUESTS = 429,
+  PAYLOAD_TOO_LARGE = 413,
+  INTERNAL_SERVER_ERROR = 500,
+  SERVICE_UNAVAILABLE = 503,
+  GATEWAY_TIMEOUT = 504,
+}
+
+/**
  * Error types for consistent error handling
  */
 export enum ErrorType {
@@ -118,6 +155,53 @@ export enum ErrorType {
   TIMEOUT_ERROR = "TIMEOUT_ERROR",
   WORKER_ERROR = "WORKER_ERROR",
   UNKNOWN_ERROR = "UNKNOWN_ERROR",
+}
+
+/**
+ * Standardized error codes for consistent error handling
+ */
+export enum AppErrorCode {
+  // Validation errors
+  VALIDATION_FAILED = "VALIDATION_FAILED",
+  INVALID_INPUT = "INVALID_INPUT",
+  MISSING_REQUIRED_FIELD = "MISSING_REQUIRED_FIELD",
+  INVALID_FORMAT = "INVALID_FORMAT",
+  INVALID_UUID = "INVALID_UUID",
+
+  // Database errors
+  DATABASE_CONNECTION_FAILED = "DATABASE_CONNECTION_FAILED",
+  DATABASE_QUERY_FAILED = "DATABASE_QUERY_FAILED",
+  DATABASE_TRANSACTION_FAILED = "DATABASE_TRANSACTION_FAILED",
+  RECORD_NOT_FOUND = "RECORD_NOT_FOUND",
+  DUPLICATE_RECORD = "DUPLICATE_RECORD",
+
+  // Cache errors
+  CACHE_OPERATION_FAILED = "CACHE_OPERATION_FAILED",
+  CACHE_CONNECTION_FAILED = "CACHE_CONNECTION_FAILED",
+  CACHE_KEY_NOT_FOUND = "CACHE_KEY_NOT_FOUND",
+
+  // Parsing errors
+  HTML_PARSING_FAILED = "HTML_PARSING_FAILED",
+  INGREDIENT_PARSING_FAILED = "INGREDIENT_PARSING_FAILED",
+  INSTRUCTION_PARSING_FAILED = "INSTRUCTION_PARSING_FAILED",
+  FILE_PARSING_FAILED = "FILE_PARSING_FAILED",
+
+  // Queue errors
+  QUEUE_OPERATION_FAILED = "QUEUE_OPERATION_FAILED",
+  JOB_PROCESSING_FAILED = "JOB_PROCESSING_FAILED",
+  WORKER_STARTUP_FAILED = "WORKER_STARTUP_FAILED",
+  QUEUE_CONNECTION_FAILED = "QUEUE_CONNECTION_FAILED",
+
+  // Network errors
+  NETWORK_TIMEOUT = "NETWORK_TIMEOUT",
+  NETWORK_CONNECTION_FAILED = "NETWORK_CONNECTION_FAILED",
+  EXTERNAL_API_FAILED = "EXTERNAL_API_FAILED",
+
+  // System errors
+  INTERNAL_ERROR = "INTERNAL_ERROR",
+  SERVICE_UNAVAILABLE = "SERVICE_UNAVAILABLE",
+  CONFIGURATION_ERROR = "CONFIGURATION_ERROR",
+  ENVIRONMENT_ERROR = "ENVIRONMENT_ERROR",
 }
 
 /**
@@ -297,10 +381,11 @@ export interface DatabaseError extends JobError {
 }
 
 export interface RetryConfig {
-  maxRetries: number;
-  backoffMs: number;
+  maxAttempts: number;
+  baseDelay: number;
+  maxDelay: number;
   backoffMultiplier: number;
-  maxBackoffMs: number;
+  jitter?: boolean;
 }
 
 // ============================================================================
@@ -348,6 +433,21 @@ export interface UnhealthyCheck extends BaseHealthCheck {
 export type HealthCheck = HealthyCheck | DegradedCheck | UnhealthyCheck;
 
 // ============================================================================
+// LOGGING TYPES
+// ============================================================================
+
+/**
+ * Structured logger interface for consistent logging across the application
+ */
+export interface StructuredLogger {
+  log: (
+    message: string,
+    level?: LogLevel,
+    meta?: Record<string, unknown>
+  ) => void;
+}
+
+// ============================================================================
 // QUEUE TYPES
 // ============================================================================
 
@@ -358,6 +458,33 @@ export interface TypedQueue<JobData, Action extends string = string>
     data: JobData,
     opts?: Parameters<Queue["add"]>[2]
   ) => ReturnType<Queue["add"]>;
+}
+
+// ============================================================================
+// METRICS TYPES
+// ============================================================================
+
+export interface QueueMetrics {
+  waiting: number;
+  active: number;
+  completed: number;
+  failed: number;
+  delayed: number;
+  paused: number;
+}
+
+export interface SystemMetrics {
+  cpu: {
+    usage: number;
+    load: number[];
+  };
+  memory: {
+    heapUsed: number;
+    heapTotal: number;
+    external: number;
+  };
+  uptime: number;
+  totalWorkers: number;
 }
 
 // ============================================================================

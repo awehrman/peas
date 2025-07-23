@@ -1,3 +1,5 @@
+import type { QueueMetrics } from "../../../types/monitoring";
+
 // ============================================================================
 // WORKER METRICS
 // ============================================================================
@@ -12,18 +14,11 @@ export interface WorkerMetrics {
   uptime: number;
 }
 
-export interface QueueMetrics {
-  queueName: string;
-  jobCount: number;
-  waitingCount: number;
-  activeCount: number;
-  completedCount: number;
-  failedCount: number;
-  averageWaitTime: number;
-  averageProcessingTime: number;
-}
+// ============================================================================
+// METRICS COLLECTOR SYSTEM METRICS
+// ============================================================================
 
-export interface SystemMetrics {
+export interface MetricsCollectorSystemMetrics {
   totalWorkers: number;
   totalQueues: number;
   totalJobsProcessed: number;
@@ -33,6 +28,8 @@ export interface SystemMetrics {
   cpuUsage: number;
 }
 
+// QueueMetrics and SystemMetrics are now imported from monitoring types
+
 // ============================================================================
 // METRICS COLLECTOR
 // ============================================================================
@@ -41,7 +38,7 @@ export class MetricsCollector {
   private static instance: MetricsCollector;
   private workerMetrics: Map<string, WorkerMetrics> = new Map();
   private queueMetrics: Map<string, QueueMetrics> = new Map();
-  private systemMetrics: SystemMetrics = {
+  private systemMetrics: MetricsCollectorSystemMetrics = {
     totalWorkers: 0,
     totalQueues: 0,
     totalJobsProcessed: 0,
@@ -88,7 +85,7 @@ export class MetricsCollector {
     return Array.from(this.queueMetrics.values());
   }
 
-  public getSystemMetrics(): SystemMetrics {
+  public getSystemMetrics(): MetricsCollectorSystemMetrics {
     return { ...this.systemMetrics };
   }
 
@@ -112,4 +109,4 @@ export class MetricsCollector {
 // EXPORTS
 // ============================================================================
 
-export const metricsCollector = MetricsCollector.getInstance(); 
+export const metricsCollector = MetricsCollector.getInstance();

@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import { z } from "zod";
+import { HttpStatus } from "../types";
 
 // ============================================================================
 // ENVIRONMENT VARIABLE SCHEMAS
@@ -257,7 +258,7 @@ export function createValidationMiddleware<T extends z.ZodSchema>(
       next();
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({
+        return res.status(HttpStatus.BAD_REQUEST).json({
           error: "Validation failed",
           details: error.issues.map((issue) => ({
             field: issue.path.join("."),

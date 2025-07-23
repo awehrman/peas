@@ -10,7 +10,7 @@ import type {
 } from "../../../types/notes";
 import { BaseAction } from "../../../workers/core/base-action";
 import { ActionContext } from "../../../workers/core/types";
-import type { StructuredLogger } from "../../../workers/core/types";
+import type { StructuredLogger } from "../../../types";
 
 /**
  * Parse HTML file and convert to structured format

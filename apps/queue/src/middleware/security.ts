@@ -1,4 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
+import { SECURITY_CONSTANTS } from "../config/constants";
+import { HttpStatus } from "../types";
 
 // Extended request type for validated query parameters
 interface ValidatedQueryRequest extends Request {
@@ -58,7 +60,7 @@ export function createRateLimitMiddleware(
     });
 
     if (count > maxRequests) {
-      return res.status(429).json({
+      return res.status(HttpStatus.TOO_MANY_REQUESTS).json({
         error: "Too many requests",
         message: `Rate limit exceeded. Try again after ${new Date(resetTime).toISOString()}`,
         retryAfter: Math.ceil((resetTime - now) / 1000),
@@ -78,7 +80,7 @@ export function validateUUID(req: Request, res: Response, next: NextFunction) {
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
   if (req.params.id && !uuidRegex.test(req.params.id)) {
-    return res.status(400).json({
+    return res.status(HttpStatus.BAD_REQUEST).json({
       error: "Invalid ID format",
       message: "ID must be a valid UUID",
     });
@@ -96,14 +98,14 @@ export function validatePagination(
   const limit = parseInt(req.query.limit as string) || 20;
 
   if (page < 1) {
-    return res.status(400).json({
+    return res.status(HttpStatus.BAD_REQUEST).json({
       error: "Invalid page number",
       message: "Page must be greater than 0",
     });
   }
 
   if (limit < 1 || limit > 100) {
-    return res.status(400).json({
+    return res.status(HttpStatus.BAD_REQUEST).json({
       error: "Invalid limit",
       message: "Limit must be between 1 and 100",
     });
@@ -126,14 +128,14 @@ export function validateContent(
   const content = req.body?.content;
 
   if (!content || typeof content !== "string") {
-    return res.status(400).json({
+    return res.status(HttpStatus.BAD_REQUEST).json({
       error: "Invalid content",
       message: "Content is required and must be a string",
     });
   }
 
   if (content.length === 0) {
-    return res.status(400).json({
+    return res.status(HttpStatus.BAD_REQUEST).json({
       error: "Empty content",
       message: "Content cannot be empty",
     });
@@ -141,7 +143,7 @@ export function validateContent(
 
   if (content.length > 10 * 1024 * 1024) {
     // 10MB
-    return res.status(400).json({
+    return res.status(HttpStatus.BAD_REQUEST).json({
       error: "Content too large",
       message: "Content size exceeds 10MB limit",
     });
@@ -161,12 +163,11 @@ export function addSecurityHeaders(
 ) {
   // Basic security headers
   res.set({
-    "X-Content-Type-Options": "nosniff",
-    "X-Frame-Options": "DENY",
-    "X-XSS-Protection": "1; mode=block",
-    "Referrer-Policy": "strict-origin-when-cross-origin",
-    "Content-Security-Policy":
-      "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'",
+    "X-Content-Type-Options": SECURITY_CONSTANTS.SECURITY_HEADERS.CONTENT_TYPE_OPTIONS,
+    "X-Frame-Options": SECURITY_CONSTANTS.SECURITY_HEADERS.FRAME_OPTIONS,
+    "X-XSS-Protection": SECURITY_CONSTANTS.SECURITY_HEADERS.XSS_PROTECTION,
+    "Referrer-Policy": SECURITY_CONSTANTS.SECURITY_HEADERS.REFERRER_POLICY,
+    "Content-Security-Policy": SECURITY_CONSTANTS.SECURITY_HEADERS.CONTENT_SECURITY_POLICY,
   });
 
   next();
@@ -177,7 +178,7 @@ export function addSecurityHeaders(
 // ============================================================================
 
 export function configureCORS(
-  allowedOrigins: string[] = ["http://localhost:3000"]
+  allowedOrigins: string[] = [...SECURITY_CONSTANTS.CORS.ALLOWED_ORIGINS]
 ) {
   return function corsMiddleware(
     req: Request,
@@ -191,14 +192,13 @@ export function configureCORS(
     }
 
     res.set({
-      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-      "Access-Control-Allow-Headers":
-        "Content-Type, Authorization, X-Requested-With",
+      "Access-Control-Allow-Methods": SECURITY_CONSTANTS.CORS.ALLOWED_METHODS.join(", "),
+      "Access-Control-Allow-Headers": SECURITY_CONSTANTS.CORS.ALLOWED_HEADERS.join(", "),
       "Access-Control-Allow-Credentials": "true",
     });
 
     if (req.method === "OPTIONS") {
-      return res.status(200).end();
+      return res.status(HttpStatus.OK).end();
     }
 
     next();
@@ -218,7 +218,7 @@ export function validateRequestSize(maxSizeBytes: number = 10 * 1024 * 1024) {
     const contentLength = parseInt(req.headers["content-length"] || "0");
 
     if (contentLength > maxSizeBytes) {
-      return res.status(413).json({
+      return res.status(HttpStatus.PAYLOAD_TOO_LARGE).json({
         error: "Request too large",
         message: `Request size exceeds ${Math.round(maxSizeBytes / 1024 / 1024)}MB limit`,
       });

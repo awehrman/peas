@@ -133,6 +133,41 @@ export const RETRY_CONSTANTS = {
 } as const;
 
 // ============================================================================
+// SECURITY CONSTANTS
+// ============================================================================
+
+export const SECURITY_CONSTANTS = {
+  /** Rate limiting */
+  RATE_LIMITS: {
+    GLOBAL_WINDOW_MS: 15 * 60 * 1000, // 15 minutes
+    GLOBAL_MAX_REQUESTS: 100,
+    IMPORT_WINDOW_MS: 15 * 60 * 1000, // 15 minutes
+    IMPORT_MAX_REQUESTS: 50,
+    API_WINDOW_MS: 15 * 60 * 1000, // 15 minutes
+    API_MAX_REQUESTS: 200,
+  },
+  /** Request size limits */
+  REQUEST_LIMITS: {
+    MAX_REQUEST_SIZE_BYTES: 10 * 1024 * 1024, // 10MB
+    MAX_IMPORT_REQUEST_SIZE_BYTES: 50 * 1024 * 1024, // 50MB
+  },
+  /** CORS settings */
+  CORS: {
+    ALLOWED_ORIGINS: ["http://localhost:3000", "http://localhost:4200"],
+    ALLOWED_METHODS: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    ALLOWED_HEADERS: ["Content-Type", "Authorization", "X-Requested-With"],
+  },
+  /** Security headers */
+  SECURITY_HEADERS: {
+    CONTENT_TYPE_OPTIONS: "nosniff",
+    FRAME_OPTIONS: "DENY",
+    XSS_PROTECTION: "1; mode=block",
+    REFERRER_POLICY: "strict-origin-when-cross-origin",
+    CONTENT_SECURITY_POLICY: "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'",
+  },
+} as const;
+
+// ============================================================================
 // HTTP CONSTANTS
 // ============================================================================
 

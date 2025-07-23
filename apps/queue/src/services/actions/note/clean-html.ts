@@ -10,7 +10,7 @@ import {
 } from "../../../utils/html-cleaner";
 import { BaseAction } from "../../../workers/core/base-action";
 import { ActionContext } from "../../../workers/core/types";
-import type { StructuredLogger } from "../../../workers/core/types";
+import type { StructuredLogger } from "../../../types";
 
 /**
  * Clean HTML file by removing style and icons tags

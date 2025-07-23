@@ -32,12 +32,17 @@ export interface QueueMetrics {
  * System metrics summary
  */
 export interface SystemMetrics {
+  totalWorkers: number;
+  totalQueues: number;
   totalJobsProcessed: number;
   totalJobsFailed: number;
   averageJobDuration: number;
   totalErrors: number;
   uptime: number;
   lastUpdated: Date;
+  systemUptime: number;
+  memoryUsage: number;
+  cpuUsage: number;
 }
 
 /**

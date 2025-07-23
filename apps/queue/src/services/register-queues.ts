@@ -1,4 +1,5 @@
 import { Queue } from "bullmq";
+
 import { createQueue } from "../queues/createQueue";
 
 export interface IQueueService {

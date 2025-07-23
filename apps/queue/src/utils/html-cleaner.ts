@@ -1,5 +1,5 @@
 import type { NotePipelineData } from "../types/notes";
-import type { StructuredLogger } from "../workers/core/types";
+import type { StructuredLogger } from "../types";
 
 /**
  * Extract title from H1 tag or meta itemprop="title"

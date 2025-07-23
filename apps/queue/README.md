@@ -1,671 +1,401 @@
 # Queue Service
 
-A production-ready, action-based queue processing service built with BullMQ, featuring comprehensive error handling, monitoring, and real-time status updates.
-
-## 🎯 Overview
-
-This service processes notes, ingredients, instructions, images, and categorization jobs using a sophisticated action-based worker system. It provides an HTTP API, health monitoring, WebSocket real-time updates, and a ServiceContainer for dependency injection.
-
-## 🏗️ Architecture
-
-The system is built around **actions** - small, focused units of work that can be composed into pipelines. Each worker extends `BaseWorker` and defines its own action pipeline with automatic error handling, retry logic, and performance monitoring.
-
-### Key Components
-
-- **BaseWorker**: Abstract base class providing common worker functionality
-- **BaseAction**: Abstract base class for all actions with timing and error handling
-- **ActionFactory**: Registry for creating actions by name with dependency injection
-- **ServiceContainer**: Dependency injection container for all services
-- **Shared Actions**: Reusable actions for common patterns (error handling, retry, status broadcasting)
-- **Error System**: Comprehensive error types and handling
-- **Caching**: In-memory caching for expensive operations
-- **Metrics**: Built-in performance monitoring and metrics collection
-
-## 🎨 Architecture Patterns
-
-### Service-Action Separation Pattern
-
-The system follows a clear separation of concerns between **Services** (business logic) and **Actions** (orchestration):
-
-```text
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   Note Queue    │───▶│  CleanHtmlAction │───▶│  ParseHtmlAction│
-└─────────────────┘    └──────────────────┘    └─────────────────┘
-                              │                         │
-                              ▼                         ▼
-                       ┌─────────────┐         ┌─────────────┐
-                       │cleanHtmlFile│         │parseHtmlFile│
-                       └─────────────┘         └─────────────┘
-                              │                         │
-                              ▼                         ▼
-                       ┌─────────────┐         ┌─────────────┐
-                       │ HTML Utils  │         │parseHTMLContent│
-                       └─────────────┘         └─────────────┘
-```
-
-#### Service Layer (`cleanHtmlFile`, `parseHtmlFile`)
-
-- **Purpose**: Pure business logic functions
-- **Responsibilities**:
-  - Process data and return enriched results
-  - Accept dependencies as parameters
-  - No orchestration or status broadcasting
-- **Location**: `src/services/actions/{domain}/`
-- **Naming**: `{actionName}File` (e.g., `parseHtmlFile`, `cleanHtmlFile`)
-
-#### Action Layer (`CleanHtmlAction`, `ParseHtmlAction`)
-
-- **Purpose**: Orchestration and coordination
-- **Responsibilities**:
-  - Call services from dependencies
-  - Handle status broadcasting
-  - Manage validation and error reporting
-  - Coordinate between multiple services
-- **Location**: `src/services/actions/{domain}/`
-- **Naming**: `{ActionName}Action` (e.g., `ParseHtmlAction`, `CleanHtmlAction`)
-
-### Dependency Injection Pattern
-
-Dependencies are injected at the worker level and passed down through the action pipeline:
-
-```typescript
-// Dependencies are built at the worker level
-export function buildNoteWorkerDependencies(
-  container: IServiceContainer
-): NoteWorkerDependencies {
-  const baseDeps = buildBaseDependencies(container);
-
-  return {
-    ...baseDeps,
-    services: {
-      cleanHtml: async (data: NotePipelineData) =>
-        cleanHtmlFile(data, baseDeps.logger),
-      parseHtml: async (data: NotePipelineData) =>
-        parseHtmlFile(data, baseDeps.logger, parseHTMLContent),
-    },
-  };
-}
-
-// Services receive dependencies as parameters
-export async function parseHtmlFile(
-  data: NotePipelineData,
-  logger: StructuredLogger,
-  parseHTMLContent: (
-    content: string,
-    options?: HTMLParsingOptions
-  ) => ParsedHTMLFile
-): Promise<NotePipelineData> {
-  // Business logic here
-}
-```
-
-### Naming Conventions
-
-#### Function Naming
-
-- **Parser Functions**: `parseHTMLContent` (the actual parser)
-- **Service Functions**: `parseHtmlFile`, `cleanHtmlFile` (business logic)
-- **Action Classes**: `ParseHtmlAction`, `CleanHtmlAction` (orchestration)
-
-#### File Naming
-
-- **Service Files**: `parse-html.ts`, `clean-html.ts`
-- **Type Files**: `types.ts`
-- **Schema Files**: `schema.ts`
-- **Registration Files**: `register.ts`
-
-#### Type Naming
-
-- **Pipeline Data**: `NotePipelineData` (single source of truth)
-- **Worker Dependencies**: `NoteWorkerDependencies`
-- **Action Types**: `NotePipelineAction`
-
-### Type Safety Patterns
-
-#### Single Source of Truth
-
-```typescript
-// NotePipelineData is the single source of truth for all note processing
-export interface NotePipelineData {
-  content: string;
-  importId?: string;
-  noteId?: string;
-  source?: SourceInfo;
-  options?: ProcessingOptions;
-  metadata?: JobMetadata;
-  createdAt?: Date;
-  priority?: number;
-  timeout?: number;
-
-  // Pipeline stage data (added by actions)
-  file?: ParsedHTMLFile;
-  note?: NoteWithParsedLines;
-}
-```
-
-#### Consistent Interfaces
-
-```typescript
-// All services follow the same pattern
-export interface NoteWorkerDependencies extends BaseWorkerDependencies {
-  services: {
-    parseHtml: (data: NotePipelineData) => Promise<NotePipelineData>;
-    cleanHtml: (data: NotePipelineData) => Promise<NotePipelineData>;
-  };
-}
-```
-
-## 📁 Project Structure
-
-```text
-apps/queue/
-├── src/
-│   ├── services/           # ServiceContainer and dependency injection
-│   │   ├── container.ts    # Main ServiceContainer implementation
-│   │   └── index.ts        # Service exports
-│   ├── workers/            # Action-based worker system
-│   │   ├── core/           # Core infrastructure
-│   │   │   ├── base-worker.ts      # Base worker class
-│   │   │   ├── cache.ts           # Action result caching
-│   │   │   ├── errors.ts          # Error types and handling
-│   │   │   ├── metrics.ts         # Performance metrics
-│   │   │   └── index.ts           # Core exports
-│   │   ├── shared/         # Shared utilities
-│   │   │   ├── broadcast-status.ts # Status broadcasting
-│   │   │   ├── error-handling.ts  # Error handling actions
-│   │   │   ├── retry.ts           # Retry logic
-│   │   │   └── index.ts           # Shared exports
-│   │   ├── actions/        # Action system
-│   │   │   ├── core/       # Action infrastructure
-│   │   │   │   ├── base-action.ts # Base action class
-│   │   │   │   ├── action-factory.ts # Action factory
-│   │   │   │   ├── types.ts       # Action types
-│   │   │   │   └── index.ts       # Core action exports
-│   │   │   ├── note/       # Note processing actions
-│   │   │   │   ├── clean-html.ts  # CleanHtmlAction + cleanHtmlFile service
-│   │   │   │   ├── parse-html.ts  # ParseHtmlAction + parseHtmlFile service
-│   │   │   │   ├── save-note.ts   # SaveNoteAction (commented out)
-│   │   │   │   ├── types.ts       # Note-specific types
-│   │   │   │   ├── schema.ts      # Validation schemas
-│   │   │   │   ├── register.ts    # Action registration
-│   │   │   │   └── index.ts       # Note action exports
-│   │   │   ├── ingredient/ # Ingredient processing actions
-│   │   │   ├── instruction/# Instruction processing actions
-│   │   │   ├── image/      # Image processing actions
-│   │   │   ├── categorization/ # Categorization actions
-│   │   │   └── index.ts    # Action exports
-│   │   ├── note/           # Note worker implementation
-│   │   │   ├── dependencies.ts   # Dependency injection
-│   │   │   ├── types.ts          # Worker-specific types
-│   │   │   └── index.ts          # Worker exports
-│   │   ├── note-worker.ts         # Note processing worker
-│   │   ├── ingredient-worker.ts   # Ingredient processing worker
-│   │   ├── instruction-worker.ts  # Instruction processing worker
-│   │   ├── image-worker.ts        # Image processing worker
-│   │   ├── categorization-worker.ts # Categorization worker
-│   │   ├── index.ts               # Main exports
-│   │   └── README.md              # Worker architecture documentation
-│   ├── queues/             # Queue definitions and setup
-│   ├── routes/             # Express route handlers
-│   ├── config/             # Configuration files
-│   ├── parsers/            # HTML and content parsing
-│   │   ├── html.ts         # parseHTMLContent function
-│   │   └── __tests__/      # Parser tests
-│   ├── utils/              # Utility modules
-│   │   ├── error-handler.ts
-│   │   ├── health-monitor.ts
-│   │   ├── performance.ts
-│   │   ├── status-broadcaster.ts
-│   │   └── index.ts
-│   ├── tests/              # Comprehensive test suite
-│   │   ├── workers/        # Worker tests
-│   │   ├── services/       # Service tests
-│   │   └── utils/          # Utility tests
-│   ├── websocket-server.ts # WebSocket server implementation
-│   ├── index.ts            # Main entry point
-│   └── ...
-├── package.json
-└── README.md
-```
+A high-performance, scalable queue processing service built with TypeScript, Node.js, and BullMQ. This service handles HTML file processing, note parsing, ingredient extraction, and provides comprehensive monitoring and optimization capabilities.
 
 ## 🚀 Features
 
-### Production-Ready Features
+### Core Functionality
+- **HTML File Processing**: Stream-based processing of HTML files with validation and error handling
+- **Note Parsing**: Intelligent parsing of recipe notes with metadata extraction
+- **Ingredient Processing**: Advanced ingredient line parsing with caching and pattern recognition
+- **Queue Management**: Robust job queue system with retry logic and error recovery
+- **Real-time Monitoring**: WebSocket-based status updates and progress tracking
 
-- **Type Safety**: Full TypeScript support with proper types and interfaces
-- **Error Handling**: Comprehensive error types and recovery mechanisms
-- **Performance Monitoring**: Built-in metrics collection and monitoring
-- **Caching**: Intelligent caching for expensive operations
-- **Retry Logic**: Exponential backoff with circuit breaker patterns
-- **Status Broadcasting**: Real-time status updates via WebSocket
-- **Validation**: Input validation for all actions
-- **Service Integration**: Seamless integration with service container
-- **Health Monitoring**: Worker status and health checks
-- **Graceful Shutdown**: Proper cleanup of resources
+### Performance & Optimization
+- **Performance Monitoring**: Comprehensive performance profiling and metrics collection
+- **Memory Optimization**: Memory pooling, leak detection, and garbage collection management
+- **Database Optimization**: Query caching, connection pooling, and batch operations
+- **Caching System**: Multi-level caching with Redis and in-memory caches
+- **Load Balancing**: Intelligent job distribution and worker scaling
 
-### Monitoring & Observability
+### Security & Reliability
+- **Security Middleware**: Comprehensive security headers, CORS, rate limiting, and request validation
+- **Error Handling**: Standardized error handling with automatic recovery and retry logic
+- **Health Monitoring**: Detailed health checks for all system components
+- **Graceful Shutdown**: Proper cleanup and resource management on shutdown
 
-- **Metrics Collection**: Automatic collection of job processing times, success rates, and queue depths
-- **Error Tracking**: Detailed error logging with context and stack traces
-- **Performance Insights**: Action-level timing and caching statistics
-- **Health Monitoring**: Worker status and health checks
-- **Bull Board**: Web-based queue monitoring interface
+### Developer Experience
+- **TypeScript**: Full type safety and IntelliSense support
+- **Modular Architecture**: Clean separation of concerns with dependency injection
+- **Comprehensive Logging**: Structured logging with context-aware loggers
+- **API Documentation**: RESTful APIs with detailed endpoint documentation
+- **Testing Support**: Built-in testing utilities and test environment setup
 
-## 🔧 ServiceContainer Pattern
+## 📁 Project Structure
 
-This project uses a **ServiceContainer** for dependency injection. The ServiceContainer manages all core services and provides them to the rest of the application.
-
-### Required Services
-
-```typescript
-interface IServiceContainer {
-  queues: IQueueService; // Queue instances (note, ingredient, instruction, image, categorization)
-  database: IDatabaseService; // Database operations (prisma, createNote)
-  errorHandler: IErrorHandlerService; // Error handling utilities
-  healthMonitor: IHealthMonitorService; // Health checks
-  webSocket: IWebSocketService; // WebSocket management
-  statusBroadcaster: IStatusBroadcasterService; // Status broadcasting
-  parsers: IParserService; // Parsing operations (parseHTML)
-  logger: ILoggerService; // Logging
-  config: IConfigService; // Configuration
-}
+```
+src/
+├── config/                 # Configuration management
+│   ├── constants.ts       # Application constants
+│   ├── database.ts        # Database configuration
+│   ├── redis.ts          # Redis configuration
+│   ├── factory.ts        # Manager factory pattern
+│   └── standardized-config.ts # Standardized configuration system
+├── middleware/            # Express middleware
+│   ├── security.ts       # Security middleware
+│   └── validation.ts     # Request validation
+├── monitoring/           # System monitoring
+│   ├── system-monitor.ts # System health monitoring
+│   └── queue-monitor.ts  # Queue performance monitoring
+├── parsers/              # Content parsing
+│   └── html.ts          # HTML parsing utilities
+├── routes/               # API routes
+│   ├── import.ts        # File import endpoints
+│   ├── notes.ts         # Note management endpoints
+│   ├── health-enhanced.ts # Health check endpoints
+│   ├── metrics.ts       # Metrics endpoints
+│   ├── cache.ts         # Cache management endpoints
+│   └── performance.ts   # Performance monitoring endpoints
+├── services/             # Business logic services
+│   ├── container.ts     # Dependency injection container
+│   ├── factory.ts       # Service factory
+│   ├── register-database.ts # Database service registration
+│   ├── register-queues.ts # Queue service registration
+│   ├── note/            # Note processing services
+│   └── ingredient/      # Ingredient processing services
+├── utils/                # Utility functions
+│   ├── standardized-logger.ts # Standardized logging system
+│   ├── standardized-error-handler.ts # Error handling system
+│   ├── performance-optimizer.ts # Performance optimization
+│   ├── database-optimizer.ts # Database optimization
+│   ├── memory-optimizer.ts # Memory optimization
+│   ├── file-processor.ts # File processing utilities
+│   ├── error-handler.ts # Error handling utilities
+│   └── metrics.ts       # Metrics collection
+├── workers/              # Queue workers
+│   ├── core/            # Core worker functionality
+│   ├── note/            # Note processing workers
+│   └── shared/          # Shared worker utilities
+├── types.ts             # TypeScript type definitions
+├── index.ts             # Application entry point
+└── load-env.ts          # Environment loading
 ```
 
-### Example Usage
-
-```typescript
-import { ServiceContainer } from "./services/container";
-
-const container = ServiceContainer.getInstance();
-const db = container.database;
-const logger = container.logger;
-```
-
-### For Testing
-
-```typescript
-import { createServiceContainer } from "./services/container";
-
-const mockLogger = { log: vi.fn() };
-const testContainer = createServiceContainer({ logger: mockLogger });
-```
-
-## 👷 Worker System
-
-### Creating a New Worker
-
-1. **Extend BaseWorker**:
-
-```typescript
-export class MyWorker extends BaseWorker<MyJobData, MyDependencies> {
-  protected registerActions(): void {
-    // Register your actions
-    this.actionFactory.register("my_action", () => new MyAction());
-  }
-
-  protected getOperationName(): string {
-    return "my_operation";
-  }
-
-  protected createActionPipeline(
-    data: MyJobData,
-    context: ActionContext
-  ): ActionPipeline<MyJobData, MyJobResult> {
-    const actions: ActionPipeline<MyJobData, MyJobResult> = [];
-
-    // Add status broadcasting (automatic if noteId exists)
-    this.addStatusActions(actions, data);
-
-    // Add your action pipeline with automatic wrapping
-    actions.push(
-      this.createWrappedAction(ActionName.MY_ACTION, this.dependencies)
-    );
-
-    return actions;
-  }
-}
-```
-
-2. **Create Actions with Validation**:
-
-```typescript
-export class MyAction extends BaseAction<MyData, MyDeps> {
-  name = "my_action";
-
-  async execute(data: MyData, deps: MyDeps, context: ActionContext) {
-    // Validate input
-    const validationError = this.validateInput(data);
-    if (validationError) {
-      throw validationError;
-    }
-
-    // Your action logic here
-    return result;
-  }
-
-  private validateInput(data: MyData): Error | null {
-    // Validation logic
-    return null;
-  }
-}
-```
-
-3. **Register Actions**:
-
-```typescript
-export function registerMyActions(factory: ActionFactory) {
-  factory.register("my_action", () => new MyAction());
-}
-```
-
-### Using Workers
-
-```typescript
-import { createNoteWorker } from "./workers";
-
-import { noteQueue } from "../queues/note";
-
-// Create worker with automatic dependency injection
-const noteWorker = createNoteWorker(noteQueue, serviceContainer);
-
-// Get worker status
-const status = noteWorker.getStatus();
-
-// Close worker gracefully
-await noteWorker.close();
-```
-
-## 📊 Action Pipeline
-
-The note worker executes this optimized pipeline:
-
-1. **Broadcast Processing Status** (automatic if noteId exists)
-2. **Clean HTML** (with caching, retry + error handling)
-3. **Parse HTML** (with caching, retry + error handling)
-4. **Broadcast Completion Status** (automatic if noteId exists)
-
-### Current Pipeline (Clean + Parse Focus)
-
-```typescript
-// Current pipeline focuses on core HTML processing
-const pipeline = [
-  // 1. Clean HTML content
-  this.createWrappedAction("clean_html", this.dependencies),
-
-  // 2. Parse HTML into structured data
-  this.createWrappedAction("parse_html", this.dependencies),
-];
-```
-
-### Future Pipeline (When Save is Re-enabled)
-
-```typescript
-// Future pipeline will include save and scheduling
-const pipeline = [
-  // 1. Clean HTML content
-  this.createWrappedAction("clean_html", this.dependencies),
-
-  // 2. Parse HTML into structured data
-  this.createWrappedAction("parse_html", this.dependencies),
-
-  // 3. Save note to database
-  this.createWrappedAction("save_note", this.dependencies),
-
-  // 4. Schedule follow-up tasks
-  this.createWrappedAction("schedule_tasks", this.dependencies),
-];
-```
-
-## 🔄 Shared Actions
-
-### Status Broadcasting
-
-- `BroadcastProcessingAction`: Broadcasts "PROCESSING" status
-- `BroadcastCompletedAction`: Broadcasts "COMPLETED" status
-- `BroadcastFailedAction`: Broadcasts "FAILED" status
-- `createStatusAction()`: Helper to create custom status actions
-
-### Error Handling
-
-- `ErrorHandlingWrapperAction`: Wraps other actions with error handling
-- `LogErrorAction`: Logs errors and continues
-- `CaptureErrorAction`: Captures errors for monitoring
-- `ErrorRecoveryAction`: Attempts error recovery
-- `withErrorHandling()`: Helper to wrap actions with error handling
-
-### Retry Logic
-
-- `RetryAction`: Implements exponential backoff retry
-- `RetryWrapperAction`: Wraps other actions with retry logic
-- `CircuitBreakerAction`: Implements circuit breaker pattern
-- `withRetry()`: Helper to wrap actions with retry logic
-- `withCircuitBreaker()`: Helper to wrap actions with circuit breaker
-
-## 🚨 Error Types
-
-- `WorkerError`: Base error class for all worker errors
-- `NoteProcessingError`: Specific to note processing failures
-- `ActionValidationError`: When action validation fails
-- `ActionExecutionError`: When action execution fails
-- `MissingDependencyError`: When required dependencies are missing
-- `ServiceUnhealthyError`: When service health checks fail
-
-## 💾 Caching System
-
-- **Smart Caching**: Automatic caching for parse and fetch operations
-- **TTL Support**: Configurable cache expiration times
-- **Cache Statistics**: Monitor cache hit rates and performance
-- **Cache Cleanup**: Automatic cleanup of expired entries
-
-## 📈 Metrics Collection
-
-- **Job Metrics**: Processing times, success/failure rates
-- **Action Metrics**: Individual action performance
-- **Queue Metrics**: Queue depths and throughput
-- **Worker Metrics**: Worker status and health
-- **Custom Metrics**: Easy to add domain-specific metrics
-
-## 🧪 Testing
-
-This project uses [Vitest](https://vitest.dev/) for testing with comprehensive coverage:
-
-### Running Tests
-
-```sh
-# Run all tests
-yarn test
-
-# Run tests with coverage
-yarn test:coverage
-
-# Run tests in watch mode
-yarn test:watch
-
-# Run tests with UI
-yarn test:ui
-```
-
-### Test Coverage
-
-The test suite achieves **100% coverage** on core functionality:
-
-- **Over 180 tests passing** across 18+ test files
-- **Over 75% overall statement coverage**
-- **Over 90% branch coverage**
-- **Over 70% function coverage**
-
-### Test Structure
-
-```text
-src/tests/
-├── workers/           # Worker tests
-│   ├── factory.test.ts
-│   ├── manager.test.ts
-│   ├── notes/         # Note worker tests
-│   ├── ingredients/   # Ingredient worker tests
-│   ├── instructions/  # Instruction worker tests
-│   └── ...
-├── services/          # Service tests
-│   └── container.test.ts
-└── utils/             # Utility tests
-    ├── error-handler.test.ts
-    ├── health-monitor.test.ts
-    ├── performance.test.ts
-    └── status-broadcaster.test.ts
-```
-
-## 🚀 Performance Optimizations
-
-- **Action Caching**: Expensive operations are automatically cached
-- **Concurrent Processing**: Configurable concurrency levels
-- **Memory Management**: Automatic cleanup of old metrics and cache entries
-- **Efficient Pipelines**: Optimized action execution order
-
-## 🔌 API Endpoints
-
-- **`POST /import`**: Process uploaded HTML files
-- **`GET /import/status`**: Get import processing status
-- **`POST /notes`**: Queue a note for processing
-- **`GET /health`**: Health check endpoint
-- **`/bull-board`**: Bull Board queue monitoring interface
-
-## 🌐 WebSocket Server
-
-Real-time status updates via WebSocket on port 8080 (configurable):
-
-```typescript
-// Client connection
-const ws = new WebSocket('ws://localhost:8080');
-
-// Status event format
-{
-  noteId: string;
-  status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
-  message?: string;
-  context?: string;
-  currentCount?: number;
-  totalCount?: number;
-  createdAt: Date;
-}
-```
-
-## 🛠️ Development
+## 🛠️ Installation
 
 ### Prerequisites
-
-- Node.js 18+
+- Node.js 18+ 
 - Yarn package manager
-- Redis (for BullMQ queues)
-- PostgreSQL (for data storage)
+- Redis server
+- PostgreSQL database
 
 ### Setup
-
-```sh
+```bash
 # Install dependencies
 yarn install
 
-# Run tests
-yarn test:coverage
+# Set up environment variables
+cp .env.example .env.local
 
-# Start development server
+# Run database migrations
+yarn db:migrate
+
+# Start the development server
 yarn dev
 ```
 
+## ⚙️ Configuration
+
 ### Environment Variables
 
-```env
-# Database
-DATABASE_URL=postgresql://...
+```bash
+# Server Configuration
+PORT=3000
+HOST=localhost
+WS_PORT=3001
+WS_HOST=localhost
 
-# Redis
+# Database Configuration
+DATABASE_URL=postgresql://localhost:5432/peas
+DB_MAX_CONNECTIONS=10
+DB_CONNECTION_TIMEOUT=30000
+DB_QUERY_TIMEOUT=10000
+
+# Redis Configuration
 REDISHOST=localhost
 REDISPORT=6379
 REDISUSERNAME=
 REDISPASSWORD=
-
-# Server
-PORT=4200
-WS_PORT=8080
-WS_HOST=localhost
-WS_URL=ws://localhost:8080
+REDIS_DATABASE=0
+REDIS_CONNECTION_TIMEOUT=5000
+REDIS_RETRY_ATTEMPTS=3
 
 # Queue Configuration
 BATCH_SIZE=10
 MAX_RETRIES=3
 BACKOFF_MS=1000
 MAX_BACKOFF_MS=30000
+JOB_TIMEOUT=30000
+CONCURRENCY=5
+
+# Security Configuration
+JWT_SECRET=your-jwt-secret-here
+API_KEY=your-api-key-here
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX_REQUESTS=100
+MAX_REQUEST_SIZE_BYTES=10485760
+
+# Logging Configuration
+LOG_LEVEL=info
+ENABLE_FILE_LOGGING=true
+ENABLE_CONSOLE_LOGGING=true
+LOG_DIR=logs
+MAX_LOG_SIZE_MB=10
+MAX_LOG_FILES=5
+
+# Monitoring Configuration
+MONITORING_ENABLED=true
+METRICS_RETENTION_HOURS=24
+HEALTH_CHECK_INTERVAL_MS=30000
+CLEANUP_INTERVAL_MS=3600000
+MAX_METRICS_HISTORY=1000
 ```
 
-### WebSocket Configuration
+## 🚀 Usage
 
-The queue service supports configurable WebSocket URLs through environment variables:
+### Starting the Service
 
-- `WS_URL`: Full WebSocket URL (e.g., `wss://example.com:8080`)
-- `WS_HOST`: WebSocket host (defaults to `localhost`)
-- `WS_PORT`: WebSocket port (defaults to `8080`)
+```bash
+# Development mode
+yarn dev
 
-If `WS_URL` is provided, it takes precedence. Otherwise, the URL is constructed from `WS_HOST` and `WS_PORT` with the appropriate protocol (`wss` in production, `ws` in development).
+# Production mode
+yarn build
+yarn start
 
-For frontend applications, use these Next.js environment variables:
-
-- `NEXT_PUBLIC_WEBSOCKET_URL`: Full WebSocket URL
-- `NEXT_PUBLIC_WEBSOCKET_HOST`: WebSocket host
-- `NEXT_PUBLIC_WEBSOCKET_PORT`: WebSocket port
-
-## 📝 Type Safety & Linter Notes
-
-- If you see a linter warning about a missing type declaration for `@peas/parser`, you can safely ignore it for now, or add a declaration file:
-  - Create a file `@types/peas__parser/index.d.ts` with:
-
-    ```ts
-    declare module "@peas/parser";
-    ```
-
-  - Or install a type package if one becomes available.
-
-## 🎯 Benefits
-
-- **Production Ready**: Built-in monitoring, error handling, and performance optimization
-- **Modularity**: Each action is a small, focused unit
-- **Reusability**: Actions can be shared across workers
-- **Testability**: Actions can be tested in isolation with mock services
-- **Flexibility**: Easy to modify pipelines and add new actions
-- **Observability**: Built-in logging, error handling, status broadcasting, and metrics
-- **Reliability**: Retry logic, circuit breakers, and health checks
-- **Performance**: Caching, concurrent processing, and optimized pipelines
-
-## 🔄 Extending the System
-
-To add a new worker type:
-
-1. Create domain-specific actions in `actions/{domain}/`
-2. Define proper types in `types.ts`
-3. Add validation in `validation.ts`
-4. Extend `BaseWorker` for your worker
-5. Register actions in the factory
-6. Create a factory function for easy instantiation
-
-The system is designed to be easily extensible while maintaining consistency, reliability, and performance across all workers.
-
-## 🔗 Queue Integration
-
-The note worker is designed to work with the existing queue system:
-
-```typescript
-// In apps/queue/src/queues/note.ts
-import { createQueue } from "./createQueue";
-
-export const noteQueue = createQueue("noteQueue");
-
-// The worker automatically connects to this queue
-const noteWorker = createNoteWorker(noteQueue, serviceContainer);
+# With performance profiling
+NODE_OPTIONS="--expose-gc" yarn start
 ```
 
-This ensures seamless integration with your existing BullMQ setup and queue management system.
+### API Endpoints
 
-## 📚 More Information
+#### File Import
+```bash
+# Import HTML files
+POST /import
+Content-Type: multipart/form-data
 
-- See `src/services/container.ts` for the main ServiceContainer implementation
-- See `src/workers/` for the action-based worker system
-- See `src/tests/` for comprehensive test examples
-- See `src/workers/README.md` for detailed worker architecture documentation
+# Get import status
+GET /import/status/:importId
+```
+
+#### Note Management
+```bash
+# Get note by ID
+GET /notes/:noteId
+
+# Get note status
+GET /notes/:noteId/status
+```
+
+#### Health Monitoring
+```bash
+# Basic health check
+GET /health
+
+# Detailed health check
+GET /health/ready
+
+# Component health check
+GET /health/component/:component
+```
+
+#### Performance Monitoring
+```bash
+# Performance overview
+GET /performance/overview
+
+# Performance metrics
+GET /performance/metrics
+
+# Memory usage
+GET /performance/memory
+
+# Database optimization
+GET /performance/database
+
+# Performance health
+GET /performance/health
+```
+
+#### Cache Management
+```bash
+# Get cache stats
+GET /cache/stats
+
+# Clear all caches
+POST /cache/clear
+
+# Invalidate specific cache
+POST /cache/invalidate
+```
+
+### WebSocket API
+
+```javascript
+// Connect to WebSocket
+const ws = new WebSocket('ws://localhost:3001');
+
+// Listen for status updates
+ws.onmessage = (event) => {
+  const message = JSON.parse(event.data);
+  console.log('Status update:', message);
+};
+
+// Send ping to keep connection alive
+setInterval(() => {
+  ws.send(JSON.stringify({ type: 'ping' }));
+}, 30000);
+```
+
+## 🔧 Development
+
+### Code Style
+- **TypeScript**: Strict type checking enabled
+- **ESLint**: Code linting with custom rules
+- **Prettier**: Code formatting
+- **Conventional Commits**: Git commit message format
+
+### Testing
+```bash
+# Run all tests
+yarn test
+
+# Run tests with coverage
+yarn test:coverage
+
+# Run specific test file
+yarn test:file src/workers/note/worker.test.ts
+```
+
+### Building
+```bash
+# Build for production
+yarn build
+
+# Build with type checking
+yarn build:check
+
+# Build and watch for changes
+yarn build:watch
+```
+
+### Database Management
+```bash
+# Run migrations
+yarn db:migrate
+
+# Generate migration
+yarn db:migrate:generate
+
+# Reset database
+yarn db:reset
+
+# Seed database
+yarn db:seed
+```
+
+## 📊 Monitoring & Observability
+
+### Performance Metrics
+- **Operation Timing**: Detailed timing for all operations
+- **Memory Usage**: Heap, external, and array buffer monitoring
+- **CPU Usage**: Process and system CPU monitoring
+- **Database Performance**: Query timing and cache hit rates
+- **Queue Performance**: Job processing times and throughput
+
+### Health Checks
+- **Database Connectivity**: Connection pool health
+- **Redis Connectivity**: Cache service health
+- **Queue Health**: Worker and job queue status
+- **Memory Health**: Memory usage and leak detection
+- **System Resources**: CPU, memory, and disk usage
+
+### Logging
+- **Structured Logging**: JSON-formatted logs with context
+- **Log Levels**: Debug, Info, Warn, Error, Fatal
+- **Context Awareness**: Job, worker, and component context
+- **File Rotation**: Automatic log file rotation
+- **Performance Logging**: Operation timing and resource usage
+
+## 🔒 Security
+
+### Security Features
+- **Security Headers**: Comprehensive security headers
+- **CORS Protection**: Configurable CORS policies
+- **Rate Limiting**: Request rate limiting
+- **Input Validation**: Request body and parameter validation
+- **Error Sanitization**: Safe error message handling
+
+### Best Practices
+- **Environment Variables**: Secure configuration management
+- **Input Sanitization**: All inputs validated and sanitized
+- **Error Handling**: Secure error handling without information leakage
+- **Resource Limits**: Request size and rate limiting
+- **Authentication**: JWT-based authentication support
+
+## 🚀 Performance Optimization
+
+### Optimization Features
+- **Query Caching**: Database query result caching
+- **Memory Pooling**: Object pooling for memory efficiency
+- **Batch Operations**: Bulk database operations
+- **Connection Pooling**: Database connection optimization
+- **Garbage Collection**: Automatic memory cleanup
+
+### Monitoring Tools
+- **Performance Profiling**: Automatic operation profiling
+- **Memory Leak Detection**: Automatic memory leak detection
+- **Database Optimization**: Query optimization recommendations
+- **Cache Optimization**: Cache hit rate monitoring
+- **Resource Monitoring**: CPU, memory, and disk monitoring
+
+## 🤝 Contributing
+
+### Development Setup
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests for new functionality
+5. Ensure all tests pass
+6. Submit a pull request
+
+### Code Standards
+- Follow TypeScript best practices
+- Write comprehensive tests
+- Use conventional commit messages
+- Update documentation for new features
+- Follow the established code style
+
+## 📝 License
+
+This project is licensed under the MIT License - see the [LICENSE](../LICENSE) file for details.
+
+## 🆘 Support
+
+For support and questions:
+- Create an issue in the repository
+- Check the documentation
+- Review the health endpoints for system status
+- Monitor the performance endpoints for optimization opportunities
+
+## 🔄 Changelog
+
+### Recent Updates
+- **Performance Optimization**: Comprehensive performance monitoring and optimization systems
+- **Standardization**: Standardized logging, error handling, and configuration
+- **Security Enhancement**: Global and route-specific security middleware
+- **Type System**: Consolidated duplicate types and interfaces
+- **Code Cleanup**: Removed unused files and dead code
+
+For a complete changelog, see the [CHANGELOG.md](CHANGELOG.md) file.

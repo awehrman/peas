@@ -1,4 +1,4 @@
-import { SERVER_DEFAULTS } from "./config";
+import { SECURITY_CONSTANTS, SERVER_DEFAULTS } from "./config";
 import "./load-env";
 import {
   cacheRouter,
@@ -6,9 +6,10 @@ import {
   importRouter,
   metricsRouter,
   notesRouter,
-  testRouter,
+  performanceRouter,
 } from "./routes";
 import { ServiceContainer } from "./services";
+import { ErrorSeverity, ErrorType, HttpStatus } from "./types";
 
 import { createBullBoard } from "@bull-board/api";
 import { BullMQAdapter } from "@bull-board/api/bullMQAdapter.js";
@@ -17,7 +18,10 @@ import cors from "cors";
 import express from "express";
 
 import { ManagerFactory } from "./config/factory";
-// // import { SecurityMiddleware } from "./middleware/security";
+import { configManager } from "./config/standardized-config";
+import { SecurityMiddleware } from "./middleware/security";
+import { errorHandler as stdErrorHandler } from "./utils/standardized-error-handler";
+import { LOG_MESSAGES, LoggerFactory } from "./utils/standardized-logger";
 import { startWorkers } from "./workers/startup";
 
 // Type guard to check if value is an Error
@@ -37,7 +41,18 @@ function createError(value: unknown): Error {
 }
 
 async function initializeApp() {
+  // Initialize standardized systems
+  const config = configManager.loadConfig();
+  const logger = LoggerFactory.getLogger();
+
+  // Set up logger with base logger from service container
   const serviceContainer = await ServiceContainer.getInstance();
+  LoggerFactory.setBaseLogger(serviceContainer.logger);
+
+  logger.info(LOG_MESSAGES.SYSTEM.STARTUP, {
+    environment: config.server.environment,
+    version: config.server.version,
+  });
 
   // Initialize managers using factory
   const databaseManager = ManagerFactory.createDatabaseManager();
@@ -45,18 +60,27 @@ async function initializeApp() {
   const metricsCollector = ManagerFactory.createMetricsCollector();
 
   try {
-    await databaseManager.checkConnectionHealth();
-    await cacheManager.connect();
+    await stdErrorHandler.withErrorHandling(
+      async () => {
+        await databaseManager.checkConnectionHealth();
+        await cacheManager.connect();
 
-    // Start health monitoring
-    databaseManager.startHealthMonitoring();
+        // Start health monitoring
+        databaseManager.startHealthMonitoring();
 
-    // Start metrics collection
-    metricsCollector.startCollection();
+        // Start metrics collection
+        metricsCollector.startCollection();
+      },
+      { operation: "initialize_services", component: "app" },
+      ErrorType.DATABASE_ERROR,
+      ErrorSeverity.HIGH
+    );
 
-    console.log("✅ Database, cache, and metrics initialized successfully");
+    logger.info("Database, cache, and metrics initialized successfully");
   } catch (error) {
-    console.error("❌ Failed to initialize database or cache:", error);
+    logger.error("Failed to initialize database or cache", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     // Continue startup even if cache fails
   }
 
@@ -85,12 +109,26 @@ async function initializeApp() {
     next();
   });
 
-  // TODO: Apply security middleware globally
-  // app.use(SecurityMiddleware.addSecurityHeaders);
-  // app.use(SecurityMiddleware.configureCORS(["http://localhost:3000"]));
-  // app.use(SecurityMiddleware.validateRequestSize(10 * 1024 * 1024)); // 10MB limit
-  // app.use(SecurityMiddleware.rateLimit(15 * 60 * 1000, 100)); // 100 requests per 15 minutes
+  // Apply security middleware globally
+  app.use(SecurityMiddleware.addSecurityHeaders);
+  app.use(
+    SecurityMiddleware.configureCORS([
+      ...SECURITY_CONSTANTS.CORS.ALLOWED_ORIGINS,
+    ])
+  );
+  app.use(
+    SecurityMiddleware.validateRequestSize(
+      SECURITY_CONSTANTS.REQUEST_LIMITS.MAX_REQUEST_SIZE_BYTES
+    )
+  );
+  app.use(
+    SecurityMiddleware.rateLimit(
+      SECURITY_CONSTANTS.RATE_LIMITS.GLOBAL_WINDOW_MS,
+      SECURITY_CONSTANTS.RATE_LIMITS.GLOBAL_MAX_REQUESTS
+    )
+  );
 
+  // Fallback CORS for compatibility
   app.use(cors());
 
   app.use(express.json({ limit: SERVER_DEFAULTS.REQUEST_SIZE_LIMIT }));
@@ -120,7 +158,7 @@ async function initializeApp() {
         timestamp: new Date(),
       });
 
-      res.status(500).json({
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
         error: {
           message: properError.message,
           type: errorType,
@@ -175,13 +213,14 @@ initializeApp()
     app.use("/import", importRouter);
     app.use("/notes", notesRouter);
     app.use("/health", healthEnhancedRouter); // Enhanced health endpoints
-    app.use("/test", testRouter);
+    // Test routes removed - use health endpoints for testing
     app.use("/metrics", metricsRouter);
     app.use("/cache", cacheRouter); // Cache management endpoints
+    app.use("/performance", performanceRouter); // Performance monitoring endpoints
 
     // 404 handler
     app.use("*", (req, res) => {
-      res.status(404).json({
+      res.status(HttpStatus.NOT_FOUND).json({
         error: "Not Found",
         message: `Route ${req.method} ${req.originalUrl} not found`,
         timestamp: new Date().toISOString(),
@@ -306,7 +345,10 @@ initializeApp()
     process.on("SIGINT", () => gracefulShutdown("SIGINT"));
   })
   .catch((error) => {
-    console.error("Failed to initialize application:", error);
+    const logger = LoggerFactory.getLogger();
+    logger.error("Failed to initialize application", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     // eslint-disable-next-line no-process-exit
     process.exit(1);
   });

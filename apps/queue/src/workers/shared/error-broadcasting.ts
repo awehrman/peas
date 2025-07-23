@@ -1,7 +1,8 @@
 import type { NoteStatus } from "@peas/database";
 
 import { LogLevel } from "../../types";
-import type { BaseWorkerDependencies, StructuredLogger } from "../core/types";
+import type { BaseWorkerDependencies } from "../core/types";
+import type { StructuredLogger } from "../../types";
 
 /**
  * Data required to broadcast an error event.

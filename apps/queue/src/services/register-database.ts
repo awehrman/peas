@@ -2,6 +2,9 @@ import type { ParsedHTMLFile } from "@peas/database";
 
 import { prisma } from "../config/database";
 import { PatternTracker } from "../workers/shared/pattern-tracker";
+import { createLogger } from "../utils/standardized-logger";
+
+const logger = createLogger("DatabaseService");
 
 export interface IDatabaseService {
   prisma: typeof prisma;
@@ -61,9 +64,7 @@ export class DatabaseService implements IDatabaseService {
         completedJobs: 0,
         isComplete: false,
       });
-      console.log(
-        `[DATABASE] Created completion tracker for note ${noteId} with ${totalJobs} jobs`
-      );
+      logger.info("Created completion tracker", { noteId, totalJobs });
       return Promise.resolve();
     };
   }
@@ -75,13 +76,14 @@ export class DatabaseService implements IDatabaseService {
         // Update the completed jobs count (this represents the current job that just completed)
         tracker.completedJobs = completedJobs;
         tracker.isComplete = completedJobs >= tracker.totalJobs;
-        console.log(
-          `[DATABASE] Updated completion tracker for note ${noteId}: ${completedJobs}/${tracker.totalJobs} jobs completed (${tracker.isComplete ? "COMPLETE" : "INCOMPLETE"})`
-        );
+        logger.info("Updated completion tracker", { 
+          noteId, 
+          completedJobs, 
+          totalJobs: tracker.totalJobs, 
+          isComplete: tracker.isComplete 
+        });
       } else {
-        console.log(
-          `[DATABASE] No completion tracker found for note ${noteId}, creating one with ${completedJobs} completed jobs`
-        );
+        logger.info("No completion tracker found, creating fallback", { noteId, completedJobs });
         // Create a tracker if one doesn't exist (fallback)
         jobCompletionTracker.set(noteId, {
           totalJobs: completedJobs,
@@ -101,18 +103,21 @@ export class DatabaseService implements IDatabaseService {
         if (tracker.completedJobs < tracker.totalJobs) {
           tracker.completedJobs += 1;
           tracker.isComplete = tracker.completedJobs >= tracker.totalJobs;
-          console.log(
-            `[DATABASE] Incremented completion tracker for note ${noteId}: ${tracker.completedJobs}/${tracker.totalJobs} jobs completed (${tracker.isComplete ? "COMPLETE" : "INCOMPLETE"})`
-          );
+          logger.info("Incremented completion tracker", { 
+            noteId, 
+            completedJobs: tracker.completedJobs, 
+            totalJobs: tracker.totalJobs, 
+            isComplete: tracker.isComplete 
+          });
         } else {
-          console.log(
-            `[DATABASE] Note ${noteId} already complete (${tracker.completedJobs}/${tracker.totalJobs}), skipping increment`
-          );
+          logger.info("Note already complete, skipping increment", { 
+            noteId, 
+            completedJobs: tracker.completedJobs, 
+            totalJobs: tracker.totalJobs 
+          });
         }
       } else {
-        console.log(
-          `[DATABASE] No completion tracker found for note ${noteId}, creating one with 1 completed job`
-        );
+        logger.info("No completion tracker found, creating fallback with 1 job", { noteId });
         // Create a tracker if one doesn't exist (fallback)
         jobCompletionTracker.set(noteId, {
           totalJobs: 1,
@@ -129,9 +134,7 @@ export class DatabaseService implements IDatabaseService {
       const tracker = jobCompletionTracker.get(noteId);
 
       if (!tracker) {
-        console.log(
-          `[DATABASE] No completion tracker found for note ${noteId}, considering complete`
-        );
+        logger.info("No completion tracker found, considering complete", { noteId });
         return {
           isComplete: true,
           completedJobs: 0,
@@ -139,9 +142,12 @@ export class DatabaseService implements IDatabaseService {
         };
       }
 
-      console.log(
-        `[DATABASE] Note ${noteId}: ${tracker.completedJobs}/${tracker.totalJobs} jobs complete (${tracker.isComplete ? "COMPLETE" : "INCOMPLETE"})`
-      );
+      logger.info("Note completion status", { 
+        noteId, 
+        completedJobs: tracker.completedJobs, 
+        totalJobs: tracker.totalJobs, 
+        isComplete: tracker.isComplete 
+      });
 
       return {
         isComplete: tracker.isComplete,
@@ -160,9 +166,10 @@ export class DatabaseService implements IDatabaseService {
         });
         return note?.title || null;
       } catch (error) {
-        console.log(
-          `[DATABASE] Error getting note title for ${noteId}: ${error}`
-        );
+        logger.error("Error getting note title", { 
+          noteId, 
+          error: error instanceof Error ? error.message : String(error) 
+        });
         return null;
       }
     };

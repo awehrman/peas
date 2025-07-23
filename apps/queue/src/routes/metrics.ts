@@ -1,5 +1,6 @@
 import { Router } from "express";
 
+import { HttpStatus } from "../types";
 import { ErrorHandler } from "../utils/error-handler";
 import {
   getMetricsSnapshot,
@@ -24,7 +25,7 @@ metricsRouter.get("/prometheus", (req, res) => {
       error,
       "get_prometheus_metrics"
     );
-    res.status(500).json(errorResponse);
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse);
   }
 });
 
@@ -42,7 +43,7 @@ metricsRouter.get("/snapshot", (req, res) => {
       error,
       "get_metrics_snapshot"
     );
-    res.status(500).json(errorResponse);
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse);
   }
 });
 
@@ -60,7 +61,7 @@ metricsRouter.get("/performance", (req, res) => {
       error,
       "get_performance_metrics"
     );
-    res.status(500).json(errorResponse);
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse);
   }
 });
 
@@ -83,7 +84,7 @@ metricsRouter.get("/health", (req, res) => {
       metrics: performance,
     });
   } catch (error) {
-    res.status(500).json({
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       status: "unhealthy",
       timestamp: new Date().toISOString(),
       error: error instanceof Error ? error.message : "Unknown error",

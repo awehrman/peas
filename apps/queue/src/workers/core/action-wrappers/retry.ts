@@ -2,12 +2,11 @@
  * Wraps a BaseAction with retry logic.
  * Retries the action on failure according to the retry policy.
  */
-import { ActionName } from "../../../types";
+import { ActionName, StructuredLogger } from "../../../types";
 import type { BaseJobData } from "../../types";
+import type { ActionFactory } from "../action-factory";
 import { BaseAction } from "../base-action";
 import type { ActionContext } from "../types";
-import type { StructuredLogger } from "../types";
-import type { ActionFactory } from "../action-factory";
 
 export class RetryAction<
   TData extends BaseJobData = BaseJobData,
@@ -91,7 +90,10 @@ export function wrapActionWithRetryAndErrorHandlingFactory<
   actionFactory: ActionFactory<TData, TDeps>,
   actionName: ActionName
 ): BaseAction<TData, TDeps> {
-  const action = actionFactory.create(actionName, {} as TDeps) as BaseAction<TData, TDeps>;
+  const action = actionFactory.create(actionName, {} as TDeps) as BaseAction<
+    TData,
+    TDeps
+  >;
   return new RetryAction(action);
 }
 

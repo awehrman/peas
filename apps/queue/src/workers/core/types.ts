@@ -1,22 +1,8 @@
 import { Queue } from "bullmq";
 
-import type { LogLevel } from "../../types";
+import type { StructuredLogger } from "../../types";
 
-/**
- * Base interface for job data - all job data should extend this
- */
-export interface BaseJobData {
-  noteId?: string;
-  metadata?: Record<string, unknown>;
-}
-
-export interface StructuredLogger {
-  log: (
-    message: string,
-    level?: LogLevel,
-    meta?: Record<string, unknown>
-  ) => void;
-}
+// BaseJobData and StructuredLogger are now imported from ../types.ts
 
 /**
  * Base interface for worker dependencies - all dependencies should extend this

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { systemMonitor } from "../monitoring/system-monitor";
 import { ManagerFactory } from "../config/factory";
+import { HttpStatus } from "../types";
 
 export const healthEnhancedRouter = Router();
 
@@ -38,7 +39,7 @@ healthEnhancedRouter.get("/", async (req, res) => {
     });
   } catch (error) {
     console.error("Health check failed:", error);
-    res.status(503).json({
+    res.status(HttpStatus.SERVICE_UNAVAILABLE).json({
       status: "unhealthy",
       timestamp: new Date().toISOString(),
       error: "Health check failed",
@@ -63,7 +64,7 @@ healthEnhancedRouter.get("/ready", async (req, res) => {
     const isReady = isHealthy && isCacheReady;
     
     if (isReady) {
-      res.status(200).json({
+      res.status(HttpStatus.OK).json({
         status: "ready",
         timestamp: new Date().toISOString(),
         checks: {
@@ -72,7 +73,7 @@ healthEnhancedRouter.get("/ready", async (req, res) => {
         },
       });
     } else {
-      res.status(503).json({
+      res.status(HttpStatus.SERVICE_UNAVAILABLE).json({
         status: "not_ready",
         timestamp: new Date().toISOString(),
         checks: {
@@ -84,7 +85,7 @@ healthEnhancedRouter.get("/ready", async (req, res) => {
     }
   } catch (error) {
     console.error("Readiness check failed:", error);
-    res.status(503).json({
+    res.status(HttpStatus.SERVICE_UNAVAILABLE).json({
       status: "not_ready",
       timestamp: new Date().toISOString(),
       error: "Readiness check failed",
@@ -107,7 +108,7 @@ healthEnhancedRouter.get("/live", async (req, res) => {
     const isMemoryHealthy = memoryUsage.heapUsed < 1024 * 1024 * 1024;
     
     if (isMemoryHealthy && uptime > 0) {
-      res.status(200).json({
+      res.status(HttpStatus.OK).json({
         status: "alive",
         timestamp: new Date().toISOString(),
         uptime,
@@ -119,7 +120,7 @@ healthEnhancedRouter.get("/live", async (req, res) => {
         },
       });
     } else {
-      res.status(503).json({
+      res.status(HttpStatus.SERVICE_UNAVAILABLE).json({
         status: "unhealthy",
         timestamp: new Date().toISOString(),
         uptime,
@@ -129,7 +130,7 @@ healthEnhancedRouter.get("/live", async (req, res) => {
     }
   } catch (error) {
     console.error("Liveness check failed:", error);
-    res.status(503).json({
+    res.status(HttpStatus.SERVICE_UNAVAILABLE).json({
       status: "unhealthy",
       timestamp: new Date().toISOString(),
       error: "Liveness check failed",
@@ -148,14 +149,14 @@ healthEnhancedRouter.get("/components/:component", async (req, res) => {
     
     const componentHealth = await healthMonitor.getComponentHealth(component as "database" | "redis" | "queues");
     
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       component,
       timestamp: new Date().toISOString(),
       health: componentHealth,
     });
   } catch (error) {
     console.error(`Component health check failed for ${req.params.component}:`, error);
-    res.status(500).json({
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       component: req.params.component,
       timestamp: new Date().toISOString(),
       error: "Component health check failed",
@@ -173,7 +174,7 @@ healthEnhancedRouter.get("/metrics", async (req, res) => {
     const allJobMetrics = systemMonitor.getAllJobMetrics();
     const allQueueMetrics = systemMonitor.getAllQueueMetrics();
     
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       timestamp: new Date().toISOString(),
       system: systemMetrics,
       jobs: {
@@ -189,7 +190,7 @@ healthEnhancedRouter.get("/metrics", async (req, res) => {
     });
   } catch (error) {
     console.error("Metrics endpoint failed:", error);
-    res.status(500).json({
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       timestamp: new Date().toISOString(),
       error: "Metrics collection failed",
       message: error instanceof Error ? error.message : "Unknown error",

@@ -1,10 +1,10 @@
 import {
-  ErrorType,
-  ErrorSeverity,
-  JobError,
-  ValidationError,
   DatabaseError,
+  ErrorSeverity,
+  ErrorType,
+  JobError,
   RetryConfig,
+  ValidationError,
 } from "../types";
 
 export class QueueError extends Error {
@@ -19,10 +19,10 @@ export class QueueError extends Error {
 
 export class ErrorHandler {
   private static readonly DEFAULT_RETRY_CONFIG: RetryConfig = {
-    maxRetries: 3,
-    backoffMs: 1000,
+    maxAttempts: 3,
+    baseDelay: 1000,
+    maxDelay: 30000,
     backoffMultiplier: 2,
-    maxBackoffMs: 30000,
   };
 
   /**
@@ -107,7 +107,7 @@ export class ErrorHandler {
   ): boolean {
     const retryConfig = { ...this.DEFAULT_RETRY_CONFIG, ...config };
 
-    if (retryCount >= retryConfig.maxRetries) {
+    if (retryCount >= retryConfig.maxAttempts) {
       return false;
     }
 
@@ -134,9 +134,9 @@ export class ErrorHandler {
     const retryConfig = { ...this.DEFAULT_RETRY_CONFIG, ...config };
 
     const backoff =
-      retryConfig.backoffMs *
+      retryConfig.baseDelay *
       Math.pow(retryConfig.backoffMultiplier, retryCount);
-    return Math.min(backoff, retryConfig.maxBackoffMs);
+    return Math.min(backoff, retryConfig.maxDelay);
   }
 
   /**

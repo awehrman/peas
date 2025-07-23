@@ -1,5 +1,4 @@
 // Note actions
 export * from "./note";
 
-// Shared actions (to be added later)
-export * from "./shared";
+// Shared actions will be added when implemented

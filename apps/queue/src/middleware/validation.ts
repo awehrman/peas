@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { z } from "zod";
+import { HttpStatus } from "../types";
 
 // ============================================================================
 // SIMPLE VALIDATION SCHEMAS
@@ -66,7 +67,7 @@ export function validateQuery(schema: z.ZodSchema) {
       next();
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({
+        return res.status(HttpStatus.BAD_REQUEST).json({
           error: "Query validation failed",
           details: error.issues.map((issue) => ({
             field: issue.path.join("."),
@@ -87,7 +88,7 @@ export function validateParams(schema: z.ZodSchema) {
       next();
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({
+        return res.status(HttpStatus.BAD_REQUEST).json({
           error: "Parameter validation failed",
           details: error.issues.map((issue) => ({
             field: issue.path.join("."),
@@ -108,7 +109,7 @@ export function validateBody(schema: z.ZodSchema) {
       next();
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({
+        return res.status(HttpStatus.BAD_REQUEST).json({
           error: "Body validation failed",
           details: error.issues.map((issue) => ({
             field: issue.path.join("."),
@@ -131,7 +132,7 @@ export function validateFile(schema: z.ZodSchema) {
   return (req: Request, res: Response, next: NextFunction) => {
     try {
       if (!hasFile(req)) {
-        return res.status(400).json({
+        return res.status(HttpStatus.BAD_REQUEST).json({
           error: "File validation failed",
           details: [
             {
@@ -153,7 +154,7 @@ export function validateFile(schema: z.ZodSchema) {
       next();
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({
+        return res.status(HttpStatus.BAD_REQUEST).json({
           error: "File validation failed",
           details: error.issues.map((issue) => ({
             field: issue.path.join("."),

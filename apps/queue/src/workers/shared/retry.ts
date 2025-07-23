@@ -1,21 +1,14 @@
-import { ActionName, LogLevel } from "../../types";
+import { ActionName, LogLevel, RetryConfig, StructuredLogger } from "../../types";
 import type { ActionFactory } from "../core/action-factory";
 import { BaseAction } from "../core/base-action";
 import { ActionContext } from "../core/types";
-import type { StructuredLogger } from "../core/types";
 import type { BaseJobData } from "../types";
 
 export interface RetryDeps {
   logger?: StructuredLogger;
 }
 
-export interface RetryConfig {
-  maxAttempts: number;
-  baseDelay: number;
-  maxDelay: number;
-  backoffMultiplier: number;
-  jitter: boolean;
-}
+// RetryConfig is now imported from ../../types
 
 export interface RetryData {
   attempt: number;

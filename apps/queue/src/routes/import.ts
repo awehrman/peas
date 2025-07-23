@@ -1,8 +1,10 @@
 import { Router } from "express";
 import path from "path";
 
-import { FILE_CONSTANTS, LOG_MESSAGES } from "../config/constants";
-import { noteQueue } from "../queues";
+import { FILE_CONSTANTS, LOG_MESSAGES, SECURITY_CONSTANTS } from "../config/constants";
+import { ServiceContainer } from "../services";
+import { SecurityMiddleware } from "../middleware/security";
+import { HttpStatus } from "../types";
 import {
   FileProcessingOptions,
   processFilesWithStreaming,
@@ -17,9 +19,9 @@ import {
 
 export const importRouter = Router();
 
-// TODO: Apply security middleware when integration issues are resolved
-// importRouter.use(SecurityMiddleware.rateLimit(15 * 60 * 1000, 50)); // 50 requests per 15 minutes for import
-// importRouter.use(SecurityMiddleware.addSecurityHeaders);
+// Apply security middleware for import routes
+importRouter.use(SecurityMiddleware.rateLimit(SECURITY_CONSTANTS.RATE_LIMITS.IMPORT_WINDOW_MS, SECURITY_CONSTANTS.RATE_LIMITS.IMPORT_MAX_REQUESTS));
+importRouter.use(SecurityMiddleware.validateRequestSize(SECURITY_CONSTANTS.REQUEST_LIMITS.MAX_IMPORT_REQUEST_SIZE_BYTES));
 
 const directoryPath = path.join(
   process.cwd(),
@@ -102,6 +104,9 @@ importRouter.post("/", async (req, res) => {
 // Get import status
 importRouter.get("/status", async (req, res) => {
   try {
+    const serviceContainer = await ServiceContainer.getInstance();
+    const noteQueue = serviceContainer.queues.noteQueue;
+    
     const [waiting, active, completed, failed] = await Promise.all([
       noteQueue.getWaiting(),
       noteQueue.getActive(),
@@ -115,6 +120,6 @@ importRouter.get("/status", async (req, res) => {
       error,
       "get_import_status"
     );
-    res.status(500).json(errorResponse);
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse);
   }
 });
