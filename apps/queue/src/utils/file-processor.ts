@@ -4,7 +4,11 @@ import path from "path";
 import { Transform } from "stream";
 import { pipeline } from "stream/promises";
 
-import { cacheManager } from "../config/cache";
+import {
+  CACHE_OPTIONS,
+  CacheKeyGenerator,
+  actionCache,
+} from "../workers/core/cache/action-cache";
 
 // ============================================================================
 // FILE PROCESSING INTERFACES
@@ -304,8 +308,8 @@ class StreamingFileProcessor extends EventEmitter {
     filePath: string
   ): Promise<FileProcessingResult | null> {
     try {
-      const cacheKey = `file_processed:${path.basename(filePath)}`;
-      return await cacheManager.get<FileProcessingResult>(cacheKey);
+      const cacheKey = CacheKeyGenerator.fileProcessing(filePath);
+      return await actionCache.get<FileProcessingResult>(cacheKey);
     } catch (error) {
       console.warn(`Cache read failed for ${filePath}:`, error);
       return null;
@@ -317,8 +321,8 @@ class StreamingFileProcessor extends EventEmitter {
     result: FileProcessingResult
   ): Promise<void> {
     try {
-      const cacheKey = `file_processed:${path.basename(filePath)}`;
-      await cacheManager.set(cacheKey, result, { ttl: 3600 }); // Cache for 1 hour
+      const cacheKey = CacheKeyGenerator.fileProcessing(filePath);
+      await actionCache.set(cacheKey, result, CACHE_OPTIONS.FILE_PROCESSING);
     } catch (error) {
       console.warn(`Cache write failed for ${filePath}:`, error);
     }

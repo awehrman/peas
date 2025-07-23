@@ -1,48 +1,115 @@
-/**
- * Worker and action metrics utilities for tracking execution times, status, and health.
- */
-export class WorkerMetrics {
-  private static actionExecutionTimes: Record<string, number[]> = {};
-  private static jobProcessingTimes: Record<string, number[]> = {};
-  private static workerStatus: Record<string, boolean> = {};
+// ============================================================================
+// WORKER METRICS
+// ============================================================================
 
-  static recordActionExecutionTime(
-    actionName: string,
-    duration: number,
-    _success: boolean
-  ) {
-    if (!this.actionExecutionTimes[actionName]) {
-      this.actionExecutionTimes[actionName] = [];
+export interface WorkerMetrics {
+  workerId: string;
+  queueName: string;
+  jobsProcessed: number;
+  jobsFailed: number;
+  averageProcessingTime: number;
+  lastJobTime: Date;
+  uptime: number;
+}
+
+export interface QueueMetrics {
+  queueName: string;
+  jobCount: number;
+  waitingCount: number;
+  activeCount: number;
+  completedCount: number;
+  failedCount: number;
+  averageWaitTime: number;
+  averageProcessingTime: number;
+}
+
+export interface SystemMetrics {
+  totalWorkers: number;
+  totalQueues: number;
+  totalJobsProcessed: number;
+  totalJobsFailed: number;
+  systemUptime: number;
+  memoryUsage: number;
+  cpuUsage: number;
+}
+
+// ============================================================================
+// METRICS COLLECTOR
+// ============================================================================
+
+export class MetricsCollector {
+  private static instance: MetricsCollector;
+  private workerMetrics: Map<string, WorkerMetrics> = new Map();
+  private queueMetrics: Map<string, QueueMetrics> = new Map();
+  private systemMetrics: SystemMetrics = {
+    totalWorkers: 0,
+    totalQueues: 0,
+    totalJobsProcessed: 0,
+    totalJobsFailed: 0,
+    systemUptime: 0,
+    memoryUsage: 0,
+    cpuUsage: 0,
+  };
+
+  private constructor() {
+    // Prevent direct instantiation
+  }
+
+  public static getInstance(): MetricsCollector {
+    if (!MetricsCollector.instance) {
+      MetricsCollector.instance = new MetricsCollector();
     }
-    this.actionExecutionTimes[actionName]?.push(duration);
-    // Optionally, record success/failure counts
+    return MetricsCollector.instance;
   }
 
-  static recordJobProcessingTime(
-    workerName: string,
-    duration: number,
-    _success: boolean
-  ) {
-    if (!this.jobProcessingTimes[workerName]) {
-      this.jobProcessingTimes[workerName] = [];
-    }
-    this.jobProcessingTimes[workerName]?.push(duration);
-    // Optionally, record success/failure counts
+  public updateWorkerMetrics(metrics: WorkerMetrics): void {
+    this.workerMetrics.set(metrics.workerId, metrics);
+    this.updateSystemMetrics();
   }
 
-  static recordWorkerStatus(workerName: string, isRunning: boolean) {
-    this.workerStatus[workerName] = isRunning;
+  public updateQueueMetrics(metrics: QueueMetrics): void {
+    this.queueMetrics.set(metrics.queueName, metrics);
+    this.updateSystemMetrics();
   }
 
-  static getActionExecutionTimes(actionName: string): number[] {
-    return this.actionExecutionTimes[actionName] || [];
+  public getWorkerMetrics(workerId: string): WorkerMetrics | undefined {
+    return this.workerMetrics.get(workerId);
   }
 
-  static getJobProcessingTimes(workerName: string): number[] {
-    return this.jobProcessingTimes[workerName] || [];
+  public getAllWorkerMetrics(): WorkerMetrics[] {
+    return Array.from(this.workerMetrics.values());
   }
 
-  static getWorkerStatus(workerName: string): boolean {
-    return this.workerStatus[workerName] || false;
+  public getQueueMetrics(queueName: string): QueueMetrics | undefined {
+    return this.queueMetrics.get(queueName);
+  }
+
+  public getAllQueueMetrics(): QueueMetrics[] {
+    return Array.from(this.queueMetrics.values());
+  }
+
+  public getSystemMetrics(): SystemMetrics {
+    return { ...this.systemMetrics };
+  }
+
+  private updateSystemMetrics(): void {
+    const workers = this.getAllWorkerMetrics();
+    const queues = this.getAllQueueMetrics();
+
+    this.systemMetrics = {
+      totalWorkers: workers.length,
+      totalQueues: queues.length,
+      totalJobsProcessed: workers.reduce((sum, w) => sum + w.jobsProcessed, 0),
+      totalJobsFailed: workers.reduce((sum, w) => sum + w.jobsFailed, 0),
+      systemUptime: Date.now() - process.uptime() * 1000,
+      memoryUsage: process.memoryUsage().heapUsed / 1024 / 1024, // MB
+      cpuUsage: process.cpuUsage().user / 1000000, // seconds
+    };
   }
 }
+
+// ============================================================================
+// EXPORTS
+// ============================================================================
+
+export const metricsCollector = MetricsCollector.getInstance(); 

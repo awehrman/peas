@@ -5,7 +5,6 @@ import {
 } from "./action-wrappers";
 import { BaseAction } from "./base-action";
 import { processJob } from "./job-processor";
-import { WorkerMetrics } from "./metrics";
 import { injectStandardStatusActions } from "./status-actions";
 import type { ActionContext, WorkerAction } from "./types";
 import {
@@ -14,6 +13,7 @@ import {
   buildStatusBroadcasterDependency,
 } from "./worker-dependencies";
 
+import { systemMonitor } from "../../monitoring/system-monitor";
 import type { IServiceContainer } from "../../services/container";
 import { LogLevel } from "../../types";
 import type { ActionName } from "../../types";
@@ -256,10 +256,12 @@ export abstract class BaseWorker<
           this.dependencies
         );
         const totalDuration = Date.now() - startTime;
-        WorkerMetrics.recordJobProcessingTime(
-          this.getOperationName(),
+        systemMonitor.trackJobMetrics(
+          context.jobId,
           totalDuration,
-          true
+          true,
+          context.queueName,
+          context.workerName
         );
         this.dependencies.logger.log(
           `${this.getOperationName()} completed for job ${context.jobId} in ${totalDuration}ms`,
@@ -270,10 +272,13 @@ export abstract class BaseWorker<
         return result as Record<string, unknown>;
       } catch (error) {
         const totalDuration = Date.now() - startTime;
-        WorkerMetrics.recordJobProcessingTime(
-          this.getOperationName(),
+        systemMonitor.trackJobMetrics(
+          context.jobId,
           totalDuration,
-          false
+          false,
+          context.queueName,
+          context.workerName,
+          error instanceof Error ? error.message : String(error)
         );
         this.dependencies.logger.log(
           `${this.getOperationName()} failed for job ${context.jobId}: ${error}`,
@@ -330,7 +335,14 @@ export abstract class BaseWorker<
     };
 
     // Record worker status metric
-    WorkerMetrics.recordWorkerStatus(this.getOperationName(), status.isRunning);
+    systemMonitor.logWorkerEvent({
+      type: "worker_status_changed",
+      data: {
+        workerName: this.getOperationName(),
+        status: status.isRunning ? "busy" : "idle",
+      },
+      timestamp: new Date(),
+    });
 
     return status;
   }

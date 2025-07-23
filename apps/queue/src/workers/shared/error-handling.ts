@@ -1,4 +1,5 @@
 import { ActionName } from "../../types";
+import type { ActionFactory } from "../core/action-factory";
 import { BaseAction } from "../core/base-action";
 import { ActionContext } from "../core/types";
 import type { BaseJobData } from "../types";
@@ -163,15 +164,28 @@ export function withErrorHandling<T extends BaseAction<BaseJobData, object>>(
 
 /**
  * Helper function to create a chain of error handling actions.
+ * @param actionFactory - The action factory to create actions
+ * @param deps - Dependencies for the actions
  * @param _noteId - Optional note ID
  * @returns Array of error handling actions
  */
 export function createErrorHandlingChain(
+  actionFactory: ActionFactory<ErrorJobData, object>,
+  deps: object,
   _noteId?: string
 ): BaseAction<ErrorJobData, object>[] {
   return [
-    new LogErrorAction(),
-    new CaptureErrorAction(),
-    new ErrorRecoveryAction(),
+    actionFactory.create(ActionName.LOG_ERROR, deps) as BaseAction<
+      ErrorJobData,
+      object
+    >,
+    actionFactory.create(ActionName.CAPTURE_ERROR, deps) as BaseAction<
+      ErrorJobData,
+      object
+    >,
+    actionFactory.create(ActionName.ERROR_RECOVERY, deps) as BaseAction<
+      ErrorJobData,
+      object
+    >,
   ];
 }

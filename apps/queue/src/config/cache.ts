@@ -38,8 +38,9 @@ export const CACHE_CONFIG = {
 
 export interface CacheOptions {
   ttl?: number;
+  memoryTtl?: number; // TTL for memory cache in milliseconds
   compress?: boolean;
-  tags?: string[];
+  tags?: readonly string[]; // Make readonly to match our cache options
 }
 
 export interface CacheStats {
@@ -54,7 +55,7 @@ export interface CacheStats {
 // CACHE MANAGER
 // ============================================================================
 
-class CacheManager {
+export class CacheManager {
   private static instance: CacheManager;
   private stats: CacheStats;
   private isConnected: boolean = false;
@@ -153,7 +154,7 @@ class CacheManager {
 
       // Add tags if specified
       if (options.tags && options.tags.length > 0) {
-        await this.addTags(key, options.tags);
+        await this.addTags(key, [...options.tags]);
       }
     } catch (error) {
       console.error(`❌ Cache set error for key ${key}:`, error);
@@ -421,9 +422,10 @@ class CacheManager {
 }
 
 // ============================================================================
-// EXPORT SINGLETON INSTANCE
+// EXPORT SINGLETON INSTANCE (DEPRECATED - Use ManagerFactory instead)
 // ============================================================================
 
+// @deprecated Use ManagerFactory.createCacheManager() instead
 export const cacheManager = CacheManager.getInstance();
 
 // ============================================================================

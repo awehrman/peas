@@ -1,4 +1,5 @@
 import { createNoteWorker } from "./note";
+import { queueMonitor } from "../monitoring/queue-monitor";
 
 import { Queue } from "bullmq";
 
@@ -33,6 +34,10 @@ export function startWorkers(
   ];
 
   const workers = createWorkers(workerConfigs, serviceContainer);
+
+  // Start monitoring queues
+  queueMonitor.startMonitoring(queues.noteQueue);
+  // TODO: Add monitoring for additional queues as they're implemented
 
   // Store workers for graceful shutdown
   serviceContainer._workers = {

@@ -45,7 +45,7 @@ export interface PerformanceMetrics {
 // METRICS COLLECTOR
 // ============================================================================
 
-class MetricsCollector extends EventEmitter {
+export class MetricsCollector extends EventEmitter {
   private static instance: MetricsCollector;
   private metrics: Map<string, Metric> = new Map();
   private collectionInterval: ReturnType<typeof setInterval> | null = null;
@@ -410,9 +410,10 @@ class MetricsCollector extends EventEmitter {
 }
 
 // ============================================================================
-// EXPORT SINGLETON INSTANCE
+// EXPORT SINGLETON INSTANCE (DEPRECATED - Use ManagerFactory instead)
 // ============================================================================
 
+// @deprecated Use ManagerFactory.createMetricsCollector() instead
 export const metricsCollector = MetricsCollector.getInstance();
 
 // ============================================================================

@@ -1,3 +1,5 @@
+import { ServiceFactory } from "./factory";
+
 import { PrismaClient } from "@peas/database";
 import { Queue, Worker } from "bullmq";
 
@@ -54,12 +56,7 @@ export interface IDatabaseService {
   patternTracker: JobMetadata;
 }
 
-/**
- * Parser service interface
- */
-export interface IParserService {
-  parseHTML: (content: string) => Promise<DatabaseResult>;
-}
+// Parser service removed - parsing logic is handled by Actions
 
 /**
  * Error handler service interface
@@ -136,7 +133,6 @@ export interface IWebSocketService {
 export interface IServiceContainer {
   queues: IQueueService;
   database: IDatabaseService;
-  parsers: IParserService;
   errorHandler: IErrorHandlerService;
   healthMonitor: IHealthMonitorService;
   webSocket: IWebSocketService;
@@ -209,115 +205,7 @@ async function registerDatabase(): Promise<IDatabaseService> {
   };
 }
 
-// Default error handler service implementation
-class ErrorHandlerService implements IErrorHandlerService {
-  withErrorHandling<T>(
-    operation: () => Promise<T>,
-    _context?: OperationContext
-  ): Promise<T> {
-    return operation();
-  }
-
-  createJobError(error: Error, context: OperationContext): DatabaseResult {
-    return {
-      success: false,
-      error: error.message,
-      operation: context.operation,
-      errorType: error.name || "UNKNOWN_ERROR",
-      severity: "error",
-      timestamp: new Date(),
-    };
-  }
-
-  classifyError(error: Error): string {
-    return error.name || "UNKNOWN_ERROR";
-  }
-
-  logError(error: Error, context: OperationContext): void {
-    console.error("Error occurred:", {
-      message: error.message,
-      stack: error.stack,
-      context,
-    });
-  }
-
-  // For backward compatibility
-  get errorHandler() {
-    return {
-      withErrorHandling: this.withErrorHandling.bind(this),
-      createJobError: this.createJobError.bind(this),
-      classifyError: this.classifyError.bind(this),
-      logError: this.logError.bind(this),
-    };
-  }
-}
-
-// Default health monitor service implementation
-class HealthMonitorService implements IHealthMonitorService {
-  healthMonitor = HealthMonitor.getInstance();
-}
-
-// Default WebSocket service implementation
-class WebSocketService implements IWebSocketService {
-  webSocketManager = null;
-}
-
-// Default status broadcaster service implementation
-class StatusBroadcasterService implements IStatusBroadcasterService {
-  addStatusEventAndBroadcast = async (_event: StatusEventData) => {
-    // Default implementation - no-op
-    return Promise.resolve({
-      success: true,
-      count: 1,
-      operation: "broadcast_status_event",
-    });
-  };
-}
-
-// Default parser service implementation
-class ParserServiceImpl implements IParserService {
-  parsers = {
-    parseHTML: async (content: string) => {
-      // Default implementation - return content as-is
-      return {
-        success: true,
-        count: 1,
-        operation: "parse_html",
-        content,
-        parsed: true,
-      };
-    },
-  };
-
-  parseHTML = async (content: string) => {
-    // Direct access to parseHTML for convenience
-    return this.parsers.parseHTML(content);
-  };
-}
-
-// Default logger service implementation
-function registerLogger(): ILoggerService {
-  return {
-    log: (message: string, level = "info", meta?: LoggerMetadata) => {
-      console.log(`[${level.toUpperCase()}] ${message}`, meta);
-    },
-  };
-}
-
-// Default config service implementation
-class ConfigService implements IConfigService {
-  get wsHost(): string | undefined {
-    return process.env.WS_HOST;
-  }
-
-  get port(): number {
-    return parseInt(process.env.PORT || "3000", 10);
-  }
-
-  get wsPort(): number {
-    return parseInt(process.env.WS_PORT || "3001", 10);
-  }
-}
+// Service implementations moved to factory.ts
 
 // ============================================================================
 // MAIN CONTAINER CLASS
@@ -330,7 +218,6 @@ export class ServiceContainer implements IServiceContainer {
   public readonly healthMonitor: IHealthMonitorService;
   public readonly webSocket: IWebSocketService;
   public readonly statusBroadcaster: IStatusBroadcasterService;
-  public readonly parsers: IParserService;
   public readonly logger: ILoggerService;
   public readonly config: IConfigService;
   public queues!: IQueueService; // Use definite assignment assertion
@@ -340,13 +227,12 @@ export class ServiceContainer implements IServiceContainer {
   };
 
   private constructor() {
-    this.errorHandler = new ErrorHandlerService();
-    this.healthMonitor = new HealthMonitorService();
-    this.webSocket = new WebSocketService();
-    this.statusBroadcaster = new StatusBroadcasterService();
-    this.parsers = new ParserServiceImpl();
-    this.logger = registerLogger();
-    this.config = new ConfigService();
+    this.errorHandler = ServiceFactory.createErrorHandler();
+    this.healthMonitor = ServiceFactory.createHealthMonitor();
+    this.webSocket = ServiceFactory.createWebSocketService();
+    this.statusBroadcaster = ServiceFactory.createStatusBroadcaster();
+    this.logger = ServiceFactory.createLoggerService();
+    this.config = ServiceFactory.createConfigService();
   }
 
   public static async getInstance(): Promise<ServiceContainer> {

@@ -1,4 +1,5 @@
 import { ActionName, LogLevel } from "../../types";
+import type { ActionFactory } from "../core/action-factory";
 import { BaseAction } from "../core/base-action";
 import { ActionContext } from "../core/types";
 import type { StructuredLogger } from "../core/types";
@@ -286,5 +287,45 @@ export function withCircuitBreaker<
     breakerKey?: string;
   }
 ): CircuitBreakerAction<TData, TDeps> {
+  return new CircuitBreakerAction(action, config);
+}
+
+/**
+ * Factory-based helper function to create a retry wrapper for any action.
+ */
+export function withRetryFactory<
+  TData extends BaseJobData,
+  TDeps extends object,
+>(
+  actionFactory: ActionFactory<TData, TDeps>,
+  actionName: ActionName,
+  config?: RetryConfig
+): RetryWrapperAction<TData, TDeps> {
+  const action = actionFactory.create(actionName, {} as TDeps) as BaseAction<
+    TData,
+    TDeps
+  >;
+  return new RetryWrapperAction(action, config);
+}
+
+/**
+ * Factory-based helper function to create a circuit breaker wrapper for any action.
+ */
+export function withCircuitBreakerFactory<
+  TData extends BaseJobData,
+  TDeps extends object,
+>(
+  actionFactory: ActionFactory<TData, TDeps>,
+  actionName: ActionName,
+  config?: {
+    failureThreshold: number;
+    resetTimeout: number;
+    breakerKey?: string;
+  }
+): CircuitBreakerAction<TData, TDeps> {
+  const action = actionFactory.create(actionName, {} as TDeps) as BaseAction<
+    TData,
+    TDeps
+  >;
   return new CircuitBreakerAction(action, config);
 }

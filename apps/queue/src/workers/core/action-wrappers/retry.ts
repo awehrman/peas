@@ -7,6 +7,7 @@ import type { BaseJobData } from "../../types";
 import { BaseAction } from "../base-action";
 import type { ActionContext } from "../types";
 import type { StructuredLogger } from "../types";
+import type { ActionFactory } from "../action-factory";
 
 export class RetryAction<
   TData extends BaseJobData = BaseJobData,
@@ -77,6 +78,20 @@ export function wrapActionWithRetryAndErrorHandling<
   TData extends BaseJobData = BaseJobData,
   TDeps extends object = object,
 >(action: BaseAction<TData, TDeps>): BaseAction<TData, TDeps> {
+  return new RetryAction(action);
+}
+
+/**
+ * Factory-based wrapper for retry and error handling
+ */
+export function wrapActionWithRetryAndErrorHandlingFactory<
+  TData extends BaseJobData = BaseJobData,
+  TDeps extends object = object,
+>(
+  actionFactory: ActionFactory<TData, TDeps>,
+  actionName: ActionName
+): BaseAction<TData, TDeps> {
+  const action = actionFactory.create(actionName, {} as TDeps) as BaseAction<TData, TDeps>;
   return new RetryAction(action);
 }
 

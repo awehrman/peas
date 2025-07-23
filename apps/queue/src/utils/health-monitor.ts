@@ -1,8 +1,7 @@
 import { ErrorHandler } from "./error-handler";
 
-import { cacheManager } from "../config/cache";
 import { prisma } from "../config/database";
-import { databaseManager } from "../config/database-manager";
+import { ManagerFactory } from "../config/factory";
 import { redisConnection } from "../config/redis";
 import {
   DegradedCheck,
@@ -96,6 +95,7 @@ export class HealthMonitor {
 
     try {
       // Use database manager for enhanced health checks
+      const databaseManager = ManagerFactory.createDatabaseManager();
       const isHealthy = await databaseManager.checkConnectionHealth();
 
       if (!isHealthy) {
@@ -159,6 +159,7 @@ export class HealthMonitor {
 
     try {
       // Test cache manager connectivity
+      const cacheManager = ManagerFactory.createCacheManager();
       if (!cacheManager.isReady()) {
         await cacheManager.connect();
       }

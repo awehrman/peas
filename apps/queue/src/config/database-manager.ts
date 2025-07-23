@@ -14,7 +14,7 @@ interface ConnectionStats {
   isHealthy: boolean;
 }
 
-class DatabaseManager {
+export class DatabaseManager {
   private static instance: DatabaseManager;
   private connectionStats: ConnectionStats;
   private healthCheckInterval: ReturnType<typeof setInterval> | null = null;
@@ -216,9 +216,10 @@ class DatabaseManager {
 }
 
 // ============================================================================
-// EXPORT SINGLETON INSTANCE
+// EXPORT SINGLETON INSTANCE (DEPRECATED - Use ManagerFactory instead)
 // ============================================================================
 
+// @deprecated Use ManagerFactory.createDatabaseManager() instead
 export const databaseManager = DatabaseManager.getInstance();
 
 // ============================================================================

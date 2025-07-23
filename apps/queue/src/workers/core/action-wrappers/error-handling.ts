@@ -4,6 +4,7 @@
  */
 import { ActionName } from "../../../types";
 import type { BaseJobData } from "../../types";
+import type { ActionFactory } from "../action-factory";
 import { BaseAction } from "../base-action";
 import type { ActionContext } from "../types";
 
@@ -63,5 +64,22 @@ export function wrapActionWithErrorHandlingOnly<
   TData extends BaseJobData = BaseJobData,
   TDeps extends object = object,
 >(action: BaseAction<TData, TDeps>): BaseAction<TData, TDeps> {
+  return new ErrorHandlingAction(action);
+}
+
+/**
+ * Factory-based wrapper for error handling
+ */
+export function wrapActionWithErrorHandlingFactory<
+  TData extends BaseJobData = BaseJobData,
+  TDeps extends object = object,
+>(
+  actionFactory: ActionFactory<TData, TDeps>,
+  actionName: ActionName
+): BaseAction<TData, TDeps> {
+  const action = actionFactory.create(actionName, {} as TDeps) as BaseAction<
+    TData,
+    TDeps
+  >;
   return new ErrorHandlingAction(action);
 }

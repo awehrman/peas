@@ -26,7 +26,7 @@ interface Client {
   connectedAt: Date;
 }
 
-class WebSocketManager {
+export class WebSocketManager {
   private wss: WebSocketServer;
   private clients: Map<string, Client> = new Map();
   private port: number;

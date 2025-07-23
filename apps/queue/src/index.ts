@@ -1,14 +1,14 @@
-import { SERVER_CONSTANTS, SERVER_DEFAULTS } from "./config";
+import { SERVER_DEFAULTS } from "./config";
 import "./load-env";
 import {
-  healthRouter,
+  cacheRouter,
+  healthEnhancedRouter,
   importRouter,
   metricsRouter,
   notesRouter,
   testRouter,
 } from "./routes";
 import { ServiceContainer } from "./services";
-import { initializeWebSocketServer } from "./websocket-server";
 
 import { createBullBoard } from "@bull-board/api";
 import { BullMQAdapter } from "@bull-board/api/bullMQAdapter.js";
@@ -16,9 +16,7 @@ import { ExpressAdapter } from "@bull-board/express";
 import cors from "cors";
 import express from "express";
 
-import { cacheManager } from "./config/cache";
-import { databaseManager } from "./config/database-manager";
-import { metricsCollector } from "./utils/metrics";
+import { ManagerFactory } from "./config/factory";
 // // import { SecurityMiddleware } from "./middleware/security";
 import { startWorkers } from "./workers/startup";
 
@@ -41,7 +39,11 @@ function createError(value: unknown): Error {
 async function initializeApp() {
   const serviceContainer = await ServiceContainer.getInstance();
 
-  // Initialize database manager and cache
+  // Initialize managers using factory
+  const databaseManager = ManagerFactory.createDatabaseManager();
+  const cacheManager = ManagerFactory.createCacheManager();
+  const metricsCollector = ManagerFactory.createMetricsCollector();
+
   try {
     await databaseManager.checkConnectionHealth();
     await cacheManager.connect();
@@ -169,46 +171,13 @@ async function initializeApp() {
 // Start the application
 initializeApp()
   .then(({ app, serviceContainer }) => {
-    // Health check endpoint with monitoring
-    app.get("/health", async (req, res) => {
-      try {
-        const health =
-          await serviceContainer.healthMonitor.healthMonitor.getHealth();
-
-        const statusCode =
-          health.status === "healthy"
-            ? 200
-            : health.status === "degraded"
-              ? 200
-              : SERVER_CONSTANTS.STATUS_CODES.SERVICE_UNAVAILABLE;
-
-        res.status(statusCode).json(health);
-      } catch (error) {
-        const properError = createError(error);
-        serviceContainer.errorHandler.createJobError(properError, {
-          operation: "health_check_endpoint",
-          timestamp: new Date(),
-        });
-        serviceContainer.errorHandler.logError(properError, {
-          operation: "health_check_endpoint",
-          timestamp: new Date(),
-        });
-
-        res.status(503).json({
-          status: "unhealthy",
-          message: "Health check failed",
-          error: properError.message,
-          timestamp: new Date().toISOString(),
-        });
-      }
-    });
-
     // Routes
     app.use("/import", importRouter);
     app.use("/notes", notesRouter);
-    app.use("/health", healthRouter);
+    app.use("/health", healthEnhancedRouter); // Enhanced health endpoints
     app.use("/test", testRouter);
     app.use("/metrics", metricsRouter);
+    app.use("/cache", cacheRouter); // Cache management endpoints
 
     // 404 handler
     app.use("*", (req, res) => {
@@ -227,12 +196,17 @@ initializeApp()
       );
 
       try {
+        // Get managers from factory for shutdown
+        const dbManager = ManagerFactory.createDatabaseManager();
+        const cacheMgr = ManagerFactory.createCacheManager();
+        const metricsMgr = ManagerFactory.createMetricsCollector();
+
         // Stop database and cache managers
-        await databaseManager.shutdown();
-        await cacheManager.disconnect();
+        await dbManager.shutdown();
+        await cacheMgr.disconnect();
 
         // Stop metrics collection
-        metricsCollector.stopCollection();
+        metricsMgr.stopCollection();
 
         await serviceContainer.close();
         serviceContainer.logger.log(
@@ -276,8 +250,8 @@ initializeApp()
       );
     });
 
-    // Initialize WebSocket server
-    initializeWebSocketServer(serviceContainer.config.wsPort);
+    // Initialize WebSocket server using factory
+    ManagerFactory.createWebSocketManager(serviceContainer.config.wsPort);
 
     // Start workers
     startWorkers(serviceContainer.queues, serviceContainer);

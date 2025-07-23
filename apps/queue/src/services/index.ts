@@ -5,11 +5,13 @@
 // Core service container
 export { ServiceContainer, type IServiceContainer } from "./container";
 
+// Service factory
+export { ServiceFactory } from "./factory";
+
 // Service interfaces
 export type {
   IQueueService,
   IDatabaseService,
-  IParserService,
   IErrorHandlerService,
   IStatusBroadcasterService,
   ILoggerService,
