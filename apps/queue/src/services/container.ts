@@ -1,6 +1,14 @@
 import { PrismaClient } from "@peas/database";
 import { Queue, Worker } from "bullmq";
 
+import type {
+  ConfigData,
+  DatabaseResult,
+  JobMetadata,
+  LoggerMetadata,
+  OperationContext,
+  StatusEventData,
+} from "../types/common";
 import { HealthMonitor } from "../utils/health-monitor";
 
 // ============================================================================
@@ -38,19 +46,19 @@ export interface IDatabaseService {
     title?: string;
     html: string;
     imageUrl?: string;
-  }) => Promise<Record<string, unknown>>;
+  }) => Promise<DatabaseResult>;
   createNoteCompletionTracker?: (
     noteId: string,
     totalJobs: number
-  ) => Promise<Record<string, unknown>>;
-  patternTracker: Record<string, unknown>;
+  ) => Promise<DatabaseResult>;
+  patternTracker: JobMetadata;
 }
 
 /**
  * Parser service interface
  */
 export interface IParserService {
-  parseHTML: (content: string) => Promise<Record<string, unknown>>;
+  parseHTML: (content: string) => Promise<DatabaseResult>;
 }
 
 /**
@@ -59,26 +67,20 @@ export interface IParserService {
 export interface IErrorHandlerService {
   withErrorHandling: <T>(
     operation: () => Promise<T>,
-    context: Record<string, unknown>
+    context: OperationContext
   ) => Promise<T>;
-  createJobError: (
-    error: Error,
-    context: Record<string, unknown>
-  ) => Record<string, unknown>;
+  createJobError: (error: Error, context: OperationContext) => DatabaseResult;
   classifyError: (error: Error) => string;
-  logError: (error: Error, context: Record<string, unknown>) => void;
+  logError: (error: Error, context: OperationContext) => void;
   // For backward compatibility
   errorHandler?: {
     withErrorHandling: <T>(
       operation: () => Promise<T>,
-      context: Record<string, unknown>
+      context: OperationContext
     ) => Promise<T>;
-    createJobError: (
-      error: Error,
-      context: Record<string, unknown>
-    ) => Record<string, unknown>;
+    createJobError: (error: Error, context: OperationContext) => DatabaseResult;
     classifyError: (error: Error) => string;
-    logError: (error: Error, context: Record<string, unknown>) => void;
+    logError: (error: Error, context: OperationContext) => void;
   };
 }
 
@@ -87,13 +89,13 @@ export interface IErrorHandlerService {
  */
 export interface IStatusBroadcasterService {
   addStatusEventAndBroadcast: (
-    event: Record<string, unknown>
-  ) => Promise<Record<string, unknown>>;
+    event: StatusEventData
+  ) => Promise<DatabaseResult>;
   // For backward compatibility
   statusBroadcaster?: {
     addStatusEventAndBroadcast: (
-      event: Record<string, unknown>
-    ) => Promise<Record<string, unknown>>;
+      event: StatusEventData
+    ) => Promise<DatabaseResult>;
   };
 }
 
@@ -101,11 +103,7 @@ export interface IStatusBroadcasterService {
  * Logger service interface
  */
 export interface ILoggerService {
-  log: (
-    message: string,
-    level?: string,
-    meta?: Record<string, unknown>
-  ) => void;
+  log: (message: string, level?: string, meta?: LoggerMetadata) => void;
 }
 
 /**
@@ -129,7 +127,7 @@ export interface IHealthMonitorService {
  * WebSocket service interface
  */
 export interface IWebSocketService {
-  webSocketManager: Record<string, unknown> | null;
+  webSocketManager: ConfigData | null;
 }
 
 /**
@@ -180,19 +178,34 @@ async function registerDatabase(): Promise<IDatabaseService> {
       html: string;
       imageUrl?: string;
     }) => {
-      return await prisma.note.create({
+      const result = await prisma.note.create({
         data: {
           title: data.title,
           html: data.html,
           imageUrl: data.imageUrl,
         },
       });
+      return {
+        success: true,
+        count: 1,
+        operation: "create_note",
+        table: "note",
+        id: result.id,
+      };
     },
     createNoteCompletionTracker: async (noteId: string, totalJobs: number) => {
       // Implementation for note completion tracking
-      return { noteId, totalJobs, completedJobs: 0 };
+      return {
+        success: true,
+        count: 1,
+        operation: "create_completion_tracker",
+        table: "note_completion_tracker",
+        noteId,
+        totalJobs,
+        completedJobs: 0,
+      };
     },
-    patternTracker: {} as Record<string, unknown>,
+    patternTracker: {} as JobMetadata,
   };
 }
 
@@ -200,21 +213,19 @@ async function registerDatabase(): Promise<IDatabaseService> {
 class ErrorHandlerService implements IErrorHandlerService {
   withErrorHandling<T>(
     operation: () => Promise<T>,
-    _context?: Record<string, unknown>
+    _context?: OperationContext
   ): Promise<T> {
     return operation();
   }
 
-  createJobError(
-    error: Error,
-    context: Record<string, unknown>
-  ): Record<string, unknown> {
+  createJobError(error: Error, context: OperationContext): DatabaseResult {
     return {
+      success: false,
       error: error.message,
-      type: "JOB_ERROR",
+      operation: context.operation,
+      errorType: error.name || "UNKNOWN_ERROR",
       severity: "error",
-      context,
-      timestamp: new Date().toISOString(),
+      timestamp: new Date(),
     };
   }
 
@@ -222,7 +233,7 @@ class ErrorHandlerService implements IErrorHandlerService {
     return error.name || "UNKNOWN_ERROR";
   }
 
-  logError(error: Error, context: Record<string, unknown>): void {
+  logError(error: Error, context: OperationContext): void {
     console.error("Error occurred:", {
       message: error.message,
       stack: error.stack,
@@ -253,9 +264,13 @@ class WebSocketService implements IWebSocketService {
 
 // Default status broadcaster service implementation
 class StatusBroadcasterService implements IStatusBroadcasterService {
-  addStatusEventAndBroadcast = async (_event: Record<string, unknown>) => {
+  addStatusEventAndBroadcast = async (_event: StatusEventData) => {
     // Default implementation - no-op
-    return Promise.resolve({});
+    return Promise.resolve({
+      success: true,
+      count: 1,
+      operation: "broadcast_status_event",
+    });
   };
 }
 
@@ -264,7 +279,13 @@ class ParserServiceImpl implements IParserService {
   parsers = {
     parseHTML: async (content: string) => {
       // Default implementation - return content as-is
-      return { content, parsed: true };
+      return {
+        success: true,
+        count: 1,
+        operation: "parse_html",
+        content,
+        parsed: true,
+      };
     },
   };
 
@@ -277,7 +298,7 @@ class ParserServiceImpl implements IParserService {
 // Default logger service implementation
 function registerLogger(): ILoggerService {
   return {
-    log: (message: string, level = "info", meta?: Record<string, unknown>) => {
+    log: (message: string, level = "info", meta?: LoggerMetadata) => {
       console.log(`[${level.toUpperCase()}] ${message}`, meta);
     },
   };

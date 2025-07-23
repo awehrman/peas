@@ -1,3 +1,4 @@
+import { ActionName } from "../../../types";
 import type { BaseJobData } from "../../types";
 import { BaseAction } from "../base-action";
 import type { ActionContext } from "../types";
@@ -9,7 +10,7 @@ export class ProcessingStatusAction<
   TData extends BaseJobData = BaseJobData,
   TDeps extends object = object,
 > extends BaseAction<TData, TDeps, void> {
-  public name = "processing_status_action";
+  public name = ActionName.PROCESSING_STATUS;
 
   async execute(
     data: TData,

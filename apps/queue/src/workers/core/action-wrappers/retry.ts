@@ -2,15 +2,17 @@
  * Wraps a BaseAction with retry logic.
  * Retries the action on failure according to the retry policy.
  */
+import { ActionName } from "../../../types";
 import type { BaseJobData } from "../../types";
 import { BaseAction } from "../base-action";
 import type { ActionContext } from "../types";
+import type { StructuredLogger } from "../types";
 
 export class RetryAction<
   TData extends BaseJobData = BaseJobData,
   TDeps extends object = object,
 > extends BaseAction<TData, TDeps> {
-  public name: string;
+  public name: ActionName;
   private wrappedAction: BaseAction<TData, TDeps>;
   private maxRetries: number;
   private retryDelayMs: number;
@@ -22,7 +24,7 @@ export class RetryAction<
   ) {
     super();
     this.wrappedAction = action;
-    this.name = `retry_wrapper(${action.name})`;
+    this.name = ActionName.RETRY_WRAPPER;
     this.maxRetries = maxRetries;
     this.retryDelayMs = retryDelayMs;
   }
@@ -77,3 +79,85 @@ export function wrapActionWithRetryAndErrorHandling<
 >(action: BaseAction<TData, TDeps>): BaseAction<TData, TDeps> {
   return new RetryAction(action);
 }
+
+export interface RetryConfig {
+  maxRetries: number;
+  backoffMs: number;
+  backoffMultiplier: number;
+  maxBackoffMs: number;
+}
+
+export interface RetryDeps {
+  logger?: StructuredLogger;
+}
+
+export interface RetryData extends BaseJobData {
+  retryCount?: number;
+}
+
+/**
+ * Retry wrapper that automatically retries failed actions with exponential backoff
+ */
+export function createRetryWrapper<
+  TData extends RetryData,
+  TDeps extends object,
+>(config: RetryConfig) {
+  return (action: BaseAction<TData, TDeps>) => {
+    return {
+      ...action,
+      async execute(
+        data: TData,
+        deps: TDeps,
+        context: ActionContext
+      ): Promise<unknown> {
+        let lastError: Error;
+        let attempt = 0;
+        const maxAttempts = config.maxRetries + 1;
+
+        while (attempt < maxAttempts) {
+          try {
+            return await action.execute(data, deps, context);
+          } catch (error) {
+            lastError = error as Error;
+            attempt++;
+
+            if (attempt >= maxAttempts) {
+              break;
+            }
+
+            // Calculate backoff delay
+            const delay = Math.min(
+              config.backoffMs *
+                Math.pow(config.backoffMultiplier, attempt - 1),
+              config.maxBackoffMs
+            );
+
+            // Log retry attempt
+            if (deps && typeof deps === "object" && "logger" in deps) {
+              const logger = (deps as RetryDeps).logger;
+              logger?.log(
+                `[RETRY] Action ${action.name} failed (attempt ${attempt}/${maxAttempts}), retrying in ${delay}ms: ${lastError.message}`
+              );
+            }
+
+            // Wait before retry
+            await new Promise((resolve) => setTimeout(resolve, delay));
+          }
+        }
+
+        // All attempts failed
+        throw lastError!;
+      },
+    };
+  };
+}
+
+/**
+ * Default retry configuration
+ */
+export const DEFAULT_RETRY_CONFIG: RetryConfig = {
+  maxRetries: 3,
+  backoffMs: 1000,
+  backoffMultiplier: 2,
+  maxBackoffMs: 10000,
+};

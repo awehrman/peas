@@ -1,3 +1,4 @@
+import { ActionName } from "../../types";
 import { BaseAction } from "../core/base-action";
 import { ActionContext } from "../core/types";
 import type { BaseJobData } from "../types";
@@ -19,7 +20,7 @@ export abstract class CompletionStatusAction<
   /**
    * The name of the action.
    */
-  abstract name: string;
+  abstract name: ActionName;
 
   /**
    * Get the completion message for the status event.

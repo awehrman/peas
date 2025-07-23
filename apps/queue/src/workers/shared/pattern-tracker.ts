@@ -1,5 +1,6 @@
 import type { PrismaClient } from "@peas/database";
 
+import { LogLevel } from "../../types";
 import type { BaseWorkerDependencies } from "../core/types";
 
 /**
@@ -52,7 +53,7 @@ export class PatternTracker {
 
       this.logger?.log(
         `[PATTERN_TRACKER] Tracking pattern: ${patternCode}`,
-        "debug"
+        LogLevel.DEBUG
       );
 
       // Try to find existing pattern
@@ -76,7 +77,7 @@ export class PatternTracker {
 
         this.logger?.log(
           `[PATTERN_TRACKER] Updated existing pattern: ${patternCode} (count: ${existingPattern.occurrenceCount + 1})`,
-          "debug"
+          LogLevel.DEBUG
         );
       } else {
         // Create new pattern
@@ -92,13 +93,13 @@ export class PatternTracker {
 
         this.logger?.log(
           `[PATTERN_TRACKER] Created new pattern: ${patternCode}`,
-          "debug"
+          LogLevel.DEBUG
         );
       }
     } catch (error) {
       this.logger?.log(
         `[PATTERN_TRACKER] Error tracking pattern: ${error}`,
-        "error"
+        LogLevel.ERROR
       );
       throw error;
     }
@@ -122,7 +123,7 @@ export class PatternTracker {
     } catch (error) {
       this.logger?.log(
         `[PATTERN_TRACKER] Error getting patterns: ${error}`,
-        "error"
+        LogLevel.ERROR
       );
       throw error;
     }

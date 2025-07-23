@@ -12,55 +12,16 @@ import type {
 } from "@peas/database";
 import type { Queue } from "bullmq";
 
+// Export common types
+export * from "./types/common";
+
 // ============================================================================
-// ACTION/QUEUE ENUMS AND CONSTANTS
+// CORE ENUMS
 // ============================================================================
 
-export enum ActionName {
-  // Note worker actions
-  CLEAN_HTML = "clean_html",
-  PARSE_HTML = "parse_html",
-  SAVE_NOTE = "save_note",
-  SCHEDULE_ALL_FOLLOWUP_TASKS = "schedule_all_followup_tasks",
-  SCHEDULE_SOURCE = "schedule_source",
-  SCHEDULE_IMAGES = "schedule_images",
-  SCHEDULE_INGREDIENTS = "schedule_ingredients",
-  SCHEDULE_INSTRUCTIONS = "schedule_instructions",
-
-  // Ingredient worker actions
-  PROCESS_INGREDIENT_LINE = "process_ingredient_line",
-  SAVE_INGREDIENT_LINE = "save_ingredient_line",
-  INGREDIENT_COMPLETED_STATUS = "ingredient_completed_status",
-  UPDATE_INGREDIENT_COUNT = "update_ingredient_count",
-  PROCESS_INGREDIENTS = "process_ingredients",
-  SCHEDULE_CATEGORIZATION_AFTER_COMPLETION = "schedule_categorization_after_completion",
-
-  // Instruction worker actions
-  PROCESS_INSTRUCTION_LINE = "process_instruction_line",
-  SAVE_INSTRUCTION_LINE = "save_instruction_line",
-  INSTRUCTION_COMPLETED_STATUS = "instruction_completed_status",
-  UPDATE_INSTRUCTION_COUNT = "update_instruction_count",
-
-  // Image worker actions
-  PROCESS_IMAGE = "process_image",
-  SAVE_IMAGE = "save_image",
-  IMAGE_COMPLETED_STATUS = "image_completed_status",
-
-  // Categorization worker actions
-  PROCESS_CATEGORIZATION = "process_categorization",
-  SAVE_CATEGORIZATION = "save_categorization",
-  CATEGORIZATION_COMPLETED_STATUS = "categorization_completed_status",
-  TRACK_PATTERN = "track_pattern",
-  COMPLETION_STATUS = "completion_status",
-
-  // Source worker actions
-  PROCESS_SOURCE = "process_source",
-  SAVE_SOURCE = "save_source",
-  SOURCE_PROCESSING_STATUS = "source_processing_status",
-  SOURCE_COMPLETED_STATUS = "source_completed_status",
-  BROADCAST_SOURCE_COMPLETED = "broadcast_source_completed",
-}
-
+/**
+ * All queue names in the system
+ */
 export enum QueueName {
   NOTES = "notes",
   INGREDIENTS = "ingredients",
@@ -70,16 +31,133 @@ export enum QueueName {
   CATEGORIZATION = "categorization",
 }
 
-export type QueueActionMap = {
-  [QueueName.NOTES]: ActionName[];
-  [QueueName.INGREDIENTS]: ActionName[];
-  [QueueName.INSTRUCTION]: ActionName[];
-  [QueueName.IMAGE]: ActionName[];
-  [QueueName.CATEGORIZATION]: ActionName[];
-  [QueueName.SOURCE]: ActionName[];
-};
+/**
+ * All action names in the system
+ */
+export enum ActionName {
+  // Note actions
+  CLEAN_HTML = "clean_html",
+  PARSE_HTML = "parse_html",
+  SAVE_NOTE = "save_note",
+  SCHEDULE_ALL_FOLLOWUP_TASKS = "schedule_all_followup_tasks",
+  SCHEDULE_SOURCE = "schedule_source",
+  SCHEDULE_IMAGES = "schedule_images",
+  SCHEDULE_INGREDIENTS = "schedule_ingredients",
+  SCHEDULE_INSTRUCTIONS = "schedule_instructions",
 
-export const QUEUE_ACTIONS: QueueActionMap = {
+  // Ingredient actions
+  PROCESS_INGREDIENT_LINE = "process_ingredient_line",
+  SAVE_INGREDIENT_LINE = "save_ingredient_line",
+  INGREDIENT_COMPLETED_STATUS = "ingredient_completed_status",
+  UPDATE_INGREDIENT_COUNT = "update_ingredient_count",
+  PROCESS_INGREDIENTS = "process_ingredients",
+  SCHEDULE_CATEGORIZATION_AFTER_COMPLETION = "schedule_categorization_after_completion",
+
+  // Instruction actions
+  PROCESS_INSTRUCTION_LINE = "process_instruction_line",
+  SAVE_INSTRUCTION_LINE = "save_instruction_line",
+  INSTRUCTION_COMPLETED_STATUS = "instruction_completed_status",
+  UPDATE_INSTRUCTION_COUNT = "update_instruction_count",
+
+  // Image actions
+  PROCESS_IMAGE = "process_image",
+  SAVE_IMAGE = "save_image",
+  IMAGE_COMPLETED_STATUS = "image_completed_status",
+
+  // Categorization actions
+  PROCESS_CATEGORIZATION = "process_categorization",
+  SAVE_CATEGORIZATION = "save_categorization",
+  CATEGORIZATION_COMPLETED_STATUS = "categorization_completed_status",
+  TRACK_PATTERN = "track_pattern",
+  COMPLETION_STATUS = "completion_status",
+
+  // Source actions
+  PROCESS_SOURCE = "process_source",
+  SAVE_SOURCE = "save_source",
+  SOURCE_PROCESSING_STATUS = "source_processing_status",
+  SOURCE_COMPLETED_STATUS = "source_completed_status",
+  BROADCAST_SOURCE_COMPLETED = "broadcast_source_completed",
+
+  // Utility actions
+  NO_OP = "no_op",
+  VALIDATION = "validation",
+  LOGGING = "logging",
+  RETRY = "retry",
+  RETRY_WRAPPER = "retry_wrapper",
+  CIRCUIT_BREAKER = "circuit_breaker",
+  ERROR_HANDLING = "error_handling",
+  COMPLETED_STATUS = "completed_status",
+  PROCESSING_STATUS = "processing_status",
+  LOG_ERROR = "log_error",
+  CAPTURE_ERROR = "capture_error",
+  ERROR_RECOVERY = "error_recovery",
+}
+
+/**
+ * Action categories for better organization
+ */
+export enum ActionCategory {
+  NOTE = "note",
+  INGREDIENT = "ingredient",
+  INSTRUCTION = "instruction",
+  IMAGE = "image",
+  CATEGORIZATION = "categorization",
+  SOURCE = "source",
+}
+
+/**
+ * Error types for consistent error handling
+ */
+export enum ErrorType {
+  VALIDATION_ERROR = "VALIDATION_ERROR",
+  DATABASE_ERROR = "DATABASE_ERROR",
+  REDIS_ERROR = "REDIS_ERROR",
+  PARSING_ERROR = "PARSING_ERROR",
+  EXTERNAL_SERVICE_ERROR = "EXTERNAL_SERVICE_ERROR",
+  NETWORK_ERROR = "NETWORK_ERROR",
+  TIMEOUT_ERROR = "TIMEOUT_ERROR",
+  WORKER_ERROR = "WORKER_ERROR",
+  UNKNOWN_ERROR = "UNKNOWN_ERROR",
+}
+
+/**
+ * Error severity levels
+ */
+export enum ErrorSeverity {
+  LOW = "LOW",
+  MEDIUM = "MEDIUM",
+  HIGH = "HIGH",
+  CRITICAL = "CRITICAL",
+}
+
+/**
+ * Health status values
+ */
+export enum HealthStatus {
+  HEALTHY = "healthy",
+  DEGRADED = "degraded",
+  UNHEALTHY = "unhealthy",
+}
+
+/**
+ * Log levels for structured logging
+ */
+export enum LogLevel {
+  DEBUG = "debug",
+  INFO = "info",
+  WARN = "warn",
+  ERROR = "error",
+  FATAL = "fatal",
+}
+
+// ============================================================================
+// TYPE MAPPINGS
+// ============================================================================
+
+/**
+ * Map queue names to their allowed actions
+ */
+export const QUEUE_ACTIONS: Record<QueueName, ActionName[]> = {
   [QueueName.NOTES]: [
     ActionName.CLEAN_HTML,
     ActionName.PARSE_HTML,
@@ -126,49 +204,72 @@ export const QUEUE_ACTIONS: QueueActionMap = {
   ],
 };
 
-// Re-export commonly used types
-export type {
-  ParsedIngredientLine,
-  ParsedInstructionLine,
-  Note,
-  NoteStatus,
-  NoteStatusEvent,
-  QueueJob,
-  QueueJobStatus,
-  QueueJobType,
-  ErrorCode,
+/**
+ * Map actions to their categories
+ */
+export const ACTION_CATEGORIES: Record<ActionName, ActionCategory> = {
+  // Note actions
+  [ActionName.CLEAN_HTML]: ActionCategory.NOTE,
+  [ActionName.PARSE_HTML]: ActionCategory.NOTE,
+  [ActionName.SAVE_NOTE]: ActionCategory.NOTE,
+  [ActionName.SCHEDULE_ALL_FOLLOWUP_TASKS]: ActionCategory.NOTE,
+  [ActionName.SCHEDULE_SOURCE]: ActionCategory.NOTE,
+  [ActionName.SCHEDULE_IMAGES]: ActionCategory.NOTE,
+  [ActionName.SCHEDULE_INGREDIENTS]: ActionCategory.NOTE,
+  [ActionName.SCHEDULE_INSTRUCTIONS]: ActionCategory.NOTE,
+
+  // Ingredient actions
+  [ActionName.PROCESS_INGREDIENT_LINE]: ActionCategory.INGREDIENT,
+  [ActionName.SAVE_INGREDIENT_LINE]: ActionCategory.INGREDIENT,
+  [ActionName.INGREDIENT_COMPLETED_STATUS]: ActionCategory.INGREDIENT,
+  [ActionName.UPDATE_INGREDIENT_COUNT]: ActionCategory.INGREDIENT,
+  [ActionName.PROCESS_INGREDIENTS]: ActionCategory.INGREDIENT,
+  [ActionName.SCHEDULE_CATEGORIZATION_AFTER_COMPLETION]:
+    ActionCategory.INGREDIENT,
+
+  // Instruction actions
+  [ActionName.PROCESS_INSTRUCTION_LINE]: ActionCategory.INSTRUCTION,
+  [ActionName.SAVE_INSTRUCTION_LINE]: ActionCategory.INSTRUCTION,
+  [ActionName.INSTRUCTION_COMPLETED_STATUS]: ActionCategory.INSTRUCTION,
+  [ActionName.UPDATE_INSTRUCTION_COUNT]: ActionCategory.INSTRUCTION,
+
+  // Image actions
+  [ActionName.PROCESS_IMAGE]: ActionCategory.IMAGE,
+  [ActionName.SAVE_IMAGE]: ActionCategory.IMAGE,
+  [ActionName.IMAGE_COMPLETED_STATUS]: ActionCategory.IMAGE,
+
+  // Categorization actions
+  [ActionName.PROCESS_CATEGORIZATION]: ActionCategory.CATEGORIZATION,
+  [ActionName.SAVE_CATEGORIZATION]: ActionCategory.CATEGORIZATION,
+  [ActionName.CATEGORIZATION_COMPLETED_STATUS]: ActionCategory.CATEGORIZATION,
+  [ActionName.TRACK_PATTERN]: ActionCategory.CATEGORIZATION,
+  [ActionName.COMPLETION_STATUS]: ActionCategory.CATEGORIZATION,
+
+  // Source actions
+  [ActionName.PROCESS_SOURCE]: ActionCategory.SOURCE,
+  [ActionName.SAVE_SOURCE]: ActionCategory.SOURCE,
+  [ActionName.SOURCE_PROCESSING_STATUS]: ActionCategory.SOURCE,
+  [ActionName.SOURCE_COMPLETED_STATUS]: ActionCategory.SOURCE,
+  [ActionName.BROADCAST_SOURCE_COMPLETED]: ActionCategory.SOURCE,
+
+  // Utility actions
+  [ActionName.NO_OP]: ActionCategory.NOTE,
+  [ActionName.VALIDATION]: ActionCategory.NOTE,
+  [ActionName.LOGGING]: ActionCategory.NOTE,
+  [ActionName.RETRY]: ActionCategory.NOTE,
+  [ActionName.RETRY_WRAPPER]: ActionCategory.NOTE,
+  [ActionName.CIRCUIT_BREAKER]: ActionCategory.NOTE,
+  [ActionName.ERROR_HANDLING]: ActionCategory.NOTE,
+  [ActionName.COMPLETED_STATUS]: ActionCategory.NOTE,
+  [ActionName.PROCESSING_STATUS]: ActionCategory.NOTE,
+  [ActionName.LOG_ERROR]: ActionCategory.NOTE,
+  [ActionName.CAPTURE_ERROR]: ActionCategory.NOTE,
+  [ActionName.ERROR_RECOVERY]: ActionCategory.NOTE,
 };
 
-// Keep ParsedHTMLFile as it's specific to the parser output
-export type ParsedHTMLFile = {
-  title: string;
-  historicalCreatedAt?: Date;
-  contents: string;
-  ingredients: ParsedIngredientLine[];
-  instructions: ParsedInstructionLine[];
-  source?: string;
-  image?: string;
-};
-
-// Error handling types
-export enum ErrorType {
-  VALIDATION_ERROR = "VALIDATION_ERROR",
-  DATABASE_ERROR = "DATABASE_ERROR",
-  REDIS_ERROR = "REDIS_ERROR",
-  PARSING_ERROR = "PARSING_ERROR",
-  EXTERNAL_SERVICE_ERROR = "EXTERNAL_SERVICE_ERROR",
-  NETWORK_ERROR = "NETWORK_ERROR",
-  TIMEOUT_ERROR = "TIMEOUT_ERROR",
-  WORKER_ERROR = "WORKER_ERROR",
-  UNKNOWN_ERROR = "UNKNOWN_ERROR",
-}
-
-export enum ErrorSeverity {
-  LOW = "LOW",
-  MEDIUM = "MEDIUM",
-  HIGH = "HIGH",
-  CRITICAL = "CRITICAL",
-}
+// ============================================================================
+// ERROR HANDLING TYPES
+// ============================================================================
 
 export interface JobError {
   type: ErrorType;
@@ -202,9 +303,12 @@ export interface RetryConfig {
   maxBackoffMs: number;
 }
 
-// Health check types with discriminated unions
+// ============================================================================
+// HEALTH CHECK TYPES
+// ============================================================================
+
 export interface ServiceHealth {
-  status: "healthy" | "degraded" | "unhealthy";
+  status: HealthStatus;
   checks: {
     database: HealthCheck;
     redis: HealthCheck;
@@ -213,42 +317,40 @@ export interface ServiceHealth {
   timestamp: Date;
 }
 
-// Base health check interface
 interface BaseHealthCheck {
   message?: string;
   lastChecked: Date;
 }
 
-// Healthy status with performance metrics
 export interface HealthyCheck extends BaseHealthCheck {
-  status: "healthy";
+  status: HealthStatus.HEALTHY;
   responseTime?: number;
-  performance?: number; // 0-100 performance score
+  performance?: number;
 }
 
-// Degraded status with warnings
 export interface DegradedCheck extends BaseHealthCheck {
-  status: "degraded";
+  status: HealthStatus.DEGRADED;
   warnings: string[];
-  performance: number; // 0-100 performance score
+  performance: number;
   responseTime?: number;
-  retryAfter?: number; // seconds to wait before retry
+  retryAfter?: number;
 }
 
-// Unhealthy status with error details
 export interface UnhealthyCheck extends BaseHealthCheck {
-  status: "unhealthy";
+  status: HealthStatus.UNHEALTHY;
   error: string;
   errorCode?: string;
-  retryAfter?: number; // seconds to wait before retry
-  critical?: boolean; // whether this is a critical failure
-  responseTime?: number; // response time in milliseconds
+  retryAfter?: number;
+  critical?: boolean;
+  responseTime?: number;
 }
 
-// Union type for all health check states
 export type HealthCheck = HealthyCheck | DegradedCheck | UnhealthyCheck;
 
-// TypedQueue generic for BullMQ queues
+// ============================================================================
+// QUEUE TYPES
+// ============================================================================
+
 export interface TypedQueue<JobData, Action extends string = string>
   extends Queue {
   add: (
@@ -258,5 +360,18 @@ export interface TypedQueue<JobData, Action extends string = string>
   ) => ReturnType<Queue["add"]>;
 }
 
-// ActionName type aliases for each queue
-export type NoteActionName = (typeof QUEUE_ACTIONS)[QueueName.NOTES][number];
+// ============================================================================
+// RE-EXPORTS
+// ============================================================================
+
+export type {
+  ParsedIngredientLine,
+  ParsedInstructionLine,
+  Note,
+  NoteStatus,
+  NoteStatusEvent,
+  QueueJob,
+  QueueJobStatus,
+  QueueJobType,
+  ErrorCode,
+};

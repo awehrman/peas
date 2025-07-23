@@ -1,3 +1,4 @@
+import { ActionName } from "../../types";
 import { BaseAction } from "../core/base-action";
 import { ActionContext } from "../core/types";
 import type { BaseJobData } from "../types";
@@ -30,10 +31,10 @@ export class ErrorHandlingWrapperAction<
   TData extends BaseJobData = BaseJobData,
   TDeps extends ErrorHandlingDeps = ErrorHandlingDeps,
 > extends BaseAction<TData, TDeps> {
-  name: string;
+  name: ActionName;
   constructor(private wrappedAction: BaseAction<BaseJobData, object>) {
     super();
-    this.name = `error_handling_wrapper(${wrappedAction.name})`;
+    this.name = ActionName.ERROR_HANDLING;
   }
   async execute(data: TData, deps: TDeps, context: ActionContext) {
     return await deps.ErrorHandler.withErrorHandling(
@@ -65,7 +66,7 @@ export class LogErrorAction extends BaseAction<
     };
   }
 > {
-  name = "log_error";
+  name = ActionName.LOG_ERROR;
   async execute(
     data: ErrorJobData,
     deps: {
@@ -100,7 +101,7 @@ export class LogErrorAction extends BaseAction<
  * Action that captures and stores errors for later analysis.
  */
 export class CaptureErrorAction extends BaseAction<ErrorJobData, object> {
-  name = "capture_error";
+  name = ActionName.CAPTURE_ERROR;
   async execute(data: ErrorJobData, _deps: object, context: ActionContext) {
     // Store error information for monitoring/alerting
     const errorInfo = {
@@ -125,7 +126,7 @@ export class CaptureErrorAction extends BaseAction<ErrorJobData, object> {
  * Action that attempts to recover from errors.
  */
 export class ErrorRecoveryAction extends BaseAction<ErrorJobData, object> {
-  name = "error_recovery";
+  name = ActionName.ERROR_RECOVERY;
   async execute(data: ErrorJobData, _deps: object, context: ActionContext) {
     // Attempt to recover based on error type
     if (data.error.name === "ValidationError") {

@@ -1,3 +1,4 @@
+import { ActionName } from "../../types";
 import { ActionFactory } from "../core/action-factory";
 import type { BaseAction } from "../core/base-action";
 import type { BaseJobData } from "../types";
@@ -13,7 +14,7 @@ export interface ActionRegistration<
   TDeps extends object = object,
   TResult = unknown,
 > {
-  name: string;
+  name: ActionName;
   factory: () => BaseAction<TData, TDeps, TResult>;
 }
 
@@ -52,7 +53,7 @@ export function createActionRegistration<
   TDeps extends object = object,
   TResult = unknown,
 >(
-  name: string,
+  name: ActionName,
   actionClass: new () => BaseAction<TData, TDeps, TResult>
 ): ActionRegistration<TData, TDeps, TResult> {
   return {

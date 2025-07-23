@@ -1,112 +1,18 @@
 import { Queue } from "bullmq";
 
 import type { IServiceContainer } from "../services/container";
-
-import type { LogLevel } from "./core/types";
-
-// ============================================================================
-// BRANDED TYPES FOR IDENTIFIERS
-// ============================================================================
-
-/**
- * Branded type for job IDs to prevent mixing with other string types
- */
-export type JobId = string & { readonly __brand: "JobId" };
-
-/**
- * Branded type for note IDs to prevent mixing with other string types
- */
-export type NoteId = string & { readonly __brand: "NoteId" };
-
-/**
- * Branded type for user IDs to prevent mixing with other string types
- */
-export type UserId = string & { readonly __brand: "UserId" };
-
-/**
- * Branded type for import IDs to prevent mixing with other string types
- */
-export type ImportId = string & { readonly __brand: "ImportId" };
-
-/**
- * Branded type for action names to prevent mixing with other string types
- */
-export type ActionName = string & { readonly __brand: "ActionName" };
-
-/**
- * Branded type for queue names to prevent mixing with other string types
- */
-export type QueueName = string & { readonly __brand: "QueueName" };
-
-/**
- * Branded type for worker names to prevent mixing with other string types
- */
-export type WorkerName = string & { readonly __brand: "WorkerName" };
+import type { ActionName, LogLevel } from "../types";
 
 // ============================================================================
-// BRANDED TYPE UTILITIES
+// CORE WORKER TYPES
 // ============================================================================
 
 /**
- * Create a branded ID from a string
- */
-export function createJobId(id: string): JobId {
-  return id as JobId;
-}
-
-/**
- * Create a branded note ID from a string
- */
-export function createNoteId(id: string): NoteId {
-  return id as NoteId;
-}
-
-/**
- * Create a branded user ID from a string
- */
-export function createUserId(id: string): UserId {
-  return id as UserId;
-}
-
-/**
- * Create a branded import ID from a string
- */
-export function createImportId(id: string): ImportId {
-  return id as ImportId;
-}
-
-/**
- * Create a branded action name from a string
- */
-export function createActionName(name: string): ActionName {
-  return name as ActionName;
-}
-
-/**
- * Create a branded queue name from a string
- */
-export function createQueueName(name: string): QueueName {
-  return name as QueueName;
-}
-
-/**
- * Create a branded worker name from a string
- */
-export function createWorkerName(name: string): WorkerName {
-  return name as WorkerName;
-}
-
-// ============================================================================
-// BASE TYPES
-// ============================================================================
-
-/**
- * Base interface for job data - all job data should extend this
- * Removed index signature for better type safety
+ * Base job data interface that all jobs extend
  */
 export interface BaseJobData {
   /** Unique identifier for the job */
-  jobId?: JobId;
+  jobId?: string;
   /** Job metadata for additional context */
   metadata?: Record<string, unknown>;
   /** When the job was created */
@@ -125,6 +31,9 @@ export interface BaseJobData {
   tags?: string[];
 }
 
+/**
+ * Structured logger interface for consistent logging
+ */
 export interface StructuredLogger {
   log: (
     message: string,
@@ -134,8 +43,7 @@ export interface StructuredLogger {
 }
 
 /**
- * Base interface for worker dependencies - all dependencies should extend this
- * Removed index signature for better type safety
+ * Base dependencies that all workers have access to
  */
 export interface BaseWorkerDependencies {
   /** Structured logger for all logging */
@@ -170,8 +78,36 @@ export interface BaseWorkerDependencies {
   };
 }
 
+// ============================================================================
+// ACTION TYPES
+// ============================================================================
+
 /**
- * Represents a single action that can be performed by a worker
+ * Context information passed to actions during execution
+ */
+export interface ActionContext {
+  jobId: string;
+  retryCount: number;
+  queueName: string;
+  noteId?: string;
+  operation: string;
+  startTime: number;
+  workerName: string;
+  attemptNumber: number;
+}
+
+/**
+ * Result of an action execution
+ */
+export interface ActionResult<T = unknown> {
+  success: boolean;
+  data?: T;
+  error?: Error;
+  duration?: number;
+}
+
+/**
+ * Core action interface that all actions implement
  */
 export interface WorkerAction<
   TData = unknown,
@@ -179,7 +115,7 @@ export interface WorkerAction<
   TResult = unknown,
 > {
   /** Unique identifier for this action */
-  name: string;
+  name: ActionName;
   /** Function that performs the action */
   execute: (
     data: TData,
@@ -211,58 +147,12 @@ export interface WorkerAction<
   ) => WorkerAction<TData, TDeps, TResult>;
 }
 
-/**
- * Context information available to all actions
- */
-export interface ActionContext {
-  jobId: string;
-  retryCount: number;
-  queueName: string;
-  noteId?: string;
-  operation: string;
-  startTime: number;
-  workerName: string;
-  attemptNumber: number;
-}
+// ============================================================================
+// WORKER TYPES
+// ============================================================================
 
 /**
- * Configuration for an action-based worker
- */
-export interface ActionBasedWorkerConfig<TData = unknown, TDeps = unknown> {
-  /** The BullMQ queue to process jobs from */
-  queue: Queue;
-  /** List of actions to execute in sequence */
-  actions: WorkerAction<TData, TDeps>[];
-  /** Dependencies to inject into actions */
-  dependencies: TDeps;
-  /** Maximum number of concurrent jobs */
-  concurrency?: number;
-  /** Name of the worker (for logging) */
-  workerName: string;
-  /** Custom data validation function */
-  validateData?: (data: TData) => Error | null;
-  /** Custom status update function */
-  updateStatus?: (
-    status: string,
-    message: string,
-    context: ActionContext
-  ) => Promise<void>;
-  /** Whether to check service health before processing */
-  checkHealth?: boolean;
-}
-
-/**
- * Result of an action execution
- */
-export interface ActionResult<T = unknown> {
-  success: boolean;
-  data?: T;
-  error?: Error;
-  duration?: number; // Duration is now optional for flexibility
-}
-
-/**
- * Result of processing a job through the pipeline
+ * Result of processing a job
  */
 export interface JobProcessingResult {
   success: boolean;
@@ -273,7 +163,7 @@ export interface JobProcessingResult {
 }
 
 /**
- * Status information about a worker
+ * Worker status information
  */
 export interface WorkerStatus {
   name: string;
@@ -285,8 +175,7 @@ export interface WorkerStatus {
 }
 
 /**
- * Status event for tracking progress
- * Removed index signature for better type safety
+ * Status event for broadcasting updates
  */
 export interface StatusEvent {
   /** Event type for categorization */
@@ -307,24 +196,19 @@ export interface StatusEvent {
   context?: Record<string, unknown>;
 }
 
-/**
- * Action factory type for creating and managing actions
- * Removed index signature for better type safety
- */
-
 // ============================================================================
-// ACTION PIPELINE TYPES
+// BASE CLASSES
 // ============================================================================
 
 /**
- * Generic action interface to avoid circular dependencies
+ * Base action interface for inheritance
  */
 export interface BaseAction<
   TData = unknown,
   TDeps = unknown,
   TResult = unknown,
 > {
-  name: string;
+  name: ActionName;
   execute: (
     data: TData,
     deps: TDeps,
@@ -332,10 +216,26 @@ export interface BaseAction<
   ) => Promise<TResult>;
   retryable?: boolean;
   priority?: number;
+  executeWithTiming: (
+    data: TData,
+    deps: TDeps,
+    context: ActionContext
+  ) => Promise<ActionResult<TResult>>;
+  onError?: (
+    error: Error,
+    data: TData,
+    deps: TDeps,
+    context: ActionContext
+  ) => Promise<void>;
+  withConfig?: (
+    config: Partial<
+      Pick<WorkerAction<TData, TDeps, TResult>, "retryable" | "priority">
+    >
+  ) => WorkerAction<TData, TDeps, TResult>;
 }
 
 /**
- * Generic worker interface to avoid circular dependencies
+ * Base worker interface
  */
 export interface BaseWorker<
   TData = unknown,
@@ -349,11 +249,12 @@ export interface BaseWorker<
   _resultType?: TResult;
 }
 
+// ============================================================================
+// PIPELINE TYPES
+// ============================================================================
+
 /**
- * Generic action pipeline type that maintains type safety through the pipeline
- * TInput: Input type for the first action
- * TOutput: Output type of the last action
- * TIntermediate: Intermediate types (for complex pipelines)
+ * Action pipeline type
  */
 export type ActionPipeline<
   TInput,
@@ -362,7 +263,7 @@ export type ActionPipeline<
 > = BaseAction<TInput | TIntermediate, TOutput | TIntermediate>[];
 
 /**
- * Generic action pipeline builder type with better type safety
+ * Pipeline builder function type
  */
 export type ActionPipelineBuilder<TInput, TOutput, TDeps = unknown> = (
   data: TInput,
@@ -371,18 +272,14 @@ export type ActionPipelineBuilder<TInput, TOutput, TDeps = unknown> = (
 ) => ActionPipeline<TInput, TOutput>;
 
 /**
- * Type-safe action wrapper that preserves input/output types
+ * Action wrapper function type
  */
 export type ActionWrapper<TInput, TOutput> = (
   action: BaseAction<TInput, TOutput>
 ) => BaseAction<TInput, TOutput>;
 
-// ============================================================================
-// WORKER PIPELINE TYPES
-// ============================================================================
-
 /**
- * Generic worker pipeline type with better type safety
+ * Worker pipeline configuration
  */
 export type WorkerPipeline<TInput, TOutput, TDeps = unknown> = {
   /** Build the action pipeline */
@@ -392,15 +289,15 @@ export type WorkerPipeline<TInput, TOutput, TDeps = unknown> = {
 };
 
 /**
- * Generic pipeline step type with better type safety
+ * Pipeline step can be an action, action factory, or action name
  */
 export type PipelineStep<TInput, TOutput, TDeps> =
   | BaseAction<TInput, TOutput>
   | ((deps: TDeps) => BaseAction<TInput, TOutput>)
-  | string; // Action name for factory-based creation
+  | ActionName;
 
 /**
- * Generic pipeline configuration with validation
+ * Pipeline configuration
  */
 export interface PipelineConfig<TDeps = unknown> {
   /** Pipeline steps */
@@ -421,11 +318,11 @@ export interface PipelineConfig<TDeps = unknown> {
 }
 
 // ============================================================================
-// DATABASE OPERATION RESULT TYPES
+// DATABASE TYPES
 // ============================================================================
 
 /**
- * Standard database operation result
+ * Database operation result
  */
 export interface DatabaseOperationResult {
   success: boolean;
@@ -451,15 +348,11 @@ export interface DatabaseCreateResult extends DatabaseOperationResult {
 }
 
 // ============================================================================
-// STATUS AND ERROR TYPES
+// ERROR TYPES
 // ============================================================================
 
 /**
- * Status event for broadcasting job progress
- */
-
-/**
- * Error context for error handling
+ * Error context for better error handling
  */
 export interface ErrorContext extends Record<string, unknown> {
   jobId?: string;
@@ -471,7 +364,7 @@ export interface ErrorContext extends Record<string, unknown> {
 }
 
 // ============================================================================
-// JOB DATA TYPES
+// ACTION INPUT/OUTPUT TYPES
 // ============================================================================
 
 /**
@@ -497,7 +390,7 @@ export interface ActionOutput<TResult = unknown> {
  * Typed action interface
  */
 export interface TypedAction<TInput, TOutput, TDeps = unknown> {
-  name: string;
+  name: ActionName;
   execute: (
     input: TInput,
     deps: TDeps,
@@ -510,7 +403,7 @@ export interface TypedAction<TInput, TOutput, TDeps = unknown> {
 }
 
 // ============================================================================
-// WORKER FACTORY TYPES
+// FACTORY TYPES
 // ============================================================================
 
 /**
@@ -522,7 +415,7 @@ export type WorkerFactory = (
 ) => BaseWorker<BaseJobData, BaseWorkerDependencies>;
 
 /**
- * Worker configuration options
+ * Worker configuration
  */
 export interface WorkerConfig {
   concurrency?: number;
@@ -539,28 +432,28 @@ export interface WorkerConfig {
 // ============================================================================
 
 /**
- * Type utility to ensure required properties
+ * Make specific properties required
  */
 export type HasRequired<T, K extends keyof T> = T & Required<Pick<T, K>>;
 
 /**
- * Type utility to make properties optional
+ * Make specific properties optional
  */
 export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
 
 /**
- * Type utility to make properties required
+ * Make specific properties required
  */
 export type MakeRequired<T, K extends keyof T> = T & Required<Pick<T, K>>;
 
 /**
- * Type utility for partial with required properties
+ * Partial type with specific required properties
  */
 export type PartialWithRequired<T, K extends keyof T> = Partial<T> &
   Required<Pick<T, K>>;
 
 /**
- * Type utility for union to intersection conversion
+ * Union to intersection type utility
  */
 export type UnionToIntersection<U> = (
   U extends unknown ? (k: U) => void : never
@@ -569,7 +462,7 @@ export type UnionToIntersection<U> = (
   : never;
 
 /**
- * Type utility for function return type extraction
+ * Return type utility
  */
 export type ReturnType<T> = T extends (...args: unknown[]) => infer R
   ? R

@@ -9,6 +9,7 @@ import {
   ErrorSeverity,
   ErrorType,
   HealthCheck,
+  HealthStatus,
   HealthyCheck,
   ServiceHealth,
   UnhealthyCheck,
@@ -81,7 +82,7 @@ export class HealthMonitor {
     const overallStatus = this.determineOverallStatus(checks);
 
     return {
-      status: overallStatus,
+      status: overallStatus as HealthStatus,
       checks,
       timestamp: new Date(),
     };
@@ -111,7 +112,7 @@ export class HealthMonitor {
 
       if (responseTime < 500) {
         return {
-          status: "healthy",
+          status: HealthStatus.HEALTHY,
           message: "Database is responding normally",
           responseTime,
           performance,
@@ -139,7 +140,7 @@ export class HealthMonitor {
       ErrorHandler.logError(jobError);
 
       return {
-        status: "unhealthy",
+        status: HealthStatus.UNHEALTHY,
         message: jobError.message,
         error: jobError.message,
         errorCode: "DB_CONNECTION_ERROR",
@@ -170,7 +171,7 @@ export class HealthMonitor {
 
       if (responseTime < 500) {
         return {
-          status: "healthy",
+          status: HealthStatus.HEALTHY,
           message: "Redis configuration is valid",
           responseTime,
           performance,
@@ -196,7 +197,7 @@ export class HealthMonitor {
       ErrorHandler.logError(jobError);
 
       return {
-        status: "unhealthy",
+        status: HealthStatus.UNHEALTHY,
         message: jobError.message,
         error: jobError.message,
         errorCode: "REDIS_CONNECTION_ERROR",
@@ -224,7 +225,7 @@ export class HealthMonitor {
       const performance = this.calculatePerformance(responseTime);
 
       const healthyQueueCheck: HealthyCheck = {
-        status: "healthy",
+        status: HealthStatus.HEALTHY,
         message: "Queue system is operational",
         responseTime,
         performance,
@@ -248,7 +249,7 @@ export class HealthMonitor {
       ErrorHandler.logError(jobError);
 
       const failedCheck: UnhealthyCheck = {
-        status: "unhealthy",
+        status: HealthStatus.UNHEALTHY,
         message: jobError.message,
         error: jobError.message,
         errorCode: "QUEUE_CONNECTION_ERROR",
@@ -284,7 +285,7 @@ export class HealthMonitor {
    */
   private createFailedHealthCheck(message: string): UnhealthyCheck {
     return {
-      status: "unhealthy",
+      status: HealthStatus.UNHEALTHY,
       message: message,
       error: message,
       errorCode: "HEALTH_CHECK_FAILED",

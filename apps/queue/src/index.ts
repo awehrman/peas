@@ -8,7 +8,6 @@ import {
   testRouter,
 } from "./routes";
 import { ServiceContainer } from "./services";
-import { ErrorSeverity, ErrorType } from "./types";
 import { initializeWebSocketServer } from "./websocket-server";
 
 import { createBullBoard } from "@bull-board/api";
@@ -22,6 +21,22 @@ import { databaseManager } from "./config/database-manager";
 import { metricsCollector } from "./utils/metrics";
 // // import { SecurityMiddleware } from "./middleware/security";
 import { startWorkers } from "./workers/startup";
+
+// Type guard to check if value is an Error
+function isError(value: unknown): value is Error {
+  return value instanceof Error;
+}
+
+// Helper to create a proper error from unknown
+function createError(value: unknown): Error {
+  if (isError(value)) {
+    return value;
+  }
+  if (typeof value === "string") {
+    return new Error(value);
+  }
+  return new Error(String(value));
+}
 
 async function initializeApp() {
   const serviceContainer = await ServiceContainer.getInstance();
@@ -85,24 +100,27 @@ async function initializeApp() {
       res: express.Response,
       _next: express.NextFunction
     ) => {
-      const errorType = serviceContainer.errorHandler.classifyError(
-        error as Error
-      );
-      const jobError = serviceContainer.errorHandler.createJobError(
-        error as Error,
-        {
-          path: req.path,
-          method: req.method,
-          userAgent: req.get("User-Agent"),
-          type: errorType,
-        }
-      );
+      const properError = createError(error);
+      const errorType =
+        serviceContainer.errorHandler.classifyError(properError);
+      serviceContainer.errorHandler.createJobError(properError, {
+        operation: "express_error_middleware",
+        path: req.path,
+        method: req.method,
+        userAgent: req.get("User-Agent"),
+        timestamp: new Date(),
+      });
 
-      serviceContainer.errorHandler.logError(error as Error, jobError);
+      serviceContainer.errorHandler.logError(properError, {
+        operation: "express_error_middleware",
+        path: req.path,
+        method: req.method,
+        timestamp: new Date(),
+      });
 
       res.status(500).json({
         error: {
-          message: (error as Error).message,
+          message: properError.message,
           type: errorType,
           code: "INTERNAL_ERROR",
         },
@@ -130,15 +148,15 @@ async function initializeApp() {
     serverAdapter.setBasePath("/bull-board");
     app.use("/bull-board", serverAdapter.getRouter());
   } catch (error) {
-    const jobError = serviceContainer.errorHandler.createJobError(
-      error as Error,
-      {
-        operation: "bull_board_setup",
-        type: ErrorType.EXTERNAL_SERVICE_ERROR,
-        severity: ErrorSeverity.HIGH,
-      }
-    );
-    serviceContainer.errorHandler.logError(error as Error, jobError);
+    const properError = createError(error);
+    serviceContainer.errorHandler.createJobError(properError, {
+      operation: "bull_board_setup",
+      timestamp: new Date(),
+    });
+    serviceContainer.errorHandler.logError(properError, {
+      operation: "bull_board_setup",
+      timestamp: new Date(),
+    });
     serviceContainer.logger.log(
       "Failed to setup Bull Board, continuing without it",
       "error"
@@ -166,20 +184,20 @@ initializeApp()
 
         res.status(statusCode).json(health);
       } catch (error) {
-        const jobError = serviceContainer.errorHandler.createJobError(
-          error as Error,
-          {
-            operation: "health_check_endpoint",
-            type: ErrorType.EXTERNAL_SERVICE_ERROR,
-            severity: ErrorSeverity.HIGH,
-          }
-        );
-        serviceContainer.errorHandler.logError(error as Error, jobError);
+        const properError = createError(error);
+        serviceContainer.errorHandler.createJobError(properError, {
+          operation: "health_check_endpoint",
+          timestamp: new Date(),
+        });
+        serviceContainer.errorHandler.logError(properError, {
+          operation: "health_check_endpoint",
+          timestamp: new Date(),
+        });
 
         res.status(503).json({
           status: "unhealthy",
           message: "Health check failed",
-          error: jobError.message,
+          error: properError.message,
           timestamp: new Date().toISOString(),
         });
       }
@@ -224,15 +242,15 @@ initializeApp()
         // eslint-disable-next-line no-process-exit
         process.exit(0);
       } catch (error) {
-        const jobError = serviceContainer.errorHandler.createJobError(
-          error as Error,
-          {
-            operation: "graceful_shutdown",
-            type: ErrorType.UNKNOWN_ERROR,
-            severity: ErrorSeverity.CRITICAL,
-          }
-        );
-        serviceContainer.errorHandler.logError(error as Error, jobError);
+        const properError = createError(error);
+        serviceContainer.errorHandler.createJobError(properError, {
+          operation: "graceful_shutdown",
+          timestamp: new Date(),
+        });
+        serviceContainer.errorHandler.logError(properError, {
+          operation: "graceful_shutdown",
+          timestamp: new Date(),
+        });
         // eslint-disable-next-line no-process-exit
         process.exit(1); // Exit with error code instead of throwing
       }
@@ -266,39 +284,46 @@ initializeApp()
 
     // Handle server errors
     server.on("error", (error) => {
-      const jobError = serviceContainer.errorHandler.createJobError(error, {
+      const properError = createError(error);
+      serviceContainer.errorHandler.createJobError(properError, {
         operation: "server_startup",
-        type: ErrorType.NETWORK_ERROR,
-        severity: ErrorSeverity.CRITICAL,
+        timestamp: new Date(),
       });
-      serviceContainer.errorHandler.logError(error, jobError);
+      serviceContainer.errorHandler.logError(properError, {
+        operation: "server_startup",
+        timestamp: new Date(),
+      });
       // eslint-disable-next-line no-process-exit
       process.exit(1); // Exit with error code instead of throwing
     });
 
     // Handle uncaught exceptions
     process.on("uncaughtException", (error) => {
-      const jobError = serviceContainer.errorHandler.createJobError(error, {
+      const properError = createError(error);
+      serviceContainer.errorHandler.createJobError(properError, {
         operation: "uncaught_exception",
-        type: ErrorType.UNKNOWN_ERROR,
-        severity: ErrorSeverity.CRITICAL,
+        timestamp: new Date(),
       });
-      serviceContainer.errorHandler.logError(error, jobError);
+      serviceContainer.errorHandler.logError(properError, {
+        operation: "uncaught_exception",
+        timestamp: new Date(),
+      });
       gracefulShutdown("uncaught exception");
     });
 
     // Handle unhandled promise rejections
     process.on("unhandledRejection", (reason, promise) => {
-      const jobError = serviceContainer.errorHandler.createJobError(
-        reason as Error,
-        {
-          operation: "unhandled_rejection",
-          promise: promise.toString(),
-          type: ErrorType.UNKNOWN_ERROR,
-          severity: ErrorSeverity.CRITICAL,
-        }
-      );
-      serviceContainer.errorHandler.logError(reason as Error, jobError);
+      const properError = createError(reason);
+      serviceContainer.errorHandler.createJobError(properError, {
+        operation: "unhandled_rejection",
+        promise: promise.toString(),
+        timestamp: new Date(),
+      });
+      serviceContainer.errorHandler.logError(properError, {
+        operation: "unhandled_rejection",
+        promise: promise.toString(),
+        timestamp: new Date(),
+      });
       gracefulShutdown("unhandled rejection");
     });
 

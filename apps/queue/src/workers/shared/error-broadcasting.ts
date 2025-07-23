@@ -1,5 +1,6 @@
 import type { NoteStatus } from "@peas/database";
 
+import { LogLevel } from "../../types";
 import type { BaseWorkerDependencies, StructuredLogger } from "../core/types";
 
 /**
@@ -54,7 +55,7 @@ export async function broadcastError(
   try {
     deps.logger?.log(
       `[ERROR_BROADCAST] Broadcasting ${errorType} for ${context}: ${errorMessage}`,
-      "error",
+      LogLevel.ERROR,
       { errorType, errorMessage, context, noteId, importId, metadata }
     );
   } catch (loggerError) {
@@ -67,7 +68,7 @@ export async function broadcastError(
     try {
       deps.logger?.log(
         `[ERROR_BROADCAST] Skipping error broadcast - no importId provided`,
-        "warn",
+        LogLevel.WARN,
         { errorType, errorMessage, context, noteId, metadata }
       );
     } catch (loggerError) {
@@ -96,7 +97,7 @@ export async function broadcastError(
     try {
       deps.logger?.log(
         `[ERROR_BROADCAST] Failed to broadcast error: ${broadcastError}`,
-        "error",
+        LogLevel.ERROR,
         { errorType, errorMessage, context, noteId, importId, metadata }
       );
     } catch (loggerError) {

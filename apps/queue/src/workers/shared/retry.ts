@@ -1,3 +1,4 @@
+import { ActionName, LogLevel } from "../../types";
 import { BaseAction } from "../core/base-action";
 import { ActionContext } from "../core/types";
 import type { StructuredLogger } from "../core/types";
@@ -44,7 +45,7 @@ export const DEFAULT_RETRY_CONFIG: RetryConfig = {
  * Action that implements exponential backoff retry logic.
  */
 export class RetryAction extends BaseAction<RetryJobData, RetryDeps> {
-  name = "retry";
+  name = ActionName.RETRY;
   constructor(private config: RetryConfig = DEFAULT_RETRY_CONFIG) {
     super();
   }
@@ -63,7 +64,7 @@ export class RetryAction extends BaseAction<RetryJobData, RetryDeps> {
     if (attempt > 0) {
       const message = `Retrying job ${context.jobId} (attempt ${attempt + 1}/${maxAttempts}) after ${delay}ms`;
       if (deps.logger?.log) {
-        deps.logger.log(message, "warn", {
+        deps.logger.log(message, LogLevel.WARN, {
           jobId: context.jobId,
           attempt,
           delay,
@@ -102,13 +103,13 @@ export class RetryWrapperAction<
   TData extends BaseJobData,
   TDeps extends object,
 > extends BaseAction<TData, TDeps> {
-  name: string;
+  name: ActionName;
   constructor(
     private wrappedAction: BaseAction<TData, TDeps>,
     private config: RetryConfig = DEFAULT_RETRY_CONFIG
   ) {
     super();
-    this.name = `retry_wrapper(${wrappedAction.name})`;
+    this.name = ActionName.RETRY_WRAPPER;
   }
   /**
    * Execute the wrapped action with retry logic.
@@ -177,7 +178,7 @@ export class CircuitBreakerAction<
   TData extends BaseJobData,
   TDeps extends object,
 > extends BaseAction<TData, TDeps> {
-  name = "circuit_breaker";
+  name = ActionName.CIRCUIT_BREAKER;
   private static breakers = new Map<
     string,
     {

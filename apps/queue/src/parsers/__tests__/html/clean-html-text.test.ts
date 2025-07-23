@@ -1,5 +1,6 @@
-import { describe, it, expect } from "vitest";
-import { parseHTML } from "../../html";
+import { describe, expect, it } from "vitest";
+
+import { parseHTMLContent } from "../../html";
 
 describe("cleanHtmlText function", () => {
   it("should remove HTML tags and trim whitespace", () => {
@@ -15,7 +16,7 @@ describe("cleanHtmlText function", () => {
       </html>
     `;
 
-    const result = parseHTML(html);
+    const result = parseHTMLContent(html);
     expect(result.ingredients).toHaveLength(2);
     expect(result.ingredients[0]?.reference).toBe("Bold ingredient");
     expect(result.ingredients[1]?.reference).toBe("Italic ingredient");

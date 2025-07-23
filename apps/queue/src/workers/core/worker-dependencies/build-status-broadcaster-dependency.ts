@@ -1,29 +1,26 @@
 /**
- * Builds the status broadcaster dependency from the service container.
+ * Build status broadcaster dependency
  */
-import type { NoteStatus } from "@peas/database";
-
 import type { IServiceContainer } from "../../../services/container";
+import type { StatusEventData } from "../../../types/common";
 
+/**
+ * Build status broadcaster dependency
+ */
 export function buildStatusBroadcasterDependency(container: IServiceContainer) {
-  if (!container) {
-    throw new Error("Container not available for status broadcaster");
-  }
-  return async (event: {
-    importId: string;
-    noteId?: string;
-    status: NoteStatus;
-    message?: string;
-    context?: string;
-    currentCount?: number;
-    totalCount?: number;
-    indentLevel?: number;
-  }): Promise<void> => {
-    if (container.statusBroadcaster?.addStatusEventAndBroadcast) {
-      await container.statusBroadcaster.addStatusEventAndBroadcast(
-        event as unknown as Record<string, unknown>
-      );
-    }
-    // Always return void
+  return {
+    addStatusEventAndBroadcast: async (
+      event: Record<string, unknown>
+    ): Promise<void> => {
+      // Convert Record<string, unknown> to StatusEventData
+      const statusEvent: StatusEventData = {
+        type: (event.type as string) || "status",
+        message: (event.message as string) || "",
+        severity:
+          (event.severity as "info" | "warn" | "error" | "critical") || "info",
+        ...event,
+      };
+      await container.statusBroadcaster.addStatusEventAndBroadcast(statusEvent);
+    },
   };
 }

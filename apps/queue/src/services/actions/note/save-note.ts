@@ -1,8 +1,13 @@
+// SaveNoteAction is temporarily disabled while focusing on clean and parse actions
+// This will be re-enabled when we add back the save functionality
+
+/*
 import { SaveNoteDataSchema } from "./schema";
-import { NotePipelineData, NoteWorkerDependencies } from "./types";
+import { NotePipelineData } from "../../../types/notes";
 
 import { BaseAction } from "../../../workers/core/base-action";
 import { ActionContext } from "../../../workers/core/types";
+import { NoteWorkerDependencies } from "../../../types/notes";
 
 export class SaveNoteAction extends BaseAction<
   NotePipelineData,
@@ -31,9 +36,9 @@ export class SaveNoteAction extends BaseAction<
     );
 
     // Broadcast start status if importId is provided
-    if (data.importId) {
+    if (data.importId && deps.statusBroadcaster) {
       try {
-        await deps.addStatusEventAndBroadcast({
+        await deps.statusBroadcaster.addStatusEventAndBroadcast({
           importId: data.importId,
           status: "PROCESSING",
           message: "Saving note to database",
@@ -47,27 +52,25 @@ export class SaveNoteAction extends BaseAction<
       }
     }
 
-    if (!data.file) {
-      throw new Error("SaveNoteAction: data.file is required");
-    }
-    const note = await deps.createNote(data.file);
+    // Call the saveNote service from dependencies
+    const result = await deps.services.saveNote(data);
 
     deps.logger.log(
-      `[SAVE_NOTE] Successfully created note for job ${context.jobId}, noteId: "${note.id}"`
+      `[SAVE_NOTE] Successfully created note for job ${context.jobId}, noteId: "${result.noteId}"`
     );
 
     // Broadcast completion status if importId is provided
-    if (data.importId) {
+    if (data.importId && deps.statusBroadcaster) {
       try {
-        await deps.addStatusEventAndBroadcast({
+        await deps.statusBroadcaster.addStatusEventAndBroadcast({
           importId: data.importId,
-          noteId: note.id, // Now we have the actual noteId
+          noteId: result.noteId, // Now we have the actual noteId
           status: "COMPLETED",
           message: "Note saved successfully",
           context: "save_note_complete",
           indentLevel: 1, // Slightly indented for main operations
           metadata: {
-            noteTitle: note.title, // Include the note title in metadata
+            noteTitle: result.note?.title, // Include the note title in metadata
           },
         });
       } catch (error) {
@@ -77,6 +80,7 @@ export class SaveNoteAction extends BaseAction<
       }
     }
 
-    return { ...data, note, noteId: note.id };
+    return result;
   }
 }
+*/

@@ -1,8 +1,11 @@
 import { CleanHtmlAction } from "./clean-html";
 import { ParseHtmlAction } from "./parse-html";
-import { SaveNoteAction } from "./save-note";
-import type { NotePipelineData, NoteWorkerDependencies } from "./types";
 
+import { ActionName } from "../../../types";
+// import { SaveNoteAction } from "./save-note"; // Temporarily disabled
+
+import type { NotePipelineData } from "../../../types/notes";
+import type { NoteWorkerDependencies } from "../../../types/notes";
 import { ActionFactory } from "../../../workers/core/action-factory";
 import {
   createActionRegistration,
@@ -24,16 +27,16 @@ export function registerNoteActions(
       NotePipelineData,
       NoteWorkerDependencies,
       NotePipelineData
-    >("parse_html", ParseHtmlAction),
+    >(ActionName.PARSE_HTML, ParseHtmlAction),
     createActionRegistration<
       NotePipelineData,
       NoteWorkerDependencies,
       NotePipelineData
-    >("clean_html", CleanHtmlAction),
-    createActionRegistration<
-      NotePipelineData,
-      NoteWorkerDependencies,
-      NotePipelineData
-    >("save_note", SaveNoteAction),
+    >(ActionName.CLEAN_HTML, CleanHtmlAction),
+    // createActionRegistration<
+    //   NotePipelineData,
+    //   NoteWorkerDependencies,
+    //   NotePipelineData
+    // >("save_note", SaveNoteAction), // Temporarily disabled
   ]);
 }

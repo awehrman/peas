@@ -1,4 +1,4 @@
-import { ActionFactory, globalActionFactory } from "./action-factory";
+import { ActionFactory } from "./action-factory";
 import {
   wrapActionWithErrorHandlingOnly,
   wrapActionWithRetryAndErrorHandling,
@@ -7,7 +7,7 @@ import { BaseAction } from "./base-action";
 import { processJob } from "./job-processor";
 import { WorkerMetrics } from "./metrics";
 import { injectStandardStatusActions } from "./status-actions";
-import type { ActionContext, LogLevel, WorkerAction } from "./types";
+import type { ActionContext, WorkerAction } from "./types";
 import {
   buildErrorHandlerDependency,
   buildLoggerDependency,
@@ -15,6 +15,8 @@ import {
 } from "./worker-dependencies";
 
 import type { IServiceContainer } from "../../services/container";
+import { LogLevel } from "../../types";
+import type { ActionName } from "../../types";
 import type { BaseJobData } from "../../workers/types";
 
 // BullMQ abstraction interfaces for testability
@@ -96,8 +98,7 @@ export abstract class BaseWorker<
   ) {
     this.dependencies = dependencies;
     this.actionFactory =
-      actionFactory ||
-      (globalActionFactory as unknown as ActionFact<TData, TDeps, TResult>);
+      actionFactory || new ActionFactory<TData, TDeps, TResult>();
     this.container = container;
     if (config) this.config = config;
     this.registerActions();
@@ -179,8 +180,8 @@ export abstract class BaseWorker<
    * Create an action from the factory and wrap it with retry and error handling
    */
   protected createRetryableErrorHandledAction(
-    actionName: string,
-    deps?: TDeps
+    actionName: ActionName,
+    deps: TDeps = this.dependencies
   ): WorkerAct<TData, TDeps, TResult> {
     const action = this.actionFactory.create(actionName, deps);
     return wrapActionWithRetryAndErrorHandling(
@@ -192,8 +193,8 @@ export abstract class BaseWorker<
    * Create an action from the factory and wrap it with just error handling
    */
   protected createErrorHandledActionOnly(
-    actionName: string,
-    deps?: TDeps
+    actionName: ActionName,
+    deps: TDeps = this.dependencies
   ): WorkerAct<TData, TDeps, TResult> {
     const action = this.actionFactory.create(actionName, deps);
     return wrapActionWithErrorHandlingOnly(
@@ -262,7 +263,7 @@ export abstract class BaseWorker<
         );
         this.dependencies.logger.log(
           `${this.getOperationName()} completed for job ${context.jobId} in ${totalDuration}ms`,
-          "info",
+          LogLevel.INFO,
           { duration: totalDuration, jobId: context.jobId }
         );
         await this.onAfterJob(data, context, result as TResult);
@@ -276,7 +277,7 @@ export abstract class BaseWorker<
         );
         this.dependencies.logger.log(
           `${this.getOperationName()} failed for job ${context.jobId}: ${error}`,
-          "error",
+          LogLevel.ERROR,
           { duration: totalDuration, jobId: context.jobId, error }
         );
         await this.onJobError(error as Error, data, context);

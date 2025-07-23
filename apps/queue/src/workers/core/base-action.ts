@@ -1,4 +1,5 @@
 import { ActionContext, ActionResult, WorkerAction } from "./types";
+import { ActionName } from "../../types";
 
 import type { BaseJobData } from "../types";
 
@@ -44,7 +45,7 @@ export abstract class BaseAction<
 > implements WorkerAction<TData, TDeps, TResult>
 {
   /** Unique identifier for this action */
-  abstract name: string;
+  abstract name: ActionName;
 
   /**
    * Execute the action with the given data and dependencies
@@ -143,7 +144,7 @@ export abstract class BaseAction<
 export class NoOpAction<
   TData extends BaseJobData = BaseJobData,
 > extends BaseAction<TData, { logger?: SimpleLogger }> {
-  name = "no_op";
+  name = ActionName.NO_OP;
 
   /**
    * Execute the no-op action
@@ -166,7 +167,7 @@ export class ValidationAction<TData extends BaseJobData> extends BaseAction<
   TData,
   { logger?: SimpleLogger }
 > {
-  name = "validation";
+  name = ActionName.VALIDATION;
 
   /**
    * Create a new validation action
@@ -197,7 +198,7 @@ export class ValidationAction<TData extends BaseJobData> extends BaseAction<
 export class LoggingAction<
   TData extends BaseJobData = BaseJobData,
 > extends BaseAction<TData, { logger?: SimpleLogger }> {
-  name = "logging";
+  name = ActionName.LOGGING;
 
   /**
    * Create a new logging action

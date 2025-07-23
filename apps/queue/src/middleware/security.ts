@@ -1,12 +1,18 @@
 import type { NextFunction, Request, Response } from "express";
 
-type ValidatedQueryRequest = Request & {
+// Extended request type for validated query parameters
+interface ValidatedQueryRequest extends Request {
   validatedQuery?: {
     page: number;
     limit: number;
-    // add other validated query params as needed
+    // Add other validated query params as needed
   };
-};
+}
+
+// Type guard to check if request has validated query
+function hasValidatedQuery(req: Request): req is ValidatedQueryRequest {
+  return 'validatedQuery' in req && req.validatedQuery !== undefined;
+}
 
 // ============================================================================
 // RATE LIMITING
@@ -103,8 +109,12 @@ export function validatePagination(
     });
   }
 
-  // Add validated values to request
-  (req as ValidatedQueryRequest).validatedQuery = { page, limit };
+  // Add validated values to request using type assertion
+  if (!hasValidatedQuery(req)) {
+    (req as ValidatedQueryRequest).validatedQuery = { page, limit };
+  } else {
+    req.validatedQuery = { page, limit };
+  }
   next();
 }
 

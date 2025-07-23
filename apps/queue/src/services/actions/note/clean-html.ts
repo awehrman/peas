@@ -1,7 +1,55 @@
-import { NotePipelineData, NoteWorkerDependencies } from "./types";
-
+import { ActionName } from "../../../types";
+import type { NotePipelineData } from "../../../types/notes";
+import type { NoteWorkerDependencies } from "../../../types/notes";
+import {
+  calculateRemovedSize,
+  logCleaningStats,
+  removeIconsTags,
+  removeStyleTags,
+  resolveTitle,
+} from "../../../utils/html-cleaner";
 import { BaseAction } from "../../../workers/core/base-action";
 import { ActionContext } from "../../../workers/core/types";
+import type { StructuredLogger } from "../../../workers/core/types";
+
+/**
+ * Clean HTML file by removing style and icons tags
+ * This is the business logic that can be imported and used elsewhere
+ */
+export async function cleanHtmlFile(
+  data: NotePipelineData,
+  logger: StructuredLogger
+): Promise<NotePipelineData> {
+  const title = resolveTitle(data, data.content);
+  const originalLength = data.content.length;
+
+  // Remove style tags and their content
+  const beforeStyleRemoval = data.content.length;
+  let cleanedContent = removeStyleTags(data.content);
+  const afterStyleRemoval = cleanedContent.length;
+
+  // Remove icons tags and their content
+  const beforeIconsRemoval = cleanedContent.length;
+  cleanedContent = removeIconsTags(cleanedContent);
+  const afterIconsRemoval = cleanedContent.length;
+
+  // Log the cleaning statistics
+  logCleaningStats(
+    logger,
+    title,
+    originalLength,
+    cleanedContent.length,
+    beforeStyleRemoval,
+    afterStyleRemoval,
+    beforeIconsRemoval,
+    afterIconsRemoval
+  );
+
+  return {
+    ...data,
+    content: cleanedContent,
+  };
+}
 
 /**
  * Action that cleans HTML content by removing style and icons tags
@@ -11,46 +59,17 @@ export class CleanHtmlAction extends BaseAction<
   NoteWorkerDependencies,
   NotePipelineData
 > {
-  name = "clean_html";
-
-  // Helper to extract title from H1 tag or meta itemprop="title"
-  private extractTitle(html: string): string | undefined {
-    // First try to find H1 tag
-    const h1Match = html.match(/<h1[^>]*>(.*?)<\/h1>/i);
-    if (h1Match && h1Match[1]?.trim()) {
-      return h1Match[1].trim();
-    }
-
-    // Then try to find meta itemprop="title"
-    const metaMatch = html.match(
-      /<meta[^>]*itemprop="title"[^>]*content="([^"]*)"[^>]*>/i
-    );
-    if (metaMatch && metaMatch[1]?.trim()) {
-      return metaMatch[1].trim();
-    }
-
-    return undefined;
-  }
+  name = ActionName.CLEAN_HTML;
 
   async execute(
     data: NotePipelineData,
     deps: NoteWorkerDependencies,
     context: ActionContext
   ): Promise<NotePipelineData> {
-    // Helper function to truncate content to 50 characters
-    const truncate = (content: string) =>
-      content.length > 50 ? content.slice(0, 50) + "..." : content;
-
-    // Enhanced title resolution
-    let title = data.source?.filename || data.source?.url || "Untitled";
-    if (!title || title === "Untitled") {
-      title = this.extractTitle(data.content) ?? "Untitled";
-    }
-
     // Broadcast start status if we have an importId
-    if (data.importId) {
+    if (data.importId && deps.statusBroadcaster) {
       try {
-        await deps.addStatusEventAndBroadcast({
+        await deps.statusBroadcaster.addStatusEventAndBroadcast({
           importId: data.importId,
           status: "PROCESSING",
           message: "HTML cleaning started",
@@ -65,52 +84,17 @@ export class CleanHtmlAction extends BaseAction<
       }
     }
 
-    let cleanedContent = data.content;
-    const originalLength = cleanedContent.length;
-
-    // Remove style tags and their content
-    const beforeStyleRemoval = cleanedContent.length;
-    cleanedContent = cleanedContent.replace(
-      /<style[^>]*>[\s\S]*?<\/style>/gi,
-      ""
-    );
-    const afterStyleRemoval = cleanedContent.length;
-    deps.logger.log(
-      `Style tags removed: ${beforeStyleRemoval - afterStyleRemoval} characters`
-    );
-
-    // Remove icons tags and their content
-    const beforeIconsRemoval = cleanedContent.length;
-    cleanedContent = cleanedContent.replace(
-      /<icons[^>]*>[\s\S]*?<\/icons>/gi,
-      ""
-    );
-    const afterIconsRemoval = cleanedContent.length;
-    deps.logger.log(
-      `Icons tags removed: ${beforeIconsRemoval - afterIconsRemoval} characters`
-    );
-
-    const totalRemoved = originalLength - cleanedContent.length;
-    const removedKB = totalRemoved / 1024;
-    const removedMB = totalRemoved / (1024 * 1024);
-
-    // Format size string - show KB if < 1MB, otherwise show MB
-    const sizeString =
-      removedKB >= 1024
-        ? `${removedMB.toFixed(2)}MB`
-        : `${removedKB.toFixed(1)}KB`;
-
-    deps.logger.log(`HTML cleaning completed: ${title}`);
-    deps.logger.log(
-      `Total characters removed: ${totalRemoved} (${sizeString})`
-    );
-    deps.logger.log(`Final content length: ${cleanedContent.length}`);
-    deps.logger.log(`Final content preview: ${truncate(cleanedContent)}`);
+    // Call the cleanHtmlFile service from dependencies
+    const result = await deps.services.cleanHtml(data);
 
     // Broadcast completion status if we have an importId
-    if (data.importId) {
+    if (data.importId && deps.statusBroadcaster) {
       try {
-        await deps.addStatusEventAndBroadcast({
+        const originalLength = data.content.length;
+        const cleanedLength = result.content.length;
+        const sizeString = calculateRemovedSize(originalLength, cleanedLength);
+
+        await deps.statusBroadcaster.addStatusEventAndBroadcast({
           importId: data.importId,
           status: "COMPLETED",
           message: `HTML cleaning completed (${sizeString} removed)`,
@@ -125,9 +109,6 @@ export class CleanHtmlAction extends BaseAction<
       }
     }
 
-    return {
-      ...data,
-      content: cleanedContent,
-    };
+    return result;
   }
 }

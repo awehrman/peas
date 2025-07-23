@@ -1,98 +1,113 @@
-import { createNoteWorkerDependencies } from "./dependencies";
+import { buildNoteWorkerDependencies } from "./dependencies";
 import { createNotePipeline } from "./pipeline";
 
 import { Queue } from "bullmq";
 
-import { WORKER_CONSTANTS } from "../../config/constants";
-import { registerNoteActions } from "../../services/actions/note";
+import { CleanHtmlAction } from "../../services/actions/note/clean-html";
+import { ParseHtmlAction } from "../../services/actions/note/parse-html";
+import { IServiceContainer } from "../../services/container";
+import { ActionName } from "../../types";
 import type {
   NotePipelineData,
   NoteWorkerDependencies,
-} from "../../services/actions/note/types";
-import { IServiceContainer } from "../../services/container";
-import type { ActionFactory } from "../core/action-factory";
+} from "../../types/notes";
+import { ActionFactory } from "../core/action-factory";
 import { BaseWorker } from "../core/base-worker";
 import type { ActionContext, WorkerAction } from "../core/types";
 
 /**
- * Worker responsible for processing note jobs.
- * Orchestrates the note action pipeline.
+ * NoteWorker class that extends BaseWorker for processing note jobs
  */
 export class NoteWorker extends BaseWorker<
   NotePipelineData,
   NoteWorkerDependencies,
   NotePipelineData
 > {
+  protected actionFactory: ActionFactory<
+    NotePipelineData,
+    NoteWorkerDependencies,
+    NotePipelineData
+  >;
+
+  constructor(
+    queue: Queue,
+    dependencies: NoteWorkerDependencies,
+    actionFactory: ActionFactory<
+      NotePipelineData,
+      NoteWorkerDependencies,
+      NotePipelineData
+    >,
+    container: IServiceContainer
+  ) {
+    super(queue, dependencies, actionFactory, container);
+    this.actionFactory = actionFactory;
+    this.registerActions();
+  }
+
   /**
-   * Registers all note-related actions with the action factory.
+   * Register actions specific to note processing
+   * This is where all note-related actions are registered with the factory
    */
   protected registerActions(): void {
-    registerNoteActions(
-      this.actionFactory as ActionFactory<
-        NotePipelineData,
-        NoteWorkerDependencies,
-        NotePipelineData
-      >
+    // Register core note processing actions
+    this.actionFactory.register(
+      ActionName.CLEAN_HTML,
+      () => new CleanHtmlAction()
     );
+
+    this.actionFactory.register(
+      ActionName.PARSE_HTML,
+      () => new ParseHtmlAction()
+    );
+
+    // TODO: Register scheduling actions when they are implemented
+    // this.actionFactory.registerWithWrappers(
+    //   ActionName.SCHEDULE_ALL_FOLLOWUP_TASKS,
+    //   () => new ScheduleAllFollowupTasksAction(),
+    //   [createRetryWrapper({ ...DEFAULT_RETRY_CONFIG, maxRetries: 3 })]
+    // );
   }
 
   /**
-   * Returns the operation name for this worker (used in logging and status).
+   * Get the operation name for this worker
    */
   protected getOperationName(): string {
-    return WORKER_CONSTANTS.NAMES.NOTE;
+    return "note-worker";
   }
 
   /**
-   * Helper to create a retryable, error-handled action for the pipeline.
-   * @param name - Action name
-   * @param deps - Dependencies
-   */
-  public createWrappedAction(
-    name: string,
-    deps: NoteWorkerDependencies
-  ): WorkerAction<NotePipelineData, NoteWorkerDependencies, NotePipelineData> {
-    return this.createRetryableErrorHandledAction(name, deps);
-  }
-
-  /**
-   * Helper to create an error-handled-only action for the pipeline.
-   * @param name - Action name
-   * @param deps - Dependencies
-   */
-  public createErrorHandledAction(
-    name: string,
-    deps: NoteWorkerDependencies
-  ): WorkerAction<NotePipelineData, NoteWorkerDependencies, NotePipelineData> {
-    return this.createErrorHandledActionOnly(name, deps);
-  }
-
-  /**
-   * Builds the action pipeline for a given note job.
-   * Delegates to createNotePipeline with the required dependencies.
+   * Create the action pipeline for note processing
    */
   protected createActionPipeline(
-    _data: NotePipelineData,
-    _context: ActionContext
-  ) {
-    return createNotePipeline({
-      createWrappedAction: this.createWrappedAction.bind(this),
-      createErrorHandledAction: this.createErrorHandledAction.bind(this),
-      dependencies: this.dependencies,
-    });
+    data: NotePipelineData,
+    context: ActionContext
+  ): WorkerAction<
+    NotePipelineData,
+    NoteWorkerDependencies,
+    NotePipelineData
+  >[] {
+    return createNotePipeline(
+      this.actionFactory,
+      this.dependencies,
+      data,
+      context
+    );
   }
 }
 
 /**
- * Factory function for creating a NoteWorker.
- * @param queue - BullMQ queue
- * @param container - Service container
- * @returns NoteWorker instance
+ * Create a note worker instance
  */
 export function createNoteWorker(
   queue: Queue,
   container: IServiceContainer
 ): NoteWorker {
-  const dependencies = createNoteWorkerDependencies(container);
-  return new NoteWorker(queue, dependencies);
+  const dependencies = buildNoteWorkerDependencies(container);
+  const actionFactory = new ActionFactory<
+    NotePipelineData,
+    NoteWorkerDependencies,
+    NotePipelineData
+  >();
+
+  return new NoteWorker(queue, dependencies, actionFactory, container);
 }

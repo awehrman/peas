@@ -1,64 +1,94 @@
-import { WorkerAction } from "./types";
+import type { ActionName } from "../../types";
+import type { BaseAction, WorkerAction } from "../types";
 
 /**
- * Type for action creators that can create actions with dependencies
- */
-export type ActionCreator<
-  TData = unknown,
-  TDeps = unknown,
-  TResult = unknown,
-> = (deps?: TDeps) => WorkerAction<TData, TDeps, TResult>;
-
-/**
- * ActionFactory allows registering and creating actions by name.
- * Supports dependency injection and singleton/per-job instantiation.
+ * Action factory for creating and managing actions with consistent patterns
  */
 export class ActionFactory<
   TData = unknown,
   TDeps = unknown,
   TResult = unknown,
 > {
-  private registry = new Map<string, ActionCreator<TData, TDeps, TResult>>();
+  private actions = new Map<
+    ActionName,
+    () => BaseAction<TData, TDeps, TResult>
+  >();
+  private wrappers = new Map<
+    ActionName,
+    Array<
+      (
+        action: BaseAction<TData, TDeps, TResult>
+      ) => BaseAction<TData, TDeps, TResult>
+    >
+  >();
 
   /**
-   * Register an action constructor by name.
-   * @param name Unique action name
-   * @param creator Function that returns a new action instance
+   * Register a new action with the factory
    */
-  register(name: string, creator: ActionCreator<TData, TDeps, TResult>): void {
-    this.registry.set(name, creator);
+  register(
+    name: ActionName,
+    factory: () => BaseAction<TData, TDeps, TResult>
+  ): void {
+    this.actions.set(name, factory);
   }
 
   /**
-   * Create an action by name, injecting dependencies if needed.
-   * @param name Action name
-   * @param deps Dependencies to inject
+   * Register an action with wrappers (retry, error handling, etc.)
    */
-  create(name: string, deps?: TDeps): WorkerAction<TData, TDeps, TResult> {
-    const creator = this.registry.get(name);
-    if (!creator) {
-      const available = Array.from(this.registry.keys()).join(", ");
-      throw new Error(
-        `Action '${name}' is not registered in the ActionFactory. Registered actions: [${available}]`
+  registerWithWrappers(
+    name: ActionName,
+    factory: () => BaseAction<TData, TDeps, TResult>,
+    wrappers: Array<
+      (
+        action: BaseAction<TData, TDeps, TResult>
+      ) => BaseAction<TData, TDeps, TResult>
+    >
+  ): void {
+    this.register(name, factory);
+    this.wrappers.set(name, wrappers);
+  }
+
+  /**
+   * Create an action instance with optional wrappers
+   */
+  create(name: ActionName, _deps: TDeps): WorkerAction<TData, TDeps, TResult> {
+    const factory = this.actions.get(name);
+    if (!factory) {
+      throw new Error(`Action '${name}' not registered`);
+    }
+
+    let action = factory();
+    const actionWrappers = this.wrappers.get(name);
+
+    if (actionWrappers) {
+      action = actionWrappers.reduce(
+        (wrappedAction, wrapper) => wrapper(wrappedAction),
+        action
       );
     }
-    return creator(deps);
+
+    return action;
   }
 
   /**
-   * Check if an action is registered.
+   * Check if an action is registered
    */
-  isRegistered(name: string): boolean {
-    return this.registry.has(name);
+  has(name: ActionName): boolean {
+    return this.actions.has(name);
   }
 
   /**
-   * List all registered action names.
+   * Get all registered action names
    */
-  list(): string[] {
-    return Array.from(this.registry.keys());
+  getRegisteredActions(): ActionName[] {
+    return Array.from(this.actions.keys());
+  }
+
+  /**
+   * Clear all registered actions (useful for testing)
+   */
+  clear(): void {
+    this.actions.clear();
+    this.wrappers.clear();
   }
 }
-
-// Singleton instance for convenience
-export const globalActionFactory = new ActionFactory();

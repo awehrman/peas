@@ -122,11 +122,15 @@ export function validateBody(schema: z.ZodSchema) {
   };
 }
 
+// Type guard to check if request has a file
+function hasFile(req: Request): req is Request & { file: MulterFile } {
+  return req.file !== undefined && req.file !== null;
+}
+
 export function validateFile(schema: z.ZodSchema) {
   return (req: Request, res: Response, next: NextFunction) => {
     try {
-      const fileReq = req as FileRequest;
-      if (!fileReq.file) {
+      if (!hasFile(req)) {
         return res.status(400).json({
           error: "File validation failed",
           details: [
@@ -140,9 +144,9 @@ export function validateFile(schema: z.ZodSchema) {
       }
 
       const fileData = {
-        filename: fileReq.file.originalname,
-        size: fileReq.file.size,
-        mimetype: fileReq.file.mimetype,
+        filename: req.file.originalname,
+        size: req.file.size,
+        mimetype: req.file.mimetype,
       };
 
       schema.parse(fileData);
@@ -258,5 +262,3 @@ type MulterFile = {
   path?: string;
   buffer?: Buffer;
 };
-
-type FileRequest = Request & { file?: MulterFile };

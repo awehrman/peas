@@ -1,9 +1,10 @@
-import { z } from "zod";
 import { BaseJobDataSchema, BaseValidation } from "./base";
+
 import type {
   ParsedIngredientLine,
   ParsedInstructionLine,
 } from "@peas/database";
+import { z } from "zod";
 
 // ============================================================================
 // NOTE-SPECIFIC SCHEMAS
@@ -273,20 +274,20 @@ export class NoteValidation extends BaseValidation {
 // TYPE EXPORTS
 // ============================================================================
 
-export type NoteJobData = z.infer<typeof NoteJobDataSchema>;
-export type ParseHtmlData = z.infer<typeof ParseHtmlDataSchema>;
-export type ParsedHtmlFile = z.infer<typeof ParsedHtmlFileSchema>;
-export type SaveNoteData = z.infer<typeof SaveNoteDataSchema>;
-export type Note = z.infer<typeof NoteSchema>;
-export type ScheduleActionData = z.infer<typeof ScheduleActionDataSchema>;
-export type ScheduleCategorizationData = z.infer<
-  typeof ScheduleCategorizationDataSchema
->;
-export type ScheduleImagesData = z.infer<typeof ScheduleImagesDataSchema>;
-export type ScheduleIngredientsData = z.infer<
-  typeof ScheduleIngredientsDataSchema
->;
-export type ScheduleInstructionsData = z.infer<
-  typeof ScheduleInstructionsDataSchema
->;
-export type ScheduleSourceData = z.infer<typeof ScheduleSourceDataSchema>;
+// export type NoteJobData = z.infer<typeof NoteJobDataSchema>;
+// export type ParseHtmlData = z.infer<typeof ParseHtmlDataSchema>;
+// export type ParsedHtmlFile = z.infer<typeof ParsedHtmlFileSchema>;
+// export type SaveNoteData = z.infer<typeof SaveNoteDataSchema>;
+// export type Note = z.infer<typeof NoteSchema>;
+// export type ScheduleActionData = z.infer<typeof ScheduleActionDataSchema>;
+// export type ScheduleCategorizationData = z.infer<
+//   typeof ScheduleCategorizationDataSchema
+// >;
+// export type ScheduleImagesData = z.infer<typeof ScheduleImagesDataSchema>;
+// export type ScheduleIngredientsData = z.infer<
+//   typeof ScheduleIngredientsDataSchema
+// >;
+// export type ScheduleInstructionsData = z.infer<
+//   typeof ScheduleInstructionsDataSchema
+// >;
+// export type ScheduleSourceData = z.infer<typeof ScheduleSourceDataSchema>;

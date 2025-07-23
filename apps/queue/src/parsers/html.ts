@@ -1,13 +1,14 @@
-import { load, CheerioAPI, Cheerio } from "cheerio";
-import { Element } from "domhandler";
+import { Cheerio, CheerioAPI, load } from "cheerio";
 import { parseISO } from "date-fns";
-import { PROCESSING_CONSTANTS, LOG_MESSAGES } from "../config/constants";
-import { formatLogMessage } from "../utils/utils";
+import { Element } from "domhandler";
+
+import { LOG_MESSAGES, PROCESSING_CONSTANTS } from "../config/constants";
 import {
-  ParsedHTMLFile,
   ParsedIngredientLine,
   ParsedInstructionLine,
 } from "../types";
+import type { ParsedHTMLFile } from "@peas/database";
+import { formatLogMessage } from "../utils/utils";
 
 /**
  * HTML parsing constants
@@ -47,7 +48,7 @@ const HTML_PARSING_CONSTANTS = {
 /**
  * Interface for parsing options
  */
-interface HTMLParsingOptions {
+export interface HTMLParsingOptions {
   /** Whether to include performance measurement */
   measurePerformance?: boolean;
   /** Logger function for debugging */
@@ -61,7 +62,7 @@ interface HTMLParsingOptions {
  * @param options - Parsing options
  * @returns ParsedHTMLFile with extracted data
  */
-export function parseHTML(
+export function parseHTMLContent(
   note: string,
   options: HTMLParsingOptions = {}
 ): ParsedHTMLFile {
@@ -303,18 +304,4 @@ function isInstructionLine(contents: string[], lineIndex: number): boolean {
       : HTML_PARSING_CONSTANTS.DEFAULTS.EMPTY_STRING;
 
   return isEmptyLine(prevLine) && isEmptyLine(nextLine);
-}
-
-/**
- * Parse HTML with performance measurement (convenience function)
- */
-export async function parseHTMLWithPerformance(
-  note: string,
-  logger?: (message: string) => void
-): Promise<ParsedHTMLFile> {
-  const result = parseHTML(note, { measurePerformance: true, logger });
-  if (result instanceof Promise) {
-    return result;
-  }
-  return Promise.resolve(result);
 }

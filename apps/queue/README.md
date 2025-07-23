@@ -21,6 +21,140 @@ The system is built around **actions** - small, focused units of work that can b
 - **Caching**: In-memory caching for expensive operations
 - **Metrics**: Built-in performance monitoring and metrics collection
 
+## 🎨 Architecture Patterns
+
+### Service-Action Separation Pattern
+
+The system follows a clear separation of concerns between **Services** (business logic) and **Actions** (orchestration):
+
+```text
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   Note Queue    │───▶│  CleanHtmlAction │───▶│  ParseHtmlAction│
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+                              │                         │
+                              ▼                         ▼
+                       ┌─────────────┐         ┌─────────────┐
+                       │cleanHtmlFile│         │parseHtmlFile│
+                       └─────────────┘         └─────────────┘
+                              │                         │
+                              ▼                         ▼
+                       ┌─────────────┐         ┌─────────────┐
+                       │ HTML Utils  │         │parseHTMLContent│
+                       └─────────────┘         └─────────────┘
+```
+
+#### Service Layer (`cleanHtmlFile`, `parseHtmlFile`)
+
+- **Purpose**: Pure business logic functions
+- **Responsibilities**:
+  - Process data and return enriched results
+  - Accept dependencies as parameters
+  - No orchestration or status broadcasting
+- **Location**: `src/services/actions/{domain}/`
+- **Naming**: `{actionName}File` (e.g., `parseHtmlFile`, `cleanHtmlFile`)
+
+#### Action Layer (`CleanHtmlAction`, `ParseHtmlAction`)
+
+- **Purpose**: Orchestration and coordination
+- **Responsibilities**:
+  - Call services from dependencies
+  - Handle status broadcasting
+  - Manage validation and error reporting
+  - Coordinate between multiple services
+- **Location**: `src/services/actions/{domain}/`
+- **Naming**: `{ActionName}Action` (e.g., `ParseHtmlAction`, `CleanHtmlAction`)
+
+### Dependency Injection Pattern
+
+Dependencies are injected at the worker level and passed down through the action pipeline:
+
+```typescript
+// Dependencies are built at the worker level
+export function buildNoteWorkerDependencies(
+  container: IServiceContainer
+): NoteWorkerDependencies {
+  const baseDeps = buildBaseDependencies(container);
+
+  return {
+    ...baseDeps,
+    services: {
+      cleanHtml: async (data: NotePipelineData) =>
+        cleanHtmlFile(data, baseDeps.logger),
+      parseHtml: async (data: NotePipelineData) =>
+        parseHtmlFile(data, baseDeps.logger, parseHTMLContent),
+    },
+  };
+}
+
+// Services receive dependencies as parameters
+export async function parseHtmlFile(
+  data: NotePipelineData,
+  logger: StructuredLogger,
+  parseHTMLContent: (
+    content: string,
+    options?: HTMLParsingOptions
+  ) => ParsedHTMLFile
+): Promise<NotePipelineData> {
+  // Business logic here
+}
+```
+
+### Naming Conventions
+
+#### Function Naming
+
+- **Parser Functions**: `parseHTMLContent` (the actual parser)
+- **Service Functions**: `parseHtmlFile`, `cleanHtmlFile` (business logic)
+- **Action Classes**: `ParseHtmlAction`, `CleanHtmlAction` (orchestration)
+
+#### File Naming
+
+- **Service Files**: `parse-html.ts`, `clean-html.ts`
+- **Type Files**: `types.ts`
+- **Schema Files**: `schema.ts`
+- **Registration Files**: `register.ts`
+
+#### Type Naming
+
+- **Pipeline Data**: `NotePipelineData` (single source of truth)
+- **Worker Dependencies**: `NoteWorkerDependencies`
+- **Action Types**: `NotePipelineAction`
+
+### Type Safety Patterns
+
+#### Single Source of Truth
+
+```typescript
+// NotePipelineData is the single source of truth for all note processing
+export interface NotePipelineData {
+  content: string;
+  importId?: string;
+  noteId?: string;
+  source?: SourceInfo;
+  options?: ProcessingOptions;
+  metadata?: JobMetadata;
+  createdAt?: Date;
+  priority?: number;
+  timeout?: number;
+
+  // Pipeline stage data (added by actions)
+  file?: ParsedHTMLFile;
+  note?: NoteWithParsedLines;
+}
+```
+
+#### Consistent Interfaces
+
+```typescript
+// All services follow the same pattern
+export interface NoteWorkerDependencies extends BaseWorkerDependencies {
+  services: {
+    parseHtml: (data: NotePipelineData) => Promise<NotePipelineData>;
+    cleanHtml: (data: NotePipelineData) => Promise<NotePipelineData>;
+  };
+}
+```
+
 ## 📁 Project Structure
 
 ```text
@@ -48,11 +182,22 @@ apps/queue/
 │   │   │   │   ├── types.ts       # Action types
 │   │   │   │   └── index.ts       # Core action exports
 │   │   │   ├── note/       # Note processing actions
+│   │   │   │   ├── clean-html.ts  # CleanHtmlAction + cleanHtmlFile service
+│   │   │   │   ├── parse-html.ts  # ParseHtmlAction + parseHtmlFile service
+│   │   │   │   ├── save-note.ts   # SaveNoteAction (commented out)
+│   │   │   │   ├── types.ts       # Note-specific types
+│   │   │   │   ├── schema.ts      # Validation schemas
+│   │   │   │   ├── register.ts    # Action registration
+│   │   │   │   └── index.ts       # Note action exports
 │   │   │   ├── ingredient/ # Ingredient processing actions
 │   │   │   ├── instruction/# Instruction processing actions
 │   │   │   ├── image/      # Image processing actions
 │   │   │   ├── categorization/ # Categorization actions
 │   │   │   └── index.ts    # Action exports
+│   │   ├── note/           # Note worker implementation
+│   │   │   ├── dependencies.ts   # Dependency injection
+│   │   │   ├── types.ts          # Worker-specific types
+│   │   │   └── index.ts          # Worker exports
 │   │   ├── note-worker.ts         # Note processing worker
 │   │   ├── ingredient-worker.ts   # Ingredient processing worker
 │   │   ├── instruction-worker.ts  # Instruction processing worker
@@ -64,6 +209,8 @@ apps/queue/
 │   ├── routes/             # Express route handlers
 │   ├── config/             # Configuration files
 │   ├── parsers/            # HTML and content parsing
+│   │   ├── html.ts         # parseHTMLContent function
+│   │   └── __tests__/      # Parser tests
 │   ├── utils/              # Utility modules
 │   │   ├── error-handler.ts
 │   │   ├── health-monitor.ts
@@ -215,6 +362,7 @@ export function registerMyActions(factory: ActionFactory) {
 
 ```typescript
 import { createNoteWorker } from "./workers";
+
 import { noteQueue } from "../queues/note";
 
 // Create worker with automatic dependency injection
@@ -232,14 +380,41 @@ await noteWorker.close();
 The note worker executes this optimized pipeline:
 
 1. **Broadcast Processing Status** (automatic if noteId exists)
-2. **Parse HTML** (with caching, retry + error handling)
-3. **Save Note** (with retry + error handling)
-4. **Schedule Follow-up Tasks** (with error handling only):
-   - Categorization
-   - Image processing
-   - Ingredient extraction
-   - Instruction extraction
-5. **Broadcast Completion Status** (automatic if noteId exists)
+2. **Clean HTML** (with caching, retry + error handling)
+3. **Parse HTML** (with caching, retry + error handling)
+4. **Broadcast Completion Status** (automatic if noteId exists)
+
+### Current Pipeline (Clean + Parse Focus)
+
+```typescript
+// Current pipeline focuses on core HTML processing
+const pipeline = [
+  // 1. Clean HTML content
+  this.createWrappedAction("clean_html", this.dependencies),
+
+  // 2. Parse HTML into structured data
+  this.createWrappedAction("parse_html", this.dependencies),
+];
+```
+
+### Future Pipeline (When Save is Re-enabled)
+
+```typescript
+// Future pipeline will include save and scheduling
+const pipeline = [
+  // 1. Clean HTML content
+  this.createWrappedAction("clean_html", this.dependencies),
+
+  // 2. Parse HTML into structured data
+  this.createWrappedAction("parse_html", this.dependencies),
+
+  // 3. Save note to database
+  this.createWrappedAction("save_note", this.dependencies),
+
+  // 4. Schedule follow-up tasks
+  this.createWrappedAction("schedule_tasks", this.dependencies),
+];
+```
 
 ## 🔄 Shared Actions
 
@@ -479,6 +654,7 @@ The note worker is designed to work with the existing queue system:
 ```typescript
 // In apps/queue/src/queues/note.ts
 import { createQueue } from "./createQueue";
+
 export const noteQueue = createQueue("noteQueue");
 
 // The worker automatically connects to this queue

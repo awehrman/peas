@@ -2,6 +2,7 @@
  * Wraps a BaseAction with error handling logic.
  * Catches errors and delegates to the action's onError handler or logs by default.
  */
+import { ActionName } from "../../../types";
 import type { BaseJobData } from "../../types";
 import { BaseAction } from "../base-action";
 import type { ActionContext } from "../types";
@@ -10,13 +11,13 @@ export class ErrorHandlingAction<
   TData extends BaseJobData = BaseJobData,
   TDeps extends object = object,
 > extends BaseAction<TData, TDeps> {
-  public name: string;
+  public name: ActionName;
   private wrappedAction: BaseAction<TData, TDeps>;
 
   constructor(action: BaseAction<TData, TDeps>) {
     super();
     this.wrappedAction = action;
-    this.name = `error_handling_wrapper(${action.name})`;
+    this.name = ActionName.ERROR_HANDLING;
   }
 
   async execute(

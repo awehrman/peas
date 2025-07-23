@@ -1,9 +1,6 @@
 import { Queue } from "bullmq";
 
-/**
- * Log levels for structured logging
- */
-export type LogLevel = "debug" | "info" | "warn" | "error" | "fatal";
+import type { LogLevel } from "../../types";
 
 /**
  * Base interface for job data - all job data should extend this

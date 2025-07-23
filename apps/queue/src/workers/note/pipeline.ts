@@ -1,44 +1,46 @@
-import type {
-  NotePipelineAction,
-  NoteWorkerDependencies,
-} from "../../services/actions/note/types";
 import { ActionName } from "../../types";
+import type {
+  NotePipelineData,
+  NoteWorkerDependencies,
+} from "../../types/notes";
+import type { ActionFactory } from "../core/action-factory";
+import type { ActionContext, WorkerAction } from "../core/types";
 
 /**
- * Creates the action pipeline for note processing.
- * @param ctx - Context with action creation helpers and dependencies
+ * Creates the action pipeline for note processing using the factory approach.
+ * @param actionFactory - The action factory to create actions
+ * @param dependencies - Worker dependencies
+ * @param data - Pipeline data to determine conditional actions
+ * @param context - Action context
  * @returns Array of note pipeline actions
  */
-export function createNotePipeline(ctx: {
-  createWrappedAction: (
-    name: string,
-    deps: NoteWorkerDependencies
-  ) => NotePipelineAction;
-  createErrorHandledAction: (
-    name: string,
-    deps: NoteWorkerDependencies
-  ) => NotePipelineAction;
-  dependencies: NoteWorkerDependencies;
-}): NotePipelineAction[] {
-  const { createWrappedAction, createErrorHandledAction, dependencies } = ctx;
-  const actions: NotePipelineAction[] = [];
+export function createNotePipeline(
+  actionFactory: ActionFactory<
+    NotePipelineData,
+    NoteWorkerDependencies,
+    NotePipelineData
+  >,
+  dependencies: NoteWorkerDependencies,
+  data: NotePipelineData,
+  _context: ActionContext
+): WorkerAction<NotePipelineData, NoteWorkerDependencies, NotePipelineData>[] {
+  const actions: WorkerAction<
+    NotePipelineData,
+    NoteWorkerDependencies,
+    NotePipelineData
+  >[] = [];
 
-  // 1. Clean HTML (remove style and icons tags)
-  actions.push(createWrappedAction(ActionName.CLEAN_HTML, dependencies));
+  // Always start with clean and parse
+  actions.push(actionFactory.create(ActionName.CLEAN_HTML, dependencies));
 
-  // 2. Parse HTML (with retry and error handling)
-  actions.push(createWrappedAction(ActionName.PARSE_HTML, dependencies));
+  actions.push(actionFactory.create(ActionName.PARSE_HTML, dependencies));
 
-  // 3. Save note (with retry and error handling)
-  actions.push(createWrappedAction(ActionName.SAVE_NOTE, dependencies));
-
-  // 4. Schedule all follow-up processing tasks concurrently
-  actions.push(
-    createErrorHandledAction(
-      ActionName.SCHEDULE_ALL_FOLLOWUP_TASKS,
-      dependencies
-    )
-  );
+  // Conditionally add follow-up tasks based on options
+  if (!data.options?.skipFollowupTasks) {
+    // For now, we'll add a placeholder for follow-up tasks
+    // This can be expanded when we implement the actual scheduling actions
+    console.log("[PIPELINE] Follow-up tasks would be scheduled here");
+  }
 
   return actions;
 }
