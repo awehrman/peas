@@ -219,7 +219,7 @@ initializeApp()
     app.use("/performance", performanceRouter); // Performance monitoring endpoints
 
     // 404 handler
-    app.use("*", (req, res) => {
+    app.use((req, res) => {
       res.status(HttpStatus.NOT_FOUND).json({
         error: "Not Found",
         message: `Route ${req.method} ${req.originalUrl} not found`,
@@ -270,6 +270,7 @@ initializeApp()
     };
 
     // Start the server
+
     const server = app.listen(serviceContainer.config.port, () => {
       serviceContainer.logger.log(
         `🚀 Server running on port ${serviceContainer.config.port}`,
@@ -287,6 +288,8 @@ initializeApp()
         `📡 WebSocket server starting on port ${serviceContainer.config.wsPort}`,
         "info"
       );
+      serviceContainer.logger.log("TEST: Logger file output check", "info");
+      console.log("[LOGGER CONFIG]", serviceContainer.logger);
     });
 
     // Initialize WebSocket server using factory

@@ -1,4 +1,5 @@
 import { z } from "zod";
+
 import { createLogger } from "../utils/standardized-logger";
 
 // ============================================================================
@@ -111,7 +112,9 @@ export interface AppConfig extends BaseConfig {
 // ============================================================================
 
 const BaseConfigSchema = z.object({
-  environment: z.enum(["development", "test", "production"]).default("development"),
+  environment: z
+    .enum(["development", "test", "production"])
+    .default("development"),
   version: z.string().default("1.0.0"),
   debug: z.boolean().default(false),
 });
@@ -119,7 +122,7 @@ const BaseConfigSchema = z.object({
 const ServerConfigSchema = BaseConfigSchema.extend({
   port: z.number().min(1).max(65535).default(3000),
   host: z.string().default("localhost"),
-  wsPort: z.number().min(1).max(65535).default(3001),
+  wsPort: z.number().min(1).max(65535).default(8080),
   wsHost: z.string().default("localhost"),
 });
 
@@ -151,7 +154,10 @@ const QueueConfigSchema = BaseConfigSchema.extend({
 
 const SecurityConfigSchema = BaseConfigSchema.extend({
   jwtSecret: z.string().min(32, "JWT secret must be at least 32 characters"),
-  apiKey: z.string().min(16, "API key must be at least 16 characters").optional(),
+  apiKey: z
+    .string()
+    .min(16, "API key must be at least 16 characters")
+    .optional(),
   rateLimitWindowMs: z.number().positive().default(900000), // 15 minutes
   rateLimitMaxRequests: z.number().positive().default(100),
   maxRequestSizeBytes: z.number().positive().default(10485760), // 10MB
@@ -230,14 +236,17 @@ export class ConfigurationManager {
           ...baseConfig,
           port: parseInt(process.env.PORT || "3000", 10),
           host: process.env.HOST || "localhost",
-          wsPort: parseInt(process.env.WS_PORT || "3001", 10),
+          wsPort: parseInt(process.env.WS_PORT || "8080", 10),
           wsHost: process.env.WS_HOST || "localhost",
         },
         database: {
           ...baseConfig,
           url: process.env.DATABASE_URL || "postgresql://localhost:5432/peas",
           maxConnections: parseInt(process.env.DB_MAX_CONNECTIONS || "10", 10),
-          connectionTimeout: parseInt(process.env.DB_CONNECTION_TIMEOUT || "30000", 10),
+          connectionTimeout: parseInt(
+            process.env.DB_CONNECTION_TIMEOUT || "30000",
+            10
+          ),
           queryTimeout: parseInt(process.env.DB_QUERY_TIMEOUT || "10000", 10),
         },
         redis: {
@@ -247,7 +256,10 @@ export class ConfigurationManager {
           username: process.env.REDISUSERNAME,
           password: process.env.REDISPASSWORD,
           database: parseInt(process.env.REDIS_DATABASE || "0", 10),
-          connectionTimeout: parseInt(process.env.REDIS_CONNECTION_TIMEOUT || "5000", 10),
+          connectionTimeout: parseInt(
+            process.env.REDIS_CONNECTION_TIMEOUT || "5000",
+            10
+          ),
           retryAttempts: parseInt(process.env.REDIS_RETRY_ATTEMPTS || "3", 10),
         },
         queue: {
@@ -261,15 +273,31 @@ export class ConfigurationManager {
         },
         security: {
           ...baseConfig,
-          jwtSecret: process.env.JWT_SECRET || "default-jwt-secret-change-in-production",
+          jwtSecret:
+            process.env.JWT_SECRET || "default-jwt-secret-change-in-production",
           apiKey: process.env.API_KEY,
-          rateLimitWindowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || "900000", 10),
-          rateLimitMaxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || "100", 10),
-          maxRequestSizeBytes: parseInt(process.env.MAX_REQUEST_SIZE_BYTES || "10485760", 10),
+          rateLimitWindowMs: parseInt(
+            process.env.RATE_LIMIT_WINDOW_MS || "900000",
+            10
+          ),
+          rateLimitMaxRequests: parseInt(
+            process.env.RATE_LIMIT_MAX_REQUESTS || "100",
+            10
+          ),
+          maxRequestSizeBytes: parseInt(
+            process.env.MAX_REQUEST_SIZE_BYTES || "10485760",
+            10
+          ),
         },
         logging: {
           ...baseConfig,
-          level: (process.env.LOG_LEVEL as "debug" | "info" | "warn" | "error" | "fatal") || "info",
+          level:
+            (process.env.LOG_LEVEL as
+              | "debug"
+              | "info"
+              | "warn"
+              | "error"
+              | "fatal") || "info",
           enableFileLogging: process.env.ENABLE_FILE_LOGGING !== "false",
           enableConsoleLogging: process.env.ENABLE_CONSOLE_LOGGING !== "false",
           logDir: process.env.LOG_DIR || "logs",
@@ -279,10 +307,22 @@ export class ConfigurationManager {
         monitoring: {
           ...baseConfig,
           enabled: process.env.MONITORING_ENABLED !== "false",
-          metricsRetentionHours: parseInt(process.env.METRICS_RETENTION_HOURS || "24", 10),
-          healthCheckIntervalMs: parseInt(process.env.HEALTH_CHECK_INTERVAL_MS || "30000", 10),
-          cleanupIntervalMs: parseInt(process.env.CLEANUP_INTERVAL_MS || "3600000", 10),
-          maxMetricsHistory: parseInt(process.env.MAX_METRICS_HISTORY || "1000", 10),
+          metricsRetentionHours: parseInt(
+            process.env.METRICS_RETENTION_HOURS || "24",
+            10
+          ),
+          healthCheckIntervalMs: parseInt(
+            process.env.HEALTH_CHECK_INTERVAL_MS || "30000",
+            10
+          ),
+          cleanupIntervalMs: parseInt(
+            process.env.CLEANUP_INTERVAL_MS || "3600000",
+            10
+          ),
+          maxMetricsHistory: parseInt(
+            process.env.MAX_METRICS_HISTORY || "1000",
+            10
+          ),
         },
       };
 
@@ -298,8 +338,12 @@ export class ConfigurationManager {
 
       return this.config;
     } catch (error) {
-      this.logger.error("Failed to load configuration", { error: error instanceof Error ? error.message : String(error) });
-      throw new Error(`Configuration validation failed: ${error instanceof Error ? error.message : String(error)}`);
+      this.logger.error("Failed to load configuration", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw new Error(
+        `Configuration validation failed: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
@@ -430,4 +474,4 @@ export function getMonitoringConfig(): MonitoringConfig {
 // EXPORTS
 // ============================================================================
 
-export default configManager; 
+export default configManager;

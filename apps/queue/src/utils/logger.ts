@@ -91,6 +91,7 @@ export class EnhancedLoggerService implements ILoggerService {
   }
 
   private writeToFile(filePath: string, content: string): void {
+    console.log("Writing to file:", filePath, content);
     try {
       fs.appendFileSync(filePath, content + "\n", "utf8");
     } catch (error) {

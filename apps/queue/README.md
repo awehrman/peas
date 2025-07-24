@@ -5,6 +5,7 @@ A high-performance, scalable queue processing service built with TypeScript, Nod
 ## 🚀 Features
 
 ### Core Functionality
+
 - **HTML File Processing**: Stream-based processing of HTML files with validation and error handling
 - **Note Parsing**: Intelligent parsing of recipe notes with metadata extraction
 - **Ingredient Processing**: Advanced ingredient line parsing with caching and pattern recognition
@@ -12,6 +13,7 @@ A high-performance, scalable queue processing service built with TypeScript, Nod
 - **Real-time Monitoring**: WebSocket-based status updates and progress tracking
 
 ### Performance & Optimization
+
 - **Performance Monitoring**: Comprehensive performance profiling and metrics collection
 - **Memory Optimization**: Memory pooling, leak detection, and garbage collection management
 - **Database Optimization**: Query caching, connection pooling, and batch operations
@@ -19,12 +21,14 @@ A high-performance, scalable queue processing service built with TypeScript, Nod
 - **Load Balancing**: Intelligent job distribution and worker scaling
 
 ### Security & Reliability
+
 - **Security Middleware**: Comprehensive security headers, CORS, rate limiting, and request validation
 - **Error Handling**: Standardized error handling with automatic recovery and retry logic
 - **Health Monitoring**: Detailed health checks for all system components
 - **Graceful Shutdown**: Proper cleanup and resource management on shutdown
 
 ### Developer Experience
+
 - **TypeScript**: Full type safety and IntelliSense support
 - **Modular Architecture**: Clean separation of concerns with dependency injection
 - **Comprehensive Logging**: Structured logging with context-aware loggers
@@ -84,12 +88,14 @@ src/
 ## 🛠️ Installation
 
 ### Prerequisites
-- Node.js 18+ 
+
+- Node.js 18+
 - Yarn package manager
 - Redis server
 - PostgreSQL database
 
 ### Setup
+
 ```bash
 # Install dependencies
 yarn install
@@ -112,7 +118,7 @@ yarn dev
 # Server Configuration
 PORT=3000
 HOST=localhost
-WS_PORT=3001
+WS_PORT=8080
 WS_HOST=localhost
 
 # Database Configuration
@@ -180,6 +186,7 @@ NODE_OPTIONS="--expose-gc" yarn start
 ### API Endpoints
 
 #### File Import
+
 ```bash
 # Import HTML files
 POST /import
@@ -190,6 +197,7 @@ GET /import/status/:importId
 ```
 
 #### Note Management
+
 ```bash
 # Get note by ID
 GET /notes/:noteId
@@ -199,6 +207,7 @@ GET /notes/:noteId/status
 ```
 
 #### Health Monitoring
+
 ```bash
 # Basic health check
 GET /health
@@ -211,6 +220,7 @@ GET /health/component/:component
 ```
 
 #### Performance Monitoring
+
 ```bash
 # Performance overview
 GET /performance/overview
@@ -229,6 +239,7 @@ GET /performance/health
 ```
 
 #### Cache Management
+
 ```bash
 # Get cache stats
 GET /cache/stats
@@ -244,29 +255,31 @@ POST /cache/invalidate
 
 ```javascript
 // Connect to WebSocket
-const ws = new WebSocket('ws://localhost:3001');
+const ws = new WebSocket("ws://localhost:8080");
 
 // Listen for status updates
 ws.onmessage = (event) => {
   const message = JSON.parse(event.data);
-  console.log('Status update:', message);
+  console.log("Status update:", message);
 };
 
 // Send ping to keep connection alive
 setInterval(() => {
-  ws.send(JSON.stringify({ type: 'ping' }));
+  ws.send(JSON.stringify({ type: "ping" }));
 }, 30000);
 ```
 
 ## 🔧 Development
 
 ### Code Style
+
 - **TypeScript**: Strict type checking enabled
 - **ESLint**: Code linting with custom rules
 - **Prettier**: Code formatting
 - **Conventional Commits**: Git commit message format
 
 ### Testing
+
 ```bash
 # Run all tests
 yarn test
@@ -279,6 +292,7 @@ yarn test:file src/workers/note/worker.test.ts
 ```
 
 ### Building
+
 ```bash
 # Build for production
 yarn build
@@ -291,6 +305,7 @@ yarn build:watch
 ```
 
 ### Database Management
+
 ```bash
 # Run migrations
 yarn db:migrate
@@ -308,6 +323,7 @@ yarn db:seed
 ## 📊 Monitoring & Observability
 
 ### Performance Metrics
+
 - **Operation Timing**: Detailed timing for all operations
 - **Memory Usage**: Heap, external, and array buffer monitoring
 - **CPU Usage**: Process and system CPU monitoring
@@ -315,6 +331,7 @@ yarn db:seed
 - **Queue Performance**: Job processing times and throughput
 
 ### Health Checks
+
 - **Database Connectivity**: Connection pool health
 - **Redis Connectivity**: Cache service health
 - **Queue Health**: Worker and job queue status
@@ -322,6 +339,7 @@ yarn db:seed
 - **System Resources**: CPU, memory, and disk usage
 
 ### Logging
+
 - **Structured Logging**: JSON-formatted logs with context
 - **Log Levels**: Debug, Info, Warn, Error, Fatal
 - **Context Awareness**: Job, worker, and component context
@@ -331,6 +349,7 @@ yarn db:seed
 ## 🔒 Security
 
 ### Security Features
+
 - **Security Headers**: Comprehensive security headers
 - **CORS Protection**: Configurable CORS policies
 - **Rate Limiting**: Request rate limiting
@@ -338,6 +357,7 @@ yarn db:seed
 - **Error Sanitization**: Safe error message handling
 
 ### Best Practices
+
 - **Environment Variables**: Secure configuration management
 - **Input Sanitization**: All inputs validated and sanitized
 - **Error Handling**: Secure error handling without information leakage
@@ -347,6 +367,7 @@ yarn db:seed
 ## 🚀 Performance Optimization
 
 ### Optimization Features
+
 - **Query Caching**: Database query result caching
 - **Memory Pooling**: Object pooling for memory efficiency
 - **Batch Operations**: Bulk database operations
@@ -354,6 +375,7 @@ yarn db:seed
 - **Garbage Collection**: Automatic memory cleanup
 
 ### Monitoring Tools
+
 - **Performance Profiling**: Automatic operation profiling
 - **Memory Leak Detection**: Automatic memory leak detection
 - **Database Optimization**: Query optimization recommendations
@@ -363,6 +385,7 @@ yarn db:seed
 ## 🤝 Contributing
 
 ### Development Setup
+
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
@@ -371,6 +394,7 @@ yarn db:seed
 6. Submit a pull request
 
 ### Code Standards
+
 - Follow TypeScript best practices
 - Write comprehensive tests
 - Use conventional commit messages
@@ -384,6 +408,7 @@ This project is licensed under the MIT License - see the [LICENSE](../LICENSE) f
 ## 🆘 Support
 
 For support and questions:
+
 - Create an issue in the repository
 - Check the documentation
 - Review the health endpoints for system status
@@ -392,6 +417,7 @@ For support and questions:
 ## 🔄 Changelog
 
 ### Recent Updates
+
 - **Performance Optimization**: Comprehensive performance monitoring and optimization systems
 - **Standardization**: Standardized logging, error handling, and configuration
 - **Security Enhancement**: Global and route-specific security middleware

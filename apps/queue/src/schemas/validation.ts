@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import { z } from "zod";
+
 import { HttpStatus } from "../types";
 
 // ============================================================================
@@ -17,7 +18,7 @@ export const EnvironmentSchema = z.object({
     .string()
     .transform((val) => parseInt(val, 10))
     .pipe(z.number().min(1).max(65535))
-    .default(3001),
+    .default(8080),
   WS_HOST: z.string().optional(),
 
   // Database configuration

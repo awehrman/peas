@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { z } from "zod";
+
 import { HttpStatus } from "../types";
 
 // ============================================================================
@@ -222,7 +223,7 @@ export const CommonValidations = {
 export function validateEnvironment() {
   const envSchema = z.object({
     PORT: z.coerce.number().min(1).max(65535).default(3000),
-    WS_PORT: z.coerce.number().min(1).max(65535).default(3001),
+    WS_PORT: z.coerce.number().min(1).max(65535).default(8080),
     WS_HOST: z.string().optional(),
     DATABASE_URL: z.string().url("Invalid database URL"),
     REDIS_HOST: z.string().default("localhost"),

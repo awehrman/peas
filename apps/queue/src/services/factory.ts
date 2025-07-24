@@ -8,11 +8,8 @@ import type {
 } from "./container";
 
 import { ManagerFactory } from "../config/factory";
-import type {
-  LoggerMetadata,
-  OperationContext,
-  StatusEventData,
-} from "../types/common";
+import type { OperationContext, StatusEventData } from "../types/common";
+import { createLogger } from "../utils/logger";
 
 // ============================================================================
 // SERVICE FACTORY CLASS
@@ -62,11 +59,7 @@ export class ServiceFactory {
    * @returns ILoggerService instance
    */
   static createLoggerService(): ILoggerService {
-    return {
-      log: (message: string, level = "info", meta?: LoggerMetadata) => {
-        console.log(`[${level.toUpperCase()}] ${message}`, meta);
-      },
-    };
+    return createLogger();
   }
 
   /**
@@ -178,6 +171,6 @@ class ConfigService implements IConfigService {
   }
 
   get wsPort(): number {
-    return parseInt(process.env.WS_PORT || "3001", 10);
+    return parseInt(process.env.WS_PORT || "8080", 10);
   }
 }
