@@ -4,7 +4,6 @@ import { PrismaClient } from "@peas/database";
 import { Queue, Worker } from "bullmq";
 
 import type {
-  ConfigData,
   DatabaseResult,
   JobMetadata,
   LoggerMetadata,
@@ -12,6 +11,7 @@ import type {
   StatusEventData,
 } from "../types/common";
 import { HealthMonitor } from "../utils/health-monitor";
+import type { WebSocketManager } from "../websocket-server";
 
 // ============================================================================
 // SERVICE INTERFACES
@@ -124,7 +124,7 @@ export interface IHealthMonitorService {
  * WebSocket service interface
  */
 export interface IWebSocketService {
-  webSocketManager: ConfigData | null;
+  webSocketManager: WebSocketManager | null;
 }
 
 /**

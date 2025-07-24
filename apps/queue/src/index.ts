@@ -292,8 +292,12 @@ initializeApp()
       console.log("[LOGGER CONFIG]", serviceContainer.logger);
     });
 
-    // Initialize WebSocket server using factory
+    // Initialize WebSocket server using factory BEFORE starting workers
     ManagerFactory.createWebSocketManager(serviceContainer.config.wsPort);
+    serviceContainer.logger.log(
+      `🔌 WebSocket manager initialized on port ${serviceContainer.config.wsPort}`,
+      "info"
+    );
 
     // Start workers
     startWorkers(serviceContainer.queues, serviceContainer);

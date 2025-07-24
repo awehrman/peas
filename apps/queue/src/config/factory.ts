@@ -1,8 +1,12 @@
 import { CacheManager } from "./cache";
 import { DatabaseManager } from "./database-manager";
+
 import { HealthMonitor } from "../utils/health-monitor";
 import { MetricsCollector } from "../utils/metrics";
-import { WebSocketManager } from "../websocket-server";
+import {
+  WebSocketManager,
+  initializeWebSocketServer,
+} from "../websocket-server";
 
 // ============================================================================
 // MANAGER FACTORY CLASS
@@ -22,11 +26,12 @@ export class ManagerFactory {
    */
   static createWebSocketManager(port: number = 8080): WebSocketManager {
     const key = `websocket-${port}`;
-    
+
     if (!this.managers.has(key)) {
-      this.managers.set(key, new WebSocketManager(port));
+      // Use the singleton pattern to ensure consistency
+      this.managers.set(key, initializeWebSocketServer(port));
     }
-    
+
     return this.managers.get(key) as WebSocketManager;
   }
 
@@ -36,11 +41,11 @@ export class ManagerFactory {
    */
   static createDatabaseManager(): DatabaseManager {
     const key = "database";
-    
+
     if (!this.managers.has(key)) {
       this.managers.set(key, DatabaseManager.getInstance());
     }
-    
+
     return this.managers.get(key) as DatabaseManager;
   }
 
@@ -50,11 +55,11 @@ export class ManagerFactory {
    */
   static createCacheManager(): CacheManager {
     const key = "cache";
-    
+
     if (!this.managers.has(key)) {
       this.managers.set(key, CacheManager.getInstance());
     }
-    
+
     return this.managers.get(key) as CacheManager;
   }
 
@@ -64,11 +69,11 @@ export class ManagerFactory {
    */
   static createHealthMonitor(): HealthMonitor {
     const key = "health";
-    
+
     if (!this.managers.has(key)) {
       this.managers.set(key, HealthMonitor.getInstance());
     }
-    
+
     return this.managers.get(key) as HealthMonitor;
   }
 
@@ -78,11 +83,11 @@ export class ManagerFactory {
    */
   static createMetricsCollector(): MetricsCollector {
     const key = "metrics";
-    
+
     if (!this.managers.has(key)) {
       this.managers.set(key, MetricsCollector.getInstance());
     }
-    
+
     return this.managers.get(key) as MetricsCollector;
   }
 
@@ -109,4 +114,4 @@ export class ManagerFactory {
   static getManagerTypes(): string[] {
     return Array.from(this.managers.keys());
   }
-} 
+}

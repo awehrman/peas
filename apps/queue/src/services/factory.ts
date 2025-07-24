@@ -7,9 +7,13 @@ import type {
   IWebSocketService,
 } from "./container";
 
+import type { NoteStatus } from "@peas/database";
+
 import { ManagerFactory } from "../config/factory";
 import type { OperationContext, StatusEventData } from "../types/common";
 import { createLogger } from "../utils/logger";
+import { addStatusEventAndBroadcast } from "../utils/status-broadcaster";
+import { getWebSocketManager } from "../websocket-server";
 
 // ============================================================================
 // SERVICE FACTORY CLASS
@@ -140,19 +144,50 @@ class HealthMonitorService implements IHealthMonitorService {
  * WebSocket service implementation
  */
 class WebSocketService implements IWebSocketService {
-  webSocketManager = null;
+  get webSocketManager() {
+    const manager = getWebSocketManager();
+    console.log("[WebSocketService] Getting manager:", {
+      managerExists: !!manager,
+      managerType: manager ? manager.constructor.name : "null",
+    });
+    return manager;
+  }
 }
 
 /**
  * Status broadcaster service implementation
  */
 class StatusBroadcasterService implements IStatusBroadcasterService {
-  addStatusEventAndBroadcast = async (_event: StatusEventData) => {
-    return Promise.resolve({
-      success: true,
-      count: 1,
-      operation: "broadcast_status_event",
-    });
+  addStatusEventAndBroadcast = async (event: StatusEventData) => {
+    try {
+      // Convert StatusEventData to the format expected by addStatusEventAndBroadcast
+      const result = await addStatusEventAndBroadcast({
+        importId: event.importId || "",
+        noteId: event.noteId,
+        status: event.status as NoteStatus,
+        message: event.message,
+        context: event.context,
+        currentCount: event.currentCount as number | undefined,
+        totalCount: event.totalCount as number | undefined,
+        indentLevel: event.indentLevel as number | undefined,
+        metadata: event.metadata,
+      });
+
+      return {
+        success: true,
+        count: 1,
+        operation: "broadcast_status_event",
+        data: result,
+      };
+    } catch (error) {
+      console.error("❌ StatusBroadcasterService failed:", error);
+      return {
+        success: false,
+        count: 0,
+        operation: "broadcast_status_event",
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
   };
 }
 

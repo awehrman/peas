@@ -1,7 +1,6 @@
-import { WebSocketServer, WebSocket } from "ws";
-import { randomUUID } from "crypto";
-
 import type { NoteStatus } from "@peas/database";
+import { randomUUID } from "crypto";
+import { WebSocket, WebSocketServer } from "ws";
 
 interface StatusEvent {
   type: "status_update";
@@ -185,6 +184,12 @@ export function getWebSocketManager(): WebSocketManager | null {
 
 export function broadcastStatusEvent(event: StatusEvent["data"]) {
   const manager = getWebSocketManager();
+  console.log("[broadcastStatusEvent] Manager state:", {
+    managerExists: !!manager,
+    managerType: manager ? manager.constructor.name : "null",
+    event: event,
+  });
+
   if (manager) {
     manager.broadcastStatusEvent(event);
   } else {

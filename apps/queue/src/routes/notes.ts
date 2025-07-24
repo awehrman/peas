@@ -17,14 +17,13 @@ notesRouter.post("/", async (req: Request, res: Response) => {
 
   // Generate a temporary importId for frontend grouping
   const importId = `${randomUUID()}`;
-  console.log("importId", importId);
 
   const serviceContainer = await ServiceContainer.getInstance();
   const noteQueue = serviceContainer.queues.noteQueue;
 
   await noteQueue.add(ActionName.PARSE_HTML, {
     content,
-    metadata: { importId },
+    importId,
   });
   res.json({ queued: true, importId });
 });
