@@ -29,7 +29,6 @@ export default defineConfig({
       exclude: [
         "node_modules/",
         "dist/",
-        "src/test-utils/test-setup.ts",
         "**/*.d.ts",
         "**/*.config.*",
         "**/coverage/**",

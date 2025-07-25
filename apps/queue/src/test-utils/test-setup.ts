@@ -62,3 +62,8 @@ afterAll(() => {
   // Any global cleanup after tests
   // console.log("🧹 Cleaning up test environment...");
 });
+
+// Export a function that can be called to verify setup
+export function verifyTestSetup(): boolean {
+  return process.env.NODE_ENV === "test";
+}
