@@ -1,4 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { createTestEnvironment } from "../../test-utils/test-utils";
 
 // Mock PrismaClient and @peas/database
 const disconnectMock = vi.fn();
@@ -9,13 +11,19 @@ vi.mock("@peas/database", () => ({
   PrismaClient: MockPrismaClient,
 }));
 
-// Clear mocks and require cache before each test
-beforeEach(() => {
-  vi.resetModules();
-  disconnectMock.mockClear();
-});
-
 describe("database.ts", () => {
+  let testEnv: ReturnType<typeof createTestEnvironment>;
+
+  // Clear mocks and require cache before each test
+  beforeEach(() => {
+    testEnv = createTestEnvironment();
+    vi.resetModules();
+    disconnectMock.mockClear();
+  });
+
+  afterEach(() => {
+    testEnv.restore();
+  });
   it("should export a PrismaClient instance", async () => {
     const mod = await import("../database");
     expect(mod.prisma).toBeInstanceOf(MockPrismaClient);
@@ -40,8 +48,7 @@ describe("database.ts", () => {
     const exitSpy = vi
       .spyOn(process, "exit")
       .mockImplementation(() => undefined as never);
-    const oldEnv = process.env.NODE_ENV;
-    process.env.NODE_ENV = "production";
+    testEnv.setEnv({ NODE_ENV: "production" });
     await import("../database");
     const handlerCall = processOnSpy.mock.calls.find(
       ([event]) => event === "SIGINT"
@@ -51,7 +58,6 @@ describe("database.ts", () => {
     await handler();
     expect(disconnectMock).toHaveBeenCalled();
     expect(exitSpy).toHaveBeenCalledWith(0);
-    process.env.NODE_ENV = oldEnv;
     processOnSpy.mockRestore();
     exitSpy.mockRestore();
   });
@@ -61,8 +67,7 @@ describe("database.ts", () => {
     const exitSpy = vi
       .spyOn(process, "exit")
       .mockImplementation(() => undefined as never);
-    const oldEnv = process.env.NODE_ENV;
-    process.env.NODE_ENV = "production";
+    testEnv.setEnv({ NODE_ENV: "production" });
     await import("../database");
     const handlerCall = processOnSpy.mock.calls.find(
       ([event]) => event === "SIGTERM"
@@ -72,7 +77,6 @@ describe("database.ts", () => {
     await handler();
     expect(disconnectMock).toHaveBeenCalled();
     expect(exitSpy).toHaveBeenCalledWith(0);
-    process.env.NODE_ENV = oldEnv;
     processOnSpy.mockRestore();
     exitSpy.mockRestore();
   });
@@ -82,8 +86,7 @@ describe("database.ts", () => {
     const exitSpy = vi
       .spyOn(process, "exit")
       .mockImplementation(() => undefined as never);
-    const oldEnv = process.env.NODE_ENV;
-    process.env.NODE_ENV = "test";
+    testEnv.setEnv({ NODE_ENV: "test" });
     await import("../database");
     const sigintHandlerCall = processOnSpy.mock.calls.find(
       ([event]) => event === "SIGINT"
@@ -99,7 +102,6 @@ describe("database.ts", () => {
     await sigtermHandler();
     expect(disconnectMock).toHaveBeenCalledTimes(2);
     expect(exitSpy).not.toHaveBeenCalled();
-    process.env.NODE_ENV = oldEnv;
     processOnSpy.mockRestore();
     exitSpy.mockRestore();
   });

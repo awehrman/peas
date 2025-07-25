@@ -1,5 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import {
+  createConsoleSpies,
+  createTestEnvironment,
+} from "../../test-utils/test-utils";
+
 // Mocks
 vi.mock("dotenv", () => ({ config: vi.fn() }));
 vi.mock("find-up", () => ({ findUpSync: vi.fn() }));
@@ -7,24 +12,18 @@ vi.mock("find-up", () => ({ findUpSync: vi.fn() }));
 const DUMMY_ENV_PATH = "/some/path/.env.local";
 
 describe("load-env.ts", () => {
-  let originalEnv: Record<string, string | undefined>;
-  let logSpy: ReturnType<typeof vi.spyOn>;
-  let warnSpy: ReturnType<typeof vi.spyOn>;
-  let errorSpy: ReturnType<typeof vi.spyOn>;
+  let testEnv: ReturnType<typeof createTestEnvironment>;
+  let consoleSpies: ReturnType<typeof createConsoleSpies>;
 
   beforeEach(() => {
-    originalEnv = { ...process.env };
-    logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-    warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-    errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    testEnv = createTestEnvironment();
+    consoleSpies = createConsoleSpies();
     vi.resetModules();
   });
 
   afterEach(() => {
-    process.env = { ...originalEnv };
-    logSpy.mockRestore();
-    warnSpy.mockRestore();
-    errorSpy.mockRestore();
+    testEnv.restore();
+    consoleSpies.restore();
     vi.clearAllMocks();
   });
 
@@ -47,10 +46,10 @@ describe("load-env.ts", () => {
 
     expect(findUpSync).toHaveBeenCalledWith(".env.local", expect.any(Object));
     expect(config).toHaveBeenCalledWith({ path: DUMMY_ENV_PATH, quiet: true });
-    expect(logSpy).toHaveBeenCalledWith(
+    expect(consoleSpies.logSpy).toHaveBeenCalledWith(
       `[env] Loading environment from: ${DUMMY_ENV_PATH}`
     );
-    expect(logSpy).toHaveBeenCalledWith(
+    expect(consoleSpies.logSpy).toHaveBeenCalledWith(
       "[env] Environment variables loaded:",
       expect.objectContaining({
         NODE_ENV: "test",
@@ -69,7 +68,7 @@ describe("load-env.ts", () => {
 
     await import("../load-env");
 
-    expect(warnSpy).toHaveBeenCalledWith(
+    expect(consoleSpies.warnSpy).toHaveBeenCalledWith(
       "[env] No .env.local file found in parent directories"
     );
   });
@@ -82,7 +81,7 @@ describe("load-env.ts", () => {
 
     await import("../load-env");
 
-    expect(errorSpy).toHaveBeenCalledWith(
+    expect(consoleSpies.errorSpy).toHaveBeenCalledWith(
       expect.stringContaining("[env] Error loading environment variables:"),
       expect.any(Error)
     );
@@ -104,7 +103,7 @@ describe("load-env.ts", () => {
 
     await import("../load-env");
 
-    expect(logSpy).toHaveBeenCalledWith(
+    expect(consoleSpies.logSpy).toHaveBeenCalledWith(
       "[env] Environment variables loaded:",
       expect.objectContaining({
         NODE_ENV: undefined,

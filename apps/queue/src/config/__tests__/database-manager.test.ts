@@ -1,32 +1,24 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { setupTestEnvironment } from "../../test-utils/test-utils";
+import { createMockPrismaClient, createTestEnvironment, setupTestEnvironment } from "../../test-utils/test-utils";
 import type { DatabaseManager } from "../database-manager";
 
 // Mock Prisma client
+const mockPrismaClient = createMockPrismaClient();
 vi.mock("../database", () => ({
-  prisma: {
-    $queryRaw: vi.fn(),
-    $executeRaw: vi.fn(),
-    $disconnect: vi.fn(),
-  },
+  prisma: mockPrismaClient,
 }));
 
 describe("DatabaseManager", () => {
   let databaseManager: DatabaseManager;
   let testEnv: ReturnType<typeof setupTestEnvironment>;
-  let mockPrisma: {
-    $queryRaw: ReturnType<typeof vi.fn>;
-    $executeRaw: ReturnType<typeof vi.fn>;
-    $disconnect: ReturnType<typeof vi.fn>;
-  };
+  let envTestEnv: ReturnType<typeof createTestEnvironment>;
+  let mockPrisma: ReturnType<typeof createMockPrismaClient>;
 
   beforeEach(async () => {
     testEnv = setupTestEnvironment();
-
-    // Get the mocked Prisma client
-    const { prisma } = await import("../database");
-    mockPrisma = prisma as unknown as typeof mockPrisma;
+    envTestEnv = createTestEnvironment();
+    mockPrisma = mockPrismaClient;
 
     // Clear all mocks
     vi.clearAllMocks();
@@ -37,6 +29,7 @@ describe("DatabaseManager", () => {
 
   afterEach(() => {
     testEnv.cleanup();
+    envTestEnv.restore();
     vi.clearAllMocks();
     vi.useRealTimers();
   });
@@ -98,8 +91,7 @@ describe("DatabaseManager", () => {
     });
 
     it("should log health check results in development", async () => {
-      const originalEnv = process.env.NODE_ENV;
-      process.env.NODE_ENV = "development";
+      envTestEnv.setEnv({ NODE_ENV: "development" });
 
       const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
       mockPrisma.$queryRaw.mockResolvedValue([{ "1": 1 }]);
@@ -111,7 +103,6 @@ describe("DatabaseManager", () => {
       );
 
       consoleSpy.mockRestore();
-      process.env.NODE_ENV = originalEnv;
     });
   });
 

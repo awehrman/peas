@@ -1,12 +1,116 @@
 import type { Queue, Worker } from "bullmq";
+// ============================================================================
+// EXPRESS TEST UTILITIES
+// ============================================================================
+
+import type { NextFunction, Request, Response } from "express";
 import { expect, vi } from "vitest";
 
 import type { NotePipelineData } from "../types/notes";
 import type { ActionContext } from "../workers/core/types";
 
 // ============================================================================
-// TEST UTILITIES
+// ENVIRONMENT TEST UTILITIES
 // ============================================================================
+
+/**
+ * Create a test environment manager for handling process.env changes
+ */
+export function createTestEnvironment() {
+  const originalEnv: Record<string, string | undefined> = { ...process.env };
+
+  return {
+    /**
+     * Set environment variables for testing
+     */
+    setEnv: (envVars: Record<string, string | undefined>) => {
+      Object.assign(process.env, envVars);
+    },
+
+    /**
+     * Restore original environment variables
+     */
+    restore: () => {
+      process.env = { ...originalEnv };
+    },
+
+    /**
+     * Get the original environment backup
+     */
+    getOriginalEnv: () => ({ ...originalEnv }),
+  };
+}
+
+// ============================================================================
+// CONSOLE SPY UTILITIES
+// ============================================================================
+
+/**
+ * Create console spies for testing console output
+ */
+export function createConsoleSpies() {
+  const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+  const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+  const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+  const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+  return {
+    logSpy,
+    warnSpy,
+    errorSpy,
+    infoSpy,
+    /**
+     * Restore all console spies
+     */
+    restore: () => {
+      logSpy.mockRestore();
+      warnSpy.mockRestore();
+      errorSpy.mockRestore();
+      infoSpy.mockRestore();
+    },
+  };
+}
+
+// ============================================================================
+// MOCK UTILITIES
+// ============================================================================
+
+/**
+ * Create a mock Redis client for testing
+ */
+export function createMockRedisClient() {
+  return {
+    on: vi.fn(),
+    connect: vi.fn().mockResolvedValue(undefined),
+    get: vi.fn(),
+    set: vi.fn(),
+    del: vi.fn(),
+    exists: vi.fn(),
+    mGet: vi.fn(),
+    multi: vi.fn(),
+    keys: vi.fn(),
+    quit: vi.fn(),
+    scan: vi.fn(),
+    sMembers: vi.fn(),
+    sAdd: vi.fn(),
+    flushDb: vi.fn(),
+    info: vi.fn(),
+    dbSize: vi.fn(),
+  };
+}
+
+/**
+ * Create a mock Prisma client for testing
+ */
+export function createMockPrismaClient() {
+  return {
+    $queryRaw: vi.fn(),
+    $executeRaw: vi.fn(),
+    $disconnect: vi.fn(),
+  };
+}
+
+// TEST UTILITIES
 
 /**
  * Create a mock Queue instance for testing
@@ -193,14 +297,18 @@ export function expectCalledWith<T extends (...args: unknown[]) => unknown>(
 /**
  * Assert that a function was called exactly once
  */
-export function expectCalledOnce<T extends (...args: unknown[]) => unknown>(mock: T): void {
+export function expectCalledOnce<T extends (...args: unknown[]) => unknown>(
+  mock: T
+): void {
   expect(mock).toHaveBeenCalledTimes(1);
 }
 
 /**
  * Assert that a function was never called
  */
-export function expectNeverCalled<T extends (...args: unknown[]) => unknown>(mock: T): void {
+export function expectNeverCalled<T extends (...args: unknown[]) => unknown>(
+  mock: T
+): void {
   expect(mock).not.toHaveBeenCalled();
 }
 
@@ -224,6 +332,84 @@ export function setupTestEnvironment() {
     },
   };
 }
+
+// ============================================================================
+
+// ============================================================================
+
+/**
+ * Create a mock Express Request for testing
+ */
+export function createMockRequest(overrides: Partial<Request> = {}): Request {
+  return {
+    ip: "127.0.0.1",
+    params: {},
+    query: {},
+    body: {},
+    headers: {},
+    method: "GET",
+    file: undefined,
+    ...overrides,
+  } as Request;
+}
+
+/**
+ * Create a mock Express Response for testing
+ */
+export function createMockResponse(): Response {
+  const res = {
+    status: vi.fn(),
+    json: vi.fn(),
+    set: vi.fn(),
+    end: vi.fn(),
+  } as unknown as Response;
+
+  // Chain the methods properly
+  (res.status as any).mockReturnValue(res);
+  (res.json as any).mockReturnValue(res);
+  (res.set as any).mockReturnValue(res);
+  (res.end as any).mockReturnValue(res);
+
+  return res;
+}
+
+/**
+ * Create a mock Express NextFunction for testing
+ */
+export function createMockNext(): NextFunction {
+  return vi.fn();
+}
+
+/**
+ * Create a mock file upload for testing
+ */
+export function createMockFile(overrides: Partial<MulterFile> = {}) {
+  return {
+    fieldname: "file",
+    originalname: "test.html",
+    encoding: "7bit",
+    mimetype: "text/html",
+    size: 1024,
+    destination: undefined,
+    filename: undefined,
+    path: undefined,
+    buffer: undefined,
+    ...overrides,
+  } as MulterFile;
+}
+
+// Type for Multer file (matching the validation.ts definition)
+type MulterFile = {
+  fieldname: string;
+  originalname: string;
+  encoding: string;
+  mimetype: string;
+  size: number;
+  destination?: string;
+  filename?: string;
+  path?: string;
+  buffer?: Buffer;
+};
 
 /**
  * Test data fixtures

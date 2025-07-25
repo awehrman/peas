@@ -1,28 +1,28 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import {
+  createMockLogger,
+  createTestEnvironment,
+} from "../../test-utils/test-utils";
+
 // Mock the logger
-const mockLogger = {
-  info: vi.fn(),
-  error: vi.fn(),
-  warn: vi.fn(),
-  debug: vi.fn(),
-};
+const mockLogger = createMockLogger();
 
 vi.mock("../utils/standardized-logger", () => ({
   createLogger: vi.fn(() => mockLogger),
 }));
 
 describe("configuration-manager.ts", () => {
-  let originalEnv: Record<string, string | undefined>;
+  let testEnv: ReturnType<typeof createTestEnvironment>;
 
   beforeEach(() => {
-    originalEnv = { ...process.env };
+    testEnv = createTestEnvironment();
     vi.clearAllMocks();
     vi.resetModules();
   });
 
   afterEach(() => {
-    process.env = { ...originalEnv };
+    testEnv.restore();
     vi.clearAllMocks();
   });
 
@@ -42,12 +42,14 @@ describe("configuration-manager.ts", () => {
 
     describe("loadConfig", () => {
       it("should load configuration with environment variables", async () => {
-        process.env.NODE_ENV = "production";
-        process.env.npm_package_version = "2.0.0";
-        process.env.PORT = "4000";
-        process.env.HOST = "0.0.0.0";
-        process.env.DATABASE_URL = "postgresql://prod:5432/peas";
-        process.env.JWT_SECRET = "a".repeat(32);
+        testEnv.setEnv({
+          NODE_ENV: "production",
+          npm_package_version: "2.0.0",
+          PORT: "4000",
+          HOST: "0.0.0.0",
+          DATABASE_URL: "postgresql://prod:5432/peas",
+          JWT_SECRET: "a".repeat(32),
+        });
 
         const { ConfigurationManager } = await import(
           "../configuration-manager"
@@ -66,10 +68,12 @@ describe("configuration-manager.ts", () => {
       });
 
       it("should use default values when environment variables are not set", async () => {
-        delete process.env.NODE_ENV;
-        delete process.env.npm_package_version;
-        delete process.env.PORT;
-        delete process.env.HOST;
+        testEnv.setEnv({
+          NODE_ENV: undefined,
+          npm_package_version: undefined,
+          PORT: undefined,
+          HOST: undefined,
+        });
 
         const { ConfigurationManager } = await import(
           "../configuration-manager"
@@ -112,7 +116,9 @@ describe("configuration-manager.ts", () => {
       });
 
       it("should handle configuration validation errors", async () => {
-        process.env.DATABASE_URL = "invalid-url";
+        testEnv.setEnv({
+          DATABASE_URL: "invalid-url",
+        });
 
         const { ConfigurationManager } = await import(
           "../configuration-manager"
@@ -473,9 +479,11 @@ describe("configuration-manager.ts", () => {
 
   describe("Environment Variable Parsing", () => {
     it("should parse boolean environment variables correctly", async () => {
-      process.env.ENABLE_FILE_LOGGING = "false";
-      process.env.ENABLE_CONSOLE_LOGGING = "false";
-      process.env.MONITORING_ENABLED = "false";
+      testEnv.setEnv({
+        ENABLE_FILE_LOGGING: "false",
+        ENABLE_CONSOLE_LOGGING: "false",
+        MONITORING_ENABLED: "false",
+      });
 
       const { ConfigurationManager } = await import("../configuration-manager");
       const manager = ConfigurationManager.getInstance();
@@ -488,10 +496,12 @@ describe("configuration-manager.ts", () => {
     });
 
     it("should parse numeric environment variables correctly", async () => {
-      process.env.PORT = "5000";
-      process.env.DB_MAX_CONNECTIONS = "20";
-      process.env.REDISPORT = "6380";
-      process.env.BATCH_SIZE = "25";
+      testEnv.setEnv({
+        PORT: "5000",
+        DB_MAX_CONNECTIONS: "20",
+        REDISPORT: "6380",
+        BATCH_SIZE: "25",
+      });
 
       const { ConfigurationManager } = await import("../configuration-manager");
       const manager = ConfigurationManager.getInstance();
@@ -505,7 +515,9 @@ describe("configuration-manager.ts", () => {
     });
 
     it("should handle logging level environment variable", async () => {
-      process.env.LOG_LEVEL = "debug";
+      testEnv.setEnv({
+        LOG_LEVEL: "debug",
+      });
 
       const { ConfigurationManager } = await import("../configuration-manager");
       const manager = ConfigurationManager.getInstance();
@@ -516,7 +528,9 @@ describe("configuration-manager.ts", () => {
     });
 
     it("should handle optional API key", async () => {
-      process.env.API_KEY = "test-api-key-16-chars";
+      testEnv.setEnv({
+        API_KEY: "test-api-key-16-chars",
+      });
 
       const { ConfigurationManager } = await import("../configuration-manager");
       const manager = ConfigurationManager.getInstance();

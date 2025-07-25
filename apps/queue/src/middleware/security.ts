@@ -94,8 +94,11 @@ export function validatePagination(
   res: Response,
   next: NextFunction
 ) {
-  const page = parseInt(req.query.page as string) || 1;
-  const limit = parseInt(req.query.limit as string) || 20;
+  const pageStr = req.query.page as string;
+  const limitStr = req.query.limit as string;
+  
+  const page = pageStr ? (isNaN(parseInt(pageStr)) ? 1 : parseInt(pageStr)) : 1;
+  const limit = limitStr ? (isNaN(parseInt(limitStr)) ? 20 : parseInt(limitStr)) : 20;
 
   if (page < 1) {
     return res.status(HttpStatus.BAD_REQUEST).json({

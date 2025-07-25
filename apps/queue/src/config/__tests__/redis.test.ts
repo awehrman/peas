@@ -1,43 +1,45 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import {
+  createConsoleSpies,
+  createMockRedisClient,
+  createTestEnvironment,
+} from "../../test-utils/test-utils";
+
 // Mock redis module
 const mockCreateClient = vi.fn();
-const mockRedisClient = {
-  on: vi.fn(),
-  connect: vi.fn().mockResolvedValue(undefined),
-};
+const mockRedisClient = createMockRedisClient();
 
 vi.mock("redis", () => ({
   createClient: mockCreateClient,
 }));
 
 describe("redis.ts", () => {
-  let originalEnv: Record<string, string | undefined>;
-  let logSpy: ReturnType<typeof vi.spyOn>;
-  let errorSpy: ReturnType<typeof vi.spyOn>;
+  let testEnv: ReturnType<typeof createTestEnvironment>;
+  let consoleSpies: ReturnType<typeof createConsoleSpies>;
 
   beforeEach(() => {
-    originalEnv = { ...process.env };
-    logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-    errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    testEnv = createTestEnvironment();
+    consoleSpies = createConsoleSpies();
     mockCreateClient.mockReturnValue(mockRedisClient);
     vi.clearAllMocks();
     vi.resetModules();
   });
 
   afterEach(() => {
-    process.env = { ...originalEnv };
-    logSpy.mockRestore();
-    errorSpy.mockRestore();
+    testEnv.restore();
+    consoleSpies.restore();
     vi.clearAllMocks();
   });
 
   describe("Configuration", () => {
     it("should create redisConfig with environment variables", async () => {
-      process.env.REDISHOST = "test-host";
-      process.env.REDISPORT = "6380";
-      process.env.REDISUSER = "test-user";
-      process.env.REDISPASSWORD = "test-pass";
+      testEnv.setEnv({
+        REDISHOST: "test-host",
+        REDISPORT: "6380",
+        REDISUSER: "test-user",
+        REDISPASSWORD: "test-pass",
+      });
 
       const { redisConfig } = await import("../redis");
 
@@ -50,8 +52,10 @@ describe("redis.ts", () => {
     });
 
     it("should use default port when REDISPORT is not set", async () => {
-      delete process.env.REDISPORT;
-      process.env.REDISHOST = "test-host";
+      testEnv.setEnv({
+        REDISPORT: undefined,
+        REDISHOST: "test-host",
+      });
 
       const { redisConfig } = await import("../redis");
 
@@ -59,10 +63,12 @@ describe("redis.ts", () => {
     });
 
     it("should handle undefined environment variables", async () => {
-      delete process.env.REDISHOST;
-      delete process.env.REDISPORT;
-      delete process.env.REDISUSER;
-      delete process.env.REDISPASSWORD;
+      testEnv.setEnv({
+        REDISHOST: undefined,
+        REDISPORT: undefined,
+        REDISUSER: undefined,
+        REDISPASSWORD: undefined,
+      });
 
       const { redisConfig } = await import("../redis");
 
@@ -75,8 +81,10 @@ describe("redis.ts", () => {
     });
 
     it("should parse REDISPORT as integer", async () => {
-      process.env.REDISPORT = "12345";
-      process.env.REDISHOST = "test-host";
+      testEnv.setEnv({
+        REDISPORT: "12345",
+        REDISHOST: "test-host",
+      });
 
       const { redisConfig } = await import("../redis");
 
@@ -87,10 +95,12 @@ describe("redis.ts", () => {
 
   describe("Redis Client Creation", () => {
     it("should create Redis client with correct configuration", async () => {
-      process.env.REDISHOST = "test-host";
-      process.env.REDISPORT = "6380";
-      process.env.REDISUSER = "test-user";
-      process.env.REDISPASSWORD = "test-pass";
+      testEnv.setEnv({
+        REDISHOST: "test-host",
+        REDISPORT: "6380",
+        REDISUSER: "test-user",
+        REDISPASSWORD: "test-pass",
+      });
 
       await import("../redis");
 
@@ -105,10 +115,12 @@ describe("redis.ts", () => {
     });
 
     it("should create Redis client with undefined values when env vars not set", async () => {
-      delete process.env.REDISHOST;
-      delete process.env.REDISPORT;
-      delete process.env.REDISUSER;
-      delete process.env.REDISPASSWORD;
+      testEnv.setEnv({
+        REDISHOST: undefined,
+        REDISPORT: undefined,
+        REDISUSER: undefined,
+        REDISPASSWORD: undefined,
+      });
 
       await import("../redis");
 
@@ -164,7 +176,9 @@ describe("redis.ts", () => {
       // Call the handler
       connectHandler();
 
-      expect(logSpy).toHaveBeenCalledWith("✅ Redis client connected");
+      expect(consoleSpies.logSpy).toHaveBeenCalledWith(
+        "✅ Redis client connected"
+      );
     });
 
     it("should log error message on error event", async () => {
@@ -180,7 +194,7 @@ describe("redis.ts", () => {
       const testError = new Error("Redis connection failed");
       errorHandler(testError);
 
-      expect(errorSpy).toHaveBeenCalledWith(
+      expect(consoleSpies.errorSpy).toHaveBeenCalledWith(
         "❌ Redis client error:",
         testError
       );
@@ -199,7 +213,7 @@ describe("redis.ts", () => {
       // Call the handler
       endHandler();
 
-      expect(logSpy).toHaveBeenCalledWith("🛑 Redis client disconnected");
+      expect(consoleSpies.logSpy).toHaveBeenCalledWith("🛑 Redis client disconnected");
     });
   });
 
@@ -225,7 +239,7 @@ describe("redis.ts", () => {
       await import("../redis");
 
       expect(mockRedisClient.connect).toHaveBeenCalled();
-      expect(errorSpy).toHaveBeenCalledWith(
+      expect(consoleSpies.errorSpy).toHaveBeenCalledWith(
         "❌ Failed to connect to Redis:",
         connectionError
       );
@@ -237,7 +251,7 @@ describe("redis.ts", () => {
 
       await import("../redis");
 
-      expect(errorSpy).toHaveBeenCalledWith(
+      expect(consoleSpies.errorSpy).toHaveBeenCalledWith(
         "❌ Failed to connect to Redis:",
         customError
       );
@@ -267,8 +281,10 @@ describe("redis.ts", () => {
     });
 
     it("should handle malformed REDISPORT gracefully", async () => {
-      process.env.REDISPORT = "invalid-port";
-      process.env.REDISHOST = "test-host";
+      testEnv.setEnv({
+        REDISPORT: "invalid-port",
+        REDISHOST: "test-host",
+      });
 
       const { redisConfig } = await import("../redis");
 
