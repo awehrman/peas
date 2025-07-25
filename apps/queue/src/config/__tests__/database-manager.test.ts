@@ -170,8 +170,6 @@ describe("DatabaseManager", () => {
       expect(operation).toHaveBeenCalledTimes(1); // Custom max retries = 1
     });
 
-
-
     it("should not identify non-connection errors", async () => {
       const nonConnectionErrors = [
         "validation error",

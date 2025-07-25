@@ -16,9 +16,9 @@ import { ExpressAdapter } from "@bull-board/express";
 import cors from "cors";
 import express from "express";
 
+import { configManager } from "./config/configuration-manager";
 import { ManagerFactory } from "./config/factory";
 import "./config/load-env";
-import { configManager } from "./config/standardized-config";
 import { SecurityMiddleware } from "./middleware/security";
 import { errorHandler as stdErrorHandler } from "./utils/standardized-error-handler";
 import { LOG_MESSAGES, LoggerFactory } from "./utils/standardized-logger";

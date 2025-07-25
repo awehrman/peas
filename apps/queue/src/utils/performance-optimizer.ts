@@ -1,6 +1,6 @@
 import { createLogger } from "./standardized-logger";
 
-import { configManager } from "../config/standardized-config";
+import { configManager } from "../config/configuration-manager";
 
 // ============================================================================
 // PERFORMANCE OPTIMIZER

@@ -1,198 +1,16 @@
-import { z } from "zod";
+import { AppConfigSchema } from "./schema";
+import {
+  AppConfig,
+  DatabaseConfig,
+  LoggingConfig,
+  MonitoringConfig,
+  QueueConfig,
+  RedisConfig,
+  SecurityConfig,
+  ServerConfig,
+} from "./types";
 
 import { createLogger } from "../utils/standardized-logger";
-
-// ============================================================================
-// STANDARDIZED CONFIGURATION
-// ============================================================================
-
-/**
- * Base configuration interface
- */
-export interface BaseConfig {
-  environment: string;
-  version: string;
-  debug: boolean;
-}
-
-/**
- * Server configuration
- */
-export interface ServerConfig extends BaseConfig {
-  port: number;
-  host: string;
-  wsPort: number;
-  wsHost: string;
-}
-
-/**
- * Database configuration
- */
-export interface DatabaseConfig extends BaseConfig {
-  url: string;
-  maxConnections: number;
-  connectionTimeout: number;
-  queryTimeout: number;
-}
-
-/**
- * Redis configuration
- */
-export interface RedisConfig extends BaseConfig {
-  host: string;
-  port: number;
-  username?: string;
-  password?: string;
-  database: number;
-  connectionTimeout: number;
-  retryAttempts: number;
-}
-
-/**
- * Queue configuration
- */
-export interface QueueConfig extends BaseConfig {
-  batchSize: number;
-  maxRetries: number;
-  backoffMs: number;
-  maxBackoffMs: number;
-  jobTimeout: number;
-  concurrency: number;
-}
-
-/**
- * Security configuration
- */
-export interface SecurityConfig extends BaseConfig {
-  jwtSecret: string;
-  apiKey?: string;
-  rateLimitWindowMs: number;
-  rateLimitMaxRequests: number;
-  maxRequestSizeBytes: number;
-}
-
-/**
- * Logging configuration
- */
-export interface LoggingConfig extends BaseConfig {
-  level: "debug" | "info" | "warn" | "error" | "fatal";
-  enableFileLogging: boolean;
-  enableConsoleLogging: boolean;
-  logDir: string;
-  maxLogSizeMB: number;
-  maxLogFiles: number;
-}
-
-/**
- * Monitoring configuration
- */
-export interface MonitoringConfig extends BaseConfig {
-  enabled: boolean;
-  metricsRetentionHours: number;
-  healthCheckIntervalMs: number;
-  cleanupIntervalMs: number;
-  maxMetricsHistory: number;
-}
-
-/**
- * Complete application configuration
- */
-export interface AppConfig extends BaseConfig {
-  server: ServerConfig;
-  database: DatabaseConfig;
-  redis: RedisConfig;
-  queue: QueueConfig;
-  security: SecurityConfig;
-  logging: LoggingConfig;
-  monitoring: MonitoringConfig;
-}
-
-// ============================================================================
-// CONFIGURATION SCHEMAS
-// ============================================================================
-
-const BaseConfigSchema = z.object({
-  environment: z
-    .enum(["development", "test", "production"])
-    .default("development"),
-  version: z.string().default("1.0.0"),
-  debug: z.boolean().default(false),
-});
-
-const ServerConfigSchema = BaseConfigSchema.extend({
-  port: z.number().min(1).max(65535).default(3000),
-  host: z.string().default("localhost"),
-  wsPort: z.number().min(1).max(65535).default(8080),
-  wsHost: z.string().default("localhost"),
-});
-
-const DatabaseConfigSchema = BaseConfigSchema.extend({
-  url: z.string().url("Invalid database URL"),
-  maxConnections: z.number().positive().default(10),
-  connectionTimeout: z.number().positive().default(30000),
-  queryTimeout: z.number().positive().default(10000),
-});
-
-const RedisConfigSchema = BaseConfigSchema.extend({
-  host: z.string().default("localhost"),
-  port: z.number().min(1).max(65535).default(6379),
-  username: z.string().optional(),
-  password: z.string().optional(),
-  database: z.number().min(0).max(15).default(0),
-  connectionTimeout: z.number().positive().default(5000),
-  retryAttempts: z.number().positive().default(3),
-});
-
-const QueueConfigSchema = BaseConfigSchema.extend({
-  batchSize: z.number().positive().default(10),
-  maxRetries: z.number().min(0).default(3),
-  backoffMs: z.number().positive().default(1000),
-  maxBackoffMs: z.number().positive().default(30000),
-  jobTimeout: z.number().positive().default(30000),
-  concurrency: z.number().positive().default(5),
-});
-
-const SecurityConfigSchema = BaseConfigSchema.extend({
-  jwtSecret: z.string().min(32, "JWT secret must be at least 32 characters"),
-  apiKey: z
-    .string()
-    .min(16, "API key must be at least 16 characters")
-    .optional(),
-  rateLimitWindowMs: z.number().positive().default(900000), // 15 minutes
-  rateLimitMaxRequests: z.number().positive().default(100),
-  maxRequestSizeBytes: z.number().positive().default(10485760), // 10MB
-});
-
-const LoggingConfigSchema = BaseConfigSchema.extend({
-  level: z.enum(["debug", "info", "warn", "error", "fatal"]).default("info"),
-  enableFileLogging: z.boolean().default(true),
-  enableConsoleLogging: z.boolean().default(true),
-  logDir: z.string().default("logs"),
-  maxLogSizeMB: z.number().positive().default(10),
-  maxLogFiles: z.number().positive().default(5),
-});
-
-const MonitoringConfigSchema = BaseConfigSchema.extend({
-  enabled: z.boolean().default(true),
-  metricsRetentionHours: z.number().positive().default(24),
-  healthCheckIntervalMs: z.number().positive().default(30000),
-  cleanupIntervalMs: z.number().positive().default(3600000), // 1 hour
-  maxMetricsHistory: z.number().positive().default(1000),
-});
-
-const AppConfigSchema = BaseConfigSchema.extend({
-  server: ServerConfigSchema,
-  database: DatabaseConfigSchema,
-  redis: RedisConfigSchema,
-  queue: QueueConfigSchema,
-  security: SecurityConfigSchema,
-  logging: LoggingConfigSchema,
-  monitoring: MonitoringConfigSchema,
-});
-
-// ============================================================================
-// CONFIGURATION MANAGER
-// ============================================================================
 
 /**
  * Standardized configuration manager
@@ -404,15 +222,7 @@ export class ConfigurationManager {
   }
 }
 
-// ============================================================================
-// CONFIGURATION INSTANCE
-// ============================================================================
-
 export const configManager = ConfigurationManager.getInstance();
-
-// ============================================================================
-// CONFIGURATION UTILITIES
-// ============================================================================
 
 /**
  * Get configuration with automatic loading
@@ -469,9 +279,5 @@ export function getLoggingConfig(): LoggingConfig {
 export function getMonitoringConfig(): MonitoringConfig {
   return configManager.getMonitoringConfig();
 }
-
-// ============================================================================
-// EXPORTS
-// ============================================================================
 
 export default configManager;
