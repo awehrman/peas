@@ -5,14 +5,15 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsup src/index.ts --format esm --dts --clean",
+    "build": "tsc --noEmit && tsup src/index.ts --format esm --dts --clean",
     "start": "ts-node dist/index.js",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
     "test:ci": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "lint": "eslint --ext .ts,.tsx src"
+    "lint": "eslint --ext .ts,.tsx src",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@bull-board/api": "^6.11.0",

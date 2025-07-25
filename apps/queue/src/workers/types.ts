@@ -83,6 +83,36 @@ export interface BaseWorkerDependencies {
 // ============================================================================
 
 /**
+ * Status broadcaster interface for status actions
+ */
+export interface StatusBroadcaster {
+  addStatusEventAndBroadcast: (event: {
+    importId: string;
+    noteId?: string;
+    status: string;
+    message: string;
+    context: string;
+    indentLevel: number;
+    metadata: Record<string, unknown>;
+  }) => Promise<void>;
+}
+
+/**
+ * Dependencies for status actions
+ */
+export interface StatusDeps {
+  statusBroadcaster?: StatusBroadcaster;
+}
+
+/**
+ * Note data interface for status actions
+ */
+export interface NoteData extends BaseJobData {
+  importId?: string;
+  noteId?: string;
+}
+
+/**
  * Context information passed to actions during execution
  */
 export interface ActionContext {
