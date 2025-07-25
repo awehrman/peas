@@ -1,11 +1,11 @@
-import { defineConfig } from "vitest/config";
 import { resolve } from "path";
+import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
     globals: true,
     environment: "node",
-    setupFiles: ["./src/test-setup.ts"],
+    setupFiles: ["./src/test-utils/test-setup.ts"],
     include: ["src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"],
     exclude: ["node_modules", "dist", ".idea", ".git", ".cache"],
     coverage: {
@@ -13,17 +13,23 @@ export default defineConfig({
       reporter: ["text", "json", "html"],
       all: true,
       include: [
+        "src/config/**/*.ts",
+        "src/middleware/**/*.ts",
+        "src/monitoring/**/*.ts",
+        "src/parsers/**/*.ts",
+        "src/queues/**/*.ts",
+        "src/routes/**/*.ts",
+        "src/schemas/**/*.ts",
         "src/services/**/*.ts",
+        "src/test-utils/**/*.ts",
         "src/utils/**/*.ts",
         "src/workers/**/*.ts",
-        "src/parsers/**/*.ts",
         "src/**/__tests__/**/*.ts",
       ],
       exclude: [
         "node_modules/",
         "dist/",
-        "src/test-setup.ts",
-        "src/tests/**",
+        "src/test-utils/test-setup.ts",
         "**/*.d.ts",
         "**/*.config.*",
         "**/coverage/**",

@@ -1,6 +1,7 @@
 // Test setup file for Vitest
-import { beforeAll, afterAll, vi } from "vitest";
-import { SERVER_DEFAULTS, QUEUE_DEFAULTS } from "./config";
+import { afterAll, beforeAll, vi } from "vitest";
+
+import { QUEUE_DEFAULTS, SERVER_DEFAULTS } from "../config";
 
 // Suppress dotenv logs during testing
 process.env.DOTENV_QUIET = "true";

@@ -1,5 +1,4 @@
 import { SECURITY_CONSTANTS, SERVER_DEFAULTS } from "./config";
-import "./load-env";
 import {
   cacheRouter,
   healthEnhancedRouter,
@@ -18,6 +17,7 @@ import cors from "cors";
 import express from "express";
 
 import { ManagerFactory } from "./config/factory";
+import "./config/load-env";
 import { configManager } from "./config/standardized-config";
 import { SecurityMiddleware } from "./middleware/security";
 import { errorHandler as stdErrorHandler } from "./utils/standardized-error-handler";

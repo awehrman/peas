@@ -1,12 +1,12 @@
 import { CacheManager } from "./cache";
 import { DatabaseManager } from "./database-manager";
 
-import { HealthMonitor } from "../utils/health-monitor";
-import { MetricsCollector } from "../utils/metrics";
 import {
   WebSocketManager,
   initializeWebSocketServer,
-} from "../websocket-server";
+} from "../services/websocket-server";
+import { HealthMonitor } from "../utils/health-monitor";
+import { MetricsCollector } from "../utils/metrics";
 
 // ============================================================================
 // MANAGER FACTORY CLASS

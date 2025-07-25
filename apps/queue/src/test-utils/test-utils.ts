@@ -1,0 +1,264 @@
+import type { Queue, Worker } from "bullmq";
+import { expect, vi } from "vitest";
+
+import type { NotePipelineData } from "../types/notes";
+import type { ActionContext } from "../workers/core/types";
+
+// ============================================================================
+// TEST UTILITIES
+// ============================================================================
+
+/**
+ * Create a mock Queue instance for testing
+ */
+export function createMockQueue(): Queue {
+  return {
+    name: "test-queue",
+    add: vi.fn().mockResolvedValue({ id: "test-job-id" }),
+    close: vi.fn().mockResolvedValue(undefined),
+    getJob: vi.fn().mockResolvedValue(null),
+    getJobs: vi.fn().mockResolvedValue([]),
+    getJobCounts: vi.fn().mockResolvedValue({
+      waiting: 0,
+      active: 0,
+      completed: 0,
+      failed: 0,
+      delayed: 0,
+      paused: 0,
+    }),
+  } as unknown as Queue;
+}
+
+/**
+ * Create a mock Worker instance for testing
+ */
+export function createMockWorker(): Worker {
+  return {
+    close: vi.fn().mockResolvedValue(undefined),
+    on: vi.fn(),
+    off: vi.fn(),
+  } as unknown as Worker;
+}
+
+/**
+ * Create mock NotePipelineData for testing
+ */
+export function createMockNoteData(
+  overrides: Partial<NotePipelineData> = {}
+): NotePipelineData {
+  return {
+    content: "<html><body><h1>Test Recipe</h1><p>1 cup flour</p></body></html>",
+    importId: "test-import-id",
+    source: {
+      filename: "test-recipe.html",
+      url: "https://example.com/recipe",
+    },
+    options: {},
+    ...overrides,
+  };
+}
+
+/**
+ * Create mock ActionContext for testing
+ */
+export function createMockActionContext(
+  overrides: Partial<ActionContext> = {}
+): ActionContext {
+  return {
+    jobId: "test-job-id",
+    retryCount: 0,
+    queueName: "test-queue",
+    operation: "test-operation",
+    startTime: Date.now(),
+    workerName: "test-worker",
+    attemptNumber: 1,
+    ...overrides,
+  };
+}
+
+/**
+ * Create a mock logger for testing
+ */
+export function createMockLogger() {
+  return {
+    log: vi.fn(),
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    fatal: vi.fn(),
+  };
+}
+
+/**
+ * Create a mock status broadcaster for testing
+ */
+export function createMockStatusBroadcaster() {
+  return {
+    addStatusEventAndBroadcast: vi.fn().mockResolvedValue(undefined),
+    broadcast: vi.fn().mockResolvedValue(undefined),
+  };
+}
+
+/**
+ * Create a mock service container for testing
+ */
+export function createMockServiceContainer() {
+  return {
+    logger: createMockLogger(),
+    cache: {
+      get: vi.fn(),
+      set: vi.fn(),
+      delete: vi.fn(),
+    },
+    database: {
+      note: {
+        create: vi.fn(),
+        findById: vi.fn(),
+        update: vi.fn(),
+      },
+    },
+    _workers: {},
+  };
+}
+
+/**
+ * Wait for a specified number of milliseconds
+ */
+export function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Wait for all pending promises to resolve
+ */
+export function flushPromises(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+/**
+ * Create a mock Redis connection for testing
+ */
+export function createMockRedisConnection() {
+  return {
+    get: vi.fn(),
+    set: vi.fn(),
+    del: vi.fn(),
+    exists: vi.fn(),
+    mget: vi.fn(),
+    mset: vi.fn(),
+    keys: vi.fn(),
+    quit: vi.fn(),
+    scan: vi.fn(),
+  };
+}
+
+/**
+ * Create mock HTML content for testing
+ */
+export function createMockHtmlContent(title: string = "Test Recipe"): string {
+  return `
+    <!doctype html>
+    <html>
+      <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+      </head>
+      <body>
+        <en-note class="peso" style="white-space: inherit">
+          <meta itemprop="title" content="${title}" />
+          <meta itemprop="created" content="20230101T000000Z" />
+          <h1 class="noteTitle html-note">
+            <b>${title}</b>
+          </h1>
+          <div class="para">1 cup flour</div>
+          <div class="para">2 eggs</div>
+          <div class="para">Mix ingredients together</div>
+        </en-note>
+      </body>
+    </html>
+  `;
+}
+
+/**
+ * Assert that a function was called with specific arguments
+ */
+export function expectCalledWith<T extends (...args: unknown[]) => unknown>(
+  mock: T,
+  expectedArgs: Parameters<T>
+): void {
+  expect(mock).toHaveBeenCalledWith(...expectedArgs);
+}
+
+/**
+ * Assert that a function was called exactly once
+ */
+export function expectCalledOnce<T extends (...args: unknown[]) => unknown>(mock: T): void {
+  expect(mock).toHaveBeenCalledTimes(1);
+}
+
+/**
+ * Assert that a function was never called
+ */
+export function expectNeverCalled<T extends (...args: unknown[]) => unknown>(mock: T): void {
+  expect(mock).not.toHaveBeenCalled();
+}
+
+/**
+ * Create a test environment with common mocks
+ */
+export function setupTestEnvironment() {
+  // Mock environment variables
+  process.env.NODE_ENV = "test";
+  process.env.PORT = "3000";
+  process.env.WS_PORT = "8080";
+
+  // Mock console methods to reduce noise in tests
+  vi.spyOn(console, "log").mockImplementation(() => {});
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  vi.spyOn(console, "warn").mockImplementation(() => {});
+
+  return {
+    cleanup: () => {
+      vi.restoreAllMocks();
+    },
+  };
+}
+
+/**
+ * Test data fixtures
+ */
+export const TEST_FIXTURES = {
+  validHtml: createMockHtmlContent("Valid Recipe"),
+  invalidHtml: "<invalid>html",
+  emptyHtml: "",
+  largeHtml: createMockHtmlContent("Large Recipe") + "x".repeat(10000),
+  htmlWithStyles: `
+    <html>
+      <head>
+        <style>
+          body { color: red; }
+        </style>
+      </head>
+      <body>
+        <en-note>
+          <h1>Styled Recipe</h1>
+          <p>Content</p>
+        </en-note>
+      </body>
+    </html>
+  `,
+  htmlWithIcons: `
+    <html>
+      <body>
+        <en-note>
+          <icons>
+            <svg>...</svg>
+          </icons>
+          <h1>Recipe with Icons</h1>
+          <p>Content</p>
+        </en-note>
+      </body>
+    </html>
+  `,
+};

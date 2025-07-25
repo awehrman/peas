@@ -184,11 +184,6 @@ export function getWebSocketManager(): WebSocketManager | null {
 
 export function broadcastStatusEvent(event: StatusEvent["data"]) {
   const manager = getWebSocketManager();
-  console.log("[broadcastStatusEvent] Manager state:", {
-    managerExists: !!manager,
-    managerType: manager ? manager.constructor.name : "null",
-    event: event,
-  });
 
   if (manager) {
     manager.broadcastStatusEvent(event);

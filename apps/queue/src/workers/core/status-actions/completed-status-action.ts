@@ -3,12 +3,34 @@ import type { BaseJobData } from "../../types";
 import { BaseAction } from "../base-action";
 import type { ActionContext } from "../types";
 
+// Define types for dependencies and data
+interface StatusBroadcaster {
+  addStatusEventAndBroadcast: (event: {
+    importId: string;
+    noteId?: string;
+    status: string;
+    message: string;
+    context: string;
+    indentLevel: number;
+    metadata: Record<string, unknown>;
+  }) => Promise<void>;
+}
+
+interface StatusDeps {
+  statusBroadcaster?: StatusBroadcaster;
+}
+
+interface NoteData extends BaseJobData {
+  importId: string;
+  noteId?: string;
+}
+
 /**
  * Action for broadcasting completed status in a worker pipeline.
  */
 export class CompletedStatusAction<
-  TData extends BaseJobData = BaseJobData,
-  TDeps extends object = object,
+  TData extends NoteData = NoteData,
+  TDeps extends StatusDeps = StatusDeps,
 > extends BaseAction<TData, TDeps, void> {
   public name = ActionName.COMPLETED_STATUS;
 
@@ -17,8 +39,25 @@ export class CompletedStatusAction<
     deps: TDeps,
     context: ActionContext
   ): Promise<void> {
-    // Implement broadcasting logic here
-    // For now, just log
+    // Check if we have status broadcaster in dependencies
+    if (deps?.statusBroadcaster && data.importId) {
+      try {
+        await deps.statusBroadcaster.addStatusEventAndBroadcast({
+          importId: data.importId,
+          noteId: data.noteId,
+          status: "COMPLETED",
+          message: `Completed ${context.operation}`,
+          context: context.operation,
+          indentLevel: 1,
+          metadata: {
+            jobId: context.jobId,
+            operation: context.operation,
+          },
+        });
+      } catch (error) {
+        console.error(`[COMPLETED_STATUS] Failed to broadcast: ${error}`);
+      }
+    }
 
     console.log(
       `[${context.operation}] Completed status for job ${context.jobId}`

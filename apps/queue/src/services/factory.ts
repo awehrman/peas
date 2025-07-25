@@ -6,6 +6,7 @@ import type {
   IStatusBroadcasterService,
   IWebSocketService,
 } from "./container";
+import { getWebSocketManager } from "./websocket-server";
 
 import type { NoteStatus } from "@peas/database";
 
@@ -13,7 +14,6 @@ import { ManagerFactory } from "../config/factory";
 import type { OperationContext, StatusEventData } from "../types/common";
 import { createLogger } from "../utils/logger";
 import { addStatusEventAndBroadcast } from "../utils/status-broadcaster";
-import { getWebSocketManager } from "../websocket-server";
 
 // ============================================================================
 // SERVICE FACTORY CLASS
@@ -145,12 +145,7 @@ class HealthMonitorService implements IHealthMonitorService {
  */
 class WebSocketService implements IWebSocketService {
   get webSocketManager() {
-    const manager = getWebSocketManager();
-    console.log("[WebSocketService] Getting manager:", {
-      managerExists: !!manager,
-      managerType: manager ? manager.constructor.name : "null",
-    });
-    return manager;
+    return getWebSocketManager();
   }
 }
 

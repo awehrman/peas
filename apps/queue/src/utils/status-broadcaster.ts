@@ -1,6 +1,7 @@
 import { addStatusEvent } from "@peas/database";
 import type { NoteStatus } from "@peas/database";
-import { broadcastStatusEvent } from "../websocket-server";
+
+import { broadcastStatusEvent } from "../services/websocket-server";
 
 export async function addStatusEventAndBroadcast({
   importId,
