@@ -1,6 +1,6 @@
 import type { ParsedHTMLFile } from "@peas/database";
 
-import type { HTMLParsingOptions } from "../../../parsers/html";
+import type { HTMLParsingOptions } from "../../../parsers/types";
 import { ParseHtmlDataSchema } from "../../../schemas/note";
 import { ActionName } from "../../../types";
 import { ParsedIngredientLine, ParsedInstructionLine } from "../../../types";

@@ -457,7 +457,7 @@ export class SystemMonitor extends EventEmitter {
       SystemMonitor.instance.queueMetrics?.clear?.();
       // Reset other state if needed
     }
-    SystemMonitor.instance = undefined as typeof SystemMonitor.instance;
+    SystemMonitor.instance = undefined as unknown as SystemMonitor;
   }
 }
 

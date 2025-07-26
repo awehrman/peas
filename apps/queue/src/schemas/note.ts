@@ -43,7 +43,7 @@ export const ParseHtmlDataSchema = z.object({
 export const ParsedHtmlFileSchema = z.object({
   title: z.string().min(1, "Title is required"),
   contents: z.string().min(1, "Contents are required"),
-  tags: z.array(z.string()).optional(),
+  tags: z.array(z.string()).default([]),
   source: z.string().optional(),
   sourceUrl: z.string().url("Invalid source URL format").optional(),
   sourceApplication: z.string().optional(),
@@ -139,7 +139,7 @@ export const ScheduleIngredientsDataSchema = z.object({
   importId: z.string().optional(),
   note: z
     .object({
-      id: z.string(),
+      id: z.string().uuid("Note ID must be a valid UUID"),
       title: z.string().nullable(),
       parsedIngredientLines: z.array(ParsedIngredientLineSchema).optional(),
     })
