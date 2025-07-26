@@ -322,7 +322,7 @@ export class SystemMonitor extends EventEmitter {
 
     for (const [queueName, metrics] of this.queueMetrics) {
       const failureRate = metrics.failedCount / Math.max(metrics.jobCount, 1);
-      
+
       let status = "healthy";
       let message = "Queue is processing jobs normally";
 
@@ -351,7 +351,7 @@ export class SystemMonitor extends EventEmitter {
     const failureRate =
       this.systemMetrics.totalJobsFailed /
       Math.max(this.systemMetrics.totalJobsProcessed, 1);
-    
+
     let status = "healthy";
     let message = "Job processing is normal";
 
@@ -457,7 +457,7 @@ export class SystemMonitor extends EventEmitter {
       SystemMonitor.instance.queueMetrics?.clear?.();
       // Reset other state if needed
     }
-    SystemMonitor.instance = undefined as any;
+    SystemMonitor.instance = undefined as typeof SystemMonitor.instance;
   }
 }
 

@@ -1,4 +1,5 @@
 import type { Queue, Worker } from "bullmq";
+import express from "express";
 // ============================================================================
 // EXPRESS TEST UTILITIES
 // ============================================================================
@@ -113,11 +114,28 @@ export function createMockPrismaClient() {
 // TEST UTILITIES
 
 /**
+ * Queue options type for testing
+ */
+export interface QueueOptions {
+  connection: {
+    host?: string;
+    port?: number;
+    username?: string;
+    password?: string;
+  };
+  [key: string]: unknown;
+}
+
+/**
  * Create a mock Queue instance for testing
  */
-export function createMockQueue(): Queue {
+export function createMockQueue(
+  name: string = "test-queue",
+  options?: QueueOptions
+): Queue {
   return {
-    name: "test-queue",
+    name,
+    options,
     add: vi.fn().mockResolvedValue({ id: "test-job-id" }),
     close: vi.fn().mockResolvedValue(undefined),
     getJob: vi.fn().mockResolvedValue(null),
@@ -369,10 +387,10 @@ export function createMockResponse(): Response {
   } as unknown as Response;
 
   // Chain the methods properly
-  (res.status as any).mockReturnValue(res);
-  (res.json as any).mockReturnValue(res);
-  (res.set as any).mockReturnValue(res);
-  (res.end as any).mockReturnValue(res);
+  (res.status as ReturnType<typeof vi.fn>).mockReturnValue(res);
+  (res.json as ReturnType<typeof vi.fn>).mockReturnValue(res);
+  (res.set as ReturnType<typeof vi.fn>).mockReturnValue(res);
+  (res.end as ReturnType<typeof vi.fn>).mockReturnValue(res);
 
   return res;
 }
@@ -452,3 +470,144 @@ export const TEST_FIXTURES = {
     </html>
   `,
 };
+
+// ============================================================================
+// COMMON MOCK SETUPS
+// ============================================================================
+
+/**
+ * Mock Redis configuration for testing
+ */
+export const MOCK_REDIS_CONFIG = {
+  host: "localhost",
+  port: 6379,
+  username: "test-user",
+  password: "test-password",
+};
+
+// ============================================================================
+// EXPRESS TEST UTILITIES
+// ============================================================================
+
+/**
+ * Create a test Express application with common middleware
+ */
+export function createTestApp() {
+  const app = express();
+  app.use(express.json());
+  return app;
+}
+
+/**
+ * Create mock cache manager for testing
+ */
+export function createMockCacheManager() {
+  return {
+    ...createMockRedisClient(),
+    getHitRate: vi.fn().mockReturnValue(85.5),
+    getStats: vi.fn().mockReturnValue({
+      hits: 100,
+      misses: 20,
+      keys: 50,
+      lastReset: new Date().toISOString(),
+    }),
+    isReady: vi.fn().mockReturnValue(true),
+  };
+}
+
+/**
+ * Create mock health monitor for testing
+ */
+export function createMockHealthMonitor() {
+  return {
+    isHealthy: vi.fn().mockResolvedValue(true),
+    getComponentHealth: vi.fn().mockResolvedValue({
+      status: "healthy",
+      details: "Component is operational",
+      metrics: {},
+    }),
+  };
+}
+
+/**
+ * Create mock action cache stats for testing
+ */
+export function createMockActionCacheStats(
+  overrides: Partial<{
+    memorySize: number;
+    memoryKeys: string[];
+  }> = {}
+) {
+  return {
+    memorySize: 1024,
+    memoryKeys: ["key1", "key2", "key3", "key4", "key5"],
+    ...overrides,
+  };
+}
+
+/**
+ * Create mock Redis stats for testing
+ */
+export function createMockRedisStats(
+  overrides: Partial<{
+    hits: number;
+    misses: number;
+    keys: number;
+    lastReset: string;
+  }> = {}
+) {
+  return {
+    hits: 100,
+    misses: 20,
+    keys: 50,
+    lastReset: new Date().toISOString(),
+    ...overrides,
+  };
+}
+
+// ============================================================================
+// MOCK MODULE TYPES
+// ============================================================================
+
+/**
+ * Mock types for ManagerFactory
+ */
+export interface MockManagerFactory {
+  createCacheManager: ReturnType<typeof vi.fn>;
+}
+
+/**
+ * Mock types for CachedIngredientParser
+ */
+export interface MockCachedIngredientParser {
+  parseIngredientLines: ReturnType<typeof vi.fn>;
+  getCacheStats: ReturnType<typeof vi.fn>;
+  invalidateIngredientCache: ReturnType<typeof vi.fn>;
+}
+
+/**
+ * Mock types for actionCache
+ */
+export interface MockActionCache {
+  getStats: ReturnType<typeof vi.fn>;
+  clearAll: ReturnType<typeof vi.fn>;
+  invalidateByPattern: ReturnType<typeof vi.fn>;
+  delete: ReturnType<typeof vi.fn>;
+}
+
+/**
+ * Mock types for BullMQ Queue
+ */
+export interface MockQueue {
+  name: string;
+  options?: QueueOptions;
+  add: ReturnType<typeof vi.fn>;
+  close: ReturnType<typeof vi.fn>;
+  getJob: ReturnType<typeof vi.fn>;
+  getJobs: ReturnType<typeof vi.fn>;
+  getJobCounts: ReturnType<typeof vi.fn>;
+  getWaiting: ReturnType<typeof vi.fn>;
+  getActive: ReturnType<typeof vi.fn>;
+  getCompleted: ReturnType<typeof vi.fn>;
+  getFailed: ReturnType<typeof vi.fn>;
+}

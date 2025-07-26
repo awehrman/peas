@@ -1,6 +1,6 @@
 import { Queue } from "bullmq";
 
-import { createQueue } from "../queues/createQueue";
+import { createQueue } from "../queues/create-queue";
 
 export interface IQueueService {
   noteQueue: Queue;
