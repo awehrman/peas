@@ -1,59 +1,14 @@
+import { HTML_PARSING_CONSTANTS } from "./constants";
+import type { HTMLParsingOptions } from "./types";
+
+import type { ParsedHTMLFile } from "@peas/database";
 import { Cheerio, CheerioAPI, load } from "cheerio";
 import { parseISO } from "date-fns";
 import { Element } from "domhandler";
 
 import { LOG_MESSAGES, PROCESSING_CONSTANTS } from "../config/constants";
-import {
-  ParsedIngredientLine,
-  ParsedInstructionLine,
-} from "../types";
-import type { ParsedHTMLFile } from "@peas/database";
+import { ParsedIngredientLine, ParsedInstructionLine } from "../types";
 import { formatLogMessage } from "../utils/utils";
-
-/**
- * HTML parsing constants
- */
-const HTML_PARSING_CONSTANTS = {
-  /** CSS selectors */
-  SELECTORS: {
-    EN_NOTE: "en-note",
-    META_TITLE: 'meta[itemprop="title"]',
-    META_CREATED: 'meta[itemprop="created"]',
-    META_SOURCE: 'meta[itemprop="source-url"]',
-    H1: "h1",
-  },
-  /** HTML patterns */
-  PATTERNS: {
-    BR_TAG: "<br",
-    HTML_TAGS: /<[^>]*>/g,
-  },
-  /** Default values */
-  DEFAULTS: {
-    EMPTY_STRING: "",
-    UNKNOWN_TITLE: "Untitled",
-    LINE_SEPARATOR: "\n",
-  },
-  /** Error messages */
-  ERRORS: {
-    NO_TITLE: "HTML file does not have a title",
-    INVALID_DATE: "Invalid date format in 'created' meta tag",
-    EMPTY_CONTENT: "HTML content is empty or invalid",
-  },
-  /** Operation names */
-  OPERATIONS: {
-    HTML_PARSING: "html_parsing",
-  },
-} as const;
-
-/**
- * Interface for parsing options
- */
-export interface HTMLParsingOptions {
-  /** Whether to include performance measurement */
-  measurePerformance?: boolean;
-  /** Logger function for debugging */
-  logger?: (message: string) => void;
-}
 
 /**
  * Parse HTML content and extract structured data
