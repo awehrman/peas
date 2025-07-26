@@ -322,19 +322,20 @@ export class SystemMonitor extends EventEmitter {
 
     for (const [queueName, metrics] of this.queueMetrics) {
       const failureRate = metrics.failedCount / Math.max(metrics.jobCount, 1);
-      const isHealthy = failureRate < 0.1; // Less than 10% failure rate
-      const isDegraded = failureRate < 0.25; // Less than 25% failure rate
-
+      
       let status = "healthy";
       let message = "Queue is processing jobs normally";
 
-      if (!isHealthy) {
+      if (failureRate >= 0.25) {
+        // 25% or higher failure rate = unhealthy
         status = "unhealthy";
         message = `High failure rate: ${(failureRate * 100).toFixed(1)}%`;
-      } else if (!isDegraded) {
+      } else if (failureRate >= 0.1) {
+        // 10% to 25% failure rate = degraded
         status = "degraded";
         message = `Elevated failure rate: ${(failureRate * 100).toFixed(1)}%`;
       }
+      // Less than 10% = healthy (default)
 
       queueHealth[queueName] = { status, message, metrics };
     }
@@ -350,19 +351,20 @@ export class SystemMonitor extends EventEmitter {
     const failureRate =
       this.systemMetrics.totalJobsFailed /
       Math.max(this.systemMetrics.totalJobsProcessed, 1);
-    const isHealthy = failureRate < 0.05; // Less than 5% failure rate
-    const isDegraded = failureRate < 0.15; // Less than 15% failure rate
-
+    
     let status = "healthy";
     let message = "Job processing is normal";
 
-    if (!isHealthy) {
+    if (failureRate >= 0.15) {
+      // 15% or higher failure rate = unhealthy
       status = "unhealthy";
       message = `High job failure rate: ${(failureRate * 100).toFixed(1)}%`;
-    } else if (!isDegraded) {
+    } else if (failureRate >= 0.05) {
+      // 5% to 15% failure rate = degraded
       status = "degraded";
       message = `Elevated job failure rate: ${(failureRate * 100).toFixed(1)}%`;
     }
+    // Less than 5% = healthy (default)
 
     return { status, message, metrics: this.systemMetrics };
   }
@@ -447,6 +449,15 @@ export class SystemMonitor extends EventEmitter {
     setInterval(() => {
       this.cleanupOldJobMetrics();
     }, this.CLEANUP_INTERVAL_MS);
+  }
+
+  public static _resetForTests() {
+    if (SystemMonitor.instance) {
+      SystemMonitor.instance.jobMetrics?.clear?.();
+      SystemMonitor.instance.queueMetrics?.clear?.();
+      // Reset other state if needed
+    }
+    SystemMonitor.instance = undefined as any;
   }
 }
 

@@ -130,6 +130,10 @@ export function createMockQueue(): Queue {
       delayed: 0,
       paused: 0,
     }),
+    getWaiting: vi.fn().mockResolvedValue([]),
+    getActive: vi.fn().mockResolvedValue([]),
+    getCompleted: vi.fn().mockResolvedValue([]),
+    getFailed: vi.fn().mockResolvedValue([]),
   } as unknown as Queue;
 }
 
