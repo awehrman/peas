@@ -1,24 +1,26 @@
-import type { ParsedHTMLFile } from "@peas/database";
+import type { NoteWithParsedLines, ParsedHTMLFile } from "@peas/database";
 
 import { prisma } from "../config/database";
-import { PatternTracker } from "../workers/shared/pattern-tracker";
 import { createLogger } from "../utils/standardized-logger";
+import { PatternTracker } from "../workers/shared/pattern-tracker";
 
 const logger = createLogger("DatabaseService");
 
 export interface IDatabaseService {
   prisma: typeof prisma;
   patternTracker: PatternTracker;
-  createNote?: (file: ParsedHTMLFile) => Promise<unknown>;
+  createNote?: (file: ParsedHTMLFile) => Promise<NoteWithParsedLines>;
   createNoteCompletionTracker?: (
     noteId: string,
     totalJobs: number
-  ) => Promise<unknown>;
+  ) => Promise<Record<string, unknown>>;
   updateNoteCompletionTracker?: (
     noteId: string,
     completedJobs: number
-  ) => Promise<unknown>;
-  incrementNoteCompletionTracker?: (noteId: string) => Promise<unknown>;
+  ) => Promise<Record<string, unknown>>;
+  incrementNoteCompletionTracker?: (
+    noteId: string
+  ) => Promise<Record<string, unknown>>;
   checkNoteCompletion?: (noteId: string) => Promise<{
     isComplete: boolean;
     completedJobs: number;
@@ -28,10 +30,10 @@ export interface IDatabaseService {
   updateInstructionLine?: (
     id: string,
     data: Record<string, unknown>
-  ) => Promise<unknown>;
+  ) => Promise<Record<string, unknown>>;
   createInstructionSteps?: (
     steps: Array<Record<string, unknown>>
-  ) => Promise<unknown>;
+  ) => Promise<Record<string, unknown>>;
 }
 
 // In-memory job completion tracker
@@ -49,7 +51,7 @@ export class DatabaseService implements IDatabaseService {
   public patternTracker = new PatternTracker(prisma);
 
   get createNote() {
-    return async (file: ParsedHTMLFile) => {
+    return async (file: ParsedHTMLFile): Promise<NoteWithParsedLines> => {
       // Import the real createNote function from the database package
       const { createNote } = await import("@peas/database");
       return createNote(file);
@@ -57,7 +59,10 @@ export class DatabaseService implements IDatabaseService {
   }
 
   get createNoteCompletionTracker() {
-    return async (noteId: string, totalJobs: number) => {
+    return async (
+      noteId: string,
+      totalJobs: number
+    ): Promise<Record<string, unknown>> => {
       // Initialize tracking for this note
       jobCompletionTracker.set(noteId, {
         totalJobs,
@@ -65,25 +70,31 @@ export class DatabaseService implements IDatabaseService {
         isComplete: false,
       });
       logger.info("Created completion tracker", { noteId, totalJobs });
-      return Promise.resolve();
+      return {};
     };
   }
 
   get updateNoteCompletionTracker() {
-    return async (noteId: string, completedJobs: number) => {
+    return async (
+      noteId: string,
+      completedJobs: number
+    ): Promise<Record<string, unknown>> => {
       const tracker = jobCompletionTracker.get(noteId);
       if (tracker) {
         // Update the completed jobs count (this represents the current job that just completed)
         tracker.completedJobs = completedJobs;
         tracker.isComplete = completedJobs >= tracker.totalJobs;
-        logger.info("Updated completion tracker", { 
-          noteId, 
-          completedJobs, 
-          totalJobs: tracker.totalJobs, 
-          isComplete: tracker.isComplete 
+        logger.info("Updated completion tracker", {
+          noteId,
+          completedJobs,
+          totalJobs: tracker.totalJobs,
+          isComplete: tracker.isComplete,
         });
       } else {
-        logger.info("No completion tracker found, creating fallback", { noteId, completedJobs });
+        logger.info("No completion tracker found, creating fallback", {
+          noteId,
+          completedJobs,
+        });
         // Create a tracker if one doesn't exist (fallback)
         jobCompletionTracker.set(noteId, {
           totalJobs: completedJobs,
@@ -91,33 +102,36 @@ export class DatabaseService implements IDatabaseService {
           isComplete: true,
         });
       }
-      return Promise.resolve();
+      return {};
     };
   }
 
   get incrementNoteCompletionTracker() {
-    return async (noteId: string) => {
+    return async (noteId: string): Promise<Record<string, unknown>> => {
       const tracker = jobCompletionTracker.get(noteId);
       if (tracker) {
         // Only increment if we haven't already completed all jobs
         if (tracker.completedJobs < tracker.totalJobs) {
           tracker.completedJobs += 1;
           tracker.isComplete = tracker.completedJobs >= tracker.totalJobs;
-          logger.info("Incremented completion tracker", { 
-            noteId, 
-            completedJobs: tracker.completedJobs, 
-            totalJobs: tracker.totalJobs, 
-            isComplete: tracker.isComplete 
+          logger.info("Incremented completion tracker", {
+            noteId,
+            completedJobs: tracker.completedJobs,
+            totalJobs: tracker.totalJobs,
+            isComplete: tracker.isComplete,
           });
         } else {
-          logger.info("Note already complete, skipping increment", { 
-            noteId, 
-            completedJobs: tracker.completedJobs, 
-            totalJobs: tracker.totalJobs 
+          logger.info("Note already complete, skipping increment", {
+            noteId,
+            completedJobs: tracker.completedJobs,
+            totalJobs: tracker.totalJobs,
           });
         }
       } else {
-        logger.info("No completion tracker found, creating fallback with 1 job", { noteId });
+        logger.info(
+          "No completion tracker found, creating fallback with 1 job",
+          { noteId }
+        );
         // Create a tracker if one doesn't exist (fallback)
         jobCompletionTracker.set(noteId, {
           totalJobs: 1,
@@ -125,7 +139,7 @@ export class DatabaseService implements IDatabaseService {
           isComplete: true,
         });
       }
-      return Promise.resolve();
+      return {};
     };
   }
 
@@ -134,7 +148,9 @@ export class DatabaseService implements IDatabaseService {
       const tracker = jobCompletionTracker.get(noteId);
 
       if (!tracker) {
-        logger.info("No completion tracker found, considering complete", { noteId });
+        logger.info("No completion tracker found, considering complete", {
+          noteId,
+        });
         return {
           isComplete: true,
           completedJobs: 0,
@@ -142,11 +158,11 @@ export class DatabaseService implements IDatabaseService {
         };
       }
 
-      logger.info("Note completion status", { 
-        noteId, 
-        completedJobs: tracker.completedJobs, 
-        totalJobs: tracker.totalJobs, 
-        isComplete: tracker.isComplete 
+      logger.info("Note completion status", {
+        noteId,
+        completedJobs: tracker.completedJobs,
+        totalJobs: tracker.totalJobs,
+        isComplete: tracker.isComplete,
       });
 
       return {
@@ -166,12 +182,31 @@ export class DatabaseService implements IDatabaseService {
         });
         return note?.title || null;
       } catch (error) {
-        logger.error("Error getting note title", { 
-          noteId, 
-          error: error instanceof Error ? error.message : String(error) 
+        logger.error("Error getting note title", {
+          noteId,
+          error: error instanceof Error ? error.message : String(error),
         });
         return null;
       }
+    };
+  }
+
+  get updateInstructionLine() {
+    return async (
+      id: string,
+      data: Record<string, unknown>
+    ): Promise<Record<string, unknown>> => {
+      // Simulate update
+      return { id, ...data };
+    };
+  }
+
+  get createInstructionSteps() {
+    return async (
+      steps: Array<Record<string, unknown>>
+    ): Promise<Record<string, unknown>> => {
+      // Simulate creation
+      return { steps };
     };
   }
 }

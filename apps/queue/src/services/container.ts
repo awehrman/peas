@@ -1,42 +1,31 @@
 import { ServiceFactory } from "./factory";
-import type { WebSocketManager } from "./websocket-server";
-
-import { PrismaClient } from "@peas/database";
-import { Queue, Worker } from "bullmq";
+import { registerDatabase } from "./register-database";
+import { registerQueues } from "./register-queues";
 
 import type {
-  DatabaseResult,
-  JobMetadata,
-  LoggerMetadata,
-  OperationContext,
-  StatusEventData,
-} from "../types/common";
-import { HealthMonitor } from "../utils/health-monitor";
+  NoteWithParsedLines,
+  ParsedHTMLFile,
+  PrismaClient,
+} from "@peas/database";
+import type { Queue, Worker } from "bullmq";
+
+import type { OperationContext } from "../types/common";
+import type { PatternTracker } from "../workers/shared/pattern-tracker";
 
 // ============================================================================
 // SERVICE INTERFACES
 // ============================================================================
 
 /**
- * Queue service interface with conditional typing
+ * Queue service interface
  */
 export interface IQueueService {
-  queues: {
-    noteQueue: Queue;
-  } & Partial<{
-    imageQueue: Queue;
-    ingredientQueue: Queue;
-    instructionQueue: Queue;
-    categorizationQueue: Queue;
-    sourceQueue: Queue;
-  }>;
-  // Direct access for convenience
   noteQueue: Queue;
-  imageQueue?: Queue;
-  ingredientQueue?: Queue;
-  instructionQueue?: Queue;
-  categorizationQueue?: Queue;
-  sourceQueue?: Queue;
+  imageQueue: Queue;
+  ingredientQueue: Queue;
+  instructionQueue: Queue;
+  categorizationQueue: Queue;
+  sourceQueue: Queue;
 }
 
 /**
@@ -44,19 +33,33 @@ export interface IQueueService {
  */
 export interface IDatabaseService {
   prisma: PrismaClient;
-  createNote: (file: {
-    title?: string;
-    html: string;
-    imageUrl?: string;
-  }) => Promise<DatabaseResult>;
+  patternTracker: PatternTracker;
+  createNote?: (file: ParsedHTMLFile) => Promise<NoteWithParsedLines>;
   createNoteCompletionTracker?: (
     noteId: string,
     totalJobs: number
-  ) => Promise<DatabaseResult>;
-  patternTracker: JobMetadata;
+  ) => Promise<Record<string, unknown>>;
+  updateNoteCompletionTracker?: (
+    noteId: string,
+    completedJobs: number
+  ) => Promise<Record<string, unknown>>;
+  incrementNoteCompletionTracker?: (
+    noteId: string
+  ) => Promise<Record<string, unknown>>;
+  checkNoteCompletion?: (noteId: string) => Promise<{
+    isComplete: boolean;
+    completedJobs: number;
+    totalJobs: number;
+  }>;
+  getNoteTitle?: (noteId: string) => Promise<string | null>;
+  updateInstructionLine?: (
+    id: string,
+    data: Record<string, unknown>
+  ) => Promise<Record<string, unknown>>;
+  createInstructionSteps?: (
+    steps: Array<Record<string, unknown>>
+  ) => Promise<Record<string, unknown>>;
 }
-
-// Parser service removed - parsing logic is handled by Actions
 
 /**
  * Error handler service interface
@@ -66,16 +69,21 @@ export interface IErrorHandlerService {
     operation: () => Promise<T>,
     context: OperationContext
   ) => Promise<T>;
-  createJobError: (error: Error, context: OperationContext) => DatabaseResult;
+  createJobError: (
+    error: Error,
+    context: OperationContext
+  ) => Record<string, unknown>;
   classifyError: (error: Error) => string;
   logError: (error: Error, context: OperationContext) => void;
-  // For backward compatibility
   errorHandler?: {
     withErrorHandling: <T>(
       operation: () => Promise<T>,
       context: OperationContext
     ) => Promise<T>;
-    createJobError: (error: Error, context: OperationContext) => DatabaseResult;
+    createJobError: (
+      error: Error,
+      context: OperationContext
+    ) => Record<string, unknown>;
     classifyError: (error: Error) => string;
     logError: (error: Error, context: OperationContext) => void;
   };
@@ -86,13 +94,12 @@ export interface IErrorHandlerService {
  */
 export interface IStatusBroadcasterService {
   addStatusEventAndBroadcast: (
-    event: StatusEventData
-  ) => Promise<DatabaseResult>;
-  // For backward compatibility
+    event: Record<string, unknown>
+  ) => Promise<Record<string, unknown>>;
   statusBroadcaster?: {
     addStatusEventAndBroadcast: (
-      event: StatusEventData
-    ) => Promise<DatabaseResult>;
+      event: Record<string, unknown>
+    ) => Promise<Record<string, unknown>>;
   };
 }
 
@@ -100,7 +107,11 @@ export interface IStatusBroadcasterService {
  * Logger service interface
  */
 export interface ILoggerService {
-  log: (message: string, level?: string, meta?: LoggerMetadata) => void;
+  log: (
+    message: string,
+    level?: string,
+    meta?: Record<string, unknown>
+  ) => void;
 }
 
 /**
@@ -110,21 +121,20 @@ export interface IConfigService {
   wsHost?: string;
   port?: number;
   wsPort?: number;
-  // Add other config properties as needed
 }
 
 /**
  * Health monitor service interface
  */
 export interface IHealthMonitorService {
-  healthMonitor: HealthMonitor;
+  healthMonitor: unknown;
 }
 
 /**
  * WebSocket service interface
  */
 export interface IWebSocketService {
-  webSocketManager: WebSocketManager | null;
+  webSocketManager: unknown;
 }
 
 /**
@@ -146,86 +156,6 @@ export interface IServiceContainer {
 }
 
 // ============================================================================
-// SERVICE IMPLEMENTATIONS
-// ============================================================================
-
-// Default queue service implementation
-async function registerQueues(): Promise<IQueueService> {
-  const { redisConfig } = await import("../config/redis");
-  const { Queue } = await import("bullmq");
-
-  return {
-    queues: {
-      noteQueue: new Queue("note", { connection: redisConfig }),
-    },
-    noteQueue: new Queue("note", { connection: redisConfig }),
-  };
-}
-
-// Default database service implementation
-async function registerDatabase(): Promise<IDatabaseService> {
-  const { PrismaClient } = await import("@prisma/client");
-  const prisma = new PrismaClient();
-
-  return {
-    prisma,
-    createNote: async (data: {
-      title?: string;
-      html: string;
-      imageUrl?: string;
-    }) => {
-      const result = await prisma.note.create({
-        data: {
-          title: data.title,
-          html: data.html,
-          imageUrl: data.imageUrl,
-        },
-      });
-      return {
-        success: true,
-        count: 1,
-        operation: "create_note",
-        table: "note",
-        id: result.id,
-      };
-    },
-    createNoteCompletionTracker: async (noteId: string, totalJobs: number) => {
-      // Create a note completion tracker in the database
-      try {
-        // For now, we'll create a simple tracking record
-        // This can be expanded when we add the actual completion tracking table
-        console.log(
-          `[DATABASE] Creating completion tracker for note ${noteId} with ${totalJobs} total jobs`
-        );
-
-        return {
-          success: true,
-          count: 1,
-          operation: "create_completion_tracker",
-          table: "note_completion_tracker",
-          noteId,
-          totalJobs,
-          completedJobs: 0,
-        };
-      } catch (error) {
-        console.error(
-          `[DATABASE] Failed to create completion tracker: ${error}`
-        );
-        return {
-          success: false,
-          count: 0,
-          operation: "create_completion_tracker",
-          error: error instanceof Error ? error.message : String(error),
-        };
-      }
-    },
-    patternTracker: {} as JobMetadata,
-  };
-}
-
-// Service implementations moved to factory.ts
-
-// ============================================================================
 // MAIN CONTAINER CLASS
 // ============================================================================
 
@@ -238,8 +168,8 @@ export class ServiceContainer implements IServiceContainer {
   public readonly statusBroadcaster: IStatusBroadcasterService;
   public readonly logger: ILoggerService;
   public readonly config: IConfigService;
-  public queues!: IQueueService; // Use definite assignment assertion
-  public database!: IDatabaseService; // Use definite assignment assertion
+  public queues!: IQueueService;
+  public database!: IDatabaseService;
   public _workers?: {
     noteWorker?: Worker;
   };
@@ -256,8 +186,8 @@ export class ServiceContainer implements IServiceContainer {
   public static async getInstance(): Promise<ServiceContainer> {
     if (!ServiceContainer.instance) {
       ServiceContainer.instance = new ServiceContainer();
-      ServiceContainer.instance.queues = await registerQueues();
-      ServiceContainer.instance.database = await registerDatabase();
+      ServiceContainer.instance.queues = registerQueues();
+      ServiceContainer.instance.database = registerDatabase();
     }
     return ServiceContainer.instance;
   }
@@ -267,6 +197,8 @@ export class ServiceContainer implements IServiceContainer {
   }
 
   public async close(): Promise<void> {
-    await this.database.prisma.$disconnect();
+    if (this.database?.prisma?.$disconnect) {
+      await this.database.prisma.$disconnect();
+    }
   }
 }
