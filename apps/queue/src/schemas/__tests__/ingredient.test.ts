@@ -1,6 +1,20 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  createTestIngredientJobData,
+  createTestParseResult,
+  createTestProcessIngredientLineInput,
+  createTestProcessIngredientLineOutput,
+  createTestSaveIngredientLineInput,
+  createTestSaveIngredientLineOutput,
+  createTestScheduleCategorizationInput,
+  createTestScheduleCategorizationOutput,
+  testInvalidSchema,
+  testSchemaDefaults,
+  testSchemaRequiredFields,
+  testValidSchema,
+} from "../../test-utils/schema-test-utils";
+import {
   IngredientJobDataSchema,
   IngredientValidation,
   ProcessIngredientLineInputSchema,
@@ -13,786 +27,349 @@ import {
 
 describe("Ingredient Schemas", () => {
   describe("IngredientJobDataSchema", () => {
-    it("should validate valid ingredient job data", () => {
-      const validData = {
+    testValidSchema(
+      IngredientJobDataSchema,
+      createTestIngredientJobData(),
+      "valid ingredient job data with all fields"
+    );
+
+    testValidSchema(
+      IngredientJobDataSchema,
+      {
         ingredientLineId: "line-123",
         reference: "1 cup flour",
         blockIndex: 0,
         lineIndex: 1,
         noteId: "123e4567-e89b-12d3-a456-426614174000",
-        importId: "import-123",
-        currentIngredientIndex: 1,
-        totalIngredients: 5,
-        options: {
-          strictMode: true,
-          allowPartial: false,
-        },
-      };
+      },
+      "minimal ingredient job data"
+    );
 
-      const result = IngredientJobDataSchema.safeParse(validData);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data).toEqual(validData);
-      }
-    });
-
-    it("should validate minimal ingredient job data", () => {
-      const minimalData = {
+    testSchemaRequiredFields(
+      IngredientJobDataSchema,
+      ["ingredientLineId", "reference", "blockIndex", "lineIndex", "noteId"],
+      {
         ingredientLineId: "line-123",
         reference: "1 cup flour",
         blockIndex: 0,
         lineIndex: 1,
         noteId: "123e4567-e89b-12d3-a456-426614174000",
-      };
-
-      const result = IngredientJobDataSchema.safeParse(minimalData);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data.ingredientLineId).toBe("line-123");
-        expect(result.data.reference).toBe("1 cup flour");
-        expect(result.data.blockIndex).toBe(0);
-        expect(result.data.lineIndex).toBe(1);
-        expect(result.data.noteId).toBe("123e4567-e89b-12d3-a456-426614174000");
-        expect(result.data.importId).toBeUndefined();
-        expect(result.data.currentIngredientIndex).toBeUndefined();
-        expect(result.data.totalIngredients).toBeUndefined();
-        expect(result.data.options).toBeUndefined();
       }
-    });
+    );
 
-    it("should reject missing ingredientLineId", () => {
-      const invalidData = {
-        reference: "1 cup flour",
-        blockIndex: 0,
-        lineIndex: 0,
-        noteId: "123e4567-e89b-12d3-a456-426614174000",
-        currentIngredientIndex: 1,
-        totalIngredients: 5,
-      };
+    testInvalidSchema(
+      IngredientJobDataSchema,
+      createTestIngredientJobData({ ingredientLineId: "" }),
+      "Ingredient line ID is required",
+      "empty ingredientLineId"
+    );
 
-      const result = IngredientJobDataSchema.safeParse(invalidData);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Invalid input: expected string, received undefined"
-        );
-      }
-    });
+    testInvalidSchema(
+      IngredientJobDataSchema,
+      createTestIngredientJobData({ reference: "" }),
+      "Reference text is required",
+      "empty reference"
+    );
 
-    it("should reject empty ingredientLineId", () => {
-      const invalidData = {
-        ingredientLineId: "",
-        reference: "1 cup flour",
-        blockIndex: 0,
-        lineIndex: 0,
-        noteId: "123e4567-e89b-12d3-a456-426614174000",
-        currentIngredientIndex: 1,
-        totalIngredients: 5,
-      };
+    testInvalidSchema(
+      IngredientJobDataSchema,
+      createTestIngredientJobData({ blockIndex: -1 }),
+      "Block index must be non-negative",
+      "negative blockIndex"
+    );
 
-      const result = IngredientJobDataSchema.safeParse(invalidData);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Ingredient line ID is required"
-        );
-      }
-    });
+    testInvalidSchema(
+      IngredientJobDataSchema,
+      createTestIngredientJobData({ lineIndex: -1 }),
+      "Line index must be non-negative",
+      "negative lineIndex"
+    );
 
-    it("should reject missing reference", () => {
-      const invalidData = {
-        ingredientLineId: "line-123",
-        blockIndex: 0,
-        lineIndex: 1,
-        noteId: "123e4567-e89b-12d3-a456-426614174000",
-      };
+    testInvalidSchema(
+      IngredientJobDataSchema,
+      createTestIngredientJobData({ noteId: "invalid-uuid" }),
+      "Note ID must be a valid UUID",
+      "invalid noteId"
+    );
 
-      const result = IngredientJobDataSchema.safeParse(invalidData);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Invalid input: expected string, received undefined"
-        );
-      }
-    });
+    testInvalidSchema(
+      IngredientJobDataSchema,
+      createTestIngredientJobData({ currentIngredientIndex: 0 }),
+      undefined,
+      "currentIngredientIndex below 1"
+    );
 
-    it("should reject empty reference", () => {
-      const invalidData = {
-        ingredientLineId: "line-123",
-        reference: "",
-        blockIndex: 0,
-        lineIndex: 0,
-        noteId: "123e4567-e89b-12d3-a456-426614174000",
-        currentIngredientIndex: 1,
-        totalIngredients: 5,
-      };
-
-      const result = IngredientJobDataSchema.safeParse(invalidData);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Reference text is required"
-        );
-      }
-    });
-
-    it("should reject negative blockIndex", () => {
-      const invalidData = {
-        ingredientLineId: "line-123",
-        reference: "1 cup flour",
-        blockIndex: -1,
-        lineIndex: 1,
-        noteId: "123e4567-e89b-12d3-a456-426614174000",
-      };
-
-      const result = IngredientJobDataSchema.safeParse(invalidData);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Block index must be non-negative"
-        );
-      }
-    });
-
-    it("should reject negative lineIndex", () => {
-      const invalidData = {
-        ingredientLineId: "line-123",
-        reference: "1 cup flour",
-        blockIndex: 0,
-        lineIndex: -1,
-        noteId: "123e4567-e89b-12d3-a456-426614174000",
-      };
-
-      const result = IngredientJobDataSchema.safeParse(invalidData);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Line index must be non-negative"
-        );
-      }
-    });
-
-    it("should reject invalid noteId", () => {
-      const invalidData = {
-        ingredientLineId: "line-123",
-        reference: "1 cup flour",
-        blockIndex: 0,
-        lineIndex: 0,
-        noteId: "invalid-uuid",
-        currentIngredientIndex: 1,
-        totalIngredients: 5,
-      };
-
-      const result = IngredientJobDataSchema.safeParse(invalidData);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Note ID must be a valid UUID"
-        );
-      }
-    });
-
-    it("should reject currentIngredientIndex below 1", () => {
-      const invalidData = {
-        ingredientLineId: "line-123",
-        reference: "1 cup flour",
-        blockIndex: 0,
-        lineIndex: 1,
-        noteId: "123e4567-e89b-12d3-a456-426614174000",
-        currentIngredientIndex: 0,
-      };
-
-      const result = IngredientJobDataSchema.safeParse(invalidData);
-      expect(result.success).toBe(false);
-    });
-
-    it("should reject totalIngredients below 1", () => {
-      const invalidData = {
-        ingredientLineId: "line-123",
-        reference: "1 cup flour",
-        blockIndex: 0,
-        lineIndex: 1,
-        noteId: "123e4567-e89b-12d3-a456-426614174000",
-        totalIngredients: 0,
-      };
-
-      const result = IngredientJobDataSchema.safeParse(invalidData);
-      expect(result.success).toBe(false);
-    });
+    testInvalidSchema(
+      IngredientJobDataSchema,
+      createTestIngredientJobData({ totalIngredients: 0 }),
+      undefined,
+      "totalIngredients below 1"
+    );
   });
 
   describe("ProcessIngredientLineInputSchema", () => {
-    it("should validate valid process ingredient line input", () => {
-      const validInput = {
+    testValidSchema(
+      ProcessIngredientLineInputSchema,
+      createTestProcessIngredientLineInput(),
+      "valid process ingredient line input with all fields"
+    );
+
+    testValidSchema(
+      ProcessIngredientLineInputSchema,
+      {
         ingredientLineId: "line-123",
         reference: "1 cup flour",
         blockIndex: 0,
         lineIndex: 1,
         noteId: "123e4567-e89b-12d3-a456-426614174000",
-        options: {
-          strictMode: true,
-          allowPartial: false,
-        },
-      };
+      },
+      "input without options"
+    );
 
-      const result = ProcessIngredientLineInputSchema.safeParse(validInput);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data).toEqual(validInput);
-      }
-    });
-
-    it("should validate input without options", () => {
-      const inputWithoutOptions = {
+    testSchemaRequiredFields(
+      ProcessIngredientLineInputSchema,
+      ["ingredientLineId", "reference", "blockIndex", "lineIndex", "noteId"],
+      {
         ingredientLineId: "line-123",
         reference: "1 cup flour",
         blockIndex: 0,
         lineIndex: 1,
         noteId: "123e4567-e89b-12d3-a456-426614174000",
-      };
-
-      const result =
-        ProcessIngredientLineInputSchema.safeParse(inputWithoutOptions);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data.ingredientLineId).toBe("line-123");
-        expect(result.data.reference).toBe("1 cup flour");
-        expect(result.data.blockIndex).toBe(0);
-        expect(result.data.lineIndex).toBe(1);
-        expect(result.data.noteId).toBe("123e4567-e89b-12d3-a456-426614174000");
-        expect(result.data.options).toBeUndefined();
       }
-    });
+    );
 
-    it("should reject missing ingredientLineId", () => {
-      const invalidInput = {
-        reference: "1 cup flour",
-        blockIndex: 0,
-        lineIndex: 1,
-        noteId: "123e4567-e89b-12d3-a456-426614174000",
-      };
+    testInvalidSchema(
+      ProcessIngredientLineInputSchema,
+      createTestProcessIngredientLineInput({ ingredientLineId: "" }),
+      "Ingredient line ID is required",
+      "empty ingredientLineId"
+    );
 
-      const result = ProcessIngredientLineInputSchema.safeParse(invalidInput);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Invalid input: expected string, received undefined"
-        );
-      }
-    });
+    testInvalidSchema(
+      ProcessIngredientLineInputSchema,
+      createTestProcessIngredientLineInput({ reference: "" }),
+      "Reference text is required",
+      "empty reference"
+    );
 
-    it("should reject missing reference", () => {
-      const invalidInput = {
-        ingredientLineId: "line-123",
-        blockIndex: 0,
-        lineIndex: 1,
-        noteId: "123e4567-e89b-12d3-a456-426614174000",
-      };
+    testInvalidSchema(
+      ProcessIngredientLineInputSchema,
+      createTestProcessIngredientLineInput({ blockIndex: -1 }),
+      "Block index must be non-negative",
+      "negative blockIndex"
+    );
 
-      const result = ProcessIngredientLineInputSchema.safeParse(invalidInput);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Invalid input: expected string, received undefined"
-        );
-      }
-    });
+    testInvalidSchema(
+      ProcessIngredientLineInputSchema,
+      createTestProcessIngredientLineInput({ lineIndex: -1 }),
+      "Line index must be non-negative",
+      "negative lineIndex"
+    );
 
-    it("should reject negative blockIndex", () => {
-      const invalidInput = {
-        ingredientLineId: "line-123",
-        reference: "1 cup flour",
-        blockIndex: -1,
-        lineIndex: 1,
-        noteId: "123e4567-e89b-12d3-a456-426614174000",
-      };
-
-      const result = ProcessIngredientLineInputSchema.safeParse(invalidInput);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Block index must be non-negative"
-        );
-      }
-    });
-
-    it("should reject negative lineIndex", () => {
-      const invalidInput = {
-        ingredientLineId: "line-123",
-        reference: "1 cup flour",
-        blockIndex: 0,
-        lineIndex: -1,
-        noteId: "123e4567-e89b-12d3-a456-426614174000",
-      };
-
-      const result = ProcessIngredientLineInputSchema.safeParse(invalidInput);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Line index must be non-negative"
-        );
-      }
-    });
-
-    it("should reject invalid noteId", () => {
-      const invalidData = {
-        ingredientLineId: "line-123",
-        reference: "1 cup flour",
-        blockIndex: 0,
-        lineIndex: 0,
-        noteId: "invalid-uuid",
-      };
-
-      const result = ProcessIngredientLineInputSchema.safeParse(invalidData);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Note ID must be a valid UUID"
-        );
-      }
-    });
+    testInvalidSchema(
+      ProcessIngredientLineInputSchema,
+      createTestProcessIngredientLineInput({ noteId: "invalid-uuid" }),
+      "Note ID must be a valid UUID",
+      "invalid noteId"
+    );
   });
 
   describe("ProcessIngredientLineOutputSchema", () => {
-    it("should validate valid process ingredient line output", () => {
-      const validOutput = {
-        success: true,
-        parseStatus: "CORRECT" as const,
-        segments: [
-          {
-            index: 0,
-            rule: "amount_rule",
-            type: "amount" as const,
-            value: "1",
-            processingTime: 50,
-          },
-          {
-            index: 1,
-            rule: "unit_rule",
-            type: "unit" as const,
-            value: "cup",
-            processingTime: 30,
-          },
-          {
-            index: 2,
-            rule: "ingredient_rule",
-            type: "ingredient" as const,
-            value: "flour",
-            processingTime: 40,
-          },
-        ],
-        processingTime: 120,
-        ingredientLineId: "line-123",
-        noteId: "123e4567-e89b-12d3-a456-426614174000",
-      };
+    testValidSchema(
+      ProcessIngredientLineOutputSchema,
+      createTestProcessIngredientLineOutput(),
+      "valid process ingredient line output with all fields"
+    );
 
-      const result = ProcessIngredientLineOutputSchema.safeParse(validOutput);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data).toEqual(validOutput);
-      }
-    });
-
-    it("should validate failed output", () => {
-      const failedOutput = {
+    testValidSchema(
+      ProcessIngredientLineOutputSchema,
+      createTestProcessIngredientLineOutput({
         success: false,
         parseStatus: "ERROR" as const,
         segments: [],
         errorMessage: "Failed to parse ingredient",
+      }),
+      "failed output"
+    );
+
+    testSchemaRequiredFields(
+      ProcessIngredientLineOutputSchema,
+      ["ingredientLineId", "noteId"],
+      {
+        success: true,
+        parseStatus: "CORRECT" as const,
         processingTime: 100,
         ingredientLineId: "line-123",
         noteId: "123e4567-e89b-12d3-a456-426614174000",
-      };
-
-      const result = ProcessIngredientLineOutputSchema.safeParse(failedOutput);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data).toEqual(failedOutput);
       }
-    });
+    );
 
-    it("should reject missing ingredientLineId", () => {
-      const invalidOutput = {
-        success: true,
-        parseStatus: "CORRECT" as const,
-        processingTime: 100,
-        noteId: "123e4567-e89b-12d3-a456-426614174000",
-      };
+    testInvalidSchema(
+      ProcessIngredientLineOutputSchema,
+      createTestProcessIngredientLineOutput({ ingredientLineId: "" }),
+      "Ingredient line ID is required",
+      "empty ingredientLineId"
+    );
 
-      const result = ProcessIngredientLineOutputSchema.safeParse(invalidOutput);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Invalid input: expected string, received undefined"
-        );
-      }
-    });
-
-    it("should reject missing noteId", () => {
-      const invalidOutput = {
-        success: true,
-        parseStatus: "CORRECT" as const,
-        processingTime: 100,
-        ingredientLineId: "line-123",
-      };
-
-      const result = ProcessIngredientLineOutputSchema.safeParse(invalidOutput);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Invalid input: expected string, received undefined"
-        );
-      }
-    });
-
-    it("should reject invalid noteId", () => {
-      const invalidOutput = {
-        success: true,
-        parseStatus: "CORRECT" as const,
-        processingTime: 100,
-        ingredientLineId: "line-123",
-        noteId: "not-a-uuid",
-      };
-
-      const result = ProcessIngredientLineOutputSchema.safeParse(invalidOutput);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Note ID must be a valid UUID"
-        );
-      }
-    });
+    testInvalidSchema(
+      ProcessIngredientLineOutputSchema,
+      createTestProcessIngredientLineOutput({ noteId: "not-a-uuid" }),
+      "Note ID must be a valid UUID",
+      "invalid noteId"
+    );
   });
 
   describe("SaveIngredientLineInputSchema", () => {
-    it("should validate valid save ingredient line input", () => {
-      const validInput = {
+    testValidSchema(
+      SaveIngredientLineInputSchema,
+      createTestSaveIngredientLineInput(),
+      "valid save ingredient line input with all fields"
+    );
+
+    testSchemaRequiredFields(
+      SaveIngredientLineInputSchema,
+      ["ingredientLineId", "noteId", "parseResult"],
+      {
         ingredientLineId: "line-123",
         noteId: "123e4567-e89b-12d3-a456-426614174000",
-        parseResult: {
-          success: true,
-          parseStatus: "CORRECT" as const,
-          segments: [
-            {
-              index: 0,
-              rule: "amount_rule",
-              type: "amount" as const,
-              value: "1",
-            },
-            {
-              index: 1,
-              rule: "unit_rule",
-              type: "unit" as const,
-              value: "cup",
-            },
-            {
-              index: 2,
-              rule: "ingredient_rule",
-              type: "ingredient" as const,
-              value: "flour",
-            },
-          ],
-          processingTime: 120,
-        },
-      };
-
-      const result = SaveIngredientLineInputSchema.safeParse(validInput);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data).toEqual(validInput);
+        parseResult: createTestParseResult(),
       }
-    });
+    );
 
-    it("should reject missing ingredientLineId", () => {
-      const invalidInput = {
-        noteId: "123e4567-e89b-12d3-a456-426614174000",
-        parseResult: {
-          success: true,
-          parseStatus: "CORRECT" as const,
-          processingTime: 100,
-        },
-      };
+    testInvalidSchema(
+      SaveIngredientLineInputSchema,
+      createTestSaveIngredientLineInput({ ingredientLineId: "" }),
+      "Ingredient line ID is required",
+      "empty ingredientLineId"
+    );
 
-      const result = SaveIngredientLineInputSchema.safeParse(invalidInput);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Invalid input: expected string, received undefined"
-        );
-      }
-    });
+    testInvalidSchema(
+      SaveIngredientLineInputSchema,
+      createTestSaveIngredientLineInput({ noteId: "not-a-uuid" }),
+      "Note ID must be a valid UUID",
+      "invalid noteId"
+    );
 
-    it("should reject missing noteId", () => {
-      const invalidInput = {
-        ingredientLineId: "line-123",
-        parseResult: {
-          success: true,
-          parseStatus: "CORRECT" as const,
-          processingTime: 100,
-        },
-      };
-
-      const result = SaveIngredientLineInputSchema.safeParse(invalidInput);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Invalid input: expected string, received undefined"
-        );
-      }
-    });
-
-    it("should reject invalid noteId", () => {
-      const invalidInput = {
-        ingredientLineId: "line-123",
-        noteId: "not-a-uuid",
-        parseResult: {
-          success: true,
-          parseStatus: "CORRECT" as const,
-          processingTime: 100,
-        },
-      };
-
-      const result = SaveIngredientLineInputSchema.safeParse(invalidInput);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Note ID must be a valid UUID"
-        );
-      }
-    });
-
-    it("should reject invalid parseResult", () => {
-      const invalidInput = {
-        ingredientLineId: "line-123",
-        noteId: "123e4567-e89b-12d3-a456-426614174000",
-        parseResult: {
-          success: true,
-          parseStatus: "CORRECT" as const,
-          processingTime: -100, // Invalid: negative processing time
-        },
-      };
-
-      const result = SaveIngredientLineInputSchema.safeParse(invalidInput);
-      expect(result.success).toBe(false);
-    });
+    testInvalidSchema(
+      SaveIngredientLineInputSchema,
+      createTestSaveIngredientLineInput({
+        parseResult: createTestParseResult({ processingTime: -100 }),
+      }),
+      undefined,
+      "invalid parseResult with negative processing time"
+    );
   });
 
   describe("SaveIngredientLineOutputSchema", () => {
-    it("should validate successful save ingredient line output", () => {
-      const validOutput = {
-        success: true,
-        ingredientLineId: "line-123",
-        segmentsCreated: 3,
-        processingTime: 150,
-      };
+    testValidSchema(
+      SaveIngredientLineOutputSchema,
+      createTestSaveIngredientLineOutput(),
+      "successful save ingredient line output"
+    );
 
-      const result = SaveIngredientLineOutputSchema.safeParse(validOutput);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data).toEqual(validOutput);
-      }
-    });
-
-    it("should validate failed save ingredient line output", () => {
-      const failedOutput = {
+    testValidSchema(
+      SaveIngredientLineOutputSchema,
+      createTestSaveIngredientLineOutput({
         success: false,
-        ingredientLineId: "line-123",
         segmentsCreated: 0,
-        processingTime: 50,
         errorMessage: "Database connection failed",
-      };
+      }),
+      "failed save ingredient line output"
+    );
 
-      const result = SaveIngredientLineOutputSchema.safeParse(failedOutput);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data).toEqual(failedOutput);
-      }
-    });
-
-    it("should reject missing ingredientLineId", () => {
-      const invalidOutput = {
-        success: true,
-        segmentsCreated: 3,
-        processingTime: 150,
-      };
-
-      const result = SaveIngredientLineOutputSchema.safeParse(invalidOutput);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Invalid input: expected string, received undefined"
-        );
-      }
-    });
-
-    it("should reject empty ingredientLineId", () => {
-      const invalidOutput = {
-        success: true,
-        ingredientLineId: "",
-        segmentsCreated: 3,
-        processingTime: 150,
-      };
-
-      const result = SaveIngredientLineOutputSchema.safeParse(invalidOutput);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Ingredient line ID is required"
-        );
-      }
-    });
-
-    it("should reject negative segmentsCreated", () => {
-      const invalidOutput = {
-        success: true,
-        ingredientLineId: "line-123",
-        segmentsCreated: -1,
-        processingTime: 150,
-      };
-
-      const result = SaveIngredientLineOutputSchema.safeParse(invalidOutput);
-      expect(result.success).toBe(false);
-    });
-
-    it("should reject negative processingTime", () => {
-      const invalidOutput = {
+    testSchemaRequiredFields(
+      SaveIngredientLineOutputSchema,
+      ["success", "ingredientLineId", "segmentsCreated", "processingTime"],
+      {
         success: true,
         ingredientLineId: "line-123",
         segmentsCreated: 3,
-        processingTime: -100,
-      };
+        processingTime: 150,
+      }
+    );
 
-      const result = SaveIngredientLineOutputSchema.safeParse(invalidOutput);
-      expect(result.success).toBe(false);
-    });
+    testInvalidSchema(
+      SaveIngredientLineOutputSchema,
+      createTestSaveIngredientLineOutput({ ingredientLineId: "" }),
+      "Ingredient line ID is required",
+      "empty ingredientLineId"
+    );
+
+    testInvalidSchema(
+      SaveIngredientLineOutputSchema,
+      createTestSaveIngredientLineOutput({ segmentsCreated: -1 }),
+      undefined,
+      "negative segmentsCreated"
+    );
+
+    testInvalidSchema(
+      SaveIngredientLineOutputSchema,
+      createTestSaveIngredientLineOutput({ processingTime: -100 }),
+      undefined,
+      "negative processingTime"
+    );
   });
 
   describe("ScheduleCategorizationInputSchema", () => {
-    it("should validate valid schedule categorization input", () => {
-      const validInput = {
+    testValidSchema(
+      ScheduleCategorizationInputSchema,
+      createTestScheduleCategorizationInput(),
+      "valid schedule categorization input"
+    );
+
+    testSchemaRequiredFields(
+      ScheduleCategorizationInputSchema,
+      ["noteId", "ingredientLineId"],
+      {
         noteId: "123e4567-e89b-12d3-a456-426614174000",
         ingredientLineId: "line-123",
-      };
-
-      const result = ScheduleCategorizationInputSchema.safeParse(validInput);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data).toEqual(validInput);
       }
-    });
+    );
 
-    it("should reject missing noteId", () => {
-      const invalidInput = {
-        ingredientLineId: "line-123",
-      };
+    testInvalidSchema(
+      ScheduleCategorizationInputSchema,
+      createTestScheduleCategorizationInput({ noteId: "not-a-uuid" }),
+      "Note ID must be a valid UUID",
+      "invalid noteId"
+    );
 
-      const result = ScheduleCategorizationInputSchema.safeParse(invalidInput);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Invalid input: expected string, received undefined"
-        );
-      }
-    });
-
-    it("should reject invalid noteId", () => {
-      const invalidInput = {
-        noteId: "not-a-uuid",
-        ingredientLineId: "line-123",
-      };
-
-      const result = ScheduleCategorizationInputSchema.safeParse(invalidInput);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Note ID must be a valid UUID"
-        );
-      }
-    });
-
-    it("should reject missing ingredientLineId", () => {
-      const invalidInput = {
-        noteId: "123e4567-e89b-12d3-a456-426614174000",
-      };
-
-      const result = ScheduleCategorizationInputSchema.safeParse(invalidInput);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Invalid input: expected string, received undefined"
-        );
-      }
-    });
-
-    it("should reject empty ingredientLineId", () => {
-      const invalidInput = {
-        noteId: "123e4567-e89b-12d3-a456-426614174000",
-        ingredientLineId: "",
-      };
-
-      const result = ScheduleCategorizationInputSchema.safeParse(invalidInput);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Ingredient line ID is required"
-        );
-      }
-    });
+    testInvalidSchema(
+      ScheduleCategorizationInputSchema,
+      createTestScheduleCategorizationInput({ ingredientLineId: "" }),
+      "Ingredient line ID is required",
+      "empty ingredientLineId"
+    );
   });
 
   describe("ScheduleCategorizationOutputSchema", () => {
-    it("should validate successful schedule categorization output", () => {
-      const validOutput = {
-        success: true,
-        categorizationJobId: "job-123",
-      };
+    testValidSchema(
+      ScheduleCategorizationOutputSchema,
+      createTestScheduleCategorizationOutput(),
+      "successful schedule categorization output"
+    );
 
-      const result = ScheduleCategorizationOutputSchema.safeParse(validOutput);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data).toEqual(validOutput);
-      }
-    });
-
-    it("should validate failed schedule categorization output", () => {
-      const failedOutput = {
+    testValidSchema(
+      ScheduleCategorizationOutputSchema,
+      createTestScheduleCategorizationOutput({
         success: false,
+        categorizationJobId: undefined,
         errorMessage: "Failed to schedule categorization",
-      };
+      }),
+      "failed schedule categorization output"
+    );
 
-      const result = ScheduleCategorizationOutputSchema.safeParse(failedOutput);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data).toEqual(failedOutput);
-      }
-    });
-
-    it("should validate output without optional fields", () => {
-      const minimalOutput = {
-        success: true,
-      };
-
-      const result =
-        ScheduleCategorizationOutputSchema.safeParse(minimalOutput);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data.success).toBe(true);
-        expect(result.data.categorizationJobId).toBeUndefined();
-        expect(result.data.errorMessage).toBeUndefined();
-      }
-    });
+    testSchemaDefaults(
+      ScheduleCategorizationOutputSchema,
+      { success: true },
+      {},
+      "output without optional fields"
+    );
   });
 
   describe("IngredientValidation", () => {
     describe("validateIngredientJobData", () => {
       it("should validate valid ingredient job data", () => {
-        const validData = {
-          ingredientLineId: "line-123",
-          reference: "1 cup flour",
-          blockIndex: 0,
-          lineIndex: 1,
-          noteId: "123e4567-e89b-12d3-a456-426614174000",
-        };
+        const validData = createTestIngredientJobData();
 
         const result =
           IngredientValidation.validateIngredientJobData(validData);
@@ -803,13 +380,9 @@ describe("Ingredient Schemas", () => {
       });
 
       it("should return error for invalid ingredient job data", () => {
-        const invalidData = {
+        const invalidData = createTestIngredientJobData({
           ingredientLineId: "",
-          reference: "1 cup flour",
-          blockIndex: 0,
-          lineIndex: 1,
-          noteId: "123e4567-e89b-12d3-a456-426614174000",
-        };
+        });
 
         const result =
           IngredientValidation.validateIngredientJobData(invalidData);
@@ -824,13 +397,7 @@ describe("Ingredient Schemas", () => {
 
     describe("validateProcessIngredientLineInput", () => {
       it("should validate valid process ingredient line input", () => {
-        const validInput = {
-          ingredientLineId: "line-123",
-          reference: "1 cup flour",
-          blockIndex: 0,
-          lineIndex: 1,
-          noteId: "123e4567-e89b-12d3-a456-426614174000",
-        };
+        const validInput = createTestProcessIngredientLineInput();
 
         const result =
           IngredientValidation.validateProcessIngredientLineInput(validInput);
@@ -841,13 +408,9 @@ describe("Ingredient Schemas", () => {
       });
 
       it("should return error for invalid process ingredient line input", () => {
-        const invalidInput = {
-          ingredientLineId: "line-123",
+        const invalidInput = createTestProcessIngredientLineInput({
           reference: "",
-          blockIndex: 0,
-          lineIndex: 1,
-          noteId: "123e4567-e89b-12d3-a456-426614174000",
-        };
+        });
 
         const result =
           IngredientValidation.validateProcessIngredientLineInput(invalidInput);
@@ -862,13 +425,7 @@ describe("Ingredient Schemas", () => {
 
     describe("validateProcessIngredientLineOutput", () => {
       it("should validate valid process ingredient line output", () => {
-        const validOutput = {
-          success: true,
-          parseStatus: "CORRECT" as const,
-          processingTime: 100,
-          ingredientLineId: "line-123",
-          noteId: "123e4567-e89b-12d3-a456-426614174000",
-        };
+        const validOutput = createTestProcessIngredientLineOutput();
 
         const result =
           IngredientValidation.validateProcessIngredientLineOutput(validOutput);
@@ -879,13 +436,9 @@ describe("Ingredient Schemas", () => {
       });
 
       it("should return error for invalid process ingredient line output", () => {
-        const invalidOutput = {
-          success: true,
-          parseStatus: "CORRECT" as const,
+        const invalidOutput = createTestProcessIngredientLineOutput({
           processingTime: -100,
-          ingredientLineId: "line-123",
-          noteId: "123e4567-e89b-12d3-a456-426614174000",
-        };
+        });
 
         const result =
           IngredientValidation.validateProcessIngredientLineOutput(
@@ -902,15 +455,7 @@ describe("Ingredient Schemas", () => {
 
     describe("validateSaveIngredientLineInput", () => {
       it("should validate valid save ingredient line input", () => {
-        const validInput = {
-          ingredientLineId: "line-123",
-          noteId: "123e4567-e89b-12d3-a456-426614174000",
-          parseResult: {
-            success: true,
-            parseStatus: "CORRECT" as const,
-            processingTime: 100,
-          },
-        };
+        const validInput = createTestSaveIngredientLineInput();
 
         const result =
           IngredientValidation.validateSaveIngredientLineInput(validInput);
@@ -921,15 +466,9 @@ describe("Ingredient Schemas", () => {
       });
 
       it("should return error for invalid save ingredient line input", () => {
-        const invalidInput = {
+        const invalidInput = createTestSaveIngredientLineInput({
           ingredientLineId: "",
-          noteId: "123e4567-e89b-12d3-a456-426614174000",
-          parseResult: {
-            success: true,
-            parseStatus: "CORRECT" as const,
-            processingTime: 100,
-          },
-        };
+        });
 
         const result =
           IngredientValidation.validateSaveIngredientLineInput(invalidInput);
@@ -944,12 +483,7 @@ describe("Ingredient Schemas", () => {
 
     describe("validateSaveIngredientLineOutput", () => {
       it("should validate valid save ingredient line output", () => {
-        const validOutput = {
-          success: true,
-          ingredientLineId: "line-123",
-          segmentsCreated: 3,
-          processingTime: 150,
-        };
+        const validOutput = createTestSaveIngredientLineOutput();
 
         const result =
           IngredientValidation.validateSaveIngredientLineOutput(validOutput);
@@ -960,12 +494,9 @@ describe("Ingredient Schemas", () => {
       });
 
       it("should return error for invalid save ingredient line output", () => {
-        const invalidOutput = {
-          success: true,
-          ingredientLineId: "line-123",
+        const invalidOutput = createTestSaveIngredientLineOutput({
           segmentsCreated: -1,
-          processingTime: 150,
-        };
+        });
 
         const result =
           IngredientValidation.validateSaveIngredientLineOutput(invalidOutput);
@@ -980,10 +511,7 @@ describe("Ingredient Schemas", () => {
 
     describe("validateScheduleCategorizationInput", () => {
       it("should validate valid schedule categorization input", () => {
-        const validInput = {
-          noteId: "123e4567-e89b-12d3-a456-426614174000",
-          ingredientLineId: "line-123",
-        };
+        const validInput = createTestScheduleCategorizationInput();
 
         const result =
           IngredientValidation.validateScheduleCategorizationInput(validInput);
@@ -994,10 +522,9 @@ describe("Ingredient Schemas", () => {
       });
 
       it("should return error for invalid schedule categorization input", () => {
-        const invalidInput = {
+        const invalidInput = createTestScheduleCategorizationInput({
           noteId: "not-a-uuid",
-          ingredientLineId: "line-123",
-        };
+        });
 
         const result =
           IngredientValidation.validateScheduleCategorizationInput(
@@ -1014,10 +541,7 @@ describe("Ingredient Schemas", () => {
 
     describe("validateScheduleCategorizationOutput", () => {
       it("should validate valid schedule categorization output", () => {
-        const validOutput = {
-          success: true,
-          categorizationJobId: "job-123",
-        };
+        const validOutput = createTestScheduleCategorizationOutput();
 
         const result =
           IngredientValidation.validateScheduleCategorizationOutput(
@@ -1030,10 +554,9 @@ describe("Ingredient Schemas", () => {
       });
 
       it("should return error for invalid schedule categorization output", () => {
-        const invalidOutput = {
-          success: "maybe", // Invalid: should be boolean
-          categorizationJobId: "job-123",
-        };
+        const invalidOutput = createTestScheduleCategorizationOutput({
+          success: "maybe" as never, // Invalid: should be boolean
+        });
 
         const result =
           IngredientValidation.validateScheduleCategorizationOutput(

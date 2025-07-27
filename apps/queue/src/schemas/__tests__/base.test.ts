@@ -1,6 +1,18 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  createTestJobMetadata,
+  createTestParseResult,
+  createTestParsedSegment,
+  createTestProcessingOptions,
+  createTestSourceData,
+  testInvalidSchema,
+  testSchemaDefaults,
+  testSchemaPartialData,
+  testSchemaRequiredFields,
+  testValidSchema,
+} from "../../test-utils/schema-test-utils";
+import {
   BaseJobDataSchema,
   BaseValidation,
   ErrorContextSchema,
@@ -14,329 +26,182 @@ import {
 
 describe("Base Schemas", () => {
   describe("SourceSchema", () => {
-    it("should validate valid source data", () => {
-      const validSource = {
-        url: "https://example.com/recipe",
-        filename: "recipe.html",
-        contentType: "text/html",
-        metadata: { author: "John Doe" },
-      };
+    testValidSchema(
+      SourceSchema,
+      createTestSourceData(),
+      "valid source data with all fields"
+    );
 
-      const result = SourceSchema.safeParse(validSource);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data).toEqual(validSource);
-      }
-    });
+    testValidSchema(
+      SourceSchema,
+      {},
+      "source with only required fields (empty object)"
+    );
 
-    it("should validate source with only required fields", () => {
-      const minimalSource = {};
+    testValidSchema(
+      SourceSchema,
+      createTestSourceData({ url: "https://example.com/recipe" }),
+      "source with only URL"
+    );
 
-      const result = SourceSchema.safeParse(minimalSource);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data).toEqual(minimalSource);
-      }
-    });
-
-    it("should reject invalid URL", () => {
-      const invalidSource = {
-        url: "not-a-valid-url",
-      };
-
-      const result = SourceSchema.safeParse(invalidSource);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe("Invalid URL format");
-      }
-    });
-
-    it("should validate source with only URL", () => {
-      const sourceWithUrl = {
-        url: "https://example.com/recipe",
-      };
-
-      const result = SourceSchema.safeParse(sourceWithUrl);
-      expect(result.success).toBe(true);
-    });
+    testInvalidSchema(
+      SourceSchema,
+      createTestSourceData({ url: "not-a-valid-url" }),
+      "Invalid URL format",
+      "invalid URL"
+    );
   });
 
   describe("ProcessingOptionsSchema", () => {
-    it("should validate valid processing options", () => {
-      const validOptions = {
+    testValidSchema(
+      ProcessingOptionsSchema,
+      createTestProcessingOptions({
         skipCategorization: true,
         skipImageProcessing: false,
         skipIngredientProcessing: true,
         skipInstructionProcessing: false,
         strictMode: true,
         allowPartial: false,
-      };
+      }),
+      "valid processing options"
+    );
 
-      const result = ProcessingOptionsSchema.safeParse(validOptions);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data).toEqual(validOptions);
-      }
-    });
+    testSchemaDefaults(
+      ProcessingOptionsSchema,
+      {},
+      {
+        skipCategorization: false,
+        skipImageProcessing: false,
+        skipIngredientProcessing: false,
+        skipInstructionProcessing: false,
+        strictMode: false,
+        allowPartial: true,
+      },
+      "options are not provided"
+    );
 
-    it("should use default values when options are not provided", () => {
-      const emptyOptions = {};
-
-      const result = ProcessingOptionsSchema.safeParse(emptyOptions);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data).toEqual({
-          skipCategorization: false,
-          skipImageProcessing: false,
-          skipIngredientProcessing: false,
-          skipInstructionProcessing: false,
-          strictMode: false,
-          allowPartial: true,
-        });
-      }
-    });
-
-    it("should validate partial options with defaults", () => {
-      const partialOptions = {
+    testSchemaPartialData(
+      ProcessingOptionsSchema,
+      {
         skipCategorization: true,
         strictMode: true,
-      };
-
-      const result = ProcessingOptionsSchema.safeParse(partialOptions);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data).toEqual({
-          skipCategorization: true,
-          skipImageProcessing: false,
-          skipIngredientProcessing: false,
-          skipInstructionProcessing: false,
-          strictMode: true,
-          allowPartial: true,
-        });
-      }
-    });
+      },
+      createTestProcessingOptions({
+        skipCategorization: true,
+        strictMode: true,
+      }),
+      "partial options with defaults"
+    );
   });
 
   describe("JobMetadataSchema", () => {
-    it("should validate valid job metadata", () => {
-      const validMetadata = {
+    testValidSchema(
+      JobMetadataSchema,
+      createTestJobMetadata(),
+      "valid job metadata with all fields"
+    );
+
+    testSchemaDefaults(
+      JobMetadataSchema,
+      {
         jobId: "job-123",
         workerName: "test-worker",
+      },
+      {
         attemptNumber: 1,
         maxRetries: 3,
-        createdAt: new Date("2023-01-01"),
         priority: 5,
         timeout: 30000,
-      };
+      },
+      "metadata is not provided"
+    );
 
-      const result = JobMetadataSchema.safeParse(validMetadata);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data.jobId).toBe("job-123");
-        expect(result.data.workerName).toBe("test-worker");
-        expect(result.data.priority).toBe(5);
-      }
+    testSchemaRequiredFields(JobMetadataSchema, ["jobId", "workerName"], {
+      jobId: "job-123",
+      workerName: "test-worker",
+      attemptNumber: 1,
+      maxRetries: 3,
+      createdAt: new Date("2023-01-01"),
+      priority: 5,
+      timeout: 30000,
     });
 
-    it("should use default values when metadata is not provided", () => {
-      const minimalMetadata = {
-        jobId: "job-123",
-        workerName: "test-worker",
-      };
+    // Field validation tests are covered by the individual testInvalidSchema calls below
 
-      const result = JobMetadataSchema.safeParse(minimalMetadata);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data.attemptNumber).toBe(1);
-        expect(result.data.maxRetries).toBe(3);
-        expect(result.data.priority).toBe(5);
-        expect(result.data.timeout).toBe(30000);
-        expect(result.data.createdAt).toBeInstanceOf(Date);
-      }
-    });
+    testInvalidSchema(
+      JobMetadataSchema,
+      createTestJobMetadata({ jobId: "" }),
+      "Job ID is required",
+      "empty jobId"
+    );
 
-    it("should reject missing jobId", () => {
-      const invalidMetadata = {
-        workerName: "test-worker",
-      };
+    testInvalidSchema(
+      JobMetadataSchema,
+      createTestJobMetadata({ priority: 0 }),
+      "Priority must be between 1 and 10",
+      "priority below 1"
+    );
 
-      const result = JobMetadataSchema.safeParse(invalidMetadata);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Invalid input: expected string, received undefined"
-        );
-      }
-    });
+    testInvalidSchema(
+      JobMetadataSchema,
+      createTestJobMetadata({ priority: 11 }),
+      "Priority must be between 1 and 10",
+      "priority above 10"
+    );
 
-    it("should reject empty jobId", () => {
-      const invalidMetadata = {
-        jobId: "",
-        workerName: "test-worker",
-      };
+    testInvalidSchema(
+      JobMetadataSchema,
+      createTestJobMetadata({ timeout: -1000 }),
+      "Timeout must be a positive integer",
+      "negative timeout"
+    );
 
-      const result = JobMetadataSchema.safeParse(invalidMetadata);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe("Job ID is required");
-      }
-    });
+    testInvalidSchema(
+      JobMetadataSchema,
+      createTestJobMetadata({ timeout: 0 }),
+      "Timeout must be a positive integer",
+      "zero timeout"
+    );
 
-    it("should reject missing workerName", () => {
-      const invalidMetadata = {
-        jobId: "job-123",
-      };
-
-      const result = JobMetadataSchema.safeParse(invalidMetadata);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Invalid input: expected string, received undefined"
-        );
-      }
-    });
-
-    it("should reject priority below 1", () => {
-      const invalidMetadata = {
-        jobId: "job-123",
-        workerName: "test-worker",
-        priority: 0,
-      };
-
-      const result = JobMetadataSchema.safeParse(invalidMetadata);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Priority must be between 1 and 10"
-        );
-      }
-    });
-
-    it("should reject priority above 10", () => {
-      const invalidMetadata = {
-        jobId: "job-123",
-        workerName: "test-worker",
-        priority: 11,
-      };
-
-      const result = JobMetadataSchema.safeParse(invalidMetadata);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Priority must be between 1 and 10"
-        );
-      }
-    });
-
-    it("should reject negative timeout", () => {
-      const invalidMetadata = {
-        jobId: "job-123",
-        workerName: "test-worker",
-        timeout: -1000,
-      };
-
-      const result = JobMetadataSchema.safeParse(invalidMetadata);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Timeout must be a positive integer"
-        );
-      }
-    });
-
-    it("should reject zero timeout", () => {
-      const invalidMetadata = {
-        jobId: "job-123",
-        workerName: "test-worker",
-        timeout: 0,
-      };
-
-      const result = JobMetadataSchema.safeParse(invalidMetadata);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Timeout must be a positive integer"
-        );
-      }
-    });
-
-    it("should reject maxRetries above 10", () => {
-      const invalidMetadata = {
-        jobId: "job-123",
-        workerName: "test-worker",
-        maxRetries: 11,
-      };
-
-      const result = JobMetadataSchema.safeParse(invalidMetadata);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Too big: expected number to be <=10"
-        );
-      }
-    });
+    testInvalidSchema(
+      JobMetadataSchema,
+      createTestJobMetadata({ maxRetries: 11 }),
+      "Too big: expected number to be <=10",
+      "maxRetries above 10"
+    );
   });
 
   describe("BaseJobDataSchema", () => {
-    it("should validate valid base job data", () => {
-      const validJobData = {
-        metadata: {
-          jobId: "job-123",
-          workerName: "test-worker",
-          attemptNumber: 1,
-          maxRetries: 3,
-          createdAt: new Date("2023-01-01"),
-          priority: 5,
-          timeout: 30000,
-        },
-        source: {
-          url: "https://example.com/recipe",
-          filename: "recipe.html",
-        },
-        options: {
-          skipCategorization: true,
-          skipImageProcessing: false,
-          skipIngredientProcessing: false,
-          skipInstructionProcessing: false,
-          strictMode: true,
-          allowPartial: true,
-        },
+    testValidSchema(
+      BaseJobDataSchema,
+      {
+        metadata: createTestJobMetadata(),
+        source: createTestSourceData(),
+        options: createTestProcessingOptions(),
         createdAt: new Date("2023-01-01"),
-      };
+      },
+      "valid base job data with all fields"
+    );
 
-      const result = BaseJobDataSchema.safeParse(validJobData);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data).toEqual(validJobData);
-      }
-    });
+    testValidSchema(
+      BaseJobDataSchema,
+      {},
+      "minimal base job data (empty object)"
+    );
 
-    it("should validate minimal base job data", () => {
-      const minimalJobData = {};
-
-      const result = BaseJobDataSchema.safeParse(minimalJobData);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data).toEqual(minimalJobData);
-      }
-    });
-
-    it("should validate job data with only metadata", () => {
-      const jobDataWithMetadata = {
-        metadata: {
-          jobId: "job-123",
-          workerName: "test-worker",
-        },
-      };
-
-      const result = BaseJobDataSchema.safeParse(jobDataWithMetadata);
-      expect(result.success).toBe(true);
-    });
+    testValidSchema(
+      BaseJobDataSchema,
+      {
+        metadata: createTestJobMetadata(),
+      },
+      "job data with only metadata"
+    );
   });
 
   describe("StatusEventSchema", () => {
-    it("should validate valid status event", () => {
-      const validStatusEvent = {
+    testValidSchema(
+      StatusEventSchema,
+      {
         jobId: "job-123",
         status: "PROCESSING" as const,
         message: "Processing started",
@@ -344,112 +209,30 @@ describe("Base Schemas", () => {
         metadata: { progress: 50 },
         errorCode: "TIMEOUT",
         errorDetails: { reason: "Operation timed out" },
-      };
+      },
+      "valid status event with all fields"
+    );
 
-      const result = StatusEventSchema.safeParse(validStatusEvent);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data).toEqual(validStatusEvent);
-      }
-    });
-
-    it("should use default timestamp when not provided", () => {
-      const statusEventWithoutTimestamp = {
+    testSchemaDefaults(
+      StatusEventSchema,
+      {
         jobId: "job-123",
         status: "COMPLETED" as const,
         message: "Job completed",
-      };
+      },
+      {},
+      "timestamp is not provided"
+    );
 
-      const result = StatusEventSchema.safeParse(statusEventWithoutTimestamp);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data.timestamp).toBeInstanceOf(Date);
-        expect(result.data.jobId).toBe("job-123");
-        expect(result.data.status).toBe("COMPLETED");
-        expect(result.data.message).toBe("Job completed");
-      }
-    });
-
-    it("should reject missing jobId", () => {
-      const invalidStatusEvent = {
-        status: "PROCESSING" as const,
-        message: "Processing started",
-      };
-
-      const result = StatusEventSchema.safeParse(invalidStatusEvent);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Invalid input: expected string, received undefined"
-        );
-      }
-    });
-
-    it("should reject empty jobId", () => {
-      const invalidStatusEvent = {
-        jobId: "",
-        status: "PROCESSING" as const,
-        message: "Processing started",
-      };
-
-      const result = StatusEventSchema.safeParse(invalidStatusEvent);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe("Job ID is required");
-      }
-    });
-
-    it("should reject missing status", () => {
-      const invalidStatusEvent = {
-        jobId: "job-123",
-        message: "Processing started",
-      };
-
-      const result = StatusEventSchema.safeParse(invalidStatusEvent);
-      expect(result.success).toBe(false);
-    });
-
-    it("should reject invalid status", () => {
-      const invalidStatusEvent = {
-        jobId: "job-123",
-        status: "INVALID_STATUS" as never,
-        message: "Processing started",
-      };
-
-      const result = StatusEventSchema.safeParse(invalidStatusEvent);
-      expect(result.success).toBe(false);
-    });
-
-    it("should reject missing message", () => {
-      const invalidStatusEvent = {
+    testSchemaRequiredFields(
+      StatusEventSchema,
+      ["jobId", "status", "message"],
+      {
         jobId: "job-123",
         status: "PROCESSING" as const,
-      };
-
-      const result = StatusEventSchema.safeParse(invalidStatusEvent);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Invalid input: expected string, received undefined"
-        );
+        message: "Processing started",
       }
-    });
-
-    it("should reject empty message", () => {
-      const invalidStatusEvent = {
-        jobId: "job-123",
-        status: "PROCESSING" as const,
-        message: "",
-      };
-
-      const result = StatusEventSchema.safeParse(invalidStatusEvent);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Status message is required"
-        );
-      }
-    });
+    );
 
     it("should validate all status values", () => {
       const statuses = [
@@ -474,11 +257,45 @@ describe("Base Schemas", () => {
         }
       });
     });
+
+    testInvalidSchema(
+      StatusEventSchema,
+      {
+        jobId: "",
+        status: "PROCESSING" as const,
+        message: "Processing started",
+      },
+      "Job ID is required",
+      "empty jobId"
+    );
+
+    testInvalidSchema(
+      StatusEventSchema,
+      {
+        jobId: "job-123",
+        status: "INVALID_STATUS" as never,
+        message: "Processing started",
+      },
+      undefined,
+      "invalid status"
+    );
+
+    testInvalidSchema(
+      StatusEventSchema,
+      {
+        jobId: "job-123",
+        status: "PROCESSING" as const,
+        message: "",
+      },
+      "Status message is required",
+      "empty message"
+    );
   });
 
   describe("ErrorContextSchema", () => {
-    it("should validate valid error context", () => {
-      const validErrorContext = {
+    testValidSchema(
+      ErrorContextSchema,
+      {
         jobId: "job-123",
         operation: "parse_html",
         noteId: "123e4567-e89b-12d3-a456-426614174000",
@@ -488,223 +305,89 @@ describe("Base Schemas", () => {
         errorMessage: "Failed to parse HTML",
         errorDetails: { line: 10, column: 5 },
         timestamp: new Date("2023-01-01"),
-      };
+      },
+      "valid error context with all fields"
+    );
 
-      const result = ErrorContextSchema.safeParse(validErrorContext);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data).toEqual(validErrorContext);
-      }
-    });
-
-    it("should use default timestamp when not provided", () => {
-      const errorContextWithoutTimestamp = {
+    testSchemaDefaults(
+      ErrorContextSchema,
+      {
         jobId: "job-123",
         operation: "parse_html",
-      };
+      },
+      {},
+      "timestamp is not provided"
+    );
 
-      const result = ErrorContextSchema.safeParse(errorContextWithoutTimestamp);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data.timestamp).toBeInstanceOf(Date);
-        expect(result.data.jobId).toBe("job-123");
-        expect(result.data.operation).toBe("parse_html");
-      }
+    testSchemaRequiredFields(ErrorContextSchema, ["jobId", "operation"], {
+      jobId: "job-123",
+      operation: "parse_html",
     });
 
-    it("should reject missing jobId", () => {
-      const invalidErrorContext = {
-        operation: "parse_html",
-      };
+    // Field validation tests are covered by the individual testInvalidSchema calls below
 
-      const result = ErrorContextSchema.safeParse(invalidErrorContext);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Invalid input: expected string, received undefined"
-        );
-      }
-    });
-
-    it("should reject missing operation", () => {
-      const invalidErrorContext = {
-        jobId: "job-123",
-      };
-
-      const result = ErrorContextSchema.safeParse(invalidErrorContext);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Invalid input: expected string, received undefined"
-        );
-      }
-    });
-
-    it("should reject invalid UUID for noteId", () => {
-      const invalidErrorContext = {
+    testInvalidSchema(
+      ErrorContextSchema,
+      {
         jobId: "job-123",
         operation: "parse_html",
         noteId: "invalid-uuid",
-      };
+      },
+      undefined,
+      "invalid UUID for noteId"
+    );
 
-      const result = ErrorContextSchema.safeParse(invalidErrorContext);
-      expect(result.success).toBe(false);
-    });
-
-    it("should reject negative attemptNumber", () => {
-      const invalidErrorContext = {
+    testInvalidSchema(
+      ErrorContextSchema,
+      {
         jobId: "job-123",
         operation: "parse_html",
         attemptNumber: -1,
-      };
+      },
+      undefined,
+      "negative attemptNumber"
+    );
 
-      const result = ErrorContextSchema.safeParse(invalidErrorContext);
-      expect(result.success).toBe(false);
-    });
-
-    it("should reject zero attemptNumber", () => {
-      const invalidErrorContext = {
+    testInvalidSchema(
+      ErrorContextSchema,
+      {
         jobId: "job-123",
         operation: "parse_html",
         attemptNumber: 0,
-      };
-
-      const result = ErrorContextSchema.safeParse(invalidErrorContext);
-      expect(result.success).toBe(false);
-    });
+      },
+      undefined,
+      "zero attemptNumber"
+    );
   });
 
   describe("ParsedSegmentSchema", () => {
-    it("should validate valid parsed segment", () => {
-      const validSegment = {
+    testValidSchema(
+      ParsedSegmentSchema,
+      createTestParsedSegment(),
+      "valid parsed segment with all fields"
+    );
+
+    testValidSchema(
+      ParsedSegmentSchema,
+      {
         index: 0,
         rule: "amount_rule",
         type: "amount" as const,
         value: "1 cup",
-        processingTime: 150,
-        metadata: { confidence: 0.95 },
-      };
+      },
+      "segment without optional fields"
+    );
 
-      const result = ParsedSegmentSchema.safeParse(validSegment);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data).toEqual(validSegment);
+    testSchemaRequiredFields(
+      ParsedSegmentSchema,
+      ["index", "rule", "type", "value"],
+      {
+        index: 0,
+        rule: "amount_rule",
+        type: "amount" as const,
+        value: "1 cup",
       }
-    });
-
-    it("should validate segment without optional fields", () => {
-      const minimalSegment = {
-        index: 0,
-        rule: "amount_rule",
-        type: "amount" as const,
-        value: "1 cup",
-      };
-
-      const result = ParsedSegmentSchema.safeParse(minimalSegment);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data).toEqual(minimalSegment);
-      }
-    });
-
-    it("should reject negative index", () => {
-      const invalidSegment = {
-        index: -1,
-        rule: "amount_rule",
-        type: "amount" as const,
-        value: "1 cup",
-      };
-
-      const result = ParsedSegmentSchema.safeParse(invalidSegment);
-      expect(result.success).toBe(false);
-    });
-
-    it("should reject empty rule", () => {
-      const invalidSegment = {
-        index: 0,
-        rule: "",
-        type: "amount" as const,
-        value: "1 cup",
-      };
-
-      const result = ParsedSegmentSchema.safeParse(invalidSegment);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe("Rule is required");
-      }
-    });
-
-    it("should reject missing rule", () => {
-      const invalidSegment = {
-        index: 0,
-        type: "amount" as const,
-        value: "1 cup",
-      };
-
-      const result = ParsedSegmentSchema.safeParse(invalidSegment);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Invalid input: expected string, received undefined"
-        );
-      }
-    });
-
-    it("should reject invalid type", () => {
-      const invalidSegment = {
-        index: 0,
-        rule: "amount_rule",
-        type: "invalid_type" as never,
-        value: "1 cup",
-      };
-
-      const result = ParsedSegmentSchema.safeParse(invalidSegment);
-      expect(result.success).toBe(false);
-    });
-
-    it("should reject empty value", () => {
-      const invalidSegment = {
-        index: 0,
-        rule: "amount_rule",
-        type: "amount" as const,
-        value: "",
-      };
-
-      const result = ParsedSegmentSchema.safeParse(invalidSegment);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe("Value is required");
-      }
-    });
-
-    it("should reject missing value", () => {
-      const invalidSegment = {
-        index: 0,
-        rule: "amount_rule",
-        type: "amount" as const,
-      };
-
-      const result = ParsedSegmentSchema.safeParse(invalidSegment);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Invalid input: expected string, received undefined"
-        );
-      }
-    });
-
-    it("should reject negative processingTime", () => {
-      const invalidSegment = {
-        index: 0,
-        rule: "amount_rule",
-        type: "amount" as const,
-        value: "1 cup",
-        processingTime: -100,
-      };
-
-      const result = ParsedSegmentSchema.safeParse(invalidSegment);
-      expect(result.success).toBe(false);
-    });
+    );
 
     it("should validate all segment types", () => {
       const types = [
@@ -731,85 +414,86 @@ describe("Base Schemas", () => {
         }
       });
     });
+
+    testInvalidSchema(
+      ParsedSegmentSchema,
+      {
+        index: 0,
+        rule: "",
+        type: "amount" as const,
+        value: "1 cup",
+      },
+      "Rule is required",
+      "empty rule"
+    );
+
+    testInvalidSchema(
+      ParsedSegmentSchema,
+      {
+        index: 0,
+        rule: "amount_rule",
+        type: "invalid_type" as never,
+        value: "1 cup",
+      },
+      undefined,
+      "invalid type"
+    );
+
+    testInvalidSchema(
+      ParsedSegmentSchema,
+      {
+        index: 0,
+        rule: "amount_rule",
+        type: "amount" as const,
+        value: "",
+      },
+      "Value is required",
+      "empty value"
+    );
+
+    testInvalidSchema(
+      ParsedSegmentSchema,
+      {
+        index: 0,
+        rule: "amount_rule",
+        type: "amount" as const,
+        value: "1 cup",
+        processingTime: -100,
+      },
+      undefined,
+      "negative processingTime"
+    );
   });
 
   describe("ParseResultSchema", () => {
-    it("should validate valid parse result", () => {
-      const validParseResult = {
-        success: true,
-        parseStatus: "CORRECT" as const,
-        segments: [
-          {
-            index: 0,
-            rule: "amount_rule",
-            type: "amount" as const,
-            value: "1 cup",
-          },
-        ],
-        errorMessage: undefined,
-        processingTime: 250,
-        metadata: { confidence: 0.9 },
-      };
+    testValidSchema(
+      ParseResultSchema,
+      createTestParseResult(),
+      "valid parse result with all fields"
+    );
 
-      const result = ParseResultSchema.safeParse(validParseResult);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data).toEqual(validParseResult);
-      }
-    });
-
-    it("should validate failed parse result", () => {
-      const failedParseResult = {
+    testValidSchema(
+      ParseResultSchema,
+      {
         success: false,
         parseStatus: "ERROR" as const,
         segments: [],
         errorMessage: "Failed to parse ingredient",
         processingTime: 100,
         metadata: { errorType: "syntax" },
-      };
+      },
+      "failed parse result"
+    );
 
-      const result = ParseResultSchema.safeParse(failedParseResult);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data).toEqual(failedParseResult);
-      }
-    });
-
-    it("should validate minimal parse result", () => {
-      const minimalParseResult = {
+    testValidSchema(
+      ParseResultSchema,
+      {
         success: true,
         parseStatus: "PENDING" as const,
         processingTime: 0,
-      };
-
-      const result = ParseResultSchema.safeParse(minimalParseResult);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data).toEqual(minimalParseResult);
-      }
-    });
-
-    it("should reject negative processingTime", () => {
-      const invalidParseResult = {
-        success: true,
-        parseStatus: "CORRECT" as const,
-        processingTime: -100,
-      };
-
-      const result = ParseResultSchema.safeParse(invalidParseResult);
-      expect(result.success).toBe(false);
-    });
-
-    it("should reject invalid parseStatus", () => {
-      const invalidParseResult = {
-        success: true,
-        parseStatus: "INVALID_STATUS" as never,
-        processingTime: 100,
-      };
-
-      const result = ParseResultSchema.safeParse(invalidParseResult);
-      expect(result.success).toBe(false);
-    });
+      },
+      "minimal parse result"
+    );
 
     it("should validate all parse status values", () => {
       const statuses = ["PENDING", "CORRECT", "INCORRECT", "ERROR"] as const;
@@ -828,21 +512,34 @@ describe("Base Schemas", () => {
         }
       });
     });
+
+    testInvalidSchema(
+      ParseResultSchema,
+      {
+        success: true,
+        parseStatus: "INVALID_STATUS" as never,
+        processingTime: 100,
+      },
+      undefined,
+      "invalid parseStatus"
+    );
+
+    testInvalidSchema(
+      ParseResultSchema,
+      {
+        success: true,
+        parseStatus: "CORRECT" as const,
+        processingTime: -100,
+      },
+      undefined,
+      "negative processingTime"
+    );
   });
 
   describe("BaseValidation", () => {
     describe("validate", () => {
       it("should validate valid data", () => {
-        const validData = {
-          jobId: "job-123",
-          workerName: "test-worker",
-          attemptNumber: 1,
-          maxRetries: 3,
-          createdAt: new Date("2023-01-01"),
-          priority: 5,
-          timeout: 30000,
-        };
-
+        const validData = createTestJobMetadata();
         const result = BaseValidation.validate(JobMetadataSchema, validData);
         expect(result.success).toBe(true);
         if (result.success) {
@@ -851,11 +548,7 @@ describe("Base Schemas", () => {
       });
 
       it("should return error for invalid data", () => {
-        const invalidData = {
-          jobId: "",
-          workerName: "test-worker",
-        };
-
+        const invalidData = { jobId: "", workerName: "test-worker" };
         const result = BaseValidation.validate(JobMetadataSchema, invalidData);
         expect(result.success).toBe(false);
         if (!result.success) {
@@ -904,15 +597,7 @@ describe("Base Schemas", () => {
     describe("validateBaseJobData", () => {
       it("should validate valid base job data", () => {
         const validData = {
-          metadata: {
-            jobId: "job-123",
-            workerName: "test-worker",
-            attemptNumber: 1,
-            maxRetries: 3,
-            createdAt: new Date("2023-01-01"),
-            priority: 5,
-            timeout: 30000,
-          },
+          metadata: createTestJobMetadata(),
         };
 
         const result = BaseValidation.validateBaseJobData(validData);

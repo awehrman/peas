@@ -1,6 +1,21 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  createTestNoteJobData,
+  createTestParseHtmlData,
+  createTestParsedHtmlFile,
+  createTestParsedIngredientLine,
+  createTestParsedInstructionLine,
+  createTestSaveNoteData,
+  createTestScheduleActionData,
+  createTestScheduleIngredientsData,
+  createTestScheduleInstructionsData,
+  testInvalidSchema,
+  testSchemaDefaults,
+  testSchemaRequiredFields,
+  testValidSchema,
+} from "../../test-utils/schema-test-utils";
+import {
   NoteJobDataSchema,
   NoteValidation,
   ParseHtmlDataSchema,
@@ -18,321 +33,164 @@ import {
 
 describe("Note Schemas", () => {
   describe("NoteJobDataSchema", () => {
-    it("should validate valid note job data", () => {
-      const validData = {
+    testValidSchema(
+      NoteJobDataSchema,
+      createTestNoteJobData(),
+      "valid note job data with all fields"
+    );
+
+    testValidSchema(
+      NoteJobDataSchema,
+      {
         content: "<html><body><h1>Test Recipe</h1></body></html>",
-        noteId: "123e4567-e89b-12d3-a456-426614174000",
-        priority: 5,
-        timeout: 30000,
-      };
+      },
+      "minimal note job data"
+    );
 
-      const result = NoteJobDataSchema.safeParse(validData);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data).toEqual(validData);
-      }
+    testSchemaRequiredFields(NoteJobDataSchema, ["content"], {
+      content: "<html><body><h1>Test Recipe</h1></body></html>",
     });
 
-    it("should validate minimal note job data", () => {
-      const minimalData = {
-        content: "<html><body><h1>Test Recipe</h1></body></html>",
-      };
+    testInvalidSchema(
+      NoteJobDataSchema,
+      createTestNoteJobData({ content: "" }),
+      "Content cannot be empty",
+      "empty content"
+    );
 
-      const result = NoteJobDataSchema.safeParse(minimalData);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data.content).toBe(minimalData.content);
-        expect(result.data.noteId).toBeUndefined();
-        expect(result.data.priority).toBeUndefined();
-        expect(result.data.timeout).toBeUndefined();
-      }
-    });
+    testInvalidSchema(
+      NoteJobDataSchema,
+      createTestNoteJobData({ noteId: "not-a-uuid" }),
+      "Note ID must be a valid UUID",
+      "invalid noteId"
+    );
 
-    it("should reject empty content", () => {
-      const invalidData = {
-        content: "",
-      };
+    testInvalidSchema(
+      NoteJobDataSchema,
+      createTestNoteJobData({ priority: 0 }),
+      "Priority must be between 1 and 10",
+      "priority below 1"
+    );
 
-      const result = NoteJobDataSchema.safeParse(invalidData);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe("Content cannot be empty");
-      }
-    });
+    testInvalidSchema(
+      NoteJobDataSchema,
+      createTestNoteJobData({ priority: 11 }),
+      "Priority must be between 1 and 10",
+      "priority above 10"
+    );
 
-    it("should reject missing content", () => {
-      const invalidData = {};
+    testInvalidSchema(
+      NoteJobDataSchema,
+      createTestNoteJobData({ timeout: -1000 }),
+      "Timeout must be a positive integer",
+      "negative timeout"
+    );
 
-      const result = NoteJobDataSchema.safeParse(invalidData);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Invalid input: expected string, received undefined"
-        );
-      }
-    });
-
-    it("should reject invalid noteId", () => {
-      const invalidData = {
-        content: "<html><body><h1>Test Recipe</h1></body></html>",
-        noteId: "not-a-uuid",
-      };
-
-      const result = NoteJobDataSchema.safeParse(invalidData);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Note ID must be a valid UUID"
-        );
-      }
-    });
-
-    it("should reject priority below 1", () => {
-      const invalidData = {
-        content: "<html><body><h1>Test Recipe</h1></body></html>",
-        priority: 0,
-      };
-
-      const result = NoteJobDataSchema.safeParse(invalidData);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Priority must be between 1 and 10"
-        );
-      }
-    });
-
-    it("should reject priority above 10", () => {
-      const invalidData = {
-        content: "<html><body><h1>Test Recipe</h1></body></html>",
-        priority: 11,
-      };
-
-      const result = NoteJobDataSchema.safeParse(invalidData);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Priority must be between 1 and 10"
-        );
-      }
-    });
-
-    it("should reject negative timeout", () => {
-      const invalidData = {
-        content: "<html><body><h1>Test Recipe</h1></body></html>",
-        timeout: -1000,
-      };
-
-      const result = NoteJobDataSchema.safeParse(invalidData);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Timeout must be a positive integer"
-        );
-      }
-    });
-
-    it("should reject zero timeout", () => {
-      const invalidData = {
-        content: "<html><body><h1>Test Recipe</h1></body></html>",
-        timeout: 0,
-      };
-
-      const result = NoteJobDataSchema.safeParse(invalidData);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Timeout must be a positive integer"
-        );
-      }
-    });
+    testInvalidSchema(
+      NoteJobDataSchema,
+      createTestNoteJobData({ timeout: 0 }),
+      "Timeout must be a positive integer",
+      "zero timeout"
+    );
   });
 
   describe("ParseHtmlDataSchema", () => {
-    it("should validate valid parse HTML data", () => {
-      const validData = {
+    testValidSchema(
+      ParseHtmlDataSchema,
+      createTestParseHtmlData(),
+      "valid parse HTML data with all fields"
+    );
+
+    testValidSchema(
+      ParseHtmlDataSchema,
+      {
         content: "<html><body><h1>Test Recipe</h1></body></html>",
-        importId: "import-123",
-      };
+      },
+      "data without importId"
+    );
 
-      const result = ParseHtmlDataSchema.safeParse(validData);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data).toEqual(validData);
-      }
+    testSchemaRequiredFields(ParseHtmlDataSchema, ["content"], {
+      content: "<html><body><h1>Test Recipe</h1></body></html>",
     });
 
-    it("should validate data without importId", () => {
-      const dataWithoutImportId = {
-        content: "<html><body><h1>Test Recipe</h1></body></html>",
-      };
-
-      const result = ParseHtmlDataSchema.safeParse(dataWithoutImportId);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data.content).toBe(dataWithoutImportId.content);
-        expect(result.data.importId).toBeUndefined();
-      }
-    });
-
-    it("should reject empty content", () => {
-      const invalidData = {
-        content: "",
-      };
-
-      const result = ParseHtmlDataSchema.safeParse(invalidData);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe("Content cannot be empty");
-      }
-    });
-
-    it("should reject missing content", () => {
-      const invalidData = {};
-
-      const result = ParseHtmlDataSchema.safeParse(invalidData);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Invalid input: expected string, received undefined"
-        );
-      }
-    });
+    testInvalidSchema(
+      ParseHtmlDataSchema,
+      createTestParseHtmlData({ content: "" }),
+      "Content cannot be empty",
+      "empty content"
+    );
   });
 
   describe("ParsedHtmlFileSchema", () => {
-    it("should validate valid parsed HTML file", () => {
-      const validFile = {
+    testValidSchema(
+      ParsedHtmlFileSchema,
+      createTestParsedHtmlFile(),
+      "valid parsed HTML file with all fields"
+    );
+
+    testValidSchema(
+      ParsedHtmlFileSchema,
+      {
         title: "Test Recipe",
         contents: "<html><body><h1>Test Recipe</h1></body></html>",
-        tags: ["recipe", "food"],
-        source: "Evernote",
-        sourceUrl: "https://example.com/recipe",
-        sourceApplication: "Evernote",
-        created: "2023-01-01T00:00:00Z",
-        historicalCreatedAt: new Date("2023-01-01"),
+        tags: [],
         ingredients: [],
         instructions: [],
-        image:
-          "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
-        images: [
-          {
-            src: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
-            width: "100",
-            dataResourceHash: "hash123",
-          },
-        ],
-        metadata: { author: "John Doe" },
-      };
+      },
+      "minimal parsed HTML file"
+    );
 
-      const result = ParsedHtmlFileSchema.safeParse(validFile);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data).toEqual(validFile);
-      }
-    });
-
-    it("should validate minimal parsed HTML file", () => {
-      const minimalFile = {
+    testSchemaDefaults(
+      ParsedHtmlFileSchema,
+      {
         title: "Test Recipe",
         contents: "<html><body><h1>Test Recipe</h1></body></html>",
-      };
+      },
+      {
+        tags: [],
+        ingredients: [],
+        instructions: [],
+      },
+      "minimal file with defaults"
+    );
 
-      const result = ParsedHtmlFileSchema.safeParse(minimalFile);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data.title).toBe("Test Recipe");
-        expect(result.data.contents).toBe(
-          "<html><body><h1>Test Recipe</h1></body></html>"
-        );
-        expect(result.data.tags).toEqual([]);
-        expect(result.data.ingredients).toEqual([]);
-        expect(result.data.instructions).toEqual([]);
-        expect(result.data.source).toBeUndefined();
-        expect(result.data.sourceUrl).toBeUndefined();
-        expect(result.data.sourceApplication).toBeUndefined();
-        expect(result.data.created).toBeUndefined();
-        expect(result.data.historicalCreatedAt).toBeUndefined();
-        expect(result.data.image).toBeUndefined();
-        expect(result.data.images).toBeUndefined();
-        expect(result.data.metadata).toBeUndefined();
-      }
+    testSchemaRequiredFields(ParsedHtmlFileSchema, ["title", "contents"], {
+      title: "Test Recipe",
+      contents: "<html><body><h1>Test Recipe</h1></body></html>",
     });
 
-    it("should reject empty title", () => {
-      const invalidFile = {
-        title: "",
-        contents: "<html><body><h1>Test Recipe</h1></body></html>",
-      };
+    testInvalidSchema(
+      ParsedHtmlFileSchema,
+      createTestParsedHtmlFile({ title: "" }),
+      "Title is required",
+      "empty title"
+    );
 
-      const result = ParsedHtmlFileSchema.safeParse(invalidFile);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe("Title is required");
-      }
-    });
+    testInvalidSchema(
+      ParsedHtmlFileSchema,
+      createTestParsedHtmlFile({ contents: "" }),
+      "Contents are required",
+      "empty contents"
+    );
 
-    it("should reject missing title", () => {
-      const invalidFile = {
-        contents: "<html><body><h1>Test Recipe</h1></body></html>",
-      };
-
-      const result = ParsedHtmlFileSchema.safeParse(invalidFile);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Invalid input: expected string, received undefined"
-        );
-      }
-    });
-
-    it("should reject empty contents", () => {
-      const invalidFile = {
-        title: "Test Recipe",
-        contents: "",
-      };
-
-      const result = ParsedHtmlFileSchema.safeParse(invalidFile);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe("Contents are required");
-      }
-    });
-
-    it("should reject missing contents", () => {
-      const invalidFile = {
-        title: "Test Recipe",
-      };
-
-      const result = ParsedHtmlFileSchema.safeParse(invalidFile);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Invalid input: expected string, received undefined"
-        );
-      }
-    });
-
-    it("should reject invalid sourceUrl", () => {
-      const invalidFile = {
-        title: "Test Recipe",
-        contents: "<html><body><h1>Test Recipe</h1></body></html>",
-        sourceUrl: "not-a-url",
-      };
-
-      const result = ParsedHtmlFileSchema.safeParse(invalidFile);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Invalid source URL format"
-        );
-      }
-    });
+    testInvalidSchema(
+      ParsedHtmlFileSchema,
+      createTestParsedHtmlFile({ sourceUrl: "not-a-url" }),
+      "Invalid source URL format",
+      "invalid sourceUrl"
+    );
   });
 
   describe("SaveNoteDataSchema", () => {
-    it("should validate valid save note data", () => {
-      const validData = {
+    testValidSchema(
+      SaveNoteDataSchema,
+      createTestSaveNoteData(),
+      "valid save note data with all fields"
+    );
+
+    testValidSchema(
+      SaveNoteDataSchema,
+      {
         file: {
           title: "Test Recipe",
           contents: "<html><body><h1>Test Recipe</h1></body></html>",
@@ -340,530 +198,290 @@ describe("Note Schemas", () => {
           ingredients: [],
           instructions: [],
         },
-        importId: "import-123",
-      };
+      },
+      "data without importId"
+    );
 
-      const result = SaveNoteDataSchema.safeParse(validData);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data).toEqual(validData);
-      }
+    testSchemaRequiredFields(SaveNoteDataSchema, ["file"], {
+      file: {
+        title: "Test Recipe",
+        contents: "<html><body><h1>Test Recipe</h1></body></html>",
+        tags: [],
+        ingredients: [],
+        instructions: [],
+      },
     });
 
-    it("should validate data without importId", () => {
-      const dataWithoutImportId = {
+    testInvalidSchema(
+      SaveNoteDataSchema,
+      createTestSaveNoteData({
         file: {
-          title: "Test Recipe",
+          title: "",
           contents: "<html><body><h1>Test Recipe</h1></body></html>",
           tags: [],
           ingredients: [],
           instructions: [],
         },
-      };
-
-      const result = SaveNoteDataSchema.safeParse(dataWithoutImportId);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data.file).toEqual(dataWithoutImportId.file);
-        expect(result.data.importId).toBeUndefined();
-      }
-    });
-
-    it("should reject missing file", () => {
-      const invalidData = {
-        importId: "import-123",
-      };
-
-      const result = SaveNoteDataSchema.safeParse(invalidData);
-      expect(result.success).toBe(false);
-    });
-
-    it("should reject invalid file", () => {
-      const invalidData = {
-        file: {
-          title: "", // Invalid: empty title
-          contents: "<html><body><h1>Test Recipe</h1></body></html>",
-        },
-        importId: "import-123",
-      };
-
-      const result = SaveNoteDataSchema.safeParse(invalidData);
-      expect(result.success).toBe(false);
-    });
+      }),
+      undefined,
+      "invalid file with empty title"
+    );
   });
 
   describe("ParsedIngredientLineSchema", () => {
-    it("should validate valid parsed ingredient line", () => {
-      const validLine = {
+    testValidSchema(
+      ParsedIngredientLineSchema,
+      createTestParsedIngredientLine(),
+      "valid parsed ingredient line"
+    );
+
+    testSchemaRequiredFields(
+      ParsedIngredientLineSchema,
+      ["id", "reference", "blockIndex", "lineIndex"],
+      {
         id: "123e4567-e89b-12d3-a456-426614174000",
         reference: "1 cup flour",
         blockIndex: 0,
         lineIndex: 1,
-      };
-
-      const result = ParsedIngredientLineSchema.safeParse(validLine);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data).toEqual(validLine);
       }
-    });
+    );
 
-    it("should reject invalid id", () => {
-      const invalidLine = {
-        id: "not-a-uuid",
-        reference: "1 cup flour",
-        blockIndex: 0,
-        lineIndex: 1,
-      };
+    testInvalidSchema(
+      ParsedIngredientLineSchema,
+      createTestParsedIngredientLine({ id: "not-a-uuid" }),
+      undefined,
+      "invalid id"
+    );
 
-      const result = ParsedIngredientLineSchema.safeParse(invalidLine);
-      expect(result.success).toBe(false);
-    });
+    testInvalidSchema(
+      ParsedIngredientLineSchema,
+      createTestParsedIngredientLine({ blockIndex: -1 }),
+      undefined,
+      "negative blockIndex"
+    );
 
-    it("should reject negative blockIndex", () => {
-      const invalidLine = {
-        id: "123e4567-e89b-12d3-a456-426614174000",
-        reference: "1 cup flour",
-        blockIndex: -1,
-        lineIndex: 1,
-      };
-
-      const result = ParsedIngredientLineSchema.safeParse(invalidLine);
-      expect(result.success).toBe(false);
-    });
-
-    it("should reject negative lineIndex", () => {
-      const invalidLine = {
-        id: "123e4567-e89b-12d3-a456-426614174000",
-        reference: "1 cup flour",
-        blockIndex: 0,
-        lineIndex: -1,
-      };
-
-      const result = ParsedIngredientLineSchema.safeParse(invalidLine);
-      expect(result.success).toBe(false);
-    });
+    testInvalidSchema(
+      ParsedIngredientLineSchema,
+      createTestParsedIngredientLine({ lineIndex: -1 }),
+      undefined,
+      "negative lineIndex"
+    );
   });
 
   describe("ParsedInstructionLineSchema", () => {
-    it("should validate valid parsed instruction line", () => {
-      const validLine = {
+    testValidSchema(
+      ParsedInstructionLineSchema,
+      createTestParsedInstructionLine(),
+      "valid parsed instruction line with all fields"
+    );
+
+    testValidSchema(
+      ParsedInstructionLineSchema,
+      {
         id: "123e4567-e89b-12d3-a456-426614174000",
         originalText: "Mix ingredients together",
-        normalizedText: "mix ingredients together",
         lineIndex: 1,
-      };
+      },
+      "line without normalizedText"
+    );
 
-      const result = ParsedInstructionLineSchema.safeParse(validLine);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data).toEqual(validLine);
+    testSchemaRequiredFields(
+      ParsedInstructionLineSchema,
+      ["id", "originalText", "lineIndex"],
+      {
+        id: "123e4567-e89b-12d3-a456-426614174000",
+        originalText: "Mix ingredients together",
+        lineIndex: 1,
       }
-    });
+    );
 
-    it("should validate line without normalizedText", () => {
-      const lineWithoutNormalized = {
-        id: "123e4567-e89b-12d3-a456-426614174000",
-        originalText: "Mix ingredients together",
-        lineIndex: 1,
-      };
+    testInvalidSchema(
+      ParsedInstructionLineSchema,
+      createTestParsedInstructionLine({ id: "not-a-uuid" }),
+      undefined,
+      "invalid id"
+    );
 
-      const result = ParsedInstructionLineSchema.safeParse(
-        lineWithoutNormalized
-      );
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data.originalText).toBe("Mix ingredients together");
-        expect(result.data.normalizedText).toBeUndefined();
-        expect(result.data.lineIndex).toBe(1);
-      }
-    });
-
-    it("should reject invalid id", () => {
-      const invalidLine = {
-        id: "not-a-uuid",
-        originalText: "Mix ingredients together",
-        lineIndex: 1,
-      };
-
-      const result = ParsedInstructionLineSchema.safeParse(invalidLine);
-      expect(result.success).toBe(false);
-    });
-
-    it("should reject negative lineIndex", () => {
-      const invalidLine = {
-        id: "123e4567-e89b-12d3-a456-426614174000",
-        originalText: "Mix ingredients together",
-        lineIndex: -1,
-      };
-
-      const result = ParsedInstructionLineSchema.safeParse(invalidLine);
-      expect(result.success).toBe(false);
-    });
+    testInvalidSchema(
+      ParsedInstructionLineSchema,
+      createTestParsedInstructionLine({ lineIndex: -1 }),
+      undefined,
+      "negative lineIndex"
+    );
   });
 
   describe("ScheduleActionDataSchema", () => {
-    it("should validate valid schedule action data", () => {
-      const validData = {
-        noteId: "123e4567-e89b-12d3-a456-426614174000",
+    testValidSchema(
+      ScheduleActionDataSchema,
+      createTestScheduleActionData(),
+      "valid schedule action data"
+    );
+
+    testSchemaRequiredFields(ScheduleActionDataSchema, ["noteId", "file"], {
+      noteId: "123e4567-e89b-12d3-a456-426614174000",
+      file: {
+        title: "Test Recipe",
+        contents: "<html><body><h1>Test Recipe</h1></body></html>",
+        tags: [],
+        ingredients: [],
+        instructions: [],
+      },
+    });
+
+    testInvalidSchema(
+      ScheduleActionDataSchema,
+      createTestScheduleActionData({ noteId: "not-a-uuid" }),
+      "Note ID must be a valid UUID",
+      "invalid noteId"
+    );
+
+    testInvalidSchema(
+      ScheduleActionDataSchema,
+      createTestScheduleActionData({
         file: {
-          title: "Test Recipe",
+          title: "",
           contents: "<html><body><h1>Test Recipe</h1></body></html>",
           tags: [],
           ingredients: [],
           instructions: [],
         },
-      };
-
-      const result = ScheduleActionDataSchema.safeParse(validData);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data).toEqual(validData);
-      }
-    });
-
-    it("should reject invalid noteId", () => {
-      const invalidData = {
-        noteId: "not-a-uuid",
-        file: {
-          title: "Test Recipe",
-          contents: "<html><body><h1>Test Recipe</h1></body></html>",
-        },
-      };
-
-      const result = ScheduleActionDataSchema.safeParse(invalidData);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Note ID must be a valid UUID"
-        );
-      }
-    });
-
-    it("should reject missing noteId", () => {
-      const invalidData = {
-        file: {
-          title: "Test Recipe",
-          contents: "<html><body><h1>Test Recipe</h1></body></html>",
-        },
-      };
-
-      const result = ScheduleActionDataSchema.safeParse(invalidData);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Invalid input: expected string, received undefined"
-        );
-      }
-    });
-
-    it("should reject missing file", () => {
-      const invalidData = {
-        noteId: "123e4567-e89b-12d3-a456-426614174000",
-      };
-
-      const result = ScheduleActionDataSchema.safeParse(invalidData);
-      expect(result.success).toBe(false);
-    });
-
-    it("should reject invalid file", () => {
-      const invalidData = {
-        noteId: "123e4567-e89b-12d3-a456-426614174000",
-        file: {
-          title: "", // Invalid: empty title
-          contents: "<html><body><h1>Test Recipe</h1></body></html>",
-        },
-      };
-
-      const result = ScheduleActionDataSchema.safeParse(invalidData);
-      expect(result.success).toBe(false);
-    });
+      }),
+      undefined,
+      "invalid file with empty title"
+    );
   });
 
   describe("ScheduleCategorizationDataSchema", () => {
-    it("should validate valid schedule categorization data", () => {
-      const validData = {
-        noteId: "123e4567-e89b-12d3-a456-426614174000",
-        file: {
-          title: "Test Recipe",
-          contents: "<html><body><h1>Test Recipe</h1></body></html>",
-          tags: [],
-          ingredients: [],
-          instructions: [],
-        },
-      };
+    testValidSchema(
+      ScheduleCategorizationDataSchema,
+      createTestScheduleActionData(),
+      "valid schedule categorization data"
+    );
 
-      const result = ScheduleCategorizationDataSchema.safeParse(validData);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data).toEqual(validData);
-      }
-    });
-
-    it("should reject invalid noteId", () => {
-      const invalidData = {
-        noteId: "not-a-uuid",
-        file: {
-          title: "Test Recipe",
-          contents: "<html><body><h1>Test Recipe</h1></body></html>",
-        },
-      };
-
-      const result = ScheduleCategorizationDataSchema.safeParse(invalidData);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Note ID must be a valid UUID"
-        );
-      }
-    });
+    testInvalidSchema(
+      ScheduleCategorizationDataSchema,
+      createTestScheduleActionData({ noteId: "not-a-uuid" }),
+      "Note ID must be a valid UUID",
+      "invalid noteId"
+    );
   });
 
   describe("ScheduleImagesDataSchema", () => {
-    it("should validate valid schedule images data", () => {
-      const validData = {
-        noteId: "123e4567-e89b-12d3-a456-426614174000",
-        file: {
-          title: "Test Recipe",
-          contents: "<html><body><h1>Test Recipe</h1></body></html>",
-          tags: [],
-          ingredients: [],
-          instructions: [],
-        },
-      };
+    testValidSchema(
+      ScheduleImagesDataSchema,
+      createTestScheduleActionData(),
+      "valid schedule images data"
+    );
 
-      const result = ScheduleImagesDataSchema.safeParse(validData);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data).toEqual(validData);
-      }
-    });
-
-    it("should reject invalid noteId", () => {
-      const invalidData = {
-        noteId: "not-a-uuid",
-        file: {
-          title: "Test Recipe",
-          contents: "<html><body><h1>Test Recipe</h1></body></html>",
-        },
-      };
-
-      const result = ScheduleImagesDataSchema.safeParse(invalidData);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Note ID must be a valid UUID"
-        );
-      }
-    });
+    testInvalidSchema(
+      ScheduleImagesDataSchema,
+      createTestScheduleActionData({ noteId: "not-a-uuid" }),
+      "Note ID must be a valid UUID",
+      "invalid noteId"
+    );
   });
 
   describe("ScheduleIngredientsDataSchema", () => {
-    it("should validate valid schedule ingredients data", () => {
-      const validData = {
+    testValidSchema(
+      ScheduleIngredientsDataSchema,
+      createTestScheduleIngredientsData(),
+      "valid schedule ingredients data with all fields"
+    );
+
+    testValidSchema(
+      ScheduleIngredientsDataSchema,
+      {
         noteId: "123e4567-e89b-12d3-a456-426614174000",
-        importId: "import-123",
-        note: {
-          id: "123e4567-e89b-12d3-a456-426614174000",
-          title: "Test Recipe",
-          parsedIngredientLines: [
-            {
-              id: "456e7890-e89b-12d3-a456-426614174000",
-              reference: "1 cup flour",
-              blockIndex: 0,
-              lineIndex: 1,
-            },
-          ],
-        },
-      };
+      },
+      "data without optional fields"
+    );
 
-      const result = ScheduleIngredientsDataSchema.safeParse(validData);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data).toEqual(validData);
-      }
+    testSchemaRequiredFields(ScheduleIngredientsDataSchema, ["noteId"], {
+      noteId: "123e4567-e89b-12d3-a456-426614174000",
     });
 
-    it("should validate data without optional fields", () => {
-      const dataWithoutOptional = {
-        noteId: "123e4567-e89b-12d3-a456-426614174000",
-      };
+    testInvalidSchema(
+      ScheduleIngredientsDataSchema,
+      createTestScheduleIngredientsData({ noteId: "not-a-uuid" }),
+      "Note ID must be a valid UUID",
+      "invalid noteId"
+    );
 
-      const result =
-        ScheduleIngredientsDataSchema.safeParse(dataWithoutOptional);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data.noteId).toBe("123e4567-e89b-12d3-a456-426614174000");
-        expect(result.data.importId).toBeUndefined();
-        expect(result.data.note).toBeUndefined();
-      }
-    });
-
-    it("should reject invalid noteId", () => {
-      const invalidData = {
-        noteId: "not-a-uuid",
-      };
-
-      const result = ScheduleIngredientsDataSchema.safeParse(invalidData);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Note ID must be a valid UUID"
-        );
-      }
-    });
-
-    it("should reject missing noteId", () => {
-      const invalidData = {};
-
-      const result = ScheduleIngredientsDataSchema.safeParse(invalidData);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Invalid input: expected string, received undefined"
-        );
-      }
-    });
-
-    it("should reject invalid note.id", () => {
-      const invalidData = {
-        noteId: "123e4567-e89b-12d3-a456-426614174000",
+    testInvalidSchema(
+      ScheduleIngredientsDataSchema,
+      createTestScheduleIngredientsData({
         note: {
           id: "not-a-uuid",
           title: "Test Recipe",
+          parsedIngredientLines: [],
         },
-      };
-
-      const result = ScheduleIngredientsDataSchema.safeParse(invalidData);
-      expect(result.success).toBe(false);
-    });
+      }),
+      undefined,
+      "invalid note.id"
+    );
   });
 
   describe("ScheduleInstructionsDataSchema", () => {
-    it("should validate valid schedule instructions data", () => {
-      const validData = {
+    testValidSchema(
+      ScheduleInstructionsDataSchema,
+      createTestScheduleInstructionsData(),
+      "valid schedule instructions data with all fields"
+    );
+
+    testValidSchema(
+      ScheduleInstructionsDataSchema,
+      {
         noteId: "123e4567-e89b-12d3-a456-426614174000",
-        importId: "import-123",
+      },
+      "data without optional fields"
+    );
+
+    testSchemaRequiredFields(ScheduleInstructionsDataSchema, ["noteId"], {
+      noteId: "123e4567-e89b-12d3-a456-426614174000",
+    });
+
+    testInvalidSchema(
+      ScheduleInstructionsDataSchema,
+      createTestScheduleInstructionsData({ noteId: "not-a-uuid" }),
+      "Note ID must be a valid UUID",
+      "invalid noteId"
+    );
+
+    testInvalidSchema(
+      ScheduleInstructionsDataSchema,
+      createTestScheduleInstructionsData({
         instructionLines: [
           {
-            id: "456e7890-e89b-12d3-a456-426614174000",
+            id: "not-a-uuid",
             originalText: "Mix ingredients together",
             lineIndex: 1,
           },
         ],
-      };
-
-      const result = ScheduleInstructionsDataSchema.safeParse(validData);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data).toEqual(validData);
-      }
-    });
-
-    it("should validate data without optional fields", () => {
-      const dataWithoutOptional = {
-        noteId: "123e4567-e89b-12d3-a456-426614174000",
-      };
-
-      const result =
-        ScheduleInstructionsDataSchema.safeParse(dataWithoutOptional);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data.noteId).toBe("123e4567-e89b-12d3-a456-426614174000");
-        expect(result.data.importId).toBeUndefined();
-        expect(result.data.instructionLines).toBeUndefined();
-      }
-    });
-
-    it("should reject invalid noteId", () => {
-      const invalidData = {
-        noteId: "not-a-uuid",
-      };
-
-      const result = ScheduleInstructionsDataSchema.safeParse(invalidData);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Note ID must be a valid UUID"
-        );
-      }
-    });
-
-    it("should reject missing noteId", () => {
-      const invalidData = {};
-
-      const result = ScheduleInstructionsDataSchema.safeParse(invalidData);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Invalid input: expected string, received undefined"
-        );
-      }
-    });
-
-    it("should reject invalid instructionLines", () => {
-      const invalidData = {
-        noteId: "123e4567-e89b-12d3-a456-426614174000",
-        instructionLines: [
-          {
-            id: "not-a-uuid", // Invalid UUID
-            originalText: "Mix ingredients together",
-            lineIndex: 1,
-          },
-        ],
-      };
-
-      const result = ScheduleInstructionsDataSchema.safeParse(invalidData);
-      expect(result.success).toBe(false);
-    });
+      }),
+      undefined,
+      "invalid instructionLines with invalid UUID"
+    );
   });
 
   describe("ScheduleSourceDataSchema", () => {
-    it("should validate valid schedule source data", () => {
-      const validData = {
-        noteId: "123e4567-e89b-12d3-a456-426614174000",
-        file: {
-          title: "Test Recipe",
-          contents: "<html><body><h1>Test Recipe</h1></body></html>",
-          tags: [],
-          ingredients: [],
-          instructions: [],
-        },
-      };
+    testValidSchema(
+      ScheduleSourceDataSchema,
+      createTestScheduleActionData(),
+      "valid schedule source data"
+    );
 
-      const result = ScheduleSourceDataSchema.safeParse(validData);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data).toEqual(validData);
-      }
-    });
-
-    it("should reject invalid noteId", () => {
-      const invalidData = {
-        noteId: "not-a-uuid",
-        file: {
-          title: "Test Recipe",
-          contents: "<html><body><h1>Test Recipe</h1></body></html>",
-        },
-      };
-
-      const result = ScheduleSourceDataSchema.safeParse(invalidData);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Note ID must be a valid UUID"
-        );
-      }
-    });
+    testInvalidSchema(
+      ScheduleSourceDataSchema,
+      createTestScheduleActionData({ noteId: "not-a-uuid" }),
+      "Note ID must be a valid UUID",
+      "invalid noteId"
+    );
   });
 
   describe("NoteValidation", () => {
     describe("validateNoteJobData", () => {
       it("should validate valid note job data", () => {
-        const validData = {
-          content: "<html><body><h1>Test Recipe</h1></body></html>",
-          noteId: "123e4567-e89b-12d3-a456-426614174000",
-        };
+        const validData = createTestNoteJobData();
 
         const result = NoteValidation.validateNoteJobData(validData);
         expect(result.success).toBe(true);
@@ -873,10 +491,7 @@ describe("Note Schemas", () => {
       });
 
       it("should return error for invalid note job data", () => {
-        const invalidData = {
-          content: "",
-          noteId: "123e4567-e89b-12d3-a456-426614174000",
-        };
+        const invalidData = createTestNoteJobData({ content: "" });
 
         const result = NoteValidation.validateNoteJobData(invalidData);
         expect(result.success).toBe(false);
@@ -888,10 +503,7 @@ describe("Note Schemas", () => {
 
     describe("validateParseHtmlData", () => {
       it("should validate valid parse HTML data", () => {
-        const validData = {
-          content: "<html><body><h1>Test Recipe</h1></body></html>",
-          importId: "import-123",
-        };
+        const validData = createTestParseHtmlData();
 
         const result = NoteValidation.validateParseHtmlData(validData);
         expect(result.success).toBe(true);
@@ -901,10 +513,7 @@ describe("Note Schemas", () => {
       });
 
       it("should return error for invalid parse HTML data", () => {
-        const invalidData = {
-          content: "",
-          importId: "import-123",
-        };
+        const invalidData = createTestParseHtmlData({ content: "" });
 
         const result = NoteValidation.validateParseHtmlData(invalidData);
         expect(result.success).toBe(false);
@@ -916,16 +525,7 @@ describe("Note Schemas", () => {
 
     describe("validateSaveNoteData", () => {
       it("should validate valid save note data", () => {
-        const validData = {
-          file: {
-            title: "Test Recipe",
-            contents: "<html><body><h1>Test Recipe</h1></body></html>",
-            tags: [],
-            ingredients: [],
-            instructions: [],
-          },
-          importId: "import-123",
-        };
+        const validData = createTestSaveNoteData();
 
         const result = NoteValidation.validateSaveNoteData(validData);
         expect(result.success).toBe(true);
@@ -935,13 +535,15 @@ describe("Note Schemas", () => {
       });
 
       it("should return error for invalid save note data", () => {
-        const invalidData = {
+        const invalidData = createTestSaveNoteData({
           file: {
             title: "",
             contents: "<html><body><h1>Test Recipe</h1></body></html>",
+            tags: [],
+            ingredients: [],
+            instructions: [],
           },
-          importId: "import-123",
-        };
+        });
 
         const result = NoteValidation.validateSaveNoteData(invalidData);
         expect(result.success).toBe(false);
@@ -953,16 +555,7 @@ describe("Note Schemas", () => {
 
     describe("validateScheduleActionData", () => {
       it("should validate valid schedule action data", () => {
-        const validData = {
-          noteId: "123e4567-e89b-12d3-a456-426614174000",
-          file: {
-            title: "Test Recipe",
-            contents: "<html><body><h1>Test Recipe</h1></body></html>",
-            tags: [],
-            ingredients: [],
-            instructions: [],
-          },
-        };
+        const validData = createTestScheduleActionData();
 
         const result = NoteValidation.validateScheduleActionData(validData);
         expect(result.success).toBe(true);
@@ -972,13 +565,9 @@ describe("Note Schemas", () => {
       });
 
       it("should return error for invalid schedule action data", () => {
-        const invalidData = {
+        const invalidData = createTestScheduleActionData({
           noteId: "not-a-uuid",
-          file: {
-            title: "Test Recipe",
-            contents: "<html><body><h1>Test Recipe</h1></body></html>",
-          },
-        };
+        });
 
         const result = NoteValidation.validateScheduleActionData(invalidData);
         expect(result.success).toBe(false);
@@ -992,16 +581,7 @@ describe("Note Schemas", () => {
 
     describe("validateScheduleCategorizationData", () => {
       it("should validate valid schedule categorization data", () => {
-        const validData = {
-          noteId: "123e4567-e89b-12d3-a456-426614174000",
-          file: {
-            title: "Test Recipe",
-            contents: "<html><body><h1>Test Recipe</h1></body></html>",
-            tags: [],
-            ingredients: [],
-            instructions: [],
-          },
-        };
+        const validData = createTestScheduleActionData();
 
         const result =
           NoteValidation.validateScheduleCategorizationData(validData);
@@ -1012,13 +592,9 @@ describe("Note Schemas", () => {
       });
 
       it("should return error for invalid schedule categorization data", () => {
-        const invalidData = {
+        const invalidData = createTestScheduleActionData({
           noteId: "not-a-uuid",
-          file: {
-            title: "Test Recipe",
-            contents: "<html><body><h1>Test Recipe</h1></body></html>",
-          },
-        };
+        });
 
         const result =
           NoteValidation.validateScheduleCategorizationData(invalidData);
@@ -1033,16 +609,7 @@ describe("Note Schemas", () => {
 
     describe("validateScheduleImagesData", () => {
       it("should validate valid schedule images data", () => {
-        const validData = {
-          noteId: "123e4567-e89b-12d3-a456-426614174000",
-          file: {
-            title: "Test Recipe",
-            contents: "<html><body><h1>Test Recipe</h1></body></html>",
-            tags: [],
-            ingredients: [],
-            instructions: [],
-          },
-        };
+        const validData = createTestScheduleActionData();
 
         const result = NoteValidation.validateScheduleImagesData(validData);
         expect(result.success).toBe(true);
@@ -1052,13 +619,9 @@ describe("Note Schemas", () => {
       });
 
       it("should return error for invalid schedule images data", () => {
-        const invalidData = {
+        const invalidData = createTestScheduleActionData({
           noteId: "not-a-uuid",
-          file: {
-            title: "Test Recipe",
-            contents: "<html><body><h1>Test Recipe</h1></body></html>",
-          },
-        };
+        });
 
         const result = NoteValidation.validateScheduleImagesData(invalidData);
         expect(result.success).toBe(false);
@@ -1072,10 +635,7 @@ describe("Note Schemas", () => {
 
     describe("validateScheduleIngredientsData", () => {
       it("should validate valid schedule ingredients data", () => {
-        const validData = {
-          noteId: "123e4567-e89b-12d3-a456-426614174000",
-          importId: "import-123",
-        };
+        const validData = createTestScheduleIngredientsData();
 
         const result =
           NoteValidation.validateScheduleIngredientsData(validData);
@@ -1086,10 +646,9 @@ describe("Note Schemas", () => {
       });
 
       it("should return error for invalid schedule ingredients data", () => {
-        const invalidData = {
+        const invalidData = createTestScheduleIngredientsData({
           noteId: "not-a-uuid",
-          importId: "import-123",
-        };
+        });
 
         const result =
           NoteValidation.validateScheduleIngredientsData(invalidData);
@@ -1104,10 +663,7 @@ describe("Note Schemas", () => {
 
     describe("validateScheduleInstructionsData", () => {
       it("should validate valid schedule instructions data", () => {
-        const validData = {
-          noteId: "123e4567-e89b-12d3-a456-426614174000",
-          importId: "import-123",
-        };
+        const validData = createTestScheduleInstructionsData();
 
         const result =
           NoteValidation.validateScheduleInstructionsData(validData);
@@ -1118,10 +674,9 @@ describe("Note Schemas", () => {
       });
 
       it("should return error for invalid schedule instructions data", () => {
-        const invalidData = {
+        const invalidData = createTestScheduleInstructionsData({
           noteId: "not-a-uuid",
-          importId: "import-123",
-        };
+        });
 
         const result =
           NoteValidation.validateScheduleInstructionsData(invalidData);
@@ -1136,16 +691,7 @@ describe("Note Schemas", () => {
 
     describe("validateScheduleSourceData", () => {
       it("should validate valid schedule source data", () => {
-        const validData = {
-          noteId: "123e4567-e89b-12d3-a456-426614174000",
-          file: {
-            title: "Test Recipe",
-            contents: "<html><body><h1>Test Recipe</h1></body></html>",
-            tags: [],
-            ingredients: [],
-            instructions: [],
-          },
-        };
+        const validData = createTestScheduleActionData();
 
         const result = NoteValidation.validateScheduleSourceData(validData);
         expect(result.success).toBe(true);
@@ -1155,13 +701,9 @@ describe("Note Schemas", () => {
       });
 
       it("should return error for invalid schedule source data", () => {
-        const invalidData = {
+        const invalidData = createTestScheduleActionData({
           noteId: "not-a-uuid",
-          file: {
-            title: "Test Recipe",
-            contents: "<html><body><h1>Test Recipe</h1></body></html>",
-          },
-        };
+        });
 
         const result = NoteValidation.validateScheduleSourceData(invalidData);
         expect(result.success).toBe(false);

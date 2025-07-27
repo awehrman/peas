@@ -1,5 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import {
+  createTestContext,
+  createTestError,
+  testConfigInterface,
+  testErrorHandlerInterface,
+  testHealthMonitorInterface,
+  testLoggerInterface,
+  testStatusBroadcasterInterface,
+  testWebSocketInterface,
+} from "../../test-utils/service-test-utils";
 import type {
   IConfigService,
   IErrorHandlerService,
@@ -72,10 +82,7 @@ describe("ServiceFactory", () => {
     it("should implement IErrorHandlerService interface", () => {
       const errorHandler =
         ServiceFactory.createErrorHandler() as IErrorHandlerService;
-      expect(errorHandler).toHaveProperty("withErrorHandling");
-      expect(errorHandler).toHaveProperty("createJobError");
-      expect(errorHandler).toHaveProperty("classifyError");
-      expect(errorHandler).toHaveProperty("logError");
+      testErrorHandlerInterface(errorHandler);
     });
   });
 
@@ -89,7 +96,7 @@ describe("ServiceFactory", () => {
     it("should implement IHealthMonitorService interface", () => {
       const healthMonitor =
         ServiceFactory.createHealthMonitor() as IHealthMonitorService;
-      expect(healthMonitor).toHaveProperty("healthMonitor");
+      testHealthMonitorInterface(healthMonitor);
     });
   });
 
@@ -103,7 +110,7 @@ describe("ServiceFactory", () => {
     it("should implement IWebSocketService interface", () => {
       const webSocketService =
         ServiceFactory.createWebSocketService() as IWebSocketService;
-      expect(webSocketService).toHaveProperty("webSocketManager");
+      testWebSocketInterface(webSocketService);
     });
   });
 
@@ -119,7 +126,7 @@ describe("ServiceFactory", () => {
     it("should implement IStatusBroadcasterService interface", () => {
       const statusBroadcaster =
         ServiceFactory.createStatusBroadcaster() as IStatusBroadcasterService;
-      expect(statusBroadcaster).toHaveProperty("addStatusEventAndBroadcast");
+      testStatusBroadcasterInterface(statusBroadcaster);
     });
   });
 
@@ -132,7 +139,7 @@ describe("ServiceFactory", () => {
 
     it("should implement ILoggerService interface", () => {
       const logger = ServiceFactory.createLoggerService() as ILoggerService;
-      expect(logger).toHaveProperty("log");
+      testLoggerInterface(logger);
     });
   });
 
@@ -146,9 +153,7 @@ describe("ServiceFactory", () => {
 
     it("should implement IConfigService interface", () => {
       const config = ServiceFactory.createConfigService() as IConfigService;
-      expect(config).toHaveProperty("wsHost");
-      expect(config).toHaveProperty("port");
-      expect(config).toHaveProperty("wsPort");
+      testConfigInterface(config);
     });
 
     it("should read wsHost from environment", () => {
@@ -223,7 +228,7 @@ describe("ErrorHandlerService", () => {
   describe("withErrorHandling", () => {
     it("should execute operation without error handling", async () => {
       const operation = vi.fn().mockResolvedValue("success");
-      const context = { operation: "test", timestamp: new Date() };
+      const context = createTestContext("test");
 
       const result = await errorHandler.withErrorHandling(operation, context);
 
@@ -232,9 +237,9 @@ describe("ErrorHandlerService", () => {
     });
 
     it("should propagate errors from operation", async () => {
-      const error = new Error("Test error");
+      const error = createTestError("Test error");
       const operation = vi.fn().mockRejectedValue(error);
-      const context = { operation: "test", timestamp: new Date() };
+      const context = createTestContext("test");
 
       await expect(
         errorHandler.withErrorHandling(operation, context)
@@ -245,8 +250,8 @@ describe("ErrorHandlerService", () => {
 
   describe("createJobError", () => {
     it("should create a job error with all required fields", () => {
-      const error = new Error("Database connection failed");
-      const context = { operation: "create_note", timestamp: new Date() };
+      const error = createTestError("Database connection failed");
+      const context = createTestContext("create_note");
 
       const result = errorHandler.createJobError(error, context);
 
@@ -262,7 +267,7 @@ describe("ErrorHandlerService", () => {
 
     it("should handle errors without name property", () => {
       const error = { message: "Unknown error" } as Error;
-      const context = { operation: "test", timestamp: new Date() };
+      const context = createTestContext("test");
 
       const result = errorHandler.createJobError(error, context);
 
@@ -274,8 +279,7 @@ describe("ErrorHandlerService", () => {
 
   describe("classifyError", () => {
     it("should return error name", () => {
-      const error = new Error("Test error");
-      error.name = "ValidationError";
+      const error = createTestError("Test error", "ValidationError");
 
       const result = errorHandler.classifyError(error);
 
@@ -296,8 +300,8 @@ describe("ErrorHandlerService", () => {
       const consoleSpy = vi
         .spyOn(console, "error")
         .mockImplementation(() => {});
-      const error = new Error("Test error");
-      const context = { operation: "test", timestamp: new Date() };
+      const error = createTestError("Test error");
+      const context = createTestContext("test");
 
       errorHandler.logError(error, context);
 

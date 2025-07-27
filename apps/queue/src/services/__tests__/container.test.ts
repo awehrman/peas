@@ -1,7 +1,18 @@
 import type { PrismaClient } from "@peas/database";
-import type { Queue } from "bullmq";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import {
+  clearServiceMocks,
+  setupAllServiceMocks,
+  testConfigInterface,
+  testDatabaseInterface,
+  testErrorHandlerInterface,
+  testHealthMonitorInterface,
+  testLoggerInterface,
+  testQueueInterface,
+  testStatusBroadcasterInterface,
+  testWebSocketInterface,
+} from "../../test-utils/service-test-utils";
 import type { PatternTracker } from "../../workers/shared/pattern-tracker";
 import { type IServiceContainer, ServiceContainer } from "../container";
 // Import the mocked modules
@@ -30,48 +41,36 @@ vi.mock("../register-queues", () => ({
 }));
 
 describe("ServiceContainer", () => {
+  let mocks: ReturnType<typeof setupAllServiceMocks>;
+
   beforeEach(() => {
-    vi.clearAllMocks();
+    clearServiceMocks();
     ServiceContainer.reset();
 
-    // Mock service instances
-    vi.mocked(ServiceFactory.createErrorHandler).mockReturnValue({
-      withErrorHandling: vi.fn(),
-      createJobError: vi.fn(),
-      classifyError: vi.fn(),
-      logError: vi.fn(),
-    });
-    vi.mocked(ServiceFactory.createHealthMonitor).mockReturnValue({
-      healthMonitor: { isHealthy: vi.fn() },
-    });
-    vi.mocked(ServiceFactory.createWebSocketService).mockReturnValue({
-      webSocketManager: { broadcast: vi.fn() },
-    });
-    vi.mocked(ServiceFactory.createStatusBroadcaster).mockReturnValue({
-      addStatusEventAndBroadcast: vi.fn(),
-    });
-    vi.mocked(ServiceFactory.createLoggerService).mockReturnValue({
-      log: vi.fn(),
-    });
-    vi.mocked(ServiceFactory.createConfigService).mockReturnValue({
-      wsHost: "localhost",
-      port: 3000,
-      wsPort: 8080,
-    });
-    vi.mocked(registerDatabase).mockReturnValue({
-      prisma: { $disconnect: vi.fn() } as Partial<PrismaClient> as PrismaClient,
-      patternTracker: {} as PatternTracker,
-    });
-    vi.mocked(registerQueues).mockReturnValue({
-      noteQueue: { name: "note" } as Partial<Queue> as Queue,
-      imageQueue: { name: "image" } as Partial<Queue> as Queue,
-      ingredientQueue: { name: "ingredient" } as Partial<Queue> as Queue,
-      instructionQueue: { name: "instruction" } as Partial<Queue> as Queue,
-      categorizationQueue: {
-        name: "categorization",
-      } as Partial<Queue> as Queue,
-      sourceQueue: { name: "source" } as Partial<Queue> as Queue,
-    });
+    // Setup all service mocks
+    mocks = setupAllServiceMocks();
+
+    // Apply mocks to the mocked modules
+    vi.mocked(ServiceFactory.createErrorHandler).mockReturnValue(
+      mocks.mockInstances.errorHandler
+    );
+    vi.mocked(ServiceFactory.createHealthMonitor).mockReturnValue(
+      mocks.mockInstances.healthMonitor
+    );
+    vi.mocked(ServiceFactory.createWebSocketService).mockReturnValue(
+      mocks.mockInstances.webSocket
+    );
+    vi.mocked(ServiceFactory.createStatusBroadcaster).mockReturnValue(
+      mocks.mockInstances.statusBroadcaster
+    );
+    vi.mocked(ServiceFactory.createLoggerService).mockReturnValue(
+      mocks.mockInstances.logger
+    );
+    vi.mocked(ServiceFactory.createConfigService).mockReturnValue(
+      mocks.mockInstances.config
+    );
+    vi.mocked(registerDatabase).mockReturnValue(mocks.mockDatabase);
+    vi.mocked(registerQueues).mockReturnValue(mocks.mockQueues);
   });
 
   describe("getInstance", () => {
@@ -130,20 +129,12 @@ describe("ServiceContainer", () => {
 
     it("should have queues with all required queue types", async () => {
       const container = await ServiceContainer.getInstance();
-
-      expect(container.queues.noteQueue).toBeDefined();
-      expect(container.queues.imageQueue).toBeDefined();
-      expect(container.queues.ingredientQueue).toBeDefined();
-      expect(container.queues.instructionQueue).toBeDefined();
-      expect(container.queues.categorizationQueue).toBeDefined();
-      expect(container.queues.sourceQueue).toBeDefined();
+      testQueueInterface(container.queues);
     });
 
     it("should have database with prisma and patternTracker", async () => {
       const container = await ServiceContainer.getInstance();
-
-      expect(container.database.prisma).toBeDefined();
-      expect(container.database.patternTracker).toBeDefined();
+      testDatabaseInterface(container.database);
     });
   });
 
@@ -236,63 +227,42 @@ describe("ServiceContainer", () => {
   describe("interface compliance", () => {
     it("should have correct queue service interface", async () => {
       const container = await ServiceContainer.getInstance();
-
-      expect(container.queues).toHaveProperty("noteQueue");
-      expect(container.queues).toHaveProperty("imageQueue");
-      expect(container.queues).toHaveProperty("ingredientQueue");
-      expect(container.queues).toHaveProperty("instructionQueue");
-      expect(container.queues).toHaveProperty("categorizationQueue");
-      expect(container.queues).toHaveProperty("sourceQueue");
+      testQueueInterface(container.queues);
     });
 
     it("should have correct database service interface", async () => {
       const container = await ServiceContainer.getInstance();
-
-      expect(container.database).toHaveProperty("prisma");
-      expect(container.database).toHaveProperty("patternTracker");
+      testDatabaseInterface(container.database);
     });
 
     it("should have correct error handler service interface", async () => {
       const container = await ServiceContainer.getInstance();
-
-      expect(container.errorHandler).toHaveProperty("withErrorHandling");
-      expect(container.errorHandler).toHaveProperty("createJobError");
-      expect(container.errorHandler).toHaveProperty("classifyError");
-      expect(container.errorHandler).toHaveProperty("logError");
+      testErrorHandlerInterface(container.errorHandler);
     });
 
     it("should have correct health monitor service interface", async () => {
       const container = await ServiceContainer.getInstance();
-
-      expect(container.healthMonitor).toHaveProperty("healthMonitor");
+      testHealthMonitorInterface(container.healthMonitor);
     });
 
     it("should have correct web socket service interface", async () => {
       const container = await ServiceContainer.getInstance();
-
-      expect(container.webSocket).toHaveProperty("webSocketManager");
+      testWebSocketInterface(container.webSocket);
     });
 
     it("should have correct status broadcaster service interface", async () => {
       const container = await ServiceContainer.getInstance();
-
-      expect(container.statusBroadcaster).toHaveProperty(
-        "addStatusEventAndBroadcast"
-      );
+      testStatusBroadcasterInterface(container.statusBroadcaster);
     });
 
     it("should have correct logger service interface", async () => {
       const container = await ServiceContainer.getInstance();
-
-      expect(container.logger).toHaveProperty("log");
+      testLoggerInterface(container.logger);
     });
 
     it("should have correct config service interface", async () => {
       const container = await ServiceContainer.getInstance();
-
-      expect(container.config).toHaveProperty("wsHost");
-      expect(container.config).toHaveProperty("port");
-      expect(container.config).toHaveProperty("wsPort");
+      testConfigInterface(container.config);
     });
   });
 });

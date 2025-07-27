@@ -2,6 +2,21 @@ import type { NextFunction, Request, Response } from "express";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  createTestEnvironment,
+  createTestFileValidation,
+  createTestHealthQuery,
+  createTestHtmlContentSchema,
+  createTestNoteIdParam,
+  createTestNoteJobData,
+  createTestNoteQuery,
+  createTestStatusEvent,
+  createTestTestQuery,
+  testInvalidSchema,
+  testSchemaEnumValues,
+  testSchemaRequiredFields,
+  testValidSchema,
+} from "../../test-utils/schema-test-utils";
+import {
   EnvironmentSchema,
   FileValidationSchema,
   HTMLContentSchema,
@@ -25,22 +40,7 @@ describe("Validation Schemas", () => {
 
   describe("EnvironmentSchema", () => {
     it("should validate valid environment variables", () => {
-      const validEnv = {
-        PORT: "3000",
-        WS_PORT: "8080",
-        WS_HOST: "localhost",
-        DATABASE_URL: "postgresql://user:pass@localhost:5432/db",
-        REDIS_HOST: "localhost",
-        REDIS_PORT: "6379",
-        REDIS_PASSWORD: "secret",
-        JWT_SECRET: "this-is-a-very-long-jwt-secret-key-for-testing",
-        API_KEY: "this-is-a-very-long-api-key-for-testing",
-        RATE_LIMIT_WINDOW_MS: "900000",
-        RATE_LIMIT_MAX_REQUESTS: "100",
-        MAX_FILE_SIZE_BYTES: "10485760",
-        MAX_REQUEST_SIZE_BYTES: "10485760",
-      };
-
+      const validEnv = createTestEnvironment();
       const result = EnvironmentSchema.safeParse(validEnv);
       expect(result.success).toBe(true);
       if (result.success) {
@@ -86,82 +86,47 @@ describe("Validation Schemas", () => {
       }
     });
 
-    it("should reject invalid database URL", () => {
-      const invalidEnv = {
-        DATABASE_URL: "not-a-valid-url",
-        JWT_SECRET: "this-is-a-very-long-jwt-secret-key-for-testing",
-      };
+    testInvalidSchema(
+      EnvironmentSchema,
+      createTestEnvironment({ DATABASE_URL: "not-a-valid-url" }),
+      "Invalid database URL",
+      "invalid database URL"
+    );
 
-      const result = EnvironmentSchema.safeParse(invalidEnv);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe("Invalid database URL");
-      }
-    });
+    testInvalidSchema(
+      EnvironmentSchema,
+      createTestEnvironment({ JWT_SECRET: "short" }),
+      "JWT secret must be at least 32 characters",
+      "JWT secret that is too short"
+    );
 
-    it("should reject JWT secret that is too short", () => {
-      const invalidEnv = {
-        DATABASE_URL: "postgresql://user:pass@localhost:5432/db",
-        JWT_SECRET: "short",
-      };
+    testInvalidSchema(
+      EnvironmentSchema,
+      createTestEnvironment({ API_KEY: "short" }),
+      "API key must be at least 16 characters",
+      "API key that is too short"
+    );
 
-      const result = EnvironmentSchema.safeParse(invalidEnv);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "JWT secret must be at least 32 characters"
-        );
-      }
-    });
+    testInvalidSchema(
+      EnvironmentSchema,
+      createTestEnvironment({ PORT: "70000" }),
+      undefined,
+      "invalid port numbers"
+    );
 
-    it("should reject API key that is too short", () => {
-      const invalidEnv = {
-        DATABASE_URL: "postgresql://user:pass@localhost:5432/db",
-        JWT_SECRET: "this-is-a-very-long-jwt-secret-key-for-testing",
-        API_KEY: "short",
-      };
+    testInvalidSchema(
+      EnvironmentSchema,
+      createTestEnvironment({ RATE_LIMIT_WINDOW_MS: "-1000" }),
+      undefined,
+      "negative rate limit values"
+    );
 
-      const result = EnvironmentSchema.safeParse(invalidEnv);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "API key must be at least 16 characters"
-        );
-      }
-    });
-
-    it("should reject invalid port numbers", () => {
-      const invalidEnv = {
-        DATABASE_URL: "postgresql://user:pass@localhost:5432/db",
-        JWT_SECRET: "this-is-a-very-long-jwt-secret-key-for-testing",
-        PORT: "70000", // Invalid port
-      };
-
-      const result = EnvironmentSchema.safeParse(invalidEnv);
-      expect(result.success).toBe(false);
-    });
-
-    it("should reject negative rate limit values", () => {
-      const invalidEnv = {
-        DATABASE_URL: "postgresql://user:pass@localhost:5432/db",
-        JWT_SECRET: "this-is-a-very-long-jwt-secret-key-for-testing",
-        RATE_LIMIT_WINDOW_MS: "-1000",
-      };
-
-      const result = EnvironmentSchema.safeParse(invalidEnv);
-      expect(result.success).toBe(false);
-    });
-
-    it("should reject zero rate limit values", () => {
-      const invalidEnv = {
-        DATABASE_URL: "postgresql://user:pass@localhost:5432/db",
-        JWT_SECRET: "this-is-a-very-long-jwt-secret-key-for-testing",
-        RATE_LIMIT_MAX_REQUESTS: "0",
-      };
-
-      const result = EnvironmentSchema.safeParse(invalidEnv);
-      expect(result.success).toBe(false);
-    });
+    testInvalidSchema(
+      EnvironmentSchema,
+      createTestEnvironment({ RATE_LIMIT_MAX_REQUESTS: "0" }),
+      undefined,
+      "zero rate limit values"
+    );
   });
 
   describe("ImportRequestSchema", () => {
@@ -190,13 +155,7 @@ describe("Validation Schemas", () => {
 
   describe("NoteQuerySchema", () => {
     it("should validate valid note query parameters", () => {
-      const validQuery = {
-        page: "1",
-        limit: "20",
-        status: "COMPLETED" as const,
-        search: "recipe",
-      };
-
+      const validQuery = createTestNoteQuery();
       const result = NoteQuerySchema.safeParse(validQuery);
       expect(result.success).toBe(true);
       if (result.success) {
@@ -209,7 +168,6 @@ describe("Validation Schemas", () => {
 
     it("should use default values when parameters are not provided", () => {
       const emptyQuery = {};
-
       const result = NoteQuerySchema.safeParse(emptyQuery);
       expect(result.success).toBe(true);
       if (result.success) {
@@ -218,50 +176,40 @@ describe("Validation Schemas", () => {
       }
     });
 
-    it("should reject page below 1", () => {
-      const invalidQuery = {
-        page: "0",
-      };
+    testInvalidSchema(
+      NoteQuerySchema,
+      createTestNoteQuery({ page: "0" }),
+      undefined,
+      "page below 1"
+    );
 
-      const result = NoteQuerySchema.safeParse(invalidQuery);
-      expect(result.success).toBe(false);
-    });
+    testInvalidSchema(
+      NoteQuerySchema,
+      createTestNoteQuery({ limit: "0" }),
+      undefined,
+      "limit below 1"
+    );
 
-    it("should reject limit below 1", () => {
-      const invalidQuery = {
-        limit: "0",
-      };
+    testInvalidSchema(
+      NoteQuerySchema,
+      createTestNoteQuery({ limit: "101" }),
+      undefined,
+      "limit above 100"
+    );
 
-      const result = NoteQuerySchema.safeParse(invalidQuery);
-      expect(result.success).toBe(false);
-    });
+    testInvalidSchema(
+      NoteQuerySchema,
+      createTestNoteQuery({ status: "INVALID_STATUS" as never }),
+      undefined,
+      "invalid status"
+    );
 
-    it("should reject limit above 100", () => {
-      const invalidQuery = {
-        limit: "101",
-      };
-
-      const result = NoteQuerySchema.safeParse(invalidQuery);
-      expect(result.success).toBe(false);
-    });
-
-    it("should reject invalid status", () => {
-      const invalidQuery = {
-        status: "INVALID_STATUS",
-      };
-
-      const result = NoteQuerySchema.safeParse(invalidQuery);
-      expect(result.success).toBe(false);
-    });
-
-    it("should reject search string that is too long", () => {
-      const invalidQuery = {
-        search: "a".repeat(101),
-      };
-
-      const result = NoteQuerySchema.safeParse(invalidQuery);
-      expect(result.success).toBe(false);
-    });
+    testInvalidSchema(
+      NoteQuerySchema,
+      createTestNoteQuery({ search: "a".repeat(101) }),
+      undefined,
+      "search string that is too long"
+    );
 
     it("should validate all status values", () => {
       const statuses = [
@@ -283,47 +231,30 @@ describe("Validation Schemas", () => {
   });
 
   describe("NoteIdParamSchema", () => {
-    it("should validate valid UUID", () => {
-      const validParam = {
-        id: "123e4567-e89b-12d3-a456-426614174000",
-      };
+    testValidSchema(NoteIdParamSchema, createTestNoteIdParam(), "valid UUID");
 
-      const result = NoteIdParamSchema.safeParse(validParam);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data.id).toBe("123e4567-e89b-12d3-a456-426614174000");
-      }
+    testSchemaRequiredFields(NoteIdParamSchema, ["id"], {
+      id: "123e4567-e89b-12d3-a456-426614174000",
     });
 
-    it("should reject invalid UUID", () => {
-      const invalidParam = {
-        id: "not-a-uuid",
-      };
+    testInvalidSchema(
+      NoteIdParamSchema,
+      createTestNoteIdParam({ id: "not-a-uuid" }),
+      "Invalid note ID",
+      "invalid UUID"
+    );
 
-      const result = NoteIdParamSchema.safeParse(invalidParam);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe("Invalid note ID");
-      }
-    });
-
-    it("should reject empty UUID", () => {
-      const invalidParam = {
-        id: "",
-      };
-
-      const result = NoteIdParamSchema.safeParse(invalidParam);
-      expect(result.success).toBe(false);
-    });
+    testInvalidSchema(
+      NoteIdParamSchema,
+      createTestNoteIdParam({ id: "" }),
+      undefined,
+      "empty UUID"
+    );
   });
 
   describe("HealthQuerySchema", () => {
     it("should validate valid health query parameters", () => {
-      const validQuery = {
-        detailed: "true",
-        includeMetrics: "false",
-      };
-
+      const validQuery = createTestHealthQuery();
       const result = HealthQuerySchema.safeParse(validQuery);
       expect(result.success).toBe(true);
       if (result.success) {
@@ -334,7 +265,6 @@ describe("Validation Schemas", () => {
 
     it("should use default values when parameters are not provided", () => {
       const emptyQuery = {};
-
       const result = HealthQuerySchema.safeParse(emptyQuery);
       expect(result.success).toBe(true);
       if (result.success) {
@@ -343,23 +273,19 @@ describe("Validation Schemas", () => {
       }
     });
 
-    it("should reject invalid detailed value", () => {
-      const invalidQuery = {
-        detailed: "maybe",
-      };
+    testInvalidSchema(
+      HealthQuerySchema,
+      createTestHealthQuery({ detailed: "maybe" }),
+      undefined,
+      "invalid detailed value"
+    );
 
-      const result = HealthQuerySchema.safeParse(invalidQuery);
-      expect(result.success).toBe(false);
-    });
-
-    it("should reject invalid includeMetrics value", () => {
-      const invalidQuery = {
-        includeMetrics: "maybe",
-      };
-
-      const result = HealthQuerySchema.safeParse(invalidQuery);
-      expect(result.success).toBe(false);
-    });
+    testInvalidSchema(
+      HealthQuerySchema,
+      createTestHealthQuery({ includeMetrics: "maybe" }),
+      undefined,
+      "invalid includeMetrics value"
+    );
 
     it("should validate all boolean string values", () => {
       const booleanStrings = ["true", "false"] as const;
@@ -376,131 +302,87 @@ describe("Validation Schemas", () => {
   });
 
   describe("TestQuerySchema", () => {
-    it("should validate valid test query parameters", () => {
-      const validQuery = {
-        action: "health" as const,
-      };
+    testValidSchema(
+      TestQuerySchema,
+      createTestTestQuery(),
+      "valid test query parameters with action"
+    );
 
-      const result = TestQuerySchema.safeParse(validQuery);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data.action).toBe("health");
-      }
-    });
+    testValidSchema(TestQuerySchema, {}, "empty query");
 
-    it("should validate empty object", () => {
-      const emptyQuery = {};
+    testInvalidSchema(
+      TestQuerySchema,
+      createTestTestQuery({ action: "invalid_action" as never }),
+      undefined,
+      "invalid action"
+    );
 
-      const result = TestQuerySchema.safeParse(emptyQuery);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data.action).toBeUndefined();
-      }
-    });
-
-    it("should reject invalid action", () => {
-      const invalidQuery = {
-        action: "invalid_action",
-      };
-
-      const result = TestQuerySchema.safeParse(invalidQuery);
-      expect(result.success).toBe(false);
-    });
-
-    it("should validate all action values", () => {
-      const actions = ["health", "queue", "database", "redis"] as const;
-
-      actions.forEach((action) => {
-        const query = { action };
-        const result = TestQuerySchema.safeParse(query);
-        expect(result.success).toBe(true);
-        if (result.success) {
-          expect(result.data.action).toBe(action);
-        }
-      });
-    });
+    testSchemaEnumValues(
+      TestQuerySchema,
+      ["health", "queue", "database", "redis"],
+      "action",
+      "all action values"
+    );
   });
 
   describe("FileValidationSchema", () => {
-    it("should validate valid file data", () => {
-      const validFile = {
+    testValidSchema(
+      FileValidationSchema,
+      createTestFileValidation(),
+      "valid file data"
+    );
+
+    testSchemaRequiredFields(
+      FileValidationSchema,
+      ["filename", "size", "mimetype"],
+      {
         filename: "test.html",
         size: 1024,
         mimetype: "text/html" as const,
-      };
-
-      const result = FileValidationSchema.safeParse(validFile);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data).toEqual(validFile);
       }
-    });
+    );
 
-    it("should reject filename that is too long", () => {
-      const invalidFile = {
-        filename: "a".repeat(256),
-        size: 1024,
-        mimetype: "text/html" as const,
-      };
+    testInvalidSchema(
+      FileValidationSchema,
+      createTestFileValidation({ filename: "a".repeat(256) }),
+      undefined,
+      "filename that is too long"
+    );
 
-      const result = FileValidationSchema.safeParse(invalidFile);
-      expect(result.success).toBe(false);
-    });
+    testInvalidSchema(
+      FileValidationSchema,
+      createTestFileValidation({ filename: "" }),
+      undefined,
+      "empty filename"
+    );
 
-    it("should reject empty filename", () => {
-      const invalidFile = {
-        filename: "",
-        size: 1024,
-        mimetype: "text/html" as const,
-      };
+    testInvalidSchema(
+      FileValidationSchema,
+      createTestFileValidation({ size: -100 }),
+      undefined,
+      "negative file size"
+    );
 
-      const result = FileValidationSchema.safeParse(invalidFile);
-      expect(result.success).toBe(false);
-    });
+    testInvalidSchema(
+      FileValidationSchema,
+      createTestFileValidation({ size: 0 }),
+      undefined,
+      "zero file size"
+    );
 
-    it("should reject negative file size", () => {
-      const invalidFile = {
-        filename: "test.html",
-        size: -100,
-        mimetype: "text/html" as const,
-      };
+    testInvalidSchema(
+      FileValidationSchema,
+      createTestFileValidation({ size: 11 * 1024 * 1024 }),
+      undefined,
+      "file size that is too large"
+    );
 
-      const result = FileValidationSchema.safeParse(invalidFile);
-      expect(result.success).toBe(false);
-    });
-
-    it("should reject zero file size", () => {
-      const invalidFile = {
-        filename: "test.html",
-        size: 0,
-        mimetype: "text/html" as const,
-      };
-
-      const result = FileValidationSchema.safeParse(invalidFile);
-      expect(result.success).toBe(false);
-    });
-
-    it("should reject file size that is too large", () => {
-      const invalidFile = {
-        filename: "test.html",
-        size: 11 * 1024 * 1024, // 11MB
-        mimetype: "text/html" as const,
-      };
-
-      const result = FileValidationSchema.safeParse(invalidFile);
-      expect(result.success).toBe(false);
-    });
-
-    it("should reject invalid mimetype", () => {
-      const invalidFile = {
-        filename: "test.html",
-        size: 1024,
-        mimetype: "application/pdf",
-      };
-
-      const result = FileValidationSchema.safeParse(invalidFile);
-      expect(result.success).toBe(false);
-    });
+    testInvalidSchema(
+      FileValidationSchema,
+      createTestFileValidation({ mimetype: "application/pdf" as never }),
+      undefined,
+      "invalid mimetype"
+    );
 
     it("should validate all allowed mimetypes", () => {
       const mimetypes = [
@@ -525,97 +407,76 @@ describe("Validation Schemas", () => {
   });
 
   describe("HTMLContentSchema", () => {
-    it("should validate valid HTML content", () => {
-      const validContent = {
+    testValidSchema(
+      HTMLContentSchema,
+      createTestHtmlContentSchema(),
+      "valid HTML content with all fields"
+    );
+
+    testValidSchema(
+      HTMLContentSchema,
+      {
         content: "<html><body><h1>Test</h1></body></html>",
-        metadata: {
-          importId: "123e4567-e89b-12d3-a456-426614174000",
-          filename: "test.html",
-          source: "https://example.com/recipe",
-        },
-      };
+      },
+      "content without metadata"
+    );
 
-      const result = HTMLContentSchema.safeParse(validContent);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data).toEqual(validContent);
-      }
+    testSchemaRequiredFields(HTMLContentSchema, ["content"], {
+      content: "<html><body><h1>Test</h1></body></html>",
     });
 
-    it("should validate content without metadata", () => {
-      const validContent = {
-        content: "<html><body><h1>Test</h1></body></html>",
-      };
+    testInvalidSchema(
+      HTMLContentSchema,
+      createTestHtmlContentSchema({ content: "" }),
+      undefined,
+      "empty content"
+    );
 
-      const result = HTMLContentSchema.safeParse(validContent);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data.content).toBe(validContent.content);
-        expect(result.data.metadata).toBeUndefined();
-      }
-    });
+    testInvalidSchema(
+      HTMLContentSchema,
+      createTestHtmlContentSchema({ content: "a".repeat(11 * 1024 * 1024) }),
+      undefined,
+      "content that is too large"
+    );
 
-    it("should reject empty content", () => {
-      const invalidContent = {
-        content: "",
-      };
-
-      const result = HTMLContentSchema.safeParse(invalidContent);
-      expect(result.success).toBe(false);
-    });
-
-    it("should reject content that is too large", () => {
-      const invalidContent = {
-        content: "a".repeat(11 * 1024 * 1024), // 11MB
-      };
-
-      const result = HTMLContentSchema.safeParse(invalidContent);
-      expect(result.success).toBe(false);
-    });
-
-    it("should reject invalid import ID", () => {
-      const invalidContent = {
-        content: "<html><body><h1>Test</h1></body></html>",
+    testInvalidSchema(
+      HTMLContentSchema,
+      createTestHtmlContentSchema({
         metadata: {
           importId: "not-a-uuid",
           filename: "test.html",
+          source: "https://example.com/recipe",
         },
-      };
+      }),
+      "Invalid import ID",
+      "invalid import ID"
+    );
 
-      const result = HTMLContentSchema.safeParse(invalidContent);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe("Invalid import ID");
-      }
-    });
-
-    it("should reject invalid source URL", () => {
-      const invalidContent = {
-        content: "<html><body><h1>Test</h1></body></html>",
+    testInvalidSchema(
+      HTMLContentSchema,
+      createTestHtmlContentSchema({
         metadata: {
+          importId: "123e4567-e89b-12d3-a456-426614174000",
           filename: "test.html",
           source: "not-a-url",
         },
-      };
+      }),
+      "Invalid source URL",
+      "invalid source URL"
+    );
 
-      const result = HTMLContentSchema.safeParse(invalidContent);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe("Invalid source URL");
-      }
-    });
-
-    it("should reject filename that is too long", () => {
-      const invalidContent = {
-        content: "<html><body><h1>Test</h1></body></html>",
+    testInvalidSchema(
+      HTMLContentSchema,
+      createTestHtmlContentSchema({
         metadata: {
+          importId: "123e4567-e89b-12d3-a456-426614174000",
           filename: "a".repeat(256),
+          source: "https://example.com/recipe",
         },
-      };
-
-      const result = HTMLContentSchema.safeParse(invalidContent);
-      expect(result.success).toBe(false);
-    });
+      }),
+      undefined,
+      "filename that is too long"
+    );
   });
 
   describe("NoteJobDataSchema", () => {
@@ -636,187 +497,109 @@ describe("Validation Schemas", () => {
       }
     });
 
-    it("should validate data without metadata", () => {
-      const validData = {
+    testValidSchema(
+      NoteJobDataSchema,
+      {
         content: "<html><body><h1>Test Recipe</h1></body></html>",
-      };
+      },
+      "data without metadata"
+    );
 
-      const result = NoteJobDataSchema.safeParse(validData);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data.content).toBe(validData.content);
-        expect(result.data.metadata).toBeUndefined();
-      }
+    testSchemaRequiredFields(NoteJobDataSchema, ["content"], {
+      content: "<html><body><h1>Test Recipe</h1></body></html>",
     });
 
-    it("should reject empty content", () => {
-      const invalidData = {
-        content: "",
-      };
-
-      const result = NoteJobDataSchema.safeParse(invalidData);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe("Content cannot be empty");
-      }
-    });
-
-    it("should reject missing content", () => {
-      const invalidData = {};
-
-      const result = NoteJobDataSchema.safeParse(invalidData);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe(
-          "Invalid input: expected string, received undefined"
-        );
-      }
-    });
+    testInvalidSchema(
+      NoteJobDataSchema,
+      createTestNoteJobData({ content: "" }),
+      "Content cannot be empty",
+      "empty content"
+    );
   });
 
   describe("StatusEventSchema", () => {
-    it("should validate valid status event", () => {
-      const validEvent = {
-        importId: "123e4567-e89b-12d3-a456-426614174000",
-        noteId: "456e7890-e89b-12d3-a456-426614174000",
-        status: "PROCESSING" as const,
-        message: "Processing started",
-        context: "parse_html",
-        currentCount: 5,
-        totalCount: 10,
-        indentLevel: 2,
-        metadata: { progress: 50 },
-      };
+    testValidSchema(
+      StatusEventSchema,
+      createTestStatusEvent(),
+      "valid status event with all fields"
+    );
 
-      const result = StatusEventSchema.safeParse(validEvent);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data).toEqual(validEvent);
-      }
-    });
-
-    it("should validate minimal status event", () => {
-      const minimalEvent = {
+    testValidSchema(
+      StatusEventSchema,
+      {
         importId: "123e4567-e89b-12d3-a456-426614174000",
         status: "COMPLETED" as const,
-      };
+      },
+      "minimal status event"
+    );
 
-      const result = StatusEventSchema.safeParse(minimalEvent);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data.importId).toBe(minimalEvent.importId);
-        expect(result.data.status).toBe(minimalEvent.status);
-        expect(result.data.message).toBeUndefined();
-        expect(result.data.context).toBeUndefined();
-        expect(result.data.currentCount).toBeUndefined();
-        expect(result.data.totalCount).toBeUndefined();
-        expect(result.data.indentLevel).toBeUndefined();
-        expect(result.data.metadata).toBeUndefined();
-      }
+    testSchemaRequiredFields(StatusEventSchema, ["importId", "status"], {
+      importId: "123e4567-e89b-12d3-a456-426614174000",
+      status: "COMPLETED" as const,
     });
 
-    it("should reject invalid import ID", () => {
-      const invalidEvent = {
-        importId: "not-a-uuid",
-        status: "PROCESSING" as const,
-      };
+    testInvalidSchema(
+      StatusEventSchema,
+      createTestStatusEvent({ importId: "not-a-uuid" }),
+      "Invalid import ID",
+      "invalid import ID"
+    );
 
-      const result = StatusEventSchema.safeParse(invalidEvent);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe("Invalid import ID");
-      }
-    });
+    testInvalidSchema(
+      StatusEventSchema,
+      createTestStatusEvent({ noteId: "not-a-uuid" }),
+      "Invalid note ID",
+      "invalid note ID"
+    );
 
-    it("should reject invalid note ID", () => {
-      const invalidEvent = {
-        importId: "123e4567-e89b-12d3-a456-426614174000",
-        noteId: "not-a-uuid",
-        status: "PROCESSING" as const,
-      };
+    testInvalidSchema(
+      StatusEventSchema,
+      createTestStatusEvent({ status: "INVALID_STATUS" as never }),
+      undefined,
+      "invalid status"
+    );
 
-      const result = StatusEventSchema.safeParse(invalidEvent);
-      expect(result.success).toBe(false);
-      if (!result.success && result.error.issues[0]) {
-        expect(result.error.issues[0].message).toBe("Invalid note ID");
-      }
-    });
+    testInvalidSchema(
+      StatusEventSchema,
+      createTestStatusEvent({ message: "a".repeat(1001) }),
+      undefined,
+      "message that is too long"
+    );
 
-    it("should reject invalid status", () => {
-      const invalidEvent = {
-        importId: "123e4567-e89b-12d3-a456-426614174000",
-        status: "INVALID_STATUS",
-      };
+    testInvalidSchema(
+      StatusEventSchema,
+      createTestStatusEvent({ context: "a".repeat(501) }),
+      undefined,
+      "context that is too long"
+    );
 
-      const result = StatusEventSchema.safeParse(invalidEvent);
-      expect(result.success).toBe(false);
-    });
+    testInvalidSchema(
+      StatusEventSchema,
+      createTestStatusEvent({ currentCount: -1 }),
+      undefined,
+      "negative currentCount"
+    );
 
-    it("should reject message that is too long", () => {
-      const invalidEvent = {
-        importId: "123e4567-e89b-12d3-a456-426614174000",
-        status: "PROCESSING" as const,
-        message: "a".repeat(1001),
-      };
+    testInvalidSchema(
+      StatusEventSchema,
+      createTestStatusEvent({ totalCount: -1 }),
+      undefined,
+      "negative totalCount"
+    );
 
-      const result = StatusEventSchema.safeParse(invalidEvent);
-      expect(result.success).toBe(false);
-    });
+    testInvalidSchema(
+      StatusEventSchema,
+      createTestStatusEvent({ indentLevel: -1 }),
+      undefined,
+      "indentLevel below 0"
+    );
 
-    it("should reject context that is too long", () => {
-      const invalidEvent = {
-        importId: "123e4567-e89b-12d3-a456-426614174000",
-        status: "PROCESSING" as const,
-        context: "a".repeat(501),
-      };
-
-      const result = StatusEventSchema.safeParse(invalidEvent);
-      expect(result.success).toBe(false);
-    });
-
-    it("should reject negative currentCount", () => {
-      const invalidEvent = {
-        importId: "123e4567-e89b-12d3-a456-426614174000",
-        status: "PROCESSING" as const,
-        currentCount: -1,
-      };
-
-      const result = StatusEventSchema.safeParse(invalidEvent);
-      expect(result.success).toBe(false);
-    });
-
-    it("should reject negative totalCount", () => {
-      const invalidEvent = {
-        importId: "123e4567-e89b-12d3-a456-426614174000",
-        status: "PROCESSING" as const,
-        totalCount: -1,
-      };
-
-      const result = StatusEventSchema.safeParse(invalidEvent);
-      expect(result.success).toBe(false);
-    });
-
-    it("should reject indentLevel below 0", () => {
-      const invalidEvent = {
-        importId: "123e4567-e89b-12d3-a456-426614174000",
-        status: "PROCESSING" as const,
-        indentLevel: -1,
-      };
-
-      const result = StatusEventSchema.safeParse(invalidEvent);
-      expect(result.success).toBe(false);
-    });
-
-    it("should reject indentLevel above 10", () => {
-      const invalidEvent = {
-        importId: "123e4567-e89b-12d3-a456-426614174000",
-        status: "PROCESSING" as const,
-        indentLevel: 11,
-      };
-
-      const result = StatusEventSchema.safeParse(invalidEvent);
-      expect(result.success).toBe(false);
-    });
+    testInvalidSchema(
+      StatusEventSchema,
+      createTestStatusEvent({ indentLevel: 11 }),
+      undefined,
+      "indentLevel above 10"
+    );
 
     it("should validate all status values", () => {
       const statuses = [
