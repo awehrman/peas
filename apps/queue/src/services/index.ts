@@ -30,6 +30,3 @@ export {
   type IQueueService as QueueServiceInterface,
 } from "./register-queues";
 export { EnhancedLoggerService } from "../utils/logger";
-
-// Action exports
-export * from "./actions";

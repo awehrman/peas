@@ -1,16 +1,16 @@
-import { ActionName } from "../../../types";
-import type { NotePipelineData } from "../../../types/notes";
-import type { NoteWorkerDependencies } from "../../../types/notes";
+import { ActionName } from "../../types";
+import type { StructuredLogger } from "../../types";
+import type { NotePipelineData } from "../../types/notes";
+import type { NoteWorkerDependencies } from "../../types/notes";
 import {
   calculateRemovedSize,
   logCleaningStats,
   removeIconsTags,
   removeStyleTags,
   resolveTitle,
-} from "../../../utils/html-cleaner";
-import { BaseAction } from "../../../workers/core/base-action";
-import { ActionContext } from "../../../workers/core/types";
-import type { StructuredLogger } from "../../../types";
+} from "../../utils/html-cleaner";
+import { BaseAction } from "../../workers/core/base-action";
+import { ActionContext } from "../../workers/core/types";
 
 /**
  * Clean HTML file by removing style and icons tags

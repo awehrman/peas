@@ -1,16 +1,16 @@
 import type { ParsedHTMLFile } from "@peas/database";
 
-import type { HTMLParsingOptions } from "../../../parsers/types";
-import { ParseHtmlDataSchema } from "../../../schemas/note";
-import { ActionName } from "../../../types";
-import { ParsedIngredientLine, ParsedInstructionLine } from "../../../types";
+import type { HTMLParsingOptions } from "../../parsers/types";
+import { ParseHtmlDataSchema } from "../../schemas/note";
+import type { StructuredLogger } from "../../types";
+import { ActionName } from "../../types";
+import { ParsedIngredientLine, ParsedInstructionLine } from "../../types";
 import type {
   NotePipelineData,
   NoteWorkerDependencies,
-} from "../../../types/notes";
-import { BaseAction } from "../../../workers/core/base-action";
-import { ActionContext } from "../../../workers/core/types";
-import type { StructuredLogger } from "../../../types";
+} from "../../types/notes";
+import { BaseAction } from "../../workers/core/base-action";
+import { ActionContext } from "../../workers/core/types";
 
 /**
  * Parse HTML file and convert to structured format

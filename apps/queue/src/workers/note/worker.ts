@@ -3,9 +3,9 @@ import { createNotePipeline } from "./pipeline";
 
 import { Queue } from "bullmq";
 
-import { CleanHtmlAction } from "../../services/actions/note/clean-html";
-import { ParseHtmlAction } from "../../services/actions/note/parse-html";
 import { IServiceContainer } from "../../services/container";
+import { CleanHtmlAction } from "../../services/note/clean-html";
+import { ParseHtmlAction } from "../../services/note/parse-html";
 import { ActionName } from "../../types";
 import type {
   NotePipelineData,

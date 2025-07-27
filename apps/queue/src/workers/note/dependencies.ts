@@ -1,7 +1,7 @@
 import { parseHTMLContent } from "../../parsers/html";
-import { cleanHtmlFile } from "../../services/actions/note/clean-html";
-import { parseHtmlFile } from "../../services/actions/note/parse-html";
 import type { IServiceContainer } from "../../services/container";
+import { cleanHtmlFile } from "../../services/note/clean-html";
+import { parseHtmlFile } from "../../services/note/parse-html";
 import type {
   NotePipelineData,
   NoteWorkerDependencies,
