@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { createMockPrismaClient, createTestEnvironment, setupTestEnvironment } from "../../test-utils/test-utils";
+import {
+  createMockPrismaClient,
+  createTestEnvironment,
+  setupTestEnvironment,
+} from "../../test-utils/helpers";
 import type { DatabaseManager } from "../database-manager";
 
 // Mock Prisma client

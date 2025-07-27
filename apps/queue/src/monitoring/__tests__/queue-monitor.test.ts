@@ -5,7 +5,7 @@ import {
   createConsoleSpies,
   createMockQueue,
   flushPromises,
-} from "../../test-utils/test-utils";
+} from "../../test-utils/helpers";
 import { QueueMonitor } from "../queue-monitor";
 // Import the mocked system monitor
 import { systemMonitor } from "../system-monitor";

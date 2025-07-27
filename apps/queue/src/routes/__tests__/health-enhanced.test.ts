@@ -9,7 +9,7 @@ import {
   createMockHealthMonitor,
   createTestApp,
   createTestEnvironment,
-} from "../../test-utils/test-utils";
+} from "../../test-utils/helpers";
 import { HttpStatus } from "../../types";
 import { healthEnhancedRouter } from "../health-enhanced";
 

@@ -3,7 +3,7 @@ import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ServiceContainer } from "../../services";
-import { createMockQueue, createTestApp } from "../../test-utils/test-utils";
+import { createMockQueue, createTestApp } from "../../test-utils/helpers";
 import { ActionName, HttpStatus } from "../../types";
 // Import the router after mocking
 import { notesRouter } from "../notes";

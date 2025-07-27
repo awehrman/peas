@@ -6,7 +6,7 @@ import {
   type QueueOptions,
   createMockQueue,
   createTestEnvironment,
-} from "../../test-utils/test-utils";
+} from "../../test-utils/helpers";
 import { createQueue } from "../create-queue";
 
 // Mock BullMQ Queue

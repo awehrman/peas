@@ -12,7 +12,7 @@ import {
   testQueueInterface,
   testStatusBroadcasterInterface,
   testWebSocketInterface,
-} from "../../test-utils/service-test-utils";
+} from "../../test-utils/service";
 import type { PatternTracker } from "../../workers/shared/pattern-tracker";
 import { type IServiceContainer, ServiceContainer } from "../container";
 // Import the mocked modules

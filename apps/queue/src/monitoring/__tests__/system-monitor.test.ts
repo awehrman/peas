@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // Import the mocked ManagerFactory
 import { ManagerFactory } from "../../config/factory";
-import { createConsoleSpies } from "../../test-utils/test-utils";
+import { createConsoleSpies } from "../../test-utils/helpers";
 import { HealthStatus } from "../../types";
 import type { HealthCheck, ServiceHealth } from "../../types";
 import type { JobMetrics } from "../../types/monitoring";

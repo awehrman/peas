@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { setupTestEnvironment } from "../../test-utils/test-utils";
+import { setupTestEnvironment } from "../../test-utils/helpers";
 
 describe("ManagerFactory", () => {
   let testEnv: ReturnType<typeof setupTestEnvironment>;

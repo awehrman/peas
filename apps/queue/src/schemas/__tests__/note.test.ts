@@ -14,7 +14,7 @@ import {
   testSchemaDefaults,
   testSchemaRequiredFields,
   testValidSchema,
-} from "../../test-utils/schema-test-utils";
+} from "../../test-utils/schema";
 import {
   NoteJobDataSchema,
   NoteValidation,

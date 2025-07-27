@@ -5,9 +5,9 @@ import {
   TestAssertions,
   TestDataGenerator,
   setupEnhancedTestEnvironment,
-} from "../test-config";
+} from "../config";
 
-describe("test-config", () => {
+describe("config", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
   });

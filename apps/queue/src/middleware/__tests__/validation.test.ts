@@ -8,7 +8,7 @@ import {
   createMockRequest,
   createMockResponse,
   createTestEnvironment,
-} from "../../test-utils/test-utils";
+} from "../../test-utils/helpers";
 import { HttpStatus } from "../../types";
 import {
   CommonValidations,

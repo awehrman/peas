@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { verifyTestSetup } from "../test-setup";
+import { verifyTestSetup } from "../setup";
 
-describe("test-setup", () => {
+describe("setup", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
   });

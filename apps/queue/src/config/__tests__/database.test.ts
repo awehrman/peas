@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { createTestEnvironment } from "../../test-utils/test-utils";
+import { createTestEnvironment } from "../../test-utils/helpers";
 
 // Mock PrismaClient and @peas/database
 const disconnectMock = vi.fn();

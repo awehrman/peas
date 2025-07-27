@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createMockLogger,
   createTestEnvironment,
-} from "../../test-utils/test-utils";
+} from "../../test-utils/helpers";
 
 // Mock the logger
 const mockLogger = createMockLogger();

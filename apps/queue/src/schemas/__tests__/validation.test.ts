@@ -15,7 +15,7 @@ import {
   testSchemaEnumValues,
   testSchemaRequiredFields,
   testValidSchema,
-} from "../../test-utils/schema-test-utils";
+} from "../../test-utils/schema";
 import {
   EnvironmentSchema,
   FileValidationSchema,

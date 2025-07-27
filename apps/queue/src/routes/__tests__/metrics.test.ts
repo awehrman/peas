@@ -2,7 +2,7 @@ import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { createTestApp } from "../../test-utils/test-utils";
+import { createTestApp } from "../../test-utils/helpers";
 import { HttpStatus } from "../../types";
 import { ErrorHandler } from "../../utils/error-handler";
 import {

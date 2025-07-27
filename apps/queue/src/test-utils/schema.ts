@@ -668,8 +668,19 @@ export function createTestParsedHtmlFile(
     sourceApplication: string;
     created: string;
     historicalCreatedAt: Date;
-    ingredients: unknown[];
-    instructions: unknown[];
+    ingredients: Array<{
+      reference: string;
+      blockIndex: number;
+      lineIndex: number;
+      parseStatus?: "PENDING" | "CORRECT" | "INCORRECT" | "ERROR";
+      parsedAt?: Date;
+      rule?: string;
+    }>;
+    instructions: Array<{
+      reference: string;
+      lineIndex: number;
+      parseStatus?: "PENDING" | "CORRECT" | "INCORRECT" | "ERROR";
+    }>;
     image: string;
     images: Array<{
       src: string;
@@ -688,8 +699,21 @@ export function createTestParsedHtmlFile(
     sourceApplication: "Evernote",
     created: "2023-01-01T00:00:00Z",
     historicalCreatedAt: new Date("2023-01-01"),
-    ingredients: [],
-    instructions: [],
+    ingredients: [
+      {
+        reference: "1 cup flour",
+        blockIndex: 0,
+        lineIndex: 1,
+        parseStatus: "CORRECT" as const,
+      },
+    ],
+    instructions: [
+      {
+        reference: "Mix ingredients together",
+        lineIndex: 1,
+        parseStatus: "CORRECT" as const,
+      },
+    ],
     image:
       "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
     images: [
@@ -713,8 +737,19 @@ export function createTestSaveNoteData(
       title: string;
       contents: string;
       tags: string[];
-      ingredients: unknown[];
-      instructions: unknown[];
+      ingredients: Array<{
+        reference: string;
+        blockIndex: number;
+        lineIndex: number;
+        parseStatus?: "PENDING" | "CORRECT" | "INCORRECT" | "ERROR";
+        parsedAt?: Date;
+        rule?: string;
+      }>;
+      instructions: Array<{
+        reference: string;
+        lineIndex: number;
+        parseStatus?: "PENDING" | "CORRECT" | "INCORRECT" | "ERROR";
+      }>;
     };
     importId: string;
   }> = {}
@@ -724,8 +759,21 @@ export function createTestSaveNoteData(
       title: "Test Recipe",
       contents: "<html><body><h1>Test Recipe</h1></body></html>",
       tags: [],
-      ingredients: [],
-      instructions: [],
+      ingredients: [
+        {
+          reference: "1 cup flour",
+          blockIndex: 0,
+          lineIndex: 1,
+          parseStatus: "CORRECT" as const,
+        },
+      ],
+      instructions: [
+        {
+          reference: "Mix ingredients together",
+          lineIndex: 1,
+          parseStatus: "CORRECT" as const,
+        },
+      ],
     },
     importId: "import-123",
     ...overrides,
@@ -782,8 +830,17 @@ export function createTestScheduleActionData(
       title: string;
       contents: string;
       tags: string[];
-      ingredients: unknown[];
-      instructions: unknown[];
+      ingredients: Array<{
+        id: string;
+        reference: string;
+        blockIndex: number;
+        lineIndex: number;
+      }>;
+      instructions: Array<{
+        reference: string;
+        lineIndex: number;
+        parseStatus?: "PENDING" | "CORRECT" | "INCORRECT" | "ERROR";
+      }>;
     };
   }> = {}
 ) {
@@ -793,8 +850,21 @@ export function createTestScheduleActionData(
       title: "Test Recipe",
       contents: "<html><body><h1>Test Recipe</h1></body></html>",
       tags: [],
-      ingredients: [],
-      instructions: [],
+      ingredients: [
+        {
+          id: "123e4567-e89b-12d3-a456-426614174000",
+          reference: "1 cup flour",
+          blockIndex: 0,
+          lineIndex: 1,
+        },
+      ],
+      instructions: [
+        {
+          reference: "Mix ingredients together",
+          lineIndex: 1,
+          parseStatus: "CORRECT" as const,
+        },
+      ],
     },
     ...overrides,
   };

@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createConsoleSpies,
   createTestEnvironment,
-} from "../../test-utils/test-utils";
+} from "../../test-utils/helpers";
 
 // Mocks
 vi.mock("dotenv", () => ({ config: vi.fn() }));

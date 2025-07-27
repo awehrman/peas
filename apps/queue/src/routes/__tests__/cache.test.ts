@@ -14,7 +14,7 @@ import {
   createMockRedisClient,
   createMockRedisStats,
   createTestApp,
-} from "../../test-utils/test-utils";
+} from "../../test-utils/helpers";
 import { HttpStatus } from "../../types";
 import { actionCache } from "../../workers/core/cache/action-cache";
 import { cacheRouter } from "../cache";

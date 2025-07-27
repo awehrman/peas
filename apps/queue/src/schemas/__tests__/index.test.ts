@@ -1,9 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
-import {
-  clearSchemaMocks,
-  setupSchemaMocks,
-} from "../../test-utils/schema-test-utils";
+import { clearSchemaMocks, setupSchemaMocks } from "../../test-utils/schema";
 import { Schemas, Validation } from "../index";
 
 // Setup schema mocks using the utility

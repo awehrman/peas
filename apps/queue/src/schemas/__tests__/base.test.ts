@@ -11,7 +11,7 @@ import {
   testSchemaPartialData,
   testSchemaRequiredFields,
   testValidSchema,
-} from "../../test-utils/schema-test-utils";
+} from "../../test-utils/schema";
 import {
   BaseJobDataSchema,
   BaseValidation,

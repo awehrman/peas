@@ -17,9 +17,9 @@ import {
   flushPromises,
   setupTestEnvironment,
   wait,
-} from "../test-utils";
+} from "../helpers";
 
-describe("test-utils", () => {
+describe("helpers", () => {
   describe("mock creators", () => {
     it("should create a mock Queue with expected shape", () => {
       const queue = createMockQueue();

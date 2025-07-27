@@ -6,7 +6,7 @@ import {
   createMockNext,
   createMockRequest,
   createMockResponse,
-} from "../../test-utils/test-utils";
+} from "../../test-utils/helpers";
 import { HttpStatus } from "../../types";
 import {
   SecurityMiddleware,

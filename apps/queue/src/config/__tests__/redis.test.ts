@@ -4,7 +4,7 @@ import {
   createConsoleSpies,
   createMockRedisClient,
   createTestEnvironment,
-} from "../../test-utils/test-utils";
+} from "../../test-utils/helpers";
 
 // Mock redis module
 const mockCreateClient = vi.fn();
@@ -213,7 +213,9 @@ describe("redis.ts", () => {
       // Call the handler
       endHandler();
 
-      expect(consoleSpies.logSpy).toHaveBeenCalledWith("🛑 Redis client disconnected");
+      expect(consoleSpies.logSpy).toHaveBeenCalledWith(
+        "🛑 Redis client disconnected"
+      );
     });
   });
 

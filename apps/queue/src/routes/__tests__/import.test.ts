@@ -9,7 +9,7 @@ import {
   createMockServiceContainer,
   createTestApp,
   createTestEnvironment,
-} from "../../test-utils/test-utils";
+} from "../../test-utils/helpers";
 import { HttpStatus } from "../../types";
 import { processFilesWithStreaming } from "../../utils/file-processor";
 import {

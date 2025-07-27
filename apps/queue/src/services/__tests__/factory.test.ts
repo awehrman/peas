@@ -9,7 +9,7 @@ import {
   testLoggerInterface,
   testStatusBroadcasterInterface,
   testWebSocketInterface,
-} from "../../test-utils/service-test-utils";
+} from "../../test-utils/service";
 import type {
   IConfigService,
   IErrorHandlerService,
