@@ -47,6 +47,10 @@ interface JobCompletionTracker {
 const jobCompletionTracker = new Map<string, JobCompletionTracker>();
 
 export class DatabaseService implements IDatabaseService {
+  // Method to clear the tracker for testing purposes
+  static clearJobCompletionTracker() {
+    jobCompletionTracker.clear();
+  }
   public prisma = prisma;
   public patternTracker = new PatternTracker(prisma);
 
