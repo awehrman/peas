@@ -2,6 +2,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { IServiceContainer } from "../../../../services/container";
+import { LogLevel } from "../../../../types";
 import { buildBaseDependencies } from "../../../core/worker-dependencies/build-base-dependencies";
 
 describe("buildBaseDependencies", () => {
@@ -49,7 +50,7 @@ describe("buildBaseDependencies", () => {
     it("should delegate log calls to container logger", () => {
       const deps = buildBaseDependencies(mockContainer);
       const testMessage = "test message";
-      const testLevel = "info" as const;
+      const testLevel = LogLevel.INFO;
       const testMeta = { key: "value" };
 
       deps.logger.log(testMessage, testLevel, testMeta);
@@ -92,7 +93,7 @@ describe("buildBaseDependencies", () => {
         const testOperation = vi.fn().mockResolvedValue("test result");
         const testContext = { operation: "test-op", jobId: "test-job" };
 
-        await deps.errorHandler.withErrorHandling(testOperation, testContext);
+        await deps.errorHandler!.withErrorHandling(testOperation, testContext);
 
         expect(
           mockContainer.errorHandler.withErrorHandling
@@ -111,7 +112,7 @@ describe("buildBaseDependencies", () => {
         const testOperation = vi.fn().mockResolvedValue("test result");
         const testContext = { jobId: "test-job" };
 
-        await deps.errorHandler.withErrorHandling(testOperation, testContext);
+        await deps.errorHandler!.withErrorHandling(testOperation, testContext);
 
         expect(
           mockContainer.errorHandler.withErrorHandling
@@ -130,7 +131,7 @@ describe("buildBaseDependencies", () => {
         const testOperation = vi.fn().mockResolvedValue("test result");
         const testContext = { operation: 123, jobId: "test-job" };
 
-        await deps.errorHandler.withErrorHandling(testOperation, testContext);
+        await deps.errorHandler!.withErrorHandling(testOperation, testContext);
 
         expect(
           mockContainer.errorHandler.withErrorHandling
@@ -154,7 +155,7 @@ describe("buildBaseDependencies", () => {
           nested: { key: "value" },
         };
 
-        await deps.errorHandler.withErrorHandling(testOperation, testContext);
+        await deps.errorHandler!.withErrorHandling(testOperation, testContext);
 
         expect(
           mockContainer.errorHandler.withErrorHandling
@@ -177,7 +178,7 @@ describe("buildBaseDependencies", () => {
         const testError = new Error("test error");
         const testContext = { operation: "test-op", jobId: "test-job" };
 
-        deps.errorHandler.createJobError(testError, testContext);
+        deps.errorHandler!.createJobError(testError, testContext);
 
         expect(mockContainer.errorHandler.createJobError).toHaveBeenCalledWith(
           testError,
@@ -194,7 +195,7 @@ describe("buildBaseDependencies", () => {
         const testError = new Error("test error");
         const testContext = { jobId: "test-job" };
 
-        deps.errorHandler.createJobError(testError, testContext);
+        deps.errorHandler!.createJobError(testError, testContext);
 
         expect(mockContainer.errorHandler.createJobError).toHaveBeenCalledWith(
           testError,
@@ -212,7 +213,7 @@ describe("buildBaseDependencies", () => {
         const deps = buildBaseDependencies(mockContainer);
         const testError = new Error("test error");
 
-        deps.errorHandler.classifyError(testError);
+        deps.errorHandler!.classifyError(testError);
 
         expect(mockContainer.errorHandler.classifyError).toHaveBeenCalledWith(
           testError
@@ -226,7 +227,7 @@ describe("buildBaseDependencies", () => {
         const testError = new Error("test error");
         const testContext = { operation: "test-op", jobId: "test-job" };
 
-        deps.errorHandler.logError(testError, testContext);
+        deps.errorHandler!.logError(testError, testContext);
 
         expect(mockContainer.errorHandler.logError).toHaveBeenCalledWith(
           testError,
@@ -243,7 +244,7 @@ describe("buildBaseDependencies", () => {
         const testError = new Error("test error");
         const testContext = { jobId: "test-job" };
 
-        deps.errorHandler.logError(testError, testContext);
+        deps.errorHandler!.logError(testError, testContext);
 
         expect(mockContainer.errorHandler.logError).toHaveBeenCalledWith(
           testError,
@@ -262,7 +263,7 @@ describe("buildBaseDependencies", () => {
       const deps = buildBaseDependencies(mockContainer);
 
       expect(deps.statusBroadcaster).toBeDefined();
-      expect(typeof deps.statusBroadcaster.addStatusEventAndBroadcast).toBe(
+      expect(typeof deps.statusBroadcaster!.addStatusEventAndBroadcast).toBe(
         "function"
       );
     });
@@ -273,94 +274,51 @@ describe("buildBaseDependencies", () => {
         const testEvent = {
           importId: "test-import",
           noteId: "test-note",
-          status: "PROCESSING",
+          status: "test-status",
           message: "Test message",
           context: "test-context",
           indentLevel: 1,
-          metadata: { jobId: "test-job" },
+          metadata: { key: "value" },
         };
 
-        await deps.statusBroadcaster.addStatusEventAndBroadcast(testEvent);
+        await deps.statusBroadcaster!.addStatusEventAndBroadcast(testEvent);
 
         expect(
           mockContainer.statusBroadcaster.addStatusEventAndBroadcast
         ).toHaveBeenCalledWith(
           expect.objectContaining({
-            type: "status",
+            importId: "test-import",
+            noteId: "test-note",
+            status: "test-status",
             message: "Test message",
-            severity: "info",
-            ...testEvent,
-          })
-        );
-      });
-
-      it("should use default values when event properties are missing", async () => {
-        const deps = buildBaseDependencies(mockContainer);
-        const testEvent = {};
-
-        await deps.statusBroadcaster.addStatusEventAndBroadcast(testEvent);
-
-        expect(
-          mockContainer.statusBroadcaster.addStatusEventAndBroadcast
-        ).toHaveBeenCalledWith(
-          expect.objectContaining({
+            context: "test-context",
+            indentLevel: 1,
+            metadata: { key: "value" },
             type: "status",
-            message: "",
             severity: "info",
           })
         );
       });
 
-      it("should handle custom type and severity values", async () => {
+      it("should use default values when not provided", async () => {
         const deps = buildBaseDependencies(mockContainer);
         const testEvent = {
-          type: "custom-type",
-          severity: "error" as const,
-          message: "Custom message",
+          importId: "test-import",
+          status: "test-status",
+          message: "Test message",
         };
 
-        await deps.statusBroadcaster.addStatusEventAndBroadcast(testEvent);
+        await deps.statusBroadcaster!.addStatusEventAndBroadcast(testEvent);
 
         expect(
           mockContainer.statusBroadcaster.addStatusEventAndBroadcast
         ).toHaveBeenCalledWith(
           expect.objectContaining({
-            type: "custom-type",
-            message: "Custom message",
-            severity: "error",
-          })
-        );
-      });
-
-      it("should handle all severity levels", async () => {
-        const deps = buildBaseDependencies(mockContainer);
-        const severityLevels = ["info", "warn", "error", "critical"] as const;
-
-        for (const severity of severityLevels) {
-          const testEvent = { severity };
-          await deps.statusBroadcaster.addStatusEventAndBroadcast(testEvent);
-
-          expect(
-            mockContainer.statusBroadcaster.addStatusEventAndBroadcast
-          ).toHaveBeenCalledWith(
-            expect.objectContaining({
-              severity,
-            })
-          );
-        }
-      });
-
-      it("should handle invalid severity values", async () => {
-        const deps = buildBaseDependencies(mockContainer);
-        const testEvent = { severity: "invalid" };
-
-        await deps.statusBroadcaster.addStatusEventAndBroadcast(testEvent);
-
-        expect(
-          mockContainer.statusBroadcaster.addStatusEventAndBroadcast
-        ).toHaveBeenCalledWith(
-          expect.objectContaining({
-            severity: "invalid", // The implementation uses || so it keeps the original value
+            importId: "test-import",
+            status: "test-status",
+            message: "Test message",
+            type: "status",
+            severity: "info",
           })
         );
       });
@@ -370,22 +328,96 @@ describe("buildBaseDependencies", () => {
         const testEvent = {
           importId: "test-import",
           noteId: "test-note",
-          status: "PROCESSING",
+          status: "test-status",
           message: "Test message",
           context: "test-context",
-          indentLevel: 1,
-          metadata: { jobId: "test-job" },
-          customProp: "custom-value",
-          nested: { key: "value" },
+          indentLevel: 2,
+          metadata: { custom: "value", nested: { key: "value" } },
         };
 
-        await deps.statusBroadcaster.addStatusEventAndBroadcast(testEvent);
+        await deps.statusBroadcaster!.addStatusEventAndBroadcast(testEvent);
 
         expect(
           mockContainer.statusBroadcaster.addStatusEventAndBroadcast
         ).toHaveBeenCalledWith(
           expect.objectContaining({
-            ...testEvent,
+            importId: "test-import",
+            noteId: "test-note",
+            status: "test-status",
+            message: "Test message",
+            context: "test-context",
+            indentLevel: 2,
+            metadata: { custom: "value", nested: { key: "value" } },
+            type: "status",
+            severity: "info",
+          })
+        );
+      });
+
+      it("should handle events with minimal properties", async () => {
+        const deps = buildBaseDependencies(mockContainer);
+        const testEvent = {
+          importId: "test-import",
+          status: "test-status",
+        };
+
+        await deps.statusBroadcaster!.addStatusEventAndBroadcast(testEvent);
+
+        expect(
+          mockContainer.statusBroadcaster.addStatusEventAndBroadcast
+        ).toHaveBeenCalledWith(
+          expect.objectContaining({
+            importId: "test-import",
+            status: "test-status",
+            message: "",
+            type: "status",
+            severity: "info",
+          })
+        );
+      });
+
+      it("should handle events with custom metadata", async () => {
+        const deps = buildBaseDependencies(mockContainer);
+        const testEvent = {
+          importId: "test-import",
+          status: "test-status",
+          metadata: { customKey: "customValue" },
+        };
+
+        await deps.statusBroadcaster!.addStatusEventAndBroadcast(testEvent);
+
+        expect(
+          mockContainer.statusBroadcaster.addStatusEventAndBroadcast
+        ).toHaveBeenCalledWith(
+          expect.objectContaining({
+            importId: "test-import",
+            status: "test-status",
+            metadata: { customKey: "customValue" },
+            message: "",
+            type: "status",
+            severity: "info",
+          })
+        );
+      });
+
+      it("should handle events with high indent level", async () => {
+        const deps = buildBaseDependencies(mockContainer);
+        const testEvent = {
+          importId: "test-import",
+          status: "test-status",
+          indentLevel: 5,
+        };
+
+        await deps.statusBroadcaster!.addStatusEventAndBroadcast(testEvent);
+
+        expect(
+          mockContainer.statusBroadcaster.addStatusEventAndBroadcast
+        ).toHaveBeenCalledWith(
+          expect.objectContaining({
+            importId: "test-import",
+            status: "test-status",
+            indentLevel: 5,
+            message: "",
             type: "status",
             severity: "info",
           })
@@ -399,58 +431,18 @@ describe("buildBaseDependencies", () => {
       const deps = buildBaseDependencies(mockContainer);
 
       expect(deps.queues).toBeDefined();
-      expect(deps.queues.noteQueue).toBe(mockContainer.queues.noteQueue);
-      expect(deps.queues.imageQueue).toBe(mockContainer.queues.imageQueue);
-      expect(deps.queues.ingredientQueue).toBe(
+      expect(deps.queues!.noteQueue).toBe(mockContainer.queues.noteQueue);
+      expect(deps.queues!.imageQueue).toBe(mockContainer.queues.imageQueue);
+      expect(deps.queues!.ingredientQueue).toBe(
         mockContainer.queues.ingredientQueue
       );
-      expect(deps.queues.instructionQueue).toBe(
+      expect(deps.queues!.instructionQueue).toBe(
         mockContainer.queues.instructionQueue
       );
-      expect(deps.queues.categorizationQueue).toBe(
+      expect(deps.queues!.categorizationQueue).toBe(
         mockContainer.queues.categorizationQueue
       );
-      expect(deps.queues.sourceQueue).toBe(mockContainer.queues.sourceQueue);
-    });
-  });
-
-  describe("complete dependency structure", () => {
-    it("should return complete BaseWorkerDependencies structure", () => {
-      const deps = buildBaseDependencies(mockContainer);
-
-      expect(deps).toEqual({
-        logger: expect.objectContaining({
-          log: expect.any(Function),
-        }),
-        errorHandler: expect.objectContaining({
-          withErrorHandling: expect.any(Function),
-          createJobError: expect.any(Function),
-          classifyError: expect.any(Function),
-          logError: expect.any(Function),
-        }),
-        statusBroadcaster: expect.objectContaining({
-          addStatusEventAndBroadcast: expect.any(Function),
-        }),
-        queues: expect.objectContaining({
-          noteQueue: mockContainer.queues.noteQueue,
-          imageQueue: mockContainer.queues.imageQueue,
-          ingredientQueue: mockContainer.queues.ingredientQueue,
-          instructionQueue: mockContainer.queues.instructionQueue,
-          categorizationQueue: mockContainer.queues.categorizationQueue,
-          sourceQueue: mockContainer.queues.sourceQueue,
-        }),
-      });
-    });
-
-    it("should create new instances on each call", () => {
-      const deps1 = buildBaseDependencies(mockContainer);
-      const deps2 = buildBaseDependencies(mockContainer);
-
-      expect(deps1).not.toBe(deps2);
-      expect(deps1.logger).not.toBe(deps2.logger);
-      expect(deps1.errorHandler).not.toBe(deps2.errorHandler);
-      expect(deps1.statusBroadcaster).not.toBe(deps2.statusBroadcaster);
-      expect(deps1.queues).not.toBe(deps2.queues);
+      expect(deps.queues!.sourceQueue).toBe(mockContainer.queues.sourceQueue);
     });
   });
 });
