@@ -487,8 +487,7 @@ describe("Common Test Contexts", () => {
 
     it("should create unique timestamps for each call", async () => {
       const context1 = createTestContext();
-      // Add a small delay to ensure different timestamps
-      await new Promise((resolve) => setTimeout(resolve, 1));
+      await new Promise((r) => setTimeout(r, 2));
       const context2 = createTestContext();
 
       expect(context1.timestamp.getTime()).not.toEqual(
