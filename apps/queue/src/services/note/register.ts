@@ -19,7 +19,7 @@ export function registerNoteActions(
   factory: ActionFactory<
     NotePipelineData,
     NoteWorkerDependencies,
-    NotePipelineData // <-- Output type matches input type
+    NotePipelineData
   >
 ): void {
   registerActions(factory, [
