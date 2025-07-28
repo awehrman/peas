@@ -1,6 +1,6 @@
 # Peas - Recipe Parsing Platform
 
-A modern recipe parsing and management platform built with Next.js, Prisma, and BullMQ. Peas automatically extracts and structures recipe ingredients and instructions from HTML content using advanced parsing techniques.
+qqyarn
 
 ## 🎯 MVP Overview
 
