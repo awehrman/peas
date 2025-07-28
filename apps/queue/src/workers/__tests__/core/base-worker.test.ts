@@ -150,12 +150,25 @@ describe("BaseWorker", () => {
   let mockDependencies: TestDependencies;
   let worker: TestWorker;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
     mockQueue = { name: "test-queue" };
     mockLogger = createMockLogger();
     mockDependencies = { logger: mockLogger };
-    worker = new TestWorker(mockQueue, mockDependencies);
+
+    // Create worker with mock implementation to avoid async initialization
+    const mockWorkerImpl = vi.fn().mockReturnValue({
+      isRunning: () => true,
+    });
+
+    worker = new TestWorker(
+      mockQueue,
+      mockDependencies,
+      undefined,
+      undefined,
+      undefined,
+      mockWorkerImpl
+    );
   });
 
   describe("constructor", () => {
