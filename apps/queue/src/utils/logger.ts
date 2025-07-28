@@ -260,8 +260,8 @@ export class EnhancedLoggerService implements ILoggerService {
       const mainStats = fs.statSync(this.logFile);
       const errorStats = fs.statSync(this.errorLogFile);
       return {
-        mainLogSize: mainStats.size,
-        errorLogSize: errorStats.size,
+        mainLogSize: Number(mainStats.size),
+        errorLogSize: Number(errorStats.size),
       };
     } catch {
       return {
@@ -280,12 +280,13 @@ export class EnhancedLoggerService implements ILoggerService {
       const cutoffTime = Date.now() - daysOld * 24 * 60 * 60 * 1000;
 
       files.forEach((file) => {
-        if (file.endsWith(".backup")) {
-          const filePath = path.join(this.logDir, file);
+        const fileName = file.toString();
+        if (fileName.endsWith(".backup")) {
+          const filePath = path.join(this.logDir, fileName);
           const stats = fs.statSync(filePath);
           if (stats.mtime.getTime() < cutoffTime) {
             fs.unlinkSync(filePath);
-            console.log(`Deleted old log file: ${file}`);
+            console.log(`Deleted old log file: ${fileName}`);
           }
         }
       });

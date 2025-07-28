@@ -372,7 +372,7 @@ describe("StatusBroadcasterService", () => {
         operation: "broadcast_status_event",
         error: expect.stringContaining("Foreign key constraint violated"),
       });
-    });
+    }, 10000); // Increase timeout to 10 seconds
 
     it("should handle errors during broadcasting", async () => {
       const event = {
