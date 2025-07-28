@@ -123,7 +123,7 @@ class StreamingFileProcessor extends EventEmitter {
       const stats = await fs.stat(filePath);
 
       if (stats.size > this.options.maxFileSize) {
-        return this.createResult(
+        const result = this.createResult(
           filePath,
           fileName,
           "skipped",
@@ -131,6 +131,13 @@ class StreamingFileProcessor extends EventEmitter {
           Date.now() - startTime,
           `File size ${stats.size} exceeds maximum allowed size ${this.options.maxFileSize}`
         );
+
+        // Update stats for skipped file
+        this.stats.skippedFiles++;
+        this.stats.totalSize += stats.size;
+        this.emit("fileProcessed", result);
+
+        return result;
       }
 
       // Check cache first
@@ -399,6 +406,18 @@ class StreamingFileProcessor extends EventEmitter {
 
   public getStats(): FileProcessingStats {
     return { ...this.stats };
+  }
+
+  public resetStats(): void {
+    this.stats = {
+      totalFiles: 0,
+      processedFiles: 0,
+      failedFiles: 0,
+      skippedFiles: 0,
+      totalSize: 0,
+      averageProcessingTime: 0,
+      startTime: new Date(),
+    };
   }
 
   public async shutdown(): Promise<void> {

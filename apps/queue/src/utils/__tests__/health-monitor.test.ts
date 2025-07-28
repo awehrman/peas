@@ -5,35 +5,86 @@ import { HealthMonitor } from "../health-monitor";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // Mock the dependencies
-vi.mock("../config/database", () => ({
+vi.mock("../../config/database", () => ({
   prisma: {
-    $queryRaw: vi.fn(),
+    note: {
+      count: vi.fn(),
+    },
   },
 }));
 
-vi.mock("../config/factory", () => ({
+vi.mock("../../config/factory", () => ({
   ManagerFactory: {
     createDatabaseManager: vi.fn(),
     createCacheManager: vi.fn(),
   },
 }));
 
-vi.mock("../config/redis", () => ({
+vi.mock("../../config/redis", () => ({
   redisConnection: {
-    ping: vi.fn(),
+    get: vi.fn(),
+    host: "localhost",
+  },
+}));
+
+vi.mock("../error-handler", () => ({
+  ErrorHandler: {
+    createJobError: vi.fn(),
+    logError: vi.fn(),
   },
 }));
 
 describe("HealthMonitor", () => {
   let healthMonitor: HealthMonitor;
+  let mockDatabaseManager: any;
+  let mockCacheManager: any;
+  let mockErrorHandler: any;
+  let ManagerFactory: any;
+  let ErrorHandler: any;
+  let redisConnection: any;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
 
     // Reset singleton instance
     (HealthMonitor as any).instance = undefined;
 
     healthMonitor = HealthMonitor.getInstance();
+
+    // Setup mock managers
+    mockDatabaseManager = {
+      checkConnectionHealth: vi.fn(),
+      executeWithRetry: vi.fn(),
+    };
+
+    mockCacheManager = {
+      isReady: vi.fn(),
+      connect: vi.fn(),
+    };
+
+    mockErrorHandler = {
+      createJobError: vi.fn(),
+      logError: vi.fn(),
+    };
+
+    // Import the mocked modules
+    const factoryModule = await import("../../config/factory");
+    const errorHandlerModule = await import("../error-handler");
+    const redisModule = await import("../../config/redis");
+
+    ManagerFactory = factoryModule.ManagerFactory;
+    ErrorHandler = errorHandlerModule.ErrorHandler;
+    redisConnection = redisModule.redisConnection;
+
+    // Setup the mocks
+    (ManagerFactory.createDatabaseManager as any).mockReturnValue(
+      mockDatabaseManager
+    );
+    (ManagerFactory.createCacheManager as any).mockReturnValue(
+      mockCacheManager
+    );
+    (ErrorHandler.createJobError as any) = mockErrorHandler.createJobError;
+    (ErrorHandler.logError as any) = mockErrorHandler.logError;
   });
 
   describe("singleton pattern", () => {
@@ -185,6 +236,304 @@ describe("HealthMonitor", () => {
     });
   });
 
+  describe("performHealthChecks", () => {
+    it("should perform all health checks successfully", async () => {
+      // Mock successful health checks
+      mockDatabaseManager.checkConnectionHealth.mockResolvedValue(true);
+      mockDatabaseManager.executeWithRetry.mockResolvedValue(undefined);
+      mockCacheManager.isReady.mockReturnValue(true);
+      (redisConnection.get as any).mockResolvedValue("test");
+
+      const result = await (healthMonitor as any).performHealthChecks();
+
+      expect(result.status).toBe(HealthStatus.HEALTHY);
+      expect(result.checks.database.status).toBe(HealthStatus.HEALTHY);
+      expect(result.checks.redis.status).toBe(HealthStatus.HEALTHY);
+      expect(result.checks.queues.noteQueue.status).toBe(HealthStatus.HEALTHY);
+    });
+
+    it("should handle database health check failure", async () => {
+      // Mock database failure
+      mockDatabaseManager.checkConnectionHealth.mockResolvedValue(false);
+      mockCacheManager.isReady.mockReturnValue(true);
+      redisConnection.get.mockResolvedValue("test");
+
+      mockErrorHandler.createJobError.mockReturnValue({
+        message: "Database health check failed",
+      });
+
+      const result = await (healthMonitor as any).performHealthChecks();
+
+      expect(result.status).toBe(HealthStatus.UNHEALTHY);
+      expect(result.checks.database.status).toBe(HealthStatus.UNHEALTHY);
+      expect(mockErrorHandler.createJobError).toHaveBeenCalled();
+      expect(mockErrorHandler.logError).toHaveBeenCalled();
+    });
+
+    it("should handle database query error", async () => {
+      // Mock database connection success but query failure
+      mockDatabaseManager.checkConnectionHealth.mockResolvedValue(true);
+      mockDatabaseManager.executeWithRetry.mockRejectedValue(
+        new Error("Query failed")
+      );
+      mockCacheManager.isReady.mockReturnValue(true);
+      (redisConnection.get as any).mockResolvedValue("test");
+
+      mockErrorHandler.createJobError.mockReturnValue({
+        message: "Database connection failed",
+      });
+
+      const result = await (healthMonitor as any).performHealthChecks();
+
+      expect(result.status).toBe(HealthStatus.UNHEALTHY);
+      expect(result.checks.database.status).toBe(HealthStatus.UNHEALTHY);
+      expect(mockErrorHandler.createJobError).toHaveBeenCalled();
+      expect(mockErrorHandler.logError).toHaveBeenCalled();
+    });
+
+    it("should handle Redis health check failure", async () => {
+      // Mock database success but Redis failure
+      mockDatabaseManager.checkConnectionHealth.mockResolvedValue(true);
+      mockDatabaseManager.executeWithRetry.mockResolvedValue(undefined);
+      mockCacheManager.isReady.mockReturnValue(false);
+      mockCacheManager.connect.mockRejectedValue(
+        new Error("Redis connection failed")
+      );
+      (redisConnection.get as any).mockRejectedValue(new Error("Redis error"));
+
+      mockErrorHandler.createJobError.mockReturnValue({
+        message: "Redis connection failed",
+      });
+
+      const result = await (healthMonitor as any).performHealthChecks();
+
+      expect(result.status).toBe(HealthStatus.UNHEALTHY);
+      expect(result.checks.redis.status).toBe(HealthStatus.UNHEALTHY);
+      expect(mockErrorHandler.createJobError).toHaveBeenCalled();
+      expect(mockErrorHandler.logError).toHaveBeenCalled();
+    });
+
+    it("should handle queue health check failure", async () => {
+      // Mock database and Redis success but queue failure
+      mockDatabaseManager.checkConnectionHealth.mockResolvedValue(true);
+      mockDatabaseManager.executeWithRetry.mockResolvedValue(undefined);
+      mockCacheManager.isReady.mockReturnValue(true);
+      (redisConnection.get as any).mockResolvedValue("test");
+      (redisConnection.host as any) = undefined; // This will cause queue check to fail
+
+      mockErrorHandler.createJobError.mockReturnValue({
+        message: "Queue system failed",
+      });
+
+      const result = await (healthMonitor as any).performHealthChecks();
+
+      expect(result.status).toBe(HealthStatus.UNHEALTHY);
+      expect(result.checks.queues.noteQueue.status).toBe(
+        HealthStatus.UNHEALTHY
+      );
+      expect(mockErrorHandler.createJobError).toHaveBeenCalled();
+      expect(mockErrorHandler.logError).toHaveBeenCalled();
+    });
+
+    it("should handle mixed health statuses", async () => {
+      // Test that Redis health check returns degraded for slow response
+      mockCacheManager.isReady.mockReturnValue(true);
+      (redisConnection.get as any).mockResolvedValue("test");
+
+      // Mock slow Redis response to trigger degraded status
+      vi.spyOn(Date, "now")
+        .mockReturnValueOnce(0) // Start time
+        .mockReturnValueOnce(600); // End time - 600ms response time
+
+      const result = await (healthMonitor as any).checkRedisHealth();
+
+      expect(result.status).toBe("degraded");
+      expect(result.message).toBe("Redis configuration check is slow");
+      expect(result.responseTime).toBe(600);
+      expect(result.performance).toBe(75);
+      expect(result.warnings).toContain(
+        "Response time 600ms exceeds threshold"
+      );
+    });
+  });
+
+  describe("checkDatabaseHealth", () => {
+    it("should return healthy status for fast response", async () => {
+      mockDatabaseManager.checkConnectionHealth.mockResolvedValue(true);
+      mockDatabaseManager.executeWithRetry.mockResolvedValue(undefined);
+
+      vi.spyOn(Date, "now")
+        .mockReturnValueOnce(0) // Start time
+        .mockReturnValueOnce(99); // End time - 99ms response time (under 100ms threshold)
+
+      const result = await (healthMonitor as any).checkDatabaseHealth();
+
+      expect(result.status).toBe(HealthStatus.HEALTHY);
+      expect(result.message).toBe("Database is responding normally");
+      expect(result.responseTime).toBe(99);
+      expect(result.performance).toBe(100);
+    });
+
+    it("should return degraded status for slow response", async () => {
+      mockDatabaseManager.checkConnectionHealth.mockResolvedValue(true);
+      mockDatabaseManager.executeWithRetry.mockResolvedValue(undefined);
+
+      vi.spyOn(Date, "now")
+        .mockReturnValueOnce(0) // Start time
+        .mockReturnValueOnce(600); // End time - 600ms response time
+
+      const result = await (healthMonitor as any).checkDatabaseHealth();
+
+      expect(result.status).toBe("degraded");
+      expect(result.message).toBe("Database is slow to respond");
+      expect(result.responseTime).toBe(600);
+      expect(result.performance).toBe(75);
+      expect(result.warnings).toContain(
+        "Response time 600ms exceeds threshold"
+      );
+    });
+
+    it("should handle database connection error", async () => {
+      mockDatabaseManager.checkConnectionHealth.mockResolvedValue(false);
+
+      mockErrorHandler.createJobError.mockReturnValue({
+        message: "Database health check failed",
+      });
+
+      const result = await (healthMonitor as any).checkDatabaseHealth();
+
+      expect(result.status).toBe(HealthStatus.UNHEALTHY);
+      expect(result.message).toBe("Database health check failed");
+      expect(result.errorCode).toBe("DB_CONNECTION_ERROR");
+      expect(result.critical).toBe(true);
+      expect(mockErrorHandler.createJobError).toHaveBeenCalled();
+      expect(mockErrorHandler.logError).toHaveBeenCalled();
+    });
+
+    it("should handle database query error", async () => {
+      mockDatabaseManager.checkConnectionHealth.mockResolvedValue(true);
+      mockDatabaseManager.executeWithRetry.mockRejectedValue(
+        new Error("Query failed")
+      );
+
+      mockErrorHandler.createJobError.mockReturnValue({
+        message: "Database connection failed",
+      });
+
+      const result = await (healthMonitor as any).checkDatabaseHealth();
+
+      expect(result.status).toBe(HealthStatus.UNHEALTHY);
+      expect(result.message).toBe("Database connection failed");
+      expect(result.errorCode).toBe("DB_CONNECTION_ERROR");
+      expect(result.critical).toBe(true);
+      expect(mockErrorHandler.createJobError).toHaveBeenCalled();
+      expect(mockErrorHandler.logError).toHaveBeenCalled();
+    });
+  });
+
+  describe("checkRedisHealth", () => {
+    it("should return healthy status for fast response", async () => {
+      mockCacheManager.isReady.mockReturnValue(true);
+      (redisConnection.get as any).mockResolvedValue("test");
+
+      vi.spyOn(Date, "now")
+        .mockReturnValueOnce(0) // Start time
+        .mockReturnValueOnce(99); // End time - 99ms response time (under 100ms threshold)
+
+      const result = await (healthMonitor as any).checkRedisHealth();
+
+      expect(result.status).toBe(HealthStatus.HEALTHY);
+      expect(result.message).toBe("Redis configuration is valid");
+      expect(result.responseTime).toBe(99);
+      expect(result.performance).toBe(100);
+    });
+
+    it("should return degraded status for slow response", async () => {
+      mockCacheManager.isReady.mockReturnValue(true);
+      (redisConnection.get as any).mockResolvedValue("test");
+
+      vi.spyOn(Date, "now")
+        .mockReturnValueOnce(0) // Start time
+        .mockReturnValueOnce(600); // End time - 600ms response time
+
+      const result = await (healthMonitor as any).checkRedisHealth();
+
+      expect(result.status).toBe("degraded");
+      expect(result.message).toBe("Redis configuration check is slow");
+      expect(result.responseTime).toBe(600);
+      expect(result.performance).toBe(75);
+      expect(result.warnings).toContain(
+        "Response time 600ms exceeds threshold"
+      );
+    });
+
+    it("should handle cache manager not ready", async () => {
+      mockCacheManager.isReady.mockReturnValue(false);
+      mockCacheManager.connect.mockResolvedValue(undefined);
+      (redisConnection.get as any).mockResolvedValue("test");
+
+      const result = await (healthMonitor as any).checkRedisHealth();
+
+      expect(result.status).toBe(HealthStatus.HEALTHY);
+      expect(mockCacheManager.connect).toHaveBeenCalled();
+    });
+
+    it("should handle Redis connection error", async () => {
+      mockCacheManager.isReady.mockReturnValue(true);
+      (redisConnection.get as any).mockRejectedValue(
+        new Error("Redis connection failed")
+      );
+
+      mockErrorHandler.createJobError.mockReturnValue({
+        message: "Redis connection failed",
+      });
+
+      const result = await (healthMonitor as any).checkRedisHealth();
+
+      expect(result.status).toBe(HealthStatus.UNHEALTHY);
+      expect(result.message).toBe("Redis connection failed");
+      expect(result.errorCode).toBe("REDIS_CONNECTION_ERROR");
+      expect(result.critical).toBe(true);
+      expect(mockErrorHandler.createJobError).toHaveBeenCalled();
+      expect(mockErrorHandler.logError).toHaveBeenCalled();
+    });
+  });
+
+  describe("checkQueueHealth", () => {
+    it("should return healthy status for all queues", async () => {
+      (redisConnection.host as any) = "localhost";
+
+      const result = await (healthMonitor as any).checkQueueHealth();
+
+      expect(result.noteQueue.status).toBe(HealthStatus.HEALTHY);
+      expect(result.imageQueue.status).toBe(HealthStatus.HEALTHY);
+      expect(result.ingredientQueue.status).toBe(HealthStatus.HEALTHY);
+      expect(result.instructionQueue.status).toBe(HealthStatus.HEALTHY);
+      expect(result.categorizationQueue.status).toBe(HealthStatus.HEALTHY);
+      expect(result.noteQueue.message).toBe("Queue system is operational");
+    });
+
+    it("should return unhealthy status when Redis host is missing", async () => {
+      (redisConnection.host as any) = undefined;
+
+      mockErrorHandler.createJobError.mockReturnValue({
+        message: "Queue system failed",
+      });
+
+      const result = await (healthMonitor as any).checkQueueHealth();
+
+      expect(result.noteQueue.status).toBe(HealthStatus.UNHEALTHY);
+      expect(result.imageQueue.status).toBe(HealthStatus.UNHEALTHY);
+      expect(result.ingredientQueue.status).toBe(HealthStatus.UNHEALTHY);
+      expect(result.instructionQueue.status).toBe(HealthStatus.UNHEALTHY);
+      expect(result.categorizationQueue.status).toBe(HealthStatus.UNHEALTHY);
+      expect(result.noteQueue.errorCode).toBe("QUEUE_CONNECTION_ERROR");
+      expect(result.noteQueue.critical).toBe(false);
+      expect(mockErrorHandler.createJobError).toHaveBeenCalled();
+      expect(mockErrorHandler.logError).toHaveBeenCalled();
+    });
+  });
+
   describe("refreshHealth", () => {
     it("should clear cache and perform fresh health check", async () => {
       const mockHealth: ServiceHealth = {
@@ -229,7 +578,10 @@ describe("HealthMonitor", () => {
 
       expect(result).toBe(mockHealth);
       expect((healthMonitor as any).performHealthChecks).toHaveBeenCalledOnce();
-      expect((healthMonitor as any).performHealthChecks).toHaveBeenCalledOnce();
+      // Note: healthCache and lastCheckTime are not null because refreshHealth() calls getHealth()
+      // which immediately populates the cache with fresh data
+      expect((healthMonitor as any).healthCache).toBe(mockHealth);
+      expect((healthMonitor as any).lastCheckTime).toBeInstanceOf(Date);
     });
   });
 

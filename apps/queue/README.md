@@ -37,7 +37,7 @@ A high-performance, scalable queue processing service built with TypeScript, Nod
 
 ## 📁 Project Structure
 
-```
+```text
 src/
 ├── config/                 # Configuration management
 │   ├── constants.ts       # Application constants

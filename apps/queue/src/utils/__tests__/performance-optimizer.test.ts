@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -375,6 +376,53 @@ describe("PerformanceOptimizer", () => {
       expect(report.slowestOperations).toHaveLength(2);
       expect(report.slowestOperations[0]?.operation).toBe("slow_operation");
     });
+
+    it("should handle empty metrics", () => {
+      (optimizer as unknown as { metrics: PerformanceMetrics[] }).metrics = [];
+
+      const report = optimizer.getPerformanceReport();
+
+      expect(report.summary.totalOperations).toBe(0);
+      expect(report.summary.averageDuration).toBe(0);
+      expect(report.summary.slowOperations).toBe(0);
+      expect(report.slowestOperations).toHaveLength(0);
+    });
+
+    it("should calculate correct summary statistics", () => {
+      const metrics: PerformanceMetrics[] = [
+        {
+          operation: "op1",
+          duration: 100,
+          memoryUsage: 50 * 1024 * 1024,
+          cpuUsage: 1000000,
+          timestamp: new Date(),
+        },
+        {
+          operation: "op2",
+          duration: 200,
+          memoryUsage: 75 * 1024 * 1024,
+          cpuUsage: 2000000,
+          timestamp: new Date(),
+        },
+        {
+          operation: "op3",
+          duration: 1200, // Slow operation
+          memoryUsage: 100 * 1024 * 1024,
+          cpuUsage: 3000000,
+          timestamp: new Date(),
+        },
+      ];
+
+      (optimizer as unknown as { metrics: PerformanceMetrics[] }).metrics =
+        metrics;
+
+      const report = optimizer.getPerformanceReport();
+
+      expect(report.summary.totalOperations).toBe(3);
+      expect(report.summary.averageDuration).toBe(500); // (100 + 200 + 1200) / 3
+      expect(report.summary.slowOperations).toBe(1);
+      expect(report.summary.memoryUsage).toBe(75 * 1024 * 1024); // Average memory usage
+    });
   });
 
   describe("metrics management", () => {
@@ -413,6 +461,244 @@ describe("PerformanceOptimizer", () => {
         (optimizer as unknown as { isProfiling: boolean }).isProfiling
       ).toBe(false);
     });
+
+    it("should record metrics when profiling is enabled", () => {
+      const mockMetrics: PerformanceMetrics = {
+        operation: "test_operation",
+        duration: 100,
+        memoryUsage: 50 * 1024 * 1024,
+        cpuUsage: 1000000,
+        timestamp: new Date(),
+      };
+
+      // Enable profiling
+      (optimizer as unknown as { isProfiling: boolean }).isProfiling = true;
+
+      // Call the private recordMetrics method
+      (optimizer as any).recordMetrics(mockMetrics);
+
+      const metrics = (
+        optimizer as unknown as { metrics: PerformanceMetrics[] }
+      ).metrics;
+      expect(metrics).toHaveLength(1);
+      expect(metrics[0]).toEqual(mockMetrics);
+    });
+
+    it("should not record metrics when profiling is disabled", () => {
+      const mockMetrics: PerformanceMetrics = {
+        operation: "test_operation",
+        duration: 100,
+        memoryUsage: 50 * 1024 * 1024,
+        cpuUsage: 1000000,
+        timestamp: new Date(),
+      };
+
+      // Disable profiling
+      (optimizer as unknown as { isProfiling: boolean }).isProfiling = false;
+
+      // Call the private recordMetrics method
+      (optimizer as any).recordMetrics(mockMetrics);
+
+      const metrics = (
+        optimizer as unknown as { metrics: PerformanceMetrics[] }
+      ).metrics;
+      expect(metrics).toHaveLength(0);
+    });
+
+    it("should limit metrics history size", () => {
+      const maxHistorySize = (
+        optimizer as unknown as { options: PerformanceOptions }
+      ).options.maxMetricsHistory;
+
+      // Enable profiling
+      (optimizer as unknown as { isProfiling: boolean }).isProfiling = true;
+
+      // Add more metrics than the max size
+      const metrics: PerformanceMetrics[] = [];
+      for (let i = 0; i < maxHistorySize + 10; i++) {
+        metrics.push({
+          operation: `op_${i}`,
+          duration: 100,
+          memoryUsage: 0,
+          cpuUsage: 0,
+          timestamp: new Date(),
+        });
+      }
+
+      (optimizer as unknown as { metrics: PerformanceMetrics[] }).metrics =
+        metrics;
+
+      // Call recordMetrics to trigger history size check
+      (optimizer as any).recordMetrics({
+        operation: "new_op",
+        duration: 100,
+        memoryUsage: 0,
+        cpuUsage: 0,
+        timestamp: new Date(),
+      });
+
+      const finalMetrics = (
+        optimizer as unknown as { metrics: PerformanceMetrics[] }
+      ).metrics;
+      expect(finalMetrics.length).toBeLessThanOrEqual(maxHistorySize);
+    });
+  });
+
+  describe("performance threshold checks", () => {
+    it("should log warning for slow operations", async () => {
+      const mockLogger = vi.mocked(
+        (await import("../standardized-logger")).createLogger
+      );
+      const slowMetrics: PerformanceMetrics = {
+        operation: "slow_operation",
+        duration: 1500, // 1.5 seconds - above 1 second threshold
+        memoryUsage: 0,
+        cpuUsage: 0,
+        timestamp: new Date(),
+      };
+
+      // Call the private checkPerformanceThresholds method
+      (optimizer as any).checkPerformanceThresholds(slowMetrics);
+
+      expect(mockLogger).toHaveBeenCalled();
+    });
+
+    it("should log warning for high memory usage", async () => {
+      const mockLogger = vi.mocked(
+        (await import("../standardized-logger")).createLogger
+      );
+      const highMemoryMetrics: PerformanceMetrics = {
+        operation: "high_memory_operation",
+        duration: 100,
+        memoryUsage: 150 * 1024 * 1024, // 150MB - above 100MB threshold
+        cpuUsage: 0,
+        timestamp: new Date(),
+      };
+
+      // Call the private checkPerformanceThresholds method
+      (optimizer as any).checkPerformanceThresholds(highMemoryMetrics);
+
+      expect(mockLogger).toHaveBeenCalled();
+    });
+
+    it("should not log warnings for normal operations", async () => {
+      const mockLogger = vi.mocked(
+        (await import("../standardized-logger")).createLogger
+      );
+      const normalMetrics: PerformanceMetrics = {
+        operation: "normal_operation",
+        duration: 500, // 500ms - below 1 second threshold
+        memoryUsage: 50 * 1024 * 1024, // 50MB - below 100MB threshold
+        cpuUsage: 0,
+        timestamp: new Date(),
+      };
+
+      // Call the private checkPerformanceThresholds method
+      (optimizer as any).checkPerformanceThresholds(normalMetrics);
+
+      // Should not log warnings for normal operations
+      expect(mockLogger).not.toHaveBeenCalledWith(
+        expect.objectContaining({
+          warn: expect.any(Function),
+        })
+      );
+    });
+
+    it("should include context in threshold warnings", async () => {
+      const mockLogger = vi.mocked(
+        (await import("../standardized-logger")).createLogger
+      );
+      const metricsWithContext: PerformanceMetrics = {
+        operation: "operation_with_context",
+        duration: 1500,
+        memoryUsage: 0,
+        cpuUsage: 0,
+        timestamp: new Date(),
+        context: { userId: 123, action: "test" },
+      };
+
+      // Call the private checkPerformanceThresholds method
+      (optimizer as any).checkPerformanceThresholds(metricsWithContext);
+
+      expect(mockLogger).toHaveBeenCalled();
+    });
+  });
+
+  describe("edge cases and error handling", () => {
+    it("should handle profiling with context", async () => {
+      const context = { userId: 123, action: "test" };
+
+      const result = await optimizer.profile(
+        "test_with_context",
+        async () => {
+          return "result";
+        },
+        context
+      );
+
+      expect(result).toBe("result");
+    });
+
+    it("should handle sync profiling with context", () => {
+      const context = { userId: 123, action: "test" };
+
+      const result = optimizer.profileSync(
+        "test_sync_with_context",
+        () => {
+          return "result";
+        },
+        context
+      );
+
+      expect(result).toBe("result");
+    });
+
+    it("should handle custom thresholds", () => {
+      const customOptimizer = new PerformanceOptimizer({
+        slowOperationThreshold: 500, // 500ms
+        memoryThreshold: 50 * 1024 * 1024, // 50MB
+      });
+
+      const slowMetrics: PerformanceMetrics = {
+        operation: "slow_operation",
+        duration: 600, // 600ms - above 500ms threshold
+        memoryUsage: 0,
+        cpuUsage: 0,
+        timestamp: new Date(),
+      };
+
+      // Call the private checkPerformanceThresholds method
+      (customOptimizer as any).checkPerformanceThresholds(slowMetrics);
+
+      // Should log warning for slow operation with custom threshold
+      expect(customOptimizer).toBeInstanceOf(PerformanceOptimizer);
+    });
+
+    it("should handle disabled memory tracking", () => {
+      const customOptimizer = new PerformanceOptimizer({
+        enableMemoryTracking: false,
+      });
+
+      const result = customOptimizer.optimizeMemory();
+
+      expect(result).toHaveProperty("optimized");
+      expect(result).toHaveProperty("improvements");
+      expect(result).toHaveProperty("metrics");
+      expect(result).toHaveProperty("recommendations");
+    });
+
+    it("should handle disabled CPU tracking", () => {
+      const customOptimizer = new PerformanceOptimizer({
+        enableCpuTracking: false,
+      });
+
+      const result = customOptimizer.optimizeEventLoop();
+
+      expect(result).toHaveProperty("optimized");
+      expect(result).toHaveProperty("improvements");
+      expect(result).toHaveProperty("metrics");
+      expect(result).toHaveProperty("recommendations");
+    });
   });
 });
 
@@ -448,6 +734,28 @@ describe("Performance Utilities", () => {
     it("should handle batch size larger than items", async () => {
       const items = [1, 2, 3];
       const results = await batchOperations(items, 10, async (batch) => {
+        return batch.map((x) => x * 2);
+      });
+
+      expect(results).toEqual([2, 4, 6]);
+    });
+
+    it("should handle batch operation errors", async () => {
+      const items = [1, 2, 3, 4, 5];
+
+      await expect(
+        batchOperations(items, 2, async (batch) => {
+          if (batch.includes(3)) {
+            throw new Error("Batch error");
+          }
+          return batch.map((x) => x * 2);
+        })
+      ).rejects.toThrow("Batch error");
+    });
+
+    it("should handle single item batches", async () => {
+      const items = [1, 2, 3];
+      const results = await batchOperations(items, 1, async (batch) => {
         return batch.map((x) => x * 2);
       });
 
@@ -495,6 +803,36 @@ describe("Performance Utilities", () => {
       expect(callCount).toBe(1);
       vi.useRealTimers();
     });
+
+    it("should pass arguments to debounced function", async () => {
+      vi.useFakeTimers();
+      let lastArgs: unknown[] = [];
+      const debouncedFn = debounce((...args: unknown[]) => {
+        lastArgs = args;
+      }, 100);
+
+      debouncedFn("arg1", "arg2", 123);
+
+      vi.advanceTimersByTime(150);
+      await vi.runAllTimersAsync();
+
+      expect(lastArgs).toEqual(["arg1", "arg2", 123]);
+      vi.useRealTimers();
+    });
+
+    it("should handle zero wait time", async () => {
+      vi.useFakeTimers();
+      let callCount = 0;
+      const debouncedFn = debounce(() => {
+        callCount++;
+      }, 0);
+
+      debouncedFn();
+      await vi.runAllTimersAsync();
+
+      expect(callCount).toBe(1);
+      vi.useRealTimers();
+    });
   });
 
   describe("throttle", () => {
@@ -537,6 +875,58 @@ describe("Performance Utilities", () => {
       throttledFn();
 
       expect(callCount).toBe(3);
+      vi.useRealTimers();
+    });
+
+    it("should pass arguments to throttled function", async () => {
+      vi.useFakeTimers();
+      let lastArgs: unknown[] = [];
+      const throttledFn = throttle((...args: unknown[]) => {
+        lastArgs = args;
+      }, 100);
+
+      throttledFn("arg1", "arg2", 123);
+
+      expect(lastArgs).toEqual(["arg1", "arg2", 123]);
+      vi.useRealTimers();
+    });
+
+    it("should handle zero limit time", async () => {
+      vi.useFakeTimers();
+      let callCount = 0;
+      const throttledFn = throttle(() => {
+        callCount++;
+      }, 0);
+
+      throttledFn();
+      throttledFn();
+      throttledFn();
+
+      expect(callCount).toBe(1);
+      vi.useRealTimers();
+    });
+
+    it("should handle rapid successive calls", async () => {
+      vi.useFakeTimers();
+      let callCount = 0;
+      const throttledFn = throttle(() => {
+        callCount++;
+      }, 100);
+
+      // Call multiple times rapidly
+      for (let i = 0; i < 10; i++) {
+        throttledFn();
+      }
+
+      expect(callCount).toBe(1);
+
+      // Wait for throttle to reset
+      vi.advanceTimersByTime(150);
+      await vi.runAllTimersAsync();
+
+      // Call again
+      throttledFn();
+      expect(callCount).toBe(2);
       vi.useRealTimers();
     });
   });

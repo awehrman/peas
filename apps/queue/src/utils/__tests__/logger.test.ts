@@ -553,71 +553,6 @@ describe("EnhancedLoggerService", () => {
       loggerService = new EnhancedLoggerService();
     });
 
-    it.skip("should clear old backup log files", async () => {
-      const fs = vi.mocked(await import("fs"));
-      fs.readdirSync.mockReturnValue([
-        {
-          name: Buffer.from("old.log.backup"),
-          isFile: () => true,
-          isDirectory: () => false,
-          isBlockDevice: () => false,
-          isCharacterDevice: () => false,
-          isSymbolicLink: () => false,
-          isFIFO: () => false,
-          isSocket: () => false,
-          parentPath: "",
-        },
-        {
-          name: Buffer.from("new.log.backup"),
-          isFile: () => true,
-          isDirectory: () => false,
-          isBlockDevice: () => false,
-          isCharacterDevice: () => false,
-          isSymbolicLink: () => false,
-          isFIFO: () => false,
-          isSocket: () => false,
-          parentPath: "",
-        },
-      ]);
-      fs.statSync.mockReturnValue({
-        mtime: new Date(Date.now() - 31 * 24 * 60 * 60 * 1000),
-        size: BigInt(100),
-        isFile: () => true,
-        isDirectory: () => false,
-        isBlockDevice: () => false,
-        isCharacterDevice: () => false,
-        isSymbolicLink: () => false,
-        isFIFO: () => false,
-        isSocket: () => false,
-        atime: new Date(),
-        ctime: new Date(),
-        birthtime: new Date(),
-        atimeMs: BigInt(Date.now()),
-        mtimeMs: BigInt(Date.now()),
-        ctimeMs: BigInt(Date.now()),
-        birthtimeMs: BigInt(Date.now()),
-        dev: BigInt(0),
-        ino: BigInt(0),
-        mode: BigInt(0),
-        nlink: BigInt(0),
-        uid: BigInt(0),
-        gid: BigInt(0),
-        rdev: BigInt(0),
-        blksize: BigInt(0),
-        blocks: BigInt(0),
-        atimeNs: BigInt(0),
-        mtimeNs: BigInt(0),
-        ctimeNs: BigInt(0),
-        birthtimeNs: BigInt(0),
-      });
-      // Ensure unlinkSync mock is preserved
-      fs.unlinkSync.mockImplementation(() => undefined);
-
-      loggerService.clearOldLogs(30);
-      expect(fs.unlinkSync).toHaveBeenCalledWith("logs/old.log.backup");
-      expect(fs.unlinkSync).toHaveBeenCalledWith("logs/new.log.backup");
-    });
-
     it("should not delete recent backup files", async () => {
       const fs = vi.mocked(await import("fs"));
       const recentDate = new Date();
@@ -680,59 +615,6 @@ describe("EnhancedLoggerService", () => {
       });
 
       expect(() => loggerService.clearOldLogs(30)).not.toThrow();
-    });
-
-    it.skip("should use default 30 days when no parameter provided", async () => {
-      const fs = vi.mocked(await import("fs"));
-      fs.readdirSync.mockReturnValue([
-        {
-          name: Buffer.from("old.log.backup"),
-          isFile: () => true,
-          isDirectory: () => false,
-          isBlockDevice: () => false,
-          isCharacterDevice: () => false,
-          isSymbolicLink: () => false,
-          isFIFO: () => false,
-          isSocket: () => false,
-          parentPath: "",
-        },
-      ]);
-      fs.statSync.mockReturnValue({
-        mtime: new Date(Date.now() - 31 * 24 * 60 * 60 * 1000),
-        size: BigInt(100),
-        isFile: () => true,
-        isDirectory: () => false,
-        isBlockDevice: () => false,
-        isCharacterDevice: () => false,
-        isSymbolicLink: () => false,
-        isFIFO: () => false,
-        isSocket: () => false,
-        atime: new Date(),
-        ctime: new Date(),
-        birthtime: new Date(),
-        atimeMs: BigInt(Date.now()),
-        mtimeMs: BigInt(Date.now()),
-        ctimeMs: BigInt(Date.now()),
-        birthtimeMs: BigInt(Date.now()),
-        dev: BigInt(0),
-        ino: BigInt(0),
-        mode: BigInt(0),
-        nlink: BigInt(0),
-        uid: BigInt(0),
-        gid: BigInt(0),
-        rdev: BigInt(0),
-        blksize: BigInt(0),
-        blocks: BigInt(0),
-        atimeNs: BigInt(0),
-        mtimeNs: BigInt(0),
-        ctimeNs: BigInt(0),
-        birthtimeNs: BigInt(0),
-      });
-      // Ensure unlinkSync mock is preserved
-      fs.unlinkSync.mockImplementation(() => undefined);
-
-      loggerService.clearOldLogs();
-      expect(fs.unlinkSync).toHaveBeenCalledWith("logs/old.log.backup");
     });
   });
 

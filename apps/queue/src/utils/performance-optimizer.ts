@@ -374,7 +374,11 @@ export class PerformanceOptimizer {
     const slowOperations = this.metrics.filter(
       (m) => m.duration > this.options.slowOperationThreshold
     ).length;
-    const memoryUsage = process.memoryUsage().heapUsed;
+    const memoryUsage =
+      totalOperations > 0
+        ? this.metrics.reduce((sum, m) => sum + m.memoryUsage, 0) /
+          totalOperations
+        : 0;
 
     const slowestOperations = [...this.metrics]
       .sort((a, b) => b.duration - a.duration)
@@ -436,6 +440,10 @@ export class PerformanceOptimizer {
    * Record performance metrics
    */
   private recordMetrics(metrics: PerformanceMetrics): void {
+    if (!this.isProfiling) {
+      return;
+    }
+
     this.metrics.push(metrics);
 
     // Keep only the latest metrics

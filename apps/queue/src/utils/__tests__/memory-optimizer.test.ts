@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -195,6 +196,134 @@ describe("MemoryOptimizer", () => {
       expect(result).toHaveProperty("recommendations");
     });
 
+    it("should detect high severity memory leaks", () => {
+      // Mock memory history with consistent growth pattern
+      const mockHistory = [];
+      let baseMemory = 50 * 1024 * 1024; // 50MB base
+
+      for (let i = 0; i < 15; i++) {
+        baseMemory += 2 * 1024 * 1024; // 2MB growth per iteration
+        mockHistory.push({
+          heapUsed: baseMemory,
+          heapTotal: 100 * 1024 * 1024,
+          external: 10 * 1024 * 1024,
+          arrayBuffers: 5 * 1024 * 1024,
+          rss: 200 * 1024 * 1024,
+          heapUsedPercentage: (baseMemory / (100 * 1024 * 1024)) * 100,
+          externalPercentage: 10,
+        });
+      }
+
+      // Directly set the memory history
+      (optimizer as any).memoryHistory = mockHistory;
+
+      const result = optimizer.detectMemoryLeaks();
+
+      expect(result.detected).toBe(true);
+      expect(result.severity).toBe("high");
+      expect(result.description).toBe(
+        "High probability of memory leak detected"
+      );
+      expect(result.recommendations).toContain(
+        "Review object lifecycle and cleanup"
+      );
+      expect(result.recommendations).toContain("Check for circular references");
+      expect(result.recommendations).toContain(
+        "Implement proper cleanup in event listeners"
+      );
+      expect(result.growthRate).toBeGreaterThan(1024 * 1024); // > 1MB average growth
+    });
+
+    it("should detect medium severity memory leaks", () => {
+      // Mock memory history with moderate growth pattern
+      const mockHistory = [];
+      let baseMemory = 50 * 1024 * 1024; // 50MB base
+
+      for (let i = 0; i < 15; i++) {
+        baseMemory += 600 * 1024; // 600KB growth per iteration
+        mockHistory.push({
+          heapUsed: baseMemory,
+          heapTotal: 100 * 1024 * 1024,
+          external: 10 * 1024 * 1024,
+          arrayBuffers: 5 * 1024 * 1024,
+          rss: 200 * 1024 * 1024,
+          heapUsedPercentage: (baseMemory / (100 * 1024 * 1024)) * 100,
+          externalPercentage: 10,
+        });
+      }
+
+      (optimizer as any).memoryHistory = mockHistory;
+
+      const result = optimizer.detectMemoryLeaks();
+
+      expect(result.detected).toBe(true);
+      expect(result.severity).toBe("medium");
+      expect(result.description).toBe("Possible memory leak detected");
+      expect(result.recommendations).toContain(
+        "Monitor memory usage more closely"
+      );
+      expect(result.recommendations).toContain(
+        "Review object creation patterns"
+      );
+      expect(result.growthRate).toBeGreaterThan(512 * 1024); // > 512KB average growth
+    });
+
+    it("should detect low severity memory leaks", () => {
+      // Mock memory history with minor growth pattern
+      const mockHistory = [];
+      let baseMemory = 50 * 1024 * 1024; // 50MB base
+
+      for (let i = 0; i < 15; i++) {
+        baseMemory += 300 * 1024; // 300KB growth per iteration
+        mockHistory.push({
+          heapUsed: baseMemory,
+          heapTotal: 100 * 1024 * 1024,
+          external: 10 * 1024 * 1024,
+          arrayBuffers: 5 * 1024 * 1024,
+          rss: 200 * 1024 * 1024,
+          heapUsedPercentage: (baseMemory / (100 * 1024 * 1024)) * 100,
+          externalPercentage: 10,
+        });
+      }
+
+      (optimizer as any).memoryHistory = mockHistory;
+
+      const result = optimizer.detectMemoryLeaks();
+
+      expect(result.detected).toBe(true);
+      expect(result.severity).toBe("low");
+      expect(result.description).toBe("Minor memory growth detected");
+      expect(result.recommendations).toContain("Monitor for sustained growth");
+      expect(result.growthRate).toBeGreaterThan(256 * 1024); // > 256KB average growth
+    });
+
+    it("should not detect leaks with stable memory usage", () => {
+      // Mock memory history with stable usage
+      const mockHistory = [];
+      const baseMemory = 50 * 1024 * 1024; // 50MB stable
+
+      for (let i = 0; i < 15; i++) {
+        mockHistory.push({
+          heapUsed: baseMemory + Math.random() * 1024 * 1024, // Small random variation
+          heapTotal: 100 * 1024 * 1024,
+          external: 10 * 1024 * 1024,
+          arrayBuffers: 5 * 1024 * 1024,
+          rss: 200 * 1024 * 1024,
+          heapUsedPercentage: 50,
+          externalPercentage: 10,
+        });
+      }
+
+      (optimizer as any).memoryHistory = mockHistory;
+
+      const result = optimizer.detectMemoryLeaks();
+
+      expect(result.detected).toBe(false);
+      expect(result.severity).toBe("low");
+      expect(result.description).toBe("No memory leak detected");
+      expect(result.recommendations).toHaveLength(0);
+    });
+
     it("should clear old memory history", () => {
       // Directly test the action by checking if it's included when history is cleared
       const result = optimizer.optimizeMemory();
@@ -202,6 +331,57 @@ describe("MemoryOptimizer", () => {
       // The action should be present if history was cleared, or not present if history was small
       // This test verifies the method works correctly regardless of current history size
       expect(result.actions).toContain("Cleaned up memory pools");
+    });
+  });
+
+  describe("memory monitoring", () => {
+    it("should handle memory threshold exceeded", async () => {
+      const originalMemoryUsage = process.memoryUsage;
+
+      // Mock high memory usage
+      process.memoryUsage = vi.fn(() => ({
+        heapUsed: 150 * 1024 * 1024, // 150MB - exceeds 100MB threshold
+        heapTotal: 200 * 1024 * 1024,
+        external: 10 * 1024 * 1024,
+        arrayBuffers: 5 * 1024 * 1024,
+        rss: 300 * 1024 * 1024,
+      })) as unknown as typeof process.memoryUsage;
+
+      // Create a new optimizer to trigger the monitoring
+      const testOptimizer = new MemoryOptimizer();
+
+      // Manually trigger the monitoring interval callback
+      const monitoringCallback = (testOptimizer as any).startMemoryMonitoring;
+      if (monitoringCallback) {
+        // Simulate the interval callback
+        const stats = testOptimizer.getMemoryStats();
+        (testOptimizer as any).memoryHistory.push(stats);
+
+        // Check if threshold warning would be logged
+        if (stats.heapUsed > (testOptimizer as any).options.memoryThreshold) {
+          expect(stats.heapUsed).toBeGreaterThan(100 * 1024 * 1024);
+        }
+      }
+
+      process.memoryUsage = originalMemoryUsage;
+      testOptimizer.shutdown();
+    });
+
+    it("should manage memory history size", () => {
+      // Test that memory history doesn't exceed max size
+      const testOptimizer = new MemoryOptimizer();
+      const maxHistorySize = (testOptimizer as any).options.maxHistorySize;
+
+      // Add more items than the max size
+      for (let i = 0; i < maxHistorySize + 10; i++) {
+        testOptimizer.getMemoryStats();
+      }
+
+      expect((testOptimizer as any).memoryHistory.length).toBeLessThanOrEqual(
+        maxHistorySize
+      );
+
+      testOptimizer.shutdown();
     });
   });
 
@@ -242,6 +422,84 @@ describe("MemoryOptimizer", () => {
       expect(
         (global as unknown as { gc: ReturnType<typeof vi.fn> }).gc
       ).toHaveBeenCalled();
+    });
+
+    it("should calculate memory saved from garbage collection", () => {
+      const originalMemoryUsage = process.memoryUsage;
+
+      // Mock memory usage before and after GC
+      let callCount = 0;
+      process.memoryUsage = vi.fn(() => {
+        callCount++;
+        if (callCount === 1) {
+          // Before GC
+          return {
+            heapUsed: 100 * 1024 * 1024, // 100MB
+            heapTotal: 200 * 1024 * 1024,
+            external: 10 * 1024 * 1024,
+            arrayBuffers: 5 * 1024 * 1024,
+            rss: 300 * 1024 * 1024,
+          };
+        } else {
+          // After GC
+          return {
+            heapUsed: 80 * 1024 * 1024, // 80MB - 20MB saved
+            heapTotal: 200 * 1024 * 1024,
+            external: 10 * 1024 * 1024,
+            arrayBuffers: 5 * 1024 * 1024,
+            rss: 300 * 1024 * 1024,
+          };
+        }
+      }) as unknown as typeof process.memoryUsage;
+
+      const result = optimizer.optimizeMemory();
+
+      expect(result.memorySaved).toBe(20 * 1024 * 1024); // 20MB saved
+      expect(result.actions).toContain("Forced garbage collection");
+
+      process.memoryUsage = originalMemoryUsage;
+    });
+
+    it("should clear memory history when too large", () => {
+      // Directly set memory history to exceed max size
+      const maxHistorySize = (optimizer as any).options.maxHistorySize;
+      const mockHistory = [];
+      for (let i = 0; i < maxHistorySize + 5; i++) {
+        mockHistory.push({
+          heapUsed: 50 * 1024 * 1024,
+          heapTotal: 100 * 1024 * 1024,
+          external: 10 * 1024 * 1024,
+          arrayBuffers: 5 * 1024 * 1024,
+          rss: 200 * 1024 * 1024,
+          heapUsedPercentage: 50,
+          externalPercentage: 10,
+        });
+      }
+      (optimizer as any).memoryHistory = mockHistory;
+
+      const result = optimizer.optimizeMemory();
+
+      // The method always cleans up pools, so we check for both actions
+      expect(result.actions).toContain("Cleaned up memory pools");
+      expect(result.actions).toContain("Cleared 5 old memory history entries");
+      expect((optimizer as any).memoryHistory.length).toBeLessThanOrEqual(
+        maxHistorySize
+      );
+    });
+
+    it("should always return optimized due to pool cleanup", () => {
+      // Create a fresh optimizer with no pools or history
+      const freshOptimizer = new MemoryOptimizer();
+
+      const result = freshOptimizer.optimizeMemory();
+
+      // The method always cleans up pools, so it's always optimized
+      expect(result.optimized).toBe(true);
+      expect(result.actions).toContain("Cleaned up memory pools");
+      // Memory saved can vary due to garbage collection, so we just check it's a number
+      expect(typeof result.memorySaved).toBe("number");
+
+      freshOptimizer.shutdown();
     });
 
     it("should clear old memory history", () => {
@@ -287,6 +545,104 @@ describe("MemoryOptimizer", () => {
       );
 
       process.memoryUsage = originalMemoryUsage;
+    });
+
+    it("should include leak detection recommendations when leaks are detected", () => {
+      // Mock memory history with leak pattern
+      const mockHistory = [];
+      let baseMemory = 50 * 1024 * 1024;
+
+      for (let i = 0; i < 15; i++) {
+        baseMemory += 2 * 1024 * 1024; // 2MB growth per iteration
+        mockHistory.push({
+          heapUsed: baseMemory,
+          heapTotal: 100 * 1024 * 1024,
+          external: 10 * 1024 * 1024,
+          arrayBuffers: 5 * 1024 * 1024,
+          rss: 200 * 1024 * 1024,
+          heapUsedPercentage: (baseMemory / (100 * 1024 * 1024)) * 100,
+          externalPercentage: 10,
+        });
+      }
+
+      (optimizer as any).memoryHistory = mockHistory;
+
+      const report = optimizer.getMemoryReport();
+
+      expect(report.leakDetection.detected).toBe(true);
+      expect(report.recommendations).toContain(
+        "Review object lifecycle and cleanup"
+      );
+    });
+
+    it("should not include recommendations for normal memory usage", () => {
+      const originalMemoryUsage = process.memoryUsage;
+      process.memoryUsage = vi.fn(() => ({
+        heapUsed: 30 * 1024 * 1024, // 30% of heap
+        heapTotal: 100 * 1024 * 1024,
+        external: 20 * 1024 * 1024, // 20% external
+        arrayBuffers: 5 * 1024 * 1024,
+        rss: 200 * 1024 * 1024,
+      })) as unknown as typeof process.memoryUsage;
+
+      const report = optimizer.getMemoryReport();
+
+      expect(report.recommendations).not.toContain(
+        "High heap usage, consider optimization"
+      );
+      expect(report.recommendations).not.toContain(
+        "High external memory usage, review buffer handling"
+      );
+
+      process.memoryUsage = originalMemoryUsage;
+    });
+  });
+
+  describe("pool management edge cases", () => {
+    it("should handle cleanup intervals properly", () => {
+      optimizer.createPool("test-pool", {
+        cleanupInterval: 1000, // 1 second
+        maxIdleTime: 2000, // 2 seconds
+      });
+
+      // Verify cleanup interval was set
+      const cleanupIntervals = (optimizer as any).cleanupIntervals;
+      expect(cleanupIntervals.has("test-pool")).toBe(true);
+
+      optimizer.shutdown();
+    });
+
+    it("should handle pool configuration edge cases", () => {
+      // Test with minimal configuration
+      optimizer.createPool("minimal-pool", {});
+
+      // Test with maximum configuration
+      optimizer.createPool("max-pool", {
+        maxPoolSize: 1000,
+        initialPoolSize: 100,
+        cleanupInterval: 60000,
+        maxIdleTime: 300000,
+      });
+
+      const stats = optimizer.getPoolStats();
+      expect(stats["minimal-pool"]).toBeDefined();
+      expect(stats["max-pool"]).toBeDefined();
+      expect(stats["max-pool"]!.maxSize).toBe(1000);
+    });
+
+    it("should handle pool cleanup with no items", () => {
+      optimizer.createPool("empty-pool");
+
+      // Cleanup should not throw when pool is empty
+      expect(() => optimizer.cleanupPool("empty-pool")).not.toThrow();
+
+      const stats = optimizer.getPoolStats();
+      expect(stats["empty-pool"]!.size).toBe(0);
+    });
+
+    it("should handle destroying non-existent pool", () => {
+      // Should not throw when destroying non-existent pool
+      expect(() => optimizer.destroyPool("non-existent-pool")).not.toThrow();
     });
   });
 
