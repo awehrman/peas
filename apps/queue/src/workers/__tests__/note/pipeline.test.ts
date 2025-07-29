@@ -1,76 +1,80 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import {
-  createMockActionContext,
-  createMockNoteData,
-} from "../../../test-utils/helpers";
 import { ActionName } from "../../../types";
-import type { NoteWorkerDependencies } from "../../../types/notes";
+import type {
+  NotePipelineData,
+  NoteWorkerDependencies,
+} from "../../../types/notes";
 import type { ActionFactory } from "../../core/action-factory";
 import type { ActionContext } from "../../core/types";
 import { createNotePipeline } from "../../note/pipeline";
 
-// Mock console.log to avoid noise in tests
-const originalConsoleLog = console.log;
-beforeEach(() => {
-  console.log = vi.fn();
-});
-
-afterEach(() => {
-  console.log = originalConsoleLog;
-});
-
 describe("createNotePipeline", () => {
-  let mockActionFactory: ActionFactory<any, any, any>;
+  let mockActionFactory: ActionFactory<
+    NotePipelineData,
+    NoteWorkerDependencies,
+    NotePipelineData
+  >;
   let mockDependencies: NoteWorkerDependencies;
   let mockContext: ActionContext;
 
   beforeEach(() => {
+    // Reset mocks
+    vi.clearAllMocks();
+
+    // Create mock action factory
     mockActionFactory = {
-      create: vi.fn() as any,
+      create: vi.fn(),
+      register: vi.fn(),
+      registerWithWrappers: vi.fn(),
     } as any;
 
+    // Create mock dependencies
     mockDependencies = {
       logger: {
         log: vi.fn(),
       },
-      errorHandler: {
-        withErrorHandling: vi.fn(),
-        createJobError: vi.fn(),
-        classifyError: vi.fn(),
-        logError: vi.fn(),
-      },
       statusBroadcaster: {
         addStatusEventAndBroadcast: vi.fn(),
       },
-      queues: {
-        noteQueue: { name: "note" } as any,
-        imageQueue: { name: "image" } as any,
-        ingredientQueue: { name: "ingredient" } as any,
-        instructionQueue: { name: "instruction" } as any,
-        categorizationQueue: { name: "categorization" } as any,
-        sourceQueue: { name: "source" } as any,
-      },
-      services: {
-        cleanHtml: vi.fn(),
-        parseHtml: vi.fn(),
-      },
     } as any;
 
-    mockContext = createMockActionContext();
+    // Create mock context
+    mockContext = {
+      jobId: "test-job-id",
+      retryCount: 0,
+      queueName: "notes",
+      operation: "test-operation",
+      startTime: Date.now(),
+      workerName: "test-worker",
+      attemptNumber: 1,
+    };
   });
+
+  // Helper function to create mock note data
+  function createMockNoteData(
+    overrides: Partial<NotePipelineData> = {}
+  ): NotePipelineData {
+    return {
+      content: "Test content",
+      importId: "test-import-id",
+      ...overrides,
+    };
+  }
 
   describe("basic pipeline creation", () => {
     it("should create a pipeline with clean and parse actions", () => {
       const mockCleanAction = { name: "clean-html" } as any;
       const mockParseAction = { name: "parse-html" } as any;
       const mockSaveAction = { name: "save-note" } as any;
+      const mockScheduleAction = { name: "schedule-all-followup-tasks" } as any;
 
       (mockActionFactory.create as any)
         .mockReturnValueOnce(mockCleanAction)
         .mockReturnValueOnce(mockParseAction)
-        .mockReturnValueOnce(mockSaveAction);
+        .mockReturnValueOnce(mockSaveAction)
+        .mockReturnValueOnce(mockScheduleAction);
 
       const testData = createMockNoteData();
       const pipeline = createNotePipeline(
@@ -82,21 +86,24 @@ describe("createNotePipeline", () => {
 
       expect(pipeline).toBeDefined();
       expect(Array.isArray(pipeline)).toBe(true);
-      expect(pipeline).toHaveLength(3);
+      expect(pipeline).toHaveLength(4);
       expect(pipeline[0]).toBe(mockCleanAction);
       expect(pipeline[1]).toBe(mockParseAction);
       expect(pipeline[2]).toBe(mockSaveAction);
+      expect(pipeline[3]).toBe(mockScheduleAction);
     });
 
     it("should call actionFactory.create with correct parameters", () => {
       const mockCleanAction = { name: "clean-html" } as any;
       const mockParseAction = { name: "parse-html" } as any;
       const mockSaveAction = { name: "save-note" } as any;
+      const mockScheduleAction = { name: "schedule-all-followup-tasks" } as any;
 
       (mockActionFactory.create as any)
         .mockReturnValueOnce(mockCleanAction)
         .mockReturnValueOnce(mockParseAction)
-        .mockReturnValueOnce(mockSaveAction);
+        .mockReturnValueOnce(mockSaveAction)
+        .mockReturnValueOnce(mockScheduleAction);
 
       const testData = createMockNoteData();
       createNotePipeline(
@@ -106,7 +113,7 @@ describe("createNotePipeline", () => {
         mockContext
       );
 
-      expect(mockActionFactory.create).toHaveBeenCalledTimes(3);
+      expect(mockActionFactory.create).toHaveBeenCalledTimes(4);
       expect(mockActionFactory.create).toHaveBeenNthCalledWith(
         1,
         ActionName.CLEAN_HTML,
@@ -122,17 +129,27 @@ describe("createNotePipeline", () => {
         ActionName.SAVE_NOTE,
         mockDependencies
       );
+      expect(mockActionFactory.create).toHaveBeenNthCalledWith(
+        4,
+        ActionName.SCHEDULE_ALL_FOLLOWUP_TASKS,
+        mockDependencies
+      );
     });
 
     it("should return actions in correct order", () => {
       const mockCleanAction = { name: "clean-html", order: 1 } as any;
       const mockParseAction = { name: "parse-html", order: 2 } as any;
       const mockSaveAction = { name: "save-note", order: 3 } as any;
+      const mockScheduleAction = {
+        name: "schedule-all-followup-tasks",
+        order: 4,
+      } as any;
 
       (mockActionFactory.create as any)
         .mockReturnValueOnce(mockCleanAction)
         .mockReturnValueOnce(mockParseAction)
-        .mockReturnValueOnce(mockSaveAction);
+        .mockReturnValueOnce(mockSaveAction)
+        .mockReturnValueOnce(mockScheduleAction);
 
       const testData = createMockNoteData();
       const pipeline = createNotePipeline(
@@ -145,6 +162,7 @@ describe("createNotePipeline", () => {
       expect(pipeline[0]).toBe(mockCleanAction);
       expect(pipeline[1]).toBe(mockParseAction);
       expect(pipeline[2]).toBe(mockSaveAction);
+      expect(pipeline[3]).toBe(mockScheduleAction);
     });
   });
 
@@ -173,19 +191,24 @@ describe("createNotePipeline", () => {
       );
 
       expect(pipeline).toHaveLength(3);
-      // The console.log should NOT be called when skipFollowupTasks is true
-      expect(console.log).not.toHaveBeenCalled();
+      // When skipFollowupTasks is true, the SCHEDULE_ALL_FOLLOWUP_TASKS action should not be added
+      expect(mockActionFactory.create).not.toHaveBeenCalledWith(
+        ActionName.SCHEDULE_ALL_FOLLOWUP_TASKS,
+        mockDependencies
+      );
     });
 
     it("should add follow-up tasks when skipFollowupTasks is false", () => {
       const mockCleanAction = { name: "clean-html" } as any;
       const mockParseAction = { name: "parse-html" } as any;
       const mockSaveAction = { name: "save-note" } as any;
+      const mockScheduleAction = { name: "schedule-all-followup-tasks" } as any;
 
       (mockActionFactory.create as any)
         .mockReturnValueOnce(mockCleanAction)
         .mockReturnValueOnce(mockParseAction)
-        .mockReturnValueOnce(mockSaveAction);
+        .mockReturnValueOnce(mockSaveAction)
+        .mockReturnValueOnce(mockScheduleAction);
 
       const testData = createMockNoteData({
         options: {
@@ -200,10 +223,10 @@ describe("createNotePipeline", () => {
         mockContext
       );
 
-      expect(pipeline).toHaveLength(3);
-      // The console.log should be called when skipFollowupTasks is false
-      expect(console.log).toHaveBeenCalledWith(
-        "[PIPELINE] Follow-up tasks would be scheduled here"
+      expect(pipeline).toHaveLength(4);
+      expect(mockActionFactory.create).toHaveBeenCalledWith(
+        ActionName.SCHEDULE_ALL_FOLLOWUP_TASKS,
+        mockDependencies
       );
     });
 
@@ -211,11 +234,13 @@ describe("createNotePipeline", () => {
       const mockCleanAction = { name: "clean-html" } as any;
       const mockParseAction = { name: "parse-html" } as any;
       const mockSaveAction = { name: "save-note" } as any;
+      const mockScheduleAction = { name: "schedule-all-followup-tasks" } as any;
 
       (mockActionFactory.create as any)
         .mockReturnValueOnce(mockCleanAction)
         .mockReturnValueOnce(mockParseAction)
-        .mockReturnValueOnce(mockSaveAction);
+        .mockReturnValueOnce(mockSaveAction)
+        .mockReturnValueOnce(mockScheduleAction);
 
       const testData = createMockNoteData({
         options: undefined,
@@ -228,10 +253,10 @@ describe("createNotePipeline", () => {
         mockContext
       );
 
-      expect(pipeline).toHaveLength(3);
-      // The console.log should be called when options is undefined
-      expect(console.log).toHaveBeenCalledWith(
-        "[PIPELINE] Follow-up tasks would be scheduled here"
+      expect(pipeline).toHaveLength(4);
+      expect(mockActionFactory.create).toHaveBeenCalledWith(
+        ActionName.SCHEDULE_ALL_FOLLOWUP_TASKS,
+        mockDependencies
       );
     });
 
@@ -239,11 +264,13 @@ describe("createNotePipeline", () => {
       const mockCleanAction = { name: "clean-html" } as any;
       const mockParseAction = { name: "parse-html" } as any;
       const mockSaveAction = { name: "save-note" } as any;
+      const mockScheduleAction = { name: "schedule-all-followup-tasks" } as any;
 
       (mockActionFactory.create as any)
         .mockReturnValueOnce(mockCleanAction)
         .mockReturnValueOnce(mockParseAction)
-        .mockReturnValueOnce(mockSaveAction);
+        .mockReturnValueOnce(mockSaveAction)
+        .mockReturnValueOnce(mockScheduleAction);
 
       const testData = createMockNoteData({
         options: {
@@ -258,10 +285,10 @@ describe("createNotePipeline", () => {
         mockContext
       );
 
-      expect(pipeline).toHaveLength(3);
-      // The console.log should be called when skipFollowupTasks is undefined
-      expect(console.log).toHaveBeenCalledWith(
-        "[PIPELINE] Follow-up tasks would be scheduled here"
+      expect(pipeline).toHaveLength(4);
+      expect(mockActionFactory.create).toHaveBeenCalledWith(
+        ActionName.SCHEDULE_ALL_FOLLOWUP_TASKS,
+        mockDependencies
       );
     });
   });
@@ -271,22 +298,15 @@ describe("createNotePipeline", () => {
       const mockCleanAction = { name: "clean-html" } as any;
       const mockParseAction = { name: "parse-html" } as any;
       const mockSaveAction = { name: "save-note" } as any;
+      const mockScheduleAction = { name: "schedule-all-followup-tasks" } as any;
 
       (mockActionFactory.create as any)
         .mockReturnValueOnce(mockCleanAction)
         .mockReturnValueOnce(mockParseAction)
-        .mockReturnValueOnce(mockSaveAction);
+        .mockReturnValueOnce(mockSaveAction)
+        .mockReturnValueOnce(mockScheduleAction);
 
-      const testData = createMockNoteData({
-        content: "<html><body>Minimal content</body></html>",
-        importId: "minimal-import",
-        source: {
-          filename: "minimal.html",
-          url: "https://example.com/minimal",
-        },
-        options: {},
-      });
-
+      const testData = createMockNoteData();
       const pipeline = createNotePipeline(
         mockActionFactory,
         mockDependencies,
@@ -294,46 +314,8 @@ describe("createNotePipeline", () => {
         mockContext
       );
 
-      expect(pipeline).toHaveLength(3);
-      expect(mockActionFactory.create).toHaveBeenCalledTimes(3);
-    });
-
-    it("should handle data with complex options", () => {
-      const mockCleanAction = { name: "clean-html" } as any;
-      const mockParseAction = { name: "parse-html" } as any;
-      const mockSaveAction = { name: "save-note" } as any;
-
-      (mockActionFactory.create as any)
-        .mockReturnValueOnce(mockCleanAction)
-        .mockReturnValueOnce(mockParseAction)
-        .mockReturnValueOnce(mockSaveAction);
-
-      const testData = createMockNoteData({
-        content: "<html><body>Complex content</body></html>",
-        importId: "complex-import",
-        source: {
-          filename: "complex.html",
-          url: "https://example.com/complex",
-        },
-        options: {
-          skipFollowupTasks: true,
-          customOption: "value",
-          nestedOption: {
-            key: "value",
-          },
-        },
-      });
-
-      const pipeline = createNotePipeline(
-        mockActionFactory,
-        mockDependencies,
-        testData,
-        mockContext
-      );
-
-      expect(pipeline).toHaveLength(3);
-      // The console.log should NOT be called when skipFollowupTasks is true
-      expect(console.log).not.toHaveBeenCalled();
+      expect(pipeline).toHaveLength(4);
+      expect(mockActionFactory.create).toHaveBeenCalledTimes(4);
     });
   });
 
@@ -342,18 +324,24 @@ describe("createNotePipeline", () => {
       const mockCleanAction = { name: "clean-html" } as any;
       const mockParseAction = { name: "parse-html" } as any;
       const mockSaveAction = { name: "save-note" } as any;
+      const mockScheduleAction = { name: "schedule-all-followup-tasks" } as any;
 
       (mockActionFactory.create as any)
         .mockReturnValueOnce(mockCleanAction)
         .mockReturnValueOnce(mockParseAction)
-        .mockReturnValueOnce(mockSaveAction);
+        .mockReturnValueOnce(mockSaveAction)
+        .mockReturnValueOnce(mockScheduleAction);
 
       const testData = createMockNoteData();
-      const customContext = createMockActionContext({
+      const customContext: ActionContext = {
         jobId: "custom-job-id",
+        retryCount: 0,
+        queueName: "notes",
         operation: "custom-operation",
+        startTime: Date.now(),
         workerName: "custom-worker",
-      });
+        attemptNumber: 1,
+      };
 
       const pipeline = createNotePipeline(
         mockActionFactory,
@@ -362,22 +350,32 @@ describe("createNotePipeline", () => {
         customContext
       );
 
-      expect(pipeline).toHaveLength(3);
-      expect(mockActionFactory.create).toHaveBeenCalledTimes(3);
+      expect(pipeline).toHaveLength(4);
+      expect(mockActionFactory.create).toHaveBeenCalledTimes(4);
     });
 
     it("should work with minimal context", () => {
       const mockCleanAction = { name: "clean-html" } as any;
       const mockParseAction = { name: "parse-html" } as any;
       const mockSaveAction = { name: "save-note" } as any;
+      const mockScheduleAction = { name: "schedule-all-followup-tasks" } as any;
 
       (mockActionFactory.create as any)
         .mockReturnValueOnce(mockCleanAction)
         .mockReturnValueOnce(mockParseAction)
-        .mockReturnValueOnce(mockSaveAction);
+        .mockReturnValueOnce(mockSaveAction)
+        .mockReturnValueOnce(mockScheduleAction);
 
       const testData = createMockNoteData();
-      const minimalContext = createMockActionContext();
+      const minimalContext: ActionContext = {
+        jobId: "minimal-job-id",
+        retryCount: 0,
+        queueName: "notes",
+        operation: "minimal-operation",
+        startTime: Date.now(),
+        workerName: "minimal-worker",
+        attemptNumber: 1,
+      };
 
       const pipeline = createNotePipeline(
         mockActionFactory,
@@ -386,148 +384,8 @@ describe("createNotePipeline", () => {
         minimalContext
       );
 
-      expect(pipeline).toHaveLength(3);
-      expect(mockActionFactory.create).toHaveBeenCalledTimes(3);
-    });
-  });
-
-  describe("action factory integration", () => {
-    it("should use the provided action factory", () => {
-      const mockCleanAction = { name: "clean-html" } as any;
-      const mockParseAction = { name: "parse-html" } as any;
-      const mockSaveAction = { name: "save-note" } as any;
-
-      (mockActionFactory.create as any)
-        .mockReturnValueOnce(mockCleanAction)
-        .mockReturnValueOnce(mockParseAction)
-        .mockReturnValueOnce(mockSaveAction);
-
-      const testData = createMockNoteData();
-      createNotePipeline(
-        mockActionFactory,
-        mockDependencies,
-        testData,
-        mockContext
-      );
-
-      expect(mockActionFactory.create).toHaveBeenCalledWith(
-        ActionName.CLEAN_HTML,
-        mockDependencies
-      );
-      expect(mockActionFactory.create).toHaveBeenCalledWith(
-        ActionName.PARSE_HTML,
-        mockDependencies
-      );
-      expect(mockActionFactory.create).toHaveBeenCalledWith(
-        ActionName.SAVE_NOTE,
-        mockDependencies
-      );
-    });
-
-    it("should handle action factory that returns different action types", () => {
-      const mockCleanAction = { name: "clean-html", type: "clean" } as any;
-      const mockParseAction = { name: "parse-html", type: "parse" } as any;
-      const mockSaveAction = { name: "save-note", type: "save" } as any;
-
-      (mockActionFactory.create as any)
-        .mockReturnValueOnce(mockCleanAction)
-        .mockReturnValueOnce(mockParseAction)
-        .mockReturnValueOnce(mockSaveAction);
-
-      const testData = createMockNoteData();
-      const pipeline = createNotePipeline(
-        mockActionFactory,
-        mockDependencies,
-        testData,
-        mockContext
-      );
-
-      expect(pipeline[0]).toBe(mockCleanAction);
-      expect(pipeline[1]).toBe(mockParseAction);
-      expect(pipeline[2]).toBe(mockSaveAction);
-      expect((pipeline[0] as any).type).toBe("clean");
-      expect((pipeline[1] as any).type).toBe("parse");
-      expect((pipeline[2] as any).type).toBe("save");
-    });
-  });
-
-  describe("dependencies handling", () => {
-    it("should pass dependencies to action factory", () => {
-      const mockCleanAction = { name: "clean-html" } as any;
-      const mockParseAction = { name: "parse-html" } as any;
-      const mockSaveAction = { name: "save-note" } as any;
-
-      (mockActionFactory.create as any)
-        .mockReturnValueOnce(mockCleanAction)
-        .mockReturnValueOnce(mockParseAction)
-        .mockReturnValueOnce(mockSaveAction);
-
-      const testData = createMockNoteData();
-      createNotePipeline(
-        mockActionFactory,
-        mockDependencies,
-        testData,
-        mockContext
-      );
-
-      expect(mockActionFactory.create).toHaveBeenCalledWith(
-        ActionName.CLEAN_HTML,
-        mockDependencies
-      );
-      expect(mockActionFactory.create).toHaveBeenCalledWith(
-        ActionName.PARSE_HTML,
-        mockDependencies
-      );
-      expect(mockActionFactory.create).toHaveBeenCalledWith(
-        ActionName.SAVE_NOTE,
-        mockDependencies
-      );
-    });
-
-    it("should work with different dependency configurations", () => {
-      const mockCleanAction = { name: "clean-html" } as any;
-      const mockParseAction = { name: "parse-html" } as any;
-      const mockSaveAction = { name: "save-note" } as any;
-
-      (mockActionFactory.create as any)
-        .mockReturnValueOnce(mockCleanAction)
-        .mockReturnValueOnce(mockParseAction)
-        .mockReturnValueOnce(mockSaveAction);
-
-      const differentDependencies = {
-        ...mockDependencies,
-        logger: {
-          log: vi.fn(),
-          debug: vi.fn(),
-        },
-        services: {
-          cleanHtml: vi.fn(),
-          parseHtml: vi.fn(),
-          saveNote: vi.fn(),
-          customService: vi.fn(),
-        },
-      };
-
-      const testData = createMockNoteData();
-      createNotePipeline(
-        mockActionFactory,
-        differentDependencies,
-        testData,
-        mockContext
-      );
-
-      expect(mockActionFactory.create).toHaveBeenCalledWith(
-        ActionName.CLEAN_HTML,
-        differentDependencies
-      );
-      expect(mockActionFactory.create).toHaveBeenCalledWith(
-        ActionName.PARSE_HTML,
-        differentDependencies
-      );
-      expect(mockActionFactory.create).toHaveBeenCalledWith(
-        ActionName.SAVE_NOTE,
-        differentDependencies
-      );
+      expect(pipeline).toHaveLength(4);
+      expect(mockActionFactory.create).toHaveBeenCalledTimes(4);
     });
   });
 
@@ -536,11 +394,13 @@ describe("createNotePipeline", () => {
       const mockCleanAction = { name: "clean-html" } as any;
       const mockParseAction = { name: "parse-html" } as any;
       const mockSaveAction = { name: "save-note" } as any;
+      const mockScheduleAction = { name: "schedule-all-followup-tasks" } as any;
 
       (mockActionFactory.create as any)
         .mockReturnValueOnce(mockCleanAction)
         .mockReturnValueOnce(mockParseAction)
-        .mockReturnValueOnce(mockSaveAction);
+        .mockReturnValueOnce(mockSaveAction)
+        .mockReturnValueOnce(mockScheduleAction);
 
       const testData = createMockNoteData();
       const pipeline = createNotePipeline(
@@ -551,21 +411,24 @@ describe("createNotePipeline", () => {
       );
 
       expect(Array.isArray(pipeline)).toBe(true);
-      expect(pipeline).toHaveLength(3);
+      expect(pipeline).toHaveLength(4);
       expect(pipeline[0]).toBeDefined();
       expect(pipeline[1]).toBeDefined();
       expect(pipeline[2]).toBeDefined();
+      expect(pipeline[3]).toBeDefined();
     });
 
     it("should return immutable array", () => {
       const mockCleanAction = { name: "clean-html" } as any;
       const mockParseAction = { name: "parse-html" } as any;
       const mockSaveAction = { name: "save-note" } as any;
+      const mockScheduleAction = { name: "schedule-all-followup-tasks" } as any;
 
       (mockActionFactory.create as any)
         .mockReturnValueOnce(mockCleanAction)
         .mockReturnValueOnce(mockParseAction)
-        .mockReturnValueOnce(mockSaveAction);
+        .mockReturnValueOnce(mockSaveAction)
+        .mockReturnValueOnce(mockScheduleAction);
 
       const testData = createMockNoteData();
       const pipeline = createNotePipeline(
@@ -576,10 +439,11 @@ describe("createNotePipeline", () => {
       );
 
       // Should be able to access array methods
-      expect(pipeline.length).toBe(3);
+      expect(pipeline.length).toBe(4);
       expect(pipeline[0]).toBe(mockCleanAction);
       expect(pipeline[1]).toBe(mockParseAction);
       expect(pipeline[2]).toBe(mockSaveAction);
+      expect(pipeline[3]).toBe(mockScheduleAction);
     });
   });
 
@@ -588,24 +452,26 @@ describe("createNotePipeline", () => {
       const mockCleanAction = { name: "clean-html" } as any;
       const mockParseAction = { name: "parse-html" } as any;
       const mockSaveAction = { name: "save-note" } as any;
+      const mockScheduleAction = { name: "schedule-all-followup-tasks" } as any;
 
       (mockActionFactory.create as any)
         .mockReturnValueOnce(mockCleanAction)
         .mockReturnValueOnce(mockParseAction)
-        .mockReturnValueOnce(mockSaveAction);
+        .mockReturnValueOnce(mockSaveAction)
+        .mockReturnValueOnce(mockScheduleAction);
 
-      const emptyData = {} as any;
+      const testData = {} as NotePipelineData;
       const pipeline = createNotePipeline(
         mockActionFactory,
         mockDependencies,
-        emptyData,
+        testData,
         mockContext
       );
 
-      expect(pipeline).toHaveLength(3);
-      // The console.log should be called when options is undefined
-      expect(console.log).toHaveBeenCalledWith(
-        "[PIPELINE] Follow-up tasks would be scheduled here"
+      expect(pipeline).toHaveLength(4);
+      expect(mockActionFactory.create).toHaveBeenCalledWith(
+        ActionName.SCHEDULE_ALL_FOLLOWUP_TASKS,
+        mockDependencies
       );
     });
 
@@ -613,11 +479,13 @@ describe("createNotePipeline", () => {
       const mockCleanAction = { name: "clean-html" } as any;
       const mockParseAction = { name: "parse-html" } as any;
       const mockSaveAction = { name: "save-note" } as any;
+      const mockScheduleAction = { name: "schedule-all-followup-tasks" } as any;
 
       (mockActionFactory.create as any)
         .mockReturnValueOnce(mockCleanAction)
         .mockReturnValueOnce(mockParseAction)
-        .mockReturnValueOnce(mockSaveAction);
+        .mockReturnValueOnce(mockSaveAction)
+        .mockReturnValueOnce(mockScheduleAction);
 
       const testData = createMockNoteData();
       const pipeline = createNotePipeline(
@@ -627,19 +495,21 @@ describe("createNotePipeline", () => {
         null as any
       );
 
-      expect(pipeline).toHaveLength(3);
-      expect(mockActionFactory.create).toHaveBeenCalledTimes(3);
+      expect(pipeline).toHaveLength(4);
+      expect(mockActionFactory.create).toHaveBeenCalledTimes(4);
     });
 
     it("should handle undefined context", () => {
       const mockCleanAction = { name: "clean-html" } as any;
       const mockParseAction = { name: "parse-html" } as any;
       const mockSaveAction = { name: "save-note" } as any;
+      const mockScheduleAction = { name: "schedule-all-followup-tasks" } as any;
 
       (mockActionFactory.create as any)
         .mockReturnValueOnce(mockCleanAction)
         .mockReturnValueOnce(mockParseAction)
-        .mockReturnValueOnce(mockSaveAction);
+        .mockReturnValueOnce(mockSaveAction)
+        .mockReturnValueOnce(mockScheduleAction);
 
       const testData = createMockNoteData();
       const pipeline = createNotePipeline(
@@ -649,8 +519,8 @@ describe("createNotePipeline", () => {
         undefined as any
       );
 
-      expect(pipeline).toHaveLength(3);
-      expect(mockActionFactory.create).toHaveBeenCalledTimes(3);
+      expect(pipeline).toHaveLength(4);
+      expect(mockActionFactory.create).toHaveBeenCalledTimes(4);
     });
   });
 });

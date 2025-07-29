@@ -39,9 +39,10 @@ export function createNotePipeline(
 
   // Conditionally add follow-up tasks based on options
   if (!data.options?.skipFollowupTasks) {
-    // For now, we'll add a placeholder for follow-up tasks
-    // This can be expanded when we implement the actual scheduling actions
-    console.log("[PIPELINE] Follow-up tasks would be scheduled here");
+    // Schedule all followup tasks (source, images, ingredients, instructions)
+    actions.push(
+      actionFactory.create(ActionName.SCHEDULE_ALL_FOLLOWUP_TASKS, dependencies)
+    );
   }
 
   return actions;

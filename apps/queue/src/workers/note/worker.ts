@@ -7,6 +7,7 @@ import { IServiceContainer } from "../../services/container";
 import { CleanHtmlAction } from "../../services/note/clean-html";
 import { ParseHtmlAction } from "../../services/note/parse-html";
 import { SaveNoteAction } from "../../services/note/save-note";
+import { ScheduleAllFollowupTasksAction } from "../../services/note/schedule-all-followup-tasks";
 import { ActionName } from "../../types";
 import type {
   NotePipelineData,
@@ -66,12 +67,10 @@ export class NoteWorker extends BaseWorker<
       () => new SaveNoteAction()
     );
 
-    // TODO: Register scheduling actions when they are implemented
-    // this.actionFactory.registerWithWrappers(
-    //   ActionName.SCHEDULE_ALL_FOLLOWUP_TASKS,
-    //   () => new ScheduleAllFollowupTasksAction(),
-    //   [createRetryWrapper({ ...DEFAULT_RETRY_CONFIG, maxRetries: 3 })]
-    // );
+    this.actionFactory.register(
+      ActionName.SCHEDULE_ALL_FOLLOWUP_TASKS,
+      () => new ScheduleAllFollowupTasksAction()
+    );
   }
 
   /**
