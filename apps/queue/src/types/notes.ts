@@ -1,9 +1,9 @@
-import type { JobMetadata, ProcessingOptions, SourceInfo } from "./common";
+import type { ProcessingOptions, SourceInfo } from "./common";
 
 import type { ParsedHTMLFile } from "@peas/database";
 
 import type { WorkerAction } from "../workers/types";
-import type { BaseWorkerDependencies } from "../workers/types";
+import type { BaseJobData, BaseWorkerDependencies } from "../workers/types";
 
 // ============================================================================
 // NOTE PROCESSING TYPES
@@ -24,29 +24,15 @@ export interface NoteProcessingResult {
  * Unified pipeline data for the note processing pipeline
  * This is the single source of truth for note job data
  */
-export interface NotePipelineData {
-  // Core content
+export interface NotePipelineData extends BaseJobData {
+  // Core content (required)
   content: string;
-
-  // Identifiers
-  importId?: string;
-  noteId?: string;
 
   // Source information
   source?: SourceInfo;
 
   // Processing options
   options?: ProcessingOptions;
-
-  // Metadata
-  metadata?: JobMetadata;
-
-  // Timestamps
-  createdAt?: Date;
-
-  // Job configuration
-  priority?: number;
-  timeout?: number;
 
   // Pipeline stage data (added by actions)
   file?: ParsedHTMLFile;
@@ -96,6 +82,10 @@ export interface NoteWorkerDependencies extends BaseWorkerDependencies {
      * Clean HTML content by removing style and icons tags.
      */
     cleanHtml: (data: NotePipelineData) => Promise<NotePipelineData>;
+    /**
+     * Save note to database.
+     */
+    saveNote: (data: NotePipelineData) => Promise<NotePipelineData>;
   };
 }
 
@@ -117,7 +107,8 @@ export type NotePipelineAction = WorkerAction<
  */
 export type NoteActionClass =
   | typeof import("../services/note/parse-html").ParseHtmlAction
-  | typeof import("../services/note/clean-html").CleanHtmlAction;
+  | typeof import("../services/note/clean-html").CleanHtmlAction
+  | typeof import("../services/note/save-note").SaveNoteAction;
 
 /**
  * Note job data type

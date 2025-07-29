@@ -20,13 +20,18 @@ describe("ParseHtmlAction", () => {
     vi.clearAllMocks();
 
     mockDeps = {
-      logger: { log: vi.fn() },
-      statusBroadcaster: { addStatusEventAndBroadcast: vi.fn() },
-      services: {
-        cleanHtml: vi.fn(),
-        parseHtml: vi.fn(),
+      logger: {
+        log: vi.fn(),
       },
-    } as NoteWorkerDependencies;
+      statusBroadcaster: {
+        addStatusEventAndBroadcast: vi.fn(),
+      },
+      services: {
+        parseHtml: vi.fn(),
+        cleanHtml: vi.fn(),
+        saveNote: vi.fn(),
+      },
+    } as unknown as NoteWorkerDependencies;
 
     mockData = {
       content: "<html><body><h1>Test Recipe</h1><p>Content</p></body></html>",
@@ -273,7 +278,8 @@ describe("ParseHtmlAction", () => {
       const result = await action.execute(mockData, mockDeps, mockContext);
 
       expect(mockDeps.logger.log).toHaveBeenCalledWith(
-        "[PARSE_HTML] Failed to broadcast start status: Error: Broadcast error"
+        "[PARSE_HTML] Failed to broadcast start status: Error: Broadcast error",
+        "error"
       );
       expect(mockDeps.services.parseHtml).toHaveBeenCalledWith(mockData);
       expect(result).toEqual(parsedData);
@@ -299,20 +305,14 @@ describe("ParseHtmlAction", () => {
           .mockRejectedValueOnce(error);
       }
 
-      const consoleSpy = vi
-        .spyOn(console, "error")
-        .mockImplementation(() => {});
-
       const result = await action.execute(mockData, mockDeps, mockContext);
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        "[PARSE-HTML-TEST] Failed to broadcast completion status:",
-        error
+      expect(mockDeps.logger.log).toHaveBeenCalledWith(
+        "[PARSE_HTML] Failed to broadcast completion status: Error: Broadcast error",
+        "error"
       );
       expect(mockDeps.services.parseHtml).toHaveBeenCalledWith(mockData);
       expect(result).toEqual(parsedData);
-
-      consoleSpy.mockRestore();
     });
 
     it("should handle service error", async () => {

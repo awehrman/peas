@@ -2,19 +2,13 @@ import { parseHTMLContent } from "../../parsers/html";
 import type { IServiceContainer } from "../../services/container";
 import { cleanHtmlFile } from "../../services/note/clean-html";
 import { parseHtmlFile } from "../../services/note/parse-html";
+import { saveNote } from "../../services/note/save-note";
 import type {
   NotePipelineData,
   NoteWorkerDependencies,
 } from "../../types/notes";
 import { buildBaseDependencies } from "../core/worker-dependencies/build-base-dependencies";
 
-// ============================================================================
-// NOTE WORKER DEPENDENCIES
-// ============================================================================
-
-/**
- * Build note worker dependencies from service container
- */
 export function buildNoteWorkerDependencies(
   container: IServiceContainer
 ): NoteWorkerDependencies {
@@ -23,10 +17,13 @@ export function buildNoteWorkerDependencies(
   return {
     ...baseDeps,
     services: {
+      parseHtml: async (data: NotePipelineData) => {
+        return parseHtmlFile(data, baseDeps.logger, parseHTMLContent);
+      },
       cleanHtml: async (data: NotePipelineData) =>
         cleanHtmlFile(data, baseDeps.logger),
-      parseHtml: async (data: NotePipelineData) =>
-        parseHtmlFile(data, baseDeps.logger, parseHTMLContent),
+      saveNote: async (data: NotePipelineData) =>
+        saveNote(data, baseDeps.logger),
     },
   };
 }

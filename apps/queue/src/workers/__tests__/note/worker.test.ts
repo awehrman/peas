@@ -442,6 +442,7 @@ describe("createNoteWorker", () => {
         services: {
           cleanHtml: vi.fn(),
           parseHtml: vi.fn(),
+          saveNote: vi.fn(),
           customService: vi.fn(),
         },
       };

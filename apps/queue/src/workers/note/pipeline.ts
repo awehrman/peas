@@ -35,6 +35,8 @@ export function createNotePipeline(
 
   actions.push(actionFactory.create(ActionName.PARSE_HTML, dependencies));
 
+  actions.push(actionFactory.create(ActionName.SAVE_NOTE, dependencies));
+
   // Conditionally add follow-up tasks based on options
   if (!data.options?.skipFollowupTasks) {
     // For now, we'll add a placeholder for follow-up tasks

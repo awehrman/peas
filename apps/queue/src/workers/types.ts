@@ -29,6 +29,12 @@ export interface BaseJobData {
   };
   /** Job tags for categorization */
   tags?: string[];
+  /** Content field for jobs that need it */
+  content?: string;
+  /** Import ID for jobs that need it */
+  importId?: string;
+  /** Note ID for jobs that need it */
+  noteId?: string;
 }
 
 /**

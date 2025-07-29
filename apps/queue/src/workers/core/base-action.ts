@@ -1,10 +1,23 @@
-import { ActionContext, ActionResult, WorkerAction } from "./types";
-import { ActionName } from "../../types";
+import type { ActionContext, ActionResult, WorkerAction } from "./types";
 
+import { ActionName } from "../../types";
 import type { BaseJobData } from "../types";
 
-// Shared type definitions for better type safety
-export interface BaseErrorLoggerDeps {
+// ============================================================================
+// TYPES
+// ============================================================================
+
+interface StatusBroadcaster {
+  addStatusEventAndBroadcast: (event: {
+    importId?: string;
+    status: string;
+    message: string;
+    context: string;
+    indentLevel: number;
+  }) => Promise<void>;
+}
+
+interface BaseErrorLoggerDeps {
   logger: {
     log: (
       message: string,
@@ -21,16 +34,21 @@ type ActionConfig = Pick<
   "retryable" | "priority"
 >;
 
-/**
- * Type guard to check if dependencies have a logger
- */
+// ============================================================================
+// UTILITY FUNCTIONS
+// ============================================================================
+
 function hasLogger(deps: unknown): deps is BaseErrorLoggerDeps {
   return (
-    typeof deps === "object" &&
     deps !== null &&
+    deps !== undefined &&
+    typeof deps === "object" &&
     "logger" in deps &&
-    typeof ((deps as Record<string, unknown>).logger as { log?: unknown })
-      ?.log === "function"
+    deps.logger !== null &&
+    deps.logger !== undefined &&
+    typeof deps.logger === "object" &&
+    "log" in deps.logger &&
+    typeof deps.logger.log === "function"
   );
 }
 
@@ -135,6 +153,108 @@ export abstract class BaseAction<
     const newAction = Object.create(this);
     Object.assign(newAction, config);
     return newAction;
+  }
+
+  /**
+   * Execute a service action with optional status broadcasting.
+   * This provides a standardized way to handle service calls with consistent error handling.
+   * @param options Configuration options for the service action execution
+   * @returns Promise that resolves to the service result
+   */
+  protected async executeServiceAction(options: {
+    data: TData;
+    deps: TDeps;
+    context: ActionContext;
+    serviceCall: () => Promise<TResult>;
+    contextName?: string;
+    startMessage?: string;
+    completionMessage?: string;
+    additionalBroadcasting?: (result: TResult) => Promise<void>;
+  }): Promise<TResult> {
+    const {
+      data,
+      deps,
+      serviceCall,
+      contextName,
+      startMessage,
+      completionMessage,
+      additionalBroadcasting,
+    } = options;
+
+    // Check if we have status broadcasting capabilities
+    const hasStatusBroadcaster =
+      deps &&
+      "statusBroadcaster" in deps &&
+      deps.statusBroadcaster &&
+      typeof (deps.statusBroadcaster as StatusBroadcaster)
+        .addStatusEventAndBroadcast === "function";
+
+    const hasImportId = data && "importId" in data && data.importId;
+
+    // Broadcast start status if we have the capability and importId
+    if (hasImportId && hasStatusBroadcaster) {
+      const finalContextName = contextName || this.name;
+      const finalStartMessage = startMessage || `${this.name} started`;
+
+      try {
+        await (
+          deps.statusBroadcaster as StatusBroadcaster
+        ).addStatusEventAndBroadcast({
+          importId: data.importId,
+          status: "PROCESSING",
+          message: finalStartMessage,
+          context: finalContextName,
+          indentLevel: 1,
+        });
+      } catch (error) {
+        this.logError(deps, `Failed to broadcast start status: ${error}`);
+      }
+    }
+
+    // Call the service function
+    const result = await serviceCall();
+
+    // Handle completion broadcasting
+    if (hasImportId && hasStatusBroadcaster) {
+      try {
+        if (additionalBroadcasting) {
+          // If additional broadcasting is provided, let it handle all completion messages
+          await additionalBroadcasting(result);
+        } else {
+          // Otherwise, send the standard completion message
+          const finalContextName = contextName || this.name;
+          const finalCompletionMessage =
+            completionMessage || `${this.name} completed`;
+
+          await (
+            deps.statusBroadcaster as StatusBroadcaster
+          ).addStatusEventAndBroadcast({
+            importId: data.importId,
+            status: "COMPLETED",
+            message: finalCompletionMessage,
+            context: finalContextName,
+            indentLevel: 1,
+          });
+        }
+      } catch (error) {
+        this.logError(deps, `Failed to broadcast completion status: ${error}`);
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Helper method to log errors consistently
+   * @param deps Dependencies that may contain a logger
+   * @param message Error message to log
+   */
+  private logError(deps: TDeps, message: string): void {
+    if (hasLogger(deps)) {
+      deps.logger.log(`[${this.name.toUpperCase()}] ${message}`, "error");
+    } else {
+      console.error(`[${this.name.toUpperCase()}] ${message}`);
+    }
   }
 }
 

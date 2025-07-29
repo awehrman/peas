@@ -38,13 +38,18 @@ describe("CleanHtmlAction", () => {
     vi.clearAllMocks();
 
     mockDeps = {
-      logger: { log: vi.fn() },
-      statusBroadcaster: { addStatusEventAndBroadcast: vi.fn() },
-      services: {
-        cleanHtml: vi.fn(),
-        parseHtml: vi.fn(),
+      logger: {
+        log: vi.fn(),
       },
-    } as NoteWorkerDependencies;
+      statusBroadcaster: {
+        addStatusEventAndBroadcast: vi.fn(),
+      },
+      services: {
+        parseHtml: vi.fn(),
+        cleanHtml: vi.fn(),
+        saveNote: vi.fn(),
+      },
+    } as unknown as NoteWorkerDependencies;
 
     mockData = {
       content:
@@ -173,30 +178,24 @@ describe("CleanHtmlAction", () => {
       const error = createTestError("Broadcast error");
       const cleanedData = {
         ...mockData,
-        content: "<html><body><h1>Test Recipe</h1><p>Content</p></body></html>",
+        content: "<html><body>Cleaned content</body></html>",
       };
 
       vi.mocked(mockDeps.services.cleanHtml).mockResolvedValue(cleanedData);
       if (mockDeps.statusBroadcaster?.addStatusEventAndBroadcast) {
-        vi.mocked(mockDeps.statusBroadcaster.addStatusEventAndBroadcast)
-          .mockRejectedValueOnce(error)
-          .mockResolvedValueOnce({} as Record<string, unknown>);
+        vi.mocked(
+          mockDeps.statusBroadcaster.addStatusEventAndBroadcast
+        ).mockRejectedValueOnce(error);
       }
-
-      const consoleSpy = vi
-        .spyOn(console, "error")
-        .mockImplementation(() => {});
 
       const result = await action.execute(mockData, mockDeps, mockContext);
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        "[CLEAN-HTML-TEST] Failed to broadcast start status:",
-        error
+      expect(mockDeps.logger.log).toHaveBeenCalledWith(
+        "[CLEAN_HTML] Failed to broadcast start status: Error: Broadcast error",
+        "error"
       );
       expect(mockDeps.services.cleanHtml).toHaveBeenCalledWith(mockData);
       expect(result).toEqual(cleanedData);
-
-      consoleSpy.mockRestore();
     });
 
     it("should handle completion status broadcast error", async () => {
@@ -204,7 +203,7 @@ describe("CleanHtmlAction", () => {
       const error = createTestError("Broadcast error");
       const cleanedData = {
         ...mockData,
-        content: "<html><body><h1>Test Recipe</h1><p>Content</p></body></html>",
+        content: "<html><body>Cleaned content</body></html>",
       };
 
       vi.mocked(mockDeps.services.cleanHtml).mockResolvedValue(cleanedData);
@@ -214,20 +213,14 @@ describe("CleanHtmlAction", () => {
           .mockRejectedValueOnce(error);
       }
 
-      const consoleSpy = vi
-        .spyOn(console, "error")
-        .mockImplementation(() => {});
-
       const result = await action.execute(mockData, mockDeps, mockContext);
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        "[CLEAN-HTML-TEST] Failed to broadcast completion status:",
-        error
+      expect(mockDeps.logger.log).toHaveBeenCalledWith(
+        "[CLEAN_HTML] Failed to broadcast completion status: Error: Broadcast error",
+        "error"
       );
       expect(mockDeps.services.cleanHtml).toHaveBeenCalledWith(mockData);
       expect(result).toEqual(cleanedData);
-
-      consoleSpy.mockRestore();
     });
 
     it("should handle service error", async () => {

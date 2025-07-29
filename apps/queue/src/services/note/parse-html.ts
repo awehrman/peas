@@ -13,8 +13,23 @@ import { BaseAction } from "../../workers/core/base-action";
 import { ActionContext } from "../../workers/core/types";
 
 /**
- * Parse HTML file and convert to structured format
- * This is the business logic that can be imported and used elsewhere
+ * Parse HTML file and convert to structured format.
+ *
+ * This function takes HTML content and parses it into a structured format containing
+ * ingredients, instructions, title, and metadata. It uses the provided parsing function
+ * to extract structured data from the HTML content and transforms it into the expected
+ * ParsedHTMLFile format.
+ *
+ * @param data - The pipeline data containing the HTML content to parse
+ * @param logger - Logger instance for recording parsing progress and statistics
+ * @param parseHTMLContent - Function that performs the actual HTML parsing logic
+ * @returns Promise resolving to the updated pipeline data with parsed file information
+ *
+ * @example
+ * ```typescript
+ * const result = await parseHtmlFile(pipelineData, logger, parseHTMLContent);
+ * console.log(`Parsed ${result.file?.ingredients.length} ingredients`);
+ * ```
  */
 export async function parseHtmlFile(
   data: NotePipelineData,
@@ -60,14 +75,50 @@ export async function parseHtmlFile(
   return { ...data, file };
 }
 
+/**
+ * Action class for parsing HTML content in the worker pipeline.
+ *
+ * This action validates input data using a Zod schema and delegates the actual
+ * HTML parsing to the parseHtml service. It extends BaseAction to provide
+ * standardized error handling, logging, and status broadcasting.
+ *
+ * The action includes additional status broadcasting for import tracking,
+ * providing detailed progress information about parsed ingredients and instructions.
+ *
+ * @example
+ * ```typescript
+ * const action = new ParseHtmlAction();
+ * const result = await action.execute(pipelineData, dependencies, context);
+ * ```
+ */
 export class ParseHtmlAction extends BaseAction<
   NotePipelineData,
   NoteWorkerDependencies,
   NotePipelineData
 > {
+  /** The unique identifier for this action in the worker pipeline */
   name = ActionName.PARSE_HTML;
+
+  /** Zod schema for validating input data before processing */
   private schema = ParseHtmlDataSchema;
 
+  /**
+   * Validates the input data using the ParseHtmlDataSchema.
+   *
+   * This method ensures that the pipeline data contains all required fields
+   * and meets the schema requirements before attempting to parse the HTML.
+   *
+   * @param data - The pipeline data to validate
+   * @returns null if validation passes, Error object if validation fails
+   *
+   * @example
+   * ```typescript
+   * const error = action.validateInput(pipelineData);
+   * if (error) {
+   *   console.error('Validation failed:', error.message);
+   * }
+   * ```
+   */
   validateInput(data: NotePipelineData): Error | null {
     try {
       this.schema.parse(data);
@@ -77,78 +128,86 @@ export class ParseHtmlAction extends BaseAction<
     }
   }
 
+  /**
+   * Executes the HTML parsing action.
+   *
+   * This method orchestrates the HTML parsing process by:
+   * 1. Validating the input data
+   * 2. Calling the parseHtml service with proper error handling
+   * 3. Broadcasting status updates with detailed progress information
+   * 4. Logging operation progress
+   *
+   * When an importId is present, it broadcasts additional status events for:
+   * - Parse completion with note title
+   * - Ingredient count and progress tracking
+   * - Instruction count and progress tracking
+   *
+   * @param data - The pipeline data containing the HTML content to parse
+   * @param deps - Worker dependencies including services, logger, and status broadcaster
+   * @param context - Action context for tracking execution state
+   * @returns Promise resolving to the updated pipeline data with parsed file information
+   * @throws {Error} When validation fails or the parsing operation encounters an error
+   *
+   * @example
+   * ```typescript
+   * const result = await action.execute(pipelineData, dependencies, context);
+   * console.log(`Parsed file: ${result.file?.title}`);
+   * ```
+   */
   async execute(
     data: NotePipelineData,
     deps: NoteWorkerDependencies,
     context: ActionContext
   ): Promise<NotePipelineData> {
-    // Broadcast start status if importId is provided
-    if (data.importId && deps.statusBroadcaster) {
-      try {
-        await deps.statusBroadcaster.addStatusEventAndBroadcast({
-          importId: data.importId,
-          status: "PROCESSING",
-          message: "Parsing HTML",
-          context: "parse_html_start",
-          indentLevel: 1, // Slightly indented for main operations
-        });
-      } catch (error) {
-        deps.logger.log(
-          `[PARSE_HTML] Failed to broadcast start status: ${error}`
-        );
-      }
-    }
+    return this.executeServiceAction({
+      data,
+      deps,
+      context,
+      serviceCall: () => deps.services.parseHtml(data),
+      contextName: "parse_html_start",
+      startMessage: "Parsing HTML",
+      completionMessage: "Finished parsing HTML file.",
+      additionalBroadcasting: async (result) => {
+        if (data.importId && deps.statusBroadcaster && result.file) {
+          // Send completion message with correct context and metadata
+          await deps.statusBroadcaster.addStatusEventAndBroadcast({
+            importId: data.importId,
+            status: "COMPLETED",
+            message: "Finished parsing HTML file.",
+            context: "parse_html_complete",
+            indentLevel: 1,
+            metadata: {
+              noteTitle: result.file.title,
+            },
+          });
 
-    // Call the parseHtmlFile service from dependencies
-    const result = await deps.services.parseHtml(data);
+          // Broadcast ingredient count status
+          await deps.statusBroadcaster.addStatusEventAndBroadcast({
+            importId: data.importId,
+            status: "PENDING",
+            message: `0/${result.file.ingredients?.length || 0} ingredients`,
+            context: "parse_html_ingredients",
+            indentLevel: 2,
+            metadata: {
+              totalIngredients: result.file.ingredients?.length || 0,
+              processedIngredients: 0,
+            },
+          });
 
-    // Broadcast completion status if we have an importId
-    if (data.importId && deps.statusBroadcaster && result.file) {
-      try {
-        await deps.statusBroadcaster.addStatusEventAndBroadcast({
-          importId: data.importId,
-          status: "COMPLETED",
-          message: "Finished parsing HTML file.",
-          context: "parse_html_complete",
-          indentLevel: 1, // Slightly indented for main operations
-          metadata: {
-            noteTitle: result.file.title, // Include the note title in metadata
-          },
-        });
-
-        // Broadcast ingredient count status
-        await deps.statusBroadcaster.addStatusEventAndBroadcast({
-          importId: data.importId,
-          status: "PENDING",
-          message: `0/${result.file.ingredients?.length || 0} ingredients`,
-          context: "parse_html_ingredients",
-          indentLevel: 2, // Additional indentation for ingredients
-          metadata: {
-            totalIngredients: result.file.ingredients?.length || 0,
-            processedIngredients: 0,
-          },
-        });
-
-        // Broadcast instruction count status
-        await deps.statusBroadcaster.addStatusEventAndBroadcast({
-          importId: data.importId,
-          status: "PENDING",
-          message: `0/${result.file.instructions?.length || 0} instructions`,
-          context: "parse_html_instructions",
-          indentLevel: 2, // Additional indentation for instructions
-          metadata: {
-            totalInstructions: result.file.instructions?.length || 0,
-            processedInstructions: 0,
-          },
-        });
-      } catch (error) {
-        console.error(
-          `[${context.operation.toUpperCase()}] Failed to broadcast completion status:`,
-          error
-        );
-      }
-    }
-
-    return result;
+          // Broadcast instruction count status
+          await deps.statusBroadcaster.addStatusEventAndBroadcast({
+            importId: data.importId,
+            status: "PENDING",
+            message: `0/${result.file.instructions?.length || 0} instructions`,
+            context: "parse_html_instructions",
+            indentLevel: 2,
+            metadata: {
+              totalInstructions: result.file.instructions?.length || 0,
+              processedInstructions: 0,
+            },
+          });
+        }
+      },
+    });
   }
 }

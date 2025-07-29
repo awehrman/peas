@@ -2,12 +2,18 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { IServiceContainer } from "../../../services/container";
+import { cleanHtmlFile } from "../../../services/note/clean-html";
+import { parseHtmlFile } from "../../../services/note/parse-html";
 import { createMockNoteData } from "../../../test-utils/helpers";
 import type { NoteWorkerDependencies } from "../../../types/notes";
 import { buildNoteWorkerDependencies } from "../../note/dependencies";
 
 // Mock the dependencies
 vi.mock("../../../parsers/html", () => ({
+  parseHTMLContent: vi.fn(),
+}));
+
+vi.mock("@peas/parser", () => ({
   parseHTMLContent: vi.fn(),
 }));
 
@@ -87,6 +93,10 @@ describe("buildNoteWorkerDependencies", () => {
       "../../core/worker-dependencies/build-base-dependencies"
     );
     vi.mocked(buildBaseDependencies).mockReturnValue(mockBaseDeps);
+
+    // Set up mock return values
+    vi.mocked(cleanHtmlFile).mockResolvedValue(createMockNoteData());
+    vi.mocked(parseHtmlFile).mockResolvedValue(createMockNoteData());
   });
 
   describe("successful cases", () => {
@@ -132,30 +142,8 @@ describe("buildNoteWorkerDependencies", () => {
 
   describe("services", () => {
     let deps: NoteWorkerDependencies;
-    let mockCleanHtmlFile: any;
-    let mockParseHtmlFile: any;
-    let mockParseHTMLContent: any;
 
     beforeEach(async () => {
-      mockCleanHtmlFile = vi.fn().mockResolvedValue({ cleaned: true });
-      mockParseHtmlFile = vi.fn().mockResolvedValue({ parsed: true });
-      mockParseHTMLContent = vi.fn().mockReturnValue({ content: "parsed" });
-
-      // Update the mocks
-      const cleanHtmlModule = await import("../../../services/note/clean-html");
-      const parseHtmlModule = await import("../../../services/note/parse-html");
-      const htmlParserModule = await import("../../../parsers/html");
-
-      vi.mocked(cleanHtmlModule.cleanHtmlFile).mockImplementation(
-        mockCleanHtmlFile
-      );
-      vi.mocked(parseHtmlModule.parseHtmlFile).mockImplementation(
-        mockParseHtmlFile
-      );
-      vi.mocked(htmlParserModule.parseHTMLContent).mockImplementation(
-        mockParseHTMLContent
-      );
-
       deps = buildNoteWorkerDependencies(mockContainer);
     });
 
@@ -164,23 +152,23 @@ describe("buildNoteWorkerDependencies", () => {
         const testData = createMockNoteData();
         const result = await deps.services.cleanHtml(testData);
 
-        expect(mockCleanHtmlFile).toHaveBeenCalledWith(
+        expect(cleanHtmlFile).toHaveBeenCalledWith(
           testData,
           mockBaseDeps.logger
         );
-        expect(mockCleanHtmlFile).toHaveBeenCalledTimes(1);
-        expect(result).toEqual({ cleaned: true });
+        expect(cleanHtmlFile).toHaveBeenCalledTimes(1);
+        expect(result).toEqual(createMockNoteData());
       });
 
       it("should handle cleanHtmlFile errors", async () => {
         const testError = new Error("Clean HTML failed");
-        mockCleanHtmlFile.mockRejectedValue(testError);
+        vi.mocked(cleanHtmlFile).mockRejectedValue(testError);
         const testData = createMockNoteData();
 
         await expect(deps.services.cleanHtml(testData)).rejects.toThrow(
           "Clean HTML failed"
         );
-        expect(mockCleanHtmlFile).toHaveBeenCalledWith(
+        expect(cleanHtmlFile).toHaveBeenCalledWith(
           testData,
           mockBaseDeps.logger
         );
@@ -201,7 +189,7 @@ describe("buildNoteWorkerDependencies", () => {
 
         await deps.services.cleanHtml(testData);
 
-        expect(mockCleanHtmlFile).toHaveBeenCalledWith(
+        expect(cleanHtmlFile).toHaveBeenCalledWith(
           testData,
           mockBaseDeps.logger
         );
@@ -213,24 +201,24 @@ describe("buildNoteWorkerDependencies", () => {
         const testData = createMockNoteData();
         const result = await deps.services.parseHtml(testData);
 
-        expect(mockParseHtmlFile).toHaveBeenCalledWith(
+        expect(parseHtmlFile).toHaveBeenCalledWith(
           testData,
           mockBaseDeps.logger,
           expect.any(Function) // parseHTMLContent function
         );
-        expect(mockParseHtmlFile).toHaveBeenCalledTimes(1);
-        expect(result).toEqual({ parsed: true });
+        expect(parseHtmlFile).toHaveBeenCalledTimes(1);
+        expect(result).toEqual(createMockNoteData());
       });
 
       it("should handle parseHtmlFile errors", async () => {
         const testError = new Error("Parse HTML failed");
-        mockParseHtmlFile.mockRejectedValue(testError);
+        vi.mocked(parseHtmlFile).mockRejectedValue(testError);
         const testData = createMockNoteData();
 
         await expect(deps.services.parseHtml(testData)).rejects.toThrow(
           "Parse HTML failed"
         );
-        expect(mockParseHtmlFile).toHaveBeenCalledWith(
+        expect(parseHtmlFile).toHaveBeenCalledWith(
           testData,
           mockBaseDeps.logger,
           expect.any(Function) // parseHTMLContent function
@@ -252,7 +240,7 @@ describe("buildNoteWorkerDependencies", () => {
 
         await deps.services.parseHtml(testData);
 
-        expect(mockParseHtmlFile).toHaveBeenCalledWith(
+        expect(parseHtmlFile).toHaveBeenCalledWith(
           testData,
           mockBaseDeps.logger,
           expect.any(Function) // parseHTMLContent function
@@ -280,6 +268,7 @@ describe("buildNoteWorkerDependencies", () => {
         services: {
           cleanHtml: expect.any(Function),
           parseHtml: expect.any(Function),
+          saveNote: expect.any(Function),
         },
       });
     });

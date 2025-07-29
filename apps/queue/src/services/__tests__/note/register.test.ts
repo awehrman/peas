@@ -50,7 +50,7 @@ describe("registerNoteActions", () => {
     registerNoteActions(mockFactory);
 
     // Assert
-    expect(mockRegister).toHaveBeenCalledTimes(2);
+    expect(mockRegister).toHaveBeenCalledTimes(3);
 
     // Check that PARSE_HTML action was registered
     expect(mockRegister).toHaveBeenCalledWith(
@@ -61,6 +61,12 @@ describe("registerNoteActions", () => {
     // Check that CLEAN_HTML action was registered
     expect(mockRegister).toHaveBeenCalledWith(
       ActionName.CLEAN_HTML,
+      expect.any(Function)
+    );
+
+    // Check that SAVE_NOTE action was registered
+    expect(mockRegister).toHaveBeenCalledWith(
+      ActionName.SAVE_NOTE,
       expect.any(Function)
     );
   });
@@ -76,10 +82,14 @@ describe("registerNoteActions", () => {
     const cleanHtmlCall = mockRegister.mock.calls.find(
       (call) => call[0] === ActionName.CLEAN_HTML
     );
+    const saveNoteCall = mockRegister.mock.calls.find(
+      (call) => call[0] === ActionName.SAVE_NOTE
+    );
 
     // Assert
     expect(parseHtmlCall).toBeDefined();
     expect(cleanHtmlCall).toBeDefined();
+    expect(saveNoteCall).toBeDefined();
 
     // Test that the factory functions create the correct action instances
 
@@ -87,26 +97,16 @@ describe("registerNoteActions", () => {
 
     const cleanHtmlAction = cleanHtmlCall![1]();
 
+    const saveNoteAction = saveNoteCall![1]();
+
     expect(parseHtmlAction.name).toBe(ActionName.PARSE_HTML);
     expect(cleanHtmlAction.name).toBe(ActionName.CLEAN_HTML);
+    expect(saveNoteAction.name).toBe(ActionName.SAVE_NOTE);
 
     // Verify that the action instances were created successfully
     expect(parseHtmlAction).toBeDefined();
     expect(cleanHtmlAction).toBeDefined();
-  });
-
-  it("should not register SAVE_NOTE action when it is commented out", () => {
-    // Act
-    registerNoteActions(mockFactory);
-
-    // Assert
-    expect(mockRegister).not.toHaveBeenCalledWith(
-      ActionName.SAVE_NOTE,
-      expect.any(Function)
-    );
-
-    // Verify only the two active actions are registered
-    expect(mockRegister).toHaveBeenCalledTimes(2);
+    expect(saveNoteAction).toBeDefined();
   });
 
   it("should register actions in the correct order", () => {
@@ -115,13 +115,16 @@ describe("registerNoteActions", () => {
 
     // Assert
     const calls = mockRegister.mock.calls;
-    expect(calls).toHaveLength(2);
+    expect(calls).toHaveLength(3);
 
     // First call should be PARSE_HTML
     expect(calls?.[0]?.[0]).toBe(ActionName.PARSE_HTML);
 
     // Second call should be CLEAN_HTML
     expect(calls?.[1]?.[0]).toBe(ActionName.CLEAN_HTML);
+
+    // Third call should be SAVE_NOTE
+    expect(calls?.[2]?.[0]).toBe(ActionName.SAVE_NOTE);
   });
 
   it("should work with different factory instances", () => {
@@ -139,8 +142,8 @@ describe("registerNoteActions", () => {
     registerNoteActions(mockFactory2);
 
     // Assert
-    expect(mockRegister).toHaveBeenCalledTimes(2);
-    expect(mockFactory2.register).toHaveBeenCalledTimes(2);
+    expect(mockRegister).toHaveBeenCalledTimes(3);
+    expect(mockFactory2.register).toHaveBeenCalledTimes(3);
   });
 
   it("should handle factory with additional methods without error", () => {
@@ -158,6 +161,6 @@ describe("registerNoteActions", () => {
 
     // Act & Assert
     expect(() => registerNoteActions(extendedFactory)).not.toThrow();
-    expect(mockRegister).toHaveBeenCalledTimes(2);
+    expect(mockRegister).toHaveBeenCalledTimes(3);
   });
 });

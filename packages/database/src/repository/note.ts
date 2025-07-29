@@ -19,6 +19,8 @@ export type NoteWithParsedLines = {
     originalText: string;
     lineIndex: number;
   }[];
+  createdAt: Date;
+  updatedAt?: Date;
 };
 
 export async function getNotes() {
@@ -35,6 +37,7 @@ export async function getNotes() {
   }
 }
 
+// TODO should we be passing the select object here?
 export async function createNote(
   file: ParsedHTMLFile
 ): Promise<NoteWithParsedLines> {
@@ -84,6 +87,8 @@ export async function createNote(
             lineIndex: true,
           },
         },
+        createdAt: true,
+        updatedAt: true,
       },
     });
     console.log(`Successfully created note ${response.id}`);
