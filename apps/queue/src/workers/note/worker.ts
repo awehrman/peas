@@ -6,6 +6,7 @@ import { Queue } from "bullmq";
 import { IServiceContainer } from "../../services/container";
 import { CleanHtmlAction } from "../../services/note/clean-html";
 import { ParseHtmlAction } from "../../services/note/parse-html";
+import { SaveNoteAction } from "../../services/note/save-note";
 import { ActionName } from "../../types";
 import type {
   NotePipelineData,
@@ -58,6 +59,11 @@ export class NoteWorker extends BaseWorker<
     this.actionFactory.register(
       ActionName.PARSE_HTML,
       () => new ParseHtmlAction()
+    );
+
+    this.actionFactory.register(
+      ActionName.SAVE_NOTE,
+      () => new SaveNoteAction()
     );
 
     // TODO: Register scheduling actions when they are implemented

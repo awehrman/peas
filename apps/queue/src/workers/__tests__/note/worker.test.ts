@@ -17,7 +17,7 @@ vi.mock("../../../services/note/clean-html", () => ({
   CleanHtmlAction: class MockCleanHtmlAction {
     name: string;
     constructor() {
-      this.name = "clean-html";
+      this.name = "clean_html";
     }
   },
 }));
@@ -26,7 +26,16 @@ vi.mock("../../../services/note/parse-html", () => ({
   ParseHtmlAction: class MockParseHtmlAction {
     name: string;
     constructor() {
-      this.name = "parse-html";
+      this.name = "parse_html";
+    }
+  },
+}));
+
+vi.mock("../../../services/note/save-note", () => ({
+  SaveNoteAction: class MockSaveNoteAction {
+    name: string;
+    constructor() {
+      this.name = "save_note";
     }
   },
 }));
@@ -166,6 +175,22 @@ describe("NoteWorker", () => {
       );
     });
 
+    it("should register SAVE_NOTE action", () => {
+      const registerSpy = vi.spyOn(mockActionFactory, "register");
+
+      new NoteWorker(
+        mockQueue,
+        mockDependencies,
+        mockActionFactory,
+        mockContainer
+      );
+
+      expect(registerSpy).toHaveBeenCalledWith(
+        ActionName.SAVE_NOTE,
+        expect.any(Function)
+      );
+    });
+
     it("should register actions in correct order", () => {
       const registerSpy = vi.spyOn(mockActionFactory, "register");
 
@@ -184,6 +209,11 @@ describe("NoteWorker", () => {
       expect(registerSpy).toHaveBeenNthCalledWith(
         2,
         ActionName.PARSE_HTML,
+        expect.any(Function)
+      );
+      expect(registerSpy).toHaveBeenNthCalledWith(
+        3,
+        ActionName.SAVE_NOTE,
         expect.any(Function)
       );
     });
@@ -205,20 +235,23 @@ describe("NoteWorker", () => {
       const parseHtmlFactory = registerSpy.mock.calls.find(
         (call) => call[0] === ActionName.PARSE_HTML
       )?.[1];
+      const saveNoteFactory = registerSpy.mock.calls.find(
+        (call) => call[0] === ActionName.SAVE_NOTE
+      )?.[1];
 
-      expect(cleanHtmlFactory).toBeDefined();
-      expect(parseHtmlFactory).toBeDefined();
+      // Test that the factory functions create the correct action instances
+      const cleanHtmlAction = cleanHtmlFactory!();
+      const parseHtmlAction = parseHtmlFactory!();
+      const saveNoteAction = saveNoteFactory!();
 
-      // Test that the factory functions return action instances
-      if (cleanHtmlFactory && parseHtmlFactory) {
-        const cleanHtmlAction = cleanHtmlFactory();
-        const parseHtmlAction = parseHtmlFactory();
+      expect(cleanHtmlAction.name).toBe(ActionName.CLEAN_HTML);
+      expect(parseHtmlAction.name).toBe(ActionName.PARSE_HTML);
+      expect(saveNoteAction.name).toBe(ActionName.SAVE_NOTE);
 
-        expect(cleanHtmlAction).toBeDefined();
-        expect(parseHtmlAction).toBeDefined();
-        expect(cleanHtmlAction.name).toBe("clean-html");
-        expect(parseHtmlAction.name).toBe("parse-html");
-      }
+      // Verify that the action instances were created successfully
+      expect(cleanHtmlAction).toBeDefined();
+      expect(parseHtmlAction).toBeDefined();
+      expect(saveNoteAction).toBeDefined();
     });
   });
 
