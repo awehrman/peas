@@ -677,7 +677,7 @@ describe("EnhancedLoggerService", () => {
       ).formatLogEntry(entry);
 
       expect(formatted).toBe(
-        "[2023-01-01T00:00:00.000Z] [INFO] [worker-1] [Job:job-123] [Note:note-456] Test message"
+        "[2023-01-01T00:00:00.000Z] [INFO] [worker-1] [job:job-123] [note:note-456] Test message"
       );
     });
   });

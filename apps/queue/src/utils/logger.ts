@@ -14,6 +14,10 @@ export interface LogConfig {
   enableConsoleLogging?: boolean;
   /** Log level filter */
   logLevel?: "debug" | "info" | "warn" | "error" | "fatal";
+  /** Maximum message length before truncation */
+  maxMessageLength?: number;
+  /** Maximum number of backup files to keep */
+  maxBackupFiles?: number;
 }
 
 export interface LogEntry {
@@ -34,14 +38,18 @@ export class EnhancedLoggerService implements ILoggerService {
   private logFile: string;
   private errorLogFile: string;
   private config: LogConfig;
+  private lastRotationCheck: number = 0;
+  private readonly ROTATION_CHECK_INTERVAL = 60000; // Check every minute
 
   constructor(config: LogConfig = {}) {
     this.config = {
       logDir: "logs",
-      maxLogSizeMB: 10,
+      maxLogSizeMB: 5, // Reduced from 10MB to 5MB for better management
       enableFileLogging: true,
       enableConsoleLogging: true,
       logLevel: "info",
+      maxMessageLength: 1000, // Truncate messages longer than 1000 characters
+      maxBackupFiles: 3, // Keep only 3 backup files
       ...config,
     };
 
@@ -74,14 +82,21 @@ export class EnhancedLoggerService implements ILoggerService {
     }
 
     if (entry.jobId) {
-      parts.push(`[Job:${entry.jobId}]`);
+      parts.push(`[job:${entry.jobId}]`);
     }
 
     if (entry.noteId) {
-      parts.push(`[Note:${entry.noteId}]`);
+      parts.push(`[note:${entry.noteId}]`);
     }
 
-    parts.push(entry.message);
+    // Truncate message if it's too long
+    let message = entry.message;
+    const maxLength = this.config.maxMessageLength || 1000;
+    if (message.length > maxLength) {
+      message = message.substring(0, maxLength - 3) + "...";
+    }
+
+    parts.push(message);
 
     if (entry.context && Object.keys(entry.context).length > 0) {
       parts.push(`| Context: ${JSON.stringify(entry.context)}`);
@@ -91,13 +106,27 @@ export class EnhancedLoggerService implements ILoggerService {
   }
 
   private writeToFile(filePath: string, content: string): void {
-    console.log("Writing to file:", filePath, content);
     try {
+      // Check for rotation before writing
+      this.checkAndRotateLogs();
+
       fs.appendFileSync(filePath, content + "\n", "utf8");
     } catch (error) {
       // Fallback to console if file writing fails
       console.error(`Failed to write to log file ${filePath}:`, error);
     }
+  }
+
+  private checkAndRotateLogs(): void {
+    const now = Date.now();
+
+    // Only check for rotation every minute to avoid performance issues
+    if (now - this.lastRotationCheck < this.ROTATION_CHECK_INTERVAL) {
+      return;
+    }
+
+    this.lastRotationCheck = now;
+    this.rotateLogs();
   }
 
   private logInternal(
@@ -236,20 +265,64 @@ export class EnhancedLoggerService implements ILoggerService {
    * Rotate log files if they get too large
    */
   rotateLogs(): void {
-    const maxSizeBytes = (this.config.maxLogSizeMB || 10) * 1024 * 1024;
+    const maxSizeBytes = (this.config.maxLogSizeMB || 5) * 1024 * 1024;
+    const maxBackupFiles = this.config.maxBackupFiles || 3;
 
     [this.logFile, this.errorLogFile].forEach((filePath) => {
       try {
         const stats = fs.statSync(filePath);
         if (stats.size > maxSizeBytes) {
-          const backupPath = `${filePath}.${new Date().toISOString().split("T")[0]}.backup`;
+          const timestamp = new Date().toISOString().split("T")[0];
+          const backupPath = `${filePath}.${timestamp}.backup`;
+
+          // Rotate the file
           fs.renameSync(filePath, backupPath);
           console.log(`Rotated log file: ${filePath} -> ${backupPath}`);
+
+          // Clean up old backup files
+          this.cleanupOldBackupFiles(filePath, maxBackupFiles);
         }
       } catch {
         // File doesn't exist or other error, ignore
       }
     });
+  }
+
+  /**
+   * Clean up old backup files, keeping only the specified number
+   */
+  private cleanupOldBackupFiles(
+    baseFilePath: string,
+    maxBackupFiles: number
+  ): void {
+    try {
+      const logDir = path.dirname(baseFilePath);
+      const baseFileName = path.basename(baseFilePath);
+      const files = fs.readdirSync(logDir);
+
+      // Find all backup files for this log file
+      const backupFiles = files
+        .filter(
+          (file) => file.startsWith(baseFileName) && file.endsWith(".backup")
+        )
+        .map((file) => ({
+          name: file,
+          path: path.join(logDir, file),
+          mtime: fs.statSync(path.join(logDir, file)).mtime.getTime(),
+        }))
+        .sort((a, b) => b.mtime - a.mtime); // Sort by modification time, newest first
+
+      // Remove excess backup files
+      if (backupFiles.length > maxBackupFiles) {
+        const filesToRemove = backupFiles.slice(maxBackupFiles);
+        filesToRemove.forEach((file) => {
+          fs.unlinkSync(file.path);
+          console.log(`Removed old backup file: ${file.name}`);
+        });
+      }
+    } catch (error) {
+      console.error("Failed to cleanup old backup files:", error);
+    }
   }
 
   /**
@@ -293,6 +366,25 @@ export class EnhancedLoggerService implements ILoggerService {
     } catch (error) {
       console.error("Failed to clear old logs:", error);
     }
+  }
+
+  /**
+   * Force rotation of log files regardless of size
+   */
+  forceRotateLogs(): void {
+    const timestamp = new Date().toISOString().split("T")[0];
+
+    [this.logFile, this.errorLogFile].forEach((filePath) => {
+      try {
+        if (fs.existsSync(filePath)) {
+          const backupPath = `${filePath}.${timestamp}.backup`;
+          fs.renameSync(filePath, backupPath);
+          console.log(`Force rotated log file: ${filePath} -> ${backupPath}`);
+        }
+      } catch (error) {
+        console.error(`Failed to force rotate ${filePath}:`, error);
+      }
+    });
   }
 }
 

@@ -1,11 +1,17 @@
 "use client";
 
 import { ReactNode } from "react";
-import { StatsSummary } from "../dashboard/stats-summary";
+
+import { useImportStatsRefetch } from "../../hooks/use-import-stats-refetch";
 import { ActivityLog } from "../activity-log/activity-log";
+import { StatsSummary } from "../dashboard/stats-summary";
 import { ImportFileUpload } from "../file-upload/file-upload";
-import { useIngredientCountUpdater } from "../../hooks/use-ingredient-count-updater";
-import { getWebSocketUrl } from "../../../utils/websocket-config";
+
+export interface ImportStats {
+  noteCount: number;
+  ingredientCount: number;
+  parsingErrorCount: number;
+}
 
 interface ImportPageContentProps {
   initialNoteCount: number;
@@ -18,9 +24,13 @@ export function ImportPageContent({
   initialIngredientCount,
   initialParsingErrorCount,
 }: ImportPageContentProps): ReactNode {
-  const { ingredientCount } = useIngredientCountUpdater({
-    wsUrl: getWebSocketUrl(),
-    initialCount: initialIngredientCount,
+  // Use the combined hook that handles stats refetching and ingredient count updates
+  const { stats } = useImportStatsRefetch({
+    initialStats: {
+      noteCount: initialNoteCount,
+      ingredientCount: initialIngredientCount,
+      parsingErrorCount: initialParsingErrorCount,
+    },
   });
 
   return (
@@ -29,9 +39,9 @@ export function ImportPageContent({
         {/* Left Column */}
         <div className="flex-1 flex flex-col">
           <StatsSummary
-            noteCount={initialNoteCount}
-            ingredientCount={ingredientCount}
-            parsingErrorCount={initialParsingErrorCount}
+            noteCount={stats.noteCount}
+            ingredientCount={stats.ingredientCount}
+            parsingErrorCount={stats.parsingErrorCount}
             className="mb-8"
           />
           <div className="flex-1">

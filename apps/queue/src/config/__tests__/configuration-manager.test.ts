@@ -342,8 +342,10 @@ describe("configuration-manager.ts", () => {
             enableFileLogging: true,
             enableConsoleLogging: true,
             logDir: "logs",
-            maxLogSizeMB: 10,
-            maxLogFiles: 5,
+            maxLogSizeMB: 5,
+            maxLogFiles: 3,
+            maxMessageLength: 1000,
+            maxBackupFiles: 3,
           },
           monitoring: {
             environment: "production",

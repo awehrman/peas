@@ -57,8 +57,10 @@ export const LoggingConfigSchema = BaseConfigSchema.extend({
   enableFileLogging: z.boolean().default(true),
   enableConsoleLogging: z.boolean().default(true),
   logDir: z.string().default("logs"),
-  maxLogSizeMB: z.number().positive().default(10),
-  maxLogFiles: z.number().positive().default(5),
+  maxLogSizeMB: z.number().positive().default(5),
+  maxLogFiles: z.number().positive().default(3),
+  maxMessageLength: z.number().positive().default(1000),
+  maxBackupFiles: z.number().positive().default(3),
 });
 
 export const MonitoringConfigSchema = BaseConfigSchema.extend({

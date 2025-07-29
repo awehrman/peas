@@ -73,6 +73,8 @@ export interface LoggingConfig extends BaseConfig {
   logDir: string;
   maxLogSizeMB: number;
   maxLogFiles: number;
+  maxMessageLength: number;
+  maxBackupFiles: number;
 }
 
 /**

@@ -171,8 +171,9 @@ describe("SaveNoteAction", () => {
     it("should validate input successfully with valid data", () => {
       const action = new SaveNoteAction();
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      vi.mocked(SaveNoteDataSchema.parse).mockReturnValue(mockData as any);
+      vi.mocked(SaveNoteDataSchema.parse).mockReturnValue(
+        mockData as unknown as ReturnType<typeof SaveNoteDataSchema.parse>
+      );
 
       const result = action.validateInput(mockData);
 
@@ -213,8 +214,7 @@ describe("SaveNoteAction", () => {
       const depsWithoutLogger = {
         ...mockDependencies,
         logger: undefined,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any; // Type assertion for testing edge case
+      } as unknown as NoteWorkerDependencies;
       const resultData = {
         ...mockData,
         noteId: "test-note-id",
@@ -249,8 +249,7 @@ describe("SaveNoteAction", () => {
       const depsWithoutServices = {
         ...mockDependencies,
         services: undefined,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any; // Type assertion for testing edge case
+      } as unknown as NoteWorkerDependencies;
 
       await expect(
         action.execute(mockData, depsWithoutServices, mockContext)
@@ -349,7 +348,7 @@ describe("SaveNoteAction", () => {
         title: "Test Recipe",
         parsedIngredientLines: [],
         parsedInstructionLines: [],
-      };
+      } as unknown as Awaited<ReturnType<typeof mockDbCreateNote>>; // Type assertion for testing edge case
       vi.mocked(mockDbCreateNote).mockResolvedValue(dbNoteWithoutTimestamps);
 
       const result = await saveNote(mockData, mockDependencies.logger);

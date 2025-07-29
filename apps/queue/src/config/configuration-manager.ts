@@ -119,8 +119,13 @@ export class ConfigurationManager {
           enableFileLogging: process.env.ENABLE_FILE_LOGGING !== "false",
           enableConsoleLogging: process.env.ENABLE_CONSOLE_LOGGING !== "false",
           logDir: process.env.LOG_DIR || "logs",
-          maxLogSizeMB: parseInt(process.env.MAX_LOG_SIZE_MB || "10", 10),
-          maxLogFiles: parseInt(process.env.MAX_LOG_FILES || "5", 10),
+          maxLogSizeMB: parseInt(process.env.MAX_LOG_SIZE_MB || "5", 10),
+          maxLogFiles: parseInt(process.env.MAX_LOG_FILES || "3", 10),
+          maxMessageLength: parseInt(
+            process.env.MAX_MESSAGE_LENGTH || "300",
+            10
+          ),
+          maxBackupFiles: parseInt(process.env.MAX_BACKUP_FILES || "3", 10),
         },
         monitoring: {
           ...baseConfig,

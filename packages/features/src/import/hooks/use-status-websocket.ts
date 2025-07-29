@@ -1,4 +1,7 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+"use client";
+
+import { useCallback, useEffect, useRef, useState } from "react";
+
 import { getWebSocketUrl } from "../../utils/websocket-config";
 
 export interface UseStatusWebSocketOptions {
