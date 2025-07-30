@@ -156,9 +156,9 @@ export const ScheduleInstructionsDataSchema = z.object({
 });
 
 /**
- * Schedule source action data schema
+ * Process source action data schema
  */
-export const ScheduleSourceDataSchema = ScheduleActionDataSchema.extend({
+export const ProcessSourceDataSchema = ScheduleActionDataSchema.extend({
   // Add source processing-specific fields if needed
 });
 
@@ -259,14 +259,14 @@ export class NoteValidation extends BaseValidation {
   }
 
   /**
-   * Validate schedule source data
+   * Validate process source data
    */
-  static validateScheduleSourceData(
+  static validateProcessSourceData(
     data: unknown
   ):
-    | { success: true; data: z.infer<typeof ScheduleSourceDataSchema> }
+    | { success: true; data: z.infer<typeof ProcessSourceDataSchema> }
     | { success: false; error: string } {
-    return this.validate(ScheduleSourceDataSchema, data);
+    return this.validate(ProcessSourceDataSchema, data);
   }
 }
 

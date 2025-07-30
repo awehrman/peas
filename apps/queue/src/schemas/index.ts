@@ -58,8 +58,8 @@ export const Schemas = {
       import("./note").then((m) => m.ScheduleIngredientsDataSchema),
     ScheduleInstructionsDataSchema: () =>
       import("./note").then((m) => m.ScheduleInstructionsDataSchema),
-    ScheduleSourceDataSchema: () =>
-      import("./note").then((m) => m.ScheduleSourceDataSchema),
+    ProcessSourceDataSchema: () =>
+      import("./note").then((m) => m.ProcessSourceDataSchema),
   },
 
   // Ingredient schemas

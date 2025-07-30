@@ -4,11 +4,7 @@ import { createNotePipeline } from "./pipeline";
 import { Queue } from "bullmq";
 
 import { IServiceContainer } from "../../services/container";
-import { CleanHtmlAction } from "../../services/note/clean-html";
-import { ParseHtmlAction } from "../../services/note/parse-html";
-import { SaveNoteAction } from "../../services/note/save-note";
-import { ScheduleAllFollowupTasksAction } from "../../services/note/schedule-all-followup-tasks";
-import { ActionName } from "../../types";
+import { registerNoteActions } from "../../services/note/register";
 import type {
   NotePipelineData,
   NoteWorkerDependencies,
@@ -51,26 +47,8 @@ export class NoteWorker extends BaseWorker<
    * This is where all note-related actions are registered with the factory
    */
   protected registerActions(): void {
-    // Register core note processing actions
-    this.actionFactory.register(
-      ActionName.CLEAN_HTML,
-      () => new CleanHtmlAction()
-    );
-
-    this.actionFactory.register(
-      ActionName.PARSE_HTML,
-      () => new ParseHtmlAction()
-    );
-
-    this.actionFactory.register(
-      ActionName.SAVE_NOTE,
-      () => new SaveNoteAction()
-    );
-
-    this.actionFactory.register(
-      ActionName.SCHEDULE_ALL_FOLLOWUP_TASKS,
-      () => new ScheduleAllFollowupTasksAction()
-    );
+    // Register all note actions using the centralized registration function
+    registerNoteActions(this.actionFactory);
   }
 
   /**

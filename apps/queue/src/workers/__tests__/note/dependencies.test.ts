@@ -2,8 +2,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { IServiceContainer } from "../../../services/container";
-import { cleanHtmlFile } from "../../../services/note/clean-html";
-import { parseHtmlFile } from "../../../services/note/parse-html";
+import { cleanHtmlFile } from "../../../services/note/actions/clean-html/action";
+import { parseHtmlFile } from "../../../services/note/actions/parse-html/action";
 import { createMockNoteData } from "../../../test-utils/helpers";
 import type { NoteWorkerDependencies } from "../../../types/notes";
 import { buildNoteWorkerDependencies } from "../../note/dependencies";
@@ -17,11 +17,11 @@ vi.mock("@peas/parser", () => ({
   parseHTMLContent: vi.fn(),
 }));
 
-vi.mock("../../../services/note/clean-html", () => ({
+vi.mock("../../../services/note/actions/clean-html/action", () => ({
   cleanHtmlFile: vi.fn(),
 }));
 
-vi.mock("../../../services/note/parse-html", () => ({
+vi.mock("../../../services/note/actions/parse-html/action", () => ({
   parseHtmlFile: vi.fn(),
 }));
 
@@ -323,7 +323,9 @@ describe("buildNoteWorkerDependencies", () => {
       const testData = createMockNoteData();
 
       // Test cleanHtml error
-      const cleanHtmlModule = await import("../../../services/note/clean-html");
+      const cleanHtmlModule = await import(
+        "../../../services/note/actions/clean-html/action"
+      );
       const cleanHtmlSpy = vi.mocked(cleanHtmlModule.cleanHtmlFile);
       cleanHtmlSpy.mockRejectedValueOnce(new Error("Service error"));
 
@@ -332,7 +334,9 @@ describe("buildNoteWorkerDependencies", () => {
       );
 
       // Test parseHtml error
-      const parseHtmlModule = await import("../../../services/note/parse-html");
+      const parseHtmlModule = await import(
+        "../../../services/note/actions/parse-html/action"
+      );
       const parseHtmlSpy = vi.mocked(parseHtmlModule.parseHtmlFile);
       parseHtmlSpy.mockRejectedValueOnce(new Error("Parse error"));
 
@@ -358,8 +362,12 @@ describe("buildNoteWorkerDependencies", () => {
       const deps = buildNoteWorkerDependencies(mockContainer);
       const testData = createMockNoteData();
 
-      const cleanHtmlModule = await import("../../../services/note/clean-html");
-      const parseHtmlModule = await import("../../../services/note/parse-html");
+      const cleanHtmlModule = await import(
+        "../../../services/note/actions/clean-html/action"
+      );
+      const parseHtmlModule = await import(
+        "../../../services/note/actions/parse-html/action"
+      );
 
       vi.mocked(cleanHtmlModule.cleanHtmlFile).mockResolvedValue({
         cleaned: true,

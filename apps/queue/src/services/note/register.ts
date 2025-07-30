@@ -1,7 +1,3 @@
-import { CleanHtmlAction } from "./clean-html";
-import { ParseHtmlAction } from "./parse-html";
-import { SaveNoteAction } from "./save-note";
-
 import { ActionName } from "../../types";
 import type { NotePipelineData } from "../../types/notes";
 import type { NoteWorkerDependencies } from "../../types/notes";
@@ -10,6 +6,12 @@ import {
   createActionRegistration,
   registerActions,
 } from "../../workers/shared/action-registry";
+
+import { CleanHtmlAction } from "./actions/clean-html/action";
+import { ParseHtmlAction } from "./actions/parse-html/action";
+import { ProcessSourceAction } from "./actions/process-source/action";
+import { SaveNoteAction } from "./actions/save-note/action";
+import { ScheduleAllFollowupTasksAction } from "./actions/schedule-tasks/action";
 
 /**
  * Register all note actions in the given ActionFactory with type safety
@@ -21,6 +23,9 @@ export function registerNoteActions(
     NotePipelineData
   >
 ): void {
+  if (!factory || typeof factory !== "object") {
+    throw new Error("Invalid factory");
+  }
   registerActions(factory, [
     createActionRegistration<
       NotePipelineData,
@@ -37,5 +42,15 @@ export function registerNoteActions(
       NoteWorkerDependencies,
       NotePipelineData
     >(ActionName.SAVE_NOTE, SaveNoteAction),
+    createActionRegistration<
+      NotePipelineData,
+      NoteWorkerDependencies,
+      NotePipelineData
+    >(ActionName.SCHEDULE_ALL_FOLLOWUP_TASKS, ScheduleAllFollowupTasksAction),
+    createActionRegistration<
+      NotePipelineData,
+      NoteWorkerDependencies,
+      NotePipelineData
+    >(ActionName.PROCESS_SOURCE, ProcessSourceAction),
   ]);
 }

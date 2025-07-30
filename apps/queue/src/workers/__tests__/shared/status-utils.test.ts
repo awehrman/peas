@@ -443,8 +443,8 @@ describe("StatusUtils", () => {
         message: "Test 1",
       });
 
-      // Add a small delay to ensure different timestamps
-      await new Promise((resolve) => setTimeout(resolve, 1));
+      // Add a delay to ensure different timestamps
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       const result2 = StatusUtils.createProcessingStatus({
         importId: "import-123",

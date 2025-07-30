@@ -1,19 +1,17 @@
 // Source module
 // Contains source tracking and references
 
-enum SourceType {
-  URL
-  BOOK
-}
-
 model Source {
   id String @id @default(cuid())
 
-  type SourceType
+  // URLs associated with this source
   urls URL[]
+  
+  // Book information (optional)
   book Book? @relation(fields: [bookId], references: [id])
   bookId String?
 
+  // Notes that reference this source
   notes Note[]
 
   createdAt DateTime @default(now())
@@ -24,6 +22,7 @@ model URL {
   id String @id @default(cuid())
 
   siteName String?
+  domainName String?
   author String?
   url String
 

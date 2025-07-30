@@ -50,7 +50,7 @@ describe("Schema Index", () => {
         "ScheduleImagesDataSchema",
         "ScheduleIngredientsDataSchema",
         "ScheduleInstructionsDataSchema",
-        "ScheduleSourceDataSchema",
+        "ProcessSourceDataSchema",
       ];
 
       noteSchemaNames.forEach((schemaName) => {
@@ -123,7 +123,7 @@ describe("Schema Index", () => {
           "ScheduleImagesDataSchema",
           "ScheduleIngredientsDataSchema",
           "ScheduleInstructionsDataSchema",
-          "ScheduleSourceDataSchema",
+          "ProcessSourceDataSchema",
         ];
 
         expectedNoteSchemas.forEach((schemaName) => {

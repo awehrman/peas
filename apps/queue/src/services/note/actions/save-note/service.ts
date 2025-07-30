@@ -1,0 +1,51 @@
+import type { StructuredLogger } from "../../../../types";
+import type { NotePipelineData } from "../../../../types/notes";
+import type { NoteWithParsedLines } from "../../../../types/notes";
+
+export async function saveNote(
+  data: NotePipelineData,
+  logger: StructuredLogger
+): Promise<NotePipelineData> {
+  logger.log(`[SAVE_NOTE] Starting note creation`);
+
+  // Validate that we have the required file data
+  if (!data.file) {
+    throw new Error("No parsed HTML file data available for note creation");
+  }
+
+  // Import the database service to create the note
+  const db = await import("@peas/database");
+
+  try {
+    // Create the note in the database
+    const dbNote = await db.createNote(data.file);
+
+    logger.log(
+      `[SAVE_NOTE] Successfully created note with ID: ${dbNote.id}, title: "${dbNote.title}"`
+    );
+
+    // Transform the database result to match the expected NoteWithParsedLines interface
+    const note: NoteWithParsedLines = {
+      id: dbNote.id,
+      title: dbNote.title,
+      content: data.file.contents, // Use the original content
+      html: data.file.contents, // Use the original HTML content
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      createdAt: (dbNote as any).createdAt || new Date(), // Use the createdAt from database
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      updatedAt: (dbNote as any).updatedAt || new Date(), // Use the updatedAt from database or current time
+      parsedIngredientLines: dbNote.parsedIngredientLines,
+      parsedInstructionLines: dbNote.parsedInstructionLines,
+    };
+
+    // Return the updated pipeline data with the created note
+    return {
+      ...data,
+      noteId: dbNote.id,
+      note,
+    };
+  } catch (error) {
+    logger.log(`[SAVE_NOTE] Failed to create note: ${error}`);
+    throw error;
+  }
+}

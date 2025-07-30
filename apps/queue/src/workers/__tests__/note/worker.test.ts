@@ -203,12 +203,12 @@ describe("NoteWorker", () => {
 
       expect(registerSpy).toHaveBeenNthCalledWith(
         1,
-        ActionName.CLEAN_HTML,
+        ActionName.PARSE_HTML,
         expect.any(Function)
       );
       expect(registerSpy).toHaveBeenNthCalledWith(
         2,
-        ActionName.PARSE_HTML,
+        ActionName.CLEAN_HTML,
         expect.any(Function)
       );
       expect(registerSpy).toHaveBeenNthCalledWith(

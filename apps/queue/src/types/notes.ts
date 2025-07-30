@@ -106,9 +106,9 @@ export type NotePipelineAction = WorkerAction<
  * Union type for all note action classes
  */
 export type NoteActionClass =
-  | typeof import("../services/note/parse-html").ParseHtmlAction
-  | typeof import("../services/note/clean-html").CleanHtmlAction
-  | typeof import("../services/note/save-note").SaveNoteAction;
+  | typeof import("../services/note/actions/parse-html/action").ParseHtmlAction
+  | typeof import("../services/note/actions/clean-html/action").CleanHtmlAction
+  | typeof import("../services/note/actions/save-note/action").SaveNoteAction;
 
 /**
  * Note job data type

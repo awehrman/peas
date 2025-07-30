@@ -22,13 +22,13 @@ import {
   ParsedHtmlFileSchema,
   ParsedIngredientLineSchema,
   ParsedInstructionLineSchema,
+  ProcessSourceDataSchema,
   SaveNoteDataSchema,
   ScheduleActionDataSchema,
   ScheduleCategorizationDataSchema,
   ScheduleImagesDataSchema,
   ScheduleIngredientsDataSchema,
   ScheduleInstructionsDataSchema,
-  ScheduleSourceDataSchema,
 } from "../note";
 
 describe("Note Schemas", () => {
@@ -463,15 +463,15 @@ describe("Note Schemas", () => {
     );
   });
 
-  describe("ScheduleSourceDataSchema", () => {
+  describe("ProcessSourceDataSchema", () => {
     testValidSchema(
-      ScheduleSourceDataSchema,
+      ProcessSourceDataSchema,
       createTestScheduleActionData(),
-      "valid schedule source data"
+      "valid process source data"
     );
 
     testInvalidSchema(
-      ScheduleSourceDataSchema,
+      ProcessSourceDataSchema,
       createTestScheduleActionData({ noteId: "not-a-uuid" }),
       "Note ID must be a valid UUID",
       "invalid noteId"
@@ -689,23 +689,23 @@ describe("Note Schemas", () => {
       });
     });
 
-    describe("validateScheduleSourceData", () => {
-      it("should validate valid schedule source data", () => {
+    describe("validateProcessSourceData", () => {
+      it("should validate valid process source data", () => {
         const validData = createTestScheduleActionData();
 
-        const result = NoteValidation.validateScheduleSourceData(validData);
+        const result = NoteValidation.validateProcessSourceData(validData);
         expect(result.success).toBe(true);
         if (result.success) {
           expect(result.data).toEqual(validData);
         }
       });
 
-      it("should return error for invalid schedule source data", () => {
+      it("should return error for invalid process source data", () => {
         const invalidData = createTestScheduleActionData({
           noteId: "not-a-uuid",
         });
 
-        const result = NoteValidation.validateScheduleSourceData(invalidData);
+        const result = NoteValidation.validateProcessSourceData(invalidData);
         expect(result.success).toBe(false);
         if (!result.success) {
           expect(result.error).toContain(
