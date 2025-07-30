@@ -21,4 +21,8 @@ export type ParsedHTMLFile = {
   instructions: ParsedInstructionLine[];
   source?: string;
   image?: string;
+  evernoteMetadata?: {
+    source?: string;
+    tags?: string[];
+  };
 };

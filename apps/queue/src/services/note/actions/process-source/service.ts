@@ -1,10 +1,11 @@
 import {
+  connectNoteToSource,
   createOrFindSourceWithBook,
   createOrFindSourceWithUrl,
+  getNoteWithEvernoteMetadata,
   isValidUrl,
-} from "./helpers";
-
-import { prisma } from "@peas/database";
+  upsertEvernoteMetadataSource,
+} from "@peas/database";
 
 import type { StructuredLogger } from "../../../../types";
 import type { NotePipelineData } from "../../../../types/notes";
@@ -24,12 +25,7 @@ export async function processSource(
 
   try {
     // Get the note with its parsed file data
-    const note = await prisma.note.findUnique({
-      where: { id: data.noteId },
-      include: {
-        evernoteMetadata: true,
-      },
-    });
+    const note = await getNoteWithEvernoteMetadata(data.noteId);
 
     if (!note) {
       throw new Error(`Note with ID ${data.noteId} not found`);
@@ -56,27 +52,19 @@ export async function processSource(
 
     if (isUrl) {
       // Create or find existing source with URL
-      sourceId = await createOrFindSourceWithUrl(sourceUrl, logger);
+      sourceId = await createOrFindSourceWithUrl(sourceUrl);
     } else {
       // Treat as book reference
-      sourceId = await createOrFindSourceWithBook(sourceUrl, logger);
+      sourceId = await createOrFindSourceWithBook(sourceUrl);
     }
 
-    // Update the note's EvernoteMetadata with the source
-    await prisma.evernoteMetadata.update({
-      where: { id: note.evernoteMetadataId! },
-      data: { source: sourceUrl },
-    });
+    // Upsert the note's EvernoteMetadata with the source
+    if (note.evernoteMetadataId) {
+      await upsertEvernoteMetadataSource(note.evernoteMetadataId, sourceUrl);
+    }
 
     // Connect the note to the source
-    await prisma.note.update({
-      where: { id: data.noteId },
-      data: {
-        sources: {
-          connect: { id: sourceId },
-        },
-      },
-    });
+    await connectNoteToSource(data.noteId, sourceId);
 
     logger.log(
       `[PROCESS_SOURCE] Successfully processed source for note: ${data.noteId}, source ID: ${sourceId}`

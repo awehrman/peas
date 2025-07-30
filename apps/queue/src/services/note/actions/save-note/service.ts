@@ -17,11 +17,19 @@ export async function saveNote(
   const db = await import("@peas/database");
 
   try {
-    // Create the note in the database
-    const dbNote = await db.createNote(data.file);
+    // Extract Evernote metadata from the file
+    const source = data.file?.evernoteMetadata?.source || data.file?.source;
+    const tags = data.file?.evernoteMetadata?.tags || [];
 
     logger.log(
-      `[SAVE_NOTE] Successfully created note with ID: ${dbNote.id}, title: "${dbNote.title}"`
+      `[SAVE_NOTE] Creating note with metadata - source: ${source || "none"}, tags: ${tags.length}`
+    );
+
+    // Create the note in the database with Evernote metadata
+    const dbNote = await db.createNoteWithEvernoteMetadata(data.file);
+
+    logger.log(
+      `[SAVE_NOTE] Successfully created note with ID: ${dbNote.id}, title: "${dbNote.title}", evernoteMetadataId: ${dbNote.evernoteMetadataId || "none"}`
     );
 
     // Transform the database result to match the expected NoteWithParsedLines interface

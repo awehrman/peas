@@ -1,6 +1,4 @@
-import { prisma } from "@peas/database";
-
-import type { StructuredLogger } from "../../../../types";
+import { prisma } from "../client.js";
 
 /**
  * Check if a string is a valid URL
@@ -15,12 +13,21 @@ export function isValidUrl(string: string): boolean {
 }
 
 /**
+ * Extract site name from URL
+ */
+export function extractSiteName(url: string): string | null {
+  try {
+    const urlObj = new globalThis.URL(url);
+    return urlObj.hostname.replace(/^www\./, "");
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Create or find a source with the given URL
  */
-export async function createOrFindSourceWithUrl(
-  url: string,
-  logger: StructuredLogger
-): Promise<string> {
+export async function createOrFindSourceWithUrl(url: string): Promise<string> {
   // Check if a source with this URL already exists
   const existingSource = await prisma.source.findFirst({
     where: {
@@ -36,9 +43,6 @@ export async function createOrFindSourceWithUrl(
   });
 
   if (existingSource) {
-    logger.log(
-      `[PROCESS_SOURCE] Found existing source with URL: ${url}, source ID: ${existingSource.id}`
-    );
     return existingSource.id;
   }
 
@@ -48,15 +52,12 @@ export async function createOrFindSourceWithUrl(
       urls: {
         create: {
           url: url,
-          siteName: extractSiteName(url),
+          domainName: extractSiteName(url),
         },
       },
     },
   });
 
-  logger.log(
-    `[PROCESS_SOURCE] Created new source with URL: ${url}, source ID: ${newSource.id}`
-  );
   return newSource.id;
 }
 
@@ -64,8 +65,7 @@ export async function createOrFindSourceWithUrl(
  * Create or find a source with the given book reference
  */
 export async function createOrFindSourceWithBook(
-  bookReference: string,
-  logger: StructuredLogger
+  bookReference: string
 ): Promise<string> {
   // Check if a source with this book already exists
   const existingSource = await prisma.source.findFirst({
@@ -80,9 +80,6 @@ export async function createOrFindSourceWithBook(
   });
 
   if (existingSource) {
-    logger.log(
-      `[PROCESS_SOURCE] Found existing source with book: ${bookReference}, source ID: ${existingSource.id}`
-    );
     return existingSource.id;
   }
 
@@ -97,20 +94,51 @@ export async function createOrFindSourceWithBook(
     },
   });
 
-  logger.log(
-    `[PROCESS_SOURCE] Created new source with book: ${bookReference}, source ID: ${newSource.id}`
-  );
   return newSource.id;
 }
 
 /**
- * Extract site name from URL
+ * Upsert EvernoteMetadata with source information
  */
-export function extractSiteName(url: string): string | null {
-  try {
-    const urlObj = new globalThis.URL(url);
-    return urlObj.hostname.replace(/^www\./, "");
-  } catch {
-    return null;
-  }
+export async function upsertEvernoteMetadataSource(
+  evernoteMetadataId: string,
+  sourceUrl: string
+): Promise<void> {
+  await prisma.evernoteMetadata.upsert({
+    where: { id: evernoteMetadataId },
+    update: { source: sourceUrl },
+    create: {
+      id: evernoteMetadataId,
+      source: sourceUrl,
+    },
+  });
+}
+
+/**
+ * Connect note to source
+ */
+export async function connectNoteToSource(
+  noteId: string,
+  sourceId: string
+): Promise<void> {
+  await prisma.note.update({
+    where: { id: noteId },
+    data: {
+      sources: {
+        connect: { id: sourceId },
+      },
+    },
+  });
+}
+
+/**
+ * Get note with EvernoteMetadata
+ */
+export async function getNoteWithEvernoteMetadata(noteId: string) {
+  return prisma.note.findUnique({
+    where: { id: noteId },
+    include: {
+      evernoteMetadata: true,
+    },
+  });
 }

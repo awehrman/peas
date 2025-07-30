@@ -98,3 +98,83 @@ export async function createNote(
     throw error;
   }
 }
+
+export async function createNoteWithEvernoteMetadata(
+  file: ParsedHTMLFile
+): Promise<NoteWithParsedLines & { evernoteMetadataId: string | null }> {
+  try {
+    // Extract Evernote metadata from the file
+    const source = file.evernoteMetadata?.source || file.source;
+    const tags = file.evernoteMetadata?.tags || [];
+
+    const response = await prisma.note.create({
+      data: {
+        title: file.title,
+        html: file.contents,
+        // Counters
+        totalIngredientLines: file.ingredients.length,
+        totalInstructionLines: file.instructions.length,
+        parsingErrorCount: 0,
+        // Relations
+        parsedIngredientLines: {
+          create: file.ingredients.map((ingredient: ParsedIngredientLine) => ({
+            reference: ingredient.reference,
+            blockIndex: ingredient.blockIndex,
+            lineIndex: ingredient.lineIndex,
+            parseStatus: ingredient.parseStatus,
+          })),
+        },
+        parsedInstructionLines: {
+          create: file.instructions.map(
+            (instruction: ParsedInstructionLine) => ({
+              originalText: instruction.reference,
+              lineIndex: instruction.lineIndex,
+              parseStatus: instruction.parseStatus,
+            })
+          ),
+        },
+        // Create EvernoteMetadata if we have metadata
+        ...(source || tags.length > 0
+          ? {
+              evernoteMetadata: {
+                create: {
+                  source: source || null,
+                  notebook: null, // Removed notebook as requested
+                  evernoteTags: tags,
+                },
+              },
+            }
+          : {}),
+      },
+      select: {
+        id: true,
+        title: true,
+        evernoteMetadataId: true,
+        parsedIngredientLines: {
+          select: {
+            id: true,
+            reference: true,
+            blockIndex: true,
+            lineIndex: true,
+          },
+        },
+        parsedInstructionLines: {
+          select: {
+            id: true,
+            originalText: true,
+            lineIndex: true,
+          },
+        },
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+    console.log(
+      `Successfully created note ${response.id} with EvernoteMetadata`
+    );
+    return response;
+  } catch (error) {
+    console.log({ error });
+    throw error;
+  }
+}

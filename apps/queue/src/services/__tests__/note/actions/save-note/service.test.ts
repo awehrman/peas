@@ -8,12 +8,14 @@ import { saveNote } from "../../../../note/actions/save-note/service";
 // Mock the database module
 vi.mock("@peas/database", () => ({
   createNote: vi.fn(),
+  createNoteWithEvernoteMetadata: vi.fn(),
 }));
 
 describe("saveNote", () => {
   let mockData: NotePipelineData;
   let mockLogger: StructuredLogger;
   let mockCreateNote: ReturnType<typeof vi.fn>;
+  let mockCreateNoteWithEvernoteMetadata: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     // Clear all mocks
@@ -48,14 +50,18 @@ describe("saveNote", () => {
       log: vi.fn(),
     };
 
-    // Get mocked database function
+    // Get mocked database functions
     const dbModule = await import("@peas/database");
     mockCreateNote = vi.mocked(dbModule.createNote);
+    mockCreateNoteWithEvernoteMetadata = vi.mocked(
+      dbModule.createNoteWithEvernoteMetadata
+    );
 
     // Setup default mock implementations
-    mockCreateNote.mockResolvedValue({
+    const mockNoteResult = {
       id: "new-note-789",
       title: "Test Recipe",
+      evernoteMetadataId: "evernote-metadata-123",
       parsedIngredientLines: [
         { id: "ing-1", reference: "Ingredient 1", blockIndex: 0, lineIndex: 0 },
         { id: "ing-2", reference: "Ingredient 2", blockIndex: 0, lineIndex: 1 },
@@ -66,14 +72,19 @@ describe("saveNote", () => {
       ],
       createdAt: new Date("2023-01-01T10:00:00Z"),
       updatedAt: new Date("2023-01-01T10:00:00Z"),
-    });
+    };
+
+    mockCreateNote.mockResolvedValue(mockNoteResult);
+    mockCreateNoteWithEvernoteMetadata.mockResolvedValue(mockNoteResult);
   });
 
   describe("basic functionality", () => {
     it("should save note and return updated data", async () => {
       const result = await saveNote(mockData, mockLogger);
 
-      expect(mockCreateNote).toHaveBeenCalledWith(mockData.file!);
+      expect(mockCreateNoteWithEvernoteMetadata).toHaveBeenCalledWith(
+        mockData.file!
+      );
       expect(result).toEqual({
         ...mockData,
         noteId: "new-note-789",
@@ -113,14 +124,16 @@ describe("saveNote", () => {
         "[SAVE_NOTE] Starting note creation"
       );
       expect(mockLogger.log).toHaveBeenCalledWith(
-        '[SAVE_NOTE] Successfully created note with ID: new-note-789, title: "Test Recipe"'
+        '[SAVE_NOTE] Successfully created note with ID: new-note-789, title: "Test Recipe", evernoteMetadataId: evernote-metadata-123'
       );
     });
 
     it("should call createNote with correct parameters", async () => {
       await saveNote(mockData, mockLogger);
 
-      expect(mockCreateNote).toHaveBeenCalledWith(mockData.file!);
+      expect(mockCreateNoteWithEvernoteMetadata).toHaveBeenCalledWith(
+        mockData.file!
+      );
     });
   });
 
@@ -167,7 +180,7 @@ describe("saveNote", () => {
         createdAt: new Date("2023-01-01T12:00:00Z"),
         updatedAt: new Date("2023-01-01T12:00:00Z"),
       };
-      mockCreateNote.mockResolvedValue(dbResult);
+      mockCreateNoteWithEvernoteMetadata.mockResolvedValue(dbResult);
 
       const result = await saveNote(mockData, mockLogger);
 
@@ -200,7 +213,7 @@ describe("saveNote", () => {
         parsedIngredientLines: [],
         parsedInstructionLines: [],
       };
-      mockCreateNote.mockResolvedValue(dbResult);
+      mockCreateNoteWithEvernoteMetadata.mockResolvedValue(dbResult);
 
       const result = await saveNote(mockData, mockLogger);
 
@@ -217,7 +230,7 @@ describe("saveNote", () => {
         createdAt: new Date("2023-01-01T10:00:00Z"),
         updatedAt: new Date("2023-01-01T10:00:00Z"),
       };
-      mockCreateNote.mockResolvedValue(dbResult);
+      mockCreateNoteWithEvernoteMetadata.mockResolvedValue(dbResult);
 
       const result = await saveNote(mockData, mockLogger);
 
@@ -234,7 +247,7 @@ describe("saveNote", () => {
         createdAt: new Date("2023-01-01T10:00:00Z"),
         updatedAt: new Date("2023-01-01T10:00:00Z"),
       };
-      mockCreateNote.mockResolvedValue(dbResult);
+      mockCreateNoteWithEvernoteMetadata.mockResolvedValue(dbResult);
 
       const result = await saveNote(mockData, mockLogger);
 
@@ -302,18 +315,18 @@ describe("saveNote", () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      mockCreateNote.mockResolvedValue(dbResult);
+      mockCreateNoteWithEvernoteMetadata.mockResolvedValue(dbResult);
 
       await saveNote(mockData, mockLogger);
 
       expect(mockLogger.log).toHaveBeenCalledWith(
-        '[SAVE_NOTE] Successfully created note with ID: custom-note-id, title: "Custom Recipe Title"'
+        '[SAVE_NOTE] Successfully created note with ID: custom-note-id, title: "Custom Recipe Title", evernoteMetadataId: none'
       );
     });
 
     it("should log error message when database operation fails", async () => {
       const dbError = new Error("Database connection failed");
-      mockCreateNote.mockRejectedValue(dbError);
+      mockCreateNoteWithEvernoteMetadata.mockRejectedValue(dbError);
 
       await expect(saveNote(mockData, mockLogger)).rejects.toThrow(
         "Database connection failed"
@@ -327,7 +340,7 @@ describe("saveNote", () => {
   describe("error handling", () => {
     it("should handle database errors", async () => {
       const dbError = new Error("Database error");
-      mockCreateNote.mockRejectedValue(dbError);
+      mockCreateNoteWithEvernoteMetadata.mockRejectedValue(dbError);
 
       await expect(saveNote(mockData, mockLogger)).rejects.toThrow(
         "Database error"
@@ -336,7 +349,7 @@ describe("saveNote", () => {
 
     it("should handle database errors with custom messages", async () => {
       const dbError = new Error("Unique constraint violation");
-      mockCreateNote.mockRejectedValue(dbError);
+      mockCreateNoteWithEvernoteMetadata.mockRejectedValue(dbError);
 
       await expect(saveNote(mockData, mockLogger)).rejects.toThrow(
         "Unique constraint violation"
@@ -344,7 +357,7 @@ describe("saveNote", () => {
     });
 
     it("should handle non-Error exceptions from database", async () => {
-      mockCreateNote.mockRejectedValue("String error");
+      mockCreateNoteWithEvernoteMetadata.mockRejectedValue("String error");
 
       await expect(saveNote(mockData, mockLogger)).rejects.toThrow(
         "String error"
@@ -394,6 +407,26 @@ describe("saveNote", () => {
       expect(result.note?.title).toBe("Test Recipe");
       expect(result.note?.content).toBe(
         "<html><body>Minimal content</body></html>"
+      );
+    });
+
+    it("should handle file with evernoteMetadata", async () => {
+      const fileWithEvernoteMetadata = {
+        ...mockData,
+        file: {
+          ...mockData.file!,
+          evernoteMetadata: {
+            source: "https://evernote.com/recipe",
+            tags: ["recipe", "cooking", "dinner"],
+          },
+        },
+      };
+
+      const result = await saveNote(fileWithEvernoteMetadata, mockLogger);
+
+      expect(result.note?.title).toBe("Test Recipe");
+      expect(mockCreateNoteWithEvernoteMetadata).toHaveBeenCalledWith(
+        fileWithEvernoteMetadata.file
       );
     });
   });
@@ -452,7 +485,7 @@ describe("saveNote", () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      mockCreateNote.mockResolvedValue(dbResult);
+      mockCreateNoteWithEvernoteMetadata.mockResolvedValue(dbResult);
 
       const result = await saveNote(dataWithManyItems as any, mockLogger);
 

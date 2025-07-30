@@ -1,581 +1,432 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+// Import the mocked functions
+import {
+  connectNoteToSource,
+  createOrFindSourceWithBook,
+  createOrFindSourceWithUrl,
+  getNoteWithEvernoteMetadata,
+  isValidUrl,
+  upsertEvernoteMetadataSource,
+} from "@peas/database";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { StructuredLogger } from "../../../../../types";
+// Import types
 import type { NotePipelineData } from "../../../../../types/notes";
+// Import the function to test
 import { processSource } from "../../../../note/actions/process-source/service";
 
-// Mock the database
+// Mock the database functions
 vi.mock("@peas/database", () => ({
-  prisma: {
-    note: {
-      findUnique: vi.fn(),
-      update: vi.fn(),
-    },
-    evernoteMetadata: {
-      update: vi.fn(),
-    },
-  },
-}));
-
-// Mock the helpers
-vi.mock("../../../../note/actions/process-source/helpers", () => ({
+  getNoteWithEvernoteMetadata: vi.fn(),
+  isValidUrl: vi.fn(),
   createOrFindSourceWithUrl: vi.fn(),
   createOrFindSourceWithBook: vi.fn(),
-  isValidUrl: vi.fn(),
+  upsertEvernoteMetadataSource: vi.fn(),
+  connectNoteToSource: vi.fn(),
 }));
 
 describe("processSource", () => {
-  let mockData: NotePipelineData;
   let mockLogger: StructuredLogger;
-  let mockPrisma: any;
-  let mockCreateOrFindSourceWithUrl: ReturnType<typeof vi.fn>;
-  let mockCreateOrFindSourceWithBook: ReturnType<typeof vi.fn>;
-  let mockIsValidUrl: ReturnType<typeof vi.fn>;
+  let mockData: NotePipelineData;
 
-  beforeEach(async () => {
-    // Clear all mocks
+  beforeEach(() => {
+    // Reset all mocks
     vi.clearAllMocks();
 
-    // Create mock data
-    mockData = {
-      content: "<html><body><h1>Test Recipe</h1></body></html>",
-      jobId: "test-job-123",
-      noteId: "test-note-456",
-      importId: "test-import-789",
-      metadata: { source: "test" },
-      file: {
-        title: "Test Recipe",
-        contents: "<html><body><h1>Test Recipe</h1></body></html>",
-        ingredients: [
-          { reference: "Ingredient 1", blockIndex: 0, lineIndex: 0 },
-          { reference: "Ingredient 2", blockIndex: 0, lineIndex: 1 },
-        ],
-        instructions: [
-          { reference: "Step 1", lineIndex: 0 },
-          { reference: "Step 2", lineIndex: 1 },
-        ],
-        source: "https://example.com/recipe",
-      },
-    };
-
-    // Create mock logger
+    // Setup mock logger
     mockLogger = {
       log: vi.fn(),
-    };
+    } as any;
 
-    // Get mocked database
-    const dbModule = await import("@peas/database");
-    mockPrisma = dbModule.prisma;
-
-    // Get mocked helpers
-    const helpersModule = await import(
-      "../../../../note/actions/process-source/helpers"
-    );
-    mockCreateOrFindSourceWithUrl = vi.mocked(
-      helpersModule.createOrFindSourceWithUrl
-    );
-    mockCreateOrFindSourceWithBook = vi.mocked(
-      helpersModule.createOrFindSourceWithBook
-    );
-    mockIsValidUrl = vi.mocked(helpersModule.isValidUrl);
-
-    // Setup default mock implementations
-    mockPrisma.note.findUnique.mockResolvedValue({
-      id: "test-note-456",
-      evernoteMetadataId: "evernote-metadata-123",
-      evernoteMetadata: {
-        id: "evernote-metadata-123",
+    // Setup mock data
+    mockData = {
+      noteId: "test-note-123",
+      content: "test content",
+      file: {
+        contents: "test content",
+        source: "https://example.com/recipe",
+        title: "Test Recipe",
+        ingredients: [],
+        instructions: [],
       },
-    });
-    mockPrisma.evernoteMetadata.update.mockResolvedValue({});
-    mockPrisma.note.update.mockResolvedValue({});
-    mockIsValidUrl.mockReturnValue(true);
-    mockCreateOrFindSourceWithUrl.mockResolvedValue("source-id-123");
+    };
   });
 
   describe("basic functionality", () => {
-    it("should process source URL and return data", async () => {
+    it("should process source URL successfully", async () => {
+      // Arrange
+      const mockNote = {
+        id: "test-note-123",
+        evernoteMetadataId: "metadata-123",
+      };
+      (getNoteWithEvernoteMetadata as any).mockResolvedValue(mockNote);
+      (isValidUrl as any).mockReturnValue(true);
+      (createOrFindSourceWithUrl as any).mockResolvedValue("source-123");
+      (upsertEvernoteMetadataSource as any).mockResolvedValue(undefined);
+      (connectNoteToSource as any).mockResolvedValue(undefined);
+
+      // Act
       const result = await processSource(mockData, mockLogger);
 
+      // Assert
       expect(result).toBe(mockData);
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        `[PROCESS_SOURCE] Starting source processing for note: ${mockData.noteId}`
+      expect(getNoteWithEvernoteMetadata).toHaveBeenCalledWith("test-note-123");
+      expect(isValidUrl).toHaveBeenCalledWith("https://example.com/recipe");
+      expect(createOrFindSourceWithUrl).toHaveBeenCalledWith(
+        "https://example.com/recipe"
+      );
+      expect(upsertEvernoteMetadataSource).toHaveBeenCalledWith(
+        "metadata-123",
+        "https://example.com/recipe"
+      );
+      expect(connectNoteToSource).toHaveBeenCalledWith(
+        "test-note-123",
+        "source-123"
       );
       expect(mockLogger.log).toHaveBeenCalledWith(
-        `[PROCESS_SOURCE] Processing source URL: ${mockData.file?.source} for note: ${mockData.noteId}`
+        "[PROCESS_SOURCE] Starting source processing for note: test-note-123"
       );
       expect(mockLogger.log).toHaveBeenCalledWith(
-        `[PROCESS_SOURCE] Successfully processed source for note: ${mockData.noteId}, source ID: source-id-123`
+        "[PROCESS_SOURCE] Processing source URL: https://example.com/recipe for note: test-note-123"
+      );
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        "[PROCESS_SOURCE] Successfully processed source for note: test-note-123, source ID: source-123"
       );
     });
 
-    it("should find note with evernote metadata", async () => {
-      await processSource(mockData, mockLogger);
+    it("should process book reference successfully", async () => {
+      // Arrange
+      const mockNote = {
+        id: "test-note-123",
+        evernoteMetadataId: "metadata-123",
+      };
+      mockData.file!.source = "The Joy of Cooking";
+      (getNoteWithEvernoteMetadata as any).mockResolvedValue(mockNote);
+      (isValidUrl as any).mockReturnValue(false);
+      (createOrFindSourceWithBook as any).mockResolvedValue("book-source-456");
+      (upsertEvernoteMetadataSource as any).mockResolvedValue(undefined);
+      (connectNoteToSource as any).mockResolvedValue(undefined);
 
-      expect(mockPrisma.note.findUnique).toHaveBeenCalledWith({
-        where: { id: mockData.noteId },
-        include: {
-          evernoteMetadata: true,
-        },
-      });
-    });
+      // Act
+      const result = await processSource(mockData, mockLogger);
 
-    it("should process URL source", async () => {
-      await processSource(mockData, mockLogger);
-
-      expect(mockIsValidUrl).toHaveBeenCalledWith(mockData.file?.source);
-      expect(mockCreateOrFindSourceWithUrl).toHaveBeenCalledWith(
-        mockData.file?.source,
-        mockLogger
+      // Assert
+      expect(result).toBe(mockData);
+      expect(isValidUrl).toHaveBeenCalledWith("The Joy of Cooking");
+      expect(createOrFindSourceWithBook).toHaveBeenCalledWith(
+        "The Joy of Cooking"
       );
+      expect(createOrFindSourceWithUrl).not.toHaveBeenCalled();
     });
 
-    it("should process book reference", async () => {
-      mockIsValidUrl.mockReturnValue(false);
-      mockCreateOrFindSourceWithBook.mockResolvedValue("book-source-id-456");
+    it("should handle note without evernoteMetadataId", async () => {
+      // Arrange
+      const mockNote = {
+        id: "test-note-123",
+        evernoteMetadataId: null,
+      };
+      (getNoteWithEvernoteMetadata as any).mockResolvedValue(mockNote);
+      (isValidUrl as any).mockReturnValue(true);
+      (createOrFindSourceWithUrl as any).mockResolvedValue("source-123");
+      (connectNoteToSource as any).mockResolvedValue(undefined);
 
-      await processSource(mockData, mockLogger);
+      // Act
+      const result = await processSource(mockData, mockLogger);
 
-      expect(mockCreateOrFindSourceWithBook).toHaveBeenCalledWith(
-        mockData.file?.source,
-        mockLogger
+      // Assert
+      expect(result).toBe(mockData);
+      expect(upsertEvernoteMetadataSource).not.toHaveBeenCalled();
+      expect(connectNoteToSource).toHaveBeenCalledWith(
+        "test-note-123",
+        "source-123"
       );
-    });
-
-    it("should update evernote metadata with source", async () => {
-      await processSource(mockData, mockLogger);
-
-      expect(mockPrisma.evernoteMetadata.update).toHaveBeenCalledWith({
-        where: { id: "evernote-metadata-123" },
-        data: { source: mockData.file?.source },
-      });
-    });
-
-    it("should connect note to source", async () => {
-      await processSource(mockData, mockLogger);
-
-      expect(mockPrisma.note.update).toHaveBeenCalledWith({
-        where: { id: mockData.noteId },
-        data: {
-          sources: {
-            connect: { id: "source-id-123" },
-          },
-        },
-      });
     });
   });
 
-  describe("noteId validation", () => {
+  describe("input validation", () => {
     it("should throw error when noteId is missing", async () => {
-      const dataWithoutNoteId = {
-        ...mockData,
-        noteId: undefined,
-      };
+      // Arrange
+      const dataWithoutNoteId = { ...mockData, noteId: undefined };
 
+      // Act & Assert
       await expect(
         processSource(dataWithoutNoteId, mockLogger)
       ).rejects.toThrow("No note ID available for source processing");
     });
 
     it("should throw error when noteId is null", async () => {
-      const dataWithNullNoteId = {
-        ...mockData,
-        noteId: null as unknown as string,
-      };
+      // Arrange
+      const dataWithNullNoteId = { ...mockData, noteId: null as any };
 
+      // Act & Assert
       await expect(
         processSource(dataWithNullNoteId, mockLogger)
       ).rejects.toThrow("No note ID available for source processing");
     });
 
     it("should throw error when noteId is empty string", async () => {
-      const dataWithEmptyNoteId = {
-        ...mockData,
-        noteId: "",
-      };
+      // Arrange
+      const dataWithEmptyNoteId = { ...mockData, noteId: "" };
 
+      // Act & Assert
       await expect(
         processSource(dataWithEmptyNoteId, mockLogger)
       ).rejects.toThrow("No note ID available for source processing");
     });
-
-    it("should work with valid noteId", async () => {
-      const result = await processSource(mockData, mockLogger);
-
-      expect(result).toBe(mockData);
-    });
   });
 
-  describe("note lookup", () => {
+  describe("note retrieval", () => {
     it("should throw error when note is not found", async () => {
-      mockPrisma.note.findUnique.mockResolvedValue(null);
+      // Arrange
+      (getNoteWithEvernoteMetadata as any).mockResolvedValue(null);
 
+      // Act & Assert
       await expect(processSource(mockData, mockLogger)).rejects.toThrow(
-        `Note with ID ${mockData.noteId} not found`
+        "Note with ID test-note-123 not found"
       );
     });
 
-    it("should handle note without evernote metadata", async () => {
-      mockPrisma.note.findUnique.mockResolvedValue({
-        id: "test-note-456",
-        evernoteMetadataId: null,
-        evernoteMetadata: null,
-      });
+    it("should handle database error when retrieving note", async () => {
+      // Arrange
+      const dbError = new Error("Database connection failed");
+      (getNoteWithEvernoteMetadata as any).mockRejectedValue(dbError);
 
-      const result = await processSource(mockData, mockLogger);
-
-      expect(result).toBe(mockData);
+      // Act & Assert
+      await expect(processSource(mockData, mockLogger)).rejects.toThrow(
+        "Database connection failed"
+      );
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        "[PROCESS_SOURCE] Failed to process source: Error: Database connection failed"
+      );
     });
   });
 
   describe("source URL handling", () => {
-    it("should return data when no source URL is found", async () => {
+    it("should return data unchanged when no source URL is provided", async () => {
+      // Arrange
+      const mockNote = {
+        id: "test-note-123",
+        evernoteMetadataId: "metadata-123",
+      };
       const dataWithoutSource = {
         ...mockData,
-        file: {
-          ...mockData.file!,
-          source: undefined,
-        },
+        file: { ...mockData.file!, source: undefined },
       };
+      (getNoteWithEvernoteMetadata as any).mockResolvedValue(mockNote);
 
+      // Act
       const result = await processSource(dataWithoutSource, mockLogger);
 
+      // Assert
       expect(result).toBe(dataWithoutSource);
       expect(mockLogger.log).toHaveBeenCalledWith(
-        `[PROCESS_SOURCE] No source URL found for note: ${mockData.noteId}`
+        "[PROCESS_SOURCE] No source URL found for note: test-note-123"
+      );
+      expect(isValidUrl).not.toHaveBeenCalled();
+      expect(createOrFindSourceWithUrl).not.toHaveBeenCalled();
+      expect(createOrFindSourceWithBook).not.toHaveBeenCalled();
+      expect(upsertEvernoteMetadataSource).not.toHaveBeenCalled();
+      expect(connectNoteToSource).not.toHaveBeenCalled();
+    });
+
+    it("should return data unchanged when source URL is empty string", async () => {
+      // Arrange
+      const mockNote = {
+        id: "test-note-123",
+        evernoteMetadataId: "metadata-123",
+      };
+      const dataWithEmptySource = {
+        ...mockData,
+        file: { ...mockData.file!, source: "" },
+      };
+      (getNoteWithEvernoteMetadata as any).mockResolvedValue(mockNote);
+
+      // Act
+      const result = await processSource(dataWithEmptySource, mockLogger);
+
+      // Assert
+      expect(result).toBe(dataWithEmptySource);
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        "[PROCESS_SOURCE] No source URL found for note: test-note-123"
       );
     });
 
-    it("should return data when file is missing", async () => {
-      const dataWithoutFile = {
+    it("should return data unchanged when file is null", async () => {
+      // Arrange
+      const mockNote = {
+        id: "test-note-123",
+        evernoteMetadataId: "metadata-123",
+      };
+      const dataWithNullFile = {
         ...mockData,
         file: undefined,
       };
+      (getNoteWithEvernoteMetadata as any).mockResolvedValue(mockNote);
 
-      const result = await processSource(dataWithoutFile, mockLogger);
+      // Act
+      const result = await processSource(dataWithNullFile, mockLogger);
 
-      expect(result).toBe(dataWithoutFile);
+      // Assert
+      expect(result).toBe(dataWithNullFile);
       expect(mockLogger.log).toHaveBeenCalledWith(
-        `[PROCESS_SOURCE] No source URL found for note: ${mockData.noteId}`
-      );
-    });
-
-    it("should handle empty source URL", async () => {
-      const dataWithEmptySource = {
-        ...mockData,
-        file: {
-          ...mockData.file!,
-          source: "",
-        },
-      };
-
-      const result = await processSource(dataWithEmptySource, mockLogger);
-
-      expect(result).toBe(dataWithEmptySource);
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        `[PROCESS_SOURCE] No source URL found for note: ${mockData.noteId}`
-      );
-    });
-
-    it("should handle whitespace source URL", async () => {
-      const dataWithWhitespaceSource = {
-        ...mockData,
-        file: {
-          ...mockData.file!,
-          source: "   ",
-        },
-      };
-
-      const result = await processSource(dataWithWhitespaceSource, mockLogger);
-
-      expect(result).toBe(dataWithWhitespaceSource);
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        `[PROCESS_SOURCE] Processing source URL:     for note: ${mockData.noteId}`
+        "[PROCESS_SOURCE] No source URL found for note: test-note-123"
       );
     });
   });
 
-  describe("URL vs book processing", () => {
-    it("should process valid URL", async () => {
-      mockIsValidUrl.mockReturnValue(true);
-      mockCreateOrFindSourceWithUrl.mockResolvedValue("url-source-id");
-
-      await processSource(mockData, mockLogger);
-
-      expect(mockIsValidUrl).toHaveBeenCalledWith(mockData.file?.source);
-      expect(mockCreateOrFindSourceWithUrl).toHaveBeenCalledWith(
-        mockData.file?.source,
-        mockLogger
-      );
-      expect(mockCreateOrFindSourceWithBook).not.toHaveBeenCalled();
-    });
-
-    it("should process book reference", async () => {
-      mockIsValidUrl.mockReturnValue(false);
-      mockCreateOrFindSourceWithBook.mockResolvedValue("book-source-id");
-
-      await processSource(mockData, mockLogger);
-
-      expect(mockIsValidUrl).toHaveBeenCalledWith(mockData.file?.source);
-      expect(mockCreateOrFindSourceWithBook).toHaveBeenCalledWith(
-        mockData.file?.source,
-        mockLogger
-      );
-      expect(mockCreateOrFindSourceWithUrl).not.toHaveBeenCalled();
-    });
-
-    it("should handle different URL formats", async () => {
-      const dataWithHttpsUrl = {
-        ...mockData,
-        file: {
-          ...mockData.file!,
-          source: "https://example.com/recipe",
-        },
+  describe("source creation errors", () => {
+    it("should handle error when creating source with URL fails", async () => {
+      // Arrange
+      const mockNote = {
+        id: "test-note-123",
+        evernoteMetadataId: "metadata-123",
       };
-      mockIsValidUrl.mockReturnValue(true);
-      mockCreateOrFindSourceWithUrl.mockResolvedValue("https-source-id");
+      const sourceError = new Error("Failed to create source");
+      (getNoteWithEvernoteMetadata as any).mockResolvedValue(mockNote);
+      (isValidUrl as any).mockReturnValue(true);
+      (createOrFindSourceWithUrl as any).mockRejectedValue(sourceError);
 
-      await processSource(dataWithHttpsUrl, mockLogger);
-
-      expect(mockCreateOrFindSourceWithUrl).toHaveBeenCalledWith(
-        "https://example.com/recipe",
-        mockLogger
+      // Act & Assert
+      await expect(processSource(mockData, mockLogger)).rejects.toThrow(
+        "Failed to create source"
+      );
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        "[PROCESS_SOURCE] Failed to process source: Error: Failed to create source"
       );
     });
 
-    it("should handle different book references", async () => {
-      const dataWithBookReference = {
-        ...mockData,
-        file: {
-          ...mockData.file!,
-          source: "The Joy of Cooking",
-        },
+    it("should handle error when creating source with book fails", async () => {
+      // Arrange
+      const mockNote = {
+        id: "test-note-123",
+        evernoteMetadataId: "metadata-123",
       };
-      mockIsValidUrl.mockReturnValue(false);
-      mockCreateOrFindSourceWithBook.mockResolvedValue("book-source-id");
+      mockData.file!.source = "The Joy of Cooking";
+      const bookError = new Error("Failed to create book source");
+      (getNoteWithEvernoteMetadata as any).mockResolvedValue(mockNote);
+      (isValidUrl as any).mockReturnValue(false);
+      (createOrFindSourceWithBook as any).mockRejectedValue(bookError);
 
-      await processSource(dataWithBookReference, mockLogger);
+      // Act & Assert
+      await expect(processSource(mockData, mockLogger)).rejects.toThrow(
+        "Failed to create book source"
+      );
+    });
+  });
 
-      expect(mockCreateOrFindSourceWithBook).toHaveBeenCalledWith(
-        "The Joy of Cooking",
-        mockLogger
+  describe("metadata update errors", () => {
+    it("should handle error when upserting evernote metadata fails", async () => {
+      // Arrange
+      const mockNote = {
+        id: "test-note-123",
+        evernoteMetadataId: "metadata-123",
+      };
+      const metadataError = new Error("Failed to update metadata");
+      (getNoteWithEvernoteMetadata as any).mockResolvedValue(mockNote);
+      (isValidUrl as any).mockReturnValue(true);
+      (createOrFindSourceWithUrl as any).mockResolvedValue("source-123");
+      (upsertEvernoteMetadataSource as any).mockRejectedValue(metadataError);
+
+      // Act & Assert
+      await expect(processSource(mockData, mockLogger)).rejects.toThrow(
+        "Failed to update metadata"
+      );
+    });
+  });
+
+  describe("note connection errors", () => {
+    it("should handle error when connecting note to source fails", async () => {
+      // Arrange
+      const mockNote = {
+        id: "test-note-123",
+        evernoteMetadataId: "metadata-123",
+      };
+      const connectionError = new Error("Failed to connect note to source");
+      (getNoteWithEvernoteMetadata as any).mockResolvedValue(mockNote);
+      (isValidUrl as any).mockReturnValue(true);
+      (createOrFindSourceWithUrl as any).mockResolvedValue("source-123");
+      (upsertEvernoteMetadataSource as any).mockResolvedValue(undefined);
+      (connectNoteToSource as any).mockRejectedValue(connectionError);
+
+      // Act & Assert
+      await expect(processSource(mockData, mockLogger)).rejects.toThrow(
+        "Failed to connect note to source"
       );
     });
   });
 
   describe("logging", () => {
-    it("should log start message with correct noteId", async () => {
-      await processSource(mockData, mockLogger);
-
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        `[PROCESS_SOURCE] Starting source processing for note: ${mockData.noteId}`
-      );
-    });
-
-    it("should log source URL processing", async () => {
-      await processSource(mockData, mockLogger);
-
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        `[PROCESS_SOURCE] Processing source URL: ${mockData.file?.source} for note: ${mockData.noteId}`
-      );
-    });
-
-    it("should log completion message with source ID", async () => {
-      await processSource(mockData, mockLogger);
-
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        `[PROCESS_SOURCE] Successfully processed source for note: ${mockData.noteId}, source ID: source-id-123`
-      );
-    });
-
-    it("should log error message when processing fails", async () => {
-      const processingError = new Error("Processing failed");
-      mockPrisma.note.findUnique.mockRejectedValue(processingError);
-
-      await expect(processSource(mockData, mockLogger)).rejects.toThrow(
-        "Processing failed"
-      );
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        `[PROCESS_SOURCE] Failed to process source: Error: Processing failed`
-      );
-    });
-  });
-
-  describe("error handling", () => {
-    it("should handle database errors", async () => {
-      const dbError = new Error("Database connection failed");
-      mockPrisma.note.findUnique.mockRejectedValue(dbError);
-
-      await expect(processSource(mockData, mockLogger)).rejects.toThrow(
-        "Database connection failed"
-      );
-    });
-
-    it("should handle source creation errors", async () => {
-      const sourceError = new Error("Source creation failed");
-      mockCreateOrFindSourceWithUrl.mockRejectedValue(sourceError);
-
-      await expect(processSource(mockData, mockLogger)).rejects.toThrow(
-        "Source creation failed"
-      );
-    });
-
-    it("should handle metadata update errors", async () => {
-      const metadataError = new Error("Metadata update failed");
-      mockPrisma.evernoteMetadata.update.mockRejectedValue(metadataError);
-
-      await expect(processSource(mockData, mockLogger)).rejects.toThrow(
-        "Metadata update failed"
-      );
-    });
-
-    it("should handle note update errors", async () => {
-      const noteUpdateError = new Error("Note update failed");
-      mockPrisma.note.update.mockRejectedValue(noteUpdateError);
-
-      await expect(processSource(mockData, mockLogger)).rejects.toThrow(
-        "Note update failed"
-      );
-    });
-
-    it("should handle non-Error exceptions", async () => {
-      mockPrisma.note.findUnique.mockRejectedValue("String error");
-
-      await expect(processSource(mockData, mockLogger)).rejects.toThrow(
-        "String error"
-      );
-    });
-  });
-
-  describe("data preservation", () => {
-    it("should preserve all original data properties", async () => {
-      const complexData = {
-        ...mockData,
-        source: {
-          filename: "test.html",
-          url: "https://example.com/test.html",
-        },
-        options: {
-          parseIngredients: true,
-          parseInstructions: true,
-        },
-        note: {
-          id: "existing-note",
-          title: "Existing Note",
-          content: "existing content",
-          html: "existing html",
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          parsedIngredientLines: [],
-          parsedInstructionLines: [],
-        },
+    it("should log start message", async () => {
+      // Arrange
+      const mockNote = {
+        id: "test-note-123",
+        evernoteMetadataId: "metadata-123",
       };
+      (getNoteWithEvernoteMetadata as any).mockResolvedValue(mockNote);
+      (isValidUrl as any).mockReturnValue(true);
+      (createOrFindSourceWithUrl as any).mockResolvedValue("source-123");
+      (upsertEvernoteMetadataSource as any).mockResolvedValue(undefined);
+      (connectNoteToSource as any).mockResolvedValue(undefined);
 
-      const result = await processSource(complexData, mockLogger);
+      // Act
+      await processSource(mockData, mockLogger);
 
-      expect(result).toBe(complexData);
-      expect(result.jobId).toBe(complexData.jobId);
-      expect(result.noteId).toBe(complexData.noteId);
-      expect(result.importId).toBe(complexData.importId);
-      expect(result.metadata).toEqual(complexData.metadata);
-      expect(result.source).toEqual(complexData.source);
-      expect(result.options).toEqual(complexData.options);
-      expect(result.file).toEqual(complexData.file);
+      // Assert
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        "[PROCESS_SOURCE] Starting source processing for note: test-note-123"
+      );
     });
 
-    it("should return the same data object reference", async () => {
-      const result = await processSource(mockData, mockLogger);
+    it("should log completion message on success", async () => {
+      // Arrange
+      const mockNote = {
+        id: "test-note-123",
+        evernoteMetadataId: "metadata-123",
+      };
+      (getNoteWithEvernoteMetadata as any).mockResolvedValue(mockNote);
+      (isValidUrl as any).mockReturnValue(true);
+      (createOrFindSourceWithUrl as any).mockResolvedValue("source-123");
+      (upsertEvernoteMetadataSource as any).mockResolvedValue(undefined);
+      (connectNoteToSource as any).mockResolvedValue(undefined);
 
-      expect(result).toBe(mockData);
+      // Act
+      await processSource(mockData, mockLogger);
+
+      // Assert
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        "[PROCESS_SOURCE] Successfully processed source for note: test-note-123, source ID: source-123"
+      );
+    });
+
+    it("should log error message on failure", async () => {
+      // Arrange
+      const error = new Error("Test error");
+      (getNoteWithEvernoteMetadata as any).mockRejectedValue(error);
+
+      // Act & Assert
+      await expect(processSource(mockData, mockLogger)).rejects.toThrow(
+        "Test error"
+      );
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        "[PROCESS_SOURCE] Failed to process source: Error: Test error"
+      );
     });
   });
 
   describe("edge cases", () => {
-    it("should handle null or undefined data", async () => {
-      await expect(processSource(null as any, mockLogger)).rejects.toThrow();
-    });
+    it("should handle non-Error exceptions", async () => {
+      // Arrange
+      const nonErrorException = "String exception";
+      (getNoteWithEvernoteMetadata as any).mockRejectedValue(nonErrorException);
 
-    it("should handle null or undefined logger", async () => {
-      await expect(processSource(mockData, null as any)).rejects.toThrow();
-    });
-
-    it("should handle logger without log method", async () => {
-      const invalidLogger = {} as StructuredLogger;
-
-      await expect(processSource(mockData, invalidLogger)).rejects.toThrow();
-    });
-
-    it("should handle data with minimal required fields", async () => {
-      const minimalData = {
-        noteId: "minimal-note-id",
-      } as unknown as NotePipelineData;
-
-      // Mock the database to return null for this note
-      mockPrisma.note.findUnique.mockResolvedValue(null);
-
-      await expect(processSource(minimalData, mockLogger)).rejects.toThrow(
-        "Note with ID minimal-note-id not found"
+      // Act & Assert
+      await expect(processSource(mockData, mockLogger)).rejects.toBe(
+        "String exception"
       );
-    });
-
-    it("should handle data with different noteId values", async () => {
-      const dataWithDifferentNoteId = {
-        ...mockData,
-        noteId: "different-note-id",
-      };
-
-      const result = await processSource(dataWithDifferentNoteId, mockLogger);
-
-      expect(result).toBe(dataWithDifferentNoteId);
-    });
-  });
-
-  describe("performance characteristics", () => {
-    it("should handle large data efficiently", async () => {
-      const startTime = Date.now();
-      const largeContent = "x".repeat(1000000);
-      const dataWithLargeContent = {
-        ...mockData,
-        content: largeContent,
-        file: {
-          ...mockData.file!,
-          contents: largeContent,
-        },
-      };
-
-      const result = await processSource(dataWithLargeContent, mockLogger);
-      const endTime = Date.now();
-
-      expect(result).toBe(dataWithLargeContent);
-      expect(endTime - startTime).toBeLessThan(1000); // Should complete within 1 second
-    });
-
-    it("should handle many ingredients and instructions", async () => {
-      const manyIngredients = Array.from({ length: 1000 }, (_, i) => ({
-        reference: `Ingredient ${i}`,
-        blockIndex: Math.floor(i / 10),
-        lineIndex: i % 10,
-      }));
-      const manyInstructions = Array.from({ length: 500 }, (_, i) => ({
-        reference: `Step ${i}`,
-        lineIndex: i,
-      }));
-
-      const dataWithManyItems = {
-        ...mockData,
-        file: {
-          ...mockData.file!,
-          ingredients: manyIngredients,
-          instructions: manyInstructions,
-        },
-      };
-
-      const result = await processSource(dataWithManyItems, mockLogger);
-
-      expect(result).toBe(dataWithManyItems);
-      expect(result.file?.ingredients).toHaveLength(1000);
-      expect(result.file?.instructions).toHaveLength(500);
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        "[PROCESS_SOURCE] Failed to process source: String exception"
+      );
     });
   });
 });

@@ -2,23 +2,11 @@ import type { ProcessingOptions, SourceInfo } from "./common";
 
 import type { ParsedHTMLFile } from "@peas/database";
 
-import type { WorkerAction } from "../workers/types";
 import type { BaseJobData, BaseWorkerDependencies } from "../workers/types";
 
 // ============================================================================
 // NOTE PROCESSING TYPES
 // ============================================================================
-
-/**
- * Result type for note processing operations
- */
-export interface NoteProcessingResult {
-  noteId: string;
-  status: "completed" | "failed" | "partial";
-  parsedLines: number;
-  errors?: string[];
-  duration?: number;
-}
 
 /**
  * Unified pipeline data for the note processing pipeline
@@ -62,6 +50,10 @@ export interface NoteWithParsedLines {
     originalText: string;
     lineIndex: number;
   }>;
+  evernoteMetadata?: {
+    source?: string;
+    tags?: string[];
+  };
 }
 
 // ============================================================================
@@ -88,56 +80,3 @@ export interface NoteWorkerDependencies extends BaseWorkerDependencies {
     saveNote: (data: NotePipelineData) => Promise<NotePipelineData>;
   };
 }
-
-// ============================================================================
-// NOTE ACTION TYPES
-// ============================================================================
-
-/**
- * Base action type for note pipeline actions
- */
-export type NotePipelineAction = WorkerAction<
-  NotePipelineData,
-  NoteWorkerDependencies,
-  NotePipelineData
->;
-
-/**
- * Union type for all note action classes
- */
-export type NoteActionClass =
-  | typeof import("../services/note/actions/parse-html/action").ParseHtmlAction
-  | typeof import("../services/note/actions/clean-html/action").CleanHtmlAction
-  | typeof import("../services/note/actions/save-note/action").SaveNoteAction;
-
-/**
- * Note job data type
- */
-export type NoteJobData = NotePipelineData;
-
-// ============================================================================
-// NOTE PIPELINE STAGES
-// ============================================================================
-
-/**
- * Stage 1: Raw HTML content (input)
- */
-export type NotePipelineStage1 = NotePipelineData;
-
-/**
- * Stage 2: Cleaned HTML content
- */
-export type NotePipelineStage2 = NotePipelineData;
-
-/**
- * Stage 3: Parsed HTML file with structured data
- */
-export type NotePipelineStage3 = NotePipelineData & {
-  file: ParsedHTMLFile;
-};
-
-/**
- * Action return types
- */
-export type CleanHtmlActionReturn = NotePipelineStage2;
-export type ParseHtmlActionReturn = NotePipelineStage3;
