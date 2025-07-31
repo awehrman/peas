@@ -23,7 +23,8 @@ model EvernoteMetadata {
   evernoteGUID        String?
   source              String?
   notebook            String?
-  evernoteTags        String[]
+  tags        String[]
+  originalCreatedAt   DateTime?
 
   evernoteCreatedAt DateTime?
   evernoteUpdatedAt DateTime?
@@ -42,7 +43,7 @@ model Note {
   status              NoteStatus @default(PENDING)
 
   evernoteMetadataId String? @unique
-  evernoteMetadata   EvernoteMetadata? @relation(fields: [evernoteMetadataId], references: [id])
+  evernoteMetadata   EvernoteMetadata? @relation(fields: [evernoteMetadataId], references: [id], onDelete: Cascade)
   
   totalIngredientLines Int @default(0)
   totalInstructionLines Int @default(0)

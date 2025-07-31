@@ -5,6 +5,7 @@ export const HTML_PARSING_CONSTANTS = {
     META_TITLE: 'meta[itemprop="title"]',
     META_CREATED: 'meta[itemprop="created"]',
     META_SOURCE: 'meta[itemprop="source-url"]',
+    META_TAG: 'meta[itemprop="tag"]',
     H1: "h1",
   },
   /** HTML patterns */

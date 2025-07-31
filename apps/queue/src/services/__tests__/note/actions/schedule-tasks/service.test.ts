@@ -42,8 +42,10 @@ describe("scheduleAllFollowupTasks", () => {
           { reference: "Step 2", lineIndex: 1 },
         ],
         image: "recipe-image.jpg",
-        source: "https://example.com/recipe",
-        historicalCreatedAt: new Date("2023-01-01"),
+        evernoteMetadata: {
+          source: "https://example.com/recipe",
+          originalCreatedAt: new Date("2023-01-01"),
+        },
       },
     };
 

@@ -662,12 +662,6 @@ export function createTestParsedHtmlFile(
   overrides: Partial<{
     title: string;
     contents: string;
-    tags: string[];
-    source: string;
-    sourceUrl: string;
-    sourceApplication: string;
-    created: string;
-    historicalCreatedAt: Date;
     ingredients: Array<{
       reference: string;
       blockIndex: number;
@@ -687,18 +681,16 @@ export function createTestParsedHtmlFile(
       width: string;
       dataResourceHash: string;
     }>;
-    metadata: Record<string, unknown>;
+    evernoteMetadata: {
+      originalCreatedAt?: Date;
+      source?: string;
+      tags?: string[];
+    };
   }> = {}
 ) {
   return {
     title: "Test Recipe",
     contents: "<html><body><h1>Test Recipe</h1></body></html>",
-    tags: ["recipe", "food"],
-    source: "Evernote",
-    sourceUrl: "https://example.com/recipe",
-    sourceApplication: "Evernote",
-    created: "2023-01-01T00:00:00Z",
-    historicalCreatedAt: new Date("2023-01-01"),
     ingredients: [
       {
         reference: "1 cup flour",
@@ -723,7 +715,11 @@ export function createTestParsedHtmlFile(
         dataResourceHash: "hash123",
       },
     ],
-    metadata: { author: "John Doe" },
+    evernoteMetadata: {
+      originalCreatedAt: new Date("2023-01-01"),
+      source: "https://example.com/recipe",
+      tags: ["recipe", "food"],
+    },
     ...overrides,
   };
 }
@@ -736,7 +732,6 @@ export function createTestSaveNoteData(
     file: {
       title: string;
       contents: string;
-      tags: string[];
       ingredients: Array<{
         reference: string;
         blockIndex: number;
@@ -758,7 +753,6 @@ export function createTestSaveNoteData(
     file: {
       title: "Test Recipe",
       contents: "<html><body><h1>Test Recipe</h1></body></html>",
-      tags: [],
       ingredients: [
         {
           reference: "1 cup flour",
@@ -829,7 +823,6 @@ export function createTestScheduleActionData(
     file: {
       title: string;
       contents: string;
-      tags: string[];
       ingredients: Array<{
         id: string;
         reference: string;
@@ -849,10 +842,9 @@ export function createTestScheduleActionData(
     file: {
       title: "Test Recipe",
       contents: "<html><body><h1>Test Recipe</h1></body></html>",
-      tags: [],
       ingredients: [
         {
-          id: "123e4567-e89b-12d3-a456-426614174000",
+          id: "ing-1",
           reference: "1 cup flour",
           blockIndex: 0,
           lineIndex: 1,

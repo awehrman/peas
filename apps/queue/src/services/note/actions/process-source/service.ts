@@ -32,7 +32,7 @@ export async function processSource(
     }
 
     // Extract source information from the parsed file
-    const sourceUrl = data.file?.source;
+    const sourceUrl = data.file?.evernoteMetadata?.source;
 
     if (!sourceUrl) {
       logger.log(

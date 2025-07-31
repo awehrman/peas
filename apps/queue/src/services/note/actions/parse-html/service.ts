@@ -38,8 +38,7 @@ export async function parseHtmlFile(
         })
       ) || [],
     image: result.image || "",
-    historicalCreatedAt: result.historicalCreatedAt,
-    source: result.source,
+    evernoteMetadata: result.evernoteMetadata,
   };
 
   logger.log(

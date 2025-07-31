@@ -15,14 +15,15 @@ export type ParsedInstructionLine = {
 
 export type ParsedHTMLFile = {
   title: string;
-  historicalCreatedAt?: Date;
   contents: string;
   ingredients: ParsedIngredientLine[];
   instructions: ParsedInstructionLine[];
-  source?: string;
   image?: string;
   evernoteMetadata?: {
+    originalCreatedAt?: Date;
     source?: string;
     tags?: string[];
+    // NOTE we oddly don't receive the notebook on export,
+    // but we can add this back in if we want to grab this from the sdk
   };
 };

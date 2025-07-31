@@ -43,10 +43,10 @@ describe("parseHTMLContent", () => {
       const result = parseHTMLContent(html);
 
       expect(result.title).toBe("Beef Cheeks Recipe");
-      expect(result.historicalCreatedAt).toEqual(
+      expect(result.evernoteMetadata?.originalCreatedAt).toEqual(
         new Date("2023-01-01T00:00:00Z")
       );
-      expect(result.source).toBe("https://example.com");
+      expect(result.evernoteMetadata?.source).toBe("https://example.com");
       expect(result.ingredients).toHaveLength(8);
       expect(result.ingredients[0]?.reference).toBe("2 tbsp olive oil");
       expect(result.ingredients[1]?.reference).toBe(
@@ -171,8 +171,8 @@ describe("parseHTMLContent", () => {
       const result = parseHTMLContent(html);
 
       expect(result.title).toBe("Simple Salad Recipe");
-      expect(result.historicalCreatedAt).toBeUndefined();
-      expect(result.source).toBeUndefined();
+      expect(result.evernoteMetadata?.originalCreatedAt).toBeUndefined();
+      expect(result.evernoteMetadata?.source).toBeUndefined();
     });
   });
 

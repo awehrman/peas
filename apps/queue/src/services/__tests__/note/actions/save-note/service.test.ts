@@ -40,8 +40,11 @@ describe("saveNote", () => {
           { reference: "Step 2", lineIndex: 1 },
         ],
         image: "recipe-image.jpg",
-        source: "https://example.com/recipe",
-        historicalCreatedAt: new Date("2023-01-01"),
+        evernoteMetadata: {
+          source: "https://example.com/recipe",
+          originalCreatedAt: new Date("2023-01-01"),
+          tags: ["recipe", "cooking"],
+        },
       },
     };
 
@@ -410,7 +413,7 @@ describe("saveNote", () => {
       );
     });
 
-    it("should handle file with evernoteMetadata", async () => {
+    it("should handle file with complete evernoteMetadata", async () => {
       const fileWithEvernoteMetadata = {
         ...mockData,
         file: {
@@ -418,6 +421,7 @@ describe("saveNote", () => {
           evernoteMetadata: {
             source: "https://evernote.com/recipe",
             tags: ["recipe", "cooking", "dinner"],
+            originalCreatedAt: new Date("2023-01-01"),
           },
         },
       };
@@ -427,6 +431,118 @@ describe("saveNote", () => {
       expect(result.note?.title).toBe("Test Recipe");
       expect(mockCreateNoteWithEvernoteMetadata).toHaveBeenCalledWith(
         fileWithEvernoteMetadata.file
+      );
+    });
+
+    it("should handle file with only source in evernoteMetadata", async () => {
+      const fileWithSourceOnly = {
+        ...mockData,
+        file: {
+          ...mockData.file!,
+          evernoteMetadata: {
+            source: "https://evernote.com/recipe",
+          },
+        },
+      };
+
+      const result = await saveNote(fileWithSourceOnly, mockLogger);
+
+      expect(result.note?.title).toBe("Test Recipe");
+      expect(mockCreateNoteWithEvernoteMetadata).toHaveBeenCalledWith(
+        fileWithSourceOnly.file
+      );
+    });
+
+    it("should handle file with only tags in evernoteMetadata", async () => {
+      const fileWithTagsOnly = {
+        ...mockData,
+        file: {
+          ...mockData.file!,
+          evernoteMetadata: {
+            tags: ["recipe", "cooking"],
+          },
+        },
+      };
+
+      const result = await saveNote(fileWithTagsOnly, mockLogger);
+
+      expect(result.note?.title).toBe("Test Recipe");
+      expect(mockCreateNoteWithEvernoteMetadata).toHaveBeenCalledWith(
+        fileWithTagsOnly.file
+      );
+    });
+
+    it("should handle file with only originalCreatedAt in evernoteMetadata", async () => {
+      const fileWithDateOnly = {
+        ...mockData,
+        file: {
+          ...mockData.file!,
+          evernoteMetadata: {
+            originalCreatedAt: new Date("2023-01-01"),
+          },
+        },
+      };
+
+      const result = await saveNote(fileWithDateOnly, mockLogger);
+
+      expect(result.note?.title).toBe("Test Recipe");
+      expect(mockCreateNoteWithEvernoteMetadata).toHaveBeenCalledWith(
+        fileWithDateOnly.file
+      );
+    });
+
+    it("should handle file with empty evernoteMetadata", async () => {
+      const fileWithEmptyMetadata = {
+        ...mockData,
+        file: {
+          ...mockData.file!,
+          evernoteMetadata: {},
+        },
+      };
+
+      const result = await saveNote(fileWithEmptyMetadata, mockLogger);
+
+      expect(result.note?.title).toBe("Test Recipe");
+      expect(mockCreateNoteWithEvernoteMetadata).toHaveBeenCalledWith(
+        fileWithEmptyMetadata.file
+      );
+    });
+
+    it("should handle file with null evernoteMetadata values", async () => {
+      const fileWithNullValues = {
+        ...mockData,
+        file: {
+          ...mockData.file!,
+          evernoteMetadata: {
+            source: null,
+            tags: null,
+            originalCreatedAt: null,
+          },
+        },
+      };
+
+      const result = await saveNote(fileWithNullValues, mockLogger);
+
+      expect(result.note?.title).toBe("Test Recipe");
+      expect(mockCreateNoteWithEvernoteMetadata).toHaveBeenCalledWith(
+        fileWithNullValues.file
+      );
+    });
+
+    it("should handle file with undefined evernoteMetadata", async () => {
+      const fileWithoutMetadata = {
+        ...mockData,
+        file: {
+          ...mockData.file!,
+          evernoteMetadata: undefined,
+        },
+      };
+
+      const result = await saveNote(fileWithoutMetadata, mockLogger);
+
+      expect(result.note?.title).toBe("Test Recipe");
+      expect(mockCreateNoteWithEvernoteMetadata).toHaveBeenCalledWith(
+        fileWithoutMetadata.file
       );
     });
   });

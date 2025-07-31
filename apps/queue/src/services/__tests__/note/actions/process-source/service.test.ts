@@ -45,10 +45,12 @@ describe("processSource", () => {
       content: "test content",
       file: {
         contents: "test content",
-        source: "https://example.com/recipe",
         title: "Test Recipe",
         ingredients: [],
         instructions: [],
+        evernoteMetadata: {
+          source: "https://example.com/recipe",
+        },
       },
     };
   });
@@ -101,7 +103,7 @@ describe("processSource", () => {
         id: "test-note-123",
         evernoteMetadataId: "metadata-123",
       };
-      mockData.file!.source = "The Joy of Cooking";
+      mockData.file!.evernoteMetadata!.source = "The Joy of Cooking";
       (getNoteWithEvernoteMetadata as any).mockResolvedValue(mockNote);
       (isValidUrl as any).mockReturnValue(false);
       (createOrFindSourceWithBook as any).mockResolvedValue("book-source-456");
@@ -211,7 +213,7 @@ describe("processSource", () => {
       };
       const dataWithoutSource = {
         ...mockData,
-        file: { ...mockData.file!, source: undefined },
+        file: { ...mockData.file!, evernoteMetadata: { source: undefined } },
       };
       (getNoteWithEvernoteMetadata as any).mockResolvedValue(mockNote);
 
@@ -238,7 +240,7 @@ describe("processSource", () => {
       };
       const dataWithEmptySource = {
         ...mockData,
-        file: { ...mockData.file!, source: "" },
+        file: { ...mockData.file!, evernoteMetadata: { source: "" } },
       };
       (getNoteWithEvernoteMetadata as any).mockResolvedValue(mockNote);
 
@@ -302,7 +304,7 @@ describe("processSource", () => {
         id: "test-note-123",
         evernoteMetadataId: "metadata-123",
       };
-      mockData.file!.source = "The Joy of Cooking";
+      mockData.file!.evernoteMetadata!.source = "The Joy of Cooking";
       const bookError = new Error("Failed to create book source");
       (getNoteWithEvernoteMetadata as any).mockResolvedValue(mockNote);
       (isValidUrl as any).mockReturnValue(false);

@@ -51,6 +51,7 @@ export interface NoteWithParsedLines {
     lineIndex: number;
   }>;
   evernoteMetadata?: {
+    originalCreatedAt?: Date;
     source?: string;
     tags?: string[];
   };

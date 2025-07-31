@@ -43,7 +43,7 @@ export function parseHTMLContent(
     const title = extractTitle($, enNote);
 
     // Extract metadata
-    const { historicalCreatedAt, source } = extractMetadata($);
+    const evernoteMetadata = extractMetadata($);
 
     // Extract content
     const contents = extractContent($, enNote);
@@ -54,11 +54,10 @@ export function parseHTMLContent(
     // Create final result
     const result: ParsedHTMLFile = {
       title,
-      historicalCreatedAt,
-      source,
       ingredients,
       instructions,
       contents: contents.join(HTML_PARSING_CONSTANTS.DEFAULTS.LINE_SEPARATOR),
+      evernoteMetadata,
     };
 
     logger(
@@ -110,19 +109,20 @@ function extractTitle($: CheerioAPI, enNote: Cheerio<Element>): string {
  * Extract metadata from HTML content
  */
 function extractMetadata($: CheerioAPI): {
-  historicalCreatedAt?: Date;
+  originalCreatedAt?: Date;
   source?: string;
+  tags?: string[];
 } {
   // Extract creation date
-  const historicalCreatedAtString = $(
+  const originalCreatedAtString = $(
     HTML_PARSING_CONSTANTS.SELECTORS.META_CREATED
   ).attr("content");
-  let historicalCreatedAt: Date | undefined;
+  let originalCreatedAt: Date | undefined;
 
-  if (historicalCreatedAtString) {
+  if (originalCreatedAtString) {
     try {
-      historicalCreatedAt = parseISO(historicalCreatedAtString);
-      if (isNaN(historicalCreatedAt.getTime())) {
+      originalCreatedAt = parseISO(originalCreatedAtString);
+      if (isNaN(originalCreatedAt.getTime())) {
         throw new Error(HTML_PARSING_CONSTANTS.ERRORS.INVALID_DATE);
       }
     } catch {
@@ -135,7 +135,20 @@ function extractMetadata($: CheerioAPI): {
     "content"
   );
 
-  return { historicalCreatedAt, source };
+  // Extract tags
+  const tags: string[] = [];
+  $(HTML_PARSING_CONSTANTS.SELECTORS.META_TAG).each((_, element) => {
+    const tagContent = $(element).attr("content");
+    if (tagContent && tagContent.trim()) {
+      tags.push(tagContent.trim());
+    }
+  });
+
+  return {
+    originalCreatedAt,
+    source,
+    tags: tags.length > 0 ? tags : undefined,
+  };
 }
 
 /**

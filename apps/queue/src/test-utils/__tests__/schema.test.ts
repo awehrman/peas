@@ -641,12 +641,11 @@ describe("Test Data Generators", () => {
       expect(file).toEqual({
         title: "Test Recipe",
         contents: "<html><body><h1>Test Recipe</h1></body></html>",
-        tags: ["recipe", "food"],
-        source: "Evernote",
-        sourceUrl: "https://example.com/recipe",
-        sourceApplication: "Evernote",
-        created: "2023-01-01T00:00:00Z",
-        historicalCreatedAt: new Date("2023-01-01"),
+        evernoteMetadata: {
+          originalCreatedAt: new Date("2023-01-01"),
+          source: "https://example.com/recipe",
+          tags: ["recipe", "food"],
+        },
         ingredients: [
           {
             reference: "1 cup flour",
@@ -671,18 +670,15 @@ describe("Test Data Generators", () => {
             dataResourceHash: "hash123",
           },
         ],
-        metadata: { author: "John Doe" },
       });
     });
 
     it("should create parsed HTML file with overrides", () => {
       const file = createTestParsedHtmlFile({
         title: "Custom Recipe",
-        tags: ["custom", "recipe"],
         ingredients: [],
       });
       expect(file.title).toBe("Custom Recipe");
-      expect(file.tags).toEqual(["custom", "recipe"]);
       expect(file.ingredients).toEqual([]);
     });
   });
@@ -694,7 +690,6 @@ describe("Test Data Generators", () => {
         file: {
           title: "Test Recipe",
           contents: "<html><body><h1>Test Recipe</h1></body></html>",
-          tags: [],
           ingredients: [
             {
               reference: "1 cup flour",
@@ -720,7 +715,6 @@ describe("Test Data Generators", () => {
         file: {
           title: "Custom Recipe",
           contents: "<html><body><h1>Custom Recipe</h1></body></html>",
-          tags: ["custom"],
           ingredients: [],
           instructions: [],
         },
@@ -783,10 +777,9 @@ describe("Test Data Generators", () => {
         file: {
           title: "Test Recipe",
           contents: "<html><body><h1>Test Recipe</h1></body></html>",
-          tags: [],
           ingredients: [
             {
-              id: "123e4567-e89b-12d3-a456-426614174000",
+              id: "ing-1",
               reference: "1 cup flour",
               blockIndex: 0,
               lineIndex: 1,
@@ -809,7 +802,6 @@ describe("Test Data Generators", () => {
         file: {
           title: "Custom Recipe",
           contents: "<html><body><h1>Custom Recipe</h1></body></html>",
-          tags: ["custom"],
           ingredients: [],
           instructions: [],
         },

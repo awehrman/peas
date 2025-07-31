@@ -46,8 +46,10 @@ describe("parseHtmlFile", () => {
           { reference: "Step 2", lineIndex: 1 },
         ],
         image: "recipe-image.jpg",
-        source: "https://example.com/recipe",
-        historicalCreatedAt: new Date("2023-01-01"),
+        evernoteMetadata: {
+          source: "https://example.com/recipe",
+          originalCreatedAt: new Date("2023-01-01"),
+        },
       };
 
       mockParseHTMLContent.mockReturnValue(mockParsedResult);
@@ -73,8 +75,10 @@ describe("parseHtmlFile", () => {
             { reference: "Step 2", lineIndex: 1 },
           ],
           image: "recipe-image.jpg",
-          historicalCreatedAt: new Date("2023-01-01"),
-          source: "https://example.com/recipe",
+          evernoteMetadata: {
+            source: "https://example.com/recipe",
+            originalCreatedAt: new Date("2023-01-01"),
+          },
         },
       });
     });
@@ -500,7 +504,9 @@ describe("parseHtmlFile", () => {
         title: "Test Recipe",
         ingredients: [],
         instructions: [],
-        source: "https://example.com/recipe",
+        evernoteMetadata: {
+          source: "https://example.com/recipe",
+        },
       };
 
       mockParseHTMLContent.mockReturnValue(mockParsedResult);
@@ -511,7 +517,7 @@ describe("parseHtmlFile", () => {
         mockParseHTMLContent
       );
 
-      expect(result.file?.source).toBe("https://example.com/recipe");
+      expect(result.file?.evernoteMetadata?.source).toBe("https://example.com/recipe");
     });
 
     it("should handle missing source field", async () => {
@@ -529,7 +535,7 @@ describe("parseHtmlFile", () => {
         mockParseHTMLContent
       );
 
-      expect(result.file?.source).toBeUndefined();
+      expect(result.file?.evernoteMetadata?.source).toBeUndefined();
     });
 
     it("should handle historicalCreatedAt field", async () => {
@@ -538,7 +544,9 @@ describe("parseHtmlFile", () => {
         title: "Test Recipe",
         ingredients: [],
         instructions: [],
-        historicalCreatedAt: historicalDate,
+        evernoteMetadata: {
+          originalCreatedAt: historicalDate,
+        },
       };
 
       mockParseHTMLContent.mockReturnValue(mockParsedResult);
@@ -549,7 +557,7 @@ describe("parseHtmlFile", () => {
         mockParseHTMLContent
       );
 
-      expect(result.file?.historicalCreatedAt).toBe(historicalDate);
+      expect(result.file?.evernoteMetadata?.originalCreatedAt).toBe(historicalDate);
     });
 
     it("should handle missing historicalCreatedAt field", async () => {
@@ -567,7 +575,7 @@ describe("parseHtmlFile", () => {
         mockParseHTMLContent
       );
 
-      expect(result.file?.historicalCreatedAt).toBeUndefined();
+      expect(result.file?.evernoteMetadata?.originalCreatedAt).toBeUndefined();
     });
   });
 

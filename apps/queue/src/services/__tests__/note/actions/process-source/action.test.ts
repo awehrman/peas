@@ -44,7 +44,9 @@ describe("ProcessSourceAction", () => {
           { reference: "Step 1", lineIndex: 0 },
           { reference: "Step 2", lineIndex: 1 },
         ],
-        source: "https://example.com/recipe",
+        evernoteMetadata: {
+          source: "https://example.com/recipe",
+        },
       },
     };
 

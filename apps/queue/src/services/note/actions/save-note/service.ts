@@ -18,7 +18,7 @@ export async function saveNote(
 
   try {
     // Extract Evernote metadata from the file
-    const source = data.file?.evernoteMetadata?.source || data.file?.source;
+    const source = data.file?.evernoteMetadata?.source;
     const tags = data.file?.evernoteMetadata?.tags || [];
 
     logger.log(

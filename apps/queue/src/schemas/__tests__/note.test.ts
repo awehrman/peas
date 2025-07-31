@@ -133,7 +133,6 @@ describe("Note Schemas", () => {
       {
         title: "Test Recipe",
         contents: "<html><body><h1>Test Recipe</h1></body></html>",
-        tags: [],
         ingredients: [],
         instructions: [],
       },
@@ -147,7 +146,6 @@ describe("Note Schemas", () => {
         contents: "<html><body><h1>Test Recipe</h1></body></html>",
       },
       {
-        tags: [],
         ingredients: [],
         instructions: [],
       },
@@ -172,13 +170,6 @@ describe("Note Schemas", () => {
       "Contents are required",
       "empty contents"
     );
-
-    testInvalidSchema(
-      ParsedHtmlFileSchema,
-      createTestParsedHtmlFile({ sourceUrl: "not-a-url" }),
-      "Invalid source URL format",
-      "invalid sourceUrl"
-    );
   });
 
   describe("SaveNoteDataSchema", () => {
@@ -194,7 +185,6 @@ describe("Note Schemas", () => {
         file: {
           title: "Test Recipe",
           contents: "<html><body><h1>Test Recipe</h1></body></html>",
-          tags: [],
           ingredients: [],
           instructions: [],
         },
@@ -206,7 +196,6 @@ describe("Note Schemas", () => {
       file: {
         title: "Test Recipe",
         contents: "<html><body><h1>Test Recipe</h1></body></html>",
-        tags: [],
         ingredients: [],
         instructions: [],
       },
@@ -218,7 +207,6 @@ describe("Note Schemas", () => {
         file: {
           title: "",
           contents: "<html><body><h1>Test Recipe</h1></body></html>",
-          tags: [],
           ingredients: [],
           instructions: [],
         },
@@ -322,7 +310,6 @@ describe("Note Schemas", () => {
       file: {
         title: "Test Recipe",
         contents: "<html><body><h1>Test Recipe</h1></body></html>",
-        tags: [],
         ingredients: [],
         instructions: [],
       },
@@ -341,7 +328,6 @@ describe("Note Schemas", () => {
         file: {
           title: "",
           contents: "<html><body><h1>Test Recipe</h1></body></html>",
-          tags: [],
           ingredients: [],
           instructions: [],
         },
@@ -539,7 +525,6 @@ describe("Note Schemas", () => {
           file: {
             title: "",
             contents: "<html><body><h1>Test Recipe</h1></body></html>",
-            tags: [],
             ingredients: [],
             instructions: [],
           },

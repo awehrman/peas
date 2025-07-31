@@ -104,8 +104,9 @@ export async function createNoteWithEvernoteMetadata(
 ): Promise<NoteWithParsedLines & { evernoteMetadataId: string | null }> {
   try {
     // Extract Evernote metadata from the file
-    const source = file.evernoteMetadata?.source || file.source;
+    const source = file.evernoteMetadata?.source;
     const tags = file.evernoteMetadata?.tags || [];
+    const originalCreatedAt = file.evernoteMetadata?.originalCreatedAt;
 
     const response = await prisma.note.create({
       data: {
@@ -134,13 +135,14 @@ export async function createNoteWithEvernoteMetadata(
           ),
         },
         // Create EvernoteMetadata if we have metadata
-        ...(source || tags.length > 0
+        ...(source || tags.length > 0 || originalCreatedAt
           ? {
               evernoteMetadata: {
                 create: {
                   source: source || null,
                   notebook: null, // Removed notebook as requested
-                  evernoteTags: tags,
+                  tags,
+                  originalCreatedAt: originalCreatedAt || null,
                 },
               },
             }

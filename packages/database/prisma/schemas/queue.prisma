@@ -33,7 +33,7 @@ model QueueJob {
   startedAt DateTime?
   completedAt DateTime?
   
-  note Note @relation(fields: [noteId], references: [id])
+  note Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
   noteId String
   
   // Only one of these should be set based on job type
