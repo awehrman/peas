@@ -41,7 +41,7 @@ describe("Status Actions Module Exports", () => {
 
     it("should have correct action name", () => {
       const action = new StatusActionsModule.CompletedStatusAction();
-      expect(action.name).toBe("completed_status");
+      expect(action.name).toBe("completion_status");
     });
   });
 
@@ -281,7 +281,7 @@ describe("Status Actions Module Exports", () => {
       injectStandardStatusActions(actions, getOperationName, logger);
 
       expect(actions[0]!.name).toBe("processing_status");
-      expect(actions[1]!.name).toBe("completed_status");
+      expect(actions[1]!.name).toBe("completion_status");
     });
   });
 

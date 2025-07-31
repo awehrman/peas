@@ -100,13 +100,13 @@ describe("registerNoteActions", () => {
     );
   });
 
-  it("should register exactly 5 actions", () => {
+  it("should register exactly 6 actions", () => {
     // Act
     registerNoteActions(mockFactory);
 
     // Assert
     const registeredActions = mockRegisterActions.mock.calls[0]?.[1];
-    expect(registeredActions).toHaveLength(5);
+    expect(registeredActions).toHaveLength(6);
   });
 
   it("should register PARSE_HTML action", () => {
@@ -164,12 +164,12 @@ describe("registerNoteActions", () => {
     );
   });
 
-  it("should call createActionRegistration exactly 5 times", () => {
+  it("should call createActionRegistration exactly 6 times", () => {
     // Act
     registerNoteActions(mockFactory);
 
     // Assert
-    expect(mockCreateActionRegistration).toHaveBeenCalledTimes(5);
+    expect(mockCreateActionRegistration).toHaveBeenCalledTimes(6);
   });
 
   it("should register actions in the correct order", () => {
@@ -183,6 +183,7 @@ describe("registerNoteActions", () => {
     expect(calls[2]?.[0]).toBe(ActionName.SAVE_NOTE);
     expect(calls[3]?.[0]).toBe(ActionName.SCHEDULE_ALL_FOLLOWUP_TASKS);
     expect(calls[4]?.[0]).toBe(ActionName.PROCESS_SOURCE);
+    expect(calls[5]?.[0]).toBe(ActionName.PROCESS_INSTRUCTION_LINES);
   });
 
   it("should pass the correct action classes to createActionRegistration", async () => {
@@ -202,6 +203,9 @@ describe("registerNoteActions", () => {
     const { ProcessSourceAction } = await import(
       "../../note/actions/process-source/action"
     );
+    const { ProcessInstructionsAction } = await import(
+      "../../note/actions/schedule-instructions/action"
+    );
 
     // Act
     registerNoteActions(mockFactory);
@@ -213,6 +217,7 @@ describe("registerNoteActions", () => {
     expect(calls[2]?.[1]).toBe(SaveNoteAction);
     expect(calls[3]?.[1]).toBe(ScheduleAllFollowupTasksAction);
     expect(calls[4]?.[1]).toBe(ProcessSourceAction);
+    expect(calls[5]?.[1]).toBe(ProcessInstructionsAction);
   });
 
   it("should return void", () => {
@@ -242,6 +247,7 @@ describe("registerNoteActions", () => {
       { name: ActionName.SAVE_NOTE, factory: vi.fn() },
       { name: ActionName.SCHEDULE_ALL_FOLLOWUP_TASKS, factory: vi.fn() },
       { name: ActionName.PROCESS_SOURCE, factory: vi.fn() },
+      { name: ActionName.PROCESS_INSTRUCTION_LINES, factory: vi.fn() },
     ];
 
     mockCreateActionRegistration
@@ -249,7 +255,8 @@ describe("registerNoteActions", () => {
       .mockReturnValueOnce(mockRegistrations[1])
       .mockReturnValueOnce(mockRegistrations[2])
       .mockReturnValueOnce(mockRegistrations[3])
-      .mockReturnValueOnce(mockRegistrations[4]);
+      .mockReturnValueOnce(mockRegistrations[4])
+      .mockReturnValueOnce(mockRegistrations[5]);
 
     // Act
     registerNoteActions(mockFactory);

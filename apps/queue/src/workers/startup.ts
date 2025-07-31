@@ -1,12 +1,14 @@
+import { createInstructionWorker } from "./instruction";
 import { createNoteWorker } from "./note";
-import { queueMonitor } from "../monitoring/queue-monitor";
 
 import { Queue } from "bullmq";
 
 import { LOG_MESSAGES, WORKER_CONSTANTS } from "../config/constants";
+import { queueMonitor } from "../monitoring/queue-monitor";
 import type { IServiceContainer } from "../services/container";
 
 import {
+  type AllWorkers,
   type FlexibleWorker,
   type WorkerRegistry,
   createWorkerConfig,
@@ -20,6 +22,7 @@ import {
 export function startWorkers(
   queues: {
     noteQueue: Queue;
+    instructionQueue: Queue;
     // TODO more queues here
   },
   serviceContainer: IServiceContainer
@@ -30,18 +33,25 @@ export function startWorkers(
       createNoteWorker,
       queues.noteQueue
     ),
+    createWorkerConfig(
+      WORKER_CONSTANTS.NAMES.INSTRUCTION,
+      createInstructionWorker,
+      queues.instructionQueue
+    ),
     // TODO more workers here
   ];
 
-  const workers = createWorkers(workerConfigs, serviceContainer);
+  const workers = createWorkers<AllWorkers>(workerConfigs, serviceContainer);
 
   // Start monitoring queues
   queueMonitor.startMonitoring(queues.noteQueue);
+  queueMonitor.startMonitoring(queues.instructionQueue);
   // TODO: Add monitoring for additional queues as they're implemented
 
   // Store workers for graceful shutdown
   serviceContainer._workers = {
     noteWorker: workers[WORKER_CONSTANTS.NAMES.NOTE],
+    instructionWorker: workers[WORKER_CONSTANTS.NAMES.INSTRUCTION],
     // TODO more workers here
   } as WorkerRegistry<FlexibleWorker>;
 

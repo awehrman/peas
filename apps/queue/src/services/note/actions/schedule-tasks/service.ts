@@ -2,6 +2,7 @@ import type { StructuredLogger } from "../../../../types";
 import type { NotePipelineData } from "../../../../types/notes";
 import type { NoteWorkerDependencies } from "../../../../types/notes";
 import { ActionContext } from "../../../../workers/core/types";
+import { ProcessInstructionsAction } from "../schedule-instructions/action";
 // import { ScheduleImagesAction } from "../../schedule-images";
 // import { ScheduleIngredientsAction } from "../../schedule-ingredients";
 // import { ScheduleInstructionsAction } from "../../schedule-instructions";
@@ -21,12 +22,17 @@ export async function scheduleAllFollowupTasks(
     throw new Error("No note ID available for scheduling followup tasks");
   }
 
+  // Validate that we have dependencies
+  if (!deps) {
+    throw new Error("No dependencies available for scheduling followup tasks");
+  }
+
   try {
     // Create action instances
     const sourceAction = new ProcessSourceAction();
+    const instructionsAction = new ProcessInstructionsAction();
     // const imageAction = new ScheduleImagesAction();
     // const ingredientAction = new ScheduleIngredientsAction();
-    // const instructionAction = new ScheduleInstructionsAction();
 
     // Create a mock context for the actions
     const context: ActionContext = {
@@ -45,14 +51,14 @@ export async function scheduleAllFollowupTasks(
       // Schedule source processing
       sourceAction.execute(data, deps, context),
 
+      // Schedule instruction processing
+      instructionsAction.execute(data, deps, context),
+
       // Schedule image processing
       // imageAction.execute(data, deps, context),
 
       // Schedule ingredient processing
       // ingredientAction.execute(data, deps, context),
-
-      // Schedule instruction processing
-      // instructionAction.execute(data, deps, context),
     ]);
 
     logger.log(

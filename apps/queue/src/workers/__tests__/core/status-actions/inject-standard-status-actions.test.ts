@@ -138,7 +138,7 @@ describe("injectStandardStatusActions", () => {
       injectStandardStatusActions(mockActions, getOperationName, mockLogger);
 
       const completedAction = mockActions[1] as CompletedStatusAction;
-      expect(completedAction.name).toBe(ActionName.COMPLETED_STATUS);
+      expect(completedAction.name).toBe(ActionName.COMPLETION_STATUS);
     });
 
     it("should create actions with correct generic types", () => {

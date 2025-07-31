@@ -30,7 +30,7 @@ describe("CompletedStatusAction", () => {
 
   describe("basic functionality", () => {
     it("should have correct action name", () => {
-      expect(action.name).toBe(ActionName.COMPLETED_STATUS);
+      expect(action.name).toBe(ActionName.COMPLETION_STATUS);
     });
 
     it("should be instance of CompletedStatusAction", () => {

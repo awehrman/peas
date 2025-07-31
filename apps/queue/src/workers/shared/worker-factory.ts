@@ -5,13 +5,14 @@ import type { IServiceContainer } from "../../services/container";
 import { formatLogMessage } from "../../utils/utils";
 import type { BaseWorker } from "../core/base-worker";
 import type { NoteWorker } from "../note/worker";
+import type { InstructionWorker } from "../instruction/worker";
 import type { BaseJobData, BaseWorkerDependencies } from "../types";
 
 /**
  * Union type of all concrete worker types in the system.
  * Extend this as you add more workers.
  */
-export type AllWorkers = NoteWorker; // | IngredientWorker | ImageWorker | ...
+export type AllWorkers = NoteWorker | InstructionWorker; // | IngredientWorker | ImageWorker | ...
 
 /**
  * Worker factory function type
@@ -54,7 +55,7 @@ export type FlexibleWorker = AllWorkers;
  * @returns Worker registry
  */
 export function createWorkers<
-  TWorker = BaseWorker<BaseJobData, BaseWorkerDependencies>,
+  TWorker = AllWorkers,
 >(
   configs: WorkerConfig<TWorker>[],
   container: IServiceContainer

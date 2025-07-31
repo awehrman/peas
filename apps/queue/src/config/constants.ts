@@ -163,7 +163,8 @@ export const SECURITY_CONSTANTS = {
     FRAME_OPTIONS: "DENY",
     XSS_PROTECTION: "1; mode=block",
     REFERRER_POLICY: "strict-origin-when-cross-origin",
-    CONTENT_SECURITY_POLICY: "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'",
+    CONTENT_SECURITY_POLICY:
+      "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'",
   },
 } as const;
 
@@ -207,6 +208,7 @@ export const WORKER_CONSTANTS = {
   /** Worker names */
   NAMES: {
     NOTE: "note_processing",
+    INSTRUCTION: "instruction_processing",
   },
   /** Job types */
   JOB_TYPES: {

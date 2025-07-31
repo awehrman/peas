@@ -355,13 +355,9 @@ describe("scheduleAllFollowupTasks", () => {
     });
 
     it("should handle null or undefined deps", async () => {
-      const result = await scheduleAllFollowupTasks(
-        mockData,
-        mockLogger,
-        null as any
-      );
-
-      expect(result).toBe(mockData);
+      await expect(
+        scheduleAllFollowupTasks(mockData, mockLogger, null as any)
+      ).rejects.toThrow("No dependencies available for scheduling followup tasks");
     });
 
     it("should handle logger without log method", async () => {

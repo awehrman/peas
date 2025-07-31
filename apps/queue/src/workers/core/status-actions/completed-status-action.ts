@@ -10,7 +10,7 @@ export class CompletedStatusAction<
   TData extends BaseJobData = BaseJobData,
   TDeps extends StatusDeps = StatusDeps,
 > extends BaseAction<TData, TDeps, void> {
-  public name = ActionName.COMPLETED_STATUS;
+  public name = ActionName.COMPLETION_STATUS;
 
   async execute(
     data: TData,

@@ -80,13 +80,14 @@ describe("Note Services Index", () => {
           name: ActionName.SCHEDULE_ALL_FOLLOWUP_TASKS,
         }),
         expect.objectContaining({ name: ActionName.PROCESS_SOURCE }),
+        expect.objectContaining({ name: ActionName.PROCESS_INSTRUCTION_LINES }),
       ]);
     });
 
     it("should create action registrations with correct parameters", () => {
       registerNoteActions(mockFactory);
 
-      expect(mockCreateActionRegistration).toHaveBeenCalledTimes(5);
+      expect(mockCreateActionRegistration).toHaveBeenCalledTimes(6);
 
       // Check each action registration
       expect(mockCreateActionRegistration).toHaveBeenCalledWith(
@@ -109,6 +110,10 @@ describe("Note Services Index", () => {
         ActionName.PROCESS_SOURCE,
         expect.any(Function) // ProcessSourceAction
       );
+      expect(mockCreateActionRegistration).toHaveBeenCalledWith(
+        ActionName.PROCESS_INSTRUCTION_LINES,
+        expect.any(Function) // ProcessInstructionsAction
+      );
     });
 
     it("should register actions in the correct order", () => {
@@ -120,6 +125,7 @@ describe("Note Services Index", () => {
       expect(calls[2]?.[0]).toBe(ActionName.SAVE_NOTE);
       expect(calls[3]?.[0]).toBe(ActionName.SCHEDULE_ALL_FOLLOWUP_TASKS);
       expect(calls[4]?.[0]).toBe(ActionName.PROCESS_SOURCE);
+      expect(calls[5]?.[0]).toBe(ActionName.PROCESS_INSTRUCTION_LINES);
     });
 
     it("should handle factory with different configurations", () => {
@@ -151,7 +157,7 @@ describe("Note Services Index", () => {
       registerNoteActions(mockFactory);
 
       const registrations = mockRegisterActions.mock.calls[0]?.[1];
-      expect(registrations).toHaveLength(5);
+      expect(registrations).toHaveLength(6);
 
       // Each registration should have the correct structure
       registrations.forEach((registration: any) => {
@@ -172,7 +178,7 @@ describe("Note Services Index", () => {
       registerNoteActions(mockFactory);
 
       expect(mockRegisterActions).toHaveBeenCalledTimes(1);
-      expect(mockCreateActionRegistration).toHaveBeenCalledTimes(5);
+      expect(mockCreateActionRegistration).toHaveBeenCalledTimes(6);
     });
   });
 
@@ -248,6 +254,7 @@ describe("Note Services Index", () => {
         ActionName.SAVE_NOTE,
         ActionName.SCHEDULE_ALL_FOLLOWUP_TASKS,
         ActionName.PROCESS_SOURCE,
+        ActionName.PROCESS_INSTRUCTION_LINES,
       ];
 
       const actualActionNames = mockCreateActionRegistration.mock.calls.map(
