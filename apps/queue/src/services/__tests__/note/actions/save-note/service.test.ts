@@ -508,24 +508,24 @@ describe("saveNote", () => {
       );
     });
 
-    it("should handle file with null evernoteMetadata values", async () => {
-      const fileWithNullValues = {
+    it("should handle file with undefined evernoteMetadata values", async () => {
+      const fileWithUndefinedValues = {
         ...mockData,
         file: {
           ...mockData.file!,
           evernoteMetadata: {
-            source: null,
-            tags: null,
-            originalCreatedAt: null,
+            source: undefined,
+            tags: undefined,
+            originalCreatedAt: undefined,
           },
         },
       };
 
-      const result = await saveNote(fileWithNullValues, mockLogger);
+      const result = await saveNote(fileWithUndefinedValues, mockLogger);
 
       expect(result.note?.title).toBe("Test Recipe");
       expect(mockCreateNoteWithEvernoteMetadata).toHaveBeenCalledWith(
-        fileWithNullValues.file
+        fileWithUndefinedValues.file
       );
     });
 

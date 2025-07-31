@@ -13,15 +13,22 @@ export function isValidUrl(string: string): boolean {
 }
 
 /**
- * Extract site name from URL
+ * Extract domain name from URL
  */
-export function extractSiteName(url: string): string | null {
+export function extractDomainName(url: string): string | null {
   try {
     const urlObj = new globalThis.URL(url);
     return urlObj.hostname.replace(/^www\./, "");
   } catch {
     return null;
   }
+}
+
+/**
+ * Extract site name from URL (for backward compatibility)
+ */
+export function extractSiteName(url: string): string | null {
+  return extractDomainName(url);
 }
 
 /**
@@ -38,7 +45,11 @@ export async function createOrFindSourceWithUrl(url: string): Promise<string> {
       },
     },
     include: {
-      urls: true,
+      urls: {
+        include: {
+          website: true,
+        },
+      },
     },
   });
 
@@ -46,13 +57,32 @@ export async function createOrFindSourceWithUrl(url: string): Promise<string> {
     return existingSource.id;
   }
 
-  // Create new source with URL
+  // Extract domain name from URL
+  const domainName = extractDomainName(url);
+
+  // Find or create website
+  let websiteId: string | undefined;
+  if (domainName) {
+    const website = await prisma.website.upsert({
+      where: { domainName },
+      update: {},
+      create: {
+        domainName,
+        // Don't set siteName initially - it can be updated later
+      },
+    });
+    websiteId = website.id;
+  }
+
+  // Create new source with URL and website
   const newSource = await prisma.source.create({
     data: {
       urls: {
         create: {
           url: url,
-          domainName: extractSiteName(url),
+          websiteId,
+          lastAccessed: null, // Don't set lastAccessed initially
+          isBrokenLink: false,
         },
       },
     },
@@ -115,12 +145,23 @@ export async function upsertEvernoteMetadataSource(
 }
 
 /**
- * Connect note to source
+ * Connect note to source and update URL lastAccessed
  */
 export async function connectNoteToSource(
   noteId: string,
   sourceId: string
 ): Promise<void> {
+  // Update the lastAccessed date for all URLs in this source
+  await prisma.uRL.updateMany({
+    where: {
+      sourceId: sourceId,
+    },
+    data: {
+      lastAccessed: null,
+    },
+  });
+
+  // Connect the note to the source
   await prisma.note.update({
     where: { id: noteId },
     data: {
@@ -139,6 +180,58 @@ export async function getNoteWithEvernoteMetadata(noteId: string) {
     where: { id: noteId },
     include: {
       evernoteMetadata: true,
+    },
+  });
+}
+
+/**
+ * Mark URL as broken link
+ */
+export async function markUrlAsBroken(urlId: string): Promise<void> {
+  await prisma.uRL.update({
+    where: { id: urlId },
+    data: {
+      isBrokenLink: true,
+    },
+  });
+}
+
+/**
+ * Mark URL as working (not broken)
+ */
+export async function markUrlAsWorking(urlId: string): Promise<void> {
+  await prisma.uRL.update({
+    where: { id: urlId },
+    data: {
+      isBrokenLink: false,
+      lastAccessed: null,
+    },
+  });
+}
+
+/**
+ * Get website by domain name
+ */
+export async function getWebsiteByDomain(domainName: string) {
+  return prisma.website.findUnique({
+    where: { domainName },
+    include: {
+      urls: true,
+    },
+  });
+}
+
+/**
+ * Update website site name
+ */
+export async function updateWebsiteSiteName(
+  websiteId: string,
+  siteName: string
+): Promise<void> {
+  await prisma.website.update({
+    where: { id: websiteId },
+    data: {
+      siteName,
     },
   });
 }

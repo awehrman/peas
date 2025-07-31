@@ -51,11 +51,21 @@ export async function processSource(
     let sourceId: string;
 
     if (isUrl) {
-      // Create or find existing source with URL
+      // Create or find existing source with URL (this will also handle Website creation)
+      logger.log(
+        `[PROCESS_SOURCE] Creating or finding source with URL: ${sourceUrl}`
+      );
       sourceId = await createOrFindSourceWithUrl(sourceUrl);
+      logger.log(`[PROCESS_SOURCE] Source created/found with ID: ${sourceId}`);
     } else {
       // Treat as book reference
+      logger.log(
+        `[PROCESS_SOURCE] Creating or finding source with book reference: ${sourceUrl}`
+      );
       sourceId = await createOrFindSourceWithBook(sourceUrl);
+      logger.log(
+        `[PROCESS_SOURCE] Book source created/found with ID: ${sourceId}`
+      );
     }
 
     // Upsert the note's EvernoteMetadata with the source

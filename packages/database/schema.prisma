@@ -344,19 +344,44 @@ model Source {
   updatedAt DateTime @updatedAt
 }
 
-model URL {
+model Website {
   id String @id @default(cuid())
 
   siteName String?
   domainName String?
+  
+  // URLs associated with this website
+  urls URL[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([domainName])
+  @@index([siteName])
+}
+
+model URL {
+  id String @id @default(cuid())
+
   author String?
   url String
+  lastAccessed DateTime?
+  isBrokenLink Boolean @default(false)
 
+  // Website this URL belongs to
+  website Website? @relation(fields: [websiteId], references: [id])
+  websiteId String?
+
+  // Source this URL belongs to
   source Source @relation(fields: [sourceId], references: [id])
   sourceId String
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([url])
+  @@index([lastAccessed])
+  @@index([isBrokenLink])
 }
 
 model Book {
