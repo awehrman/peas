@@ -34,13 +34,21 @@ export async function formatInstruction(
       throw new Error("Instruction is empty after trimming");
     }
 
+    // Validate minimum length (3 characters)
+    if (formattedReference.length < 3) {
+      logger.log(
+        `[FORMAT_INSTRUCTION] Instruction too short (${formattedReference.length} chars): "${formattedReference}"`
+      );
+      throw new Error(
+        `Instruction too short: "${formattedReference}" (minimum 3 characters required)`
+      );
+    }
+
     // Add period if the string doesn't end with punctuation
     const punctuationRegex = /[.!?;:]$/;
     if (!punctuationRegex.test(formattedReference)) {
       formattedReference += ".";
-      logger.log(
-        `[FORMAT_INSTRUCTION] Added period to instruction`
-      );
+      logger.log(`[FORMAT_INSTRUCTION] Added period to instruction`);
     }
 
     // Update the data with formatted reference
@@ -55,9 +63,7 @@ export async function formatInstruction(
 
     return formattedData;
   } catch (error) {
-    logger.log(
-      `[FORMAT_INSTRUCTION] Failed to format instruction: ${error}`
-    );
+    logger.log(`[FORMAT_INSTRUCTION] Failed to format instruction: ${error}`);
     throw error;
   }
-} 
+}

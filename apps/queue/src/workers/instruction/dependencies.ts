@@ -18,6 +18,12 @@ export interface InstructionWorkerDependencies extends BaseWorkerDependencies {
      */
     saveInstruction: (data: InstructionJobData) => Promise<InstructionJobData>;
   };
+  /** Status broadcaster for completion messages */
+  statusBroadcaster?: {
+    addStatusEventAndBroadcast: (
+      event: Record<string, unknown>
+    ) => Promise<Record<string, unknown>>;
+  };
 }
 
 /**
@@ -41,6 +47,7 @@ export function buildInstructionDependencies(
 ): InstructionWorkerDependencies {
   return {
     logger: serviceContainer.logger,
+    statusBroadcaster: serviceContainer.statusBroadcaster,
     services: {
       formatInstruction: async (data: InstructionJobData) => {
         // Import and use the actual format instruction service
@@ -54,7 +61,7 @@ export function buildInstructionDependencies(
         const { saveInstruction } = await import(
           "../../services/instruction/actions/save-instruction/service"
         );
-        return saveInstruction(data, serviceContainer.logger);
+        return saveInstruction(data, serviceContainer.logger, serviceContainer.statusBroadcaster);
       },
     },
   };
