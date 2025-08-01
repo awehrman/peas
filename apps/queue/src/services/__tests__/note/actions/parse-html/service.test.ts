@@ -259,7 +259,7 @@ describe("parseHtmlFile", () => {
       );
 
       expect(result.file?.ingredients).toEqual([
-        { reference: "Ingredient 1", blockIndex: 1, lineIndex: 0 },
+        { reference: "Ingredient 1", blockIndex: 1, lineIndex: undefined },
         { reference: "Ingredient 2", blockIndex: 2, lineIndex: 10 },
       ]);
     });
@@ -363,7 +363,7 @@ describe("parseHtmlFile", () => {
       );
 
       expect(result.file?.instructions).toEqual([
-        { reference: "Step 1", lineIndex: 0 },
+        { reference: "Step 1", lineIndex: undefined },
         { reference: "Step 2", lineIndex: 10 },
       ]);
     });
@@ -517,7 +517,9 @@ describe("parseHtmlFile", () => {
         mockParseHTMLContent
       );
 
-      expect(result.file?.evernoteMetadata?.source).toBe("https://example.com/recipe");
+      expect(result.file?.evernoteMetadata?.source).toBe(
+        "https://example.com/recipe"
+      );
     });
 
     it("should handle missing source field", async () => {
@@ -557,7 +559,9 @@ describe("parseHtmlFile", () => {
         mockParseHTMLContent
       );
 
-      expect(result.file?.evernoteMetadata?.originalCreatedAt).toBe(historicalDate);
+      expect(result.file?.evernoteMetadata?.originalCreatedAt).toBe(
+        historicalDate
+      );
     });
 
     it("should handle missing historicalCreatedAt field", async () => {

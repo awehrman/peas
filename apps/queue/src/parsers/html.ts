@@ -177,9 +177,9 @@ function parseContentLines(contents: string[]): {
   ingredients: ParsedIngredientLine[];
   instructions: ParsedInstructionLine[];
 } {
-  const ingredients: string[][] = [];
+  const ingredients: Array<{ text: string; originalLineIndex: number }>[] = [];
   const instructions: ParsedInstructionLine[] = [];
-  let currentChunk: string[] = [];
+  let currentChunk: Array<{ text: string; originalLineIndex: number }> = [];
 
   contents.forEach((line, lineIndex) => {
     if (isEmptyLine(line)) {
@@ -202,16 +202,19 @@ function parseContentLines(contents: string[]): {
           ) {
             instructions.push({
               reference: cleanText,
-              lineIndex,
+              lineIndex: instructions.length, // Start at 0 and increment for each instruction
               parseStatus: "PENDING",
             });
           } else {
             // Short line that doesn't qualify as instruction - treat as ingredient
-            currentChunk.push(cleanText);
+            currentChunk.push({
+              text: cleanText,
+              originalLineIndex: lineIndex,
+            });
           }
         } else {
           // Line is part of a block - this is an ingredient
-          currentChunk.push(cleanText);
+          currentChunk.push({ text: cleanText, originalLineIndex: lineIndex });
         }
       }
     }
@@ -223,15 +226,18 @@ function parseContentLines(contents: string[]): {
   }
 
   // Convert ingredient chunks to ParsedIngredientLine format
-  const parsedIngredients: ParsedIngredientLine[] = ingredients.flatMap(
-    (block, blockIndex) =>
-      block.map((line, lineIndex) => ({
+  const parsedIngredients: ParsedIngredientLine[] = [];
+
+  ingredients.forEach((block, blockIndex) => {
+    block.forEach((item, lineIndexInBlock) => {
+      parsedIngredients.push({
         blockIndex,
-        lineIndex,
-        reference: line,
+        lineIndex: lineIndexInBlock,
+        reference: item.text,
         parseStatus: "PENDING",
-      }))
-  );
+      });
+    });
+  });
 
   return { ingredients: parsedIngredients, instructions };
 }

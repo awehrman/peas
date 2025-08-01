@@ -15,7 +15,6 @@ export async function parseHtmlFile(
 ): Promise<NotePipelineData> {
   logger.log(`[PARSE_HTML] Starting HTML parsing`);
 
-  // Call the parseHTMLContent function with the content string
   const result = parseHTMLContent(data.content);
 
   // Convert the parsed data to the expected ParsedHTMLFile format
@@ -23,20 +22,16 @@ export async function parseHtmlFile(
     title: result.title || "Untitled",
     contents: data.content, // Use the original content
     ingredients:
-      result.ingredients?.map(
-        (ingredient: ParsedIngredientLine, index: number) => ({
-          reference: ingredient.reference,
-          blockIndex: ingredient.blockIndex || 0,
-          lineIndex: ingredient.lineIndex || index,
-        })
-      ) || [],
+      result.ingredients?.map((ingredient: ParsedIngredientLine) => ({
+        reference: ingredient.reference,
+        blockIndex: ingredient.blockIndex || 0,
+        lineIndex: ingredient.lineIndex,
+      })) || [],
     instructions:
-      result.instructions?.map(
-        (instruction: ParsedInstructionLine, index: number) => ({
-          reference: instruction.reference,
-          lineIndex: instruction.lineIndex || index,
-        })
-      ) || [],
+      result.instructions?.map((instruction: ParsedInstructionLine) => ({
+        reference: instruction.reference,
+        lineIndex: instruction.lineIndex,
+      })) || [],
     image: result.image || "",
     evernoteMetadata: result.evernoteMetadata,
   };
