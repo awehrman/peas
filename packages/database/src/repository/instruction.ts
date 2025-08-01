@@ -1,18 +1,14 @@
 import { prisma } from "../client.js";
 
 /**
- * Update a parsed instruction line with processed text and broadcast completion
+ * Update a parsed instruction line with processed text
  */
 export async function updateInstructionLine(
   noteId: string,
   lineIndex: number,
   processedText: string,
-  statusBroadcaster?: {
-    addStatusEventAndBroadcast: (
-      event: Record<string, unknown>
-    ) => Promise<Record<string, unknown>>;
-  },
-  parseStatus: "CORRECT" | "ERROR" = "CORRECT"
+  parseStatus: "CORRECT" | "ERROR" = "CORRECT",
+  isActive: boolean = true
 ): Promise<{
   id: string;
   lineIndex: number;
@@ -43,49 +39,10 @@ export async function updateInstructionLine(
       data: {
         normalizedText: processedText,
         parseStatus,
+        isActive,
         updatedAt: new Date(),
       },
     });
-
-    // Get the note to check completion status
-    const note = await prisma.note.findUnique({
-      where: { id: noteId },
-      select: {
-        id: true,
-        title: true,
-        totalInstructionLines: true,
-        parsedInstructionLines: {
-          where: {
-            parseStatus: "CORRECT",
-          },
-          select: {
-            id: true,
-          },
-        },
-      },
-    });
-
-    if (!note) {
-      throw new Error(`Note not found: ${noteId}`);
-    }
-
-    const completedInstructions = note.parsedInstructionLines.length;
-    const totalInstructions = note.totalInstructionLines;
-
-    // Broadcast completion message if statusBroadcaster is available
-    if (statusBroadcaster) {
-      await statusBroadcaster.addStatusEventAndBroadcast({
-        type: "instruction_processed",
-        noteId,
-        lineIndex,
-        processedText,
-        completedInstructions,
-        totalInstructions,
-        progress: `${completedInstructions}/${totalInstructions}`,
-        isComplete: completedInstructions >= totalInstructions,
-        timestamp: new Date().toISOString(),
-      });
-    }
 
     return {
       id: updatedInstructionLine.id,

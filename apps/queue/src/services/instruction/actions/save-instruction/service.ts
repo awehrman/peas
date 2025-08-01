@@ -1,4 +1,7 @@
-import { updateInstructionLine } from "@peas/database";
+import {
+  getInstructionCompletionStatus,
+  updateInstructionLine,
+} from "@peas/database";
 
 import type { StructuredLogger } from "../../../../types";
 import type { InstructionJobData } from "../../../../workers/instruction/dependencies";
@@ -30,14 +33,33 @@ export async function saveInstruction(
       `[SAVE_INSTRUCTION] Saving instruction: "${data.instructionReference}"`
     );
 
-    // Update the instruction line in the database and broadcast completion
+    // Update the instruction line in the database
     const updatedInstruction = await updateInstructionLine(
       data.noteId,
       data.lineIndex,
       data.instructionReference,
-      statusBroadcaster,
-      "CORRECT"
+      "CORRECT",
+      data.isActive
     );
+
+    // Broadcast completion message if statusBroadcaster is available
+    if (statusBroadcaster) {
+      const completionStatus = await getInstructionCompletionStatus(
+        data.noteId
+      );
+
+      await statusBroadcaster.addStatusEventAndBroadcast({
+        type: "instruction_processed",
+        noteId: data.noteId,
+        lineIndex: data.lineIndex,
+        processedText: data.instructionReference,
+        completedInstructions: completionStatus.completedInstructions,
+        totalInstructions: completionStatus.totalInstructions,
+        progress: completionStatus.progress,
+        isComplete: completionStatus.isComplete,
+        timestamp: new Date().toISOString(),
+      });
+    }
 
     logger.log(
       `[SAVE_INSTRUCTION] Successfully saved instruction: "${data.instructionReference}" (ID: ${updatedInstruction.id})`

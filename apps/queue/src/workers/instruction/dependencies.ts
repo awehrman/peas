@@ -1,3 +1,5 @@
+import { ParseStatus } from "@peas/database";
+
 import type { IServiceContainer } from "../../services/container";
 import type { BaseWorkerDependencies } from "../types";
 
@@ -35,6 +37,8 @@ export interface InstructionJobData {
   lineIndex: number;
   jobId?: string;
   metadata?: Record<string, unknown>;
+  parseStatus: ParseStatus;
+  isActive: boolean;
 }
 
 /**
@@ -61,7 +65,11 @@ export function buildInstructionDependencies(
         const { saveInstruction } = await import(
           "../../services/instruction/actions/save-instruction/service"
         );
-        return saveInstruction(data, serviceContainer.logger, serviceContainer.statusBroadcaster);
+        return saveInstruction(
+          data,
+          serviceContainer.logger,
+          serviceContainer.statusBroadcaster
+        );
       },
     },
   };

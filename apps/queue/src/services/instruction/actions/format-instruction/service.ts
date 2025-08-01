@@ -29,32 +29,38 @@ export async function formatInstruction(
     // Remove instruction if it has no length after trimming
     if (formattedReference.length === 0) {
       logger.log(
-        `[FORMAT_INSTRUCTION] Instruction is empty after trimming, skipping`
+        `[FORMAT_INSTRUCTION] Marking instruction as inactive: empty after trimming`
       );
-      throw new Error("Instruction is empty after trimming");
+      return {
+        ...data,
+        instructionReference: formattedReference,
+        isActive: false,
+      };
     }
 
-    // Validate minimum length (3 characters)
+    // Mark as inactive if too short instead of throwing error
     if (formattedReference.length < 3) {
       logger.log(
-        `[FORMAT_INSTRUCTION] Instruction too short (${formattedReference.length} chars): "${formattedReference}"`
+        `[FORMAT_INSTRUCTION] Marking instruction as inactive: too short "${formattedReference}" (minimum 3 characters required)`
       );
-      throw new Error(
-        `Instruction too short: "${formattedReference}" (minimum 3 characters required)`
-      );
+      return {
+        ...data,
+        instructionReference: formattedReference,
+        isActive: false,
+      };
     }
 
     // Add period if the string doesn't end with punctuation
     const punctuationRegex = /[.!?;:]$/;
     if (!punctuationRegex.test(formattedReference)) {
       formattedReference += ".";
-      logger.log(`[FORMAT_INSTRUCTION] Added period to instruction`);
     }
 
     // Update the data with formatted reference
     const formattedData = {
       ...data,
       instructionReference: formattedReference,
+      isActive: true, // Explicitly mark as active
     };
 
     logger.log(

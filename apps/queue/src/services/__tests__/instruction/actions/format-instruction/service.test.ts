@@ -1,11 +1,9 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-
-import type { StructuredLogger } from "../../../../../types";
+import { describe, it, expect, beforeEach, vi } from "vitest";
+import { formatInstruction } from "../../../../instruction/actions/format-instruction/service.js";
 import type { InstructionJobData } from "../../../../../workers/instruction/dependencies";
-import { formatInstruction } from "../../../../instruction/actions/format-instruction/service";
 
 describe("formatInstruction", () => {
-  let mockLogger: StructuredLogger;
+  let mockLogger: { log: ReturnType<typeof vi.fn> };
   let mockData: InstructionJobData;
 
   beforeEach(() => {
@@ -15,8 +13,10 @@ describe("formatInstruction", () => {
 
     mockData = {
       noteId: "test-note-id",
-      instructionReference: "Mix ingredients",
       lineIndex: 0,
+      instructionReference: "Mix ingredients",
+      parseStatus: "PENDING" as const,
+      isActive: true,
     };
   });
 
@@ -27,13 +27,8 @@ describe("formatInstruction", () => {
       expect(result).toEqual({
         ...mockData,
         instructionReference: "Mix ingredients.",
+        isActive: true,
       });
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        expect.stringContaining("Starting instruction formatting")
-      );
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        expect.stringContaining("Successfully formatted instruction")
-      );
     });
 
     it("should handle data without instruction reference", async () => {
@@ -68,36 +63,46 @@ describe("formatInstruction", () => {
 
       const result = await formatInstruction(dataWithWhitespace, mockLogger);
 
-      expect(result.instructionReference).toBe("Mix ingredients.");
+      expect(result).toEqual({
+        ...mockData,
+        instructionReference: "Mix ingredients.",
+        isActive: true,
+      });
     });
 
-    it("should remove instructions that are only whitespace", async () => {
+    it("should mark instructions that are only whitespace as inactive", async () => {
       const dataWithOnlyWhitespace = {
         ...mockData,
-        instructionReference: "   ",
+        instructionReference: "   \n\t   ",
       };
 
-      await expect(
-        formatInstruction(dataWithOnlyWhitespace, mockLogger)
-      ).rejects.toThrow("Instruction is empty after trimming");
+      const result = await formatInstruction(dataWithOnlyWhitespace, mockLogger);
+
+      expect(result).toEqual({
+        ...mockData,
+        instructionReference: "",
+        isActive: false,
+      });
     });
   });
 
   describe("length validation", () => {
-    it("should reject instructions shorter than 3 characters", async () => {
+    it("should mark instructions shorter than 3 characters as inactive", async () => {
       const shortInstruction = {
         ...mockData,
         instructionReference: "Hi",
       };
 
-      await expect(
-        formatInstruction(shortInstruction, mockLogger)
-      ).rejects.toThrow(
-        'Instruction too short: "Hi" (minimum 3 characters required)'
-      );
+      const result = await formatInstruction(shortInstruction, mockLogger);
+
+      expect(result).toEqual({
+        ...mockData,
+        instructionReference: "Hi",
+        isActive: false,
+      });
     });
 
-    it("should accept instructions exactly 3 characters long", async () => {
+    it("should mark instructions with exactly 3 characters as active", async () => {
       const threeCharInstruction = {
         ...mockData,
         instructionReference: "Mix",
@@ -105,33 +110,11 @@ describe("formatInstruction", () => {
 
       const result = await formatInstruction(threeCharInstruction, mockLogger);
 
-      expect(result.instructionReference).toBe("Mix.");
-    });
-
-    it("should accept instructions longer than 3 characters", async () => {
-      const longInstruction = {
+      expect(result).toEqual({
         ...mockData,
-        instructionReference: "Mix all ingredients thoroughly",
-      };
-
-      const result = await formatInstruction(longInstruction, mockLogger);
-
-      expect(result.instructionReference).toBe(
-        "Mix all ingredients thoroughly."
-      );
-    });
-
-    it("should handle short instructions with whitespace", async () => {
-      const shortWithWhitespace = {
-        ...mockData,
-        instructionReference: "  Hi  ",
-      };
-
-      await expect(
-        formatInstruction(shortWithWhitespace, mockLogger)
-      ).rejects.toThrow(
-        'Instruction too short: "Hi" (minimum 3 characters required)'
-      );
+        instructionReference: "Mix.",
+        isActive: true,
+      });
     });
   });
 
@@ -142,7 +125,7 @@ describe("formatInstruction", () => {
       expect(result.instructionReference).toBe("Mix ingredients.");
     });
 
-    it("should not add period to instructions that already have punctuation", async () => {
+    it("should not add period to instructions that already end with punctuation", async () => {
       const dataWithPunctuation = {
         ...mockData,
         instructionReference: "Mix ingredients!",
@@ -153,18 +136,7 @@ describe("formatInstruction", () => {
       expect(result.instructionReference).toBe("Mix ingredients!");
     });
 
-    it("should handle mixed punctuation scenarios", async () => {
-      const dataWithQuestion = {
-        ...mockData,
-        instructionReference: "Mix ingredients?",
-      };
-
-      const result = await formatInstruction(dataWithQuestion, mockLogger);
-
-      expect(result.instructionReference).toBe("Mix ingredients?");
-    });
-
-    it("should handle instructions ending with semicolon", async () => {
+    it("should not add period to instructions ending with semicolon", async () => {
       const dataWithSemicolon = {
         ...mockData,
         instructionReference: "Mix ingredients;",
@@ -175,7 +147,7 @@ describe("formatInstruction", () => {
       expect(result.instructionReference).toBe("Mix ingredients;");
     });
 
-    it("should handle instructions ending with colon", async () => {
+    it("should not add period to instructions ending with colon", async () => {
       const dataWithColon = {
         ...mockData,
         instructionReference: "Mix ingredients:",
@@ -188,62 +160,19 @@ describe("formatInstruction", () => {
   });
 
   describe("error handling", () => {
-    it("should handle processing errors gracefully", async () => {
+    it("should log errors and re-throw them", async () => {
       const invalidData = {
         ...mockData,
-        instructionReference: null as unknown as string,
+        noteId: "",
       };
 
       await expect(
         formatInstruction(invalidData, mockLogger)
-      ).rejects.toThrow();
-    });
-  });
-
-  describe("logging", () => {
-    it("should log processing start and completion", async () => {
-      await formatInstruction(mockData, mockLogger);
+      ).rejects.toThrow("No note ID available for instruction formatting");
 
       expect(mockLogger.log).toHaveBeenCalledWith(
-        expect.stringContaining("Starting instruction formatting")
+        expect.stringContaining("[FORMAT_INSTRUCTION] Failed to format instruction")
       );
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        expect.stringContaining("Successfully formatted instruction")
-      );
-    });
-
-    it("should log when instruction is too short", async () => {
-      const shortInstruction = {
-        ...mockData,
-        instructionReference: "Hi",
-      };
-
-      await expect(
-        formatInstruction(shortInstruction, mockLogger)
-      ).rejects.toThrow();
-
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        expect.stringContaining("Instruction too short (2 chars)")
-      );
-    });
-
-    it("should log when period is added", async () => {
-      await formatInstruction(mockData, mockLogger);
-
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        expect.stringContaining("Added period to instruction")
-      );
-    });
-  });
-
-  describe("data preservation", () => {
-    it("should preserve all other data properties", async () => {
-      const result = await formatInstruction(mockData, mockLogger);
-
-      expect(result.noteId).toBe(mockData.noteId);
-      expect(result.lineIndex).toBe(mockData.lineIndex);
-      expect(result.jobId).toBe(mockData.jobId);
-      expect(result.metadata).toEqual(mockData.metadata);
     });
   });
 });

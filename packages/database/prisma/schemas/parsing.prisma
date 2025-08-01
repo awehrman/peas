@@ -23,6 +23,9 @@ model ParsedIngredientLine {
 
   ingredientReferences IngredientReference[]
 
+  // New field to mark lines as active/inactive
+  isActive Boolean @default(true)
+
   Note   Note?   @relation(fields: [noteId], references: [id], onDelete: Cascade)
   noteId String?
 
@@ -30,6 +33,7 @@ model ParsedIngredientLine {
   updatedAt DateTime @updatedAt
 
   @@index([noteId])
+  @@index([isActive])
 }
 
 model ParsedInstructionLine {
@@ -41,6 +45,8 @@ model ParsedInstructionLine {
 
   parseStatus ParseStatus @default(PENDING)
 
+  isActive Boolean @default(true)
+
   note   Note?   @relation(fields: [noteId], references: [id], onDelete: Cascade)
   noteId String?
   queueJobs QueueJob[]
@@ -49,6 +55,7 @@ model ParsedInstructionLine {
   updatedAt DateTime @updatedAt
 
   @@index([noteId])
+  @@index([isActive])
 }
 
 model ParsedSegment {
