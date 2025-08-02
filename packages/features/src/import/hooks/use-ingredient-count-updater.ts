@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useStatusWebSocket } from "./use-status-websocket";
+
+import { useEffect, useState } from "react";
 
 interface UseIngredientCountUpdaterProps {
   wsUrl: string;
@@ -24,8 +25,8 @@ export function useIngredientCountUpdater({
     // Listen for instruction count update events
     const instructionCountEvents = events.filter(
       (event) =>
-        event.context === "parse_html_instructions" &&
-        event.metadata?.totalInstructions &&
+        (event.context === "parse_html_ingredients" ||
+          event.context === "process_ingredients") &&
         typeof event.metadata?.processedInstructions === "number"
     );
 

@@ -2,21 +2,17 @@ import type { StructuredLogger } from "../../../../types";
 import type { NotePipelineData } from "../../../../types/notes";
 import type { NoteWorkerDependencies } from "../../../../types/notes";
 import { ActionContext } from "../../../../workers/core/types";
-import { ProcessInstructionsAction } from "../schedule-instructions/action";
 // import { ScheduleImagesAction } from "../../schedule-images";
 // import { ScheduleIngredientsAction } from "../../schedule-ingredients";
 // import { ScheduleInstructionsAction } from "../../schedule-instructions";
 import { ProcessSourceAction } from "../process-source/action";
+import { ProcessInstructionsAction } from "../schedule-instructions/action";
 
 export async function scheduleAllFollowupTasks(
   data: NotePipelineData,
   logger: StructuredLogger,
   deps: NoteWorkerDependencies
 ): Promise<NotePipelineData> {
-  logger.log(
-    `[SCHEDULE_ALL_FOLLOWUP_TASKS] Starting to schedule followup tasks for note: ${data.noteId}`
-  );
-
   // Validate that we have a note ID
   if (!data.noteId) {
     throw new Error("No note ID available for scheduling followup tasks");
@@ -28,6 +24,10 @@ export async function scheduleAllFollowupTasks(
   }
 
   try {
+    logger.log(
+      `[SCHEDULE_ALL_FOLLOWUP_TASKS] Starting to schedule followup tasks for note: ${data.noteId}`
+    );
+
     // Create action instances
     const sourceAction = new ProcessSourceAction();
     const instructionsAction = new ProcessInstructionsAction();
@@ -51,7 +51,7 @@ export async function scheduleAllFollowupTasks(
       // Schedule source processing
       sourceAction.execute(data, deps, context),
 
-      // Schedule instruction processing
+      // Process instructions (schedules individual instruction jobs)
       instructionsAction.execute(data, deps, context),
 
       // Schedule image processing

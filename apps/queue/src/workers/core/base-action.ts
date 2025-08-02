@@ -162,6 +162,7 @@ export abstract class BaseAction<
    * @returns Promise that resolves to the service result
    */
   protected async executeServiceAction(options: {
+    suppressDefaultBroadcast?: boolean;
     data: TData;
     deps: TDeps;
     context: ActionContext;
@@ -172,6 +173,7 @@ export abstract class BaseAction<
     additionalBroadcasting?: (result: TResult) => Promise<void>;
   }): Promise<TResult> {
     const {
+      suppressDefaultBroadcast = false,
       data,
       deps,
       serviceCall,
@@ -191,8 +193,8 @@ export abstract class BaseAction<
 
     const hasImportId = data && "importId" in data && data.importId;
 
-    // Broadcast start status if we have the capability and importId
-    if (hasImportId && hasStatusBroadcaster) {
+    // Broadcast start status if enabled
+    if (!suppressDefaultBroadcast && hasImportId && hasStatusBroadcaster) {
       const finalContextName = contextName || this.name;
       const finalStartMessage = startMessage || `${this.name} started`;
 
@@ -215,7 +217,7 @@ export abstract class BaseAction<
     const result = await serviceCall();
 
     // Handle completion broadcasting
-    if (hasImportId && hasStatusBroadcaster) {
+    if (!suppressDefaultBroadcast && hasImportId && hasStatusBroadcaster) {
       try {
         if (additionalBroadcasting) {
           // If additional broadcasting is provided, let it handle all completion messages

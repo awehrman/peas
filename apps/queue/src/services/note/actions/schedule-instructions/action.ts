@@ -42,10 +42,11 @@ export class ProcessInstructionsAction extends BaseAction<
       data,
       deps,
       context,
-      serviceCall: () => processInstructions(data, deps.logger),
+      serviceCall: () => processInstructions(data, deps.logger, deps.queues),
       contextName: "PROCESS_INSTRUCTION_LINES",
       startMessage: `Starting to process instructions for note: ${data.noteId}`,
-      completionMessage: `Successfully processed instructions for note: ${data.noteId}`,
+      // Completion handled via per-instruction progress events; no final broadcast
+      additionalBroadcasting: async () => {},
     });
   }
 }

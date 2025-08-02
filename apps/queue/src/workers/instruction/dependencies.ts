@@ -35,6 +35,7 @@ export interface InstructionJobData {
   noteId: string;
   instructionReference: string;
   lineIndex: number;
+  importId?: string;
   jobId?: string;
   metadata?: Record<string, unknown>;
   parseStatus: ParseStatus;

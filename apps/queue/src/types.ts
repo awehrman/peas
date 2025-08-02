@@ -39,8 +39,8 @@ export interface BaseJobData {
  * All queue names in the system
  */
 export enum QueueName {
-  NOTES = "notes",
-  INGREDIENTS = "ingredients",
+  NOTE = "note",
+  INGREDIENT = "ingredient",
   INSTRUCTION = "instruction",
   SOURCE = "source",
   IMAGE = "image",
@@ -241,7 +241,7 @@ export enum LogLevel {
  * Map queue names to their allowed actions
  */
 export const QUEUE_ACTIONS: Record<QueueName, ActionName[]> = {
-  [QueueName.NOTES]: [
+  [QueueName.NOTE]: [
     ActionName.CLEAN_HTML,
     ActionName.PARSE_HTML,
     ActionName.SAVE_NOTE,
@@ -251,7 +251,7 @@ export const QUEUE_ACTIONS: Record<QueueName, ActionName[]> = {
     ActionName.PROCESS_INGREDIENT_LINES,
     ActionName.PROCESS_INSTRUCTION_LINES,
   ],
-  [QueueName.INGREDIENTS]: [
+  [QueueName.INGREDIENT]: [
     ActionName.PROCESS_INGREDIENT_LINE,
     ActionName.SAVE_INGREDIENT_LINE,
     ActionName.INGREDIENT_COMPLETED_STATUS,

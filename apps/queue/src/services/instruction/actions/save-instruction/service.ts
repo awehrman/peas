@@ -15,10 +15,6 @@ export async function saveInstruction(
     ) => Promise<Record<string, unknown>>;
   }
 ): Promise<InstructionJobData> {
-  logger.log(
-    `[SAVE_INSTRUCTION] Starting instruction save for note: ${data.noteId}, line: ${data.lineIndex}`
-  );
-
   try {
     // Validate that we have required data
     if (!data.noteId) {
@@ -29,12 +25,8 @@ export async function saveInstruction(
       throw new Error("No instruction reference available for saving");
     }
 
-    logger.log(
-      `[SAVE_INSTRUCTION] Saving instruction: "${data.instructionReference}"`
-    );
-
     // Update the instruction line in the database
-    const updatedInstruction = await updateInstructionLine(
+    await updateInstructionLine(
       data.noteId,
       data.lineIndex,
       data.instructionReference,
@@ -49,21 +41,17 @@ export async function saveInstruction(
       );
 
       await statusBroadcaster.addStatusEventAndBroadcast({
-        type: "instruction_processed",
-        noteId: data.noteId,
-        lineIndex: data.lineIndex,
-        processedText: data.instructionReference,
-        completedInstructions: completionStatus.completedInstructions,
-        totalInstructions: completionStatus.totalInstructions,
-        progress: completionStatus.progress,
-        isComplete: completionStatus.isComplete,
-        timestamp: new Date().toISOString(),
+        importId: data.importId,
+        status: "PENDING",
+        message: "Instruction completed",
+        context: "instruction_completed",
+        indentLevel: 2,
+        metadata: {
+          totalInstructions: completionStatus.totalInstructions,
+          lineIndex: data.lineIndex,
+        },
       });
     }
-
-    logger.log(
-      `[SAVE_INSTRUCTION] Successfully saved instruction: "${data.instructionReference}" (ID: ${updatedInstruction.id})`
-    );
 
     return data;
   } catch (error) {

@@ -67,6 +67,11 @@ describe("scheduleAllFollowupTasks", () => {
       statusBroadcaster: {
         addStatusEventAndBroadcast: vi.fn(),
       },
+      queues: {
+        instructionQueue: {
+          add: vi.fn().mockResolvedValue(undefined),
+        } as any,
+      },
     } as NoteWorkerDependencies;
 
     // Get mocked ProcessSourceAction

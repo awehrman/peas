@@ -1,6 +1,7 @@
 import { Queue } from "bullmq";
 
 import { createQueue } from "../queues/create-queue";
+import { QueueName } from "../types";
 
 export interface IQueueService {
   noteQueue: Queue;
@@ -21,12 +22,12 @@ export class QueueService implements IQueueService {
   public readonly sourceQueue: Queue;
 
   constructor() {
-    this.noteQueue = createQueue("note");
-    this.imageQueue = createQueue("image");
-    this.ingredientQueue = createQueue("ingredient");
-    this.instructionQueue = createQueue("instruction");
-    this.categorizationQueue = createQueue("categorization");
-    this.sourceQueue = createQueue("source");
+    this.noteQueue = createQueue(QueueName.NOTE);
+    this.imageQueue = createQueue(QueueName.IMAGE);
+    this.ingredientQueue = createQueue(QueueName.INGREDIENT);
+    this.instructionQueue = createQueue(QueueName.INSTRUCTION);
+    this.categorizationQueue = createQueue(QueueName.CATEGORIZATION);
+    this.sourceQueue = createQueue(QueueName.SOURCE);
   }
 }
 

@@ -51,9 +51,6 @@ describe("processJob", () => {
         "[TEST-OPERATION] Executing 1 actions: test-action"
       );
       expect(mockLogger.log).toHaveBeenCalledWith(
-        '[TEST-OPERATION] Data for action test-action: "initial-data"'
-      );
-      expect(mockLogger.log).toHaveBeenCalledWith(
         expect.stringMatching(/\[TEST-OPERATION\] ✅ test-action \(\d+ms\)/)
       );
     });
@@ -149,9 +146,6 @@ describe("processJob", () => {
         "[TEST-OPERATION] Executing 1 actions: parse-action"
       );
       expect(mockLogger.log).toHaveBeenCalledWith(
-        '[TEST-OPERATION] Data for action parse-action: "initial-data"'
-      );
-      expect(mockLogger.log).toHaveBeenCalledWith(
         expect.stringMatching(/\[TEST-OPERATION\] ✅ parse-action \(\d+ms\)/)
       );
     });
@@ -179,9 +173,6 @@ describe("processJob", () => {
 
       expect(mockLogger.log).toHaveBeenCalledWith(
         "[TEST-OPERATION] Executing 1 actions: validate-action"
-      );
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        '[TEST-OPERATION] Data for action validate-action: "initial-data"'
       );
       expect(mockLogger.log).toHaveBeenCalledWith(
         expect.stringMatching(/\[TEST-OPERATION\] ✅ validate-action \(\d+ms\)/)
@@ -248,9 +239,6 @@ describe("processJob", () => {
 
       expect(mockLogger.log).toHaveBeenCalledWith(
         "[TEST-OPERATION] Executing 1 actions: simple-action"
-      );
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        '[TEST-OPERATION] Data for action simple-action: "initial-data"'
       );
       expect(mockLogger.log).toHaveBeenCalledWith(
         expect.stringMatching(/\[TEST-OPERATION\] ✅ simple-action \(\d+ms\)/)
@@ -348,9 +336,6 @@ describe("processJob", () => {
         initialData,
         mockDependencies,
         mockContext
-      );
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        '[TEST-OPERATION] Data for action complex-action: {"id":"123","name":"test","value":0}'
       );
     });
   });
@@ -461,9 +446,6 @@ describe("processJob", () => {
 
       expect(mockLogger.log).toHaveBeenCalledWith(
         "[CUSTOM-OPERATION] Executing 1 actions: test-action"
-      );
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        '[CUSTOM-OPERATION] Data for action test-action: "initial-data"'
       );
       expect(mockLogger.log).toHaveBeenCalledWith(
         expect.stringMatching(/\[CUSTOM-OPERATION\] ✅ test-action \(\d+ms\)/)

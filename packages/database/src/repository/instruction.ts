@@ -73,7 +73,18 @@ export async function getInstructionCompletionStatus(noteId: string): Promise<{
         totalInstructionLines: true,
         parsedInstructionLines: {
           where: {
-            parseStatus: "CORRECT",
+            OR: [
+              {
+                parseStatus: {
+                  in: ["CORRECT", "ERROR"],
+                },
+              },
+              {
+                normalizedText: {
+                  not: null,
+                },
+              },
+            ],
           },
           select: {
             id: true,

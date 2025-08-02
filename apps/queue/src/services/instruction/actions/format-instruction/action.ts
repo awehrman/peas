@@ -45,10 +45,9 @@ export class FormatInstructionAction extends BaseAction<
       data,
       deps,
       context,
-      serviceCall: () => formatInstruction(data, deps.logger),
+      serviceCall: () => deps.services.formatInstruction(data),
       contextName: "FORMAT_INSTRUCTION",
-      startMessage: `Starting to format instruction for note: ${data.noteId}, line: ${data.lineIndex}`,
-      completionMessage: `Successfully formatted instruction for note: ${data.noteId}, line: ${data.lineIndex}`,
+      suppressDefaultBroadcast: true,
     });
   }
 }

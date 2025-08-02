@@ -5,10 +5,6 @@ export async function formatInstruction(
   data: InstructionJobData,
   logger: StructuredLogger
 ): Promise<InstructionJobData> {
-  logger.log(
-    `[FORMAT_INSTRUCTION] Starting instruction formatting for note: ${data.noteId}, line: ${data.lineIndex}`
-  );
-
   try {
     // Validate that we have required data
     if (!data.noteId) {
@@ -18,10 +14,6 @@ export async function formatInstruction(
     if (!data.instructionReference) {
       throw new Error("No instruction reference available for formatting");
     }
-
-    logger.log(
-      `[FORMAT_INSTRUCTION] Formatting instruction: "${data.instructionReference}"`
-    );
 
     // Trim whitespace from the instruction reference
     let formattedReference = data.instructionReference.trim();
@@ -62,10 +54,6 @@ export async function formatInstruction(
       instructionReference: formattedReference,
       isActive: true, // Explicitly mark as active
     };
-
-    logger.log(
-      `[FORMAT_INSTRUCTION] Successfully formatted instruction: "${formattedReference}"`
-    );
 
     return formattedData;
   } catch (error) {

@@ -1,10 +1,10 @@
 import { saveInstruction } from "./service";
 
 import { ActionName } from "../../../../types";
-import type { InstructionJobData } from "../../../../workers/instruction/dependencies";
-import type { InstructionWorkerDependencies } from "../../../../workers/instruction/dependencies";
 import { BaseAction } from "../../../../workers/core/base-action";
 import { ActionContext } from "../../../../workers/core/types";
+import type { InstructionJobData } from "../../../../workers/instruction/dependencies";
+import type { InstructionWorkerDependencies } from "../../../../workers/instruction/dependencies";
 
 export class SaveInstructionAction extends BaseAction<
   InstructionJobData,
@@ -45,12 +45,11 @@ export class SaveInstructionAction extends BaseAction<
       data,
       deps,
       context,
-      serviceCall: () => saveInstruction(data, deps.logger),
+      serviceCall: () => deps.services.saveInstruction(data),
       contextName: "SAVE_INSTRUCTION",
-      startMessage: `Starting to save instruction for note: ${data.noteId}, line: ${data.lineIndex}`,
-      completionMessage: `Successfully saved instruction for note: ${data.noteId}, line: ${data.lineIndex}`,
+      suppressDefaultBroadcast: true,
     });
   }
 }
 
-export { saveInstruction }; 
+export { saveInstruction };

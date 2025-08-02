@@ -251,9 +251,6 @@ describe("Job Processor Module Exports", () => {
         "[TEST-OPERATION] Executing 1 actions: test-action"
       );
       expect(mockLogger.log).toHaveBeenCalledWith(
-        '[TEST-OPERATION] Data for action test-action: "initial-data"'
-      );
-      expect(mockLogger.log).toHaveBeenCalledWith(
         expect.stringMatching(/\[TEST-OPERATION\] ✅ test-action \(\d+ms\)/)
       );
     });

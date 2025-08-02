@@ -1,10 +1,11 @@
+import { saveNote } from "./service";
+
 import { SaveNoteDataSchema } from "../../../../schemas";
 import { ActionName } from "../../../../types";
 import type { NotePipelineData } from "../../../../types/notes";
 import type { NoteWorkerDependencies } from "../../../../types/notes";
 import { BaseAction } from "../../../../workers/core/base-action";
 import { ActionContext } from "../../../../workers/core/types";
-import { saveNote } from "./service";
 
 export class SaveNoteAction extends BaseAction<
   NotePipelineData,

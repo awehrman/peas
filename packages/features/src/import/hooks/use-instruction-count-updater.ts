@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useStatusWebSocket } from "./use-status-websocket";
+
+import { useEffect, useState } from "react";
 
 interface UseInstructionCountUpdaterProps {
   wsUrl: string;
@@ -22,14 +23,14 @@ export function useInstructionCountUpdater({
   });
 
   useEffect(() => {
+    console.log({ events });
     // Listen for instruction count update events
     const instructionCountEvents = events.filter(
       (event) =>
-        event.context === "parse_html_instructions" &&
-        event.metadata?.totalInstructions &&
+        (event.context === "parse_html_instructions" ||
+          event.context === "process_instructions") &&
         typeof event.metadata?.processedInstructions === "number"
     );
-
     if (instructionCountEvents.length > 0) {
       // Get the latest event
       const latestEvent =

@@ -28,26 +28,24 @@ export async function processJob<TData, TDeps, TResult>(
   for (const action of actions) {
     const actionStartTime = Date.now();
     // Extract clean action name for logging
-    let cleanActionName = action.name;
+    let actionName = action.name;
     if (action.name.includes("error_handling_wrapper(")) {
-      cleanActionName = action.name
+      actionName = action.name
         .replace("error_handling_wrapper(", "")
         .replace(")", "");
     }
     if (action.name.includes("retry_wrapper(")) {
-      cleanActionName = action.name
-        .replace("retry_wrapper(", "")
-        .replace(")", "");
+      actionName = action.name.replace("retry_wrapper(", "").replace(")", "");
     }
-    logger.log(
-      `[${getOperationName().toUpperCase()}] Data for action ${cleanActionName}: ${JSON.stringify(currentData)}`
-    );
+    // logger.log(
+    //   `[${getOperationName().toUpperCase()}] Data for action ${actionName}: ${JSON.stringify(currentData)}`
+    // );
     const result = await action.execute(currentData, dependencies, context);
     // Update currentData for the next action, assuming the result is compatible with TData
     currentData = result as unknown as TData;
     const actionDuration = Date.now() - actionStartTime;
     logger.log(
-      `[${getOperationName().toUpperCase()}] ✅ ${cleanActionName} (${actionDuration}ms)`
+      `[${getOperationName().toUpperCase()}] ✅ ${actionName} (${actionDuration}ms)`
     );
   }
   return currentData as unknown as TResult;
