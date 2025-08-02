@@ -120,7 +120,10 @@ describe("Instruction Worker", () => {
 
     it("should have actionFactory property", () => {
       expect(worker).toHaveProperty("actionFactory");
-      expect((worker as any).actionFactory).toBe(mockActionFactory);
+      expect(
+        (worker as unknown as { actionFactory: typeof mockActionFactory })
+          .actionFactory
+      ).toBe(mockActionFactory);
     });
 
     it("should call registerActions during construction", () => {
@@ -131,7 +134,9 @@ describe("Instruction Worker", () => {
 
     it("should have correct operation name", () => {
       // Access the protected method through the class
-      const operationName = (worker as any).getOperationName();
+      const operationName = (
+        worker as unknown as { getOperationName(): string }
+      ).getOperationName();
       expect(operationName).toBe("instruction-worker");
     });
 
@@ -157,10 +162,11 @@ describe("Instruction Worker", () => {
 
       vi.mocked(createInstructionPipeline).mockReturnValue(mockPipeline);
 
-      const pipeline = (worker as any).createActionPipeline(
-        mockData,
-        mockContext
-      );
+      const pipeline = (
+        worker as unknown as {
+          createActionPipeline(data: unknown, context: unknown): unknown;
+        }
+      ).createActionPipeline(mockData, mockContext);
 
       expect(createInstructionPipeline).toHaveBeenCalledWith(
         mockActionFactory,
@@ -174,7 +180,11 @@ describe("Instruction Worker", () => {
     it("should pass correct parameters to createActionPipeline", () => {
       vi.mocked(createInstructionPipeline).mockReturnValue([]);
 
-      (worker as any).createActionPipeline(mockData, mockContext);
+      (
+        worker as unknown as {
+          createActionPipeline(data: unknown, context: unknown): unknown;
+        }
+      ).createActionPipeline(mockData, mockContext);
 
       expect(createInstructionPipeline).toHaveBeenCalledWith(
         mockActionFactory,
@@ -208,7 +218,10 @@ describe("Instruction Worker", () => {
       const worker = createInstructionWorker(mockQueue, mockContainer);
 
       expect(worker).toBeInstanceOf(InstructionWorker);
-      expect((worker as any).actionFactory).toBeInstanceOf(ActionFactory);
+      expect(
+        (worker as unknown as { actionFactory: typeof ActionFactory })
+          .actionFactory
+      ).toBeInstanceOf(ActionFactory);
     });
 
     it("should pass correct parameters to InstructionWorker constructor", () => {
@@ -217,7 +230,10 @@ describe("Instruction Worker", () => {
       const worker = createInstructionWorker(mockQueue, mockContainer);
 
       expect(worker).toBeInstanceOf(InstructionWorker);
-      expect((worker as any).actionFactory).toBeInstanceOf(ActionFactory);
+      expect(
+        (worker as unknown as { actionFactory: typeof ActionFactory })
+          .actionFactory
+      ).toBeInstanceOf(ActionFactory);
     });
 
     it("should return worker with correct dependencies", () => {
@@ -226,7 +242,10 @@ describe("Instruction Worker", () => {
       const worker = createInstructionWorker(mockQueue, mockContainer);
 
       expect(worker).toBeInstanceOf(InstructionWorker);
-      expect((worker as any).actionFactory).toBeInstanceOf(ActionFactory);
+      expect(
+        (worker as unknown as { actionFactory: typeof ActionFactory })
+          .actionFactory
+      ).toBeInstanceOf(ActionFactory);
     });
   });
 
@@ -245,7 +264,7 @@ describe("Instruction Worker", () => {
       vi.mocked(buildInstructionDependencies).mockReturnValue(mockDependencies);
 
       const worker = createInstructionWorker(mockQueue, mockContainer);
-      const operationName = (worker as any).getOperationName();
+      const operationName = (worker as unknown as { getOperationName(): string }).getOperationName();
 
       expect(operationName).toBe("instruction-worker");
     });

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { createMockQueue } from "../../../../../test-utils/helpers";
 import { ActionName } from "../../../../../types";
 import type { StructuredLogger } from "../../../../../types";
 import type { NotePipelineData } from "../../../../../types/notes";
@@ -9,13 +10,9 @@ describe("processInstructions", () => {
   let mockData: NotePipelineData;
   let mockLogger: StructuredLogger;
   let mockQueues: {
-    instructionQueue: {
-      add: ReturnType<typeof vi.fn>;
-    };
+    instructionQueue: ReturnType<typeof createMockQueue>;
   };
-  let mockInstructionQueue: {
-    add: ReturnType<typeof vi.fn>;
-  };
+  let mockInstructionQueue: ReturnType<typeof createMockQueue>;
 
   beforeEach(() => {
     mockData = {
@@ -34,9 +31,7 @@ describe("processInstructions", () => {
       },
     };
 
-    mockInstructionQueue = {
-      add: vi.fn().mockResolvedValue(undefined),
-    };
+    mockInstructionQueue = createMockQueue("instruction-queue");
 
     mockQueues = {
       instructionQueue: mockInstructionQueue,
@@ -190,7 +185,7 @@ describe("processInstructions", () => {
 
     it("should handle queue.add errors and re-throw them", async () => {
       const queueError = new Error("Queue error");
-      mockInstructionQueue.add.mockRejectedValue(queueError);
+      (mockInstructionQueue.add as ReturnType<typeof vi.fn>).mockRejectedValue(queueError);
 
       await expect(
         processInstructions(mockData, mockLogger, mockQueues)
@@ -203,7 +198,7 @@ describe("processInstructions", () => {
 
     it("should log error message when queue operation fails", async () => {
       const queueError = new Error("Queue operation failed");
-      mockInstructionQueue.add.mockRejectedValue(queueError);
+      (mockInstructionQueue.add as ReturnType<typeof vi.fn>).mockRejectedValue(queueError);
 
       try {
         await processInstructions(mockData, mockLogger, mockQueues);

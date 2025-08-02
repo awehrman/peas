@@ -409,7 +409,7 @@ describe("ErrorHandling", () => {
 
       // Verify the JSON structure contains all expected fields
       const callArgs = consoleSpy.mock.calls[0];
-      const jsonString = callArgs[1] as string;
+      const jsonString = callArgs?.[1] as string;
       const parsed = JSON.parse(jsonString);
 
       expect(parsed).toHaveProperty("timestamp");

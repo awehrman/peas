@@ -418,17 +418,22 @@ describe("ActionCache", () => {
 
     it("should delete keys during cleanup to cover line 233", async () => {
       const cache = ActionCache.getInstance();
-      
+
       // Clear the cache first
       await cache.clearAll();
-      
+
       // Set a very small limit
       (cache as unknown as ActionCacheClass).MEMORY_CACHE_SIZE_LIMIT = 5;
 
       // Add entries directly to memory cache to bypass any size checks
-      const memoryCache = (cache as any).memoryCache;
+      const memoryCache = (
+        cache as unknown as { memoryCache: Map<string, unknown> }
+      ).memoryCache;
       for (let i = 0; i < 10; i++) {
-        memoryCache.set(`key${i}`, { value: `value${i}`, expiresAt: Date.now() + 60000 });
+        memoryCache.set(`key${i}`, {
+          value: `value${i}`,
+          expiresAt: Date.now() + 60000,
+        });
       }
 
       // Verify we have more entries than the limit

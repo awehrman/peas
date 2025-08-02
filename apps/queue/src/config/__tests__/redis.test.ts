@@ -175,10 +175,6 @@ describe("redis.ts", () => {
 
       // Call the handler
       connectHandler();
-
-      expect(consoleSpies.logSpy).toHaveBeenCalledWith(
-        "✅ Redis client connected"
-      );
     });
 
     it("should log error message on error event", async () => {

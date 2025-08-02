@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ActionName, LogLevel } from "../../../types";
+import type { StructuredLogger } from "../../../types";
 import { ActionFactory } from "../../core/action-factory";
 import { BaseAction } from "../../core/base-action";
 import type { ActionContext } from "../../core/types";
@@ -201,7 +202,9 @@ describe("Retry", () => {
         attempt: 1,
         maxAttempts: 3,
       };
-      const testDeps: RetryDeps = { logger: { log: undefined } as any };
+      const testDeps: RetryDeps = {
+        logger: { log: undefined } as unknown as StructuredLogger,
+      };
 
       const result = await retryAction.execute(testData, testDeps, mockContext);
 
@@ -223,7 +226,9 @@ describe("Retry", () => {
         attempt: 1,
         maxAttempts: 3,
       };
-      const testDeps: RetryDeps = { logger: { log: null } as any };
+      const testDeps: RetryDeps = {
+        logger: { log: null } as unknown as StructuredLogger,
+      };
 
       const result = await retryAction.execute(testData, testDeps, mockContext);
 
@@ -423,7 +428,9 @@ describe("Retry", () => {
     it("should use console.warn when logger.log is undefined", async () => {
       const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
       const testData: BaseJobData = { jobId: "test-job-123" };
-      const testDeps = { logger: { log: undefined } as any };
+      const testDeps = {
+        logger: { log: undefined } as unknown as StructuredLogger,
+      };
 
       mockWrappedAction.execute = vi
         .fn()
@@ -442,7 +449,7 @@ describe("Retry", () => {
     it("should use console.warn when logger.log is null", async () => {
       const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
       const testData: BaseJobData = { jobId: "test-job-123" };
-      const testDeps = { logger: { log: null } as any };
+      const testDeps = { logger: { log: null } as unknown as StructuredLogger };
 
       mockWrappedAction.execute = vi
         .fn()
@@ -650,7 +657,9 @@ describe("Retry", () => {
         .spyOn(console, "error")
         .mockImplementation(() => {});
       const testData: BaseJobData = { jobId: "test-job-123" };
-      const testDeps = { logger: { log: undefined } as any };
+      const testDeps = {
+        logger: { log: undefined } as unknown as StructuredLogger,
+      };
       const testError = new Error("Service unavailable");
 
       // Use a unique breaker key to avoid state interference
@@ -685,7 +694,7 @@ describe("Retry", () => {
         .spyOn(console, "error")
         .mockImplementation(() => {});
       const testData: BaseJobData = { jobId: "test-job-123" };
-      const testDeps = { logger: { log: null } as any };
+      const testDeps = { logger: { log: null } as unknown as StructuredLogger };
       const testError = new Error("Service unavailable");
 
       // Use a unique breaker key to avoid state interference
