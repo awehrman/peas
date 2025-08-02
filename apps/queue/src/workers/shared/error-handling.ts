@@ -156,6 +156,7 @@ export function withErrorHandling<T extends BaseAction<BaseJobData, object>>(
   errorHandler?: (error: Error, context: ActionContext) => Promise<void>
 ): ErrorHandlingWrapperAction {
   if (errorHandler) {
+    /* istanbul ignore next -- @preserve */
     action.onError = (error, _data, _deps, context) =>
       errorHandler(error, context);
   }

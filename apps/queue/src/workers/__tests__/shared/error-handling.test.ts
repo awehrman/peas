@@ -348,6 +348,81 @@ describe("ErrorHandling", () => {
 
       expect(result).toEqual(testData);
     });
+
+    it("should log captured error to console", async () => {
+      const consoleSpy = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+
+      const action = new CaptureErrorAction();
+      const data: ErrorJobData = {
+        noteId: "test-note",
+        error: new Error("Test error"),
+      };
+      const context: ActionContext = {
+        jobId: "test-job",
+        operation: "test-operation",
+        startTime: Date.now(),
+        retryCount: 0,
+        queueName: "test-queue",
+        workerName: "test-worker",
+        attemptNumber: 1,
+      };
+
+      await action.execute(data, {}, context);
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "Captured error:",
+        expect.stringContaining('"jobId": "test-job"')
+      );
+
+      consoleSpy.mockRestore();
+    });
+
+    it("should call console.error with properly formatted JSON for line 161 coverage", async () => {
+      const consoleSpy = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+
+      const action = new CaptureErrorAction();
+      const data: ErrorJobData = {
+        noteId: "test-note-161",
+        error: new Error("Test error for line 161"),
+      };
+      const context: ActionContext = {
+        jobId: "test-job-161",
+        operation: "test-operation-161",
+        startTime: Date.now(),
+        retryCount: 0,
+        queueName: "test-queue",
+        workerName: "test-worker",
+        attemptNumber: 1,
+      };
+
+      await action.execute(data, {}, context);
+
+      // Verify that console.error was called with the exact format expected
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "Captured error:",
+        expect.stringContaining('"jobId": "test-job-161"')
+      );
+
+      // Verify the JSON structure contains all expected fields
+      const callArgs = consoleSpy.mock.calls[0];
+      const jsonString = callArgs[1] as string;
+      const parsed = JSON.parse(jsonString);
+
+      expect(parsed).toHaveProperty("timestamp");
+      expect(parsed).toHaveProperty("jobId", "test-job-161");
+      expect(parsed).toHaveProperty("operation", "test-operation-161");
+      expect(parsed).toHaveProperty("noteId", "test-note-161");
+      expect(parsed).toHaveProperty("error");
+      expect(parsed.error).toHaveProperty("message", "Test error for line 161");
+      expect(parsed.error).toHaveProperty("stack");
+      expect(parsed.error).toHaveProperty("name", "Error");
+
+      consoleSpy.mockRestore();
+    });
   });
 
   describe("ErrorRecoveryAction", () => {

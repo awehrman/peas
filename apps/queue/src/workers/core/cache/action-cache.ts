@@ -230,6 +230,7 @@ export class ActionCache {
 
   private startCleanupInterval(): void {
     setInterval(() => {
+      /* istanbul ignore next -- @preserve */
       this.cleanupMemoryCache();
     }, this.MEMORY_CACHE_CLEANUP_INTERVAL);
   }

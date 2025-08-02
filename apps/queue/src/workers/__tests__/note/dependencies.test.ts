@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { IServiceContainer } from "../../../services/container";
 import { cleanHtmlFile } from "../../../services/note/actions/clean-html/action";
 import { parseHtmlFile } from "../../../services/note/actions/parse-html/action";
+import { saveNote } from "../../../services/note/actions/save-note/action";
 import { createMockNoteData } from "../../../test-utils/helpers";
 import type { NoteWorkerDependencies } from "../../../types/notes";
 import { buildNoteWorkerDependencies } from "../../note/dependencies";
@@ -23,6 +24,10 @@ vi.mock("../../../services/note/actions/clean-html/action", () => ({
 
 vi.mock("../../../services/note/actions/parse-html/action", () => ({
   parseHtmlFile: vi.fn(),
+}));
+
+vi.mock("../../../services/note/actions/save-note/action", () => ({
+  saveNote: vi.fn(),
 }));
 
 vi.mock("../../core/worker-dependencies/build-base-dependencies", () => ({
@@ -97,6 +102,7 @@ describe("buildNoteWorkerDependencies", () => {
     // Set up mock return values
     vi.mocked(cleanHtmlFile).mockResolvedValue(createMockNoteData());
     vi.mocked(parseHtmlFile).mockResolvedValue(createMockNoteData());
+    vi.mocked(saveNote).mockResolvedValue(createMockNoteData());
   });
 
   describe("successful cases", () => {
@@ -126,6 +132,7 @@ describe("buildNoteWorkerDependencies", () => {
       expect(deps.services).toBeDefined();
       expect(typeof deps.services.cleanHtml).toBe("function");
       expect(typeof deps.services.parseHtml).toBe("function");
+      expect(typeof deps.services.saveNote).toBe("function");
     });
 
     it("should call buildBaseDependencies with the container", async () => {
@@ -246,6 +253,86 @@ describe("buildNoteWorkerDependencies", () => {
           expect.any(Function) // parseHTMLContent function
         );
       });
+
+      it("should execute parseHtmlFile function to cover line 26", async () => {
+        const testData = createMockNoteData();
+        const mockResult = createMockNoteData({ content: "parsed content" });
+        vi.mocked(parseHtmlFile).mockResolvedValue(mockResult);
+
+        // Actually call the service function to execute line 26
+        const result = await deps.services.parseHtml(testData);
+
+        expect(parseHtmlFile).toHaveBeenCalledWith(
+          testData,
+          mockBaseDeps.logger,
+          expect.any(Function) // parseHTMLContent function
+        );
+        expect(result).toEqual(mockResult);
+      });
+    });
+
+    describe("saveNote service", () => {
+      it("should call saveNote with correct parameters", async () => {
+        const testData = createMockNoteData();
+        const result = await deps.services.saveNote(testData);
+
+        expect(saveNote).toHaveBeenCalledWith(testData, mockBaseDeps.logger);
+        expect(saveNote).toHaveBeenCalledTimes(1);
+        expect(result).toEqual(createMockNoteData());
+      });
+
+      it("should handle saveNote errors", async () => {
+        const testError = new Error("Save note failed");
+        vi.mocked(saveNote).mockRejectedValue(testError);
+        const testData = createMockNoteData();
+
+        await expect(deps.services.saveNote(testData)).rejects.toThrow(
+          "Save note failed"
+        );
+        expect(saveNote).toHaveBeenCalledWith(testData, mockBaseDeps.logger);
+      });
+
+      it("should pass through the data correctly", async () => {
+        const testData = createMockNoteData({
+          content: "<html><body>Test content</body></html>",
+          importId: "test-import-789",
+          source: {
+            filename: "test3.html",
+            url: "https://example.com/test3",
+          },
+          options: {
+            skipFollowupTasks: true,
+          },
+        });
+
+        await deps.services.saveNote(testData);
+
+        expect(saveNote).toHaveBeenCalledWith(testData, mockBaseDeps.logger);
+      });
+
+      it("should execute saveNote function to cover line 26", async () => {
+        const testData = createMockNoteData();
+        const mockResult = createMockNoteData({
+          noteId: "test-note-123",
+          note: {
+            id: "test-note-123",
+            title: "Test Note",
+            content: "saved content",
+            html: "saved content",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            parsedIngredientLines: [],
+            parsedInstructionLines: [],
+          },
+        });
+        vi.mocked(saveNote).mockResolvedValue(mockResult);
+
+        // Actually call the service function to execute line 26
+        const result = await deps.services.saveNote(testData);
+
+        expect(saveNote).toHaveBeenCalledWith(testData, mockBaseDeps.logger);
+        expect(result).toEqual(mockResult);
+      });
     });
   });
 
@@ -258,6 +345,7 @@ describe("buildNoteWorkerDependencies", () => {
       expect(deps1.services).not.toBe(deps2.services);
       expect(deps1.services.cleanHtml).not.toBe(deps2.services.cleanHtml);
       expect(deps1.services.parseHtml).not.toBe(deps2.services.parseHtml);
+      expect(deps1.services.saveNote).not.toBe(deps2.services.saveNote);
     });
 
     it("should maintain proper structure", () => {
@@ -300,6 +388,7 @@ describe("buildNoteWorkerDependencies", () => {
       expect(deps.logger).toBe(differentBaseDeps.logger);
       expect(deps.services.cleanHtml).toBeDefined();
       expect(deps.services.parseHtml).toBeDefined();
+      expect(deps.services.saveNote).toBeDefined();
     });
   });
 
@@ -343,6 +432,17 @@ describe("buildNoteWorkerDependencies", () => {
       await expect(deps.services.parseHtml(testData)).rejects.toThrow(
         "Parse error"
       );
+
+      // Test saveNote error
+      const saveNoteModule = await import(
+        "../../../services/note/actions/save-note/action"
+      );
+      const saveNoteSpy = vi.mocked(saveNoteModule.saveNote);
+      saveNoteSpy.mockRejectedValueOnce(new Error("Save error"));
+
+      await expect(deps.services.saveNote(testData)).rejects.toThrow(
+        "Save error"
+      );
     });
   });
 
@@ -353,9 +453,11 @@ describe("buildNoteWorkerDependencies", () => {
 
       const cleanHtmlPromise = deps.services.cleanHtml(testData);
       const parseHtmlPromise = deps.services.parseHtml(testData);
+      const saveNotePromise = deps.services.saveNote(testData);
 
       expect(cleanHtmlPromise).toBeInstanceOf(Promise);
       expect(parseHtmlPromise).toBeInstanceOf(Promise);
+      expect(saveNotePromise).toBeInstanceOf(Promise);
     });
 
     it("should handle async operations correctly", async () => {
@@ -376,11 +478,20 @@ describe("buildNoteWorkerDependencies", () => {
         parsed: true,
       } as any);
 
+      const saveNoteModule = await import(
+        "../../../services/note/actions/save-note/action"
+      );
+      vi.mocked(saveNoteModule.saveNote).mockResolvedValue({
+        saved: true,
+      } as any);
+
       const cleanResult = await deps.services.cleanHtml(testData);
       const parseResult = await deps.services.parseHtml(testData);
+      const saveResult = await deps.services.saveNote(testData);
 
       expect(cleanResult).toEqual({ cleaned: true });
       expect(parseResult).toEqual({ parsed: true });
+      expect(saveResult).toEqual({ saved: true });
     });
   });
 });

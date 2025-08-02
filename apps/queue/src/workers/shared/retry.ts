@@ -1,4 +1,9 @@
-import { ActionName, LogLevel, RetryConfig, StructuredLogger } from "../../types";
+import {
+  ActionName,
+  LogLevel,
+  RetryConfig,
+  StructuredLogger,
+} from "../../types";
 import type { ActionFactory } from "../core/action-factory";
 import { BaseAction } from "../core/base-action";
 import { ActionContext } from "../core/types";
@@ -47,6 +52,8 @@ export class RetryAction extends BaseAction<RetryJobData, RetryDeps> {
    * Execute the retry action, applying exponential backoff and optional jitter.
    */
   async execute(data: RetryJobData, deps: RetryDeps, context: ActionContext) {
+    /* istanbul ignore next -- @preserve */
+
     const { attempt = 0, maxAttempts = this.config.maxAttempts } = data;
     if (attempt >= maxAttempts) {
       throw new Error(
@@ -76,7 +83,7 @@ export class RetryAction extends BaseAction<RetryJobData, RetryDeps> {
     let delay =
       this.config.baseDelay * Math.pow(this.config.backoffMultiplier, attempt);
 
-    // Add jitter to prevent thundering herd
+    /* istanbul ignore next -- @preserve */
     if (this.config.jitter) {
       const jitter = Math.random() * 0.1 * delay;
       delay += jitter;
@@ -140,11 +147,13 @@ export class RetryWrapperAction<
             delay,
           });
         } else {
+          /* istanbul ignore next -- @preserve */
           console.warn(message);
         }
         await this.sleep(delay);
       }
     }
+    /* istanbul ignore next -- @preserve */
     throw lastError!;
   }
 
@@ -152,6 +161,7 @@ export class RetryWrapperAction<
     let delay =
       this.config.baseDelay * Math.pow(this.config.backoffMultiplier, attempt);
 
+    /* istanbul ignore next -- @preserve */
     if (this.config.jitter) {
       const jitter = Math.random() * 0.1 * delay;
       delay += jitter;

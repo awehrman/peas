@@ -195,6 +195,50 @@ describe("Retry", () => {
       consoleSpy.mockRestore();
     });
 
+    it("should use console.warn when logger.log is undefined", async () => {
+      const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+      const testData: RetryJobData = {
+        attempt: 1,
+        maxAttempts: 3,
+      };
+      const testDeps: RetryDeps = { logger: { log: undefined } as any };
+
+      const result = await retryAction.execute(testData, testDeps, mockContext);
+
+      expect(result).toEqual({
+        attempt: 2,
+        maxAttempts: 3,
+      });
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Retrying job test-job-123 (attempt 2/3) after")
+      );
+
+      consoleSpy.mockRestore();
+    });
+
+    it("should use console.warn when logger.log is null", async () => {
+      const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+      const testData: RetryJobData = {
+        attempt: 1,
+        maxAttempts: 3,
+      };
+      const testDeps: RetryDeps = { logger: { log: null } as any };
+
+      const result = await retryAction.execute(testData, testDeps, mockContext);
+
+      expect(result).toEqual({
+        attempt: 2,
+        maxAttempts: 3,
+      });
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Retrying job test-job-123 (attempt 2/3) after")
+      );
+
+      consoleSpy.mockRestore();
+    });
+
     it("should respect custom max attempts", async () => {
       const customConfig = { ...DEFAULT_RETRY_CONFIG, maxAttempts: 5 };
       const customRetryAction = new RetryAction(customConfig);
@@ -376,6 +420,44 @@ describe("Retry", () => {
       consoleSpy.mockRestore();
     });
 
+    it("should use console.warn when logger.log is undefined", async () => {
+      const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+      const testData: BaseJobData = { jobId: "test-job-123" };
+      const testDeps = { logger: { log: undefined } as any };
+
+      mockWrappedAction.execute = vi
+        .fn()
+        .mockRejectedValueOnce(new Error("First attempt failed"))
+        .mockResolvedValueOnce({ success: true });
+
+      await retryWrapperAction.execute(testData, testDeps, mockContext);
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Retrying no_op for job test-job-123 (attempt")
+      );
+
+      consoleSpy.mockRestore();
+    });
+
+    it("should use console.warn when logger.log is null", async () => {
+      const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+      const testData: BaseJobData = { jobId: "test-job-123" };
+      const testDeps = { logger: { log: null } as any };
+
+      mockWrappedAction.execute = vi
+        .fn()
+        .mockRejectedValueOnce(new Error("First attempt failed"))
+        .mockResolvedValueOnce({ success: true });
+
+      await retryWrapperAction.execute(testData, testDeps, mockContext);
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Retrying no_op for job test-job-123 (attempt")
+      );
+
+      consoleSpy.mockRestore();
+    });
+
     it("should use custom retry config", async () => {
       const customConfig = { ...DEFAULT_RETRY_CONFIG, maxAttempts: 2 };
       const customRetryWrapper = new RetryWrapperAction(
@@ -536,17 +618,98 @@ describe("Retry", () => {
       const testDeps = {};
       const testError = new Error("Service unavailable");
 
+      // Use a unique breaker key to avoid state interference
+      const customConfig = {
+        failureThreshold: 5,
+        resetTimeout: 60000,
+        breakerKey: "test-console-error-undefined",
+      };
+      const customCircuitBreaker = new CircuitBreakerAction(
+        mockWrappedAction,
+        customConfig
+      );
+
       mockWrappedAction.execute = vi.fn().mockRejectedValue(testError);
 
       // Execute 5 times to trigger circuit breaker
       for (let i = 0; i < 5; i++) {
         await expect(
-          circuitBreakerAction.execute(testData, testDeps, mockContext)
+          customCircuitBreaker.execute(testData, testDeps, mockContext)
         ).rejects.toThrow("Service unavailable");
       }
 
       expect(consoleSpy).toHaveBeenCalledWith(
-        "Circuit breaker opened for test-operation after 5 failures"
+        "Circuit breaker opened for test-console-error-undefined after 5 failures"
+      );
+
+      consoleSpy.mockRestore();
+    });
+
+    it("should use console.error when logger.log is undefined", async () => {
+      const consoleSpy = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+      const testData: BaseJobData = { jobId: "test-job-123" };
+      const testDeps = { logger: { log: undefined } as any };
+      const testError = new Error("Service unavailable");
+
+      // Use a unique breaker key to avoid state interference
+      const customConfig = {
+        failureThreshold: 5,
+        resetTimeout: 60000,
+        breakerKey: "test-console-error-undefined",
+      };
+      const customCircuitBreaker = new CircuitBreakerAction(
+        mockWrappedAction,
+        customConfig
+      );
+
+      mockWrappedAction.execute = vi.fn().mockRejectedValue(testError);
+
+      // Execute 5 times to trigger circuit breaker
+      for (let i = 0; i < 5; i++) {
+        await expect(
+          customCircuitBreaker.execute(testData, testDeps, mockContext)
+        ).rejects.toThrow("Service unavailable");
+      }
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "Circuit breaker opened for test-console-error-undefined after 5 failures"
+      );
+
+      consoleSpy.mockRestore();
+    });
+
+    it("should use console.error when logger.log is null", async () => {
+      const consoleSpy = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+      const testData: BaseJobData = { jobId: "test-job-123" };
+      const testDeps = { logger: { log: null } as any };
+      const testError = new Error("Service unavailable");
+
+      // Use a unique breaker key to avoid state interference
+      const customConfig = {
+        failureThreshold: 5,
+        resetTimeout: 60000,
+        breakerKey: "test-console-error-null",
+      };
+      const customCircuitBreaker = new CircuitBreakerAction(
+        mockWrappedAction,
+        customConfig
+      );
+
+      mockWrappedAction.execute = vi.fn().mockRejectedValue(testError);
+
+      // Execute 5 times to trigger circuit breaker
+      for (let i = 0; i < 5; i++) {
+        await expect(
+          customCircuitBreaker.execute(testData, testDeps, mockContext)
+        ).rejects.toThrow("Service unavailable");
+      }
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "Circuit breaker opened for test-console-error-null after 5 failures"
       );
 
       consoleSpy.mockRestore();

@@ -415,6 +415,34 @@ describe("ActionCache", () => {
       (cache as unknown as ActionCacheClass).MEMORY_CACHE_SIZE_LIMIT =
         originalLimit;
     });
+
+    it("should delete keys during cleanup to cover line 233", async () => {
+      const cache = ActionCache.getInstance();
+      
+      // Clear the cache first
+      await cache.clearAll();
+      
+      // Set a very small limit
+      (cache as unknown as ActionCacheClass).MEMORY_CACHE_SIZE_LIMIT = 5;
+
+      // Add entries directly to memory cache to bypass any size checks
+      const memoryCache = (cache as any).memoryCache;
+      for (let i = 0; i < 10; i++) {
+        memoryCache.set(`key${i}`, { value: `value${i}`, expiresAt: Date.now() + 60000 });
+      }
+
+      // Verify we have more entries than the limit
+      expect(memoryCache.size).toBeGreaterThan(5);
+
+      // Manually trigger cleanup
+      (cache as unknown as ActionCacheClass).cleanupMemoryCache();
+
+      // Check that keys were deleted
+      expect(memoryCache.size).toBeLessThan(10);
+
+      // Restore original limit
+      (cache as unknown as ActionCacheClass).MEMORY_CACHE_SIZE_LIMIT = 1000;
+    });
   });
 });
 

@@ -255,6 +255,77 @@ describe("ErrorBroadcasting", () => {
 
       expect(mockAddStatusEventAndBroadcast).not.toHaveBeenCalled();
     });
+
+    it("should handle logger failure when no importId provided", async () => {
+      const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      
+      // Mock logger to throw an error
+      const failingLogger = {
+        log: vi.fn().mockImplementation(() => {
+          throw new Error("Logger failed");
+        }),
+      };
+
+      const depsWithFailingLogger: ErrorBroadcastDependencies = {
+        logger: failingLogger,
+        addStatusEventAndBroadcast: mockAddStatusEventAndBroadcast,
+      };
+
+      const errorData: ErrorBroadcastData = {
+        noteId: "note-456",
+        errorType: "PARSING_ERROR",
+        errorMessage: "Failed to parse ingredient",
+        context: "ingredient-parsing",
+        metadata: { lineNumber: 5 },
+      };
+
+      await broadcastError(depsWithFailingLogger, errorData);
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "[ERROR_BROADCAST] Logger failed: Error: Logger failed"
+      );
+      expect(mockAddStatusEventAndBroadcast).not.toHaveBeenCalled();
+
+      consoleSpy.mockRestore();
+    });
+
+    it("should handle logger failure when broadcasting fails", async () => {
+      const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      
+      // Mock addStatusEventAndBroadcast to throw an error
+      const failingBroadcaster = vi.fn().mockRejectedValue(new Error("Broadcast failed"));
+      
+      // Mock logger to throw an error when called for broadcast failure
+      const failingLogger = {
+        log: vi.fn().mockImplementation((message: string) => {
+          if (message.includes("Failed to broadcast error")) {
+            throw new Error("Logger failed during broadcast error");
+          }
+        }),
+      };
+
+      const depsWithFailingBroadcaster: ErrorBroadcastDependencies = {
+        logger: failingLogger,
+        addStatusEventAndBroadcast: failingBroadcaster,
+      };
+
+      const errorData: ErrorBroadcastData = {
+        importId: "import-123",
+        noteId: "note-456",
+        errorType: "PARSING_ERROR",
+        errorMessage: "Failed to parse ingredient",
+        context: "ingredient-parsing",
+        metadata: { lineNumber: 5 },
+      };
+
+      await broadcastError(depsWithFailingBroadcaster, errorData);
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "[ERROR_BROADCAST] Failed to broadcast error and logger failed: Error: Broadcast failed, Error: Logger failed during broadcast error"
+      );
+
+      consoleSpy.mockRestore();
+    });
   });
 
   describe("broadcastParsingError", () => {
