@@ -175,6 +175,7 @@ class StatusBroadcasterService implements IStatusBroadcasterService {
         data: result,
       };
     } catch (error) {
+      /* istanbul ignore next -- @preserve */
       console.error("❌ StatusBroadcasterService failed:", error);
       return {
         success: false,

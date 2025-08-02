@@ -16,10 +16,20 @@ import { createMockLogger } from "../../../test-utils/helpers";
 import { ActionName, LogLevel } from "../../../types";
 import { ActionFactory } from "../../core/action-factory";
 import { BaseAction } from "../../core/base-action";
-import type { WorkerImpl } from "../../core/base-worker";
 import { BaseWorker } from "../../core/base-worker";
 import type { ActionContext } from "../../core/types";
 import type { BaseJobData } from "../../types";
+
+// WorkerImpl type is not exported, so we'll define it locally for testing
+type WorkerImpl<TData> = (
+  queue: { name: string },
+  jobProcessor: (job: {
+    id?: string;
+    attemptsMade?: number;
+    data: TData;
+  }) => Promise<Record<string, unknown>>,
+  concurrency: number
+) => { isRunning: () => boolean };
 
 // Mock processJob function
 vi.mock("../../core/job-processor/job-processor", () => ({
@@ -160,12 +170,24 @@ class TestWorker extends BaseWorker<BaseJobData, TestDependencies> {
     return this.container;
   }
 
+  // Expose protected methods for testing
+  public testCreateActionPipeline(data: BaseJobData, context: ActionContext) {
+    return this.createActionPipeline(data, context);
+  }
+
   // Expose the createWorker method for testing job processing
   public async testCreateWorker(
     queue: { name: string },
     workerImpl?: WorkerImpl<BaseJobData>
   ) {
-    return this.createWorker(queue, workerImpl);
+    return (
+      this as unknown as {
+        createWorker: (
+          queue: { name: string },
+          workerImpl?: WorkerImpl<BaseJobData>
+        ) => Promise<unknown>;
+      }
+    ).createWorker(queue, workerImpl);
   }
 
   // Expose the job processor directly for testing
@@ -181,7 +203,14 @@ class TestWorker extends BaseWorker<BaseJobData, TestDependencies> {
         };
       });
 
-    await this.createWorker(queue, mockWorkerImpl);
+    await (
+      this as unknown as {
+        createWorker: (
+          queue: { name: string },
+          workerImpl?: WorkerImpl<BaseJobData>
+        ) => Promise<unknown>;
+      }
+    ).createWorker(queue, mockWorkerImpl);
     return capturedJobProcessor;
   }
 
@@ -536,13 +565,13 @@ describe("BaseWorker", () => {
 
       // Verify lifecycle hooks were called
       expect(worker.onBeforeJobCalls).toHaveLength(1);
-      expect(worker.onBeforeJobCalls[0].data).toEqual(testJob.data);
-      expect(worker.onBeforeJobCalls[0].context.jobId).toBe("test-job-123");
+      expect(worker.onBeforeJobCalls[0]?.data).toEqual(testJob.data);
+      expect(worker.onBeforeJobCalls[0]?.context.jobId).toBe("test-job-123");
 
       expect(worker.onAfterJobCalls).toHaveLength(1);
-      expect(worker.onAfterJobCalls[0].data).toEqual(testJob.data);
-      expect(worker.onAfterJobCalls[0].context.jobId).toBe("test-job-123");
-      expect(worker.onAfterJobCalls[0].result).toBeDefined();
+      expect(worker.onAfterJobCalls[0]?.data).toEqual(testJob.data);
+      expect(worker.onAfterJobCalls[0]?.context.jobId).toBe("test-job-123");
+      expect(worker.onAfterJobCalls[0]?.result).toBeDefined();
 
       // Verify logging calls
       expect(mockLogger.log).toHaveBeenCalledWith(
@@ -620,11 +649,11 @@ describe("BaseWorker", () => {
 
       // Verify error lifecycle hook was called
       expect(failingWorker.onJobErrorCalls).toHaveLength(1);
-      expect(failingWorker.onJobErrorCalls[0].data).toEqual(testJob.data);
-      expect(failingWorker.onJobErrorCalls[0].context.jobId).toBe(
+      expect(failingWorker.onJobErrorCalls[0]?.data).toEqual(testJob.data);
+      expect(failingWorker.onJobErrorCalls[0]?.context.jobId).toBe(
         "test-job-456"
       );
-      expect(failingWorker.onJobErrorCalls[0].error.message).toBe(
+      expect(failingWorker.onJobErrorCalls[0]?.error.message).toBe(
         "Action execution failed"
       );
 
@@ -665,8 +694,8 @@ describe("BaseWorker", () => {
       const result = await jobProcessor(testJob);
 
       // Verify context was created with fallback job ID
-      expect(worker.onBeforeJobCalls[0].context.jobId).toBe("unknown");
-      expect(worker.onAfterJobCalls[0].context.jobId).toBe("unknown");
+      expect(worker.onBeforeJobCalls[0]?.context.jobId).toBe("unknown");
+      expect(worker.onAfterJobCalls[0]?.context.jobId).toBe("unknown");
 
       expect(result).toBeDefined();
     });
@@ -683,8 +712,8 @@ describe("BaseWorker", () => {
       const result = await jobProcessor(testJob);
 
       // Verify context includes retry information
-      expect(worker.onBeforeJobCalls[0].context.retryCount).toBe(3);
-      expect(worker.onBeforeJobCalls[0].context.attemptNumber).toBe(4);
+      expect(worker.onBeforeJobCalls[0]?.context.retryCount).toBe(3);
+      expect(worker.onBeforeJobCalls[0]?.context.attemptNumber).toBe(4);
 
       expect(result).toBeDefined();
     });
@@ -736,6 +765,23 @@ describe("BaseWorker", () => {
         10 // custom concurrency
       );
     });
+
+    it("should create BullMQ worker with default concurrency when no workerImpl provided", async () => {
+      // Create a worker without a custom workerImpl to test the BullMQ path
+      const bullMQWorker = new TestWorker(
+        mockQueue,
+        mockDependencies,
+        undefined,
+        undefined,
+        undefined, // no custom config
+        undefined // no custom workerImpl
+      );
+
+      const result = await bullMQWorker.testCreateWorker(mockQueue);
+
+      expect(result).toBeDefined();
+      expect((result as { isRunning: () => boolean }).isRunning).toBeDefined();
+    });
   });
 
   describe("createActionPipeline", () => {
@@ -751,10 +797,49 @@ describe("BaseWorker", () => {
         attemptNumber: 1,
       };
 
-      const pipeline = worker.createActionPipeline(data, context);
+      const pipeline = worker.testCreateActionPipeline(data, context);
 
       expect(pipeline).toHaveLength(1);
-      expect(pipeline[0].name).toBe(ActionName.NO_OP);
+      expect(pipeline[0]?.name).toBe(ActionName.NO_OP);
+    });
+
+    it("should return empty array for default implementation", () => {
+      // Create a worker that uses the default createActionPipeline implementation
+      class DefaultWorker extends BaseWorker<BaseJobData, TestDependencies> {
+        protected registerActions(): void {
+          // No actions registered
+        }
+
+        protected getOperationName(): string {
+          return "default-worker";
+        }
+
+        // Don't override createActionPipeline to test the default implementation
+
+        // Expose protected method for testing
+        public testCreateActionPipeline(
+          data: BaseJobData,
+          context: ActionContext
+        ) {
+          return this.createActionPipeline(data, context);
+        }
+      }
+
+      const defaultWorker = new DefaultWorker(mockQueue, mockDependencies);
+      const data = { jobId: "test-default" } as BaseJobData;
+      const context: ActionContext = {
+        jobId: "test-default",
+        retryCount: 0,
+        queueName: "test-queue",
+        operation: "default-worker",
+        startTime: Date.now(),
+        workerName: "default-worker",
+        attemptNumber: 1,
+      };
+
+      const pipeline = defaultWorker.testCreateActionPipeline(data, context);
+
+      expect(pipeline).toEqual([]);
     });
   });
 });

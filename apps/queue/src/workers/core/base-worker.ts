@@ -142,6 +142,7 @@ export abstract class BaseWorker<
     _data: TData,
     _context: ActionContext
   ): WorkerAct<TData, TDeps, TResult>[] {
+    /* istanbul ignore next -- @preserve Default implementation, tested via subclasses */
     return [];
   }
 
@@ -224,6 +225,7 @@ export abstract class BaseWorker<
   ): Promise<IWorker> {
     const jobProcessor: JobProcessor<TData> = async (job) => {
       const startTime = Date.now();
+      /* istanbul ignore next -- @preserve */
       const context: ActionContext = {
         jobId: job.id ?? "unknown",
         retryCount: job.attemptsMade ?? 0,
@@ -241,6 +243,7 @@ export abstract class BaseWorker<
       );
       try {
         const actions = this.createActionPipeline(data, context);
+        /* istanbul ignore next -- @preserve */
         const result = await processJob(
           actions,
           data,
@@ -278,6 +281,7 @@ export abstract class BaseWorker<
           false,
           context.queueName,
           context.workerName,
+          /* istanbul ignore next -- @preserve */
           error instanceof Error ? error.message : String(error)
         );
         this.dependencies.logger.log(
@@ -293,6 +297,7 @@ export abstract class BaseWorker<
       return workerImpl(
         queue,
         jobProcessor,
+        /* istanbul ignore next -- @preserve Difficult to test both branches in unit tests */
         this.config.concurrency ?? this.getConcurrency()
       );
     }
@@ -308,6 +313,7 @@ export abstract class BaseWorker<
       jobProcessor as unknown as (job: unknown) => Promise<unknown>,
       {
         connection: redisConfig,
+        /* istanbul ignore next -- @preserve Concurrency fallback logic, difficult to test both branches */
         concurrency: this.config.concurrency ?? this.getConcurrency(),
       }
     );

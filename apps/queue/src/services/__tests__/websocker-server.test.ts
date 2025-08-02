@@ -542,5 +542,72 @@ describe("websocket-server.ts", () => {
         );
       }
     });
+
+    it("should handle send errors in sendToClient method", () => {
+      // Create a client with a WebSocket that throws an error on send
+      const errorWebSocket = {
+        ...mockWebSocket,
+        send: vi.fn().mockImplementation(() => {
+          throw new Error("Send failed");
+        }),
+      };
+
+      // Add client to the manager
+      const clients = getClients(wsManager);
+      clients.set("test-client", {
+        id: "test-client",
+        ws: errorWebSocket,
+        connectedAt: new Date(),
+      });
+
+      // Call the private sendToClient method through reflection
+      const sendToClient = (
+        wsManager as unknown as {
+          sendToClient: (
+            clientId: string,
+            message: { type: string; data: unknown }
+          ) => void;
+        }
+      ).sendToClient.bind(wsManager);
+      sendToClient("test-client", { type: "test", data: {} });
+
+      expect(mockConsoleError).toHaveBeenCalledWith(
+        "❌ WebSocket: Failed to send message to test-client:",
+        expect.any(Error)
+      );
+      expect(clients.has("test-client")).toBe(false); // Client should be removed
+    });
+
+    it("should handle send errors in broadcastStatusEvent method", () => {
+      // Create a client with a WebSocket that throws an error on send
+      const errorWebSocket = {
+        ...mockWebSocket,
+        send: vi.fn().mockImplementation(() => {
+          throw new Error("Broadcast failed");
+        }),
+      };
+
+      // Add client to the manager
+      const clients = getClients(wsManager);
+      clients.set("error-client", {
+        id: "error-client",
+        ws: errorWebSocket,
+        connectedAt: new Date(),
+      });
+
+      const statusEvent = {
+        importId: "test-import",
+        status: "PARSING" as NoteStatus,
+        createdAt: new Date(),
+      };
+
+      wsManager.broadcastStatusEvent(statusEvent);
+
+      expect(mockConsoleError).toHaveBeenCalledWith(
+        "❌ WebSocket: Failed to broadcast to error-client:",
+        expect.any(Error)
+      );
+      expect(clients.has("error-client")).toBe(false); // Client should be removed
+    });
   });
 });

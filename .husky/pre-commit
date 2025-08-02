@@ -10,7 +10,7 @@ fi
 
 # Run tests in CI mode (only in queue package where tests exist)
 echo "🧪 Running tests..."
-cd apps/queue && yarn test:ci
+cd apps/queue && yarn test:ci --silent
 if [ $? -ne 0 ]; then
   echo "❌ Tests failed. Please fix the failing tests before committing."
   exit 1

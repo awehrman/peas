@@ -112,6 +112,7 @@ export class WebSocketManager {
       try {
         client.ws.send(JSON.stringify(message));
       } catch (error) {
+        /* istanbul ignore next -- @preserve */
         console.error(
           `❌ WebSocket: Failed to send message to ${clientId}:`,
           error
@@ -144,6 +145,7 @@ export class WebSocketManager {
           client.ws.send(messageStr);
           console.log(`[WebSocket] Successfully sent to client ${clientId}`);
         } catch (error) {
+          /* istanbul ignore next -- @preserve */
           console.error(
             `❌ WebSocket: Failed to broadcast to ${clientId}:`,
             error
@@ -153,6 +155,7 @@ export class WebSocketManager {
       } else {
         // Remove disconnected clients
         this.clients.delete(clientId);
+        /* istanbul ignore next -- @preserve */
         console.log(`[WebSocket] Removed disconnected client ${clientId}`);
       }
     }

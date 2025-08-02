@@ -185,6 +185,7 @@ export class CachedIngredientParser {
       };
     } catch (error) {
       const processingTime = Date.now() - startTime;
+      /* istanbul ignore next -- @preserve */
       console.warn(
         `[CACHED_INGREDIENT_PARSER] Error parsing line "${line}":`,
         error

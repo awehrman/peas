@@ -252,6 +252,249 @@ describe("BaseAction", () => {
       expect(configuredAction.name).toBe(ActionName.LOGGING); // Preserved
     });
   });
+
+  describe("executeServiceAction", () => {
+    it("should execute service action with default broadcasting", async () => {
+      class TestAction extends BaseAction<
+        BaseJobData,
+        { logger: typeof mockLogger }
+      > {
+        name = ActionName.NO_OP;
+
+        async execute(
+          data: BaseJobData,
+          deps: { logger: typeof mockLogger },
+          context: ActionContext
+        ): Promise<BaseJobData> {
+          return this.executeServiceAction({
+            data,
+            deps,
+            context,
+            serviceCall: async () =>
+              ({ ...data, processed: true }) as BaseJobData,
+          }) as Promise<BaseJobData>;
+        }
+      }
+
+      const action = new TestAction();
+      const testData = {
+        jobId: "test-123",
+        importId: "import-456",
+      } as BaseJobData;
+
+      const result = await action.execute(
+        testData,
+        { logger: mockLogger },
+        mockContext
+      );
+
+      expect(result).toEqual({
+        jobId: "test-123",
+        importId: "import-456",
+        processed: true,
+      });
+    });
+
+    it("should execute service action with custom context name and messages", async () => {
+      class TestAction extends BaseAction {
+        name = ActionName.NO_OP;
+
+        async execute(data: BaseJobData): Promise<BaseJobData> {
+          return this.executeServiceAction({
+            data,
+            deps: { logger: mockLogger },
+            context: mockContext,
+            serviceCall: async () =>
+              ({ ...data, processed: true }) as BaseJobData,
+            contextName: "Custom Context",
+            startMessage: "Starting custom action",
+            completionMessage: "Custom action completed",
+          }) as Promise<BaseJobData>;
+        }
+      }
+
+      const action = new TestAction();
+      const testData = {
+        jobId: "test-123",
+        importId: "import-456",
+      } as BaseJobData;
+
+      const result = await action.execute(testData);
+
+      expect(result).toEqual({
+        jobId: "test-123",
+        importId: "import-456",
+        processed: true,
+      });
+    });
+
+    it("should execute service action with additional broadcasting", async () => {
+      const additionalBroadcasting = vi.fn().mockResolvedValue(undefined);
+      const mockStatusBroadcaster = {
+        addStatusEventAndBroadcast: vi.fn().mockResolvedValue(undefined),
+      };
+
+      class TestAction extends BaseAction<
+        BaseJobData,
+        {
+          logger: typeof mockLogger;
+          statusBroadcaster: typeof mockStatusBroadcaster;
+        }
+      > {
+        name = ActionName.NO_OP;
+
+        async execute(
+          data: BaseJobData,
+          deps: {
+            logger: typeof mockLogger;
+            statusBroadcaster: typeof mockStatusBroadcaster;
+          },
+          context: ActionContext
+        ): Promise<BaseJobData> {
+          return this.executeServiceAction({
+            data,
+            deps,
+            context,
+            serviceCall: async () =>
+              ({ ...data, processed: true }) as BaseJobData,
+            additionalBroadcasting,
+          }) as Promise<BaseJobData>;
+        }
+      }
+
+      const action = new TestAction();
+      const testData = {
+        jobId: "test-123",
+        importId: "import-456",
+      } as BaseJobData;
+
+      const result = await action.execute(
+        testData,
+        { logger: mockLogger, statusBroadcaster: mockStatusBroadcaster },
+        mockContext
+      );
+
+      expect(result).toEqual({
+        jobId: "test-123",
+        importId: "import-456",
+        processed: true,
+      });
+      expect(additionalBroadcasting).toHaveBeenCalledWith(result);
+    });
+
+    it("should execute service action without broadcasting when suppressDefaultBroadcast is true", async () => {
+      class TestAction extends BaseAction {
+        name = ActionName.NO_OP;
+
+        async execute(data: BaseJobData): Promise<BaseJobData> {
+          return this.executeServiceAction({
+            data,
+            deps: { logger: mockLogger },
+            context: mockContext,
+            serviceCall: async () =>
+              ({ ...data, processed: true }) as BaseJobData,
+            suppressDefaultBroadcast: true,
+          }) as Promise<BaseJobData>;
+        }
+      }
+
+      const action = new TestAction();
+      const testData = {
+        jobId: "test-123",
+        importId: "import-456",
+      } as BaseJobData;
+
+      const result = await action.execute(testData);
+
+      expect(result).toEqual({
+        jobId: "test-123",
+        importId: "import-456",
+        processed: true,
+      });
+    });
+
+    it("should execute service action without broadcasting when no importId", async () => {
+      class TestAction extends BaseAction {
+        name = ActionName.NO_OP;
+
+        async execute(data: BaseJobData): Promise<BaseJobData> {
+          return this.executeServiceAction({
+            data,
+            deps: { logger: mockLogger },
+            context: mockContext,
+            serviceCall: async () =>
+              ({ ...data, processed: true }) as BaseJobData,
+          }) as Promise<BaseJobData>;
+        }
+      }
+
+      const action = new TestAction();
+      const testData = { jobId: "test-123" } as BaseJobData; // No importId
+
+      const result = await action.execute(testData);
+
+      expect(result).toEqual({
+        jobId: "test-123",
+        processed: true,
+      });
+    });
+
+    it("should execute service action without broadcasting when no statusBroadcaster", async () => {
+      class TestAction extends BaseAction {
+        name = ActionName.NO_OP;
+
+        async execute(data: BaseJobData): Promise<BaseJobData> {
+          return this.executeServiceAction({
+            data,
+            deps: {}, // No statusBroadcaster
+            context: mockContext,
+            serviceCall: async () => ({ ...data, processed: true }),
+          }) as Promise<BaseJobData>;
+        }
+      }
+
+      const action = new TestAction();
+      const testData = {
+        jobId: "test-123",
+        importId: "import-456",
+      } as BaseJobData;
+
+      const result = await action.execute(testData);
+
+      expect(result).toEqual({
+        jobId: "test-123",
+        importId: "import-456",
+        processed: true,
+      });
+    });
+
+    it("should handle service call errors gracefully", async () => {
+      class TestAction extends BaseAction {
+        name = ActionName.NO_OP;
+
+        async execute(data: BaseJobData): Promise<BaseJobData> {
+          return this.executeServiceAction({
+            data,
+            deps: { logger: mockLogger },
+            context: mockContext,
+            serviceCall: async () => {
+              throw new Error("Service call failed");
+            },
+          }) as Promise<BaseJobData>;
+        }
+      }
+
+      const action = new TestAction();
+      const testData = {
+        jobId: "test-123",
+        importId: "import-456",
+      } as BaseJobData;
+
+      await expect(action.execute(testData)).rejects.toThrow(
+        "Service call failed"
+      );
+    });
+  });
 });
 
 describe("NoOpAction", () => {
