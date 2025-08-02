@@ -21,7 +21,7 @@ export async function formatInstruction(
     // Remove instruction if it has no length after trimming
     if (formattedReference.length === 0) {
       logger.log(
-        `[FORMAT_INSTRUCTION] Marking instruction as inactive: empty after trimming`
+        `[FORMAT_INSTRUCTION_LINE] Marking instruction as inactive: empty after trimming`
       );
       return {
         ...data,
@@ -33,7 +33,7 @@ export async function formatInstruction(
     // Mark as inactive if too short instead of throwing error
     if (formattedReference.length < 3) {
       logger.log(
-        `[FORMAT_INSTRUCTION] Marking instruction as inactive: too short "${formattedReference}" (minimum 3 characters required)`
+        `[FORMAT_INSTRUCTION_LINE] Marking instruction as inactive: too short "${formattedReference}" (minimum 3 characters required)`
       );
       return {
         ...data,
@@ -57,7 +57,7 @@ export async function formatInstruction(
 
     return formattedData;
   } catch (error) {
-    logger.log(`[FORMAT_INSTRUCTION] Failed to format instruction: ${error}`);
+    logger.log(`[FORMAT_INSTRUCTION_LINE] Failed to format instruction: ${error}`);
     throw error;
   }
 }

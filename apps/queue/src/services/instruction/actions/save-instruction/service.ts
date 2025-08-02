@@ -55,7 +55,7 @@ export async function saveInstruction(
 
     return data;
   } catch (error) {
-    logger.log(`[SAVE_INSTRUCTION] Failed to save instruction: ${error}`);
+    logger.log(`[SAVE_INSTRUCTION_LINE] Failed to save instruction: ${error}`);
     throw error;
   }
 }

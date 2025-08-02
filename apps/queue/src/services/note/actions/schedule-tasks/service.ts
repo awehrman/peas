@@ -6,7 +6,7 @@ import { ActionContext } from "../../../../workers/core/types";
 // import { ScheduleIngredientsAction } from "../../schedule-ingredients";
 // import { ScheduleInstructionsAction } from "../../schedule-instructions";
 import { ProcessSourceAction } from "../process-source/action";
-import { ProcessInstructionsAction } from "../schedule-instructions/action";
+import { ScheduleInstructionsAction } from "../schedule-instructions/action";
 
 export async function scheduleAllFollowupTasks(
   data: NotePipelineData,
@@ -30,7 +30,7 @@ export async function scheduleAllFollowupTasks(
 
     // Create action instances
     const sourceAction = new ProcessSourceAction();
-    const instructionsAction = new ProcessInstructionsAction();
+    const instructionsAction = new ScheduleInstructionsAction();
     // const imageAction = new ScheduleImagesAction();
     // const ingredientAction = new ScheduleIngredientsAction();
 

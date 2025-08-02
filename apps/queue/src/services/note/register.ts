@@ -11,7 +11,7 @@ import { CleanHtmlAction } from "./actions/clean-html/action";
 import { ParseHtmlAction } from "./actions/parse-html/action";
 import { ProcessSourceAction } from "./actions/process-source/action";
 import { SaveNoteAction } from "./actions/save-note/action";
-import { ProcessInstructionsAction } from "./actions/schedule-instructions/action";
+import { ScheduleInstructionsAction } from "./actions/schedule-instructions/action";
 import { ScheduleAllFollowupTasksAction } from "./actions/schedule-tasks/action";
 
 /**
@@ -57,6 +57,6 @@ export function registerNoteActions(
       NotePipelineData,
       NoteWorkerDependencies,
       NotePipelineData
-    >(ActionName.PROCESS_INSTRUCTION_LINES, ProcessInstructionsAction),
+    >(ActionName.SCHEDULE_INSTRUCTION_LINES, ScheduleInstructionsAction),
   ]);
 }

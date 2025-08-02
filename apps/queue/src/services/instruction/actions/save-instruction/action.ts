@@ -12,7 +12,7 @@ export class SaveInstructionAction extends BaseAction<
   InstructionJobData
 > {
   /** The unique identifier for this action in the worker pipeline */
-  name = ActionName.SAVE_INSTRUCTION;
+  name = ActionName.SAVE_INSTRUCTION_LINE;
 
   /**
    * Validate input data before processing
@@ -46,7 +46,7 @@ export class SaveInstructionAction extends BaseAction<
       deps,
       context,
       serviceCall: () => deps.services.saveInstruction(data),
-      contextName: "SAVE_INSTRUCTION",
+      contextName: "SAVE_INSTRUCTION_LINE",
       suppressDefaultBroadcast: true,
     });
   }

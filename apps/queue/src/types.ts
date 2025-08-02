@@ -56,25 +56,20 @@ export enum ActionName {
   PARSE_HTML = "parse_html",
   SAVE_NOTE = "save_note",
   SCHEDULE_ALL_FOLLOWUP_TASKS = "schedule_all_followup_tasks",
-  PROCESS_SOURCE = "process_source",
   SCHEDULE_IMAGES = "schedule_images",
+  SCHEDULE_INSTRUCTION_LINES = "schedule_instruction_lines",
+  SCHEDULE_INGREDIENT_LINES = "schedule_ingredient_lines",
 
   // Ingredient actions
-  PROCESS_INGREDIENT_LINE = "process_ingredient_line",
+  PARSE_INGREDIENT_LINE = "parse_ingredient_line",
   SAVE_INGREDIENT_LINE = "save_ingredient_line",
   INGREDIENT_COMPLETED_STATUS = "ingredient_completed_status",
   UPDATE_INGREDIENT_COUNT = "update_ingredient_count",
-  PROCESS_INGREDIENT_LINES = "process_ingredient_lines",
   SCHEDULE_CATEGORIZATION_AFTER_COMPLETION = "schedule_categorization_after_completion",
 
   // Instruction actions
-  PROCESS_INSTRUCTION_LINE = "process_instruction_line",
+  FORMAT_INSTRUCTION_LINE = "format_instruction_line",
   SAVE_INSTRUCTION_LINE = "save_instruction_line",
-  INSTRUCTION_COMPLETED_STATUS = "instruction_completed_status",
-  UPDATE_INSTRUCTION_COUNT = "update_instruction_count",
-  PROCESS_INSTRUCTION_LINES = "process_instruction_lines",
-  FORMAT_INSTRUCTION = "format_instruction",
-  SAVE_INSTRUCTION = "save_instruction",
 
   // Image actions
   PROCESS_IMAGE = "process_image",
@@ -89,6 +84,7 @@ export enum ActionName {
   COMPLETION_STATUS = "completion_status",
 
   // Source actions
+  PROCESS_SOURCE = "process_source",
   SAVE_SOURCE = "save_source",
   SOURCE_PROCESSING_STATUS = "source_processing_status",
   SOURCE_COMPLETED_STATUS = "source_completed_status",
@@ -248,40 +244,24 @@ export const QUEUE_ACTIONS: Record<QueueName, ActionName[]> = {
     ActionName.SCHEDULE_ALL_FOLLOWUP_TASKS,
     ActionName.PROCESS_SOURCE,
     ActionName.PROCESS_IMAGE,
-    ActionName.PROCESS_INGREDIENT_LINES,
-    ActionName.PROCESS_INSTRUCTION_LINES,
+    ActionName.SCHEDULE_INGREDIENT_LINES,
+    ActionName.SCHEDULE_INSTRUCTION_LINES,
   ],
   [QueueName.INGREDIENT]: [
-    ActionName.PROCESS_INGREDIENT_LINE,
     ActionName.SAVE_INGREDIENT_LINE,
-    ActionName.INGREDIENT_COMPLETED_STATUS,
-    ActionName.UPDATE_INGREDIENT_COUNT,
-    ActionName.PROCESS_INGREDIENT_LINES,
+    ActionName.SCHEDULE_INGREDIENT_LINES,
     ActionName.SCHEDULE_CATEGORIZATION_AFTER_COMPLETION,
-    ActionName.TRACK_PATTERN,
-    ActionName.COMPLETION_STATUS,
   ],
   [QueueName.INSTRUCTION]: [
-    ActionName.PROCESS_INSTRUCTION_LINE,
+    ActionName.FORMAT_INSTRUCTION_LINE,
     ActionName.SAVE_INSTRUCTION_LINE,
-    ActionName.INSTRUCTION_COMPLETED_STATUS,
-    ActionName.UPDATE_INSTRUCTION_COUNT,
-    ActionName.FORMAT_INSTRUCTION,
-    ActionName.SAVE_INSTRUCTION,
-    ActionName.COMPLETION_STATUS,
   ],
   [QueueName.IMAGE]: [ActionName.SAVE_IMAGE, ActionName.IMAGE_COMPLETED_STATUS],
   [QueueName.CATEGORIZATION]: [
     ActionName.PROCESS_CATEGORIZATION,
     ActionName.SAVE_CATEGORIZATION,
-    ActionName.CATEGORIZATION_COMPLETED_STATUS,
   ],
-  [QueueName.SOURCE]: [
-    ActionName.SAVE_SOURCE,
-    ActionName.SOURCE_PROCESSING_STATUS,
-    ActionName.SOURCE_COMPLETED_STATUS,
-    ActionName.BROADCAST_SOURCE_COMPLETED,
-  ],
+  [QueueName.SOURCE]: [ActionName.SAVE_SOURCE],
 };
 
 /**
@@ -293,26 +273,21 @@ export const ACTION_CATEGORIES: Record<ActionName, ActionCategory> = {
   [ActionName.PARSE_HTML]: ActionCategory.NOTE,
   [ActionName.SAVE_NOTE]: ActionCategory.NOTE,
   [ActionName.SCHEDULE_ALL_FOLLOWUP_TASKS]: ActionCategory.NOTE,
-  [ActionName.PROCESS_SOURCE]: ActionCategory.NOTE,
   [ActionName.SCHEDULE_IMAGES]: ActionCategory.NOTE,
 
   // Ingredient actions
-  [ActionName.PROCESS_INGREDIENT_LINE]: ActionCategory.INGREDIENT,
+  [ActionName.PARSE_INGREDIENT_LINE]: ActionCategory.INGREDIENT,
   [ActionName.SAVE_INGREDIENT_LINE]: ActionCategory.INGREDIENT,
   [ActionName.INGREDIENT_COMPLETED_STATUS]: ActionCategory.INGREDIENT,
   [ActionName.UPDATE_INGREDIENT_COUNT]: ActionCategory.INGREDIENT,
-  [ActionName.PROCESS_INGREDIENT_LINES]: ActionCategory.INGREDIENT,
+  [ActionName.SCHEDULE_INGREDIENT_LINES]: ActionCategory.INGREDIENT,
   [ActionName.SCHEDULE_CATEGORIZATION_AFTER_COMPLETION]:
     ActionCategory.INGREDIENT,
 
   // Instruction actions
-  [ActionName.PROCESS_INSTRUCTION_LINE]: ActionCategory.INSTRUCTION,
+  [ActionName.SCHEDULE_INSTRUCTION_LINES]: ActionCategory.INSTRUCTION,
+  [ActionName.FORMAT_INSTRUCTION_LINE]: ActionCategory.INSTRUCTION,
   [ActionName.SAVE_INSTRUCTION_LINE]: ActionCategory.INSTRUCTION,
-  [ActionName.INSTRUCTION_COMPLETED_STATUS]: ActionCategory.INSTRUCTION,
-  [ActionName.UPDATE_INSTRUCTION_COUNT]: ActionCategory.INSTRUCTION,
-  [ActionName.PROCESS_INSTRUCTION_LINES]: ActionCategory.INSTRUCTION,
-  [ActionName.FORMAT_INSTRUCTION]: ActionCategory.INSTRUCTION,
-  [ActionName.SAVE_INSTRUCTION]: ActionCategory.INSTRUCTION,
 
   // Image actions
   [ActionName.PROCESS_IMAGE]: ActionCategory.IMAGE,
@@ -327,6 +302,7 @@ export const ACTION_CATEGORIES: Record<ActionName, ActionCategory> = {
   [ActionName.COMPLETION_STATUS]: ActionCategory.CATEGORIZATION,
 
   // Source actions
+  [ActionName.PROCESS_SOURCE]: ActionCategory.SOURCE,
   [ActionName.SAVE_SOURCE]: ActionCategory.SOURCE,
   [ActionName.SOURCE_PROCESSING_STATUS]: ActionCategory.SOURCE,
   [ActionName.SOURCE_COMPLETED_STATUS]: ActionCategory.SOURCE,

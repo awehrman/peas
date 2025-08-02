@@ -27,11 +27,11 @@ export function registerInstructionActions(
       InstructionJobData,
       InstructionWorkerDependencies,
       InstructionJobData
-    >(ActionName.FORMAT_INSTRUCTION, FormatInstructionAction),
+    >(ActionName.FORMAT_INSTRUCTION_LINE, FormatInstructionAction),
     createActionRegistration<
       InstructionJobData,
       InstructionWorkerDependencies,
       InstructionJobData
-    >(ActionName.SAVE_INSTRUCTION, SaveInstructionAction),
+    >(ActionName.SAVE_INSTRUCTION_LINE, SaveInstructionAction),
   ]);
 } 

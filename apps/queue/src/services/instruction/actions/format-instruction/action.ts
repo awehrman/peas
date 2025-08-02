@@ -12,7 +12,7 @@ export class FormatInstructionAction extends BaseAction<
   InstructionJobData
 > {
   /** The unique identifier for this action in the worker pipeline */
-  name = ActionName.FORMAT_INSTRUCTION;
+  name = ActionName.FORMAT_INSTRUCTION_LINE;
 
   /**
    * Validate input data before processing
@@ -46,7 +46,7 @@ export class FormatInstructionAction extends BaseAction<
       deps,
       context,
       serviceCall: () => deps.services.formatInstruction(data),
-      contextName: "FORMAT_INSTRUCTION",
+      contextName: "FORMAT_INSTRUCTION_LINE",
       suppressDefaultBroadcast: true,
     });
   }

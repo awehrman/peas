@@ -80,7 +80,9 @@ describe("Note Services Index", () => {
           name: ActionName.SCHEDULE_ALL_FOLLOWUP_TASKS,
         }),
         expect.objectContaining({ name: ActionName.PROCESS_SOURCE }),
-        expect.objectContaining({ name: ActionName.PROCESS_INSTRUCTION_LINES }),
+        expect.objectContaining({
+          name: ActionName.SCHEDULE_INSTRUCTION_LINES,
+        }),
       ]);
     });
 
@@ -111,8 +113,8 @@ describe("Note Services Index", () => {
         expect.any(Function) // ProcessSourceAction
       );
       expect(mockCreateActionRegistration).toHaveBeenCalledWith(
-        ActionName.PROCESS_INSTRUCTION_LINES,
-        expect.any(Function) // ProcessInstructionsAction
+        ActionName.SCHEDULE_INSTRUCTION_LINES,
+        expect.any(Function) // ScheduleInstructionsAction
       );
     });
 
@@ -125,7 +127,7 @@ describe("Note Services Index", () => {
       expect(calls[2]?.[0]).toBe(ActionName.SAVE_NOTE);
       expect(calls[3]?.[0]).toBe(ActionName.SCHEDULE_ALL_FOLLOWUP_TASKS);
       expect(calls[4]?.[0]).toBe(ActionName.PROCESS_SOURCE);
-      expect(calls[5]?.[0]).toBe(ActionName.PROCESS_INSTRUCTION_LINES);
+      expect(calls[5]?.[0]).toBe(ActionName.SCHEDULE_INSTRUCTION_LINES);
     });
 
     it("should handle factory with different configurations", () => {
@@ -254,7 +256,7 @@ describe("Note Services Index", () => {
         ActionName.SAVE_NOTE,
         ActionName.SCHEDULE_ALL_FOLLOWUP_TASKS,
         ActionName.PROCESS_SOURCE,
-        ActionName.PROCESS_INSTRUCTION_LINES,
+        ActionName.SCHEDULE_INSTRUCTION_LINES,
       ];
 
       const actualActionNames = mockCreateActionRegistration.mock.calls.map(

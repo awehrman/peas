@@ -37,11 +37,11 @@ export function createInstructionPipeline(
 
   // Always start with format instruction
   actions.push(
-    actionFactory.create(ActionName.FORMAT_INSTRUCTION, dependencies)
+    actionFactory.create(ActionName.FORMAT_INSTRUCTION_LINE, dependencies)
   );
 
   // Always save the formatted instruction
-  actions.push(actionFactory.create(ActionName.SAVE_INSTRUCTION, dependencies));
+  actions.push(actionFactory.create(ActionName.SAVE_INSTRUCTION_LINE, dependencies));
 
   return actions;
 }
