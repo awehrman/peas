@@ -16,9 +16,26 @@ import { createMockLogger } from "../../../test-utils/helpers";
 import { ActionName, LogLevel } from "../../../types";
 import { ActionFactory } from "../../core/action-factory";
 import { BaseAction } from "../../core/base-action";
+import type { WorkerImpl } from "../../core/base-worker";
 import { BaseWorker } from "../../core/base-worker";
 import type { ActionContext } from "../../core/types";
 import type { BaseJobData } from "../../types";
+
+// Mock processJob function
+vi.mock("../../core/job-processor/job-processor", () => ({
+  processJob: vi
+    .fn()
+    .mockImplementation(
+      async (actions, data, context, logger, operationName, deps) => {
+        // Simulate processing the first action
+        if (actions.length > 0) {
+          const result = await actions[0].execute(data, deps, context);
+          return result;
+        }
+        return data;
+      }
+    ),
+}));
 
 // Mock dependencies
 vi.mock("../../../monitoring/system-monitor", () => ({
@@ -141,6 +158,73 @@ class TestWorker extends BaseWorker<BaseJobData, TestDependencies> {
 
   public get testContainer() {
     return this.container;
+  }
+
+  // Expose the createWorker method for testing job processing
+  public async testCreateWorker(
+    queue: { name: string },
+    workerImpl?: WorkerImpl<BaseJobData>
+  ) {
+    return this.createWorker(queue, workerImpl);
+  }
+
+  // Expose the job processor directly for testing
+  public async testCreateJobProcessor(queue: { name: string }) {
+    // Create a mock worker implementation that captures the job processor
+    const capturedJobProcessor = vi.fn();
+    const mockWorkerImpl = vi
+      .fn()
+      .mockImplementation((_queue, jobProcessor, _concurrency) => {
+        capturedJobProcessor.mockImplementation(jobProcessor);
+        return {
+          isRunning: () => true,
+        };
+      });
+
+    await this.createWorker(queue, mockWorkerImpl);
+    return capturedJobProcessor;
+  }
+
+  // Override lifecycle hooks to track calls
+  public onBeforeJobCalls: Array<{
+    data: BaseJobData;
+    context: ActionContext;
+  }> = [];
+  public onAfterJobCalls: Array<{
+    data: BaseJobData;
+    context: ActionContext;
+    result: unknown;
+  }> = [];
+  public onJobErrorCalls: Array<{
+    error: Error;
+    data: BaseJobData;
+    context: ActionContext;
+  }> = [];
+
+  protected async onBeforeJob(
+    data: BaseJobData,
+    context: ActionContext
+  ): Promise<void> {
+    this.onBeforeJobCalls.push({ data, context });
+    await super.onBeforeJob(data, context);
+  }
+
+  protected async onAfterJob(
+    data: BaseJobData,
+    context: ActionContext,
+    result: unknown
+  ): Promise<void> {
+    this.onAfterJobCalls.push({ data, context, result });
+    await super.onAfterJob(data, context, result as BaseJobData);
+  }
+
+  protected async onJobError(
+    error: Error,
+    data: BaseJobData,
+    context: ActionContext
+  ): Promise<void> {
+    this.onJobErrorCalls.push({ error, data, context });
+    await super.onJobError(error, data, context);
   }
 }
 
@@ -428,6 +512,249 @@ describe("BaseWorker", () => {
       );
 
       expect(workerWithoutContainer.testContainer).toBeUndefined();
+    });
+  });
+
+  describe("job processing", () => {
+    beforeEach(() => {
+      // Clear lifecycle hook call tracking
+      worker.onBeforeJobCalls = [];
+      worker.onAfterJobCalls = [];
+      worker.onJobErrorCalls = [];
+    });
+
+    it("should process job successfully and call lifecycle hooks", async () => {
+      const jobProcessor = await worker.testCreateJobProcessor(mockQueue);
+
+      const testJob = {
+        id: "test-job-123",
+        attemptsMade: 0,
+        data: { jobId: "test-123", metadata: { test: true } } as BaseJobData,
+      };
+
+      const result = await jobProcessor(testJob);
+
+      // Verify lifecycle hooks were called
+      expect(worker.onBeforeJobCalls).toHaveLength(1);
+      expect(worker.onBeforeJobCalls[0].data).toEqual(testJob.data);
+      expect(worker.onBeforeJobCalls[0].context.jobId).toBe("test-job-123");
+
+      expect(worker.onAfterJobCalls).toHaveLength(1);
+      expect(worker.onAfterJobCalls[0].data).toEqual(testJob.data);
+      expect(worker.onAfterJobCalls[0].context.jobId).toBe("test-job-123");
+      expect(worker.onAfterJobCalls[0].result).toBeDefined();
+
+      // Verify logging calls
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        "[TEST-WORKER] Starting job test-job-123"
+      );
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        expect.stringContaining("test-worker completed for job test-job-123"),
+        LogLevel.INFO,
+        expect.objectContaining({
+          duration: expect.any(Number),
+          jobId: "test-job-123",
+        })
+      );
+
+      // Verify system monitoring was called
+      const { systemMonitor } = await import(
+        "../../../monitoring/system-monitor"
+      );
+      expect(systemMonitor.trackJobMetrics).toHaveBeenCalledWith(
+        "test-job-123",
+        expect.any(Number),
+        true,
+        "test-queue",
+        "test-worker"
+      );
+
+      expect(result).toBeDefined();
+    });
+
+    it("should handle job processing errors and call error lifecycle hook", async () => {
+      // Create a worker with a failing action
+      class FailingAction extends BaseAction<BaseJobData, TestDependencies> {
+        name = ActionName.NO_OP;
+
+        async execute(): Promise<BaseJobData> {
+          throw new Error("Action execution failed");
+        }
+
+        validateInput(): Error | null {
+          return null;
+        }
+      }
+
+      class FailingWorker extends TestWorker {
+        protected createActionPipeline(): ReturnType<
+          TestWorker["createActionPipeline"]
+        > {
+          return [new FailingAction()];
+        }
+      }
+
+      const failingWorker = new FailingWorker(
+        mockQueue,
+        mockDependencies,
+        undefined,
+        undefined,
+        undefined,
+        vi.fn().mockReturnValue({
+          isRunning: () => true,
+        })
+      );
+
+      const jobProcessor =
+        await failingWorker.testCreateJobProcessor(mockQueue);
+
+      const testJob = {
+        id: "test-job-456",
+        attemptsMade: 1,
+        data: { jobId: "test-456", metadata: { test: true } } as BaseJobData,
+      };
+
+      await expect(jobProcessor(testJob)).rejects.toThrow(
+        "Action execution failed"
+      );
+
+      // Verify error lifecycle hook was called
+      expect(failingWorker.onJobErrorCalls).toHaveLength(1);
+      expect(failingWorker.onJobErrorCalls[0].data).toEqual(testJob.data);
+      expect(failingWorker.onJobErrorCalls[0].context.jobId).toBe(
+        "test-job-456"
+      );
+      expect(failingWorker.onJobErrorCalls[0].error.message).toBe(
+        "Action execution failed"
+      );
+
+      // Verify error logging
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        expect.stringContaining("test-worker failed for job test-job-456"),
+        LogLevel.ERROR,
+        expect.objectContaining({
+          duration: expect.any(Number),
+          jobId: "test-job-456",
+          error: expect.any(Error),
+        })
+      );
+
+      // Verify error system monitoring was called
+      const { systemMonitor } = await import(
+        "../../../monitoring/system-monitor"
+      );
+      expect(systemMonitor.trackJobMetrics).toHaveBeenCalledWith(
+        "test-job-456",
+        expect.any(Number),
+        false,
+        "test-queue",
+        "test-worker",
+        "Action execution failed"
+      );
+    });
+
+    it("should handle jobs with missing job ID", async () => {
+      const jobProcessor = await worker.testCreateJobProcessor(mockQueue);
+
+      const testJob = {
+        id: undefined,
+        attemptsMade: 0,
+        data: { jobId: "test-789", metadata: { test: true } } as BaseJobData,
+      };
+
+      const result = await jobProcessor(testJob);
+
+      // Verify context was created with fallback job ID
+      expect(worker.onBeforeJobCalls[0].context.jobId).toBe("unknown");
+      expect(worker.onAfterJobCalls[0].context.jobId).toBe("unknown");
+
+      expect(result).toBeDefined();
+    });
+
+    it("should handle jobs with retry attempts", async () => {
+      const jobProcessor = await worker.testCreateJobProcessor(mockQueue);
+
+      const testJob = {
+        id: "test-job-retry",
+        attemptsMade: 3,
+        data: { jobId: "test-retry", metadata: { test: true } } as BaseJobData,
+      };
+
+      const result = await jobProcessor(testJob);
+
+      // Verify context includes retry information
+      expect(worker.onBeforeJobCalls[0].context.retryCount).toBe(3);
+      expect(worker.onBeforeJobCalls[0].context.attemptNumber).toBe(4);
+
+      expect(result).toBeDefined();
+    });
+
+    it("should create worker with custom implementation", async () => {
+      const customWorkerImpl = vi.fn().mockReturnValue({
+        isRunning: () => true,
+        process: vi.fn(),
+      });
+
+      const mockWorker = await worker.testCreateWorker(
+        mockQueue,
+        customWorkerImpl
+      );
+
+      expect(customWorkerImpl).toHaveBeenCalledWith(
+        mockQueue,
+        expect.any(Function), // jobProcessor
+        5 // default concurrency
+      );
+
+      expect(mockWorker).toBeDefined();
+    });
+
+    it("should create worker with custom concurrency", async () => {
+      const customConfig = { concurrency: 10 };
+      const customWorker = new TestWorker(
+        mockQueue,
+        mockDependencies,
+        undefined,
+        undefined,
+        customConfig,
+        vi.fn().mockReturnValue({
+          isRunning: () => true,
+          process: vi.fn(),
+        })
+      );
+
+      const customWorkerImpl = vi.fn().mockReturnValue({
+        isRunning: () => true,
+        process: vi.fn(),
+      });
+
+      await customWorker.testCreateWorker(mockQueue, customWorkerImpl);
+
+      expect(customWorkerImpl).toHaveBeenCalledWith(
+        mockQueue,
+        expect.any(Function), // jobProcessor
+        10 // custom concurrency
+      );
+    });
+  });
+
+  describe("createActionPipeline", () => {
+    it("should create action pipeline with actual actions", () => {
+      const data = { jobId: "test-pipeline" } as BaseJobData;
+      const context: ActionContext = {
+        jobId: "test-pipeline",
+        retryCount: 0,
+        queueName: "test-queue",
+        operation: "test-worker",
+        startTime: Date.now(),
+        workerName: "test-worker",
+        attemptNumber: 1,
+      };
+
+      const pipeline = worker.createActionPipeline(data, context);
+
+      expect(pipeline).toHaveLength(1);
+      expect(pipeline[0].name).toBe(ActionName.NO_OP);
     });
   });
 });

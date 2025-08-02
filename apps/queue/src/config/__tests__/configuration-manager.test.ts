@@ -14,11 +14,16 @@ vi.mock("../utils/standardized-logger", () => ({
 
 describe("configuration-manager.ts", () => {
   let testEnv: ReturnType<typeof createTestEnvironment>;
+  let ConfigurationManager: typeof import("../configuration-manager").ConfigurationManager;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     testEnv = createTestEnvironment();
     vi.clearAllMocks();
     vi.resetModules();
+
+    // Import once per test to avoid repeated dynamic imports
+    const module = await import("../configuration-manager");
+    ConfigurationManager = module.ConfigurationManager;
   });
 
   afterEach(() => {
@@ -29,10 +34,6 @@ describe("configuration-manager.ts", () => {
   describe("ConfigurationManager", () => {
     describe("Singleton Pattern", () => {
       it("should return the same instance", async () => {
-        const { ConfigurationManager } = await import(
-          "../configuration-manager"
-        );
-
         const instance1 = ConfigurationManager.getInstance();
         const instance2 = ConfigurationManager.getInstance();
 
@@ -51,9 +52,6 @@ describe("configuration-manager.ts", () => {
           JWT_SECRET: "a".repeat(32),
         });
 
-        const { ConfigurationManager } = await import(
-          "../configuration-manager"
-        );
         const manager = ConfigurationManager.getInstance();
 
         const config = manager.loadConfig();
@@ -75,9 +73,6 @@ describe("configuration-manager.ts", () => {
           HOST: undefined,
         });
 
-        const { ConfigurationManager } = await import(
-          "../configuration-manager"
-        );
         const manager = ConfigurationManager.getInstance();
 
         const config = manager.loadConfig();
@@ -90,9 +85,6 @@ describe("configuration-manager.ts", () => {
       });
 
       it("should cache configuration after first load", async () => {
-        const { ConfigurationManager } = await import(
-          "../configuration-manager"
-        );
         const manager = ConfigurationManager.getInstance();
 
         const config1 = manager.loadConfig();
@@ -102,9 +94,6 @@ describe("configuration-manager.ts", () => {
       });
 
       it("should log successful configuration load", async () => {
-        const { ConfigurationManager } = await import(
-          "../configuration-manager"
-        );
         const manager = ConfigurationManager.getInstance();
 
         // Clear the singleton instance to force a new load
@@ -120,9 +109,6 @@ describe("configuration-manager.ts", () => {
           DATABASE_URL: "invalid-url",
         });
 
-        const { ConfigurationManager } = await import(
-          "../configuration-manager"
-        );
         const manager = ConfigurationManager.getInstance();
 
         // Clear the singleton instance to force a new load

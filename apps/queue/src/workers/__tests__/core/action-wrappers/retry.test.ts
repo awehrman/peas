@@ -301,10 +301,16 @@ describe("wrapActionWithRetryAndErrorHandling", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // Mock setTimeout to resolve immediately for faster tests
+    vi.useFakeTimers();
     mockLogger = createMockLogger();
     mockDeps = { logger: mockLogger };
     mockContext = createMockActionContext();
     mockData = { jobId: "test-123" } as BaseJobData;
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("should wrap action with retry and error handling", () => {
@@ -331,7 +337,16 @@ describe("wrapActionWithRetryAndErrorHandling", () => {
     const originalAction = new EventuallySuccessAction(2);
     const wrappedAction = wrapActionWithRetryAndErrorHandling(originalAction);
 
-    const result = await wrappedAction.execute(mockData, mockDeps, mockContext);
+    const resultPromise = wrappedAction.execute(
+      mockData,
+      mockDeps,
+      mockContext
+    );
+
+    // Fast-forward timers to resolve any sleeps
+    await vi.runAllTimersAsync();
+
+    const result = await resultPromise;
 
     expect(result).toEqual({
       jobId: "test-123",
@@ -348,10 +363,16 @@ describe("wrapActionWithRetryAndErrorHandlingFactory", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // Mock setTimeout to resolve immediately for faster tests
+    vi.useFakeTimers();
     mockLogger = createMockLogger();
     mockDeps = { logger: mockLogger };
     mockContext = createMockActionContext();
     mockData = { jobId: "test-123" } as BaseJobData;
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("should create retry wrapper from factory", () => {
@@ -404,7 +425,12 @@ describe("wrapActionWithRetryAndErrorHandlingFactory", () => {
       ActionName.LOGGING
     );
 
-    const result = await wrappedAction.execute(mockData, mockDeps, mockContext);
+    const resultPromise = wrappedAction.execute(mockData, mockDeps, mockContext);
+    
+    // Fast-forward timers to resolve any sleeps
+    await vi.runAllTimersAsync();
+    
+    const result = await resultPromise;
 
     expect(result).toEqual({
       jobId: "test-123",

@@ -1,1 +1,1 @@
-export { registerInstructionActions } from "./register"; 
+export { registerInstructionActions } from "./register";

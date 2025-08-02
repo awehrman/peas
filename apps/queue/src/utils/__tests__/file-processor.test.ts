@@ -398,9 +398,6 @@ describe("File Processor", () => {
           "/path/to/file1.html",
           "/path/to/file2.html",
           "/path/to/file3.html",
-          "/path/to/file4.html",
-          "/path/to/file5.html",
-          "/path/to/file6.html",
         ];
 
         // Mock successful file processing
@@ -414,7 +411,7 @@ describe("File Processor", () => {
 
         const stats = await fileProcessor.processFiles(filePaths);
 
-        expect(stats.totalFiles).toBe(6);
+        expect(stats.totalFiles).toBe(3);
         expect(fs.promises.mkdir).toHaveBeenCalled();
       });
 

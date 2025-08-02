@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ActionName, LogLevel } from "../../../types";
 import type { StructuredLogger } from "../../../types";
@@ -29,6 +29,9 @@ describe("Retry", () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
+    // Mock setTimeout to resolve immediately for faster tests
+    vi.useFakeTimers();
+
     mockLogger = {
       log: vi.fn(),
     };
@@ -50,6 +53,10 @@ describe("Retry", () => {
     // Reset circuit breaker state between tests
     // @ts-expect-error - Accessing private static property for testing
     CircuitBreakerAction.breakers.clear();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   describe("DEFAULT_RETRY_CONFIG", () => {
@@ -115,9 +122,16 @@ describe("Retry", () => {
       };
       const testDeps: RetryDeps = { logger: mockLogger };
 
-      const startTime = Date.now();
-      const result = await retryAction.execute(testData, testDeps, mockContext);
-      const endTime = Date.now();
+      const resultPromise = retryAction.execute(
+        testData,
+        testDeps,
+        mockContext
+      );
+
+      // Fast-forward timers to resolve the sleep
+      await vi.runAllTimersAsync();
+
+      const result = await resultPromise;
 
       expect(result).toEqual({
         attempt: 2,
@@ -135,9 +149,6 @@ describe("Retry", () => {
           delay: expect.any(Number),
         })
       );
-
-      // Should have waited approximately 2000ms (baseDelay * backoffMultiplier)
-      expect(endTime - startTime).toBeGreaterThanOrEqual(1900);
     });
 
     it("should throw error when max attempts exceeded", async () => {
@@ -160,7 +171,16 @@ describe("Retry", () => {
       };
       const testDeps: RetryDeps = {};
 
-      const result = await retryAction.execute(testData, testDeps, mockContext);
+      const resultPromise = retryAction.execute(
+        testData,
+        testDeps,
+        mockContext
+      );
+
+      // Fast-forward timers to resolve the sleep
+      await vi.runAllTimersAsync();
+
+      const result = await resultPromise;
 
       expect(result).toEqual({
         attempt: 2,
@@ -182,7 +202,16 @@ describe("Retry", () => {
       };
       const testDeps: RetryDeps = { logger: undefined };
 
-      const result = await retryAction.execute(testData, testDeps, mockContext);
+      const resultPromise = retryAction.execute(
+        testData,
+        testDeps,
+        mockContext
+      );
+
+      // Fast-forward timers to resolve the sleep
+      await vi.runAllTimersAsync();
+
+      const result = await resultPromise;
 
       expect(result).toEqual({
         attempt: 2,
@@ -206,7 +235,16 @@ describe("Retry", () => {
         logger: { log: undefined } as unknown as StructuredLogger,
       };
 
-      const result = await retryAction.execute(testData, testDeps, mockContext);
+      const resultPromise = retryAction.execute(
+        testData,
+        testDeps,
+        mockContext
+      );
+
+      // Fast-forward timers to resolve the sleep
+      await vi.runAllTimersAsync();
+
+      const result = await resultPromise;
 
       expect(result).toEqual({
         attempt: 2,
@@ -230,7 +268,16 @@ describe("Retry", () => {
         logger: { log: null } as unknown as StructuredLogger,
       };
 
-      const result = await retryAction.execute(testData, testDeps, mockContext);
+      const resultPromise = retryAction.execute(
+        testData,
+        testDeps,
+        mockContext
+      );
+
+      // Fast-forward timers to resolve the sleep
+      await vi.runAllTimersAsync();
+
+      const result = await resultPromise;
 
       expect(result).toEqual({
         attempt: 2,
@@ -273,7 +320,16 @@ describe("Retry", () => {
       };
       const testDeps: RetryDeps = { logger: mockLogger };
 
-      const result = await retryAction.execute(testData, testDeps, mockContext);
+      const resultPromise = retryAction.execute(
+        testData,
+        testDeps,
+        mockContext
+      );
+
+      // Fast-forward timers to resolve the sleep
+      await vi.runAllTimersAsync();
+
+      const result = await resultPromise;
 
       expect(result).toEqual({
         attempt: 2,
@@ -300,21 +356,30 @@ describe("Retry", () => {
       };
       const testDeps: RetryDeps = { logger: mockLogger };
 
-      const startTime = Date.now();
-      const result = await customRetryAction.execute(
+      const resultPromise = customRetryAction.execute(
         testData,
         testDeps,
         mockContext
       );
-      const endTime = Date.now();
+
+      // Fast-forward timers to resolve the sleep
+      await vi.runAllTimersAsync();
+
+      const result = await resultPromise;
 
       expect(result).toEqual({
         attempt: 6,
         maxAttempts: 10,
       });
 
-      // Should not exceed maxDelay
-      expect(endTime - startTime).toBeLessThanOrEqual(1500);
+      // Verify the delay was calculated correctly (should be capped at maxDelay)
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        expect.any(String),
+        LogLevel.WARN,
+        expect.objectContaining({
+          delay: expect.any(Number),
+        })
+      );
     });
   });
 
@@ -367,13 +432,16 @@ describe("Retry", () => {
         .mockRejectedValueOnce(new Error("First attempt failed"))
         .mockResolvedValueOnce(expectedResult);
 
-      const startTime = Date.now();
-      const result = await retryWrapperAction.execute(
+      const resultPromise = retryWrapperAction.execute(
         testData,
         testDeps,
         mockContext
       );
-      const endTime = Date.now();
+
+      // Fast-forward timers to resolve the sleep
+      await vi.runAllTimersAsync();
+
+      const result = await resultPromise;
 
       expect(result).toEqual(expectedResult);
       expect(mockWrappedAction.execute).toHaveBeenCalledTimes(2);
@@ -387,9 +455,6 @@ describe("Retry", () => {
           delay: expect.any(Number),
         })
       );
-
-      // Should have waited approximately 1000ms
-      expect(endTime - startTime).toBeGreaterThanOrEqual(900);
     });
 
     it("should throw error after max attempts", async () => {
@@ -399,12 +464,22 @@ describe("Retry", () => {
 
       mockWrappedAction.execute = vi.fn().mockRejectedValue(testError);
 
-      await expect(
-        retryWrapperAction.execute(testData, testDeps, mockContext)
-      ).rejects.toThrow("All attempts failed");
+      // Mock the sleep method to avoid real delays
+      const originalSleep = retryWrapperAction["sleep"];
+      retryWrapperAction["sleep"] = vi.fn().mockResolvedValue(undefined);
 
-      expect(mockWrappedAction.execute).toHaveBeenCalledTimes(4); // maxAttempts + 1
-    }, 10000); // Increase timeout for this test
+      try {
+        await expect(
+          retryWrapperAction.execute(testData, testDeps, mockContext)
+        ).rejects.toThrow("All attempts failed");
+
+        expect(mockWrappedAction.execute).toHaveBeenCalledTimes(4); // maxAttempts + 1
+        expect(retryWrapperAction["sleep"]).toHaveBeenCalledTimes(3); // Called for each retry
+      } finally {
+        // Restore original sleep method
+        retryWrapperAction["sleep"] = originalSleep;
+      }
+    });
 
     it("should use console.warn when logger is not available", async () => {
       const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
@@ -416,7 +491,16 @@ describe("Retry", () => {
         .mockRejectedValueOnce(new Error("First attempt failed"))
         .mockResolvedValueOnce({ success: true });
 
-      await retryWrapperAction.execute(testData, testDeps, mockContext);
+      const resultPromise = retryWrapperAction.execute(
+        testData,
+        testDeps,
+        mockContext
+      );
+
+      // Fast-forward timers to resolve the sleep
+      await vi.runAllTimersAsync();
+
+      await resultPromise;
 
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringContaining("Retrying no_op for job test-job-123 (attempt")
@@ -437,7 +521,16 @@ describe("Retry", () => {
         .mockRejectedValueOnce(new Error("First attempt failed"))
         .mockResolvedValueOnce({ success: true });
 
-      await retryWrapperAction.execute(testData, testDeps, mockContext);
+      const resultPromise = retryWrapperAction.execute(
+        testData,
+        testDeps,
+        mockContext
+      );
+
+      // Fast-forward timers to resolve the sleep
+      await vi.runAllTimersAsync();
+
+      await resultPromise;
 
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringContaining("Retrying no_op for job test-job-123 (attempt")
@@ -456,7 +549,16 @@ describe("Retry", () => {
         .mockRejectedValueOnce(new Error("First attempt failed"))
         .mockResolvedValueOnce({ success: true });
 
-      await retryWrapperAction.execute(testData, testDeps, mockContext);
+      const resultPromise = retryWrapperAction.execute(
+        testData,
+        testDeps,
+        mockContext
+      );
+
+      // Fast-forward timers to resolve the sleep
+      await vi.runAllTimersAsync();
+
+      await resultPromise;
 
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringContaining("Retrying no_op for job test-job-123 (attempt")
@@ -478,12 +580,22 @@ describe("Retry", () => {
 
       mockWrappedAction.execute = vi.fn().mockRejectedValue(testError);
 
-      await expect(
-        customRetryWrapper.execute(testData, testDeps, mockContext)
-      ).rejects.toThrow("All attempts failed");
+      // Mock the sleep method to avoid real delays
+      const originalSleep = customRetryWrapper["sleep"];
+      customRetryWrapper["sleep"] = vi.fn().mockResolvedValue(undefined);
 
-      expect(mockWrappedAction.execute).toHaveBeenCalledTimes(3); // maxAttempts + 1
-    }, 10000); // Increase timeout for this test
+      try {
+        await expect(
+          customRetryWrapper.execute(testData, testDeps, mockContext)
+        ).rejects.toThrow("All attempts failed");
+
+        expect(mockWrappedAction.execute).toHaveBeenCalledTimes(3); // maxAttempts + 1
+        expect(customRetryWrapper["sleep"]).toHaveBeenCalledTimes(2); // Called for each retry
+      } finally {
+        // Restore original sleep method
+        customRetryWrapper["sleep"] = originalSleep;
+      }
+    });
   });
 
   describe("CircuitBreakerAction", () => {

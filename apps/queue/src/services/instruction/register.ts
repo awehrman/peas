@@ -1,6 +1,9 @@
 import { ActionName } from "../../types";
-import type { InstructionJobData, InstructionWorkerDependencies } from "../../workers/instruction/dependencies";
 import { ActionFactory } from "../../workers/core/action-factory";
+import type {
+  InstructionJobData,
+  InstructionWorkerDependencies,
+} from "../../workers/instruction/dependencies";
 import {
   createActionRegistration,
   registerActions,
@@ -34,4 +37,4 @@ export function registerInstructionActions(
       InstructionJobData
     >(ActionName.SAVE_INSTRUCTION_LINE, SaveInstructionAction),
   ]);
-} 
+}
