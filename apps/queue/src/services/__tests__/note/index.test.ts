@@ -83,13 +83,14 @@ describe("Note Services Index", () => {
         expect.objectContaining({
           name: ActionName.SCHEDULE_INSTRUCTION_LINES,
         }),
+        expect.objectContaining({ name: ActionName.CHECK_DUPLICATES }),
       ]);
     });
 
     it("should create action registrations with correct parameters", () => {
       registerNoteActions(mockFactory);
 
-      expect(mockCreateActionRegistration).toHaveBeenCalledTimes(6);
+      expect(mockCreateActionRegistration).toHaveBeenCalledTimes(7);
 
       // Check each action registration
       expect(mockCreateActionRegistration).toHaveBeenCalledWith(
@@ -116,6 +117,10 @@ describe("Note Services Index", () => {
         ActionName.SCHEDULE_INSTRUCTION_LINES,
         expect.any(Function) // ScheduleInstructionsAction
       );
+      expect(mockCreateActionRegistration).toHaveBeenCalledWith(
+        ActionName.CHECK_DUPLICATES,
+        expect.any(Function) // CheckDuplicatesAction
+      );
     });
 
     it("should register actions in the correct order", () => {
@@ -128,6 +133,7 @@ describe("Note Services Index", () => {
       expect(calls[3]?.[0]).toBe(ActionName.SCHEDULE_ALL_FOLLOWUP_TASKS);
       expect(calls[4]?.[0]).toBe(ActionName.PROCESS_SOURCE);
       expect(calls[5]?.[0]).toBe(ActionName.SCHEDULE_INSTRUCTION_LINES);
+      expect(calls[6]?.[0]).toBe(ActionName.CHECK_DUPLICATES);
     });
 
     it("should handle factory with different configurations", () => {
@@ -159,7 +165,7 @@ describe("Note Services Index", () => {
       registerNoteActions(mockFactory);
 
       const registrations = mockRegisterActions.mock.calls[0]?.[1];
-      expect(registrations).toHaveLength(6);
+      expect(registrations).toHaveLength(7);
 
       // Each registration should have the correct structure
       registrations.forEach((registration: any) => {
@@ -180,7 +186,7 @@ describe("Note Services Index", () => {
       registerNoteActions(mockFactory);
 
       expect(mockRegisterActions).toHaveBeenCalledTimes(1);
-      expect(mockCreateActionRegistration).toHaveBeenCalledTimes(6);
+      expect(mockCreateActionRegistration).toHaveBeenCalledTimes(7);
     });
   });
 
@@ -257,6 +263,7 @@ describe("Note Services Index", () => {
         ActionName.SCHEDULE_ALL_FOLLOWUP_TASKS,
         ActionName.PROCESS_SOURCE,
         ActionName.SCHEDULE_INSTRUCTION_LINES,
+        ActionName.CHECK_DUPLICATES,
       ];
 
       const actualActionNames = mockCreateActionRegistration.mock.calls.map(

@@ -7,6 +7,7 @@ import {
   registerActions,
 } from "../../workers/shared/action-registry";
 
+import { CheckDuplicatesAction } from "./actions/check-duplicates/action";
 import { CleanHtmlAction } from "./actions/clean-html/action";
 import { ParseHtmlAction } from "./actions/parse-html/action";
 import { ProcessSourceAction } from "./actions/process-source/action";
@@ -58,5 +59,10 @@ export function registerNoteActions(
       NoteWorkerDependencies,
       NotePipelineData
     >(ActionName.SCHEDULE_INSTRUCTION_LINES, ScheduleInstructionsAction),
+    createActionRegistration<
+      NotePipelineData,
+      NoteWorkerDependencies,
+      NotePipelineData
+    >(ActionName.CHECK_DUPLICATES, CheckDuplicatesAction),
   ]);
 }

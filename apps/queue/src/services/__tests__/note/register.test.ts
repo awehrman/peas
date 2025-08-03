@@ -106,7 +106,7 @@ describe("registerNoteActions", () => {
 
     // Assert
     const registeredActions = mockRegisterActions.mock.calls[0]?.[1];
-    expect(registeredActions).toHaveLength(6);
+    expect(registeredActions).toHaveLength(7);
   });
 
   it("should register PARSE_HTML action", () => {
@@ -169,7 +169,7 @@ describe("registerNoteActions", () => {
     registerNoteActions(mockFactory);
 
     // Assert
-    expect(mockCreateActionRegistration).toHaveBeenCalledTimes(6);
+    expect(mockCreateActionRegistration).toHaveBeenCalledTimes(7);
   });
 
   it("should register actions in the correct order", () => {
@@ -206,6 +206,9 @@ describe("registerNoteActions", () => {
     const { ScheduleInstructionsAction } = await import(
       "../../note/actions/schedule-instructions/action"
     );
+    const { CheckDuplicatesAction } = await import(
+      "../../note/actions/check-duplicates/action"
+    );
 
     // Act
     registerNoteActions(mockFactory);
@@ -218,6 +221,7 @@ describe("registerNoteActions", () => {
     expect(calls[3]?.[1]).toBe(ScheduleAllFollowupTasksAction);
     expect(calls[4]?.[1]).toBe(ProcessSourceAction);
     expect(calls[5]?.[1]).toBe(ScheduleInstructionsAction);
+    expect(calls[6]?.[1]).toBe(CheckDuplicatesAction);
   });
 
   it("should return void", () => {
@@ -248,6 +252,7 @@ describe("registerNoteActions", () => {
       { name: ActionName.SCHEDULE_ALL_FOLLOWUP_TASKS, factory: vi.fn() },
       { name: ActionName.PROCESS_SOURCE, factory: vi.fn() },
       { name: ActionName.SCHEDULE_INSTRUCTION_LINES, factory: vi.fn() },
+      { name: ActionName.CHECK_DUPLICATES, factory: vi.fn() },
     ];
 
     mockCreateActionRegistration
@@ -256,7 +261,8 @@ describe("registerNoteActions", () => {
       .mockReturnValueOnce(mockRegistrations[2])
       .mockReturnValueOnce(mockRegistrations[3])
       .mockReturnValueOnce(mockRegistrations[4])
-      .mockReturnValueOnce(mockRegistrations[5]);
+      .mockReturnValueOnce(mockRegistrations[5])
+      .mockReturnValueOnce(mockRegistrations[6]);
 
     // Act
     registerNoteActions(mockFactory);

@@ -86,7 +86,7 @@ describe("createNotePipeline", () => {
 
       expect(pipeline).toBeDefined();
       expect(Array.isArray(pipeline)).toBe(true);
-      expect(pipeline).toHaveLength(4);
+      expect(pipeline).toHaveLength(5);
       expect(pipeline[0]).toBe(mockCleanAction);
       expect(pipeline[1]).toBe(mockParseAction);
       expect(pipeline[2]).toBe(mockSaveAction);
@@ -98,12 +98,14 @@ describe("createNotePipeline", () => {
       const mockParseAction = { name: "parse-html" } as any;
       const mockSaveAction = { name: "save-note" } as any;
       const mockScheduleAction = { name: "schedule-all-followup-tasks" } as any;
+      const mockCheckDuplicatesAction = { name: "check-duplicates" } as any;
 
       (mockActionFactory.create as any)
         .mockReturnValueOnce(mockCleanAction)
         .mockReturnValueOnce(mockParseAction)
         .mockReturnValueOnce(mockSaveAction)
-        .mockReturnValueOnce(mockScheduleAction);
+        .mockReturnValueOnce(mockScheduleAction)
+        .mockReturnValueOnce(mockCheckDuplicatesAction);
 
       const testData = createMockNoteData();
       createNotePipeline(
@@ -113,7 +115,7 @@ describe("createNotePipeline", () => {
         mockContext
       );
 
-      expect(mockActionFactory.create).toHaveBeenCalledTimes(4);
+      expect(mockActionFactory.create).toHaveBeenCalledTimes(5);
       expect(mockActionFactory.create).toHaveBeenNthCalledWith(
         1,
         ActionName.CLEAN_HTML,
@@ -134,6 +136,11 @@ describe("createNotePipeline", () => {
         ActionName.SCHEDULE_ALL_FOLLOWUP_TASKS,
         mockDependencies
       );
+      expect(mockActionFactory.create).toHaveBeenNthCalledWith(
+        5,
+        ActionName.CHECK_DUPLICATES,
+        mockDependencies
+      );
     });
 
     it("should return actions in correct order", () => {
@@ -144,12 +151,17 @@ describe("createNotePipeline", () => {
         name: "schedule-all-followup-tasks",
         order: 4,
       } as any;
+      const mockCheckDuplicatesAction = {
+        name: "check-duplicates",
+        order: 5,
+      } as any;
 
       (mockActionFactory.create as any)
         .mockReturnValueOnce(mockCleanAction)
         .mockReturnValueOnce(mockParseAction)
         .mockReturnValueOnce(mockSaveAction)
-        .mockReturnValueOnce(mockScheduleAction);
+        .mockReturnValueOnce(mockScheduleAction)
+        .mockReturnValueOnce(mockCheckDuplicatesAction);
 
       const testData = createMockNoteData();
       const pipeline = createNotePipeline(
@@ -163,6 +175,7 @@ describe("createNotePipeline", () => {
       expect(pipeline[1]).toBe(mockParseAction);
       expect(pipeline[2]).toBe(mockSaveAction);
       expect(pipeline[3]).toBe(mockScheduleAction);
+      expect(pipeline[4]).toBe(mockCheckDuplicatesAction);
     });
   });
 
@@ -203,12 +216,14 @@ describe("createNotePipeline", () => {
       const mockParseAction = { name: "parse-html" } as any;
       const mockSaveAction = { name: "save-note" } as any;
       const mockScheduleAction = { name: "schedule-all-followup-tasks" } as any;
+      const mockCheckDuplicatesAction = { name: "check-duplicates" } as any;
 
       (mockActionFactory.create as any)
         .mockReturnValueOnce(mockCleanAction)
         .mockReturnValueOnce(mockParseAction)
         .mockReturnValueOnce(mockSaveAction)
-        .mockReturnValueOnce(mockScheduleAction);
+        .mockReturnValueOnce(mockScheduleAction)
+        .mockReturnValueOnce(mockCheckDuplicatesAction);
 
       const testData = createMockNoteData({
         options: {
@@ -223,7 +238,7 @@ describe("createNotePipeline", () => {
         mockContext
       );
 
-      expect(pipeline).toHaveLength(4);
+      expect(pipeline).toHaveLength(5);
       expect(mockActionFactory.create).toHaveBeenCalledWith(
         ActionName.SCHEDULE_ALL_FOLLOWUP_TASKS,
         mockDependencies
@@ -235,12 +250,14 @@ describe("createNotePipeline", () => {
       const mockParseAction = { name: "parse-html" } as any;
       const mockSaveAction = { name: "save-note" } as any;
       const mockScheduleAction = { name: "schedule-all-followup-tasks" } as any;
+      const mockCheckDuplicatesAction = { name: "check-duplicates" } as any;
 
       (mockActionFactory.create as any)
         .mockReturnValueOnce(mockCleanAction)
         .mockReturnValueOnce(mockParseAction)
         .mockReturnValueOnce(mockSaveAction)
-        .mockReturnValueOnce(mockScheduleAction);
+        .mockReturnValueOnce(mockScheduleAction)
+        .mockReturnValueOnce(mockCheckDuplicatesAction);
 
       const testData = createMockNoteData({
         options: undefined,
@@ -253,7 +270,7 @@ describe("createNotePipeline", () => {
         mockContext
       );
 
-      expect(pipeline).toHaveLength(4);
+      expect(pipeline).toHaveLength(5);
       expect(mockActionFactory.create).toHaveBeenCalledWith(
         ActionName.SCHEDULE_ALL_FOLLOWUP_TASKS,
         mockDependencies
@@ -265,12 +282,14 @@ describe("createNotePipeline", () => {
       const mockParseAction = { name: "parse-html" } as any;
       const mockSaveAction = { name: "save-note" } as any;
       const mockScheduleAction = { name: "schedule-all-followup-tasks" } as any;
+      const mockCheckDuplicatesAction = { name: "check-duplicates" } as any;
 
       (mockActionFactory.create as any)
         .mockReturnValueOnce(mockCleanAction)
         .mockReturnValueOnce(mockParseAction)
         .mockReturnValueOnce(mockSaveAction)
-        .mockReturnValueOnce(mockScheduleAction);
+        .mockReturnValueOnce(mockScheduleAction)
+        .mockReturnValueOnce(mockCheckDuplicatesAction);
 
       const testData = createMockNoteData({
         options: {
@@ -285,7 +304,7 @@ describe("createNotePipeline", () => {
         mockContext
       );
 
-      expect(pipeline).toHaveLength(4);
+      expect(pipeline).toHaveLength(5);
       expect(mockActionFactory.create).toHaveBeenCalledWith(
         ActionName.SCHEDULE_ALL_FOLLOWUP_TASKS,
         mockDependencies
@@ -299,12 +318,14 @@ describe("createNotePipeline", () => {
       const mockParseAction = { name: "parse-html" } as any;
       const mockSaveAction = { name: "save-note" } as any;
       const mockScheduleAction = { name: "schedule-all-followup-tasks" } as any;
+      const mockCheckDuplicatesAction = { name: "check-duplicates" } as any;
 
       (mockActionFactory.create as any)
         .mockReturnValueOnce(mockCleanAction)
         .mockReturnValueOnce(mockParseAction)
         .mockReturnValueOnce(mockSaveAction)
-        .mockReturnValueOnce(mockScheduleAction);
+        .mockReturnValueOnce(mockScheduleAction)
+        .mockReturnValueOnce(mockCheckDuplicatesAction);
 
       const testData = createMockNoteData();
       const pipeline = createNotePipeline(
@@ -314,8 +335,8 @@ describe("createNotePipeline", () => {
         mockContext
       );
 
-      expect(pipeline).toHaveLength(4);
-      expect(mockActionFactory.create).toHaveBeenCalledTimes(4);
+      expect(pipeline).toHaveLength(5);
+      expect(mockActionFactory.create).toHaveBeenCalledTimes(5);
     });
   });
 
@@ -325,12 +346,14 @@ describe("createNotePipeline", () => {
       const mockParseAction = { name: "parse-html" } as any;
       const mockSaveAction = { name: "save-note" } as any;
       const mockScheduleAction = { name: "schedule-all-followup-tasks" } as any;
+      const mockCheckDuplicatesAction = { name: "check-duplicates" } as any;
 
       (mockActionFactory.create as any)
         .mockReturnValueOnce(mockCleanAction)
         .mockReturnValueOnce(mockParseAction)
         .mockReturnValueOnce(mockSaveAction)
-        .mockReturnValueOnce(mockScheduleAction);
+        .mockReturnValueOnce(mockScheduleAction)
+        .mockReturnValueOnce(mockCheckDuplicatesAction);
 
       const testData = createMockNoteData();
       const customContext: ActionContext = {
@@ -350,8 +373,8 @@ describe("createNotePipeline", () => {
         customContext
       );
 
-      expect(pipeline).toHaveLength(4);
-      expect(mockActionFactory.create).toHaveBeenCalledTimes(4);
+      expect(pipeline).toHaveLength(5);
+      expect(mockActionFactory.create).toHaveBeenCalledTimes(5);
     });
 
     it("should work with minimal context", () => {
@@ -359,12 +382,14 @@ describe("createNotePipeline", () => {
       const mockParseAction = { name: "parse-html" } as any;
       const mockSaveAction = { name: "save-note" } as any;
       const mockScheduleAction = { name: "schedule-all-followup-tasks" } as any;
+      const mockCheckDuplicatesAction = { name: "check-duplicates" } as any;
 
       (mockActionFactory.create as any)
         .mockReturnValueOnce(mockCleanAction)
         .mockReturnValueOnce(mockParseAction)
         .mockReturnValueOnce(mockSaveAction)
-        .mockReturnValueOnce(mockScheduleAction);
+        .mockReturnValueOnce(mockScheduleAction)
+        .mockReturnValueOnce(mockCheckDuplicatesAction);
 
       const testData = createMockNoteData();
       const minimalContext: ActionContext = {
@@ -384,8 +409,8 @@ describe("createNotePipeline", () => {
         minimalContext
       );
 
-      expect(pipeline).toHaveLength(4);
-      expect(mockActionFactory.create).toHaveBeenCalledTimes(4);
+      expect(pipeline).toHaveLength(5);
+      expect(mockActionFactory.create).toHaveBeenCalledTimes(5);
     });
   });
 
@@ -395,12 +420,14 @@ describe("createNotePipeline", () => {
       const mockParseAction = { name: "parse-html" } as any;
       const mockSaveAction = { name: "save-note" } as any;
       const mockScheduleAction = { name: "schedule-all-followup-tasks" } as any;
+      const mockCheckDuplicatesAction = { name: "check-duplicates" } as any;
 
       (mockActionFactory.create as any)
         .mockReturnValueOnce(mockCleanAction)
         .mockReturnValueOnce(mockParseAction)
         .mockReturnValueOnce(mockSaveAction)
-        .mockReturnValueOnce(mockScheduleAction);
+        .mockReturnValueOnce(mockScheduleAction)
+        .mockReturnValueOnce(mockCheckDuplicatesAction);
 
       const testData = createMockNoteData();
       const pipeline = createNotePipeline(
@@ -411,11 +438,12 @@ describe("createNotePipeline", () => {
       );
 
       expect(Array.isArray(pipeline)).toBe(true);
-      expect(pipeline).toHaveLength(4);
+      expect(pipeline).toHaveLength(5);
       expect(pipeline[0]).toBeDefined();
       expect(pipeline[1]).toBeDefined();
       expect(pipeline[2]).toBeDefined();
       expect(pipeline[3]).toBeDefined();
+      expect(pipeline[4]).toBeDefined();
     });
 
     it("should return immutable array", () => {
@@ -423,12 +451,14 @@ describe("createNotePipeline", () => {
       const mockParseAction = { name: "parse-html" } as any;
       const mockSaveAction = { name: "save-note" } as any;
       const mockScheduleAction = { name: "schedule-all-followup-tasks" } as any;
+      const mockCheckDuplicatesAction = { name: "check-duplicates" } as any;
 
       (mockActionFactory.create as any)
         .mockReturnValueOnce(mockCleanAction)
         .mockReturnValueOnce(mockParseAction)
         .mockReturnValueOnce(mockSaveAction)
-        .mockReturnValueOnce(mockScheduleAction);
+        .mockReturnValueOnce(mockScheduleAction)
+        .mockReturnValueOnce(mockCheckDuplicatesAction);
 
       const testData = createMockNoteData();
       const pipeline = createNotePipeline(
@@ -439,11 +469,12 @@ describe("createNotePipeline", () => {
       );
 
       // Should be able to access array methods
-      expect(pipeline.length).toBe(4);
+      expect(pipeline.length).toBe(5);
       expect(pipeline[0]).toBe(mockCleanAction);
       expect(pipeline[1]).toBe(mockParseAction);
       expect(pipeline[2]).toBe(mockSaveAction);
       expect(pipeline[3]).toBe(mockScheduleAction);
+      expect(pipeline[4]).toBe(mockCheckDuplicatesAction);
     });
   });
 
@@ -453,12 +484,14 @@ describe("createNotePipeline", () => {
       const mockParseAction = { name: "parse-html" } as any;
       const mockSaveAction = { name: "save-note" } as any;
       const mockScheduleAction = { name: "schedule-all-followup-tasks" } as any;
+      const mockCheckDuplicatesAction = { name: "check-duplicates" } as any;
 
       (mockActionFactory.create as any)
         .mockReturnValueOnce(mockCleanAction)
         .mockReturnValueOnce(mockParseAction)
         .mockReturnValueOnce(mockSaveAction)
-        .mockReturnValueOnce(mockScheduleAction);
+        .mockReturnValueOnce(mockScheduleAction)
+        .mockReturnValueOnce(mockCheckDuplicatesAction);
 
       const testData = {} as NotePipelineData;
       const pipeline = createNotePipeline(
@@ -468,7 +501,7 @@ describe("createNotePipeline", () => {
         mockContext
       );
 
-      expect(pipeline).toHaveLength(4);
+      expect(pipeline).toHaveLength(5);
       expect(mockActionFactory.create).toHaveBeenCalledWith(
         ActionName.SCHEDULE_ALL_FOLLOWUP_TASKS,
         mockDependencies
@@ -480,12 +513,14 @@ describe("createNotePipeline", () => {
       const mockParseAction = { name: "parse-html" } as any;
       const mockSaveAction = { name: "save-note" } as any;
       const mockScheduleAction = { name: "schedule-all-followup-tasks" } as any;
+      const mockCheckDuplicatesAction = { name: "check-duplicates" } as any;
 
       (mockActionFactory.create as any)
         .mockReturnValueOnce(mockCleanAction)
         .mockReturnValueOnce(mockParseAction)
         .mockReturnValueOnce(mockSaveAction)
-        .mockReturnValueOnce(mockScheduleAction);
+        .mockReturnValueOnce(mockScheduleAction)
+        .mockReturnValueOnce(mockCheckDuplicatesAction);
 
       const testData = createMockNoteData();
       const pipeline = createNotePipeline(
@@ -495,8 +530,8 @@ describe("createNotePipeline", () => {
         null as any
       );
 
-      expect(pipeline).toHaveLength(4);
-      expect(mockActionFactory.create).toHaveBeenCalledTimes(4);
+      expect(pipeline).toHaveLength(5);
+      expect(mockActionFactory.create).toHaveBeenCalledTimes(5);
     });
 
     it("should handle undefined context", () => {
@@ -504,12 +539,14 @@ describe("createNotePipeline", () => {
       const mockParseAction = { name: "parse-html" } as any;
       const mockSaveAction = { name: "save-note" } as any;
       const mockScheduleAction = { name: "schedule-all-followup-tasks" } as any;
+      const mockCheckDuplicatesAction = { name: "check-duplicates" } as any;
 
       (mockActionFactory.create as any)
         .mockReturnValueOnce(mockCleanAction)
         .mockReturnValueOnce(mockParseAction)
         .mockReturnValueOnce(mockSaveAction)
-        .mockReturnValueOnce(mockScheduleAction);
+        .mockReturnValueOnce(mockScheduleAction)
+        .mockReturnValueOnce(mockCheckDuplicatesAction);
 
       const testData = createMockNoteData();
       const pipeline = createNotePipeline(
@@ -519,8 +556,8 @@ describe("createNotePipeline", () => {
         undefined as any
       );
 
-      expect(pipeline).toHaveLength(4);
-      expect(mockActionFactory.create).toHaveBeenCalledTimes(4);
+      expect(pipeline).toHaveLength(5);
+      expect(mockActionFactory.create).toHaveBeenCalledTimes(5);
     });
   });
 });

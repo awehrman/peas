@@ -43,6 +43,11 @@ export function createNotePipeline(
     actions.push(
       actionFactory.create(ActionName.SCHEDULE_ALL_FOLLOWUP_TASKS, dependencies)
     );
+    
+    // Check for duplicates after all tasks are scheduled
+    actions.push(
+      actionFactory.create(ActionName.CHECK_DUPLICATES, dependencies)
+    );
   }
 
   return actions;
