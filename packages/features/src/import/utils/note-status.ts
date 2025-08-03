@@ -34,6 +34,30 @@ export function getStatusFromText(
 ): "pending" | "processing" | "completed" | "error" {
   const lowerText = text.toLowerCase();
 
+  // Check for instruction count patterns (e.g., "7/7 instructions")
+  const instructionCountMatch = text.match(/(\d+)\/(\d+)\s+instructions/);
+  if (instructionCountMatch && instructionCountMatch[1] && instructionCountMatch[2]) {
+    const processed = parseInt(instructionCountMatch[1], 10);
+    const total = parseInt(instructionCountMatch[2], 10);
+    if (processed === total && total > 0) {
+      return "completed";
+    } else if (processed > 0) {
+      return "processing";
+    }
+  }
+
+  // Check for ingredient count patterns (e.g., "11/11 ingredients")
+  const ingredientCountMatch = text.match(/(\d+)\/(\d+)\s+ingredients/);
+  if (ingredientCountMatch && ingredientCountMatch[1] && ingredientCountMatch[2]) {
+    const processed = parseInt(ingredientCountMatch[1], 10);
+    const total = parseInt(ingredientCountMatch[2], 10);
+    if (processed === total && total > 0) {
+      return "completed";
+    } else if (processed > 0) {
+      return "processing";
+    }
+  }
+
   if (
     lowerText.includes("started") ||
     lowerText.includes("processing") ||

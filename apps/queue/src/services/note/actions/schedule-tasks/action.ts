@@ -25,14 +25,21 @@ export class ScheduleAllFollowupTasksAction extends BaseAction<
     deps: NoteWorkerDependencies,
     context: ActionContext
   ): Promise<NotePipelineData> {
+    // Validate input before processing
+    const validationError = this.validateInput(data);
+    if (validationError) {
+      throw validationError;
+    }
+
     return this.executeServiceAction({
       data,
       deps,
       context,
       serviceCall: () => scheduleAllFollowupTasks(data, deps.logger, deps),
       contextName: "SCHEDULE_ALL_FOLLOWUP_TASKS",
-      startMessage: `Starting to schedule followup tasks for note: ${data.noteId}`,
-      completionMessage: `Successfully scheduled all followup tasks for note: ${data.noteId}`,
+      suppressDefaultBroadcast: true,
+      // startMessage: `Starting to schedule followup tasks for note: ${data.noteId}`,
+      // completionMessage: `Successfully scheduled all followup tasks for note: ${data.noteId}`,
     });
   }
 }

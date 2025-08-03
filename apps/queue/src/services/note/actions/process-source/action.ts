@@ -38,14 +38,20 @@ export class ProcessSourceAction extends BaseAction<
     deps: NoteWorkerDependencies,
     context: ActionContext
   ): Promise<NotePipelineData> {
+    // Validate input before processing
+    const validationError = this.validateInput(data);
+    if (validationError) {
+      throw validationError;
+    }
+
     return this.executeServiceAction({
       data,
       deps,
       context,
       serviceCall: () => processSource(data, deps.logger),
       contextName: "PROCESS_SOURCE",
-      startMessage: `Starting to process source for note: ${data.noteId}`,
-      completionMessage: `Successfully processed source for note: ${data.noteId}`,
+      startMessage: `Processing source for note...`,
+      completionMessage: `Successfully processed source for note!`,
     });
   }
 }

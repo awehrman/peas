@@ -182,8 +182,8 @@ describe("ProcessSourceAction", () => {
         context: mockContext,
         serviceCall: expect.any(Function),
         contextName: "PROCESS_SOURCE",
-        startMessage: `Starting to process source for note: ${mockData.noteId}`,
-        completionMessage: `Successfully processed source for note: ${mockData.noteId}`,
+        startMessage: "Processing source for note...",
+        completionMessage: "Successfully processed source for note!",
       });
     });
 
@@ -328,9 +328,10 @@ describe("ProcessSourceAction", () => {
     it("should handle null or undefined data gracefully", async () => {
       const nullData = null as unknown as NotePipelineData;
 
+      // When data is null, accessing data.noteId will throw a TypeError
       await expect(
         action.execute(nullData, mockDeps, mockContext)
-      ).rejects.toThrow();
+      ).rejects.toThrow(TypeError);
     });
 
     it("should handle data without required properties", async () => {

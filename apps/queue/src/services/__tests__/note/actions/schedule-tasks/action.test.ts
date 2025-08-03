@@ -192,8 +192,7 @@ describe("ScheduleAllFollowupTasksAction", () => {
         context: mockContext,
         serviceCall: expect.any(Function),
         contextName: "SCHEDULE_ALL_FOLLOWUP_TASKS",
-        startMessage: `Starting to schedule followup tasks for note: ${mockData.noteId}`,
-        completionMessage: `Successfully scheduled all followup tasks for note: ${mockData.noteId}`,
+        suppressDefaultBroadcast: true,
       });
     });
 
@@ -340,9 +339,10 @@ describe("ScheduleAllFollowupTasksAction", () => {
     it("should handle null or undefined data gracefully", async () => {
       const nullData = null as unknown as NotePipelineData;
 
+      // When data is null, accessing data.noteId will throw a TypeError
       await expect(
         action.execute(nullData, mockDeps, mockContext)
-      ).rejects.toThrow();
+      ).rejects.toThrow(TypeError);
     });
 
     it("should handle data without required properties", async () => {
