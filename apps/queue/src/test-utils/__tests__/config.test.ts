@@ -44,6 +44,62 @@ describe("config", () => {
       // Verify mocks are restored
       expect(vi.isMockFunction(console.log)).toBe(false);
     });
+
+    it("should test path mock functions", async () => {
+      const { cleanup } = setupEnhancedTestEnvironment();
+
+      // Test path.join mock
+      const path = await import("path");
+      expect(path.join("a", "b", "c")).toBe("a/b/c");
+
+      // Test path.resolve mock - this should use the actual path.resolve behavior
+      expect(path.resolve("a", "b")).toContain("a/b");
+
+      // Test path.extname mock with extension
+      expect(path.extname("file.txt")).toBe(".txt");
+
+      // Test path.extname mock without extension
+      expect(path.extname("file")).toBe("");
+
+      // Test path.basename mock
+      expect(path.basename("path/to/file.txt")).toBe("file.txt");
+
+      cleanup();
+    });
+
+    it("should test crypto mock functions", async () => {
+      const { cleanup } = setupEnhancedTestEnvironment();
+
+      const crypto = await import("crypto");
+
+      // Test randomUUID mock - this returns the mocked value
+      const uuid = crypto.randomUUID();
+      expect(uuid).toBe("test-uuid");
+
+      // Test createHash mock
+      const hash = crypto.createHash("md5");
+      expect(hash.update("test")).toBe(hash);
+      expect(hash.digest()).toBe("test-hash");
+
+      cleanup();
+    });
+
+    it("should test date-fns mock functions", async () => {
+      const { cleanup } = setupEnhancedTestEnvironment();
+
+      const dateFns = await import("date-fns");
+      const testDate = new Date("2023-01-01T00:00:00.000Z");
+
+      // Test format mock - this returns the mocked value
+      const formatted = dateFns.format(testDate, "yyyy-MM-dd");
+      expect(formatted).toBe("2023-01-01T00:00:00.000Z");
+
+      // Test parseISO mock
+      const parsed = dateFns.parseISO("2023-01-01");
+      expect(parsed).toStrictEqual(testDate);
+
+      cleanup();
+    });
   });
 
   describe("TestDataGenerator", () => {
@@ -125,6 +181,47 @@ describe("config", () => {
       const html = TestDataGenerator.generateTestHtml({ includeIcons: true });
       expect(html).toContain("<svg");
       expect(html).toContain("<circle");
+    });
+
+    it("should generate HTML with all options enabled", () => {
+      const html = TestDataGenerator.generateTestHtml({
+        title: "Full Recipe",
+        ingredients: ["Custom Ingredient"],
+        instructions: ["Custom Step"],
+        includeStyles: true,
+        includeIcons: true,
+      });
+
+      expect(html).toContain("Full Recipe");
+      expect(html).toContain("Custom Ingredient");
+      expect(html).toContain("Custom Step");
+      expect(html).toContain("<style>");
+      expect(html).toContain("<svg");
+      expect(html).toContain("<circle");
+    });
+
+    it("should generate random date with default parameters", () => {
+      const date = TestDataGenerator.randomDate();
+      const now = new Date();
+      const start = new Date(2020, 0, 1);
+
+      expect(date.getTime()).toBeGreaterThanOrEqual(start.getTime());
+      expect(date.getTime()).toBeLessThanOrEqual(now.getTime());
+    });
+
+    it("should generate random string with default length", () => {
+      const str = TestDataGenerator.randomString();
+      expect(str).toHaveLength(10);
+    });
+
+    it("should generate random string with custom length", () => {
+      const str = TestDataGenerator.randomString(5);
+      expect(str).toHaveLength(5);
+    });
+
+    it("should generate random string with zero length", () => {
+      const str = TestDataGenerator.randomString(0);
+      expect(str).toHaveLength(0);
     });
   });
 

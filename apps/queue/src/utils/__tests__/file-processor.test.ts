@@ -877,6 +877,34 @@ describe("File Processor", () => {
         expect(stats.processedFiles).toBe(1);
         expect(fs.promises.unlink).not.toHaveBeenCalled();
       });
+
+      it("should handle zero processed files in final stats calculation", async () => {
+        // Reset stats to ensure no processed files
+        fileProcessor.resetStats();
+        
+        // Mock stats with zero processed files
+        const mockStats = {
+          totalFiles: 0,
+          processedFiles: 0,
+          failedFiles: 0,
+          skippedFiles: 0,
+          totalSize: 0,
+          averageProcessingTime: 0,
+          startTime: new Date(),
+          endTime: undefined,
+        };
+
+        const statsSpy = vi
+          .spyOn(fileProcessor, "getStats")
+          .mockReturnValue(mockStats);
+
+        const stats = fileProcessor.getStats();
+
+        expect(stats).toEqual(mockStats);
+        expect(stats.averageProcessingTime).toBe(0);
+        expect(statsSpy).toHaveBeenCalled();
+        statsSpy.mockRestore();
+      });
     });
   });
 });

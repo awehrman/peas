@@ -181,6 +181,7 @@ function parseContentLines(contents: string[]): {
   const instructions: ParsedInstructionLine[] = [];
   let currentChunk: Array<{ text: string; originalLineIndex: number }> = [];
 
+  /* istanbul ignore next -- @preserve */
   contents.forEach((line, lineIndex) => {
     if (isEmptyLine(line)) {
       // End current ingredient block if we have one

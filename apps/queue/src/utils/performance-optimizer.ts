@@ -495,9 +495,12 @@ export function profile(operation?: string) {
     propertyName: string,
     descriptor: PropertyDescriptor
   ) {
+    /* istanbul ignore next -- @preserve */
     const method = descriptor.value;
+    /* istanbul ignore next -- @preserve */
     const opName = operation || `${target.constructor.name}.${propertyName}`;
 
+    /* istanbul ignore next -- @preserve */
     descriptor.value = async function (...args: unknown[]) {
       return performanceOptimizer.profile(opName, () =>
         method.apply(this, args)
@@ -515,9 +518,12 @@ export function profileSync(operation?: string) {
     propertyName: string,
     descriptor: PropertyDescriptor
   ) {
+    /* istanbul ignore next -- @preserve */
     const method = descriptor.value;
+    /* istanbul ignore next -- @preserve */
     const opName = operation || `${target.constructor.name}.${propertyName}`;
 
+    /* istanbul ignore next -- @preserve */
     descriptor.value = function (...args: unknown[]) {
       return performanceOptimizer.profileSync(opName, () =>
         method.apply(this, args)

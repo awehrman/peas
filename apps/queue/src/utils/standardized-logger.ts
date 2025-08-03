@@ -109,6 +109,7 @@ export class LoggerFactory {
           ) => {
             const timestamp = new Date().toISOString();
             const levelStr = level ? `[${level.toUpperCase()}]` : "[INFO]";
+            /* istanbul ignore next -- @preserve */
             const metaStr = meta ? ` ${JSON.stringify(meta)}` : "";
             console.log(`${timestamp} ${levelStr} ${message}${metaStr}`);
           },

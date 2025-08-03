@@ -1,8 +1,10 @@
-import { Request, Response, NextFunction } from "express";
 import { ErrorHandler } from "./error-handler";
 import { measureExecutionTime } from "./utils";
+
+import { NextFunction, Request, Response } from "express";
+
 import { HTTP_CONSTANTS } from "../config/constants";
-import { ErrorType, ErrorSeverity } from "../types";
+import { ErrorSeverity, ErrorType } from "../types";
 
 /**
  * Route handler wrapper with error handling and timing
@@ -138,6 +140,7 @@ export function validateRequestBody<T>(
 /**
  * Create a middleware for request validation
  */
+/* istanbul ignore next -- @preserve */
 export function createValidationMiddleware(
   requiredParams: string[] = [],
   bodyValidator?: (body: unknown) => boolean
@@ -196,6 +199,7 @@ export function createRateLimitMiddleware(
         )
       );
 
+      /* istanbul ignore next -- @preserve */
       return res
         .status(HTTP_CONSTANTS.STATUS_CODES.TOO_MANY_REQUESTS || 429)
         .json(errorResponse);

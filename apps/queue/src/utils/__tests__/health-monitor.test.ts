@@ -429,6 +429,34 @@ describe("HealthMonitor", () => {
       expect(mockErrorHandler.createJobError).toHaveBeenCalled();
       expect(mockErrorHandler.logError).toHaveBeenCalled();
     });
+
+    it("should execute prisma note count query successfully", async () => {
+      mockDatabaseManager.checkConnectionHealth.mockResolvedValue(true);
+      mockDatabaseManager.executeWithRetry.mockImplementation(
+        async (fn: () => Promise<void>) => {
+          // This should call the prisma.note.count() function
+          await fn();
+        }
+      );
+
+      // Mock the prisma.note.count call
+      const prisma = await import("../../config/database");
+      (prisma.prisma.note.count as any).mockResolvedValue(42);
+
+      vi.spyOn(Date, "now")
+        .mockReturnValueOnce(0) // Start time
+        .mockReturnValueOnce(99); // End time - 99ms response time
+
+      const result = await (healthMonitor as any).checkDatabaseHealth();
+
+      expect(result.status).toBe(HealthStatus.HEALTHY);
+      expect(result.message).toBe("Database is responding normally");
+      expect(result.responseTime).toBe(99);
+      expect(result.performance).toBe(100);
+
+      // Verify that the prisma.note.count was called
+      expect(prisma.prisma.note.count).toHaveBeenCalled();
+    });
   });
 
   describe("checkRedisHealth", () => {

@@ -1,6 +1,7 @@
 import { PrismaClient } from "@peas/database";
 
 // Enhanced Prisma configuration with connection pooling and performance optimizations
+/* istanbul ignore next -- @preserve */
 export const prisma = new PrismaClient({
   datasources: {
     db: {

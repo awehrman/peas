@@ -208,6 +208,22 @@ describe("Performance Router", () => {
         message: "Metrics error",
       });
     });
+
+    it("should handle non-Error exceptions when getting performance metrics", async () => {
+      (
+        performanceOptimizer.getPerformanceReport as ReturnType<typeof vi.fn>
+      ).mockImplementation(() => {
+        throw "String metrics error";
+      });
+
+      const response = await request(app).get("/performance/metrics");
+
+      expect(response.status).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
+      expect(response.body).toEqual({
+        error: "Failed to get performance metrics",
+        message: "String metrics error",
+      });
+    });
   });
 
   describe("GET /performance/memory", () => {
@@ -265,6 +281,22 @@ describe("Performance Router", () => {
         message: "Memory data error",
       });
     });
+
+    it("should handle non-Error exceptions when getting memory data", async () => {
+      (
+        memoryOptimizer.getMemoryReport as ReturnType<typeof vi.fn>
+      ).mockImplementation(() => {
+        throw "String memory data error";
+      });
+
+      const response = await request(app).get("/performance/memory");
+
+      expect(response.status).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
+      expect(response.body).toEqual({
+        error: "Failed to get memory data",
+        message: "String memory data error",
+      });
+    });
   });
 
   describe("GET /performance/database", () => {
@@ -319,6 +351,22 @@ describe("Performance Router", () => {
       expect(response.body).toEqual({
         error: "Failed to get database data",
         message: "Database data error",
+      });
+    });
+
+    it("should handle non-Error exceptions when getting database data", async () => {
+      (
+        databaseOptimizer.getCacheStats as ReturnType<typeof vi.fn>
+      ).mockImplementation(() => {
+        throw "String database data error";
+      });
+
+      const response = await request(app).get("/performance/database");
+
+      expect(response.status).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
+      expect(response.body).toEqual({
+        error: "Failed to get database data",
+        message: "String database data error",
       });
     });
   });
@@ -455,6 +503,24 @@ describe("Performance Router", () => {
         message: "Optimization error",
       });
     });
+
+    it("should handle non-Error exceptions during optimization", async () => {
+      (
+        memoryOptimizer.optimizeMemory as ReturnType<typeof vi.fn>
+      ).mockImplementation(() => {
+        throw "String optimization error";
+      });
+
+      const response = await request(app)
+        .post("/performance/optimize")
+        .send({ type: "memory" });
+
+      expect(response.status).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
+      expect(response.body).toEqual({
+        error: "Failed to trigger performance optimization",
+        message: "String optimization error",
+      });
+    });
   });
 
   describe("POST /performance/profiling/start", () => {
@@ -485,6 +551,22 @@ describe("Performance Router", () => {
         message: "Profiling start error",
       });
     });
+
+    it("should handle non-Error exceptions when starting profiling", async () => {
+      (
+        performanceOptimizer.startProfiling as ReturnType<typeof vi.fn>
+      ).mockImplementation(() => {
+        throw "String profiling error";
+      });
+
+      const response = await request(app).post("/performance/profiling/start");
+
+      expect(response.status).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
+      expect(response.body).toEqual({
+        error: "Failed to start performance profiling",
+        message: "String profiling error",
+      });
+    });
   });
 
   describe("POST /performance/profiling/stop", () => {
@@ -513,6 +595,22 @@ describe("Performance Router", () => {
       expect(response.body).toEqual({
         error: "Failed to stop performance profiling",
         message: "Profiling stop error",
+      });
+    });
+
+    it("should handle non-Error exceptions when stopping profiling", async () => {
+      (
+        performanceOptimizer.stopProfiling as ReturnType<typeof vi.fn>
+      ).mockImplementation(() => {
+        throw "String stop profiling error";
+      });
+
+      const response = await request(app).post("/performance/profiling/stop");
+
+      expect(response.status).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
+      expect(response.body).toEqual({
+        error: "Failed to stop performance profiling",
+        message: "String stop profiling error",
       });
     });
   });
@@ -563,6 +661,22 @@ describe("Performance Router", () => {
         message: "GC error",
       });
     });
+
+    it("should handle non-Error exceptions when forcing garbage collection", async () => {
+      (
+        memoryOptimizer.getMemoryStats as ReturnType<typeof vi.fn>
+      ).mockImplementation(() => {
+        throw "String GC error";
+      });
+
+      const response = await request(app).post("/performance/memory/gc");
+
+      expect(response.status).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
+      expect(response.body).toEqual({
+        error: "Failed to force garbage collection",
+        message: "String GC error",
+      });
+    });
   });
 
   describe("POST /performance/cache/clear", () => {
@@ -591,6 +705,22 @@ describe("Performance Router", () => {
       expect(response.body).toEqual({
         error: "Failed to clear database cache",
         message: "Cache clear error",
+      });
+    });
+
+    it("should handle non-Error exceptions when clearing cache", async () => {
+      (
+        databaseOptimizer.clearQueryCache as ReturnType<typeof vi.fn>
+      ).mockImplementation(() => {
+        throw "String cache clear error";
+      });
+
+      const response = await request(app).post("/performance/cache/clear");
+
+      expect(response.status).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
+      expect(response.body).toEqual({
+        error: "Failed to clear database cache",
+        message: "String cache clear error",
       });
     });
   });
@@ -753,6 +883,23 @@ describe("Performance Router", () => {
         status: "error",
         error: "Failed to get performance health",
         message: "Health check error",
+      });
+    });
+
+    it("should handle non-Error exceptions when getting performance health", async () => {
+      (
+        performanceOptimizer.getPerformanceReport as ReturnType<typeof vi.fn>
+      ).mockImplementation(() => {
+        throw "String health check error";
+      });
+
+      const response = await request(app).get("/performance/health");
+
+      expect(response.status).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
+      expect(response.body).toEqual({
+        status: "error",
+        error: "Failed to get performance health",
+        message: "String health check error",
       });
     });
 

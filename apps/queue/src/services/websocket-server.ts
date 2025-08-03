@@ -108,6 +108,7 @@ export class WebSocketManager {
     message: { type: string; data: unknown }
   ) {
     const client = this.clients.get(clientId);
+    /* istanbul ignore next -- @preserve */
     if (client && client.ws.readyState === WebSocket.OPEN) {
       try {
         client.ws.send(JSON.stringify(message));

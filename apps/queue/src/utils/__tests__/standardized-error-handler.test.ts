@@ -162,58 +162,56 @@ describe("StandardizedErrorHandler", () => {
       expect(result.shouldRetry).toBe(true);
     });
 
-    it("should retry database connection errors", () => {
-      const dbError = handler.createError(
-        "Database connection error",
-        ErrorType.DATABASE_ERROR,
+    it("should retry Redis connection errors", () => {
+      const error = handler.createError(
+        "Redis connection failed",
+        ErrorType.REDIS_ERROR,
         ErrorSeverity.MEDIUM,
-        AppErrorCode.DATABASE_QUERY_FAILED
+        AppErrorCode.CACHE_OPERATION_FAILED
       );
-      dbError.message = "connection failed";
 
-      const result = handler.handleError(dbError);
+      const result = handler.handleError(error);
 
       expect(result.shouldRetry).toBe(true);
+      expect(result.retryAfter).toBeDefined();
     });
 
-    it("should not retry database query errors", () => {
-      const dbError = handler.createError(
-        "Database query error",
-        ErrorType.DATABASE_ERROR,
+    it("should not retry Redis operation errors", () => {
+      const error = handler.createError(
+        "Redis operation failed",
+        ErrorType.REDIS_ERROR,
         ErrorSeverity.MEDIUM,
-        AppErrorCode.DATABASE_QUERY_FAILED
+        AppErrorCode.CACHE_OPERATION_FAILED
       );
-      dbError.message = "query failed";
 
-      const result = handler.handleError(dbError);
+      const result = handler.handleError(error);
 
       expect(result.shouldRetry).toBe(false);
     });
 
-    it("should retry Redis connection errors", () => {
-      const redisError = handler.createError(
-        "Redis connection error",
-        ErrorType.REDIS_ERROR,
+    it("should retry database connection errors", () => {
+      const error = handler.createError(
+        "Database connection failed",
+        ErrorType.DATABASE_ERROR,
         ErrorSeverity.MEDIUM,
-        AppErrorCode.CACHE_OPERATION_FAILED
+        AppErrorCode.DATABASE_QUERY_FAILED
       );
-      redisError.message = "connection failed";
 
-      const result = handler.handleError(redisError);
+      const result = handler.handleError(error);
 
       expect(result.shouldRetry).toBe(true);
+      expect(result.retryAfter).toBeDefined();
     });
 
-    it("should not retry Redis operation errors", () => {
-      const redisError = handler.createError(
-        "Redis operation error",
-        ErrorType.REDIS_ERROR,
+    it("should not retry database query errors", () => {
+      const error = handler.createError(
+        "Database query failed",
+        ErrorType.DATABASE_ERROR,
         ErrorSeverity.MEDIUM,
-        AppErrorCode.CACHE_OPERATION_FAILED
+        AppErrorCode.DATABASE_QUERY_FAILED
       );
-      redisError.message = "operation failed";
 
-      const result = handler.handleError(redisError);
+      const result = handler.handleError(error);
 
       expect(result.shouldRetry).toBe(false);
     });
@@ -429,6 +427,16 @@ describe("StandardizedErrorHandler", () => {
 
       expect(code).toBe(AppErrorCode.INTERNAL_ERROR);
     });
+
+    it("should map error with unknown type to INTERNAL_ERROR", () => {
+      // Create an error that won't match any of the known error types
+      const error = new Error("Some random error message");
+      error.name = "RandomError"; // This won't match any known error names
+
+      const code = handler.mapErrorToCode(error);
+
+      expect(code).toBe(AppErrorCode.INTERNAL_ERROR);
+    });
   });
 
   describe("calculateRetryDelay", () => {
@@ -523,6 +531,34 @@ describe("StandardizedErrorHandler", () => {
       const error = new Error("Test error");
       const result = (handler as any).isStandardizedError(error);
       expect(result).toBe(false);
+    });
+  });
+
+  describe("shouldRetryError", () => {
+    it("should retry database connection errors", () => {
+      const error = handler.createError(
+        "Database connection failed",
+        ErrorType.DATABASE_ERROR,
+        ErrorSeverity.MEDIUM,
+        AppErrorCode.DATABASE_QUERY_FAILED
+      );
+
+      const shouldRetry = (handler as any).shouldRetryError(error);
+
+      expect(shouldRetry).toBe(true);
+    });
+
+    it("should retry Redis connection errors", () => {
+      const error = handler.createError(
+        "Redis connection failed",
+        ErrorType.REDIS_ERROR,
+        ErrorSeverity.MEDIUM,
+        AppErrorCode.CACHE_OPERATION_FAILED
+      );
+
+      const shouldRetry = (handler as any).shouldRetryError(error);
+
+      expect(shouldRetry).toBe(true);
     });
   });
 });

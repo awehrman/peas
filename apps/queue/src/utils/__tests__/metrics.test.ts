@@ -406,6 +406,76 @@ describe("MetricsCollector", () => {
 
       consoleSpy.mockRestore();
     });
+
+    it("should clear interval and set collectionInterval to null when stopping", () => {
+      const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+      const clearIntervalSpy = vi
+        .spyOn(global, "clearInterval")
+        .mockImplementation(() => {});
+
+      // Start collection to set up the interval
+      collector.startCollection();
+
+      // Verify that collectionInterval is set
+      expect(
+        (collector as unknown as { collectionInterval: unknown })
+          .collectionInterval
+      ).toBeDefined();
+
+            // Stop collection
+      collector.stopCollection();
+      
+      // Verify clearInterval was called
+      expect(clearIntervalSpy).toHaveBeenCalled();
+      
+      // Verify collectionInterval is set to null
+      expect((collector as unknown as { collectionInterval: unknown }).collectionInterval).toBeNull();
+
+      expect(consoleSpy).toHaveBeenCalledWith("🛑 Metrics collection stopped");
+
+      consoleSpy.mockRestore();
+      clearIntervalSpy.mockRestore();
+    });
+
+    it("should not call clearInterval when collection is not running", () => {
+      const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+      const clearIntervalSpy = vi
+        .spyOn(global, "clearInterval")
+        .mockImplementation(() => {});
+
+      // Stop collection without starting it first
+      collector.stopCollection();
+
+      // Verify clearInterval was not called
+      expect(clearIntervalSpy).not.toHaveBeenCalled();
+
+      // Verify collectionInterval remains null
+      expect((collector as unknown as { collectionInterval: unknown }).collectionInterval).toBeNull();
+
+      consoleSpy.mockRestore();
+      clearIntervalSpy.mockRestore();
+    });
+
+    it("should properly clear interval when collection is active", () => {
+      const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+      const clearIntervalSpy = vi
+        .spyOn(global, "clearInterval")
+        .mockImplementation(() => {});
+
+      // Start collection and verify interval is set
+      collector.startCollection();
+      const intervalId = (collector as unknown as { collectionInterval: unknown }).collectionInterval;
+      expect(intervalId).toBeDefined();
+      expect(typeof intervalId).toBe("object");
+
+      // Stop collection and verify the exact interval is cleared
+      collector.stopCollection();
+      expect(clearIntervalSpy).toHaveBeenCalledWith(intervalId);
+      expect((collector as unknown as { collectionInterval: unknown }).collectionInterval).toBeNull();
+
+      consoleSpy.mockRestore();
+      clearIntervalSpy.mockRestore();
+    });
   });
 
   describe("metrics cleanup", () => {

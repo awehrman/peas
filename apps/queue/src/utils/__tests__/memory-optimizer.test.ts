@@ -123,6 +123,26 @@ describe("MemoryOptimizer", () => {
       expect(stats["test-pool"]!.size).toBe(1);
     });
 
+    it("should handle pool at exact max capacity", () => {
+      optimizer.createPool("test-pool", { maxPoolSize: 2 });
+      const obj1 = { id: "obj1" };
+      const obj2 = { id: "obj2" };
+      const obj3 = { id: "obj3" };
+
+      // Add exactly max capacity
+      optimizer.returnToPool("test-pool", obj1);
+      optimizer.returnToPool("test-pool", obj2);
+      
+      let stats = optimizer.getPoolStats();
+      expect(stats["test-pool"]!.size).toBe(2);
+
+      // Try to add one more - should be discarded
+      optimizer.returnToPool("test-pool", obj3);
+      
+      stats = optimizer.getPoolStats();
+      expect(stats["test-pool"]!.size).toBe(2); // Still at max capacity
+    });
+
     it("should throw error for non-existent pool", () => {
       expect(() => {
         optimizer.getFromPool("non-existent", () => ({}));
@@ -133,16 +153,27 @@ describe("MemoryOptimizer", () => {
       }).toThrow("Pool 'non-existent' not found");
     });
 
-    it("should cleanup pool", () => {
-      optimizer.createPool("test-pool");
-      const obj = { id: "test-object" };
-      optimizer.returnToPool("test-pool", obj);
+    it("should handle cleanup of non-existent pool gracefully", () => {
+      // Should not throw when cleaning up non-existent pool
+      expect(() => optimizer.cleanupPool("non-existent-pool")).not.toThrow();
+    });
 
+    it("should cleanup pool and remove items", () => {
+      optimizer.createPool("test-pool");
+
+      // Add multiple items to the pool
+      for (let i = 0; i < 10; i++) {
+        optimizer.returnToPool("test-pool", { id: `item-${i}` });
+      }
+
+      const statsBefore = optimizer.getPoolStats();
+      expect(statsBefore["test-pool"]!.size).toBe(10);
+
+      // Cleanup should remove 20% of items (2 items from 10)
       optimizer.cleanupPool("test-pool");
 
-      const stats = optimizer.getPoolStats();
-      // cleanupPool removes 20% of items, so with 1 item it should remain
-      expect(stats["test-pool"]!.size).toBe(1);
+      const statsAfter = optimizer.getPoolStats();
+      expect(statsAfter["test-pool"]!.size).toBe(8); // 10 - 2 = 8
     });
 
     it("should cleanup all pools", () => {
@@ -335,8 +366,9 @@ describe("MemoryOptimizer", () => {
   });
 
   describe("memory monitoring", () => {
-    it("should handle memory threshold exceeded", async () => {
+    it("should handle memory threshold exceeded in monitoring", () => {
       const originalMemoryUsage = process.memoryUsage;
+      const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
       // Mock high memory usage
       process.memoryUsage = vi.fn(() => ({
@@ -351,19 +383,18 @@ describe("MemoryOptimizer", () => {
       const testOptimizer = new MemoryOptimizer();
 
       // Manually trigger the monitoring interval callback
-      const monitoringCallback = (testOptimizer as any).startMemoryMonitoring;
-      if (monitoringCallback) {
-        // Simulate the interval callback
-        const stats = testOptimizer.getMemoryStats();
-        (testOptimizer as any).memoryHistory.push(stats);
+      const stats = testOptimizer.getMemoryStats();
+      (testOptimizer as any).memoryHistory.push(stats);
 
-        // Check if threshold warning would be logged
-        if (stats.heapUsed > (testOptimizer as any).options.memoryThreshold) {
-          expect(stats.heapUsed).toBeGreaterThan(100 * 1024 * 1024);
-        }
+      // Check if threshold warning would be logged
+      if (stats.heapUsed > (testOptimizer as any).options.memoryThreshold) {
+        // This should trigger the warning log
+        expect(stats.heapUsed).toBeGreaterThan(100 * 1024 * 1024);
+        expect(stats.heapUsedPercentage).toBeGreaterThanOrEqual(75); // 150MB / 200MB = 75%
       }
 
       process.memoryUsage = originalMemoryUsage;
+      consoleSpy.mockRestore();
       testOptimizer.shutdown();
     });
 

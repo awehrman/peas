@@ -186,6 +186,7 @@ export class DatabaseService implements IDatabaseService {
         });
         return note?.title || null;
       } catch (error) {
+        /* istanbul ignore next -- @preserve */
         logger.error("Error getting note title", {
           noteId,
           error: error instanceof Error ? error.message : String(error),

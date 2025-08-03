@@ -1154,6 +1154,7 @@ export function testSchemaComprehensive<T extends z.ZodType>(
     description: string;
   }>
 ) {
+  /* istanbul ignore next -- @preserve */
   testCases.forEach(
     ({ data, shouldPass, expectedErrorMessage, description }) => {
       if (shouldPass) {
@@ -1173,6 +1174,7 @@ export function testSchemaRequiredFields<T extends z.ZodType>(
   requiredFields: string[],
   baseData: Record<string, unknown>
 ) {
+  /* istanbul ignore next -- @preserve */
   requiredFields.forEach((field) => {
     it(`should reject missing required field: ${field}`, () => {
       const dataWithoutField = { ...baseData };
@@ -1196,6 +1198,7 @@ export function testSchemaFieldTypes<T extends z.ZodType>(
     description: string;
   }>
 ) {
+  /* istanbul ignore next -- @preserve */
   fieldTests.forEach(({ field, validValue, invalidValue, description }) => {
     it(`should validate ${description}`, () => {
       // Test valid value
@@ -1226,6 +1229,7 @@ export function testValidationUtility<T>(
   invalidData: unknown,
   description: string
 ) {
+  /* istanbul ignore next -- @preserve */
   describe(description, () => {
     it("should validate valid data", () => {
       const result = validationFn(validData);

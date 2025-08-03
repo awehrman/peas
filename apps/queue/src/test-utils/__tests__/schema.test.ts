@@ -1100,87 +1100,112 @@ describe("Test Data Generators", () => {
 // ============================================================================
 
 describe("Schema Test Helpers", () => {
-  const testSchema = z.object({
-    name: z.string(),
-    age: z.number(),
-    email: z.string().email(),
-  });
-
   describe("testSchemaComprehensive", () => {
-    it("should test schema with multiple valid and invalid cases", () => {
+    it("should test schema with comprehensive test cases", () => {
+      const schema = z.object({
+        name: z.string(),
+        age: z.number(),
+      });
+
       // Test valid case
-      const validData = { name: "John", age: 30, email: "john@example.com" };
-      const validResult = testSchema.safeParse(validData);
+      const validData = { name: "John", age: 30 };
+      const validResult = schema.safeParse(validData);
       expect(validResult.success).toBe(true);
 
-      // Test invalid case
-      const invalidData = {
-        name: "John",
-        age: "invalid",
-        email: "invalid-email",
-      };
-      const invalidResult = testSchema.safeParse(invalidData);
-      expect(invalidResult.success).toBe(false);
+      // Test missing required field
+      const missingFieldData = { name: "John" };
+      const missingFieldResult = schema.safeParse(missingFieldData);
+      expect(missingFieldResult.success).toBe(false);
+
+      // Test invalid field type
+      const invalidTypeData = { name: "John", age: "invalid" };
+      const invalidTypeResult = schema.safeParse(invalidTypeData);
+      expect(invalidTypeResult.success).toBe(false);
     });
   });
 
   describe("testSchemaRequiredFields", () => {
-    it("should test that schema validates required fields", () => {
-      const requiredFields = ["name", "age", "email"];
+    it("should test required fields validation", () => {
+      const schema = z.object({
+        name: z.string(),
+        email: z.string().email(),
+        age: z.number(),
+      });
+
       const baseData = {
         name: "John",
-        age: 30,
         email: "john@example.com",
+        age: 30,
       };
 
-      requiredFields.forEach((field) => {
-        const dataWithoutField = { ...baseData };
-        delete dataWithoutField[field as keyof typeof baseData];
+      // Test missing name field
+      const dataWithoutName = { email: baseData.email, age: baseData.age };
+      const resultWithoutName = schema.safeParse(dataWithoutName);
+      expect(resultWithoutName.success).toBe(false);
 
-        const result = testSchema.safeParse(dataWithoutField);
-        expect(result.success).toBe(false);
-      });
+      // Test missing email field
+      const dataWithoutEmail = { name: baseData.name, age: baseData.age };
+      const resultWithoutEmail = schema.safeParse(dataWithoutEmail);
+      expect(resultWithoutEmail.success).toBe(false);
     });
   });
 
   describe("testSchemaFieldTypes", () => {
-    it("should test that schema validates field types", () => {
-      const fieldTests = [
-        {
-          field: "name",
-          validValue: "John",
-          invalidValue: 123,
-          description: "string field",
-        },
-        {
-          field: "age",
-          validValue: 30,
-          invalidValue: "not a number",
-          description: "number field",
-        },
-      ];
-
-      fieldTests.forEach(({ field, validValue, invalidValue }) => {
-        // Test valid value - need to provide all required fields
-        const validData = {
-          [field]: validValue,
-          name: field === "name" ? validValue : "Default Name",
-          age: field === "age" ? validValue : 25,
-          email: "test@example.com",
-        };
-        const validResult = testSchema.safeParse(validData);
-        expect(validResult.success).toBe(true);
-
-        // Test invalid value - need to provide all required fields
-        const invalidData = {
-          [field]: invalidValue,
-          name: field === "name" ? invalidValue : "Default Name",
-          age: field === "age" ? invalidValue : 25,
-          email: "test@example.com",
-        };
-        const invalidResult = testSchema.safeParse(invalidData);
-        expect(invalidResult.success).toBe(false);
+    it("should test field type validation", () => {
+      const schema = z.object({
+        name: z.string(),
+        age: z.number(),
+        active: z.boolean(),
       });
+
+      // Test valid values
+      const validData = { name: "John", age: 30, active: true };
+      const validResult = schema.safeParse(validData);
+      expect(validResult.success).toBe(true);
+
+      // Test invalid string field
+      const invalidStringData = { name: 123, age: 30, active: true };
+      const invalidStringResult = schema.safeParse(invalidStringData);
+      expect(invalidStringResult.success).toBe(false);
+
+      // Test invalid number field
+      const invalidNumberData = { name: "John", age: "thirty", active: true };
+      const invalidNumberResult = schema.safeParse(invalidNumberData);
+      expect(invalidNumberResult.success).toBe(false);
+
+      // Test invalid boolean field
+      const invalidBooleanData = { name: "John", age: 30, active: "yes" };
+      const invalidBooleanResult = schema.safeParse(invalidBooleanData);
+      expect(invalidBooleanResult.success).toBe(false);
+    });
+  });
+
+  describe("testValidationUtility", () => {
+    it("should test validation utility function", () => {
+      const validationFn = (data: unknown) => {
+        if (typeof data === "string" && data.length > 0) {
+          return { success: true as const, data };
+        }
+        return { success: false as const, error: "Invalid string" };
+      };
+
+      const validData = "test string";
+      const invalidData = "";
+
+      // Test valid data
+      const validResult = validationFn(validData);
+      expect(validResult.success).toBe(true);
+      if (validResult.success) {
+        expect(validResult.data).toEqual(validData);
+      }
+
+      // Test invalid data
+      const invalidResult = validationFn(invalidData);
+      expect(invalidResult.success).toBe(false);
+      if (!invalidResult.success) {
+        expect(invalidResult.error).toBeDefined();
+        expect(typeof invalidResult.error).toBe("string");
+      }
     });
   });
 });

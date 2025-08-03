@@ -161,6 +161,24 @@ describe("PerformanceOptimizer", () => {
     });
   });
 
+  describe("profiling with disabled profiling", () => {
+    it("should return function result directly when profiling is disabled", async () => {
+      const optimizer = new PerformanceOptimizer({ enableProfiling: false });
+
+      const result = await optimizer.profile("test", async () => "test result");
+
+      expect(result).toBe("test result");
+    });
+
+    it("should return sync function result directly when profiling is disabled", () => {
+      const optimizer = new PerformanceOptimizer({ enableProfiling: false });
+
+      const result = optimizer.profileSync("test", () => "test result");
+
+      expect(result).toBe("test result");
+    });
+  });
+
   describe("database query optimization", () => {
     it("should optimize database queries", () => {
       const queries = [
@@ -271,6 +289,50 @@ describe("PerformanceOptimizer", () => {
 
       expect(result.recommendations).toContain(
         "Consider implementing memory pooling for large objects"
+      );
+
+      process.memoryUsage = originalMemoryUsage;
+    });
+
+    it("should provide recommendations for high external memory usage", () => {
+      const optimizer = new PerformanceOptimizer();
+
+      // Mock memory usage with high external memory
+      const originalMemoryUsage = process.memoryUsage;
+      process.memoryUsage = vi.fn(() => ({
+        heapUsed: 10 * 1024 * 1024,
+        heapTotal: 20 * 1024 * 1024,
+        external: 60 * 1024 * 1024, // High external memory
+        arrayBuffers: 5 * 1024 * 1024,
+        rss: 100 * 1024 * 1024,
+      })) as unknown as typeof process.memoryUsage;
+
+      const result = optimizer.optimizeMemory();
+
+      expect(result.recommendations).toContain(
+        "High external memory usage, review buffer handling"
+      );
+
+      process.memoryUsage = originalMemoryUsage;
+    });
+
+    it("should provide recommendations for large array buffers", () => {
+      const optimizer = new PerformanceOptimizer();
+
+      // Mock memory usage with large array buffers
+      const originalMemoryUsage = process.memoryUsage;
+      process.memoryUsage = vi.fn(() => ({
+        heapUsed: 10 * 1024 * 1024,
+        heapTotal: 20 * 1024 * 1024,
+        external: 10 * 1024 * 1024,
+        arrayBuffers: 15 * 1024 * 1024, // Large array buffers
+        rss: 100 * 1024 * 1024,
+      })) as unknown as typeof process.memoryUsage;
+
+      const result = optimizer.optimizeMemory();
+
+      expect(result.recommendations).toContain(
+        "Large array buffers detected, consider streaming"
       );
 
       process.memoryUsage = originalMemoryUsage;
@@ -422,6 +484,29 @@ describe("PerformanceOptimizer", () => {
       expect(report.summary.averageDuration).toBe(500); // (100 + 200 + 1200) / 3
       expect(report.summary.slowOperations).toBe(1);
       expect(report.summary.memoryUsage).toBe(75 * 1024 * 1024); // Average memory usage
+    });
+
+    it("should provide recommendations for high memory usage in report", () => {
+      const optimizer = new PerformanceOptimizer({
+        memoryThreshold: 1 * 1024 * 1024, // 1MB threshold
+      });
+
+      // Add some metrics with high memory usage
+      optimizer["metrics"] = [
+        {
+          operation: "test",
+          duration: 100,
+          memoryUsage: 2 * 1024 * 1024, // 2MB - above threshold
+          cpuUsage: 1000,
+          timestamp: new Date(),
+        },
+      ];
+
+      const report = optimizer.getPerformanceReport();
+
+      expect(report.recommendations).toContain(
+        "Memory usage is high, consider cleanup or optimization"
+      );
     });
   });
 
@@ -833,6 +918,53 @@ describe("Performance Utilities", () => {
       expect(callCount).toBe(1);
       vi.useRealTimers();
     });
+
+    // Additional test to ensure clearTimeout is called
+    it("should clear previous timeout when called multiple times", async () => {
+      vi.useFakeTimers();
+      let callCount = 0;
+      const debouncedFn = debounce(() => {
+        callCount++;
+      }, 100);
+
+      // First call
+      debouncedFn();
+
+      // Second call before first timeout completes - this should clear the first timeout
+      vi.advanceTimersByTime(50);
+      debouncedFn();
+
+      // Third call - this should clear the second timeout
+      vi.advanceTimersByTime(50);
+      debouncedFn();
+
+      // Wait for the final timeout to complete
+      vi.advanceTimersByTime(150);
+      await vi.runAllTimersAsync();
+
+      expect(callCount).toBe(1);
+      vi.useRealTimers();
+    });
+
+    // Test to ensure setTimeout is called with correct arguments
+    it("should call setTimeout with correct delay", async () => {
+      vi.useFakeTimers();
+      const setTimeoutSpy = vi.spyOn(global, "setTimeout");
+      let callCount = 0;
+      const debouncedFn = debounce(() => {
+        callCount++;
+      }, 200);
+
+      debouncedFn();
+
+      expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 200);
+
+      vi.advanceTimersByTime(250);
+      await vi.runAllTimersAsync();
+
+      expect(callCount).toBe(1);
+      vi.useRealTimers();
+    });
   });
 
   describe("throttle", () => {
@@ -928,6 +1060,89 @@ describe("Performance Utilities", () => {
       throttledFn();
       expect(callCount).toBe(2);
       vi.useRealTimers();
+    });
+
+    // Additional test to ensure function is called immediately when not throttled
+    it("should call function immediately when not in throttle", async () => {
+      vi.useFakeTimers();
+      let callCount = 0;
+      const throttledFn = throttle(() => {
+        callCount++;
+      }, 100);
+
+      // First call should execute immediately
+      throttledFn();
+      expect(callCount).toBe(1);
+
+      // Second call should be throttled
+      throttledFn();
+      expect(callCount).toBe(1);
+
+      // Wait for throttle to reset
+      vi.advanceTimersByTime(150);
+      await vi.runAllTimersAsync();
+
+      // Third call should execute immediately
+      throttledFn();
+      expect(callCount).toBe(2);
+      vi.useRealTimers();
+    });
+
+    // Test to ensure setTimeout is called with correct delay
+    it("should call setTimeout with correct delay when throttled", async () => {
+      vi.useFakeTimers();
+      const setTimeoutSpy = vi.spyOn(global, "setTimeout");
+      let callCount = 0;
+      const throttledFn = throttle(() => {
+        callCount++;
+      }, 200);
+
+      // First call should execute immediately
+      throttledFn();
+      expect(callCount).toBe(1);
+
+      // Second call should be throttled and set timeout
+      throttledFn();
+      expect(callCount).toBe(1);
+      expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 200);
+
+      vi.advanceTimersByTime(250);
+      await vi.runAllTimersAsync();
+      vi.useRealTimers();
+    });
+  });
+
+  describe("performance decorators", () => {
+    it("should create profile decorator", async () => {
+      const { profile } = await import("../performance-optimizer");
+
+      // Test the decorator function
+      const decorator = profile("test-operation");
+      expect(typeof decorator).toBe("function");
+    });
+
+    it("should create profileSync decorator", async () => {
+      const { profileSync } = await import("../performance-optimizer");
+
+      // Test the decorator function
+      const decorator = profileSync("test-operation");
+      expect(typeof decorator).toBe("function");
+    });
+
+    it("should create profile decorator without operation name", async () => {
+      const { profile } = await import("../performance-optimizer");
+
+      // Test the decorator function without operation name
+      const decorator = profile();
+      expect(typeof decorator).toBe("function");
+    });
+
+    it("should create profileSync decorator without operation name", async () => {
+      const { profileSync } = await import("../performance-optimizer");
+
+      // Test the decorator function without operation name
+      const decorator = profileSync();
+      expect(typeof decorator).toBe("function");
     });
   });
 });
