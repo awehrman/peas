@@ -1,8 +1,14 @@
-import { getNoteWithIngredients, markNoteAsDuplicate } from "@peas/database";
+import {
+  findNotesWithSimilarTitles,
+  getNoteWithIngredients,
+  markNoteAsDuplicate,
+  updateNoteTitleSimHash,
+} from "@peas/database";
 
 import type { StructuredLogger } from "../../../../types";
 import type { NotePipelineData } from "../../../../types/notes";
 import {
+  calculateIngredientSimilarity,
   calculateSimilarityScore,
   generateTitleSimHash,
 } from "../../../../utils/simhash";
@@ -44,6 +50,18 @@ export async function checkForDuplicates(
         `[CHECK_DUPLICATES] Note ${data.noteId} has no title, skipping duplicate check`
       );
       return data;
+    }
+
+    // Generate and save SimHash for the current note's title
+    const currentTitleSimHash = generateTitleSimHash(currentNote.title);
+    if (
+      currentTitleSimHash &&
+      currentTitleSimHash !== currentNote.titleSimHash
+    ) {
+      await updateNoteTitleSimHash(data.noteId, currentTitleSimHash);
+      logger.log(
+        `[CHECK_DUPLICATES] Updated SimHash for note ${data.noteId}: ${currentTitleSimHash}`
+      );
     }
 
     // Check for duplicates based on title and ingredients
@@ -124,21 +142,12 @@ async function findDuplicateMatches(
     `[CHECK_DUPLICATES] Generated SimHash for title: ${currentTitleSimHash}`
   );
 
-  // TODO: Fix import issue with findNotesWithSimilarTitles
   // Find notes with similar titles using SimHash
-  // const similarNotes = await findNotesWithSimilarTitles(
-  //   currentTitleSimHash,
-  //   3, // maxHammingDistance
-  //   currentNote.id
-  // );
-
-  // Stub: Simulate finding similar notes
-  const similarNotes: Array<{
-    id: string;
-    title: string | null;
-    titleSimHash: string | null;
-    status: string;
-  }> = [];
+  const similarNotes = await findNotesWithSimilarTitles(
+    currentTitleSimHash,
+    3, // maxHammingDistance
+    currentNote.id
+  );
 
   logger.log(
     `[CHECK_DUPLICATES] Found ${similarNotes.length} notes with similar titles`
@@ -157,9 +166,27 @@ async function findDuplicateMatches(
       similarNote.titleSimHash
     );
 
-    // TODO: Calculate ingredient similarity using Jaccard similarity
-    // For now, stub this out
-    const ingredientSimilarity = 0.0; // Stubbed out
+    // Calculate ingredient similarity using Jaccard similarity
+    const currentIngredients = currentNote.parsedIngredientLines
+      .map((line) => line.reference.toLowerCase().trim())
+      .filter((ingredient) => ingredient.length > 0);
+
+    // Get the similar note's ingredients for comparison
+    const similarNoteWithIngredients = await getNoteWithIngredients(
+      similarNote.id
+    );
+    const similarNoteIngredients =
+      similarNoteWithIngredients?.parsedIngredientLines
+        .map((line) => line.reference.toLowerCase().trim())
+        .filter((ingredient) => ingredient.length > 0) || [];
+
+    const ingredientSimilarity =
+      currentIngredients.length > 0 && similarNoteIngredients.length > 0
+        ? calculateIngredientSimilarity(
+            currentIngredients,
+            similarNoteIngredients
+          )
+        : 0.0;
 
     // Combine title and ingredient similarity for overall confidence
     // Weight title similarity more heavily (70% title, 30% ingredients)
