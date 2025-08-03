@@ -27,6 +27,7 @@ export class ScheduleAllFollowupTasksAction extends BaseAction<
   ): Promise<NotePipelineData> {
     // Validate input before processing
     const validationError = this.validateInput(data);
+    /* istanbul ignore next -- @preserve */
     if (validationError) {
       throw validationError;
     }

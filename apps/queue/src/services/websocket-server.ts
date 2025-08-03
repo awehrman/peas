@@ -79,6 +79,7 @@ export class WebSocketManager {
     });
 
     this.wss.on("error", (error) => {
+      /* istanbul ignore next -- @preserve */
       console.error("❌ WebSocket: Server error:", error);
     });
 

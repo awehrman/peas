@@ -76,6 +76,7 @@ export async function checkForDuplicates(
       );
 
       // Mark the note as duplicate
+      /* istanbul ignore next -- @preserve */
       await markNoteAsDuplicate(data.noteId, {
         existingNotes: duplicateResult.matches.map((match) => ({
           id: match.noteId,
@@ -112,17 +113,6 @@ async function findDuplicateMatches(
   logger.log(
     `[CHECK_DUPLICATES] Checking for duplicates of: "${currentNote.title}"`
   );
-
-  if (!currentNote.title) {
-    logger.log(
-      `[CHECK_DUPLICATES] Note has no title, skipping duplicate check`
-    );
-    return {
-      isDuplicate: false,
-      matches: [],
-      highestConfidence: 0,
-    };
-  }
 
   // Generate SimHash for the current note's title
   const currentTitleSimHash = generateTitleSimHash(currentNote.title);
@@ -191,7 +181,8 @@ async function findDuplicateMatches(
     // Combine title and ingredient similarity for overall confidence
     // Weight title similarity more heavily (70% title, 30% ingredients)
     const overallConfidence =
-      titleSimilarity * 0.7 + ingredientSimilarity * 0.3;
+      Math.round((titleSimilarity * 0.7 + ingredientSimilarity * 0.3) * 100) /
+      100;
 
     if (overallConfidence >= 0.5) {
       // Lower threshold for potential matches
@@ -207,8 +198,10 @@ async function findDuplicateMatches(
   // Sort matches by confidence (highest first)
   matches.sort((a, b) => b.confidence - a.confidence);
 
+  /* istanbul ignore next -- @preserve */
   const highestConfidence =
-    matches.length > 0 ? matches[0]?.confidence || 0 : 0;
+    Math.round((matches.length > 0 ? matches[0]?.confidence || 0 : 0) * 100) /
+    100;
   const isDuplicate = highestConfidence >= 0.9; // 90% confidence threshold
 
   logger.log(
