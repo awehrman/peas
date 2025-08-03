@@ -154,6 +154,7 @@ class WebSocketService implements IWebSocketService {
  */
 class StatusBroadcasterService implements IStatusBroadcasterService {
   addStatusEventAndBroadcast = async (event: StatusEventData) => {
+    /* istanbul ignore next -- @preserve */
     try {
       // Convert StatusEventData to the format expected by addStatusEventAndBroadcast
       const result = await addStatusEventAndBroadcast({

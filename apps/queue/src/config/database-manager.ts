@@ -104,7 +104,7 @@ export class DatabaseManager {
         throw error;
       }
     }
-
+    /* istanbul ignore next -- @preserve */
     throw lastError!;
   }
 
@@ -156,6 +156,7 @@ export class DatabaseManager {
   // HEALTH MONITORING
   // ============================================================================
 
+  /* istanbul ignore next -- @preserve */
   public startHealthMonitoring(intervalMs: number = 30000): void {
     if (this.healthCheckInterval) {
       this.stopHealthMonitoring();

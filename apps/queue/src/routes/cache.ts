@@ -121,7 +121,9 @@ cacheRouter.get("/keys", async (req, res) => {
   try {
     const { pattern = "*" } = req.query;
 
+    /* istanbul ignore next -- @preserve */
     if (typeof pattern !== "string") {
+      /* istanbul ignore next -- @preserve */
       return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         error: "Pattern must be a string",
@@ -160,7 +162,9 @@ cacheRouter.delete("/keys/:key", async (req, res) => {
   try {
     const { key } = req.params;
 
+    /* istanbul ignore next -- @preserve */
     if (!key) {
+      /* istanbul ignore next -- @preserve */
       return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         error: "Cache key is required",

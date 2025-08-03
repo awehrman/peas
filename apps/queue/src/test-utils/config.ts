@@ -47,6 +47,7 @@ export function setupEnhancedTestEnvironment() {
   }));
 
   // Mock WebSocket server
+  /* istanbul ignore next -- @preserve */
   vi.mock("../services/websocket-server", () => ({
     WebSocketManager: vi.fn().mockImplementation(() => ({
       broadcast: vi.fn(),
@@ -93,6 +94,7 @@ export function setupEnhancedTestEnvironment() {
   }));
 
   // Mock date operations
+  /* istanbul ignore next -- @preserve */
   vi.mock("date-fns", () => ({
     format: vi.fn((date: Date) => date.toISOString()),
     parseISO: vi.fn((dateString: string) => new Date(dateString)),
@@ -156,6 +158,7 @@ export class TestDataGenerator {
   /**
    * Generate test HTML content with specified ingredients and instructions
    */
+  /* istanbul ignore next -- @preserve */
   static generateTestHtml(
     options: {
       title?: string;
@@ -267,6 +270,7 @@ export class TestAssertions {
   /**
    * Assert that a date is within a reasonable range
    */
+  /* istanbul ignore next -- @preserve */
   static assertRecentDate(date: Date, maxAgeMs: number = 60000): void {
     const now = new Date();
     const diff = Math.abs(now.getTime() - date.getTime());

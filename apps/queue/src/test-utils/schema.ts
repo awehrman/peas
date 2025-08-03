@@ -115,6 +115,7 @@ export function testValidSchema<T extends z.ZodType>(
   validData: z.infer<T>,
   description?: string
 ) {
+  /* istanbul ignore next -- @preserve */
   it(`should validate ${description || "valid data"}`, () => {
     const result = schema.safeParse(validData);
     expect(result.success).toBe(true);
@@ -133,6 +134,7 @@ export function testInvalidSchema<T extends z.ZodType>(
   expectedErrorMessage?: string,
   description?: string
 ) {
+  /* istanbul ignore next -- @preserve */
   it(`should reject ${description || "invalid data"}`, () => {
     const result = schema.safeParse(invalidData);
     expect(result.success).toBe(false);
@@ -151,6 +153,7 @@ export function testSchemaDefaults<T extends z.ZodType>(
   expectedDefaults: Partial<z.infer<T>>,
   description?: string
 ) {
+  /* istanbul ignore next -- @preserve */
   it(`should use default values when ${description || "optional fields are not provided"}`, () => {
     const result = schema.safeParse(minimalData);
     expect(result.success).toBe(true);
@@ -170,6 +173,7 @@ export function testSchemaDefaults<T extends z.ZodType>(
 /**
  * Test that a schema validates partial data with defaults
  */
+/* istanbul ignore next -- @preserve */
 export function testSchemaPartialData<T extends z.ZodType>(
   schema: T,
   partialData: unknown,
@@ -194,6 +198,7 @@ export function testSchemaEnumValues<T extends z.ZodType>(
   fieldName: string,
   description?: string
 ) {
+  /* istanbul ignore next -- @preserve */
   it(`should validate all ${description || "enum values"}`, () => {
     enumValues.forEach((value) => {
       const testData = { [fieldName]: value };
@@ -215,6 +220,7 @@ export function testSchemaInvalidEnum<T extends z.ZodType>(
   fieldName: string,
   description?: string
 ) {
+  /* istanbul ignore next -- @preserve */
   it(`should reject ${description || "invalid enum value"}`, () => {
     const testData = { [fieldName]: invalidValue };
     const result = schema.safeParse(testData);

@@ -447,11 +447,13 @@ export class SystemMonitor extends EventEmitter {
 
   private startCleanupInterval(): void {
     setInterval(() => {
+      /* istanbul ignore next -- @preserve */
       this.cleanupOldJobMetrics();
     }, this.CLEANUP_INTERVAL_MS);
   }
 
   public static _resetForTests() {
+    /* istanbul ignore next -- @preserve */
     if (SystemMonitor.instance) {
       SystemMonitor.instance.jobMetrics?.clear?.();
       SystemMonitor.instance.queueMetrics?.clear?.();

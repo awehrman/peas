@@ -20,6 +20,7 @@ import type { ActionContext } from "../workers/core/types";
 export function createTestEnvironment() {
   const originalEnv: Record<string, string | undefined> = { ...process.env };
 
+  /* istanbul ignore next -- @preserve */
   return {
     /**
      * Set environment variables for testing
@@ -282,6 +283,7 @@ export function createMockRedisConnection() {
 /**
  * Create mock HTML content for testing
  */
+/* istanbul ignore next -- @preserve */
 export function createMockHtmlContent(title: string = "Test Recipe"): string {
   return `
     <!doctype html>

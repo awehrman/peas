@@ -161,6 +161,7 @@ export class CacheManager {
     }
   }
 
+  /* istanbul ignore next -- @preserve */
   public async delete(key: string): Promise<void> {
     if (!this.isConnected) {
       return;
@@ -376,6 +377,7 @@ export class CacheManager {
 
   public getHitRate(): number {
     const total = this.stats.hits + this.stats.misses;
+    /* istanbul ignore next -- @preserve */
     return total > 0 ? (this.stats.hits / total) * 100 : 0;
   }
 

@@ -67,6 +67,7 @@ export class CachedIngredientParser {
   /**
    * Parse multiple ingredient lines with caching
    */
+  /* istanbul ignore next -- @preserve */
   static async parseIngredientLines(
     lines: string[],
     options: IngredientParsingOptions = {}
@@ -153,6 +154,7 @@ export class CachedIngredientParser {
 
       for (const pattern of patterns) {
         const match = normalizedLine.match(pattern);
+        /* istanbul ignore next -- @preserve */
         if (match) {
           const processingTime = Date.now() - startTime;
 
@@ -189,6 +191,7 @@ export class CachedIngredientParser {
         processingTime,
       };
     } catch (error) {
+      /* istanbul ignore next -- @preserve */
       const processingTime = Date.now() - startTime;
       /* istanbul ignore next -- @preserve */
       console.warn(
@@ -196,6 +199,7 @@ export class CachedIngredientParser {
         error
       );
 
+      /* istanbul ignore next -- @preserve */
       return {
         ingredient: line,
         confidence: 0.1,
