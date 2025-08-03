@@ -38,6 +38,148 @@ export async function getNotes() {
 }
 
 // TODO should we be passing the select object here?
+export async function getNoteWithIngredients(noteId: string) {
+  try {
+    const note = await prisma.note.findUnique({
+      where: { id: noteId },
+      include: {
+        parsedIngredientLines: {
+          include: {
+            ingredientReferences: {
+              include: {
+                ingredient: true, // Include the actual ingredients
+              },
+            },
+          },
+        },
+        parsedInstructionLines: true,
+      },
+    });
+    return note;
+  } catch (error) {
+    console.log({ error });
+    throw error;
+  }
+}
+
+/**
+ * Mark a note as duplicate with error details and confidence level
+ */
+export async function markNoteAsDuplicate(
+  noteId: string,
+  duplicateInfo?: {
+    existingNotes: Array<{ id: string; title: string | null }>;
+    duplicateReason?: string;
+    confidence?: number;
+  }
+): Promise<void> {
+  const errorDetails = duplicateInfo?.existingNotes.length
+    ? {
+        duplicateNoteIds: duplicateInfo.existingNotes.map((n) => n.id),
+        duplicateNoteTitles: duplicateInfo.existingNotes
+          .map((n) => n.title)
+          .filter(Boolean),
+        message:
+          duplicateInfo.duplicateReason ||
+          `This recipe is already in your collection`,
+      }
+    : {
+        message: duplicateInfo?.duplicateReason || "This recipe is a duplicate",
+      };
+
+  await prisma.note.update({
+    where: { id: noteId },
+    data: {
+      status: "DUPLICATE",
+      errorMessage:
+        duplicateInfo?.duplicateReason || `Duplicate recipe detected.`,
+      errorDetails,
+      duplicateConfidence: duplicateInfo?.confidence || null,
+    },
+  });
+}
+
+/**
+ * Update the SimHash for a note's title
+ */
+export async function updateNoteTitleSimHash(
+  noteId: string,
+  titleSimHash: string
+): Promise<void> {
+  await prisma.note.update({
+    where: { id: noteId },
+    data: {
+      titleSimHash,
+    },
+  });
+}
+
+/**
+ * Find notes with similar titles using SimHash
+ * @param titleSimHash The SimHash of the title to search for
+ * @param maxHammingDistance Maximum Hamming distance to consider similar
+ * @param excludeNoteId Optional note ID to exclude from results
+ * @returns Array of notes with similar titles
+ */
+export async function findNotesWithSimilarTitles(
+  titleSimHash: string,
+  maxHammingDistance: number = 3,
+  excludeNoteId?: string
+) {
+  if (!titleSimHash) {
+    return [];
+  }
+
+  try {
+    // Get all notes with non-empty SimHashes
+    const allNotes = await prisma.note.findMany({
+      where: {
+        titleSimHash: {
+          not: null,
+        },
+        ...(excludeNoteId && { id: { not: excludeNoteId } }),
+      },
+      select: {
+        id: true,
+        title: true,
+        titleSimHash: true,
+        status: true,
+      },
+    });
+
+    // Filter notes based on Hamming distance
+    const similarNotes = allNotes.filter((note) => {
+      if (!note.titleSimHash) return false;
+      
+      const distance = calculateHammingDistance(titleSimHash, note.titleSimHash);
+      return distance <= maxHammingDistance;
+    });
+
+    return similarNotes;
+  } catch (error) {
+    console.error("Error finding notes with similar titles:", error);
+    return [];
+  }
+}
+
+/**
+ * Calculate Hamming distance between two SimHashes
+ * This is a simple implementation - in production, you might want to use a more optimized version
+ */
+function calculateHammingDistance(hash1: string, hash2: string): number {
+  if (!hash1 || !hash2 || hash1.length !== hash2.length) {
+    return Number.MAX_SAFE_INTEGER;
+  }
+  
+  let distance = 0;
+  for (let i = 0; i < hash1.length; i++) {
+    if (hash1[i] !== hash2[i]) {
+      distance++;
+    }
+  }
+  return distance;
+}
+
 export async function createNote(
   file: ParsedHTMLFile
 ): Promise<NoteWithParsedLines> {

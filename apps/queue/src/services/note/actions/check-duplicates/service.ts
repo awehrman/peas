@@ -2,6 +2,10 @@ import { getNoteWithIngredients, markNoteAsDuplicate } from "@peas/database";
 
 import type { StructuredLogger } from "../../../../types";
 import type { NotePipelineData } from "../../../../types/notes";
+import {
+  calculateSimilarityScore,
+  generateTitleSimHash,
+} from "../../../../utils/simhash";
 
 interface DuplicateMatch {
   noteId: string;
@@ -90,18 +94,103 @@ async function findDuplicateMatches(
   logger.log(
     `[CHECK_DUPLICATES] Checking for duplicates of: "${currentNote.title}"`
   );
-  // This is a placeholder implementation
-  // TODO: Implement actual duplicate detection logic
-  // 1. Search for notes with similar titles
-  // 2. Compare ingredient lists
-  // 3. Calculate confidence scores
-  // 4. Return matches above threshold
 
-  // For now, return no duplicates
-  // This will be implemented with actual database queries and matching logic
+  if (!currentNote.title) {
+    logger.log(
+      `[CHECK_DUPLICATES] Note has no title, skipping duplicate check`
+    );
+    return {
+      isDuplicate: false,
+      matches: [],
+      highestConfidence: 0,
+    };
+  }
+
+  // Generate SimHash for the current note's title
+  const currentTitleSimHash = generateTitleSimHash(currentNote.title);
+
+  if (!currentTitleSimHash) {
+    logger.log(
+      `[CHECK_DUPLICATES] Could not generate SimHash for title, skipping duplicate check`
+    );
+    return {
+      isDuplicate: false,
+      matches: [],
+      highestConfidence: 0,
+    };
+  }
+
+  logger.log(
+    `[CHECK_DUPLICATES] Generated SimHash for title: ${currentTitleSimHash}`
+  );
+
+  // TODO: Fix import issue with findNotesWithSimilarTitles
+  // Find notes with similar titles using SimHash
+  // const similarNotes = await findNotesWithSimilarTitles(
+  //   currentTitleSimHash,
+  //   3, // maxHammingDistance
+  //   currentNote.id
+  // );
+
+  // Stub: Simulate finding similar notes
+  const similarNotes: Array<{
+    id: string;
+    title: string | null;
+    titleSimHash: string | null;
+    status: string;
+  }> = [];
+
+  logger.log(
+    `[CHECK_DUPLICATES] Found ${similarNotes.length} notes with similar titles`
+  );
+
+  const matches: DuplicateMatch[] = [];
+
+  for (const similarNote of similarNotes) {
+    if (!similarNote.titleSimHash || !similarNote.title) {
+      continue;
+    }
+
+    // Calculate title similarity using SimHash
+    const titleSimilarity = calculateSimilarityScore(
+      currentTitleSimHash,
+      similarNote.titleSimHash
+    );
+
+    // TODO: Calculate ingredient similarity using Jaccard similarity
+    // For now, stub this out
+    const ingredientSimilarity = 0.0; // Stubbed out
+
+    // Combine title and ingredient similarity for overall confidence
+    // Weight title similarity more heavily (70% title, 30% ingredients)
+    const overallConfidence =
+      titleSimilarity * 0.7 + ingredientSimilarity * 0.3;
+
+    if (overallConfidence >= 0.5) {
+      // Lower threshold for potential matches
+      matches.push({
+        noteId: similarNote.id,
+        title: similarNote.title,
+        confidence: overallConfidence,
+        matchReason: `Title similarity: ${(titleSimilarity * 100).toFixed(1)}%, Ingredient similarity: ${(ingredientSimilarity * 100).toFixed(1)}%`,
+      });
+    }
+  }
+
+  // Sort matches by confidence (highest first)
+  matches.sort((a, b) => b.confidence - a.confidence);
+
+  const highestConfidence =
+    matches.length > 0 ? matches[0]?.confidence || 0 : 0;
+  const isDuplicate = highestConfidence >= 0.9; // 90% confidence threshold
+
+  logger.log(
+    `[CHECK_DUPLICATES] Found ${matches.length} potential matches. Highest confidence: ${(highestConfidence * 100).toFixed(1)}%`
+  );
+
   return {
-    isDuplicate: false,
-    matches: [],
-    highestConfidence: 0,
+    isDuplicate,
+    matches,
+    highestConfidence,
   };
 }

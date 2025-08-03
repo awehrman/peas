@@ -9,7 +9,7 @@ export async function addStatusEvent({
   totalCount,
 }: {
   noteId: string;
-  status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
+  status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED" | "DUPLICATE";
   message?: string;
   context?: string;
   currentCount?: number;

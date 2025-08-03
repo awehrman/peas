@@ -2448,7 +2448,6 @@ __metadata:
     "@types/supertest": "npm:^6.0.3"
     "@types/ws": "npm:^8.5.10"
     "@vitest/coverage-istanbul": "npm:3.2.4"
-    "@vitest/coverage-v8": "npm:^3.2.4"
     "@vitest/ui": "npm:^3.2.4"
     bullmq: "npm:^5.56.4"
     cheerio: "npm:^1.1.0"
@@ -2462,6 +2461,7 @@ __metadata:
     multer: "npm:^2.0.2"
     pluralize: "npm:^8.0.0"
     redis: "npm:^5.6.0"
+    simhash-js: "npm:^1.0.0"
     supertest: "npm:^7.1.4"
     ts-node: "npm:^10.9.2"
     ts-node-dev: "npm:^2.0.0"
@@ -13171,6 +13171,13 @@ __metadata:
   version: 4.1.0
   resolution: "signal-exit@npm:4.1.0"
   checksum: 10c0/41602dce540e46d599edba9d9860193398d135f7ff72cab629db5171516cfae628d21e7bfccde1bbfdf11c48726bc2a6d1a8fb8701125852fbfda7cf19c6aa83
+  languageName: node
+  linkType: hard
+
+"simhash-js@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "simhash-js@npm:1.0.0"
+  checksum: 10c0/ce73da9820274e477abbc34bd708d7eed0516902c77586f367f1bdb67588abba6119ab7873e9abf64bbb354cc29ab7593c44af2adaea55872c1c08d429087432
   languageName: node
   linkType: hard
 
