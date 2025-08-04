@@ -555,6 +555,7 @@ describe("sleep", () => {
   });
 
   it("should sleep for specified milliseconds", async () => {
+    const startTime = Date.now();
     const sleepPromise = sleep(1000);
 
     expect(sleepPromise).toBeInstanceOf(Promise);
@@ -563,26 +564,28 @@ describe("sleep", () => {
     await sleepPromise;
 
     // Promise should resolve after the specified time
-    expect(true).toBe(true);
+    expect(Date.now() - startTime).toBeGreaterThanOrEqual(1000);
   });
 
   it("should handle zero milliseconds", async () => {
+    const startTime = Date.now();
     const sleepPromise = sleep(0);
 
     vi.advanceTimersByTime(0);
     await sleepPromise;
 
     // Promise should resolve immediately
-    expect(true).toBe(true);
+    expect(Date.now() - startTime).toBeLessThan(10); // Should be very fast
   });
 
   it("should handle negative milliseconds", async () => {
+    const startTime = Date.now();
     const sleepPromise = sleep(-100);
 
     vi.advanceTimersByTime(0);
     await sleepPromise;
 
     // Promise should resolve immediately for negative values
-    expect(true).toBe(true);
+    expect(Date.now() - startTime).toBeLessThan(10); // Should be very fast
   });
 });

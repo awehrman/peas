@@ -191,6 +191,46 @@ describe("Ingredient Worker", () => {
       expect(result).toEqual(mockPipeline);
     });
 
+    it("should call real createActionPipeline method to cover type annotations", () => {
+      const worker = new IngredientWorker(
+        mockQueue,
+        mockDependencies,
+        mockActionFactory,
+        mockServiceContainer
+      );
+
+      const mockData: IngredientJobData = {
+        noteId: "test-note-id",
+        ingredientReference: "1 cup flour",
+        lineIndex: 0,
+        parseStatus: "PENDING" as const,
+        isActive: true,
+      };
+
+      const mockContext = {
+        jobId: "test-job-id",
+        attemptNumber: 1,
+        retryCount: 0,
+        queueName: "ingredient-queue",
+        operation: "ingredient-processing",
+        startTime: Date.now(),
+        workerName: "ingredient-worker",
+      };
+
+      // Call the real createActionPipeline method to cover line 72
+      const result = (
+        worker as unknown as {
+          createActionPipeline: (
+            data: IngredientJobData,
+            context: ActionContext
+          ) => unknown[];
+        }
+      ).createActionPipeline(mockData, mockContext);
+
+      // The result should be an array (the pipeline)
+      expect(Array.isArray(result)).toBe(true);
+    });
+
     it("should have actionFactory property", () => {
       const worker = new IngredientWorker(
         mockQueue,

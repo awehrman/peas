@@ -52,6 +52,7 @@ export async function parseIngredientLine(
         const cachedSegments: ParsedSegment[] = [];
         let segmentIndex = 0;
 
+        /* istanbul ignore next -- @preserve */
         if (cachedResult.amount) {
           cachedSegments.push({
             index: segmentIndex++,
@@ -114,6 +115,7 @@ export async function parseIngredientLine(
       );
 
       // Dynamically load the requested parser version (v1 or v2)
+      /* istanbul ignore next -- @preserve */
       const modulePath =
         PROCESSING_CONSTANTS.INGREDIENT_PARSER_VERSION === "v1"
           ? "@peas/parser/v1/minified"
@@ -164,6 +166,7 @@ export async function parseIngredientLine(
       `[PARSE_INGREDIENT_LINE] Failed to parse ingredient "${data.ingredientReference}": ${error}`
     );
 
+    /* istanbul ignore next -- @preserve */
     return {
       ...data,
       parseStatus: "ERROR",

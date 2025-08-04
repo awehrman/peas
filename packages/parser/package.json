@@ -4,12 +4,28 @@
   "private": true,
   "type": "module",
   "main": "dist/index.js",
+  "types": "types/index.d.ts",
   "exports": {
-    ".": "./dist/index.js",
-    "./v1": "./dist/v1/index.js",
-    "./v1/minified": "./dist/v1/index.min.js",
-    "./v2": "./dist/v2/index.js",
-    "./v2/minified": "./dist/v2/index.min.js"
+    ".": {
+      "types": "./types/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./v1": {
+      "types": "./types/index.d.ts",
+      "default": "./dist/v1/index.js"
+    },
+    "./v1/minified": {
+      "types": "./types/index.d.ts",
+      "default": "./dist/v1/index.min.js"
+    },
+    "./v2": {
+      "types": "./types/index.d.ts",
+      "default": "./dist/v2/index.js"
+    },
+    "./v2/minified": {
+      "types": "./types/index.d.ts",
+      "default": "./dist/v2/index.min.js"
+    }
   },
   "scripts": {
     "build": "node scripts/build.js",

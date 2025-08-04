@@ -47,12 +47,6 @@ describe("Workers Index", () => {
     expect(createNoteWorker).toBeDefined();
   });
 
-  it("should export BaseJobData type", () => {
-    // BaseJobData is a type, so we can't import it dynamically
-    // Instead, we test that it's available in the index exports
-    expect(true).toBe(true); // Placeholder - type exports are tested in the index test
-  });
-
   it("should export factory functions", async () => {
     const { createNoteWorker } = await import("../note");
 

@@ -115,7 +115,9 @@ describe("Ingredient Pipeline", () => {
       const mockSaveAction = { name: "save", execute: vi.fn() };
 
       vi.mocked(mockActionFactory.create)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .mockReturnValueOnce(mockParseAction as any)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .mockReturnValueOnce(mockSaveAction as any);
 
       const actions = createIngredientPipeline(

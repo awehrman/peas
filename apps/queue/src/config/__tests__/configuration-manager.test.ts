@@ -118,12 +118,6 @@ describe("configuration-manager.ts", () => {
           manager.loadConfig();
         }).toThrow("Configuration validation failed");
       });
-
-      it("should handle non-Error objects in catch block", async () => {
-        // This test is not needed since the actual implementation handles Error objects properly
-        // and the schema validation will throw proper Zod errors
-        expect(true).toBe(true);
-      });
     });
 
     describe("getConfig", () => {

@@ -238,10 +238,13 @@ describe("LoggerFactory", () => {
       const context = { key: "value" };
       const logger = LoggerFactory.createLogger(context);
 
+      expect(logger).toBeInstanceOf(StandardizedLoggerImpl);
+
+      // The logger should be created successfully with context
       logger.log("Test message");
 
-      // Should have the context merged
-      expect(true).toBe(true); // Placeholder - actual assertion would depend on base logger mock
+      // Verify the logger instance is properly created
+      expect(typeof logger.log).toBe("function");
     });
   });
 });
