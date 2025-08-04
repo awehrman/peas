@@ -375,11 +375,14 @@ describe("Save Ingredient Line Service", () => {
       ).toHaveBeenCalledWith({
         importId: "test-import-id",
         status: "PENDING",
-        message: "Ingredient completed",
-        context: "ingredient_completed",
-        indentLevel: 2,
+        message: "Processing 5/10 ingredients",
+        context: "ingredient_processing",
+        currentCount: 5,
+        totalCount: 10,
+        indentLevel: 1,
         metadata: {
           totalIngredients: 10,
+          completedIngredients: 5,
           lineIndex: 0,
         },
       });

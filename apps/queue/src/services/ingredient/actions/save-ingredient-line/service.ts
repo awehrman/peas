@@ -103,11 +103,14 @@ export async function saveIngredientLine(
       await statusBroadcaster.addStatusEventAndBroadcast({
         importId: data.importId,
         status: "PENDING",
-        message: "Ingredient completed",
-        context: "ingredient_completed",
-        indentLevel: 2,
+        message: `Processing ${completionStatus.completedIngredients}/${completionStatus.totalIngredients} ingredients`,
+        context: "ingredient_processing",
+        currentCount: completionStatus.completedIngredients,
+        totalCount: completionStatus.totalIngredients,
+        indentLevel: 1,
         metadata: {
           totalIngredients: completionStatus.totalIngredients,
+          completedIngredients: completionStatus.completedIngredients,
           lineIndex: data.lineIndex,
         },
       });

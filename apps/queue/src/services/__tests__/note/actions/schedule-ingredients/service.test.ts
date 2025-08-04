@@ -75,6 +75,9 @@ describe("Schedule Ingredients Service", () => {
           ingredientReference: "1 cup flour",
           lineIndex: 0,
           jobId: "test-note-id-ingredient-0",
+          metadata: {
+            clearCache: false,
+          },
         }
       );
 
@@ -88,6 +91,9 @@ describe("Schedule Ingredients Service", () => {
           ingredientReference: "2 eggs",
           lineIndex: 1,
           jobId: "test-note-id-ingredient-1",
+          metadata: {
+            clearCache: false,
+          },
         }
       );
     });

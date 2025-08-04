@@ -2,7 +2,6 @@
 // and normalize the parser output into the shared ParsedSegment format.
 import type { ParserResult } from "./types";
 
-import { PROCESSING_CONSTANTS } from "../../../../config/constants";
 import type { ParsedSegment } from "../../../../schemas/base";
 import type { StructuredLogger } from "../../../../types";
 import type { IngredientJobData } from "../../../../workers/ingredient/dependencies";
@@ -29,6 +28,15 @@ export async function parseIngredientLine(
     );
 
     const startTime = Date.now();
+
+    // Check if we should clear cache (for testing or when cache is stale)
+    const shouldClearCache = data.metadata?.clearCache === true;
+    if (shouldClearCache) {
+      logger.log(
+        `[PARSE_INGREDIENT_LINE] Clearing ingredient cache as requested`
+      );
+      await CachedIngredientParser.invalidateIngredientCache();
+    }
 
     // First, check if we have a cached result for this exact ingredient string
     let parseResult: ParserResult = { rule: "", type: "", values: [] };
@@ -103,6 +111,10 @@ export async function parseIngredientLine(
         logger.log(
           `[PARSE_INGREDIENT_LINE] Cached result used: ${cachedSegments.length} segments`
         );
+      } else {
+        logger.log(
+          `[PARSE_INGREDIENT_LINE] Cached result confidence too low (${cachedResult.confidence}), will use main parser`
+        );
       }
     } catch (cachedError) {
       logger.log(`[PARSE_INGREDIENT_LINE] Cache check failed: ${cachedError}`);
@@ -114,16 +126,37 @@ export async function parseIngredientLine(
         `[PARSE_INGREDIENT_LINE] No cached result found, using main parser for: "${data.ingredientReference}"`
       );
 
-      // Dynamically load the requested parser version (v1 or v2)
-      /* istanbul ignore next -- @preserve */
-      const modulePath =
-        PROCESSING_CONSTANTS.INGREDIENT_PARSER_VERSION === "v1"
-          ? "@peas/parser/v1/minified"
-          : "@peas/parser/v2/minified";
+      // Try v1 parser first, then fallback to v2 if needed
+      let parserVersion = "v1";
+      let parse: (input: string) => ParserResult;
 
-      const { parse } = (await import(modulePath)) as {
-        parse: (input: string) => ParserResult;
-      };
+      try {
+        // Try v1 parser first
+        const v1Module = await import("@peas/parser/v1/minified");
+        parse = v1Module.parse;
+        logger.log(
+          `[PARSE_INGREDIENT_LINE] Using v1 parser for: "${data.ingredientReference}"`
+        );
+      } catch (v1Error) {
+        logger.log(
+          `[PARSE_INGREDIENT_LINE] v1 parser failed, trying v2: ${v1Error}`
+        );
+
+        try {
+          // Fallback to v2 parser
+          const v2Module = await import("@peas/parser/v2/minified");
+          parse = v2Module.parse;
+          parserVersion = "v2";
+          logger.log(
+            `[PARSE_INGREDIENT_LINE] Using v2 parser for: "${data.ingredientReference}"`
+          );
+        } catch (v2Error) {
+          logger.log(
+            `[PARSE_INGREDIENT_LINE] Both v1 and v2 parsers failed: ${v2Error}`
+          );
+          throw new Error(`Failed to load ingredient parser: ${v2Error}`);
+        }
+      }
 
       parseResult = parse(data.ingredientReference);
 
@@ -137,7 +170,7 @@ export async function parseIngredientLine(
       }));
 
       logger.log(
-        `[PARSE_INGREDIENT_LINE] Main parser result: ${parsedSegments.length} segments`
+        `[PARSE_INGREDIENT_LINE] ${parserVersion} parser result: ${parsedSegments.length} segments`
       );
     }
 
@@ -153,6 +186,8 @@ export async function parseIngredientLine(
         parsedSegments,
         parseResult, // full parser JSON for later persistence
         rule: parseResult.rule,
+        usedCache,
+        parserVersion: usedCache ? "cached" : "v1", // or v2 if v1 failed
       },
     };
 

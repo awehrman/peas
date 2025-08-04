@@ -89,11 +89,14 @@ describe("saveInstruction", () => {
       ).toHaveBeenCalledWith({
         importId: "test-import-id",
         status: "PENDING",
-        message: "Instruction completed",
-        context: "instruction_completed",
-        indentLevel: 2,
+        message: "Processing 3/5 instructions",
+        context: "instruction_processing",
+        currentCount: 3,
+        totalCount: 5,
+        indentLevel: 1,
         metadata: {
           totalInstructions: 5,
+          completedInstructions: 3,
           lineIndex: 0,
         },
       });
@@ -197,11 +200,14 @@ describe("saveInstruction", () => {
       ).toHaveBeenCalledWith({
         importId: undefined,
         status: "PENDING",
-        message: "Instruction completed",
-        context: "instruction_completed",
-        indentLevel: 2,
+        message: "Processing 3/5 instructions",
+        context: "instruction_processing",
+        currentCount: 3,
+        totalCount: 5,
+        indentLevel: 1,
         metadata: {
           totalInstructions: 5,
+          completedInstructions: 3,
           lineIndex: 0,
         },
       });

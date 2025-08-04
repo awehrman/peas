@@ -19,7 +19,7 @@ export interface FileUploadProps {
 export function FileUpload({
   onFilesUpload,
   onFileUpload,
-  acceptedFileTypes = "HTML files and image folders",
+  acceptedFileTypes = "HTML files and individual image files",
   maxFileSize = "10MB",
   title = "Upload files",
   description = "or drag and drop",
@@ -80,6 +80,10 @@ export function FileUpload({
             </Button>
           }
         />
+        <div className="mt-4 text-sm text-gray-600">
+          <p><strong>Note:</strong> For image files, please select individual image files rather than folders.</p>
+          <p>Supported formats: HTML files (.html, .htm) and image files (.jpg, .jpeg, .png, .gif, .webp, .bmp)</p>
+        </div>
         <input
           id="file-upload"
           name="file-upload"

@@ -43,11 +43,14 @@ export async function saveInstruction(
       await statusBroadcaster.addStatusEventAndBroadcast({
         importId: data.importId,
         status: "PENDING",
-        message: "Instruction completed",
-        context: "instruction_completed",
-        indentLevel: 2,
+        message: `Processing ${completionStatus.completedInstructions}/${completionStatus.totalInstructions} instructions`,
+        context: "instruction_processing",
+        currentCount: completionStatus.completedInstructions,
+        totalCount: completionStatus.totalInstructions,
+        indentLevel: 1,
         metadata: {
           totalInstructions: completionStatus.totalInstructions,
+          completedInstructions: completionStatus.completedInstructions,
           lineIndex: data.lineIndex,
         },
       });

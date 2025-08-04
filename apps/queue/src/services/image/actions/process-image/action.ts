@@ -1,17 +1,38 @@
-import { BaseAction } from '../../../../workers/core/base-action';
-import type { ActionContext } from '../../../../workers/core/types';
-import { ActionName } from '../../../../types';
-import type { ImageProcessingData, ImageSaveData, ImageWorkerDependencies } from '../../../../workers/image/types';
-import { processImage } from './service';
+import { processImage } from "./service";
 
-export class ProcessImageAction extends BaseAction<ImageProcessingData, ImageWorkerDependencies, ImageSaveData> {
+import { ActionName } from "../../../../types";
+import { BaseAction } from "../../../../workers/core/base-action";
+import type { ActionContext } from "../../../../workers/core/types";
+import type {
+  ImageProcessingData,
+  ImageSaveData,
+  ImageWorkerDependencies,
+} from "../../../../workers/image/types";
+
+export class ProcessImageAction extends BaseAction<
+  ImageProcessingData,
+  ImageWorkerDependencies,
+  ImageSaveData
+> {
   name = ActionName.PROCESS_IMAGE;
 
   async execute(
     data: ImageProcessingData,
-    dependencies: ImageWorkerDependencies,
-    _context: ActionContext
+    deps: ImageWorkerDependencies,
+    context: ActionContext
   ): Promise<ImageSaveData> {
-    return processImage(data, dependencies.logger);
+    console.log(
+      `[PROCESS_IMAGE_ACTION] Starting execution for job ${context.jobId}`
+    );
+    console.log(`[PROCESS_IMAGE_ACTION] Input data:`, data);
+
+    const result = await processImage(data, deps.logger);
+
+    console.log(
+      `[PROCESS_IMAGE_ACTION] Processing completed for job ${context.jobId}`
+    );
+    console.log(`[PROCESS_IMAGE_ACTION] Result:`, result);
+
+    return result;
   }
-} 
+}

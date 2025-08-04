@@ -16,7 +16,7 @@ describe("parseHtml", () => {
 
   it("should parse HTML content and return structured data", async () => {
     const testData: NotePipelineData = {
-      content: "<html><body><h1>Test Recipe</h1></body></html>",
+      content: "<html><head><title>Test Recipe</title></head><body><en-note><h1>Test Recipe</h1><p>1 cup flour</p><p>2 eggs</p></en-note></body></html>",
       importId: "test-import-123",
       jobId: "test-job-123",
       noteId: "test-note-123",
@@ -28,9 +28,22 @@ describe("parseHtml", () => {
     expect(result).toEqual({
       ...testData,
       file: {
-        title: "Sample Recipe",
-        contents: testData.content,
-        ingredients: [],
+        title: "Test Recipe",
+        contents: "1 cup flour\n2 eggs",
+        ingredients: [
+          {
+            blockIndex: 0,
+            lineIndex: 0,
+            parseStatus: "PENDING",
+            reference: "1 cup flour",
+          },
+          {
+            blockIndex: 0,
+            lineIndex: 1,
+            parseStatus: "PENDING",
+            reference: "2 eggs",
+          },
+        ],
         instructions: [],
         evernoteMetadata: {
           source: undefined,

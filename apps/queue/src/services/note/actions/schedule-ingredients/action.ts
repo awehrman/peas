@@ -45,11 +45,29 @@ export class ScheduleIngredientsAction extends BaseAction<
       serviceCall: () => processIngredients(data, deps.logger, deps.queues),
       contextName: "SCHEDULE_INGREDIENTS",
       suppressDefaultBroadcast: true,
-      // startMessage: `Starting to process ingredients for note: ${data.noteId}`,
+      startMessage: `Starting to process ingredients for note: ${data.noteId}`,
       // Completion handled via per-ingredient progress events; no final broadcast
-      additionalBroadcasting: async () => {},
+      additionalBroadcasting: async () => {
+        // Add initial status broadcast showing 0/X ingredients
+        if (deps.statusBroadcaster && data.file?.ingredients) {
+          await deps.statusBroadcaster.addStatusEventAndBroadcast({
+            importId: data.importId || "",
+            noteId: data.noteId,
+            status: "PENDING",
+            message: `Processing 0/${data.file.ingredients.length} ingredients`,
+            context: "ingredient_processing",
+            currentCount: 0,
+            totalCount: data.file.ingredients.length,
+            indentLevel: 1,
+            metadata: {
+              totalIngredients: data.file.ingredients.length,
+              currentIngredients: 0,
+            },
+          });
+        }
+      },
     });
   }
 }
 
-export { processIngredients }; 
+export { processIngredients };

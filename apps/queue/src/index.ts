@@ -91,9 +91,19 @@ async function initializeApp() {
   app.use((req, res, next) => {
     const startTime = Date.now();
 
+    // Add comprehensive request logging
+    console.log(`[EXPRESS] ${req.method} ${req.path} - Request received`);
+    console.log(`[EXPRESS] Headers:`, req.headers);
+    console.log(`[EXPRESS] Content-Type: ${req.get("Content-Type")}`);
+    console.log(`[EXPRESS] Content-Length: ${req.get("Content-Length")}`);
+
     res.on("finish", () => {
       const duration = Date.now() - startTime;
       const status = res.statusCode;
+
+      console.log(
+        `[EXPRESS] ${req.method} ${req.path} - ${status} (${duration}ms)`
+      );
 
       if (status >= 400) {
         serviceContainer.logger.log(

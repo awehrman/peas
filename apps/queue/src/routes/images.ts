@@ -33,19 +33,40 @@ export const imagesRouter = express.Router();
 imagesRouter.post(
   "/",
   (req: Request, res: Response, next: NextFunction) => {
+    console.log("[IMAGES_ROUTE] Starting image upload middleware");
     // @ts-expect-error - Multer/Express type compatibility issue
     upload.array("images", 10)(req, res, (err) => {
       if (err) {
+        console.error("[IMAGES_ROUTE] Multer error:", err);
         return res.status(HttpStatus.BAD_REQUEST).json({ error: err.message });
       }
+      console.log("[IMAGES_ROUTE] Multer middleware completed successfully");
       next();
     });
   },
   async (req: Request, res: Response) => {
+    console.log("[IMAGES_ROUTE] Processing image upload request");
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const files = (req as any).files as any[];
+      console.log(`[IMAGES_ROUTE] Received ${files?.length || 0} files`);
+      
+      // Also check for directories and other files
+      const formData = req.body;
+      console.log("[IMAGES_ROUTE] Form data:", formData);
+      
       if (!files || files.length === 0) {
+        console.log("[IMAGES_ROUTE] No files uploaded");
+        
+        // Check if directories were sent
+        if (formData.directories) {
+          console.log("[IMAGES_ROUTE] Directories detected:", formData.directories);
+          return res.status(HttpStatus.BAD_REQUEST).json({ 
+            error: "Directories cannot be processed directly. Please select individual image files from the directory.",
+            directories: formData.directories
+          });
+        }
+        
         return res
           .status(HttpStatus.BAD_REQUEST)
           .json({ error: "No images uploaded" });
@@ -54,6 +75,7 @@ imagesRouter.post(
       const serviceContainer = req.app.locals
         .serviceContainer as IServiceContainer;
       if (!serviceContainer) {
+        console.error("[IMAGES_ROUTE] Service container not available");
         return res
           .status(HttpStatus.INTERNAL_SERVER_ERROR)
           .json({ error: "Service container not available" });
@@ -61,24 +83,49 @@ imagesRouter.post(
 
       const imageQueue = serviceContainer.queues.imageQueue;
       if (!imageQueue) {
+        console.error("[IMAGES_ROUTE] Image queue not available");
         return res
           .status(HttpStatus.INTERNAL_SERVER_ERROR)
           .json({ error: "Image queue not available" });
       }
 
+      console.log("[IMAGES_ROUTE] Image queue found, processing files");
       const results = [];
 
       for (const file of files) {
+        console.log(`[IMAGES_ROUTE] Processing file: ${file.originalname} -> ${file.filename}`);
+        
+        // Check if this is actually an image file
+        const isImage = file.mimetype.startsWith('image/') || 
+                       /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(file.originalname);
+        
+        if (!isImage) {
+          console.log(`[IMAGES_ROUTE] Skipping non-image file: ${file.originalname}`);
+          results.push({
+            originalName: file.originalname,
+            filename: file.filename,
+            status: "skipped",
+            reason: "Not an image file"
+          });
+          continue;
+        }
+        
         const importId = `import-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-        // Add image processing job to queue
-        await imageQueue.add(ActionName.PROCESS_IMAGE, {
+        const jobData = {
           noteId: `note-${importId}`, // This will be updated when the note is created
           importId,
           imagePath: file.path,
           outputDir: path.join(process.cwd(), "uploads", "processed"),
           filename: file.filename,
-        });
+        };
+
+        console.log(`[IMAGES_ROUTE] Adding job to image queue with data:`, jobData);
+
+        // Add image processing job to queue
+        await imageQueue.add(ActionName.PROCESS_IMAGE, jobData);
+
+        console.log(`[IMAGES_ROUTE] Job added to queue for file: ${file.originalname}`);
 
         results.push({
           originalName: file.originalname,
@@ -88,12 +135,13 @@ imagesRouter.post(
         });
       }
 
+      console.log(`[IMAGES_ROUTE] Successfully processed ${files.length} image(s)`);
       res.status(HttpStatus.OK).json({
         message: `${files.length} image(s) uploaded and queued for processing`,
         results,
       });
     } catch (error) {
-      console.error("Image upload error:", error);
+      console.error("[IMAGES_ROUTE] Image upload error:", error);
       res
         .status(HttpStatus.INTERNAL_SERVER_ERROR)
         .json({ error: "Failed to upload images" });

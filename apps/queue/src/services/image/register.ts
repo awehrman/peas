@@ -24,9 +24,16 @@ export function registerImageActions(
     ImageSaveData
   >
 ): void {
+  console.log("[IMAGE_SERVICE_REGISTER] Starting image action registration");
+  console.log("[IMAGE_SERVICE_REGISTER] Factory available:", !!factory);
+  
   if (!factory || typeof factory !== "object") {
+    console.error("[IMAGE_SERVICE_REGISTER] Invalid factory provided");
     throw new Error("Invalid factory");
   }
+  
+  console.log("[IMAGE_SERVICE_REGISTER] Registering actions with factory");
+  
   registerActions(factory, [
     createActionRegistration<
       ImageProcessingData,
@@ -44,4 +51,6 @@ export function registerImageActions(
       ImageSaveData
     >(ActionName.IMAGE_COMPLETED_STATUS, ImageCompletedStatusAction),
   ]);
+  
+  console.log("[IMAGE_SERVICE_REGISTER] Image actions registered successfully");
 } 
