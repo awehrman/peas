@@ -1,0 +1,1 @@
+export { registerImageActions } from "./register"; 

@@ -8,6 +8,19 @@ import type {
 export type NoteWithParsedLines = {
   id: string;
   title: string | null;
+  images?: {
+    id: string;
+    originalImageUrl: string;
+    thumbnailImageUrl?: string | null;
+    crop3x2ImageUrl?: string | null;
+    crop4x3ImageUrl?: string | null;
+    crop16x9ImageUrl?: string | null;
+    originalWidth?: number | null;
+    originalHeight?: number | null;
+    originalSize?: number | null;
+    originalFormat?: string | null;
+    processingStatus: string;
+  }[];
   parsedIngredientLines: {
     id: string;
     reference: string;
@@ -217,6 +230,21 @@ export async function createNote(
       select: {
         id: true,
         title: true,
+        images: {
+          select: {
+            id: true,
+            originalImageUrl: true,
+            thumbnailImageUrl: true,
+            crop3x2ImageUrl: true,
+            crop4x3ImageUrl: true,
+            crop16x9ImageUrl: true,
+            originalWidth: true,
+            originalHeight: true,
+            originalSize: true,
+            originalFormat: true,
+            processingStatus: true,
+          },
+        },
         parsedIngredientLines: {
           select: {
             id: true,
@@ -322,6 +350,42 @@ export async function createNoteWithEvernoteMetadata(
     return response;
   } catch (error) {
     console.log({ error });
+    throw error;
+  }
+}
+
+export async function updateNote(
+  noteId: string,
+  data: {
+    title?: string;
+    html?: string;
+    originalImageUrl?: string;
+    croppedImageUrl?: string;
+    thumbnailImageUrl?: string;
+    status?: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED" | "DUPLICATE";
+    totalIngredientLines?: number;
+    totalInstructionLines?: number;
+    parsingErrorCount?: number;
+    errorMessage?: string;
+    errorCode?:
+      | "HTML_PARSE_ERROR"
+      | "INGREDIENT_PARSE_ERROR"
+      | "INSTRUCTION_PARSE_ERROR"
+      | "QUEUE_JOB_FAILED"
+      | "IMAGE_UPLOAD_FAILED"
+      | "UNKNOWN_ERROR";
+    errorDetails?: any;
+    duplicateConfidence?: number;
+    titleSimHash?: string;
+  }
+): Promise<void> {
+  try {
+    await prisma.note.update({
+      where: { id: noteId },
+      data,
+    });
+  } catch (error) {
+    console.error(`Failed to update note ${noteId}:`, error);
     throw error;
   }
 }

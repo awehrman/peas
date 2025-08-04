@@ -8,12 +8,13 @@ import type { IngredientWorker } from "../ingredient/worker";
 import type { InstructionWorker } from "../instruction/worker";
 import type { NoteWorker } from "../note/worker";
 import type { BaseJobData, BaseWorkerDependencies } from "../types";
+import type { ImageWorker } from "../image/worker";
 
 /**
  * Union type of all concrete worker types in the system.
  * Extend this as you add more workers.
  */
-export type AllWorkers = NoteWorker | InstructionWorker | IngredientWorker; // | ImageWorker | ...
+export type AllWorkers = NoteWorker | InstructionWorker | IngredientWorker | ImageWorker;
 
 /**
  * Worker factory function type

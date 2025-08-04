@@ -25,6 +25,10 @@ vi.mock("../performance", () => ({
   performanceRouter: vi.fn(),
 }));
 
+vi.mock("../images", () => ({
+  imagesRouter: vi.fn(),
+}));
+
 describe("Routes Index", () => {
   it("should export all router modules", async () => {
     // Import the index module
@@ -37,14 +41,15 @@ describe("Routes Index", () => {
     expect(routesIndex).toHaveProperty("metricsRouter");
     expect(routesIndex).toHaveProperty("cacheRouter");
     expect(routesIndex).toHaveProperty("performanceRouter");
+    expect(routesIndex).toHaveProperty("imagesRouter");
   });
 
-  it("should export exactly 6 router modules", async () => {
+  it("should export exactly 7 router modules", async () => {
     const routesIndex = await import("../index");
 
     // Count the number of exports
     const exportCount = Object.keys(routesIndex).length;
-    expect(exportCount).toBe(6);
+    expect(exportCount).toBe(7);
   });
 
   it("should export importRouter from import module", async () => {
@@ -93,6 +98,13 @@ describe("Routes Index", () => {
     expect(performanceRouter).toBe(originalPerformanceRouter);
   });
 
+  it("should export imagesRouter from images module", async () => {
+    const { imagesRouter } = await import("../index");
+    const { imagesRouter: originalImagesRouter } = await import("../images");
+
+    expect(imagesRouter).toBe(originalImagesRouter);
+  });
+
   it("should not export any unexpected properties", async () => {
     const routesIndex = await import("../index");
 
@@ -107,6 +119,7 @@ describe("Routes Index", () => {
       "metricsRouter",
       "cacheRouter",
       "performanceRouter",
+      "imagesRouter",
     ];
 
     // Verify all properties are expected

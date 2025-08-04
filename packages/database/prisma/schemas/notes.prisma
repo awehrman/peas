@@ -36,11 +36,12 @@ model EvernoteMetadata {
   updatedAt DateTime @updatedAt
 }
 
+
+
 model Note {
   id                  String    @id @default(cuid())
   title               String?
   html                String @db.Text // For large HTML content
-  imageUrl            String?
   status              NoteStatus @default(PENDING)
 
   evernoteMetadataId String? @unique
@@ -54,6 +55,7 @@ model Note {
   parsedInstructionLines ParsedInstructionLine[]
   queueJobs QueueJob[]
   statusEvents NoteStatusEvent[]
+  images Image[] // Relation to images
 
   errorMessage String?
   errorCode ErrorCode?

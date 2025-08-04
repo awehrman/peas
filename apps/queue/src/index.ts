@@ -2,6 +2,7 @@ import { SECURITY_CONSTANTS, SERVER_DEFAULTS } from "./config";
 import {
   cacheRouter,
   healthEnhancedRouter,
+  imagesRouter,
   importRouter,
   metricsRouter,
   notesRouter,
@@ -175,8 +176,8 @@ async function initializeApp() {
     createBullBoard({
       queues: [
         new BullMQAdapter(serviceContainer.queues.noteQueue),
+        new BullMQAdapter(serviceContainer.queues.imageQueue),
         // TODO: Add back other queues as needed
-        // new BullMQAdapter(serviceContainer.queues.imageQueue),
         // new BullMQAdapter(serviceContainer.queues.ingredientQueue),
         // new BullMQAdapter(serviceContainer.queues.instructionQueue),
         // new BullMQAdapter(serviceContainer.queues.categorizationQueue),
@@ -212,6 +213,7 @@ initializeApp()
     // Routes
     app.use("/import", importRouter);
     app.use("/notes", notesRouter);
+    app.use("/images", imagesRouter);
     app.use("/health", healthEnhancedRouter); // Enhanced health endpoints
     // Test routes removed - use health endpoints for testing
     app.use("/metrics", metricsRouter);

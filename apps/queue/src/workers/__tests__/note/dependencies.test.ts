@@ -210,8 +210,7 @@ describe("buildNoteWorkerDependencies", () => {
 
         expect(parseHtmlFile).toHaveBeenCalledWith(
           testData,
-          mockBaseDeps.logger,
-          expect.any(Function) // parseHTMLContent function
+          mockBaseDeps.logger
         );
         expect(parseHtmlFile).toHaveBeenCalledTimes(1);
         expect(result).toEqual(createMockNoteData());
@@ -227,8 +226,7 @@ describe("buildNoteWorkerDependencies", () => {
         );
         expect(parseHtmlFile).toHaveBeenCalledWith(
           testData,
-          mockBaseDeps.logger,
-          expect.any(Function) // parseHTMLContent function
+          mockBaseDeps.logger
         );
       });
 
@@ -249,8 +247,7 @@ describe("buildNoteWorkerDependencies", () => {
 
         expect(parseHtmlFile).toHaveBeenCalledWith(
           testData,
-          mockBaseDeps.logger,
-          expect.any(Function) // parseHTMLContent function
+          mockBaseDeps.logger
         );
       });
 
@@ -264,8 +261,7 @@ describe("buildNoteWorkerDependencies", () => {
 
         expect(parseHtmlFile).toHaveBeenCalledWith(
           testData,
-          mockBaseDeps.logger,
-          expect.any(Function) // parseHTMLContent function
+          mockBaseDeps.logger
         );
         expect(result).toEqual(mockResult);
       });

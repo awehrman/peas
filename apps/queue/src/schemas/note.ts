@@ -45,13 +45,20 @@ export const ParsedHtmlFileSchema = z.object({
   contents: z.string().min(1, "Contents are required"),
   ingredients: z.array(z.custom<ParsedIngredientLine>()).default([]),
   instructions: z.array(z.custom<ParsedInstructionLine>()).default([]),
-  image: z.string().optional(),
   images: z
     .array(
       z.object({
-        src: z.string(),
-        width: z.string().optional(),
-        dataResourceHash: z.string().optional(),
+        id: z.string(),
+        originalImageUrl: z.string(),
+        thumbnailImageUrl: z.string().optional(),
+        crop3x2ImageUrl: z.string().optional(),
+        crop4x3ImageUrl: z.string().optional(),
+        crop16x9ImageUrl: z.string().optional(),
+        originalWidth: z.number().optional(),
+        originalHeight: z.number().optional(),
+        originalSize: z.number().optional(),
+        originalFormat: z.string().optional(),
+        processingStatus: z.string(),
       })
     )
     .optional(),

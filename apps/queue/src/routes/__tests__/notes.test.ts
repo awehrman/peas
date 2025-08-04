@@ -74,6 +74,7 @@ describe("Notes Router", () => {
         ActionName.PARSE_HTML,
         {
           content: testContent,
+          imageFiles: [],
           importId: "test-uuid-12345",
         }
       );
@@ -273,6 +274,7 @@ describe("Notes Router", () => {
         ActionName.PARSE_HTML,
         {
           content: longContent,
+          imageFiles: [],
           importId: "test-uuid-12345",
         }
       );
@@ -295,6 +297,7 @@ describe("Notes Router", () => {
         ActionName.PARSE_HTML,
         {
           content: htmlContent,
+          imageFiles: [],
           importId: "test-uuid-12345",
         }
       );
@@ -317,6 +320,7 @@ describe("Notes Router", () => {
         ActionName.PARSE_HTML,
         {
           content: unicodeContent,
+          imageFiles: [],
           importId: "test-uuid-12345",
         }
       );

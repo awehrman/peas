@@ -172,7 +172,23 @@ export const ImageJobDataSchema = z.object({
     ingredients: z.array(z.any()).optional(),
     instructions: z.array(z.any()).optional(),
     source: z.string().url("Invalid source URL").optional(),
-    image: z.string().optional(),
+    images: z
+      .array(
+        z.object({
+          id: z.string(),
+          originalImageUrl: z.string(),
+          thumbnailImageUrl: z.string().optional(),
+          crop3x2ImageUrl: z.string().optional(),
+          crop4x3ImageUrl: z.string().optional(),
+          crop16x9ImageUrl: z.string().optional(),
+          originalWidth: z.number().optional(),
+          originalHeight: z.number().optional(),
+          originalSize: z.number().optional(),
+          originalFormat: z.string().optional(),
+          processingStatus: z.string(),
+        })
+      )
+      .optional(),
   }),
 });
 
@@ -181,7 +197,6 @@ export const IngredientJobDataSchema = z.object({
     id: z.string().uuid("Invalid note ID"),
     title: z.string().optional(),
     html: z.string().min(1),
-    imageUrl: z.string().url("Invalid image URL").optional(),
     status: z.enum(["PENDING", "PROCESSING", "COMPLETED", "FAILED"]),
     createdAt: z.date(),
     updatedAt: z.date(),
@@ -193,7 +208,6 @@ export const InstructionJobDataSchema = z.object({
     id: z.string().uuid("Invalid note ID"),
     title: z.string().optional(),
     html: z.string().min(1),
-    imageUrl: z.string().url("Invalid image URL").optional(),
     status: z.enum(["PENDING", "PROCESSING", "COMPLETED", "FAILED"]),
     createdAt: z.date(),
     updatedAt: z.date(),
@@ -209,7 +223,23 @@ export const CategorizationJobDataSchema = z.object({
     ingredients: z.array(z.any()).optional(),
     instructions: z.array(z.any()).optional(),
     source: z.string().url("Invalid source URL").optional(),
-    image: z.string().optional(),
+    images: z
+      .array(
+        z.object({
+          id: z.string(),
+          originalImageUrl: z.string(),
+          thumbnailImageUrl: z.string().optional(),
+          crop3x2ImageUrl: z.string().optional(),
+          crop4x3ImageUrl: z.string().optional(),
+          crop16x9ImageUrl: z.string().optional(),
+          originalWidth: z.number().optional(),
+          originalHeight: z.number().optional(),
+          originalSize: z.number().optional(),
+          originalFormat: z.string().optional(),
+          processingStatus: z.string(),
+        })
+      )
+      .optional(),
   }),
 });
 

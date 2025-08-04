@@ -30,3 +30,6 @@ export {
   type IQueueService as QueueServiceInterface,
 } from "./register-queues";
 export { EnhancedLoggerService } from "../utils/logger";
+
+// Action services
+export { registerImageActions } from "./image";

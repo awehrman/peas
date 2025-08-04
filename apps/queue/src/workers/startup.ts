@@ -1,6 +1,7 @@
 import { createIngredientWorker } from "./ingredient";
 import { createInstructionWorker } from "./instruction";
 import { createNoteWorker } from "./note";
+import { createImageWorker } from "./image/factory";
 
 import { Queue } from "bullmq";
 
@@ -25,6 +26,7 @@ export function startWorkers(
     noteQueue: Queue;
     instructionQueue: Queue;
     ingredientQueue: Queue;
+    imageQueue: Queue;
     // TODO more queues here
   },
   serviceContainer: IServiceContainer
@@ -45,6 +47,11 @@ export function startWorkers(
       createIngredientWorker,
       queues.ingredientQueue
     ),
+    createWorkerConfig(
+      WORKER_CONSTANTS.NAMES.IMAGE,
+      createImageWorker,
+      queues.imageQueue
+    ),
     // TODO more workers here
   ];
 
@@ -54,6 +61,7 @@ export function startWorkers(
   queueMonitor.startMonitoring(queues.noteQueue);
   queueMonitor.startMonitoring(queues.instructionQueue);
   queueMonitor.startMonitoring(queues.ingredientQueue);
+  queueMonitor.startMonitoring(queues.imageQueue);
   // TODO: Add monitoring for additional queues as they're implemented
 
   // Store workers for graceful shutdown
@@ -61,6 +69,7 @@ export function startWorkers(
     noteWorker: workers[WORKER_CONSTANTS.NAMES.NOTE],
     instructionWorker: workers[WORKER_CONSTANTS.NAMES.INSTRUCTION],
     ingredientWorker: workers[WORKER_CONSTANTS.NAMES.INGREDIENT],
+    imageWorker: workers[WORKER_CONSTANTS.NAMES.IMAGE],
     // TODO more workers here
   } as WorkerRegistry<FlexibleWorker>;
 

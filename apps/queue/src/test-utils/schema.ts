@@ -681,11 +681,18 @@ export function createTestParsedHtmlFile(
       lineIndex: number;
       parseStatus?: "PENDING" | "CORRECT" | "INCORRECT" | "ERROR";
     }>;
-    image: string;
     images: Array<{
-      src: string;
-      width: string;
-      dataResourceHash: string;
+      id: string;
+      originalImageUrl: string;
+      thumbnailImageUrl?: string;
+      crop3x2ImageUrl?: string;
+      crop4x3ImageUrl?: string;
+      crop16x9ImageUrl?: string;
+      originalWidth?: number;
+      originalHeight?: number;
+      originalSize?: number;
+      originalFormat?: string;
+      processingStatus: string;
     }>;
     evernoteMetadata: {
       originalCreatedAt?: Date;
@@ -712,13 +719,11 @@ export function createTestParsedHtmlFile(
         parseStatus: "CORRECT" as const,
       },
     ],
-    image:
-      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
     images: [
       {
-        src: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
-        width: "100",
-        dataResourceHash: "hash123",
+        id: "test-image-id",
+        originalImageUrl: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+        processingStatus: "COMPLETED",
       },
     ],
     evernoteMetadata: {

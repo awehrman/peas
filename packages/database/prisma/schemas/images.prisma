@@ -1,0 +1,35 @@
+// Images module
+// Contains image processing and storage
+
+model Image {
+  id String @id @default(cuid())
+  
+  // Original uploaded image
+  originalImageUrl String
+  
+  // Different aspect ratio crops
+  thumbnailImageUrl String? // 1:1 square thumbnail
+  crop3x2ImageUrl String? // 3:2 aspect ratio crop
+  crop4x3ImageUrl String? // 4:3 aspect ratio crop
+  crop16x9ImageUrl String? // 16:9 aspect ratio crop
+  
+  // Metadata
+  originalWidth Int?
+  originalHeight Int?
+  originalSize Int? // File size in bytes
+  originalFormat String? // jpg, png, etc.
+  
+  // Processing status
+  processingStatus String @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
+  processingError String?
+  
+  // Relations
+  note Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  noteId String
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([noteId])
+  @@index([processingStatus])
+} 

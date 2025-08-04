@@ -151,6 +151,7 @@ export interface IServiceContainer {
   config: IConfigService;
   _workers?: {
     noteWorker?: Worker;
+    imageWorker?: Worker;
   };
   close(): Promise<void>;
 }
@@ -172,6 +173,7 @@ export class ServiceContainer implements IServiceContainer {
   public database!: IDatabaseService;
   public _workers?: {
     noteWorker?: Worker;
+    imageWorker?: Worker;
   };
 
   private constructor() {

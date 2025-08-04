@@ -6,8 +6,18 @@ import { ActionName, HttpStatus } from "../types";
 
 export const notesRouter = Router();
 
+interface NoteRequestBody {
+  content: string;
+  imageFiles?: Array<{
+    name: string;
+    type: string;
+    size: number;
+  }>;
+}
+
 notesRouter.post("/", async (req: Request, res: Response) => {
-  const { content } = req.body;
+  const { content, imageFiles } = req.body as NoteRequestBody;
+  
   if (typeof content !== "string" || content.trim() === "") {
     res
       .status(HttpStatus.BAD_REQUEST)
@@ -24,6 +34,8 @@ notesRouter.post("/", async (req: Request, res: Response) => {
   await noteQueue.add(ActionName.PARSE_HTML, {
     content,
     importId,
+    imageFiles: imageFiles || [],
   });
+  
   res.json({ queued: true, importId });
 });

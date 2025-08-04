@@ -2445,6 +2445,7 @@ __metadata:
     "@types/find-up": "npm:^4.0.2"
     "@types/multer": "npm:1"
     "@types/pluralize": "npm:^0.0.33"
+    "@types/sharp": "npm:^0.32.0"
     "@types/supertest": "npm:^6.0.3"
     "@types/ws": "npm:^8.5.10"
     "@vitest/coverage-istanbul": "npm:3.2.4"
@@ -2461,6 +2462,7 @@ __metadata:
     multer: "npm:^2.0.2"
     pluralize: "npm:^8.0.0"
     redis: "npm:^5.6.0"
+    sharp: "npm:^0.34.3"
     simhash-js: "npm:^1.0.0"
     supertest: "npm:^7.1.4"
     ts-node: "npm:^10.9.2"
@@ -5129,6 +5131,15 @@ __metadata:
     "@types/node": "npm:*"
     "@types/send": "npm:*"
   checksum: 10c0/26ec864d3a626ea627f8b09c122b623499d2221bbf2f470127f4c9ebfe92bd8a6bb5157001372d4c4bd0dd37a1691620217d9dc4df5aa8f779f3fd996b1c60ae
+  languageName: node
+  linkType: hard
+
+"@types/sharp@npm:^0.32.0":
+  version: 0.32.0
+  resolution: "@types/sharp@npm:0.32.0"
+  dependencies:
+    sharp: "npm:*"
+  checksum: 10c0/a101c5bf17220b51e339164fabf779993e1757fcae1610f2647d36a24d7f15bf857fd747ec559b8fef667c9ea38caab09dc3ba4d49095fef2a06e5ae1819e639
   languageName: node
   linkType: hard
 
@@ -13011,7 +13022,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"sharp@npm:^0.34.3":
+"sharp@npm:*, sharp@npm:^0.34.3":
   version: 0.34.3
   resolution: "sharp@npm:0.34.3"
   dependencies:

@@ -39,7 +39,13 @@ describe("saveNote", () => {
           { reference: "Step 1", lineIndex: 0 },
           { reference: "Step 2", lineIndex: 1 },
         ],
-        image: "recipe-image.jpg",
+        images: [
+          {
+            id: "test-image-id",
+            originalImageUrl: "recipe-image.jpg",
+            processingStatus: "COMPLETED",
+          },
+        ],
         evernoteMetadata: {
           source: "https://example.com/recipe",
           originalCreatedAt: new Date("2023-01-01"),

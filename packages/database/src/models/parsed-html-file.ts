@@ -18,7 +18,19 @@ export type ParsedHTMLFile = {
   contents: string;
   ingredients: ParsedIngredientLine[];
   instructions: ParsedInstructionLine[];
-  image?: string;
+  images?: Array<{
+    id: string;
+    originalImageUrl: string;
+    thumbnailImageUrl?: string;
+    crop3x2ImageUrl?: string;
+    crop4x3ImageUrl?: string;
+    crop16x9ImageUrl?: string;
+    originalWidth?: number;
+    originalHeight?: number;
+    originalSize?: number;
+    originalFormat?: string;
+    processingStatus: string;
+  }>;
   evernoteMetadata?: {
     originalCreatedAt?: Date;
     source?: string;

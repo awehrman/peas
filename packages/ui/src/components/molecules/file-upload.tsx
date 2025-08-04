@@ -5,28 +5,36 @@ import { Upload } from "lucide-react";
 import { Button } from "../ui/button";
 
 export interface FileUploadProps {
-  onFileUpload?: (file: File) => void;
+  onFilesUpload?: (files: File[]) => void;
+  onFileUpload?: (file: File) => void; // Keep for backward compatibility
   acceptedFileTypes?: string;
   maxFileSize?: string;
   title?: string;
   description?: string;
   className?: string;
   disabled?: boolean;
+  multiple?: boolean;
 }
 
 export function FileUpload({
+  onFilesUpload,
   onFileUpload,
-  acceptedFileTypes = "HTML",
+  acceptedFileTypes = "HTML files and image folders",
   maxFileSize = "10MB",
-  title = "Upload file",
+  title = "Upload files",
   description = "or drag and drop",
   className = "",
   disabled = false,
+  multiple = true,
 }: FileUploadProps) {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file && onFileUpload) {
-      onFileUpload(file);
+    const files = Array.from(event.target.files || []);
+    if (files.length > 0) {
+      if (onFilesUpload && multiple) {
+        onFilesUpload(files);
+      } else if (onFileUpload && files.length === 1) {
+        onFileUpload(files[0]!);
+      }
     }
   };
 
@@ -36,9 +44,14 @@ export function FileUpload({
 
   const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
-    const file = event.dataTransfer.files?.[0];
-    if (file && onFileUpload) {
-      onFileUpload(file);
+    const files = Array.from(event.dataTransfer.files || []);
+    
+    if (files.length > 0) {
+      if (onFilesUpload && multiple) {
+        onFilesUpload(files);
+      } else if (onFileUpload && files.length === 1) {
+        onFileUpload(files[0]!);
+      }
     }
   };
 
@@ -63,7 +76,7 @@ export function FileUpload({
               onClick={() => document.getElementById("file-upload")?.click()}
               disabled={disabled}
             >
-              Choose a file
+              Choose files
             </Button>
           }
         />
@@ -74,6 +87,8 @@ export function FileUpload({
           className="sr-only"
           onChange={handleFileChange}
           disabled={disabled}
+          multiple={multiple}
+          accept=".html,.htm,image/*"
         />
       </div>
     </div>

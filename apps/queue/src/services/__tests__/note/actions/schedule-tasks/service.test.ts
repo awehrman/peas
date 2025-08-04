@@ -41,7 +41,13 @@ describe("scheduleAllFollowupTasks", () => {
           { reference: "Step 1", lineIndex: 0 },
           { reference: "Step 2", lineIndex: 1 },
         ],
-        image: "recipe-image.jpg",
+        images: [
+          {
+            id: "test-image-id",
+            originalImageUrl: "recipe-image.jpg",
+            processingStatus: "COMPLETED",
+          },
+        ],
         evernoteMetadata: {
           source: "https://example.com/recipe",
           originalCreatedAt: new Date("2023-01-01"),
@@ -365,7 +371,9 @@ describe("scheduleAllFollowupTasks", () => {
     it("should handle null or undefined deps", async () => {
       await expect(
         scheduleAllFollowupTasks(mockData, mockLogger, null as any)
-      ).rejects.toThrow("No dependencies available for scheduling followup tasks");
+      ).rejects.toThrow(
+        "No dependencies available for scheduling followup tasks"
+      );
     });
 
     it("should handle logger without log method", async () => {

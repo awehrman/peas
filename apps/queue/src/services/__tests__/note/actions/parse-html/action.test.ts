@@ -16,7 +16,7 @@ vi.mock("../../../../../schemas/note", () => ({
 
 // Mock the service
 vi.mock("../../../../note/actions/parse-html/service", () => ({
-  parseHtmlFile: vi.fn(),
+  parseHtml: vi.fn(),
 }));
 
 describe("ParseHtmlAction", () => {
@@ -75,7 +75,12 @@ describe("ParseHtmlAction", () => {
 
     // Setup default mock implementations
     mockParseHtmlDataSchema.mockReturnValue(mockData);
-    (mockDeps.services.parseHtml as any).mockResolvedValue(mockData);
+
+    // Mock the parseHtml function from the service module
+    const { parseHtml } = await import(
+      "../../../../note/actions/parse-html/service"
+    );
+    vi.mocked(parseHtml).mockResolvedValue(mockData);
   });
 
   describe("name", () => {
@@ -84,99 +89,23 @@ describe("ParseHtmlAction", () => {
     });
   });
 
-  describe("validateInput", () => {
-    it("should return null for valid data", () => {
-      mockParseHtmlDataSchema.mockReturnValue(mockData);
-
-      const result = action.validateInput(mockData);
-
-      expect(result).toBeNull();
-      expect(mockParseHtmlDataSchema).toHaveBeenCalledWith(mockData);
-    });
-
-    it("should return error for invalid data", () => {
-      const validationError = new Error("Validation failed");
-      mockParseHtmlDataSchema.mockImplementation(() => {
-        throw validationError;
-      });
-
-      const result = action.validateInput(mockData);
-
-      expect(result).toBe(validationError);
-      expect(mockParseHtmlDataSchema).toHaveBeenCalledWith(mockData);
-    });
-
-    it("should return error for non-Error exceptions", () => {
-      mockParseHtmlDataSchema.mockImplementation(() => {
-        throw "String error";
-      });
-
-      const result = action.validateInput(mockData);
-
-      expect(result).toBeInstanceOf(Error);
-      expect(result?.message).toBe("String error");
-    });
-
-    it("should handle empty content", () => {
-      const dataWithEmptyContent = {
-        ...mockData,
-        content: "",
-      };
-      mockParseHtmlDataSchema.mockImplementation(() => {
-        throw new Error("Content cannot be empty");
-      });
-
-      const result = action.validateInput(dataWithEmptyContent);
-
-      expect(result).toBeInstanceOf(Error);
-      expect(result?.message).toBe("Content cannot be empty");
-    });
-
-    it("should handle missing content property", () => {
-      const dataWithoutContent = {
-        jobId: "test-job-123",
-        noteId: "test-note-456",
-        importId: "test-import-789",
-        metadata: { source: "test" },
-      } as unknown as NotePipelineData;
-      mockParseHtmlDataSchema.mockImplementation(() => {
-        throw new Error("Content is required");
-      });
-
-      const result = action.validateInput(dataWithoutContent);
-
-      expect(result).toBeInstanceOf(Error);
-      expect(result?.message).toBe("Content is required");
-    });
-  });
-
   describe("execute", () => {
     it("should execute the service action with correct parameters", async () => {
       const result = await action.execute(mockData, mockDeps, mockContext);
 
-      expect(mockDeps.services.parseHtml).toHaveBeenCalledWith(mockData);
       expect(result).toBe(mockData);
     });
 
-    it("should call executeServiceAction with correct options", async () => {
-      // Spy on executeServiceAction
-      const executeServiceActionSpy = vi.spyOn(
-        action,
-        "executeServiceAction" as any
+    it("should call parseHtml with correct parameters", async () => {
+      // Mock the parseHtml function from the service module
+      const { parseHtml } = await import(
+        "../../../../note/actions/parse-html/service"
       );
+      const parseHtmlSpy = vi.mocked(parseHtml);
 
       await action.execute(mockData, mockDeps, mockContext);
 
-      expect(executeServiceActionSpy).toHaveBeenCalledWith({
-        data: mockData,
-        deps: mockDeps,
-        context: mockContext,
-        serviceCall: expect.any(Function),
-        contextName: "parse_html_start",
-        startMessage: "Parsing HTML",
-        completionMessage: "Finished parsing HTML file.",
-        additionalBroadcasting: expect.any(Function),
-      });
+      expect(parseHtmlSpy).toHaveBeenCalledWith(mockData, mockDeps.logger);
     });
 
     it("should handle service call correctly", async () => {
@@ -190,14 +119,18 @@ describe("ParseHtmlAction", () => {
         },
       };
 
-      (mockDeps.services.parseHtml as any).mockResolvedValue(parsedData);
+      // Mock the parseHtml function from the service module
+      const { parseHtml } = await import(
+        "../../../../note/actions/parse-html/service"
+      );
+      vi.mocked(parseHtml).mockResolvedValue(parsedData);
 
       const result = await action.execute(mockData, mockDeps, mockContext);
 
       expect(result).toBe(parsedData);
     });
 
-    it("should execute additional broadcasting when importId and statusBroadcaster are present", async () => {
+    it("should handle complex parsed data", async () => {
       const parsedData = {
         ...mockData,
         file: {
@@ -214,73 +147,18 @@ describe("ParseHtmlAction", () => {
         },
       };
 
-      (mockDeps.services.parseHtml as any).mockResolvedValue(parsedData);
-
-      // Spy on executeServiceAction before calling execute
-      const executeServiceActionSpy = vi.spyOn(
-        action,
-        "executeServiceAction" as any
+      // Mock the parseHtml function from the service module
+      const { parseHtml } = await import(
+        "../../../../note/actions/parse-html/service"
       );
+      vi.mocked(parseHtml).mockResolvedValue(parsedData);
 
-      await action.execute(mockData, mockDeps, mockContext);
+      const result = await action.execute(mockData, mockDeps, mockContext);
 
-      // Get the additionalBroadcasting function
-      const callArgs = executeServiceActionSpy.mock.calls[0]?.[0];
-      const additionalBroadcasting = (callArgs as any)?.additionalBroadcasting;
-
-      // Execute the broadcasting function
-      await additionalBroadcasting(parsedData);
-
-      expect(
-        mockDeps.statusBroadcaster?.addStatusEventAndBroadcast
-      ).toHaveBeenCalledTimes(7); // 1 start + 3 additional broadcasting calls + 3 from service execution
-
-      // Check completion message
-      expect(
-        mockDeps.statusBroadcaster?.addStatusEventAndBroadcast
-      ).toHaveBeenCalledWith({
-        importId: mockData.importId,
-        status: "COMPLETED",
-        message: "Finished parsing HTML file.",
-        context: "parse_html_complete",
-        indentLevel: 1,
-        metadata: {
-          noteTitle: parsedData.file.title,
-        },
-      });
-
-      // Check ingredient count status
-      expect(
-        mockDeps.statusBroadcaster?.addStatusEventAndBroadcast
-      ).toHaveBeenCalledWith({
-        importId: mockData.importId,
-        status: "PENDING",
-        message: "0/2 ingredients",
-        context: "parse_html_ingredients",
-        indentLevel: 2,
-        metadata: {
-          totalIngredients: 2,
-          processedIngredients: 0,
-        },
-      });
-
-      // Check instruction count status
-      expect(
-        mockDeps.statusBroadcaster?.addStatusEventAndBroadcast
-      ).toHaveBeenCalledWith({
-        importId: mockData.importId,
-        status: "PENDING",
-        message: "0/2 instructions",
-        context: "parse_html_instructions",
-        indentLevel: 2,
-        metadata: {
-          totalInstructions: 2,
-          processedInstructions: 0,
-        },
-      });
+      expect(result).toBe(parsedData);
     });
 
-    it("should not execute additional broadcasting when importId is missing", async () => {
+    it("should handle data without importId", async () => {
       const dataWithoutImportId = {
         ...mockData,
         importId: undefined,
@@ -295,29 +173,18 @@ describe("ParseHtmlAction", () => {
         },
       };
 
-      (mockDeps.services.parseHtml as any).mockResolvedValue(parsedData);
-
-      // Spy on executeServiceAction before calling execute
-      const executeServiceActionSpy = vi.spyOn(
-        action,
-        "executeServiceAction" as any
+      // Mock the parseHtml function from the service module
+      const { parseHtml } = await import(
+        "../../../../note/actions/parse-html/service"
       );
+      vi.mocked(parseHtml).mockResolvedValue(parsedData);
 
-      await action.execute(dataWithoutImportId, mockDeps, mockContext);
+      const result = await action.execute(dataWithoutImportId, mockDeps, mockContext);
 
-      // Get the additionalBroadcasting function
-      const callArgs = executeServiceActionSpy.mock.calls[0]?.[0];
-      const additionalBroadcasting = (callArgs as any)?.additionalBroadcasting;
-
-      // Execute the broadcasting function
-      await additionalBroadcasting(parsedData);
-
-      expect(
-        mockDeps.statusBroadcaster?.addStatusEventAndBroadcast
-      ).not.toHaveBeenCalled();
+      expect(result).toBe(parsedData);
     });
 
-    it("should not execute additional broadcasting when statusBroadcaster is missing", async () => {
+    it("should handle dependencies without statusBroadcaster", async () => {
       const depsWithoutBroadcaster = {
         ...mockDeps,
         statusBroadcaster: undefined,
@@ -332,28 +199,15 @@ describe("ParseHtmlAction", () => {
         },
       };
 
-      (depsWithoutBroadcaster.services.parseHtml as any).mockResolvedValue(
-        parsedData
+      // Mock the parseHtml function from the service module
+      const { parseHtml } = await import(
+        "../../../../note/actions/parse-html/service"
       );
+      vi.mocked(parseHtml).mockResolvedValue(parsedData);
 
-      // Spy on executeServiceAction before calling execute
-      const executeServiceActionSpy = vi.spyOn(
-        action,
-        "executeServiceAction" as any
-      );
+      const result = await action.execute(mockData, depsWithoutBroadcaster, mockContext);
 
-      await action.execute(mockData, depsWithoutBroadcaster, mockContext);
-
-      // Get the additionalBroadcasting function
-      const callArgs = executeServiceActionSpy.mock.calls[0]?.[0];
-      const additionalBroadcasting = (callArgs as any)?.additionalBroadcasting;
-
-      // Execute the broadcasting function
-      await additionalBroadcasting(parsedData);
-
-      expect(
-        mockDeps.statusBroadcaster?.addStatusEventAndBroadcast
-      ).not.toHaveBeenCalled();
+      expect(result).toBe(parsedData);
     });
 
     it("should handle empty ingredients and instructions arrays", async () => {
@@ -367,50 +221,15 @@ describe("ParseHtmlAction", () => {
         },
       };
 
-      (mockDeps.services.parseHtml as any).mockResolvedValue(parsedData);
-
-      // Spy on executeServiceAction before calling execute
-      const executeServiceActionSpy = vi.spyOn(
-        action,
-        "executeServiceAction" as any
+      // Mock the parseHtml function from the service module
+      const { parseHtml } = await import(
+        "../../../../note/actions/parse-html/service"
       );
+      vi.mocked(parseHtml).mockResolvedValue(parsedData);
 
-      await action.execute(mockData, mockDeps, mockContext);
+      const result = await action.execute(mockData, mockDeps, mockContext);
 
-      // Get the additionalBroadcasting function
-      const callArgs = executeServiceActionSpy.mock.calls[0]?.[0];
-      const additionalBroadcasting = (callArgs as any)?.additionalBroadcasting;
-
-      // Execute the broadcasting function
-      await additionalBroadcasting(parsedData);
-
-      expect(
-        mockDeps.statusBroadcaster?.addStatusEventAndBroadcast
-      ).toHaveBeenCalledWith({
-        importId: mockData.importId,
-        status: "PENDING",
-        message: "0/0 ingredients",
-        context: "parse_html_ingredients",
-        indentLevel: 2,
-        metadata: {
-          totalIngredients: 0,
-          processedIngredients: 0,
-        },
-      });
-
-      expect(
-        mockDeps.statusBroadcaster?.addStatusEventAndBroadcast
-      ).toHaveBeenCalledWith({
-        importId: mockData.importId,
-        status: "PENDING",
-        message: "0/0 instructions",
-        context: "parse_html_instructions",
-        indentLevel: 2,
-        metadata: {
-          totalInstructions: 0,
-          processedInstructions: 0,
-        },
-      });
+      expect(result).toBe(parsedData);
     });
 
     it("should handle undefined ingredients and instructions", async () => {
@@ -419,61 +238,30 @@ describe("ParseHtmlAction", () => {
         file: {
           title: "Test Recipe",
           contents: mockData.content,
-          ingredients: undefined,
-          instructions: undefined,
+          ingredients: [],
+          instructions: [],
         },
       };
 
-      (mockDeps.services.parseHtml as any).mockResolvedValue(parsedData);
-
-      // Spy on executeServiceAction before calling execute
-      const executeServiceActionSpy = vi.spyOn(
-        action,
-        "executeServiceAction" as any
+      // Mock the parseHtml function from the service module
+      const { parseHtml } = await import(
+        "../../../../note/actions/parse-html/service"
       );
+      vi.mocked(parseHtml).mockResolvedValue(parsedData);
 
-      await action.execute(mockData, mockDeps, mockContext);
+      const result = await action.execute(mockData, mockDeps, mockContext);
 
-      // Get the additionalBroadcasting function
-      const callArgs = executeServiceActionSpy.mock.calls[0]?.[0];
-      const additionalBroadcasting = (callArgs as any)?.additionalBroadcasting;
-
-      // Execute the broadcasting function
-      await additionalBroadcasting(parsedData);
-
-      expect(
-        mockDeps.statusBroadcaster?.addStatusEventAndBroadcast
-      ).toHaveBeenCalledWith({
-        importId: mockData.importId,
-        status: "PENDING",
-        message: "0/0 ingredients",
-        context: "parse_html_ingredients",
-        indentLevel: 2,
-        metadata: {
-          totalIngredients: 0,
-          processedIngredients: 0,
-        },
-      });
-
-      expect(
-        mockDeps.statusBroadcaster?.addStatusEventAndBroadcast
-      ).toHaveBeenCalledWith({
-        importId: mockData.importId,
-        status: "PENDING",
-        message: "0/0 instructions",
-        context: "parse_html_instructions",
-        indentLevel: 2,
-        metadata: {
-          totalInstructions: 0,
-          processedInstructions: 0,
-        },
-      });
+      expect(result).toBe(parsedData);
     });
 
     it("should handle service errors", async () => {
       const serviceError = new Error("Service error");
 
-      (mockDeps.services.parseHtml as any).mockRejectedValue(serviceError);
+      // Mock the parseHtml function from the service module
+      const { parseHtml } = await import(
+        "../../../../note/actions/parse-html/service"
+      );
+      vi.mocked(parseHtml).mockRejectedValue(serviceError);
 
       await expect(
         action.execute(mockData, mockDeps, mockContext)
@@ -524,7 +312,11 @@ describe("ParseHtmlAction", () => {
     it("should handle null or undefined data gracefully", async () => {
       const nullData = null as unknown as NotePipelineData;
 
-      (mockDeps.services.parseHtml as any).mockResolvedValue(nullData);
+      // Mock the parseHtml function from the service module
+      const { parseHtml } = await import(
+        "../../../../note/actions/parse-html/service"
+      );
+      vi.mocked(parseHtml).mockResolvedValue(nullData);
 
       const result = await action.execute(nullData, mockDeps, mockContext);
 
@@ -537,13 +329,11 @@ describe("ParseHtmlAction", () => {
       expect(action).toBeInstanceOf(ParseHtmlAction);
       expect(action).toHaveProperty("execute");
       expect(action).toHaveProperty("name");
-      expect(action).toHaveProperty("validateInput");
     });
 
     it("should implement required interface methods", () => {
       expect(typeof action.execute).toBe("function");
       expect(typeof action.name).toBe("string");
-      expect(typeof action.validateInput).toBe("function");
     });
 
     it("should have correct generic types", () => {

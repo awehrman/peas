@@ -1,4 +1,3 @@
-import { parseHTMLContent } from "../../parsers/html";
 import type { IServiceContainer } from "../../services/container";
 import { cleanHtmlFile } from "../../services/note/actions/clean-html/action";
 import { parseHtmlFile } from "../../services/note/actions/parse-html/action";
@@ -18,7 +17,7 @@ export function buildNoteWorkerDependencies(
     ...baseDeps,
     services: {
       parseHtml: async (data: NotePipelineData) => {
-        return parseHtmlFile(data, baseDeps.logger, parseHTMLContent);
+        return parseHtmlFile(data, baseDeps.logger);
       },
       cleanHtml: async (data: NotePipelineData) =>
         cleanHtmlFile(data, baseDeps.logger),

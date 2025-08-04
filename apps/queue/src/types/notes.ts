@@ -36,7 +36,19 @@ export interface NoteWithParsedLines {
   title: string | null;
   content: string;
   html: string;
-  imageUrl?: string;
+  images?: Array<{
+    id: string;
+    originalImageUrl: string;
+    thumbnailImageUrl?: string;
+    crop3x2ImageUrl?: string;
+    crop4x3ImageUrl?: string;
+    crop16x9ImageUrl?: string;
+    originalWidth?: number;
+    originalHeight?: number;
+    originalSize?: number;
+    originalFormat?: string;
+    processingStatus: string;
+  }>;
   createdAt: Date;
   updatedAt: Date;
   parsedIngredientLines: Array<{

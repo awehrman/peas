@@ -131,6 +131,7 @@ describe("Worker Startup", () => {
           noteQueue: mockQueue,
           instructionQueue: mockQueue,
           ingredientQueue: mockQueue,
+          imageQueue: mockQueue,
         },
         mockServiceContainer
       );
@@ -143,6 +144,7 @@ describe("Worker Startup", () => {
       );
       expect(mockCreateWorkers).toHaveBeenCalledWith(
         [
+          { name: "test-config" },
           { name: "test-config" },
           { name: "test-config" },
           { name: "test-config" },
@@ -185,11 +187,12 @@ describe("Worker Startup", () => {
           noteQueue: mockQueue,
           instructionQueue: mockQueue,
           ingredientQueue: mockQueue,
+          imageQueue: mockQueue,
         },
         mockServiceContainer
       );
 
-      expect(mockCreateWorkerConfig).toHaveBeenCalledTimes(3);
+      expect(mockCreateWorkerConfig).toHaveBeenCalledTimes(4);
       expect(mockCreateWorkers).toHaveBeenCalledTimes(1);
       expect(result).toEqual(mockWorkers);
     });
@@ -217,6 +220,7 @@ describe("Worker Startup", () => {
           noteQueue: mockQueue,
           instructionQueue: mockQueue,
           ingredientQueue: mockQueue,
+          imageQueue: mockQueue,
         },
         mockServiceContainer
       );
@@ -248,6 +252,7 @@ describe("Worker Startup", () => {
           noteQueue: mockQueue,
           instructionQueue: mockQueue,
           ingredientQueue: mockQueue,
+          imageQueue: mockQueue,
         },
         mockServiceContainer
       );
@@ -275,6 +280,7 @@ describe("Worker Startup", () => {
           noteQueue: mockQueue,
           instructionQueue: mockQueue,
           ingredientQueue: mockQueue,
+          imageQueue: mockQueue,
         },
         mockServiceContainer
       );
@@ -300,6 +306,7 @@ describe("Worker Startup", () => {
             noteQueue: mockQueue,
             instructionQueue: mockQueue,
             ingredientQueue: mockQueue,
+            imageQueue: mockQueue,
           },
           mockServiceContainer
         );
@@ -331,6 +338,7 @@ describe("Worker Startup", () => {
             noteQueue: mockQueue,
             instructionQueue: mockQueue,
             ingredientQueue: mockQueue,
+            imageQueue: mockQueue,
           },
           mockServiceContainer
         );
@@ -364,6 +372,7 @@ describe("Worker Startup", () => {
             noteQueue: mockQueue,
             instructionQueue: mockQueue,
             ingredientQueue: mockQueue,
+            imageQueue: mockQueue,
           },
           mockServiceContainer
         );
@@ -390,6 +399,7 @@ describe("Worker Startup", () => {
           noteQueue: mockQueue,
           instructionQueue: mockQueue,
           ingredientQueue: mockQueue,
+          imageQueue: mockQueue,
         },
         mockServiceContainer
       );
@@ -422,6 +432,7 @@ describe("Worker Startup", () => {
           noteQueue: mockQueue,
           instructionQueue: mockQueue,
           ingredientQueue: mockQueue,
+          imageQueue: mockQueue,
         },
         mockServiceContainer
       );
@@ -445,6 +456,7 @@ describe("Worker Startup", () => {
           noteQueue: mockQueue,
           instructionQueue: mockQueue,
           ingredientQueue: mockQueue,
+          imageQueue: mockQueue,
         },
         mockServiceContainer
       );
@@ -491,6 +503,7 @@ describe("Worker Startup", () => {
           noteQueue: mockQueue,
           instructionQueue: mockQueue,
           ingredientQueue: mockQueue,
+          imageQueue: mockQueue,
         },
         nullServiceContainer
       );

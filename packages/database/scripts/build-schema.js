@@ -31,6 +31,7 @@ datasource db {
 const schemaFiles = [
   "prisma/schemas/auth.prisma",
   "prisma/schemas/notes.prisma",
+  "prisma/schemas/images.prisma",
   "prisma/schemas/queue.prisma",
   "prisma/schemas/parsing.prisma",
   "prisma/schemas/meta.prisma",
