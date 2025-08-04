@@ -39,11 +39,21 @@ export function ActivityLog({ className }: Props): ReactNode {
       { processed: number; total: number }
     >();
 
+    // Track ingredient count updates by importId
+    const ingredientCounts = new Map<
+      string,
+      { processed: number; total: number }
+    >();
+
     // Track completed instruction line indexes to avoid duplicates
     const completedInstructions = new Map<string, Set<number>>();
 
-    // First pass: collect instruction count updates
+    // Track completed ingredient line indexes to avoid duplicates
+    const completedIngredients = new Map<string, Set<number>>();
+
+    // First pass: collect instruction and ingredient count updates
     events.forEach((event) => {
+      // Handle instruction processing
       if (
         event.context === "process_instructions" &&
         event.importId &&
@@ -56,6 +66,22 @@ export function ActivityLog({ className }: Props): ReactNode {
             `[ActivityLog] Instruction count update: ${processed}/${total} for import ${event.importId}`
           );
           instructionCounts.set(event.importId, { processed, total });
+        }
+      }
+
+      // Handle ingredient processing
+      if (
+        event.context === "process_ingredients" &&
+        event.importId &&
+        event.metadata
+      ) {
+        const processed = event.metadata.processedIngredients as number;
+        const total = event.metadata.totalIngredients as number;
+        if (typeof processed === "number" && typeof total === "number") {
+          console.log(
+            `[ActivityLog] Ingredient count update: ${processed}/${total} for import ${event.importId}`
+          );
+          ingredientCounts.set(event.importId, { processed, total });
         }
       }
 
@@ -97,6 +123,45 @@ export function ActivityLog({ className }: Props): ReactNode {
           }
         }
       }
+
+      // Track ingredient completion events
+      if (
+        event.context === "ingredient_completed" &&
+        event.importId &&
+        event.metadata
+      ) {
+        const total = event.metadata.totalIngredients as number;
+        const lineIndex = event.metadata.lineIndex as number;
+        if (typeof total === "number" && typeof lineIndex === "number") {
+          // Initialize the set for this import if it doesn't exist
+          if (!completedIngredients.has(event.importId)) {
+            completedIngredients.set(event.importId, new Set());
+          }
+
+          const completedSet = completedIngredients.get(event.importId)!;
+
+          // Only count this ingredient if we haven't seen this lineIndex before
+          if (!completedSet.has(lineIndex)) {
+            completedSet.add(lineIndex);
+
+            const existing = ingredientCounts.get(event.importId);
+            const currentProcessed = existing ? existing.processed : 0;
+            const newProcessed = currentProcessed + 1;
+
+            console.log(
+              `[ActivityLog] Ingredient completed: ${newProcessed}/${total} for import ${event.importId} (lineIndex: ${lineIndex})`
+            );
+            ingredientCounts.set(event.importId, {
+              processed: newProcessed,
+              total,
+            });
+          } else {
+            console.log(
+              `[ActivityLog] Skipping duplicate ingredient completion for lineIndex: ${lineIndex}`
+            );
+          }
+        }
+      }
     });
 
     // Filter and process events
@@ -118,8 +183,14 @@ export function ActivityLog({ className }: Props): ReactNode {
       // Hide process_instructions events since we're updating the parse_html_instructions message
       if (event.context === "process_instructions") return false;
 
+      // Hide process_ingredients events since we're updating the parse_html_ingredients message
+      if (event.context === "process_ingredients") return false;
+
       // Hide instruction_completed events since we're using them for counting
       if (event.context === "instruction_completed") return false;
+
+      // Hide ingredient_completed events since we're using them for counting
+      if (event.context === "ingredient_completed") return false;
 
       return true;
     });
@@ -136,6 +207,14 @@ export function ActivityLog({ className }: Props): ReactNode {
         const countData = instructionCounts.get(event.importId);
         if (countData) {
           text = `${countData.processed}/${countData.total} instructions`;
+        }
+      }
+
+      // Update ingredient count messages with latest progress
+      if (event.context === "parse_html_ingredients" && event.importId) {
+        const countData = ingredientCounts.get(event.importId);
+        if (countData) {
+          text = `${countData.processed}/${countData.total} ingredients`;
         }
       }
 

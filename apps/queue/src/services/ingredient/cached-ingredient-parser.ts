@@ -183,11 +183,8 @@ export class CachedIngredientParser {
       const processingTime = Date.now() - startTime;
       /* istanbul ignore next -- @preserve */
       return {
-        /* istanbul ignore next -- @preserve */
         ingredient: normalizedLine,
-        /* istanbul ignore next -- @preserve */
         confidence: 0.5,
-        /* istanbul ignore next -- @preserve */
         processingTime,
       };
     } catch (error) {

@@ -1,4 +1,10 @@
-import { getIngredientCompletionStatus } from "@peas/database";
+import {
+  createIngredientReference,
+  findOrCreateIngredient,
+  getIngredientCompletionStatus,
+  replaceParsedSegments,
+  upsertParsedIngredientLine,
+} from "@peas/database";
 
 import type { StructuredLogger } from "../../../../types";
 import type { IngredientJobData } from "../../../../workers/ingredient/dependencies";
@@ -27,14 +33,69 @@ export async function saveIngredientLine(
       `[SAVE_INGREDIENT_LINE] Starting to save ingredient: "${data.ingredientReference}" for note: ${data.noteId}`
     );
 
-    // TODO: Implement actual ingredient saving logic
-    // This is a stub implementation for now
-    logger.log(
-      `[SAVE_INGREDIENT_LINE] Stub: Would save ingredient "${data.ingredientReference}" for note: ${data.noteId}`
+    // Extract typed metadata
+    const metadata = data.metadata as
+      | {
+          rule?: string;
+          blockIndex?: number;
+          parsedSegments?: Array<{
+            index: number;
+            rule: string;
+            type: string;
+            value: string;
+            processingTime?: number;
+          }>;
+        }
+      | undefined;
+
+    // 1. Upsert the ParsedIngredientLine record
+    const { id: lineId } = await upsertParsedIngredientLine(
+      data.noteId,
+      data.lineIndex,
+      data.ingredientReference,
+      data.parseStatus,
+      metadata?.rule,
+      metadata?.blockIndex ?? 0,
+      data.isActive
     );
 
-    // For now, just return the data unchanged
-    // In the real implementation, this would save the ingredient to the database
+    // 2. Replace parsed segments if any exist
+    if (metadata?.parsedSegments) {
+      await replaceParsedSegments(lineId, metadata.parsedSegments);
+
+      // 3. Process ingredient segments and create ingredient references
+      let ingredientCount = 0;
+      for (const segment of metadata.parsedSegments) {
+        if (segment.type === "ingredient") {
+          ingredientCount++;
+
+          // Find or create ingredient with pluralization support
+          const { id: ingredientId, isNew } = await findOrCreateIngredient(
+            segment.value
+          );
+
+          // Create ingredient reference linking ingredient to this parsed line
+          await createIngredientReference(
+            ingredientId,
+            lineId,
+            segment.index,
+            data.ingredientReference,
+            data.noteId,
+            isNew ? "new_ingredient" : "existing_ingredient"
+          );
+
+          logger.log(
+            `[SAVE_INGREDIENT_LINE] Processed ingredient "${segment.value}" (${isNew ? "new" : "existing"}) for line: ${data.ingredientReference}`
+          );
+        }
+      }
+
+      if (ingredientCount > 0) {
+        logger.log(
+          `[SAVE_INGREDIENT_LINE] Created ${ingredientCount} ingredient reference(s) for line: ${data.ingredientReference}`
+        );
+      }
+    }
     // Broadcast completion message if statusBroadcaster is available
     if (statusBroadcaster) {
       const completionStatus = await getIngredientCompletionStatus(data.noteId);

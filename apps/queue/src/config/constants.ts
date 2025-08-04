@@ -85,6 +85,9 @@ export const LOGGING_CONSTANTS = {
 // ============================================================================
 
 export const PROCESSING_CONSTANTS = {
+  /** Ingredient parser version to use ("v1" or "v2") */
+  INGREDIENT_PARSER_VERSION: "v1" as "v1" | "v2",
+
   /** Default image processing time in milliseconds */
   DEFAULT_IMAGE_PROCESSING_TIME_MS: 100,
   /** Default instruction processing time in milliseconds */
