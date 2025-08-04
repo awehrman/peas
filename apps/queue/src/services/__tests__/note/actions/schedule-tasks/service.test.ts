@@ -71,6 +71,9 @@ describe("scheduleAllFollowupTasks", () => {
         instructionQueue: {
           add: vi.fn().mockResolvedValue(undefined),
         } as any,
+        ingredientQueue: {
+          add: vi.fn().mockResolvedValue(undefined),
+        } as any,
       },
     } as NoteWorkerDependencies;
 

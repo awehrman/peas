@@ -150,8 +150,11 @@ export async function findNotesWithSimilarTitles(
     // Filter notes based on Hamming distance
     const similarNotes = allNotes.filter((note) => {
       if (!note.titleSimHash) return false;
-      
-      const distance = calculateHammingDistance(titleSimHash, note.titleSimHash);
+
+      const distance = calculateHammingDistance(
+        titleSimHash,
+        note.titleSimHash
+      );
       return distance <= maxHammingDistance;
     });
 
@@ -170,7 +173,7 @@ function calculateHammingDistance(hash1: string, hash2: string): number {
   if (!hash1 || !hash2 || hash1.length !== hash2.length) {
     return Number.MAX_SAFE_INTEGER;
   }
-  
+
   let distance = 0;
   for (let i = 0; i < hash1.length; i++) {
     if (hash1[i] !== hash2[i]) {

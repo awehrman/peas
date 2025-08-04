@@ -89,10 +89,8 @@ describe("registerNoteActions", () => {
   });
 
   it("should register all note actions with the factory", () => {
-    // Act
     registerNoteActions(mockFactory);
 
-    // Assert
     expect(mockRegisterActions).toHaveBeenCalledTimes(1);
     expect(mockRegisterActions).toHaveBeenCalledWith(
       mockFactory,
@@ -101,19 +99,15 @@ describe("registerNoteActions", () => {
   });
 
   it("should register exactly 6 actions", () => {
-    // Act
     registerNoteActions(mockFactory);
 
-    // Assert
     const registeredActions = mockRegisterActions.mock.calls[0]?.[1];
     expect(registeredActions).toHaveLength(7);
   });
 
   it("should register PARSE_HTML action", () => {
-    // Act
     registerNoteActions(mockFactory);
 
-    // Assert
     expect(mockCreateActionRegistration).toHaveBeenCalledWith(
       ActionName.PARSE_HTML,
       expect.any(Function)
@@ -121,10 +115,8 @@ describe("registerNoteActions", () => {
   });
 
   it("should register CLEAN_HTML action", () => {
-    // Act
     registerNoteActions(mockFactory);
 
-    // Assert
     expect(mockCreateActionRegistration).toHaveBeenCalledWith(
       ActionName.CLEAN_HTML,
       expect.any(Function)
@@ -132,10 +124,8 @@ describe("registerNoteActions", () => {
   });
 
   it("should register SAVE_NOTE action", () => {
-    // Act
     registerNoteActions(mockFactory);
 
-    // Assert
     expect(mockCreateActionRegistration).toHaveBeenCalledWith(
       ActionName.SAVE_NOTE,
       expect.any(Function)
@@ -143,10 +133,8 @@ describe("registerNoteActions", () => {
   });
 
   it("should register SCHEDULE_ALL_FOLLOWUP_TASKS action", () => {
-    // Act
     registerNoteActions(mockFactory);
 
-    // Assert
     expect(mockCreateActionRegistration).toHaveBeenCalledWith(
       ActionName.SCHEDULE_ALL_FOLLOWUP_TASKS,
       expect.any(Function)
@@ -154,10 +142,8 @@ describe("registerNoteActions", () => {
   });
 
   it("should register PROCESS_SOURCE action", () => {
-    // Act
     registerNoteActions(mockFactory);
 
-    // Assert
     expect(mockCreateActionRegistration).toHaveBeenCalledWith(
       ActionName.PROCESS_SOURCE,
       expect.any(Function)
@@ -165,18 +151,14 @@ describe("registerNoteActions", () => {
   });
 
   it("should call createActionRegistration exactly 6 times", () => {
-    // Act
     registerNoteActions(mockFactory);
 
-    // Assert
     expect(mockCreateActionRegistration).toHaveBeenCalledTimes(7);
   });
 
   it("should register actions in the correct order", () => {
-    // Act
     registerNoteActions(mockFactory);
 
-    // Assert
     const calls = mockCreateActionRegistration.mock.calls;
     expect(calls[0]?.[0]).toBe(ActionName.PARSE_HTML);
     expect(calls[1]?.[0]).toBe(ActionName.CLEAN_HTML);
@@ -210,10 +192,8 @@ describe("registerNoteActions", () => {
       "../../note/actions/check-duplicates/action"
     );
 
-    // Act
     registerNoteActions(mockFactory);
 
-    // Assert
     const calls = mockCreateActionRegistration.mock.calls;
     expect(calls[0]?.[1]).toBe(ParseHtmlAction);
     expect(calls[1]?.[1]).toBe(CleanHtmlAction);
@@ -225,18 +205,14 @@ describe("registerNoteActions", () => {
   });
 
   it("should return void", () => {
-    // Act
     const result = registerNoteActions(mockFactory);
 
-    // Assert
     expect(result).toBeUndefined();
   });
 
   it("should handle factory parameter correctly", () => {
-    // Act
     registerNoteActions(mockFactory);
 
-    // Assert
     expect(mockRegisterActions).toHaveBeenCalledWith(
       mockFactory,
       expect.any(Array)
@@ -264,26 +240,21 @@ describe("registerNoteActions", () => {
       .mockReturnValueOnce(mockRegistrations[5])
       .mockReturnValueOnce(mockRegistrations[6]);
 
-    // Act
     registerNoteActions(mockFactory);
 
-    // Assert
     const registeredActions = mockRegisterActions.mock.calls[0]?.[1];
     expect(registeredActions).toEqual(mockRegistrations);
   });
 
   it("should work with different factory instances", () => {
-    // Arrange
     const anotherFactory = new ActionFactory<
       NotePipelineData,
       NoteWorkerDependencies,
       NotePipelineData
     >();
 
-    // Act
     registerNoteActions(anotherFactory);
 
-    // Assert
     expect(mockRegisterActions).toHaveBeenCalledWith(
       anotherFactory,
       expect.any(Array)
@@ -299,7 +270,6 @@ describe("registerNoteActions", () => {
       NotePipelineData
     > = mockFactory;
 
-    // Act & Assert - should not throw TypeScript errors
     expect(() => registerNoteActions(typedFactory)).not.toThrow();
   });
 });

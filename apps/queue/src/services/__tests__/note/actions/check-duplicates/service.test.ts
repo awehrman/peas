@@ -64,7 +64,6 @@ describe("checkForDuplicates", () => {
 
   describe("successful duplicate detection", () => {
     it("should mark note as duplicate when high confidence match is found", async () => {
-      // Arrange
       const mockCurrentNote = {
         id: "test-note-id",
         title: "Chocolate Chip Cookies",
@@ -132,10 +131,8 @@ describe("checkForDuplicates", () => {
       mockCalculateSimilarityScore.mockReturnValue(0.95); // High title similarity
       mockCalculateIngredientSimilarity.mockReturnValue(0.9); // High ingredient similarity
 
-      // Act
       const result = await checkForDuplicates(mockNoteData, mockLogger);
 
-      // Assert
       expect(result).toEqual(mockNoteData);
       expect(mockGetNoteWithIngredients).toHaveBeenCalledWith("test-note-id");
       expect(mockGenerateTitleSimHash).toHaveBeenCalledWith(
@@ -173,7 +170,6 @@ describe("checkForDuplicates", () => {
     });
 
     it("should not update SimHash if it hasn't changed", async () => {
-      // Arrange
       const mockCurrentNote = {
         id: "test-note-id",
         title: "Chocolate Chip Cookies",
@@ -186,10 +182,8 @@ describe("checkForDuplicates", () => {
       mockGenerateTitleSimHash.mockReturnValue("existing-simhash");
       mockFindNotesWithSimilarTitles.mockResolvedValue([]);
 
-      // Act
       const result = await checkForDuplicates(mockNoteData, mockLogger);
 
-      // Assert
       expect(result).toEqual(mockNoteData);
       expect(mockUpdateNoteTitleSimHash).not.toHaveBeenCalled();
       expect(mockLogger.log).toHaveBeenCalledWith(
@@ -198,7 +192,6 @@ describe("checkForDuplicates", () => {
     });
 
     it("should handle multiple similar notes and use highest confidence match", async () => {
-      // Arrange
       const mockCurrentNote = {
         id: "test-note-id",
         title: "Chocolate Chip Cookies",
@@ -288,10 +281,8 @@ describe("checkForDuplicates", () => {
         .mockReturnValueOnce(0.9) // First note ingredient similarity
         .mockReturnValueOnce(0.8); // Second note ingredient similarity
 
-      // Act
       const result = await checkForDuplicates(mockNoteData, mockLogger);
 
-      // Assert
       expect(result).toEqual(mockNoteData);
       expect(mockMarkNoteAsDuplicate).toHaveBeenCalledWith("test-note-id", {
         existingNotes: [
@@ -307,7 +298,6 @@ describe("checkForDuplicates", () => {
 
   describe("low confidence matches", () => {
     it("should not mark note as duplicate when confidence is below 90%", async () => {
-      // Arrange
       const mockCurrentNote = {
         id: "test-note-id",
         title: "Chocolate Chip Cookies",
@@ -361,10 +351,8 @@ describe("checkForDuplicates", () => {
       mockCalculateSimilarityScore.mockReturnValue(0.8); // Lower title similarity
       mockCalculateIngredientSimilarity.mockReturnValue(0.7); // Lower ingredient similarity
 
-      // Act
       const result = await checkForDuplicates(mockNoteData, mockLogger);
 
-      // Assert
       expect(result).toEqual(mockNoteData);
       expect(mockMarkNoteAsDuplicate).not.toHaveBeenCalled();
       expect(mockLogger.log).toHaveBeenCalledWith(
@@ -373,7 +361,6 @@ describe("checkForDuplicates", () => {
     });
 
     it("should handle notes with no ingredients", async () => {
-      // Arrange
       const mockCurrentNote = {
         id: "test-note-id",
         title: "Chocolate Chip Cookies",
@@ -411,10 +398,8 @@ describe("checkForDuplicates", () => {
       mockCalculateSimilarityScore.mockReturnValue(0.95);
       mockCalculateIngredientSimilarity.mockReturnValue(0.0); // No ingredients
 
-      // Act
       const result = await checkForDuplicates(mockNoteData, mockLogger);
 
-      // Assert
       expect(result).toEqual(mockNoteData);
       // With 95% title similarity and 0% ingredient similarity (no ingredients),
       // confidence = 0.95 * 0.7 + 0.0 * 0.3 = 0.665, which is below 90% threshold
@@ -427,27 +412,22 @@ describe("checkForDuplicates", () => {
 
   describe("edge cases and error handling", () => {
     it("should throw error when noteId is missing", async () => {
-      // Arrange
       const noteDataWithoutId = { ...mockNoteData, noteId: undefined };
 
-      // Act & Assert
       await expect(
         checkForDuplicates(noteDataWithoutId, mockLogger)
       ).rejects.toThrow("Note ID is required for duplicate checking");
     });
 
     it("should throw error when note is not found", async () => {
-      // Arrange
       mockGetNoteWithIngredients.mockResolvedValue(null);
 
-      // Act & Assert
       await expect(
         checkForDuplicates(mockNoteData, mockLogger)
       ).rejects.toThrow("Note with ID test-note-id not found");
     });
 
     it("should skip duplicate check when note has no title", async () => {
-      // Arrange
       const mockCurrentNote = {
         id: "test-note-id",
         title: null,
@@ -458,10 +438,8 @@ describe("checkForDuplicates", () => {
 
       mockGetNoteWithIngredients.mockResolvedValue(mockCurrentNote);
 
-      // Act
       const result = await checkForDuplicates(mockNoteData, mockLogger);
 
-      // Assert
       expect(result).toEqual(mockNoteData);
       expect(mockGenerateTitleSimHash).not.toHaveBeenCalled();
       expect(mockFindNotesWithSimilarTitles).not.toHaveBeenCalled();
@@ -471,7 +449,6 @@ describe("checkForDuplicates", () => {
     });
 
     it("should handle empty title string", async () => {
-      // Arrange
       const mockCurrentNote = {
         id: "test-note-id",
         title: "",
@@ -482,10 +459,8 @@ describe("checkForDuplicates", () => {
 
       mockGetNoteWithIngredients.mockResolvedValue(mockCurrentNote);
 
-      // Act
       const result = await checkForDuplicates(mockNoteData, mockLogger);
 
-      // Assert
       expect(result).toEqual(mockNoteData);
       expect(mockLogger.log).toHaveBeenCalledWith(
         "[CHECK_DUPLICATES] Note test-note-id has no title, skipping duplicate check"
@@ -493,7 +468,6 @@ describe("checkForDuplicates", () => {
     });
 
     it("should handle whitespace-only title", async () => {
-      // Arrange
       const mockCurrentNote = {
         id: "test-note-id",
         title: "   ",
@@ -506,10 +480,8 @@ describe("checkForDuplicates", () => {
       mockGenerateTitleSimHash.mockReturnValue(""); // Whitespace-only title generates empty SimHash
       mockFindNotesWithSimilarTitles.mockResolvedValue([]);
 
-      // Act
       const result = await checkForDuplicates(mockNoteData, mockLogger);
 
-      // Assert
       expect(result).toEqual(mockNoteData);
       expect(mockLogger.log).toHaveBeenCalledWith(
         "[CHECK_DUPLICATES] No duplicates found for note: test-note-id"
@@ -517,11 +489,9 @@ describe("checkForDuplicates", () => {
     });
 
     it("should handle database errors gracefully", async () => {
-      // Arrange
       const dbError = new Error("Database connection failed");
       mockGetNoteWithIngredients.mockRejectedValue(dbError);
 
-      // Act & Assert
       await expect(
         checkForDuplicates(mockNoteData, mockLogger)
       ).rejects.toThrow("Database connection failed");
@@ -531,7 +501,6 @@ describe("checkForDuplicates", () => {
     });
 
     it("should handle similar notes without titleSimHash", async () => {
-      // Arrange
       const mockCurrentNote = {
         id: "test-note-id",
         title: "Chocolate Chip Cookies",
@@ -552,10 +521,8 @@ describe("checkForDuplicates", () => {
       mockUpdateNoteTitleSimHash.mockResolvedValue();
       mockFindNotesWithSimilarTitles.mockResolvedValue([mockSimilarNote]);
 
-      // Act
       const result = await checkForDuplicates(mockNoteData, mockLogger);
 
-      // Assert
       expect(result).toEqual(mockNoteData);
       expect(mockCalculateSimilarityScore).not.toHaveBeenCalled();
       expect(mockMarkNoteAsDuplicate).not.toHaveBeenCalled();
@@ -565,7 +532,6 @@ describe("checkForDuplicates", () => {
     });
 
     it("should handle similar notes without title", async () => {
-      // Arrange
       const mockCurrentNote = {
         id: "test-note-id",
         title: "Chocolate Chip Cookies",
@@ -586,10 +552,8 @@ describe("checkForDuplicates", () => {
       mockUpdateNoteTitleSimHash.mockResolvedValue();
       mockFindNotesWithSimilarTitles.mockResolvedValue([mockSimilarNote]);
 
-      // Act
       const result = await checkForDuplicates(mockNoteData, mockLogger);
 
-      // Assert
       expect(result).toEqual(mockNoteData);
       expect(mockCalculateSimilarityScore).not.toHaveBeenCalled();
       expect(mockMarkNoteAsDuplicate).not.toHaveBeenCalled();
@@ -599,7 +563,6 @@ describe("checkForDuplicates", () => {
     });
 
     it("should handle case where similar note with ingredients is not found", async () => {
-      // Arrange
       const mockCurrentNote = {
         id: "test-note-id",
         title: "Chocolate Chip Cookies",
@@ -634,10 +597,8 @@ describe("checkForDuplicates", () => {
       mockFindNotesWithSimilarTitles.mockResolvedValue([mockSimilarNote]);
       mockCalculateSimilarityScore.mockReturnValue(0.95);
 
-      // Act
       const result = await checkForDuplicates(mockNoteData, mockLogger);
 
-      // Assert
       expect(result).toEqual(mockNoteData);
       // When similar note is not found, ingredientSimilarity is set to 0.0
       // without calling calculateIngredientSimilarity
@@ -645,7 +606,6 @@ describe("checkForDuplicates", () => {
     });
 
     it("should filter out empty ingredient references", async () => {
-      // Arrange
       const mockCurrentNote = {
         id: "test-note-id",
         title: "Chocolate Chip Cookies",
@@ -727,10 +687,8 @@ describe("checkForDuplicates", () => {
       mockCalculateSimilarityScore.mockReturnValue(0.95);
       mockCalculateIngredientSimilarity.mockReturnValue(0.9);
 
-      // Act
       const result = await checkForDuplicates(mockNoteData, mockLogger);
 
-      // Assert
       expect(result).toEqual(mockNoteData);
       expect(mockCalculateIngredientSimilarity).toHaveBeenCalledWith(
         ["flour", "sugar"], // Only non-empty ingredients
@@ -739,7 +697,6 @@ describe("checkForDuplicates", () => {
     });
 
     it("should handle confidence calculation with zero ingredient similarity", async () => {
-      // Arrange
       const mockCurrentNote = {
         id: "test-note-id",
         title: "Chocolate Chip Cookies",
@@ -793,10 +750,8 @@ describe("checkForDuplicates", () => {
       mockCalculateSimilarityScore.mockReturnValue(0.95);
       mockCalculateIngredientSimilarity.mockReturnValue(0.0); // No ingredient overlap
 
-      // Act
       const result = await checkForDuplicates(mockNoteData, mockLogger);
 
-      // Assert
       expect(result).toEqual(mockNoteData);
       // With 95% title similarity and 0% ingredient similarity,
       // confidence = 0.95 * 0.7 + 0.0 * 0.3 = 0.665, which is below 90% threshold
@@ -809,7 +764,6 @@ describe("checkForDuplicates", () => {
 
   describe("no duplicates found", () => {
     it("should return data unchanged when no similar notes found", async () => {
-      // Arrange
       const mockCurrentNote = {
         id: "test-note-id",
         title: "Chocolate Chip Cookies",
@@ -823,10 +777,8 @@ describe("checkForDuplicates", () => {
       mockUpdateNoteTitleSimHash.mockResolvedValue();
       mockFindNotesWithSimilarTitles.mockResolvedValue([]);
 
-      // Act
       const result = await checkForDuplicates(mockNoteData, mockLogger);
 
-      // Assert
       expect(result).toEqual(mockNoteData);
       expect(mockMarkNoteAsDuplicate).not.toHaveBeenCalled();
       expect(mockLogger.log).toHaveBeenCalledWith(
@@ -835,7 +787,6 @@ describe("checkForDuplicates", () => {
     });
 
     it("should return data unchanged when no matches meet confidence threshold", async () => {
-      // Arrange
       const mockCurrentNote = {
         id: "test-note-id",
         title: "Chocolate Chip Cookies",
@@ -858,10 +809,8 @@ describe("checkForDuplicates", () => {
       mockCalculateSimilarityScore.mockReturnValue(0.3); // Low similarity
       mockCalculateIngredientSimilarity.mockReturnValue(0.2); // Low similarity
 
-      // Act
       const result = await checkForDuplicates(mockNoteData, mockLogger);
 
-      // Assert
       expect(result).toEqual(mockNoteData);
       expect(mockMarkNoteAsDuplicate).not.toHaveBeenCalled();
       expect(mockLogger.log).toHaveBeenCalledWith(
@@ -872,7 +821,6 @@ describe("checkForDuplicates", () => {
 
   describe("SimHash generation edge cases", () => {
     it("should handle case where SimHash generation returns empty string", async () => {
-      // Arrange
       const mockCurrentNote = {
         id: "test-note-id",
         title: "Chocolate Chip Cookies",
@@ -884,10 +832,8 @@ describe("checkForDuplicates", () => {
       mockGetNoteWithIngredients.mockResolvedValue(mockCurrentNote);
       mockGenerateTitleSimHash.mockReturnValue(""); // SimHash generation returns empty string
 
-      // Act
       const result = await checkForDuplicates(mockNoteData, mockLogger);
 
-      // Assert
       expect(result).toEqual(mockNoteData);
       expect(mockFindNotesWithSimilarTitles).not.toHaveBeenCalled();
       expect(mockMarkNoteAsDuplicate).not.toHaveBeenCalled();
@@ -897,7 +843,6 @@ describe("checkForDuplicates", () => {
     });
 
     it("should handle case where SimHash generation returns empty string", async () => {
-      // Arrange
       const mockCurrentNote = {
         id: "test-note-id",
         title: "Chocolate Chip Cookies",
@@ -909,10 +854,8 @@ describe("checkForDuplicates", () => {
       mockGetNoteWithIngredients.mockResolvedValue(mockCurrentNote);
       mockGenerateTitleSimHash.mockReturnValue(""); // SimHash generation returns empty string
 
-      // Act
       const result = await checkForDuplicates(mockNoteData, mockLogger);
 
-      // Assert
       expect(result).toEqual(mockNoteData);
       expect(mockFindNotesWithSimilarTitles).not.toHaveBeenCalled();
       expect(mockMarkNoteAsDuplicate).not.toHaveBeenCalled();
@@ -924,7 +867,6 @@ describe("checkForDuplicates", () => {
 
   describe("findDuplicateMatches internal edge cases", () => {
     it("should handle case where note has no title in findDuplicateMatches", async () => {
-      // Arrange
       const mockCurrentNote = {
         id: "test-note-id",
         title: null, // This will trigger the early return in findDuplicateMatches
@@ -935,10 +877,8 @@ describe("checkForDuplicates", () => {
 
       mockGetNoteWithIngredients.mockResolvedValue(mockCurrentNote);
 
-      // Act
       const result = await checkForDuplicates(mockNoteData, mockLogger);
 
-      // Assert
       expect(result).toEqual(mockNoteData);
       expect(mockGenerateTitleSimHash).not.toHaveBeenCalled();
       expect(mockFindNotesWithSimilarTitles).not.toHaveBeenCalled();
@@ -949,7 +889,6 @@ describe("checkForDuplicates", () => {
     });
 
     it("should handle case where matches array is empty but confidence calculation uses optional chaining", async () => {
-      // Arrange
       const mockCurrentNote = {
         id: "test-note-id",
         title: "Chocolate Chip Cookies",
@@ -963,10 +902,8 @@ describe("checkForDuplicates", () => {
       mockUpdateNoteTitleSimHash.mockResolvedValue();
       mockFindNotesWithSimilarTitles.mockResolvedValue([]); // No similar notes
 
-      // Act
       const result = await checkForDuplicates(mockNoteData, mockLogger);
 
-      // Assert
       expect(result).toEqual(mockNoteData);
       expect(mockMarkNoteAsDuplicate).not.toHaveBeenCalled();
       expect(mockLogger.log).toHaveBeenCalledWith(
@@ -975,7 +912,6 @@ describe("checkForDuplicates", () => {
     });
 
     it("should handle case where matches array has elements but first match has no matchReason", async () => {
-      // Arrange
       const mockCurrentNote = {
         id: "test-note-id",
         title: "Chocolate Chip Cookies",
@@ -1029,10 +965,8 @@ describe("checkForDuplicates", () => {
       mockCalculateSimilarityScore.mockReturnValue(0.95);
       mockCalculateIngredientSimilarity.mockReturnValue(0.9);
 
-      // Act
       const result = await checkForDuplicates(mockNoteData, mockLogger);
 
-      // Assert
       expect(result).toEqual(mockNoteData);
       expect(mockMarkNoteAsDuplicate).toHaveBeenCalledWith("test-note-id", {
         existingNotes: [

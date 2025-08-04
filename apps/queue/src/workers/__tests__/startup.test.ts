@@ -17,6 +17,10 @@ vi.mock("../instruction", () => ({
   createInstructionWorker: vi.fn(),
 }));
 
+vi.mock("../ingredient", () => ({
+  createIngredientWorker: vi.fn(),
+}));
+
 vi.mock("../../monitoring/queue-monitor", () => ({
   queueMonitor: {
     startMonitoring: vi.fn(),
@@ -33,6 +37,7 @@ vi.mock("../../config/constants", () => ({
     NAMES: {
       NOTE: "note_processing",
       INSTRUCTION: "instruction_processing",
+      INGREDIENT: "ingredient_processing",
     },
   },
 }));
@@ -47,6 +52,7 @@ describe("Worker Startup", () => {
   let mockServiceContainer: IServiceContainer;
   let mockCreateNoteWorker: ReturnType<typeof vi.fn>;
   let mockCreateInstructionWorker: ReturnType<typeof vi.fn>;
+  let mockCreateIngredientWorker: ReturnType<typeof vi.fn>;
   let mockQueueMonitor: { startMonitoring: ReturnType<typeof vi.fn> };
   let mockCreateWorkerConfig: ReturnType<typeof vi.fn>;
   let mockCreateWorkers: ReturnType<typeof vi.fn>;
@@ -72,6 +78,7 @@ describe("Worker Startup", () => {
     // Get mocked functions
     const noteModule = vi.mocked(await import("../note"));
     const instructionModule = vi.mocked(await import("../instruction"));
+    const ingredientModule = vi.mocked(await import("../ingredient"));
     const queueMonitorModule = vi.mocked(
       await import("../../monitoring/queue-monitor")
     );
@@ -81,6 +88,7 @@ describe("Worker Startup", () => {
 
     mockCreateNoteWorker = noteModule.createNoteWorker;
     mockCreateInstructionWorker = instructionModule.createInstructionWorker;
+    mockCreateIngredientWorker = ingredientModule.createIngredientWorker;
     mockQueueMonitor = queueMonitorModule.queueMonitor as unknown as {
       startMonitoring: ReturnType<typeof vi.fn>;
     };
@@ -90,6 +98,7 @@ describe("Worker Startup", () => {
     // Reset all mocks to default behavior
     mockCreateNoteWorker.mockReturnValue({});
     mockCreateInstructionWorker.mockReturnValue({});
+    mockCreateIngredientWorker.mockReturnValue({});
     mockCreateWorkerConfig.mockReturnValue({ name: "test-config" });
     mockCreateWorkers.mockReturnValue({});
     mockQueueMonitor.startMonitoring.mockImplementation(() => {});
@@ -100,28 +109,32 @@ describe("Worker Startup", () => {
 
   describe("startWorkers", () => {
     it("should start workers successfully", async () => {
-      // Arrange
       const mockWorker = { name: "test-worker" };
       const mockWorkers = {
         [vi.mocked(await import("../../config/constants")).WORKER_CONSTANTS
           .NAMES.NOTE]: mockWorker,
         [vi.mocked(await import("../../config/constants")).WORKER_CONSTANTS
           .NAMES.INSTRUCTION]: mockWorker,
+        [vi.mocked(await import("../../config/constants")).WORKER_CONSTANTS
+          .NAMES.INGREDIENT]: mockWorker,
       };
 
       mockCreateWorkerConfig.mockReturnValue({ name: "test-config" });
       mockCreateWorkers.mockReturnValue(mockWorkers);
       mockCreateNoteWorker.mockReturnValue(mockWorker);
       mockCreateInstructionWorker.mockReturnValue(mockWorker);
+      mockCreateIngredientWorker.mockReturnValue(mockWorker);
 
-      // Act
       const { startWorkers } = await import("../startup");
       const result = startWorkers(
-        { noteQueue: mockQueue, instructionQueue: mockQueue },
+        {
+          noteQueue: mockQueue,
+          instructionQueue: mockQueue,
+          ingredientQueue: mockQueue,
+        },
         mockServiceContainer
       );
 
-      // Assert
       expect(mockCreateWorkerConfig).toHaveBeenCalledWith(
         vi.mocked(await import("../../config/constants")).WORKER_CONSTANTS.NAMES
           .NOTE,
@@ -129,13 +142,18 @@ describe("Worker Startup", () => {
         mockQueue
       );
       expect(mockCreateWorkers).toHaveBeenCalledWith(
-        [{ name: "test-config" }, { name: "test-config" }],
+        [
+          { name: "test-config" },
+          { name: "test-config" },
+          { name: "test-config" },
+        ],
         mockServiceContainer
       );
       expect(mockQueueMonitor.startMonitoring).toHaveBeenCalledWith(mockQueue);
       expect(mockServiceContainer._workers).toEqual({
         noteWorker: mockWorker,
         instructionWorker: mockWorker,
+        ingredientWorker: mockWorker,
       });
       expect(mockServiceContainer.logger.log).toHaveBeenCalledWith(
         vi.mocked(await import("../../config/constants")).LOG_MESSAGES.INFO
@@ -145,61 +163,72 @@ describe("Worker Startup", () => {
     });
 
     it("should handle multiple worker configurations", async () => {
-      // Arrange
       const mockWorker = { name: "test-worker" };
       const mockWorkers = {
         [vi.mocked(await import("../../config/constants")).WORKER_CONSTANTS
           .NAMES.NOTE]: mockWorker,
         [vi.mocked(await import("../../config/constants")).WORKER_CONSTANTS
           .NAMES.INSTRUCTION]: mockWorker,
+        [vi.mocked(await import("../../config/constants")).WORKER_CONSTANTS
+          .NAMES.INGREDIENT]: mockWorker,
       };
 
       mockCreateWorkerConfig.mockReturnValue({ name: "test-config" });
       mockCreateWorkers.mockReturnValue(mockWorkers);
       mockCreateNoteWorker.mockReturnValue(mockWorker);
       mockCreateInstructionWorker.mockReturnValue(mockWorker);
+      mockCreateIngredientWorker.mockReturnValue(mockWorker);
 
-      // Act
       const { startWorkers } = await import("../startup");
       const result = startWorkers(
-        { noteQueue: mockQueue, instructionQueue: mockQueue },
+        {
+          noteQueue: mockQueue,
+          instructionQueue: mockQueue,
+          ingredientQueue: mockQueue,
+        },
         mockServiceContainer
       );
 
-      // Assert
-      expect(mockCreateWorkerConfig).toHaveBeenCalledTimes(2);
+      expect(mockCreateWorkerConfig).toHaveBeenCalledTimes(3);
       expect(mockCreateWorkers).toHaveBeenCalledTimes(1);
       expect(result).toEqual(mockWorkers);
     });
 
     it("should store workers in service container for graceful shutdown", async () => {
-      // Arrange
       const mockWorker = { name: "test-worker" };
       const mockWorkers = {
         [vi.mocked(await import("../../config/constants")).WORKER_CONSTANTS
           .NAMES.NOTE]: mockWorker,
         [vi.mocked(await import("../../config/constants")).WORKER_CONSTANTS
           .NAMES.INSTRUCTION]: mockWorker,
+        [vi.mocked(await import("../../config/constants")).WORKER_CONSTANTS
+          .NAMES.INGREDIENT]: mockWorker,
       };
 
       mockCreateWorkerConfig.mockReturnValue({ name: "test-config" });
       mockCreateWorkers.mockReturnValue(mockWorkers);
       mockCreateNoteWorker.mockReturnValue(mockWorker);
       mockCreateInstructionWorker.mockReturnValue(mockWorker);
+      mockCreateIngredientWorker.mockReturnValue(mockWorker);
 
-      // Act
       const { startWorkers } = await import("../startup");
-      startWorkers({ noteQueue: mockQueue, instructionQueue: mockQueue }, mockServiceContainer);
+      startWorkers(
+        {
+          noteQueue: mockQueue,
+          instructionQueue: mockQueue,
+          ingredientQueue: mockQueue,
+        },
+        mockServiceContainer
+      );
 
-      // Assert
       expect(mockServiceContainer._workers).toEqual({
         noteWorker: mockWorker,
         instructionWorker: mockWorker,
+        ingredientWorker: mockWorker,
       });
     });
 
     it("should start queue monitoring", async () => {
-      // Arrange
       const mockWorker = { name: "test-worker" };
       const mockWorkers = {
         [vi.mocked(await import("../../config/constants")).WORKER_CONSTANTS
@@ -213,16 +242,20 @@ describe("Worker Startup", () => {
       mockCreateNoteWorker.mockReturnValue(mockWorker);
       mockCreateInstructionWorker.mockReturnValue(mockWorker);
 
-      // Act
       const { startWorkers } = await import("../startup");
-      startWorkers({ noteQueue: mockQueue, instructionQueue: mockQueue }, mockServiceContainer);
+      startWorkers(
+        {
+          noteQueue: mockQueue,
+          instructionQueue: mockQueue,
+          ingredientQueue: mockQueue,
+        },
+        mockServiceContainer
+      );
 
-      // Assert
       expect(mockQueueMonitor.startMonitoring).toHaveBeenCalledWith(mockQueue);
     });
 
     it("should log successful worker startup", async () => {
-      // Arrange
       const mockWorker = { name: "test-worker" };
       const mockWorkers = {
         [vi.mocked(await import("../../config/constants")).WORKER_CONSTANTS
@@ -236,11 +269,16 @@ describe("Worker Startup", () => {
       mockCreateNoteWorker.mockReturnValue(mockWorker);
       mockCreateInstructionWorker.mockReturnValue(mockWorker);
 
-      // Act
       const { startWorkers } = await import("../startup");
-      startWorkers({ noteQueue: mockQueue, instructionQueue: mockQueue }, mockServiceContainer);
+      startWorkers(
+        {
+          noteQueue: mockQueue,
+          instructionQueue: mockQueue,
+          ingredientQueue: mockQueue,
+        },
+        mockServiceContainer
+      );
 
-      // Assert
       expect(mockServiceContainer.logger.log).toHaveBeenCalledWith(
         vi.mocked(await import("../../config/constants")).LOG_MESSAGES.INFO
           .WORKERS_STARTED
@@ -248,7 +286,6 @@ describe("Worker Startup", () => {
     });
 
     it("should handle worker creation errors", async () => {
-      // Arrange
       const error = new Error("Worker creation failed");
       mockCreateWorkerConfig.mockReturnValue({ name: "test-config" });
       mockCreateWorkers.mockImplementation(() => {
@@ -258,12 +295,18 @@ describe("Worker Startup", () => {
       // Act & Assert
       const { startWorkers } = await import("../startup");
       expect(() => {
-        startWorkers({ noteQueue: mockQueue, instructionQueue: mockQueue }, mockServiceContainer);
+        startWorkers(
+          {
+            noteQueue: mockQueue,
+            instructionQueue: mockQueue,
+            ingredientQueue: mockQueue,
+          },
+          mockServiceContainer
+        );
       }).toThrow("Worker creation failed");
     });
 
     it("should handle queue monitoring errors gracefully", async () => {
-      // Arrange
       const mockWorker = { name: "test-worker" };
       const mockWorkers = {
         [vi.mocked(await import("../../config/constants")).WORKER_CONSTANTS
@@ -283,12 +326,18 @@ describe("Worker Startup", () => {
       // Act & Assert
       const { startWorkers } = await import("../startup");
       expect(() => {
-        startWorkers({ noteQueue: mockQueue, instructionQueue: mockQueue }, mockServiceContainer);
+        startWorkers(
+          {
+            noteQueue: mockQueue,
+            instructionQueue: mockQueue,
+            ingredientQueue: mockQueue,
+          },
+          mockServiceContainer
+        );
       }).toThrow("Monitoring failed");
     });
 
     it("should handle service container logger errors", async () => {
-      // Arrange
       const mockWorker = { name: "test-worker" };
       const mockWorkers = {
         [vi.mocked(await import("../../config/constants")).WORKER_CONSTANTS
@@ -310,12 +359,18 @@ describe("Worker Startup", () => {
       // Act & Assert
       const { startWorkers } = await import("../startup");
       expect(() => {
-        startWorkers({ noteQueue: mockQueue, instructionQueue: mockQueue }, mockServiceContainer);
+        startWorkers(
+          {
+            noteQueue: mockQueue,
+            instructionQueue: mockQueue,
+            ingredientQueue: mockQueue,
+          },
+          mockServiceContainer
+        );
       }).toThrow("Logger failed");
     });
 
     it("should use correct worker constants", async () => {
-      // Arrange
       const mockWorker = { name: "test-worker" };
       const mockWorkers = {
         [vi.mocked(await import("../../config/constants")).WORKER_CONSTANTS
@@ -329,11 +384,16 @@ describe("Worker Startup", () => {
       mockCreateNoteWorker.mockReturnValue(mockWorker);
       mockCreateInstructionWorker.mockReturnValue(mockWorker);
 
-      // Act
       const { startWorkers } = await import("../startup");
-      startWorkers({ noteQueue: mockQueue, instructionQueue: mockQueue }, mockServiceContainer);
+      startWorkers(
+        {
+          noteQueue: mockQueue,
+          instructionQueue: mockQueue,
+          ingredientQueue: mockQueue,
+        },
+        mockServiceContainer
+      );
 
-      // Assert
       const constants = await import("../../config/constants");
       expect(mockCreateWorkerConfig).toHaveBeenCalledWith(
         constants.WORKER_CONSTANTS.NAMES.NOTE,
@@ -343,7 +403,6 @@ describe("Worker Startup", () => {
     });
 
     it("should use correct log messages", async () => {
-      // Arrange
       const mockWorker = { name: "test-worker" };
       const mockWorkers = {
         [vi.mocked(await import("../../config/constants")).WORKER_CONSTANTS
@@ -357,11 +416,16 @@ describe("Worker Startup", () => {
       mockCreateNoteWorker.mockReturnValue(mockWorker);
       mockCreateInstructionWorker.mockReturnValue(mockWorker);
 
-      // Act
       const { startWorkers } = await import("../startup");
-      startWorkers({ noteQueue: mockQueue, instructionQueue: mockQueue }, mockServiceContainer);
+      startWorkers(
+        {
+          noteQueue: mockQueue,
+          instructionQueue: mockQueue,
+          ingredientQueue: mockQueue,
+        },
+        mockServiceContainer
+      );
 
-      // Assert
       const constants = await import("../../config/constants");
       expect(mockServiceContainer.logger.log).toHaveBeenCalledWith(
         constants.LOG_MESSAGES.INFO.WORKERS_STARTED
@@ -369,21 +433,22 @@ describe("Worker Startup", () => {
     });
 
     it("should handle empty worker configuration array", async () => {
-      // Arrange
       const mockWorkers = {};
       mockCreateWorkerConfig.mockReturnValue({ name: "test-config" });
       mockCreateWorkers.mockReturnValue(mockWorkers);
       mockCreateNoteWorker.mockReturnValue({});
       mockCreateInstructionWorker.mockReturnValue({});
 
-      // Act
       const { startWorkers } = await import("../startup");
       const result = startWorkers(
-        { noteQueue: mockQueue, instructionQueue: mockQueue },
+        {
+          noteQueue: mockQueue,
+          instructionQueue: mockQueue,
+          ingredientQueue: mockQueue,
+        },
         mockServiceContainer
       );
 
-      // Assert
       expect(result).toEqual(mockWorkers);
       expect(mockServiceContainer._workers).toEqual({
         noteWorker: undefined,
@@ -392,7 +457,6 @@ describe("Worker Startup", () => {
     });
 
     it("should handle null or undefined service container", async () => {
-      // Arrange
       const mockWorker = { name: "test-worker" };
       const mockWorkers = {
         [vi.mocked(await import("../../config/constants")).WORKER_CONSTANTS
@@ -421,14 +485,16 @@ describe("Worker Startup", () => {
         close: vi.fn(),
       } as unknown as IServiceContainer;
 
-      // Act
       const { startWorkers } = await import("../startup");
       const result = startWorkers(
-        { noteQueue: mockQueue, instructionQueue: mockQueue },
+        {
+          noteQueue: mockQueue,
+          instructionQueue: mockQueue,
+          ingredientQueue: mockQueue,
+        },
         nullServiceContainer
       );
 
-      // Assert
       expect(result).toEqual(mockWorkers);
       expect(nullServiceContainer._workers).toEqual({
         noteWorker: mockWorker,

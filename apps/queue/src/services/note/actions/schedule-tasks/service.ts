@@ -2,10 +2,9 @@ import type { StructuredLogger } from "../../../../types";
 import type { NotePipelineData } from "../../../../types/notes";
 import type { NoteWorkerDependencies } from "../../../../types/notes";
 import { ActionContext } from "../../../../workers/core/types";
-// import { ScheduleImagesAction } from "../../schedule-images";
-// import { ScheduleIngredientsAction } from "../../schedule-ingredients";
-// import { ScheduleInstructionsAction } from "../../schedule-instructions";
 import { ProcessSourceAction } from "../process-source/action";
+// import { ScheduleImagesAction } from "../../schedule-images";
+import { ScheduleIngredientsAction } from "../schedule-ingredients/action";
 import { ScheduleInstructionsAction } from "../schedule-instructions/action";
 
 export async function scheduleAllFollowupTasks(
@@ -31,8 +30,8 @@ export async function scheduleAllFollowupTasks(
     // Create action instances
     const sourceAction = new ProcessSourceAction();
     const instructionsAction = new ScheduleInstructionsAction();
+    const ingredientAction = new ScheduleIngredientsAction();
     // const imageAction = new ScheduleImagesAction();
-    // const ingredientAction = new ScheduleIngredientsAction();
 
     // Create a mock context for the actions
     const context: ActionContext = {
@@ -54,11 +53,11 @@ export async function scheduleAllFollowupTasks(
       // Process instructions (schedules individual instruction jobs)
       instructionsAction.execute(data, deps, context),
 
+      // Schedule ingredient processing
+      ingredientAction.execute(data, deps, context),
+
       // Schedule image processing
       // imageAction.execute(data, deps, context),
-
-      // Schedule ingredient processing
-      // ingredientAction.execute(data, deps, context),
     ]);
 
     logger.log(

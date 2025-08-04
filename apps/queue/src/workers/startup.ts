@@ -1,3 +1,4 @@
+import { createIngredientWorker } from "./ingredient";
 import { createInstructionWorker } from "./instruction";
 import { createNoteWorker } from "./note";
 
@@ -23,6 +24,7 @@ export function startWorkers(
   queues: {
     noteQueue: Queue;
     instructionQueue: Queue;
+    ingredientQueue: Queue;
     // TODO more queues here
   },
   serviceContainer: IServiceContainer
@@ -38,6 +40,11 @@ export function startWorkers(
       createInstructionWorker,
       queues.instructionQueue
     ),
+    createWorkerConfig(
+      WORKER_CONSTANTS.NAMES.INGREDIENT,
+      createIngredientWorker,
+      queues.ingredientQueue
+    ),
     // TODO more workers here
   ];
 
@@ -46,12 +53,14 @@ export function startWorkers(
   // Start monitoring queues
   queueMonitor.startMonitoring(queues.noteQueue);
   queueMonitor.startMonitoring(queues.instructionQueue);
+  queueMonitor.startMonitoring(queues.ingredientQueue);
   // TODO: Add monitoring for additional queues as they're implemented
 
   // Store workers for graceful shutdown
   serviceContainer._workers = {
     noteWorker: workers[WORKER_CONSTANTS.NAMES.NOTE],
     instructionWorker: workers[WORKER_CONSTANTS.NAMES.INSTRUCTION],
+    ingredientWorker: workers[WORKER_CONSTANTS.NAMES.INGREDIENT],
     // TODO more workers here
   } as WorkerRegistry<FlexibleWorker>;
 
