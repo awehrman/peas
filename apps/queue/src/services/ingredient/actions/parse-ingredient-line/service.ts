@@ -6,6 +6,7 @@ import { PROCESSING_CONSTANTS } from "../../../../config/constants";
 import type { ParsedSegment } from "../../../../schemas/base";
 import type { StructuredLogger } from "../../../../types";
 import type { IngredientJobData } from "../../../../workers/ingredient/dependencies";
+import { CachedIngredientParser } from "../../cached-ingredient-parser";
 
 /**
  * Parse an ingredient line into structured segments.
@@ -29,37 +30,117 @@ export async function parseIngredientLine(
 
     const startTime = Date.now();
 
-    // Dynamically load the requested parser version (v1 or v2)
-    const modulePath =
-      PROCESSING_CONSTANTS.INGREDIENT_PARSER_VERSION === "v1"
-        ? "@peas/parser/v1/minified"
-        : "@peas/parser/v2/minified";
+    // First, check if we have a cached result for this exact ingredient string
+    let parseResult: ParserResult = { rule: "", type: "", values: [] };
+    let parsedSegments: ParsedSegment[] = [];
+    let usedCache = false;
 
-    const { parse } = (await import(modulePath)) as {
-      parse: (input: string) => ParserResult;
-    };
+    try {
+      const cachedResult = await CachedIngredientParser.parseIngredientLine(
+        data.ingredientReference,
+        { cacheResults: true }
+      );
 
-    const parseResult = parse(data.ingredientReference);
+      // If we got a cached result with good confidence, use it
+      if (cachedResult.confidence >= 0.7) {
+        usedCache = true;
+        logger.log(
+          `[PARSE_INGREDIENT_LINE] Using cached result for: "${data.ingredientReference}" (confidence: ${cachedResult.confidence})`
+        );
 
-    const processingTime = Date.now() - startTime;
+        // Convert cached parser result to ParsedSegment format
+        const cachedSegments: ParsedSegment[] = [];
+        let segmentIndex = 0;
 
-    logger.log(
-      `[PARSE_INGREDIENT_LINE] Parsed ${parseResult.values.length} segments in ${processingTime}ms`
-    );
+        if (cachedResult.amount) {
+          cachedSegments.push({
+            index: segmentIndex++,
+            rule: "amount",
+            type: "amount",
+            value: cachedResult.amount,
+            processingTime: cachedResult.processingTime,
+          });
+        }
 
-    // Map raw parser segments → shared ParsedSegment shape
-    const parsedSegments: ParsedSegment[] = parseResult.values.map(
-      (seg, idx) => ({
+        if (cachedResult.unit) {
+          cachedSegments.push({
+            index: segmentIndex++,
+            rule: "unit",
+            type: "unit",
+            value: cachedResult.unit,
+            processingTime: cachedResult.processingTime,
+          });
+        }
+
+        if (cachedResult.ingredient) {
+          cachedSegments.push({
+            index: segmentIndex++,
+            rule: "ingredient",
+            type: "ingredient",
+            value: cachedResult.ingredient,
+            processingTime: cachedResult.processingTime,
+          });
+        }
+
+        if (cachedResult.modifiers && cachedResult.modifiers.length > 0) {
+          cachedSegments.push({
+            index: segmentIndex++,
+            rule: "modifier",
+            type: "modifier",
+            value: cachedResult.modifiers.join(", "),
+            processingTime: cachedResult.processingTime,
+          });
+        }
+
+        parsedSegments = cachedSegments;
+        parseResult = {
+          rule: "cached_result",
+          type: "cached",
+          values: cachedSegments,
+        };
+
+        logger.log(
+          `[PARSE_INGREDIENT_LINE] Cached result used: ${cachedSegments.length} segments`
+        );
+      }
+    } catch (cachedError) {
+      logger.log(`[PARSE_INGREDIENT_LINE] Cache check failed: ${cachedError}`);
+    }
+
+    // If no cached result or low confidence, use the main parser
+    if (!usedCache) {
+      logger.log(
+        `[PARSE_INGREDIENT_LINE] No cached result found, using main parser for: "${data.ingredientReference}"`
+      );
+
+      // Dynamically load the requested parser version (v1 or v2)
+      const modulePath =
+        PROCESSING_CONSTANTS.INGREDIENT_PARSER_VERSION === "v1"
+          ? "@peas/parser/v1/minified"
+          : "@peas/parser/v2/minified";
+
+      const { parse } = (await import(modulePath)) as {
+        parse: (input: string) => ParserResult;
+      };
+
+      parseResult = parse(data.ingredientReference);
+
+      // Map raw parser segments → shared ParsedSegment shape
+      parsedSegments = parseResult.values.map((seg, idx) => ({
         index: idx,
         rule: seg.rule,
         type: seg.type as ParsedSegment["type"],
         value: String(seg.value),
-        processingTime,
-      })
-    );
+        processingTime: Date.now() - startTime,
+      }));
+
+      logger.log(
+        `[PARSE_INGREDIENT_LINE] Main parser result: ${parsedSegments.length} segments`
+      );
+    }
 
     logger.log(
-      `[PARSE_INGREDIENT_LINE] Normalized into ${parsedSegments.length} ParsedSegment records`
+      `[PARSE_INGREDIENT_LINE] Final result: ${parsedSegments.length} ParsedSegment records`
     );
 
     const updatedData: IngredientJobData = {
