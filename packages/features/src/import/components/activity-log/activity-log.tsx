@@ -3,7 +3,7 @@
 import { ActivityGroup } from "./activity-group";
 import { ConnectionStatus } from "./connection-status";
 
-import { ReactNode, useMemo } from "react";
+import { ReactNode, useCallback, useMemo } from "react";
 
 import { getWebSocketUrl } from "../../../utils/websocket-config";
 import { useStatusWebSocket } from "../../hooks/use-status-websocket";
@@ -21,18 +21,8 @@ export function ActivityLog({ className }: Props): ReactNode {
     maxReconnectAttempts: 5,
   });
 
-  // Debug: log all events
-  console.log(
-    `[ActivityLog] Received ${events.length} events:`,
-    events.map((e) => ({
-      context: e.context,
-      message: e.message,
-      importId: e.importId,
-    }))
-  );
-
-  // Convert WebSocket events to Item format, filtering out "Cleaning HTML file..." messages
-  const items: Item[] = useMemo(() => {
+  // Memoize the count tracking logic to avoid recreating maps on every render
+  const countTracking = useMemo(() => {
     // Track instruction count updates by importId
     const instructionCounts = new Map<
       string,
@@ -51,6 +41,22 @@ export function ActivityLog({ className }: Props): ReactNode {
     // Track completed ingredient line indexes to avoid duplicates
     const completedIngredients = new Map<string, Set<number>>();
 
+    return {
+      instructionCounts,
+      ingredientCounts,
+      completedInstructions,
+      completedIngredients,
+    };
+  }, []);
+
+  // Memoize the event processing logic
+  const processedEvents = useMemo(() => {
+    // Reset counts for new processing
+    countTracking.instructionCounts.clear();
+    countTracking.ingredientCounts.clear();
+    countTracking.completedInstructions.clear();
+    countTracking.completedIngredients.clear();
+
     // First pass: collect instruction and ingredient count updates
     events.forEach((event) => {
       // Handle instruction processing
@@ -65,7 +71,10 @@ export function ActivityLog({ className }: Props): ReactNode {
           console.log(
             `[ActivityLog] Instruction count update: ${processed}/${total} for import ${event.importId}`
           );
-          instructionCounts.set(event.importId, { processed, total });
+          countTracking.instructionCounts.set(event.importId, {
+            processed,
+            total,
+          });
         }
       }
 
@@ -81,7 +90,10 @@ export function ActivityLog({ className }: Props): ReactNode {
           console.log(
             `[ActivityLog] Ingredient count update: ${processed}/${total} for import ${event.importId}`
           );
-          ingredientCounts.set(event.importId, { processed, total });
+          countTracking.ingredientCounts.set(event.importId, {
+            processed,
+            total,
+          });
         }
       }
 
@@ -95,24 +107,28 @@ export function ActivityLog({ className }: Props): ReactNode {
         const lineIndex = event.metadata.lineIndex as number;
         if (typeof total === "number" && typeof lineIndex === "number") {
           // Initialize the set for this import if it doesn't exist
-          if (!completedInstructions.has(event.importId)) {
-            completedInstructions.set(event.importId, new Set());
+          if (!countTracking.completedInstructions.has(event.importId)) {
+            countTracking.completedInstructions.set(event.importId, new Set());
           }
 
-          const completedSet = completedInstructions.get(event.importId)!;
+          const completedSet = countTracking.completedInstructions.get(
+            event.importId
+          )!;
 
           // Only count this instruction if we haven't seen this lineIndex before
           if (!completedSet.has(lineIndex)) {
             completedSet.add(lineIndex);
 
-            const existing = instructionCounts.get(event.importId);
+            const existing = countTracking.instructionCounts.get(
+              event.importId
+            );
             const currentProcessed = existing ? existing.processed : 0;
             const newProcessed = currentProcessed + 1;
 
             console.log(
               `[ActivityLog] Instruction completed: ${newProcessed}/${total} for import ${event.importId} (lineIndex: ${lineIndex})`
             );
-            instructionCounts.set(event.importId, {
+            countTracking.instructionCounts.set(event.importId, {
               processed: newProcessed,
               total,
             });
@@ -134,24 +150,26 @@ export function ActivityLog({ className }: Props): ReactNode {
         const lineIndex = event.metadata.lineIndex as number;
         if (typeof total === "number" && typeof lineIndex === "number") {
           // Initialize the set for this import if it doesn't exist
-          if (!completedIngredients.has(event.importId)) {
-            completedIngredients.set(event.importId, new Set());
+          if (!countTracking.completedIngredients.has(event.importId)) {
+            countTracking.completedIngredients.set(event.importId, new Set());
           }
 
-          const completedSet = completedIngredients.get(event.importId)!;
+          const completedSet = countTracking.completedIngredients.get(
+            event.importId
+          )!;
 
           // Only count this ingredient if we haven't seen this lineIndex before
           if (!completedSet.has(lineIndex)) {
             completedSet.add(lineIndex);
 
-            const existing = ingredientCounts.get(event.importId);
+            const existing = countTracking.ingredientCounts.get(event.importId);
             const currentProcessed = existing ? existing.processed : 0;
             const newProcessed = currentProcessed + 1;
 
             console.log(
               `[ActivityLog] Ingredient completed: ${newProcessed}/${total} for import ${event.importId} (lineIndex: ${lineIndex})`
             );
-            ingredientCounts.set(event.importId, {
+            countTracking.ingredientCounts.set(event.importId, {
               processed: newProcessed,
               total,
             });
@@ -164,8 +182,15 @@ export function ActivityLog({ className }: Props): ReactNode {
       }
     });
 
-    // Filter and process events
-    const filteredEvents = events.filter((event) => {
+    return {
+      instructionCounts: countTracking.instructionCounts,
+      ingredientCounts: countTracking.ingredientCounts,
+    };
+  }, [events, countTracking]);
+
+  // Memoize the filtering logic
+  const filteredEvents = useMemo(() => {
+    return events.filter((event) => {
       const ctx = (event.context || "").toLowerCase();
       const message = (
         event.errorMessage ||
@@ -194,7 +219,10 @@ export function ActivityLog({ className }: Props): ReactNode {
 
       return true;
     });
+  }, [events]);
 
+  // Memoize the items conversion
+  const items: Item[] = useMemo(() => {
     return filteredEvents.map((event) => {
       let text =
         event.errorMessage ||
@@ -204,7 +232,7 @@ export function ActivityLog({ className }: Props): ReactNode {
 
       // Update instruction count messages with latest progress
       if (event.context === "parse_html_instructions" && event.importId) {
-        const countData = instructionCounts.get(event.importId);
+        const countData = processedEvents.instructionCounts.get(event.importId);
         if (countData) {
           text = `${countData.processed}/${countData.total} instructions`;
         }
@@ -212,7 +240,7 @@ export function ActivityLog({ className }: Props): ReactNode {
 
       // Update ingredient count messages with latest progress
       if (event.context === "parse_html_ingredients" && event.importId) {
-        const countData = ingredientCounts.get(event.importId);
+        const countData = processedEvents.ingredientCounts.get(event.importId);
         if (countData) {
           text = `${countData.processed}/${countData.total} ingredients`;
         }
@@ -228,10 +256,29 @@ export function ActivityLog({ className }: Props): ReactNode {
         context: event.context, // Include context for operation type
       };
     });
+  }, [filteredEvents, processedEvents]);
+
+  // Memoize the import groups
+  const importGroups = useMemo(() => {
+    return groupStatusItemsByImport(items);
+  }, [items]);
+
+  // Memoize the debug logging to prevent unnecessary console calls
+  const debugLog = useCallback(() => {
+    console.log(
+      `[ActivityLog] Received ${events.length} events:`,
+      events.map((e) => ({
+        context: e.context,
+        message: e.message,
+        importId: e.importId,
+      }))
+    );
   }, [events]);
 
-  // Group items by import ID first, then by operation type within each import
-  const importGroups = groupStatusItemsByImport(items);
+  // Only log in development
+  if (process.env.NODE_ENV === "development") {
+    debugLog();
+  }
 
   if (importGroups.length === 0) {
     return (

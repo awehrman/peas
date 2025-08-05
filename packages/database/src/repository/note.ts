@@ -1,3 +1,5 @@
+import type { Prisma } from "@prisma/client";
+
 import { prisma } from "../client.js";
 import type {
   ParsedHTMLFile,
@@ -374,7 +376,7 @@ export async function updateNote(
       | "QUEUE_JOB_FAILED"
       | "IMAGE_UPLOAD_FAILED"
       | "UNKNOWN_ERROR";
-    errorDetails?: any;
+    errorDetails?: Prisma.InputJsonValue;
     duplicateConfidence?: number;
     titleSimHash?: string;
   }

@@ -12,9 +12,7 @@ export interface IngredientWorkerDependencies extends BaseWorkerDependencies {
     /**
      * Parse ingredient text (extract structured data)
      */
-    parseIngredient: (
-      data: IngredientJobData
-    ) => Promise<IngredientJobData>;
+    parseIngredient: (data: IngredientJobData) => Promise<IngredientJobData>;
     /**
      * Save ingredient to database
      */
@@ -74,4 +72,4 @@ export function buildIngredientDependencies(
       },
     },
   };
-} 
+}

@@ -18,6 +18,14 @@ export class ActionCache {
 
   private constructor() {
     this.startCleanupInterval();
+
+    // Force reset memory cache on startup if environment variable is set
+    if (process.env.FORCE_RESET_MEMORY_CACHE === "true") {
+      this.resetMemoryCache();
+      console.log(
+        "Memory cache reset on startup due to FORCE_RESET_MEMORY_CACHE=true"
+      );
+    }
   }
 
   public static getInstance(): ActionCache {
@@ -149,6 +157,18 @@ export class ActionCache {
     } catch (error) {
       console.warn("Cache clear all failed:", error);
     }
+  }
+
+  /**
+   * Reset only the memory cache (keeps Redis cache intact)
+   */
+  public resetMemoryCache(): void {
+    this.memoryCache.clear();
+    console.log(
+      "Memory cache reset - cleared",
+      this.memoryCache.size,
+      "entries"
+    );
   }
 
   /**

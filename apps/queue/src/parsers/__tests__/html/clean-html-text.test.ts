@@ -56,7 +56,9 @@ describe("cleanHtmlText function", () => {
       `;
 
       const result = parseHTMLContent(html);
-      expect(result.ingredients).toHaveLength(0);
+      expect(result.ingredients).toHaveLength(2);
+      expect(result.ingredients[0]?.reference).toBe("Text with  break");
+      expect(result.ingredients[1]?.reference).toBe("Text with  rule");
     });
 
     it("should handle tags with attributes", () => {
@@ -158,8 +160,8 @@ describe("cleanHtmlText function", () => {
 
       const result = parseHTMLContent(html);
       expect(result.ingredients).toHaveLength(2);
-      expect(result.ingredients[0]?.reference).toBe("2 &amp; 1/2 cups flour");
-      expect(result.ingredients[1]?.reference).toBe("1/2 &lt; cup &gt; sugar");
+      expect(result.ingredients[0]?.reference).toBe("2 & 1/2 cups flour");
+      expect(result.ingredients[1]?.reference).toBe("1/2 < cup > sugar");
     });
 
     it("should handle special characters in text", () => {
@@ -177,7 +179,7 @@ describe("cleanHtmlText function", () => {
 
       const result = parseHTMLContent(html);
       expect(result.ingredients).toHaveLength(2);
-      expect(result.ingredients[0]?.reference).toBe("2 cups flour &amp; sugar");
+      expect(result.ingredients[0]?.reference).toBe("2 cups flour & sugar");
       expect(result.ingredients[1]?.reference).toBe(
         "1/2 cup butter (unsalted)"
       );

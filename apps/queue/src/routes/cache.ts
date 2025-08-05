@@ -276,4 +276,24 @@ cacheRouter.post("/ingredient/invalidate", async (req, res) => {
   }
 });
 
+/**
+ * Reset memory cache only
+ */
+cacheRouter.post("/reset-memory", async (req, res) => {
+  try {
+    actionCache.resetMemoryCache();
+    res.json({
+      success: true,
+      message: "Memory cache reset successfully",
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: "Failed to reset memory cache",
+      details: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+});
+
 export { cacheRouter };

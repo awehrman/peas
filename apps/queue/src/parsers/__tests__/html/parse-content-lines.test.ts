@@ -93,15 +93,16 @@ describe("parseContentLines function", () => {
 
       const result = parseHTMLContent(html);
 
-      expect(result.instructions).toHaveLength(4);
-      expect(result.instructions[0]?.reference).toBe("2 cups flour");
-      expect(result.instructions[1]?.reference).toBe(
+      expect(result.instructions).toHaveLength(3);
+      expect(result.ingredients).toHaveLength(1);
+      expect(result.ingredients[0]?.reference).toBe("2 cups flour");
+      expect(result.instructions[0]?.reference).toBe(
         "Mix all ingredients together in a large bowl"
       );
-      expect(result.instructions[2]?.reference).toBe(
+      expect(result.instructions[1]?.reference).toBe(
         "Bake at 350°F for 30 minutes"
       );
-      expect(result.instructions[3]?.reference).toBe("1 cup sugar");
+      expect(result.instructions[2]?.reference).toBe("1 cup sugar");
     });
 
     it("should not parse short lines as instructions", () => {
@@ -134,7 +135,7 @@ describe("parseContentLines function", () => {
           <body>
             <en-note>
               <h1>Recipe Title</h1>
-              <p>Preheat oven to 350°F</p>
+              <p>1 cup butter</p>
               <br />
               <p>2 cups flour</p>
               <p>1 cup sugar</p>
@@ -147,9 +148,12 @@ describe("parseContentLines function", () => {
 
       const result = parseHTMLContent(html);
 
-      expect(result.instructions).toHaveLength(2);
-      expect(result.instructions[0]?.reference).toBe("Preheat oven to 350°F");
-      expect(result.instructions[1]?.reference).toBe(
+      expect(result.instructions).toHaveLength(1);
+      expect(result.ingredients).toHaveLength(3);
+      expect(result.ingredients[0]?.reference).toBe("1 cup butter");
+      expect(result.ingredients[1]?.reference).toBe("2 cups flour");
+      expect(result.ingredients[2]?.reference).toBe("1 cup sugar");
+      expect(result.instructions[0]?.reference).toBe(
         "Mix ingredients and bake for 30 minutes"
       );
     });
@@ -217,8 +221,8 @@ describe("parseContentLines function", () => {
 
       const result = parseHTMLContent(html);
 
-      expect(result.ingredients).toHaveLength(2);
-      expect(result.instructions).toHaveLength(2);
+      expect(result.ingredients).toHaveLength(3);
+      expect(result.instructions).toHaveLength(1);
     });
   });
 
@@ -250,7 +254,7 @@ describe("parseContentLines function", () => {
             <en-note>
               <h1>Recipe Title</h1>
               <br />
-              <p>First instruction</p>
+              <p>1 cup butter</p>
               <br />
               <p>Second instruction</p>
               <br />
@@ -261,8 +265,10 @@ describe("parseContentLines function", () => {
 
       const result = parseHTMLContent(html);
 
-      expect(result.ingredients).toHaveLength(0);
-      expect(result.instructions).toHaveLength(2);
+      expect(result.ingredients).toHaveLength(1);
+      expect(result.instructions).toHaveLength(1);
+      expect(result.ingredients[0]?.reference).toBe("1 cup butter");
+      expect(result.instructions[0]?.reference).toBe("Second instruction");
     });
 
     it("should handle content with only ingredients", () => {

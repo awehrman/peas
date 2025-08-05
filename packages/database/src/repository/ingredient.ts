@@ -1,3 +1,5 @@
+import type { ParseStatus } from "@prisma/client";
+
 import { prisma } from "../client.js";
 
 // Define the ParsedSegment type locally to avoid circular dependencies
@@ -71,7 +73,7 @@ export async function saveParsedIngredientLine(
   noteId: string,
   lineIndex: number,
   reference: string,
-  parseStatus: string,
+  parseStatus: ParseStatus,
   rule: string | undefined,
   blockIndex: number,
   isActive: boolean,
@@ -90,7 +92,7 @@ export async function saveParsedIngredientLine(
         where: { id: existingLine.id },
         data: {
           reference,
-          parseStatus: parseStatus as any, // TODO: type this properly
+          parseStatus,
           rule,
           parsedAt: new Date(),
           isActive,
@@ -103,7 +105,7 @@ export async function saveParsedIngredientLine(
           lineIndex,
           reference,
           rule,
-          parseStatus: parseStatus as any, // TODO: type this properly
+          parseStatus,
           parsedAt: new Date(),
           isActive,
         },
@@ -131,13 +133,37 @@ export async function saveParsedIngredientLine(
 }
 
 /**
+ * Update a parsed ingredient line by its ID
+ */
+export async function updateParsedIngredientLineById(
+  lineId: string,
+  reference: string,
+  parseStatus: ParseStatus,
+  rule: string | undefined,
+  isActive: boolean
+): Promise<{ id: string }> {
+  const lineRecord = await prisma.parsedIngredientLine.update({
+    where: { id: lineId },
+    data: {
+      reference,
+      parseStatus,
+      rule,
+      parsedAt: new Date(),
+      isActive,
+    },
+  });
+
+  return { id: lineRecord.id };
+}
+
+/**
  * Upsert a parsed ingredient line (create or update)
  */
 export async function upsertParsedIngredientLine(
   noteId: string,
   lineIndex: number,
   reference: string,
-  parseStatus: string,
+  parseStatus: ParseStatus,
   rule: string | undefined,
   blockIndex: number,
   isActive: boolean
@@ -146,6 +172,7 @@ export async function upsertParsedIngredientLine(
     where: {
       noteId,
       lineIndex,
+      reference, // Include reference in the lookup to prevent duplicates
     },
   });
 
@@ -153,8 +180,7 @@ export async function upsertParsedIngredientLine(
     ? await prisma.parsedIngredientLine.update({
         where: { id: existingLine.id },
         data: {
-          reference,
-          parseStatus: parseStatus as any, // TODO: type this properly
+          parseStatus,
           rule,
           parsedAt: new Date(),
           isActive,
@@ -167,7 +193,7 @@ export async function upsertParsedIngredientLine(
           lineIndex,
           reference,
           rule,
-          parseStatus: parseStatus as any, // TODO: type this properly
+          parseStatus,
           parsedAt: new Date(),
           isActive,
         },

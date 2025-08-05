@@ -160,13 +160,13 @@ function extractContent($: CheerioAPI, enNote: Cheerio<Element>): string[] {
   if (h1.length > 0) {
     return h1
       .nextAll()
-      .map((i: number, el: Element) => $(el).html())
+      .map((i: number, el: Element) => $(el).text())
       .get();
   }
 
   return enNote
     .children()
-    .map((i: number, el: Element) => $(el).html())
+    .map((i: number, el: Element) => $(el).text())
     .get();
 }
 
@@ -254,21 +254,27 @@ function isEmptyLine(line: string): boolean {
 }
 
 /**
- * Clean HTML text by removing tags and trimming whitespace
+ * Clean HTML text by trimming whitespace
+ * Note: HTML entities are already decoded by Cheerio's .text() method
  */
 function cleanHtmlText(text: string): string {
-  return text
-    .replace(
-      HTML_PARSING_CONSTANTS.PATTERNS.HTML_TAGS,
-      HTML_PARSING_CONSTANTS.DEFAULTS.EMPTY_STRING
-    )
-    .trim();
+  return text.trim();
 }
 
 /**
  * Check if a line should be treated as an instruction
  */
 function isInstructionLine(contents: string[], lineIndex: number): boolean {
+  // Find the first non-empty line index
+  const firstNonEmptyLineIndex = contents.findIndex(
+    (line) => !isEmptyLine(line)
+  );
+
+  // If this is the first non-empty line, it should always be treated as an ingredient
+  if (lineIndex === firstNonEmptyLineIndex) {
+    return false;
+  }
+
   const prevLine =
     lineIndex > 0
       ? contents[lineIndex - 1] || HTML_PARSING_CONSTANTS.DEFAULTS.EMPTY_STRING

@@ -12,7 +12,11 @@ describe("isInstructionLine function", () => {
               <h1>Recipe Title</h1>
               <p>2 cups flour</p>
               <br />
-              <p>Mix ingredients together</p>
+              <p>Mix dry ingredients together</p>
+              <br />
+              <p>Add wet ingredients and mix well</p>
+              <br />
+              <p>Bake at 350°F for 30 minutes</p>
               <br />
               <p>1 cup sugar</p>
             </en-note>
@@ -22,13 +26,19 @@ describe("isInstructionLine function", () => {
 
       const result = parseHTMLContent(html);
 
-      expect(result.instructions).toHaveLength(3);
-      expect(result.instructions[0]?.reference).toBe("2 cups flour");
-      expect(result.instructions[1]?.reference).toBe(
-        "Mix ingredients together"
+      expect(result.instructions).toHaveLength(4);
+      expect(result.ingredients).toHaveLength(1);
+      expect(result.ingredients[0]?.reference).toBe("2 cups flour");
+      expect(result.instructions[0]?.reference).toBe(
+        "Mix dry ingredients together"
       );
-      expect(result.instructions[2]?.reference).toBe("1 cup sugar");
-      expect(result.ingredients).toHaveLength(0);
+      expect(result.instructions[1]?.reference).toBe(
+        "Add wet ingredients and mix well"
+      );
+      expect(result.instructions[2]?.reference).toBe(
+        "Bake at 350°F for 30 minutes"
+      );
+      expect(result.instructions[3]?.reference).toBe("1 cup sugar");
     });
 
     it("should detect instruction line at the beginning", () => {
@@ -37,7 +47,7 @@ describe("isInstructionLine function", () => {
           <body>
             <en-note>
               <h1>Recipe Title</h1>
-              <p>Preheat oven to 350°F</p>
+              <p>1 cup butter</p>
               <br />
               <p>2 cups flour</p>
               <p>1 cup sugar</p>
@@ -48,8 +58,9 @@ describe("isInstructionLine function", () => {
 
       const result = parseHTMLContent(html);
 
-      expect(result.instructions).toHaveLength(1);
-      expect(result.instructions[0]?.reference).toBe("Preheat oven to 350°F");
+      expect(result.instructions).toHaveLength(0);
+      expect(result.ingredients).toHaveLength(3);
+      expect(result.ingredients[0]?.reference).toBe("1 cup butter");
     });
 
     it("should detect instruction line at the end", () => {
@@ -157,18 +168,19 @@ describe("isInstructionLine function", () => {
 
       const result = parseHTMLContent(html);
 
-      expect(result.instructions).toHaveLength(5);
-      expect(result.instructions[0]?.reference).toBe("2 cups flour");
-      expect(result.instructions[1]?.reference).toBe(
+      expect(result.instructions).toHaveLength(4);
+      expect(result.ingredients).toHaveLength(1);
+      expect(result.ingredients[0]?.reference).toBe("2 cups flour");
+      expect(result.instructions[0]?.reference).toBe(
         "Mix dry ingredients together"
       );
-      expect(result.instructions[2]?.reference).toBe(
+      expect(result.instructions[1]?.reference).toBe(
         "Add wet ingredients and mix well"
       );
-      expect(result.instructions[3]?.reference).toBe(
+      expect(result.instructions[2]?.reference).toBe(
         "Bake at 350°F for 30 minutes"
       );
-      expect(result.instructions[4]?.reference).toBe("1 cup sugar");
+      expect(result.instructions[3]?.reference).toBe("1 cup sugar");
     });
 
     it("should handle consecutive instruction lines", () => {
@@ -191,25 +203,26 @@ describe("isInstructionLine function", () => {
 
       const result = parseHTMLContent(html);
 
-      expect(result.instructions).toHaveLength(4);
-      expect(result.instructions[0]?.reference).toBe("2 cups flour");
-      expect(result.instructions[1]?.reference).toBe(
+      expect(result.instructions).toHaveLength(3);
+      expect(result.ingredients).toHaveLength(1);
+      expect(result.ingredients[0]?.reference).toBe("2 cups flour");
+      expect(result.instructions[0]?.reference).toBe(
         "Mix ingredients together"
       );
-      expect(result.instructions[2]?.reference).toBe("Bake immediately");
-      expect(result.instructions[3]?.reference).toBe("1 cup sugar");
+      expect(result.instructions[1]?.reference).toBe("Bake immediately");
+      expect(result.instructions[2]?.reference).toBe("1 cup sugar");
     });
   });
 
   describe("Edge cases", () => {
-    it("should handle instruction line with only one line of content", () => {
+    it("should handle ingredient line with only one line of content", () => {
       const html = `
         <html>
           <body>
             <en-note>
               <h1>Recipe Title</h1>
               <br />
-              <p>Mix ingredients together</p>
+              <p>1 cup butter</p>
               <br />
             </en-note>
           </body>
@@ -218,10 +231,9 @@ describe("isInstructionLine function", () => {
 
       const result = parseHTMLContent(html);
 
-      expect(result.instructions).toHaveLength(1);
-      expect(result.instructions[0]?.reference).toBe(
-        "Mix ingredients together"
-      );
+      expect(result.instructions).toHaveLength(0);
+      expect(result.ingredients).toHaveLength(1);
+      expect(result.ingredients[0]?.reference).toBe("1 cup butter");
     });
 
     it("should handle content with only instructions", () => {
@@ -231,9 +243,9 @@ describe("isInstructionLine function", () => {
             <en-note>
               <h1>Recipe Title</h1>
               <br />
-              <p>First instruction</p>
+              <p>1 cup butter</p>
               <br />
-              <p>Second instruction</p>
+              <p>First instruction</p>
               <br />
             </en-note>
           </body>
@@ -242,8 +254,10 @@ describe("isInstructionLine function", () => {
 
       const result = parseHTMLContent(html);
 
-      expect(result.instructions).toHaveLength(2);
-      expect(result.ingredients).toHaveLength(0);
+      expect(result.instructions).toHaveLength(1);
+      expect(result.ingredients).toHaveLength(1);
+      expect(result.ingredients[0]?.reference).toBe("1 cup butter");
+      expect(result.instructions[0]?.reference).toBe("First instruction");
     });
   });
 });

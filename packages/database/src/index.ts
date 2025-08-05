@@ -1,10 +1,10 @@
-export * from "./client";
-export * from "./repository/note";
-export * from "./repository/user";
-export * from "./repository/status";
-export * from "./repository/source";
-export * from "./repository/instruction";
 export * from "./repository/ingredient";
+export * from "./repository/instruction";
+export * from "./repository/note";
+export * from "./repository/source";
+export * from "./repository/status";
+export { prisma } from "./client";
+export * from "@prisma/client";
 export type {
   ParsedIngredientLine,
   ParsedInstructionLine,

@@ -1,5 +1,7 @@
 import { createHash } from "crypto";
 
+import type { StructuredLogger } from "../../types";
+import { LogLevel } from "../../types";
 import {
   CACHE_OPTIONS,
   CacheKeyGenerator,
@@ -12,13 +14,18 @@ import {
 
 /**
  * Interface for ingredient parsing result
+ * Matches the exact structure returned by v1 parser
  */
 export interface IngredientParseResult {
-  amount?: string;
-  unit?: string;
-  ingredient: string;
-  modifiers?: string[];
-  confidence: number;
+  rule: string;
+  type: string;
+  values: Array<{
+    index: number;
+    rule: string;
+    type: string;
+    value: string;
+    processingTime: number;
+  }>;
   processingTime: number;
 }
 
@@ -41,27 +48,57 @@ export class CachedIngredientParser {
    */
   static async parseIngredientLine(
     line: string,
-    options: IngredientParsingOptions = {}
+    options: IngredientParsingOptions = {},
+    logger?: StructuredLogger
   ): Promise<IngredientParseResult> {
     const { cacheResults = true } = options;
 
     if (!cacheResults) {
-      return this.parseIngredientLineDirect(line, options);
+      // If caching is disabled, use v1 parser directly
+      return this.parseWithV1Parser(line, logger);
     }
 
     // Generate cache key based on line content and options
     const cacheKey = this.generateCacheKey(line, options);
 
-    return actionCache.getOrSet(
-      cacheKey,
-      async () => {
-        console.log(
-          `[CACHED_INGREDIENT_PARSER] Cache miss for line: "${line}"`
-        );
-        return this.parseIngredientLineDirect(line, options);
-      },
-      CACHE_OPTIONS.ACTION_RESULT
-    );
+    return actionCache
+      .getOrSet(
+        cacheKey,
+        async () => {
+          if (logger) {
+            logger.log(
+              `[CACHED_INGREDIENT_PARSER] Cache miss for line: "${line}"`,
+              LogLevel.INFO,
+              { line, cacheKey }
+            );
+          } else {
+            console.log(
+              `[CACHED_INGREDIENT_PARSER] Cache miss for line: "${line}"`
+            );
+          }
+          // Use v1 parser and save result to cache
+          return this.parseWithV1Parser(line, logger);
+        },
+        CACHE_OPTIONS.ACTION_RESULT
+      )
+      .then((result) => {
+        // Log cache hit if we have a logger
+        if (logger) {
+          logger.log(
+            `[CACHED_INGREDIENT_PARSER] Cache hit for line: "${line}"`,
+            LogLevel.INFO,
+            {
+              line,
+              cacheKey,
+              rule: result.rule,
+              type: result.type,
+              valuesCount: result.values.length,
+              processingTime: result.processingTime,
+            }
+          );
+        }
+        return result;
+      });
   }
 
   /**
@@ -70,12 +107,13 @@ export class CachedIngredientParser {
   /* istanbul ignore next -- @preserve */
   static async parseIngredientLines(
     lines: string[],
-    options: IngredientParsingOptions = {}
+    options: IngredientParsingOptions = {},
+    logger?: StructuredLogger
   ): Promise<IngredientParseResult[]> {
     const results: IngredientParseResult[] = [];
 
     for (const line of lines) {
-      const result = await this.parseIngredientLine(line, options);
+      const result = await this.parseIngredientLine(line, options, logger);
       results.push(result);
     }
 
@@ -130,76 +168,84 @@ export class CachedIngredientParser {
   }
 
   /**
-   * Direct ingredient line parsing (without cache)
+   * Parse ingredient line using v1 parser
    */
-  private static async parseIngredientLineDirect(
+  private static async parseWithV1Parser(
     line: string,
-    _options: IngredientParsingOptions
+    logger?: StructuredLogger
   ): Promise<IngredientParseResult> {
     const startTime = Date.now();
 
     try {
-      // Normalize the line
-      const normalizedLine = line.toLowerCase().trim();
+      // Import and use v1 parser
+      const v1Module = await import("@peas/parser/v1/minified");
+      const parse = v1Module.parse;
 
-      // Simple regex-based parsing for common patterns
-      const patterns = [
-        // "1 cup flour" -> amount: "1", unit: "cup", ingredient: "flour"
-        /^(\d+(?:\/\d+)?)\s+(\w+)\s+(.+)$/,
-        // "1/2 cup flour" -> amount: "1/2", unit: "cup", ingredient: "flour"
-        /^(\d+\/\d+)\s+(\w+)\s+(.+)$/,
-        // "flour" -> ingredient: "flour"
-        /^(.+)$/,
-      ];
-
-      for (const pattern of patterns) {
-        const match = normalizedLine.match(pattern);
-        /* istanbul ignore next -- @preserve */
-        if (match) {
-          const processingTime = Date.now() - startTime;
-
-          if (match.length === 4) {
-            // Pattern with amount, unit, ingredient
-            return {
-              amount: match[1],
-              unit: match[2],
-              ingredient: match[3]?.trim() || "",
-              confidence: 0.9,
-              processingTime,
-            };
-          } else if (match.length === 2) {
-            // Pattern with just ingredient
-            return {
-              ingredient: match[1]?.trim() || "",
-              confidence: 0.7,
-              processingTime,
-            };
-          }
-        }
+      if (logger) {
+        logger.log(
+          `[CACHED_INGREDIENT_PARSER] Using v1 parser for: "${line}"`,
+          LogLevel.INFO
+        );
       }
 
-      // Fallback: treat entire line as ingredient
-      /* istanbul ignore next -- @preserve */
-      const processingTime = Date.now() - startTime;
-      /* istanbul ignore next -- @preserve */
-      return {
-        ingredient: normalizedLine,
-        confidence: 0.5,
-        processingTime,
-      };
-    } catch (error) {
-      /* istanbul ignore next -- @preserve */
-      const processingTime = Date.now() - startTime;
-      /* istanbul ignore next -- @preserve */
-      console.warn(
-        `[CACHED_INGREDIENT_PARSER] Error parsing line "${line}":`,
-        error
+      // Parse with v1 parser
+      const parseResult = parse(line);
+      logger?.log(
+        `[CACHED_INGREDIENT_PARSER] v1 parser result: ${JSON.stringify(
+          parseResult,
+          null,
+          2
+        )}`,
+        LogLevel.INFO
       );
 
-      /* istanbul ignore next -- @preserve */
+      // Convert v1 parser result to match the exact structure from logs
+      const result: IngredientParseResult = {
+        rule: parseResult.rule,
+        type: parseResult.type,
+        values: parseResult.values.map(
+          (
+            segment: { type: string; value: unknown; rule: string },
+            index: number
+          ) => ({
+            index,
+            rule: segment.rule,
+            type: segment.type,
+            value: String(segment.value),
+            processingTime: Date.now() - startTime,
+          })
+        ),
+        processingTime: Date.now() - startTime,
+      };
+
+      if (logger) {
+        logger.log(
+          `[CACHED_INGREDIENT_PARSER] Converted result: ${JSON.stringify(result, null, 2)}`,
+          LogLevel.INFO
+        );
+      }
+
+      return result;
+    } catch (error) {
+      const processingTime = Date.now() - startTime;
+
+      if (logger) {
+        logger.log(
+          `[CACHED_INGREDIENT_PARSER] v1 parser failed for "${line}": ${error}`,
+          LogLevel.ERROR
+        );
+      } else {
+        console.warn(
+          `[CACHED_INGREDIENT_PARSER] v1 parser failed for "${line}":`,
+          error
+        );
+      }
+
+      // Fallback: return empty result structure
       return {
-        ingredient: line,
-        confidence: 0.1,
+        rule: "error",
+        type: "error",
+        values: [],
         processingTime,
       };
     }

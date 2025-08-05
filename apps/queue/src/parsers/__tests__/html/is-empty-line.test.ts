@@ -20,7 +20,8 @@ describe("isEmptyLine function", () => {
 
       const result = parseHTMLContent(html);
 
-      expect(result.ingredients).toHaveLength(0);
+      expect(result.ingredients).toHaveLength(1);
+      expect(result.ingredients[0]?.reference).toBe("Ingredient");
     });
 
     it("should detect lines with only whitespace", () => {
@@ -60,7 +61,8 @@ describe("isEmptyLine function", () => {
 
       const result = parseHTMLContent(html);
 
-      expect(result.ingredients).toHaveLength(0);
+      expect(result.ingredients).toHaveLength(1);
+      expect(result.ingredients[0]?.reference).toBe("Ingredient");
     });
 
     it("should detect lines with break tags and content", () => {
@@ -79,7 +81,10 @@ describe("isEmptyLine function", () => {
 
       const result = parseHTMLContent(html);
 
-      expect(result.ingredients).toHaveLength(0);
+      expect(result.ingredients).toHaveLength(3);
+      expect(result.ingredients[0]?.reference).toBe("Ingredient");
+      expect(result.ingredients[1]?.reference).toBe("Contentwith break");
+      expect(result.ingredients[2]?.reference).toBe("Another ingredient");
     });
 
     it("should not detect lines with content as empty", () => {
@@ -122,7 +127,8 @@ describe("isEmptyLine function", () => {
 
       const result = parseHTMLContent(html);
 
-      expect(result.ingredients).toHaveLength(0);
+      expect(result.ingredients).toHaveLength(1);
+      expect(result.ingredients[0]?.reference).toBe("Ingredient");
     });
 
     it("should detect break tags with attributes", () => {
@@ -141,7 +147,8 @@ describe("isEmptyLine function", () => {
 
       const result = parseHTMLContent(html);
 
-      expect(result.ingredients).toHaveLength(0);
+      expect(result.ingredients).toHaveLength(1);
+      expect(result.ingredients[0]?.reference).toBe("Ingredient");
     });
   });
 });

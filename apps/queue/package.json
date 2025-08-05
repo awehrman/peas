@@ -5,8 +5,11 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc --noEmit && tsup src/index.ts --format esm --dts --clean",
+    "dev:reset": "FORCE_RESET_MEMORY_CACHE=true tsx watch src/index.ts",
+    "dev:clean": "FORCE_RESET_MEMORY_CACHE=true tsx watch src/index.ts",
     "start": "ts-node dist/index.js",
+    "start:reset": "FORCE_RESET_MEMORY_CACHE=true ts-node dist/index.js",
+    "build": "tsc --noEmit && tsup src/index.ts --format esm --dts --clean",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",

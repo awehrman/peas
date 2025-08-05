@@ -74,7 +74,21 @@ export function useStatusWebSocket(options: UseStatusWebSocketOptions = {}) {
 
       ws.onmessage = (event) => {
         try {
-          const message: WebSocketMessage = JSON.parse(event.data);
+          // Filter out development server messages (like Vite HMR)
+          const data = event.data.toString();
+          if (
+            data.startsWith("0:") ||
+            data.startsWith("1:") ||
+            data.includes("$@")
+          ) {
+            console.log(
+              "🔌 WebSocket: Ignoring development server message:",
+              data
+            );
+            return;
+          }
+
+          const message: WebSocketMessage = JSON.parse(data);
           console.log("🔌 WebSocket: Received message:", message);
 
           switch (message.type) {

@@ -23,10 +23,6 @@ export async function parseIngredientLine(
   }
 
   try {
-    logger.log(
-      `[PARSE_INGREDIENT_LINE] Starting to parse ingredient: "${data.ingredientReference}" for note: ${data.noteId}`
-    );
-
     const startTime = Date.now();
 
     // Check if we should clear cache (for testing or when cache is stale)
@@ -46,76 +42,46 @@ export async function parseIngredientLine(
     try {
       const cachedResult = await CachedIngredientParser.parseIngredientLine(
         data.ingredientReference,
-        { cacheResults: true }
+        { cacheResults: true },
+        logger
       );
 
-      // If we got a cached result with good confidence, use it
-      if (cachedResult.confidence >= 0.7) {
-        usedCache = true;
-        logger.log(
-          `[PARSE_INGREDIENT_LINE] Using cached result for: "${data.ingredientReference}" (confidence: ${cachedResult.confidence})`
-        );
+      // If we got a cached result, use it (no confidence check needed since it's the actual v1 parser result)
+      usedCache = true;
+      logger.log(
+        `[CACHED RESULT] Using cached result for: ${JSON.stringify(
+          cachedResult,
+          null,
+          2
+        )}`
+      );
 
-        // Convert cached parser result to ParsedSegment format
-        const cachedSegments: ParsedSegment[] = [];
-        let segmentIndex = 0;
+      // Convert cached parser result to ParsedSegment format
+      const cachedSegments: ParsedSegment[] = [];
+      let segmentIndex = 0;
 
-        /* istanbul ignore next -- @preserve */
-        if (cachedResult.amount) {
-          cachedSegments.push({
-            index: segmentIndex++,
-            rule: "amount",
-            type: "amount",
-            value: cachedResult.amount,
-            processingTime: cachedResult.processingTime,
-          });
-        }
+      // Map the cached result values to ParsedSegment format
+      cachedResult.values.forEach((segment) => {
+        cachedSegments.push({
+          index: segmentIndex++,
+          rule: segment.rule,
+          type: segment.type as ParsedSegment["type"],
+          value: segment.value,
+          processingTime: segment.processingTime,
+        });
+      });
 
-        if (cachedResult.unit) {
-          cachedSegments.push({
-            index: segmentIndex++,
-            rule: "unit",
-            type: "unit",
-            value: cachedResult.unit,
-            processingTime: cachedResult.processingTime,
-          });
-        }
+      parsedSegments = cachedSegments;
+      parseResult = {
+        rule: "cached_result",
+        type: "cached",
+        values: cachedSegments,
+      };
 
-        if (cachedResult.ingredient) {
-          cachedSegments.push({
-            index: segmentIndex++,
-            rule: "ingredient",
-            type: "ingredient",
-            value: cachedResult.ingredient,
-            processingTime: cachedResult.processingTime,
-          });
-        }
-
-        if (cachedResult.modifiers && cachedResult.modifiers.length > 0) {
-          cachedSegments.push({
-            index: segmentIndex++,
-            rule: "modifier",
-            type: "modifier",
-            value: cachedResult.modifiers.join(", "),
-            processingTime: cachedResult.processingTime,
-          });
-        }
-
-        parsedSegments = cachedSegments;
-        parseResult = {
-          rule: "cached_result",
-          type: "cached",
-          values: cachedSegments,
-        };
-
-        logger.log(
-          `[PARSE_INGREDIENT_LINE] Cached result used: ${cachedSegments.length} segments`
-        );
-      } else {
-        logger.log(
-          `[PARSE_INGREDIENT_LINE] Cached result confidence too low (${cachedResult.confidence}), will use main parser`
-        );
-      }
+      // Log the cached result structure
+      logger.log(
+        `[PARSE_INGREDIENT_LINE] Cached result structure: ${JSON.stringify(parseResult, null, 2)}`
+      );
     } catch (cachedError) {
       logger.log(`[PARSE_INGREDIENT_LINE] Cache check failed: ${cachedError}`);
     }
@@ -126,39 +92,26 @@ export async function parseIngredientLine(
         `[PARSE_INGREDIENT_LINE] No cached result found, using main parser for: "${data.ingredientReference}"`
       );
 
-      // Try v1 parser first, then fallback to v2 if needed
-      let parserVersion = "v1";
       let parse: (input: string) => ParserResult;
 
       try {
-        // Try v1 parser first
+        // Use v1 parser
         const v1Module = await import("@peas/parser/v1/minified");
         parse = v1Module.parse;
         logger.log(
           `[PARSE_INGREDIENT_LINE] Using v1 parser for: "${data.ingredientReference}"`
         );
       } catch (v1Error) {
-        logger.log(
-          `[PARSE_INGREDIENT_LINE] v1 parser failed, trying v2: ${v1Error}`
-        );
-
-        try {
-          // Fallback to v2 parser
-          const v2Module = await import("@peas/parser/v2/minified");
-          parse = v2Module.parse;
-          parserVersion = "v2";
-          logger.log(
-            `[PARSE_INGREDIENT_LINE] Using v2 parser for: "${data.ingredientReference}"`
-          );
-        } catch (v2Error) {
-          logger.log(
-            `[PARSE_INGREDIENT_LINE] Both v1 and v2 parsers failed: ${v2Error}`
-          );
-          throw new Error(`Failed to load ingredient parser: ${v2Error}`);
-        }
+        logger.log(`[PARSE_INGREDIENT_LINE] v1 parser failed: ${v1Error}`);
+        throw new Error(`Failed to load v1 ingredient parser: ${v1Error}`);
       }
 
       parseResult = parse(data.ingredientReference);
+
+      // Log the entire stringified parser result
+      logger.log(
+        `[PARSE_INGREDIENT_LINE] v1 parser raw result: ${JSON.stringify(parseResult, null, 2)}`
+      );
 
       // Map raw parser segments → shared ParsedSegment shape
       parsedSegments = parseResult.values.map((seg, idx) => ({
@@ -168,15 +121,7 @@ export async function parseIngredientLine(
         value: String(seg.value),
         processingTime: Date.now() - startTime,
       }));
-
-      logger.log(
-        `[PARSE_INGREDIENT_LINE] ${parserVersion} parser result: ${parsedSegments.length} segments`
-      );
     }
-
-    logger.log(
-      `[PARSE_INGREDIENT_LINE] Final result: ${parsedSegments.length} ParsedSegment records`
-    );
 
     const updatedData: IngredientJobData = {
       ...data,
@@ -184,16 +129,12 @@ export async function parseIngredientLine(
       metadata: {
         ...data.metadata,
         parsedSegments,
-        parseResult, // full parser JSON for later persistence
+        parseResult,
         rule: parseResult.rule,
         usedCache,
-        parserVersion: usedCache ? "cached" : "v1", // or v2 if v1 failed
+        parserVersion: usedCache ? "cached" : "v1",
       },
     };
-
-    logger.log(
-      `[PARSE_INGREDIENT_LINE] Successfully parsed ingredient "${data.ingredientReference}" for note: ${data.noteId}`
-    );
 
     return updatedData;
   } catch (error) {

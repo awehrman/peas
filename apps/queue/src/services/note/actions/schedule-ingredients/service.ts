@@ -17,18 +17,6 @@ export async function processIngredients(
     logger.log(
       `[SCHEDULE_INGREDIENTS] Starting ingredient processing for note: ${data.noteId}`
     );
-    logger.log(`[SCHEDULE_INGREDIENTS] File data available: ${!!data.file}`);
-    logger.log(
-      `[SCHEDULE_INGREDIENTS] Has ingredients: ${!!data.file?.ingredients}`
-    );
-    logger.log(
-      `[SCHEDULE_INGREDIENTS] Ingredient count: ${data.file?.ingredients?.length || 0}`
-    );
-    if (data.file) {
-      logger.log(
-        `[SCHEDULE_INGREDIENTS] File keys: ${Object.keys(data.file).join(", ")}`
-      );
-    }
 
     // Check if we should clear cache
     const shouldClearCache = data.metadata?.clearIngredientCache === true;

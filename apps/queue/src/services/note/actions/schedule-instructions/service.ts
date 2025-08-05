@@ -17,18 +17,6 @@ export async function processInstructions(
     logger.log(
       `[SCHEDULE_INSTRUCTIONS] Starting instruction processing for note: ${data.noteId}`
     );
-    logger.log(`[SCHEDULE_INSTRUCTIONS] File data available: ${!!data.file}`);
-    logger.log(
-      `[SCHEDULE_INSTRUCTIONS] Has instructions: ${!!data.file?.instructions}`
-    );
-    logger.log(
-      `[SCHEDULE_INSTRUCTIONS] Instruction count: ${data.file?.instructions?.length || 0}`
-    );
-    if (data.file) {
-      logger.log(
-        `[SCHEDULE_INSTRUCTIONS] File keys: ${Object.keys(data.file).join(", ")}`
-      );
-    }
 
     // Validate that we have file data with instructions
     if (!data.file?.instructions || data.file.instructions.length === 0) {

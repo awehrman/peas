@@ -153,8 +153,8 @@ describe("extractContent function", () => {
 
       const result = parseHTMLContent(html);
 
-      expect(result.contents).toContain("2 cups flour &amp; sugar");
-      expect(result.contents).toContain("1/2 cup <strong>butter</strong>");
+      expect(result.contents).toContain("2 cups flour & sugar");
+      expect(result.contents).toContain("1/2 cup butter");
     });
   });
 });
