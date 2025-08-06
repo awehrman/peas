@@ -125,7 +125,10 @@ export async function parseIngredientLine(
 
     const updatedData: IngredientJobData = {
       ...data,
-      parseStatus: parsedSegments.length > 0 ? "CORRECT" : "ERROR",
+      parseStatus:
+        parsedSegments.length > 0
+          ? "COMPLETED_SUCCESSFULLY"
+          : "COMPLETED_WITH_ERROR",
       metadata: {
         ...data.metadata,
         parsedSegments,
@@ -145,7 +148,7 @@ export async function parseIngredientLine(
     /* istanbul ignore next -- @preserve */
     return {
       ...data,
-      parseStatus: "ERROR",
+      parseStatus: "COMPLETED_WITH_ERROR",
       metadata: {
         ...data.metadata,
         error: error instanceof Error ? error.message : String(error),

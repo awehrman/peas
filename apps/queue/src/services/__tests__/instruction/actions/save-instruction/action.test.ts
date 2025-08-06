@@ -25,7 +25,7 @@ describe("SaveInstructionAction", () => {
       lineIndex: 0,
       importId: "test-import-id",
       jobId: "test-job-id",
-      parseStatus: "PENDING",
+      parseStatus: "AWAITING_PARSING",
       isActive: true,
     };
     mockDeps = {
@@ -105,7 +105,7 @@ describe("SaveInstructionAction", () => {
 
     it("should return the result from saveInstruction service", async () => {
       const mockSaveInstruction = vi.mocked(mockDeps.services.saveInstruction);
-      const modifiedData = { ...mockData, parseStatus: "CORRECT" as const };
+      const modifiedData = { ...mockData, parseStatus: "COMPLETED_SUCCESSFULLY" as const };
       mockSaveInstruction.mockResolvedValue(modifiedData);
 
       const result = await action.execute(mockData, mockDeps, mockContext);

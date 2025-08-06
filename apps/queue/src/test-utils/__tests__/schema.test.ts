@@ -173,11 +173,11 @@ describe("Schema Validation Test Utilities", () => {
 
   describe("testSchemaEnumValues", () => {
     const enumSchema = z.object({
-      status: z.enum(["PENDING", "PROCESSING", "COMPLETED"]),
+      status: z.enum(["AWAITING_PARSING", "PROCESSING", "COMPLETED"]),
     });
 
     it("should validate all enum values", () => {
-      const enumValues = ["PENDING", "PROCESSING", "COMPLETED"] as const;
+      const enumValues = ["AWAITING_PARSING", "PROCESSING", "COMPLETED"] as const;
       enumValues.forEach((value) => {
         const testData = { status: value };
         const result = enumSchema.safeParse(testData);
@@ -191,7 +191,7 @@ describe("Schema Validation Test Utilities", () => {
 
   describe("testSchemaInvalidEnum", () => {
     const enumSchema = z.object({
-      status: z.enum(["PENDING", "PROCESSING", "COMPLETED"]),
+      status: z.enum(["AWAITING_PARSING", "PROCESSING", "COMPLETED"]),
     });
 
     it("should reject invalid enum value", () => {
@@ -344,7 +344,7 @@ describe("Test Data Generators", () => {
       const result = createTestParseResult();
       expect(result).toEqual({
         success: true,
-        parseStatus: "CORRECT",
+        parseStatus: "COMPLETED_SUCCESSFULLY",
         segments: [
           {
             index: 0,
@@ -362,11 +362,11 @@ describe("Test Data Generators", () => {
     it("should create parse result with overrides", () => {
       const result = createTestParseResult({
         success: false,
-        parseStatus: "ERROR",
+        parseStatus: "COMPLETED_WITH_ERROR",
         errorMessage: "Parsing failed",
       });
       expect(result.success).toBe(false);
-      expect(result.parseStatus).toBe("ERROR");
+      expect(result.parseStatus).toBe("COMPLETED_WITH_ERROR");
       expect(result.errorMessage).toBe("Parsing failed");
       expect(result.processingTime).toBe(250); // default value
     });
@@ -436,7 +436,7 @@ describe("Test Data Generators", () => {
       const output = createTestProcessIngredientLineOutput();
       expect(output).toEqual({
         success: true,
-        parseStatus: "CORRECT",
+        parseStatus: "COMPLETED_SUCCESSFULLY",
         segments: [
           {
             index: 0,
@@ -470,11 +470,11 @@ describe("Test Data Generators", () => {
     it("should create process ingredient line output with overrides", () => {
       const output = createTestProcessIngredientLineOutput({
         success: false,
-        parseStatus: "ERROR",
+        parseStatus: "COMPLETED_WITH_ERROR",
         errorMessage: "Processing failed",
       });
       expect(output.success).toBe(false);
-      expect(output.parseStatus).toBe("ERROR");
+      expect(output.parseStatus).toBe("COMPLETED_WITH_ERROR");
       expect(output.errorMessage).toBe("Processing failed");
     });
   });
@@ -487,7 +487,7 @@ describe("Test Data Generators", () => {
         noteId: "123e4567-e89b-12d3-a456-426614174000",
         parseResult: {
           success: true,
-          parseStatus: "CORRECT",
+          parseStatus: "COMPLETED_SUCCESSFULLY",
           segments: [
             {
               index: 0,
@@ -518,7 +518,7 @@ describe("Test Data Generators", () => {
         ingredientLineId: "custom-line",
         parseResult: {
           success: false,
-          parseStatus: "ERROR",
+          parseStatus: "COMPLETED_WITH_ERROR",
           segments: [],
           processingTime: 0,
         },
@@ -651,14 +651,14 @@ describe("Test Data Generators", () => {
             reference: "1 cup flour",
             blockIndex: 0,
             lineIndex: 1,
-            parseStatus: "CORRECT",
+            parseStatus: "COMPLETED_SUCCESSFULLY",
           },
         ],
         instructions: [
           {
             reference: "Mix ingredients together",
             lineIndex: 1,
-            parseStatus: "CORRECT",
+            parseStatus: "COMPLETED_SUCCESSFULLY",
           },
         ],
         images: [
@@ -693,14 +693,14 @@ describe("Test Data Generators", () => {
               reference: "1 cup flour",
               blockIndex: 0,
               lineIndex: 1,
-              parseStatus: "CORRECT",
+              parseStatus: "COMPLETED_SUCCESSFULLY",
             },
           ],
           instructions: [
             {
               reference: "Mix ingredients together",
               lineIndex: 1,
-              parseStatus: "CORRECT",
+              parseStatus: "COMPLETED_SUCCESSFULLY",
             },
           ],
         },
@@ -787,7 +787,7 @@ describe("Test Data Generators", () => {
             {
               reference: "Mix ingredients together",
               lineIndex: 1,
-              parseStatus: "CORRECT",
+              parseStatus: "COMPLETED_SUCCESSFULLY",
             },
           ],
         },
@@ -913,11 +913,11 @@ describe("Test Data Generators", () => {
     it("should create note query with overrides", () => {
       const query = createTestNoteQuery({
         page: "2",
-        status: "PENDING",
+        status: "AWAITING_PARSING",
         search: "custom",
       });
       expect(query.page).toBe("2");
-      expect(query.status).toBe("PENDING");
+      expect(query.status).toBe("AWAITING_PARSING");
       expect(query.search).toBe("custom");
     });
   });
@@ -936,10 +936,10 @@ describe("Test Data Generators", () => {
     it("should create note query result with overrides", () => {
       const result = createTestNoteQueryResult({
         page: 2,
-        status: "PENDING",
+        status: "AWAITING_PARSING",
       });
       expect(result.page).toBe(2);
-      expect(result.status).toBe("PENDING");
+      expect(result.status).toBe("AWAITING_PARSING");
     });
   });
 

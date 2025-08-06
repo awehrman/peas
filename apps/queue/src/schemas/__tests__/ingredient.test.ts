@@ -185,7 +185,7 @@ describe("Ingredient Schemas", () => {
       ProcessIngredientLineOutputSchema,
       createTestProcessIngredientLineOutput({
         success: false,
-        parseStatus: "ERROR" as const,
+        parseStatus: "COMPLETED_WITH_ERROR" as const,
         segments: [],
         errorMessage: "Failed to parse ingredient",
       }),
@@ -197,7 +197,7 @@ describe("Ingredient Schemas", () => {
       ["ingredientLineId", "noteId"],
       {
         success: true,
-        parseStatus: "CORRECT" as const,
+        parseStatus: "COMPLETED_SUCCESSFULLY" as const,
         processingTime: 100,
         ingredientLineId: "line-123",
         noteId: "123e4567-e89b-12d3-a456-426614174000",

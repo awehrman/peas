@@ -94,7 +94,7 @@ export const NoteQuerySchema = z.object({
     .pipe(z.number().min(1).max(100))
     .optional()
     .default(20),
-  status: z.enum(["PENDING", "PROCESSING", "COMPLETED", "FAILED"]).optional(),
+  status: z.enum(["AWAITING_PARSING", "PROCESSING", "COMPLETED", "FAILED"]).optional(),
   search: z.string().min(1).max(100).optional(),
 });
 
@@ -197,7 +197,7 @@ export const IngredientJobDataSchema = z.object({
     id: z.string().uuid("Invalid note ID"),
     title: z.string().optional(),
     html: z.string().min(1),
-    status: z.enum(["PENDING", "PROCESSING", "COMPLETED", "FAILED"]),
+    status: z.enum(["AWAITING_PARSING", "PROCESSING", "COMPLETED", "FAILED"]),
     createdAt: z.date(),
     updatedAt: z.date(),
   }),
@@ -208,7 +208,7 @@ export const InstructionJobDataSchema = z.object({
     id: z.string().uuid("Invalid note ID"),
     title: z.string().optional(),
     html: z.string().min(1),
-    status: z.enum(["PENDING", "PROCESSING", "COMPLETED", "FAILED"]),
+    status: z.enum(["AWAITING_PARSING", "PROCESSING", "COMPLETED", "FAILED"]),
     createdAt: z.date(),
     updatedAt: z.date(),
   }),
@@ -250,7 +250,7 @@ export const CategorizationJobDataSchema = z.object({
 export const StatusEventSchema = z.object({
   importId: z.string().uuid("Invalid import ID"),
   noteId: z.string().uuid("Invalid note ID").optional(),
-  status: z.enum(["PENDING", "PROCESSING", "COMPLETED", "FAILED"]),
+  status: z.enum(["AWAITING_PARSING", "PROCESSING", "COMPLETED", "FAILED"]),
   message: z.string().max(1000).optional(),
   context: z.string().max(500).optional(),
   currentCount: z.number().min(0).optional(),

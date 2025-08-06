@@ -1,8 +1,13 @@
 enum ParseStatus {
-  PENDING
+  AWAITING_PARSING
+  COMPLETED_WITH_ERROR
+  COMPLETED_SUCCESSFULLY
+}
+
+enum ReviewStatus {
+  UNREVIEWED
   CORRECT
   INCORRECT
-  ERROR
 }
 
 // Parsing module
@@ -16,7 +21,8 @@ model ParsedIngredientLine {
   reference  String
   rule       String?
 
-  parseStatus ParseStatus @default(PENDING)
+  parseStatus ParseStatus @default(AWAITING_PARSING)
+  reviewStatus ReviewStatus @default(UNREVIEWED)
   parsedAt              DateTime?
   parsed                ParsedSegment[]
   queueJobs QueueJob[]
@@ -43,7 +49,8 @@ model ParsedInstructionLine {
   originalText String
   normalizedText String?
 
-  parseStatus ParseStatus @default(PENDING)
+  parseStatus ParseStatus @default(AWAITING_PARSING)
+  reviewStatus ReviewStatus @default(UNREVIEWED)
 
   isActive Boolean @default(true)
 

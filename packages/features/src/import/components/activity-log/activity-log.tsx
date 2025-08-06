@@ -21,172 +21,214 @@ export function ActivityLog({ className }: Props): ReactNode {
     maxReconnectAttempts: 5,
   });
 
-  // Memoize the count tracking logic to avoid recreating maps on every render
-  const countTracking = useMemo(() => {
-    // Track instruction count updates by importId
+  // Memoize the event processing logic
+  const processedEvents = useMemo(() => {
+    // Track completed saved IDs by import ID and type
+    const completedInstructionIds = new Map<string, Set<string>>();
+    const completedIngredientIds = new Map<string, Set<string>>();
+
+    // Track total counts by import ID (from initial events)
+    const instructionTotals = new Map<string, number>();
+    const ingredientTotals = new Map<string, number>();
+
+    // Track initial event timestamps by import ID
+    const instructionInitialTimestamps = new Map<string, Date>();
+    const ingredientInitialTimestamps = new Map<string, Date>();
+
+    // Track which imports we've seen initial events for
+    const seenInitialEvents = new Set<string>();
+
+    // Process events to track instruction and ingredient progress
+    events.forEach((event) => {
+      console.log(`[ActivityLog] Processing event:`, {
+        context: event.context,
+        importId: event.importId,
+        noteId: event.noteId,
+        metadata: event.metadata,
+        message: event.message,
+      });
+
+      // Handle instruction processing updates
+      if (
+        event.context === "instruction_processing" &&
+        event.importId &&
+        event.metadata
+      ) {
+        const savedId = event.metadata.savedInstructionId as string;
+        const total = event.metadata.totalInstructions as number;
+
+        console.log(`[ActivityLog] Instruction event details:`, {
+          importId: event.importId,
+          savedId,
+          total,
+          totalType: typeof total,
+          hasSavedId: typeof savedId === "string",
+        });
+
+        // Handle initial event (has total, no savedId)
+        if (typeof total === "number" && typeof savedId !== "string") {
+          instructionTotals.set(event.importId, total);
+          instructionInitialTimestamps.set(
+            event.importId,
+            new Date(event.createdAt)
+          );
+          console.log(
+            `[ActivityLog] Set instruction total: ${total} for import ${event.importId}`
+          );
+
+          // Mark that we've seen an initial event for this import
+          const eventKey = `${event.importId}-instructions`;
+          seenInitialEvents.add(eventKey);
+        }
+
+        // Handle completion event (has savedId, may or may not have total)
+        if (typeof savedId === "string") {
+          // Initialize tracking if needed
+          if (!completedInstructionIds.has(event.importId)) {
+            completedInstructionIds.set(event.importId, new Set());
+          }
+          const completedIds = completedInstructionIds.get(event.importId)!;
+          completedIds.add(savedId);
+
+          console.log(
+            `[ActivityLog] Instruction completed: savedId=${savedId}, completedIds=${Array.from(completedIds).join(",")} for import ${event.importId}`
+          );
+        }
+      }
+
+      // Handle ingredient processing updates
+      if (
+        event.context === "ingredient_processing" &&
+        event.importId &&
+        event.metadata
+      ) {
+        const savedId = event.metadata.savedIngredientId as string;
+        const total = event.metadata.totalIngredients as number;
+
+        console.log(`[ActivityLog] Ingredient event details:`, {
+          importId: event.importId,
+          savedId,
+          total,
+          totalType: typeof total,
+          hasSavedId: typeof savedId === "string",
+        });
+
+        // Handle initial event (has total, no savedId)
+        if (typeof total === "number" && typeof savedId !== "string") {
+          ingredientTotals.set(event.importId, total);
+          ingredientInitialTimestamps.set(
+            event.importId,
+            new Date(event.createdAt)
+          );
+          console.log(
+            `[ActivityLog] Set ingredient total: ${total} for import ${event.importId}`
+          );
+
+          // Mark that we've seen an initial event for this import
+          const eventKey = `${event.importId}-ingredients`;
+          seenInitialEvents.add(eventKey);
+        }
+
+        // Handle completion event (has savedId, may or may not have total)
+        if (typeof savedId === "string") {
+          // Initialize tracking if needed
+          if (!completedIngredientIds.has(event.importId)) {
+            completedIngredientIds.set(event.importId, new Set());
+          }
+          const completedIds = completedIngredientIds.get(event.importId)!;
+          completedIds.add(savedId);
+
+          console.log(
+            `[ActivityLog] Ingredient completed: savedId=${savedId}, completedIds=${Array.from(completedIds).join(",")} for import ${event.importId}`
+          );
+        }
+      }
+
+      // Handle note completion events
+      if (
+        event.context === "note_completion" &&
+        event.importId &&
+        event.status === "COMPLETED"
+      ) {
+        console.log(`[ActivityLog] Note completion event:`, {
+          importId: event.importId,
+          noteId: event.noteId,
+          message: event.message,
+        });
+      }
+    });
+
+    // Calculate final counts
     const instructionCounts = new Map<
       string,
-      { processed: number; total: number }
+      { processed: number; total: number; timestamp: Date }
     >();
-
-    // Track ingredient count updates by importId
     const ingredientCounts = new Map<
       string,
-      { processed: number; total: number }
+      { processed: number; total: number; timestamp: Date }
     >();
 
-    // Track completed instruction line indexes to avoid duplicates
-    const completedInstructions = new Map<string, Set<number>>();
+    // Process instruction counts - include both completed and initial states
+    const allInstructionImports = new Set([
+      ...instructionTotals.keys(),
+      ...completedInstructionIds.keys(),
+    ]);
 
-    // Track completed ingredient line indexes to avoid duplicates
-    const completedIngredients = new Map<string, Set<number>>();
+    allInstructionImports.forEach((importId) => {
+      const total = instructionTotals.get(importId) || 0;
+      const completedIds = completedInstructionIds.get(importId);
+      const processed = completedIds ? completedIds.size : 0;
+
+      // Use the initial event timestamp so progress updates stay in position
+      const initialTimestamp = instructionInitialTimestamps.get(importId);
+
+      if (initialTimestamp) {
+        instructionCounts.set(importId, {
+          processed,
+          total,
+          timestamp: initialTimestamp,
+        });
+      }
+    });
+
+    // Process ingredient counts - include both completed and initial states
+    const allIngredientImports = new Set([
+      ...ingredientTotals.keys(),
+      ...completedIngredientIds.keys(),
+    ]);
+
+    allIngredientImports.forEach((importId) => {
+      const total = ingredientTotals.get(importId) || 0;
+      const completedIds = completedIngredientIds.get(importId);
+      const processed = completedIds ? completedIds.size : 0;
+
+      // Use the initial event timestamp so progress updates stay in position
+      const initialTimestamp = ingredientInitialTimestamps.get(importId);
+
+      if (initialTimestamp) {
+        ingredientCounts.set(importId, {
+          processed,
+          total,
+          timestamp: initialTimestamp,
+        });
+      }
+    });
+
+    // Log what we've seen
+    console.log(
+      `[ActivityLog] Seen initial events:`,
+      Array.from(seenInitialEvents)
+    );
+    console.log(`[ActivityLog] Final counts:`, {
+      instructionCounts: Object.fromEntries(instructionCounts),
+      ingredientCounts: Object.fromEntries(ingredientCounts),
+    });
 
     return {
       instructionCounts,
       ingredientCounts,
-      completedInstructions,
-      completedIngredients,
     };
-  }, []);
-
-  // Memoize the event processing logic
-  const processedEvents = useMemo(() => {
-    // Reset counts for new processing
-    countTracking.instructionCounts.clear();
-    countTracking.ingredientCounts.clear();
-    countTracking.completedInstructions.clear();
-    countTracking.completedIngredients.clear();
-
-    // First pass: collect instruction and ingredient count updates
-    events.forEach((event) => {
-      // Handle instruction processing
-      if (
-        event.context === "process_instructions" &&
-        event.importId &&
-        event.metadata
-      ) {
-        const processed = event.metadata.processedInstructions as number;
-        const total = event.metadata.totalInstructions as number;
-        if (typeof processed === "number" && typeof total === "number") {
-          console.log(
-            `[ActivityLog] Instruction count update: ${processed}/${total} for import ${event.importId}`
-          );
-          countTracking.instructionCounts.set(event.importId, {
-            processed,
-            total,
-          });
-        }
-      }
-
-      // Handle ingredient processing
-      if (
-        event.context === "process_ingredients" &&
-        event.importId &&
-        event.metadata
-      ) {
-        const processed = event.metadata.processedIngredients as number;
-        const total = event.metadata.totalIngredients as number;
-        if (typeof processed === "number" && typeof total === "number") {
-          console.log(
-            `[ActivityLog] Ingredient count update: ${processed}/${total} for import ${event.importId}`
-          );
-          countTracking.ingredientCounts.set(event.importId, {
-            processed,
-            total,
-          });
-        }
-      }
-
-      // Track instruction completion events
-      if (
-        event.context === "instruction_completed" &&
-        event.importId &&
-        event.metadata
-      ) {
-        const total = event.metadata.totalInstructions as number;
-        const lineIndex = event.metadata.lineIndex as number;
-        if (typeof total === "number" && typeof lineIndex === "number") {
-          // Initialize the set for this import if it doesn't exist
-          if (!countTracking.completedInstructions.has(event.importId)) {
-            countTracking.completedInstructions.set(event.importId, new Set());
-          }
-
-          const completedSet = countTracking.completedInstructions.get(
-            event.importId
-          )!;
-
-          // Only count this instruction if we haven't seen this lineIndex before
-          if (!completedSet.has(lineIndex)) {
-            completedSet.add(lineIndex);
-
-            const existing = countTracking.instructionCounts.get(
-              event.importId
-            );
-            const currentProcessed = existing ? existing.processed : 0;
-            const newProcessed = currentProcessed + 1;
-
-            console.log(
-              `[ActivityLog] Instruction completed: ${newProcessed}/${total} for import ${event.importId} (lineIndex: ${lineIndex})`
-            );
-            countTracking.instructionCounts.set(event.importId, {
-              processed: newProcessed,
-              total,
-            });
-          } else {
-            console.log(
-              `[ActivityLog] Skipping duplicate instruction completion for lineIndex: ${lineIndex}`
-            );
-          }
-        }
-      }
-
-      // Track ingredient completion events
-      if (
-        event.context === "ingredient_completed" &&
-        event.importId &&
-        event.metadata
-      ) {
-        const total = event.metadata.totalIngredients as number;
-        const lineIndex = event.metadata.lineIndex as number;
-        if (typeof total === "number" && typeof lineIndex === "number") {
-          // Initialize the set for this import if it doesn't exist
-          if (!countTracking.completedIngredients.has(event.importId)) {
-            countTracking.completedIngredients.set(event.importId, new Set());
-          }
-
-          const completedSet = countTracking.completedIngredients.get(
-            event.importId
-          )!;
-
-          // Only count this ingredient if we haven't seen this lineIndex before
-          if (!completedSet.has(lineIndex)) {
-            completedSet.add(lineIndex);
-
-            const existing = countTracking.ingredientCounts.get(event.importId);
-            const currentProcessed = existing ? existing.processed : 0;
-            const newProcessed = currentProcessed + 1;
-
-            console.log(
-              `[ActivityLog] Ingredient completed: ${newProcessed}/${total} for import ${event.importId} (lineIndex: ${lineIndex})`
-            );
-            countTracking.ingredientCounts.set(event.importId, {
-              processed: newProcessed,
-              total,
-            });
-          } else {
-            console.log(
-              `[ActivityLog] Skipping duplicate ingredient completion for lineIndex: ${lineIndex}`
-            );
-          }
-        }
-      }
-    });
-
-    return {
-      instructionCounts: countTracking.instructionCounts,
-      ingredientCounts: countTracking.ingredientCounts,
-    };
-  }, [events, countTracking]);
+  }, [events]);
 
   // Memoize the filtering logic
   const filteredEvents = useMemo(() => {
@@ -205,17 +247,11 @@ export function ActivityLog({ className }: Props): ReactNode {
       if (message.startsWith("starting to process instructions")) return false;
       if (message.includes("cleaning html file")) return false;
 
-      // Hide process_instructions events since we're updating the parse_html_instructions message
-      if (event.context === "process_instructions") return false;
+      // Hide instruction_processing events since we're updating the parse_html_instructions message
+      if (event.context === "instruction_processing") return false;
 
-      // Hide process_ingredients events since we're updating the parse_html_ingredients message
-      if (event.context === "process_ingredients") return false;
-
-      // Hide instruction_completed events since we're using them for counting
-      if (event.context === "instruction_completed") return false;
-
-      // Hide ingredient_completed events since we're using them for counting
-      if (event.context === "ingredient_completed") return false;
+      // Hide ingredient_processing events since we're updating the parse_html_ingredients message
+      if (event.context === "ingredient_processing") return false;
 
       return true;
     });
@@ -223,28 +259,12 @@ export function ActivityLog({ className }: Props): ReactNode {
 
   // Memoize the items conversion
   const items: Item[] = useMemo(() => {
-    return filteredEvents.map((event) => {
-      let text =
+    const baseItems = filteredEvents.map((event) => {
+      const text =
         event.errorMessage ||
         event.message ||
         event.context ||
         `Status ${event.status}`;
-
-      // Update instruction count messages with latest progress
-      if (event.context === "parse_html_instructions" && event.importId) {
-        const countData = processedEvents.instructionCounts.get(event.importId);
-        if (countData) {
-          text = `${countData.processed}/${countData.total} instructions`;
-        }
-      }
-
-      // Update ingredient count messages with latest progress
-      if (event.context === "parse_html_ingredients" && event.importId) {
-        const countData = processedEvents.ingredientCounts.get(event.importId);
-        if (countData) {
-          text = `${countData.processed}/${countData.total} ingredients`;
-        }
-      }
 
       return {
         id: `${event.importId}-${new Date(event.createdAt).getTime()}`,
@@ -255,6 +275,55 @@ export function ActivityLog({ className }: Props): ReactNode {
         metadata: event.metadata, // Include metadata for additional info like note title
         context: event.context, // Include context for operation type
       };
+    });
+
+    // Add display events for instruction and ingredient progress
+    const displayItems: Item[] = [];
+
+    // Create instruction progress display events
+    processedEvents.instructionCounts.forEach((countData, importId) => {
+      displayItems.push({
+        id: `${importId}-instructions-progress-${countData.processed}`,
+        text: `${countData.processed}/${countData.total} instructions`,
+        indentLevel: 2,
+        importId,
+        timestamp: countData.timestamp, // Use actual event timestamp
+        metadata: {},
+        context: "parse_html_instructions",
+      });
+    });
+
+    // Create ingredient progress display events
+    processedEvents.ingredientCounts.forEach((countData, importId) => {
+      displayItems.push({
+        id: `${importId}-ingredients-progress-${countData.processed}`,
+        text: `${countData.processed}/${countData.total} ingredients`,
+        indentLevel: 2,
+        importId,
+        timestamp: countData.timestamp, // Use actual event timestamp
+        metadata: {},
+        context: "parse_html_ingredients",
+      });
+    });
+
+    // Combine and sort by timestamp
+    return [...baseItems, ...displayItems].sort((a, b) => {
+      const timeA = a.timestamp?.getTime() || 0;
+      const timeB = b.timestamp?.getTime() || 0;
+
+      // If timestamps are the same, prioritize ingredients over instructions
+      if (timeA === timeB) {
+        const isIngredientA = a.context === "parse_html_ingredients";
+        const isIngredientB = b.context === "parse_html_ingredients";
+        const isInstructionA = a.context === "parse_html_instructions";
+        const isInstructionB = b.context === "parse_html_instructions";
+
+        // Ingredients come before instructions
+        if (isIngredientA && isInstructionB) return -1;
+        if (isInstructionA && isIngredientB) return 1;
+      }
+
+      return timeA - timeB;
     });
   }, [filteredEvents, processedEvents]);
 

@@ -31,7 +31,7 @@ export class DatabaseOperations<TPrisma extends PrismaClient = PrismaClient> {
       lineIndex: number;
       reference: string;
       noteId?: string;
-      parseStatus: "CORRECT" | "INCORRECT" | "ERROR";
+      parseStatus: "COMPLETED_SUCCESSFULLY" | "COMPLETED_WITH_ERROR";
       parsedAt?: Date;
     }
   ): Promise<void> {
@@ -81,7 +81,7 @@ export class DatabaseOperations<TPrisma extends PrismaClient = PrismaClient> {
   async updateParsedIngredientLine(
     lineId: string,
     data: {
-      parseStatus: "CORRECT" | "INCORRECT" | "ERROR";
+      parseStatus: "COMPLETED_SUCCESSFULLY" | "COMPLETED_WITH_ERROR";
       parsedAt?: Date;
     }
   ): Promise<void> {

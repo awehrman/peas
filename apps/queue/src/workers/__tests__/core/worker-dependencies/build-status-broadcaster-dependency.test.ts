@@ -282,7 +282,7 @@ describe("buildStatusBroadcasterDependency", () => {
         severity: "error" as const,
         importId: "test-import",
         noteId: "test-note",
-        status: "ERROR",
+        status: "COMPLETED_WITH_ERROR",
         error: {
           name: "ValidationError",
           message: "Invalid input data",
@@ -302,7 +302,7 @@ describe("buildStatusBroadcasterDependency", () => {
           severity: "error",
           importId: "test-import",
           noteId: "test-note",
-          status: "ERROR",
+          status: "COMPLETED_WITH_ERROR",
           error: {
             name: "ValidationError",
             message: "Invalid input data",

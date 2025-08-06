@@ -51,7 +51,7 @@ describe("Ingredient Pipeline", () => {
       noteId: "test-note-id",
       ingredientReference: "1 cup flour",
       lineIndex: 0,
-      parseStatus: ParseStatus.PENDING,
+      parseStatus: ParseStatus.AWAITING_PARSING,
       isActive: true,
     };
 
@@ -138,7 +138,7 @@ describe("Ingredient Pipeline", () => {
         importId: "test-import",
         jobId: "test-job",
         metadata: { test: "data" },
-        parseStatus: ParseStatus.CORRECT,
+        parseStatus: ParseStatus.COMPLETED_SUCCESSFULLY,
         isActive: false,
       };
 
@@ -194,7 +194,7 @@ describe("Ingredient Pipeline", () => {
         noteId: "note-1",
         ingredientReference: "1 cup flour",
         lineIndex: 0,
-        parseStatus: ParseStatus.PENDING,
+        parseStatus: ParseStatus.AWAITING_PARSING,
         isActive: true,
       };
 
@@ -202,7 +202,7 @@ describe("Ingredient Pipeline", () => {
         noteId: "note-2",
         ingredientReference: "2 tbsp butter",
         lineIndex: 1,
-        parseStatus: ParseStatus.ERROR,
+        parseStatus: ParseStatus.COMPLETED_WITH_ERROR,
         isActive: false,
       };
 

@@ -71,7 +71,7 @@ describe("Instruction Pipeline", () => {
       noteId: "test-note-id",
       instructionReference: "Test instruction",
       lineIndex: 0,
-      parseStatus: "PENDING",
+      parseStatus: "AWAITING_PARSING",
       isActive: true,
     };
 
@@ -187,7 +187,7 @@ describe("Instruction Pipeline", () => {
         noteId: "different-note-id",
         instructionReference: "Different instruction",
         lineIndex: 5,
-        parseStatus: "CORRECT",
+        parseStatus: "COMPLETED_SUCCESSFULLY",
         isActive: false,
       };
 

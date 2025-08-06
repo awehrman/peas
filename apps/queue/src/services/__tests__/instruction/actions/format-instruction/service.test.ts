@@ -15,7 +15,7 @@ describe("formatInstruction", () => {
       lineIndex: 0,
       importId: "test-import-id",
       jobId: "test-job-id",
-      parseStatus: "PENDING",
+      parseStatus: "AWAITING_PARSING",
       isActive: true,
     };
 

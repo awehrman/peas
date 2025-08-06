@@ -153,7 +153,7 @@ describe("Ingredient Worker", () => {
         noteId: "test-note-id",
         ingredientReference: "1 cup flour",
         lineIndex: 0,
-        parseStatus: "PENDING" as const,
+        parseStatus: "AWAITING_PARSING" as const,
         isActive: true,
       };
 
@@ -203,7 +203,7 @@ describe("Ingredient Worker", () => {
         noteId: "test-note-id",
         ingredientReference: "1 cup flour",
         lineIndex: 0,
-        parseStatus: "PENDING" as const,
+        parseStatus: "AWAITING_PARSING" as const,
         isActive: true,
       };
 

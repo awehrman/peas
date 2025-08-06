@@ -37,7 +37,7 @@ describe("Instruction Worker Index", () => {
         noteId: "test-note",
         instructionReference: "test instruction",
         lineIndex: 0,
-        parseStatus: "PENDING",
+        parseStatus: "AWAITING_PARSING",
         isActive: true,
       };
       expect(testData).toBeDefined();

@@ -1,7 +1,4 @@
-import {
-  getInstructionCompletionStatus,
-  updateInstructionLine,
-} from "@peas/database";
+import { updateInstructionLine } from "@peas/database";
 
 import type { StructuredLogger } from "../../../../types";
 import type { InstructionJobData } from "../../../../workers/instruction/dependencies";
@@ -25,35 +22,49 @@ export async function saveInstruction(
       throw new Error("No instruction reference available for saving");
     }
 
+    logger.log(
+      `[SAVE_INSTRUCTION_LINE] Starting to save instruction: noteId=${data.noteId}, lineIndex=${data.lineIndex}, jobId=${data.jobId}`
+    );
+
     // Update the instruction line in the database
-    await updateInstructionLine(
+    const result = await updateInstructionLine(
       data.noteId,
       data.lineIndex,
       data.instructionReference,
-      "CORRECT",
+      "COMPLETED_SUCCESSFULLY",
       data.isActive
     );
 
     // Broadcast completion message if statusBroadcaster is available
     if (statusBroadcaster) {
-      const completionStatus = await getInstructionCompletionStatus(
-        data.noteId
+      logger.log(
+        `[SAVE_INSTRUCTION_LINE] StatusBroadcaster is available, broadcasting completion`
       );
 
-      await statusBroadcaster.addStatusEventAndBroadcast({
-        importId: data.importId,
-        status: "PENDING",
-        message: `Processing ${completionStatus.completedInstructions}/${completionStatus.totalInstructions} instructions`,
-        context: "instruction_processing",
-        currentCount: completionStatus.completedInstructions,
-        totalCount: completionStatus.totalInstructions,
-        indentLevel: 1,
-        metadata: {
-          totalInstructions: completionStatus.totalInstructions,
-          completedInstructions: completionStatus.completedInstructions,
-          lineIndex: data.lineIndex,
-        },
-      });
+      try {
+        await statusBroadcaster.addStatusEventAndBroadcast({
+          importId: data.importId,
+          noteId: data.noteId,
+          status: "AWAITING_PARSING",
+          message: `Processing instruction line ${data.lineIndex}`,
+          context: "instruction_processing",
+          indentLevel: 1,
+          metadata: {
+            savedInstructionId: result.id,
+            lineIndex: data.lineIndex,
+          },
+        });
+        logger.log(
+          `[SAVE_INSTRUCTION_LINE] Successfully broadcasted instruction completion for line ${data.lineIndex} with ID ${result.id}`
+        );
+      } catch (broadcastError) {
+        logger.log(
+          `[SAVE_INSTRUCTION_LINE] Failed to broadcast instruction completion: ${broadcastError}`
+        );
+        throw broadcastError;
+      }
+    } else {
+      logger.log(`[SAVE_INSTRUCTION_LINE] StatusBroadcaster is not available`);
     }
 
     return data;

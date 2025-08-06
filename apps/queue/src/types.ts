@@ -71,6 +71,7 @@ export enum ActionName {
   // Instruction actions
   FORMAT_INSTRUCTION_LINE = "format_instruction_line",
   SAVE_INSTRUCTION_LINE = "save_instruction_line",
+  CHECK_INSTRUCTION_COMPLETION = "check_instruction_completion",
 
   // Image actions
   PROCESS_IMAGE = "process_image",
@@ -290,6 +291,7 @@ export const ACTION_CATEGORIES: Record<ActionName, ActionCategory> = {
   [ActionName.SCHEDULE_INSTRUCTION_LINES]: ActionCategory.INSTRUCTION,
   [ActionName.FORMAT_INSTRUCTION_LINE]: ActionCategory.INSTRUCTION,
   [ActionName.SAVE_INSTRUCTION_LINE]: ActionCategory.INSTRUCTION,
+  [ActionName.CHECK_INSTRUCTION_COMPLETION]: ActionCategory.INSTRUCTION,
 
   // Image actions
   [ActionName.PROCESS_IMAGE]: ActionCategory.IMAGE,

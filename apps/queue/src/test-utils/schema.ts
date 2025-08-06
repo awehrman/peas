@@ -19,13 +19,13 @@ export type ParsedSegmentType =
 /**
  * Type for parse result status
  */
-export type ParseResultStatus = "PENDING" | "CORRECT" | "INCORRECT" | "ERROR";
+export type ParseResultStatus = "AWAITING_PARSING" | "COMPLETED_SUCCESSFULLY" | "COMPLETED_SUCCESSFULLY" | "COMPLETED_WITH_ERROR";
 
 /**
  * Type for status event status
  */
 export type StatusEventStatus =
-  | "PENDING"
+  | "AWAITING_PARSING"
   | "PROCESSING"
   | "COMPLETED"
   | "FAILED"
@@ -381,7 +381,7 @@ export function createTestParseResult(
 ) {
   return {
     success: true,
-    parseStatus: "CORRECT" as ParseResultStatus,
+    parseStatus: "COMPLETED_SUCCESSFULLY" as ParseResultStatus,
     segments: [
       {
         index: 0,
@@ -485,7 +485,7 @@ export function createTestProcessIngredientLineOutput(
 ) {
   return {
     success: true,
-    parseStatus: "CORRECT" as ParseResultStatus,
+    parseStatus: "COMPLETED_SUCCESSFULLY" as ParseResultStatus,
     segments: [
       {
         index: 0,
@@ -542,7 +542,7 @@ export function createTestSaveIngredientLineInput(
     noteId: "123e4567-e89b-12d3-a456-426614174000",
     parseResult: {
       success: true,
-      parseStatus: "CORRECT" as ParseResultStatus,
+      parseStatus: "COMPLETED_SUCCESSFULLY" as ParseResultStatus,
       segments: [
         {
           index: 0,
@@ -672,14 +672,14 @@ export function createTestParsedHtmlFile(
       reference: string;
       blockIndex: number;
       lineIndex: number;
-      parseStatus?: "PENDING" | "CORRECT" | "INCORRECT" | "ERROR";
+      parseStatus?: "AWAITING_PARSING" | "COMPLETED_SUCCESSFULLY" | "COMPLETED_SUCCESSFULLY" | "COMPLETED_WITH_ERROR";
       parsedAt?: Date;
       rule?: string;
     }>;
     instructions: Array<{
       reference: string;
       lineIndex: number;
-      parseStatus?: "PENDING" | "CORRECT" | "INCORRECT" | "ERROR";
+      parseStatus?: "AWAITING_PARSING" | "COMPLETED_SUCCESSFULLY" | "COMPLETED_SUCCESSFULLY" | "COMPLETED_WITH_ERROR";
     }>;
     images: Array<{
       id: string;
@@ -709,14 +709,14 @@ export function createTestParsedHtmlFile(
         reference: "1 cup flour",
         blockIndex: 0,
         lineIndex: 1,
-        parseStatus: "CORRECT" as const,
+        parseStatus: "COMPLETED_SUCCESSFULLY" as const,
       },
     ],
     instructions: [
       {
         reference: "Mix ingredients together",
         lineIndex: 1,
-        parseStatus: "CORRECT" as const,
+        parseStatus: "COMPLETED_SUCCESSFULLY" as const,
       },
     ],
     images: [
@@ -747,14 +747,14 @@ export function createTestSaveNoteData(
         reference: string;
         blockIndex: number;
         lineIndex: number;
-        parseStatus?: "PENDING" | "CORRECT" | "INCORRECT" | "ERROR";
+        parseStatus?: "AWAITING_PARSING" | "COMPLETED_SUCCESSFULLY" | "COMPLETED_SUCCESSFULLY" | "COMPLETED_WITH_ERROR";
         parsedAt?: Date;
         rule?: string;
       }>;
       instructions: Array<{
         reference: string;
         lineIndex: number;
-        parseStatus?: "PENDING" | "CORRECT" | "INCORRECT" | "ERROR";
+        parseStatus?: "AWAITING_PARSING" | "COMPLETED_SUCCESSFULLY" | "COMPLETED_SUCCESSFULLY" | "COMPLETED_WITH_ERROR";
       }>;
     };
     importId: string;
@@ -769,14 +769,14 @@ export function createTestSaveNoteData(
           reference: "1 cup flour",
           blockIndex: 0,
           lineIndex: 1,
-          parseStatus: "CORRECT" as const,
+          parseStatus: "COMPLETED_SUCCESSFULLY" as const,
         },
       ],
       instructions: [
         {
           reference: "Mix ingredients together",
           lineIndex: 1,
-          parseStatus: "CORRECT" as const,
+          parseStatus: "COMPLETED_SUCCESSFULLY" as const,
         },
       ],
     },
@@ -843,7 +843,7 @@ export function createTestScheduleActionData(
       instructions: Array<{
         reference: string;
         lineIndex: number;
-        parseStatus?: "PENDING" | "CORRECT" | "INCORRECT" | "ERROR";
+        parseStatus?: "AWAITING_PARSING" | "COMPLETED_SUCCESSFULLY" | "COMPLETED_SUCCESSFULLY" | "COMPLETED_WITH_ERROR";
       }>;
     };
   }> = {}
@@ -865,7 +865,7 @@ export function createTestScheduleActionData(
         {
           reference: "Mix ingredients together",
           lineIndex: 1,
-          parseStatus: "CORRECT" as const,
+          parseStatus: "COMPLETED_SUCCESSFULLY" as const,
         },
       ],
     },
@@ -984,7 +984,7 @@ export function createTestNoteQuery(
   overrides: Partial<{
     page: string;
     limit: string;
-    status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
+    status: "AWAITING_PARSING" | "PROCESSING" | "COMPLETED" | "FAILED";
     search: string;
   }> = {}
 ) {
@@ -1004,7 +1004,7 @@ export function createTestNoteQueryResult(
   overrides: Partial<{
     page: number;
     limit: number;
-    status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
+    status: "AWAITING_PARSING" | "PROCESSING" | "COMPLETED" | "FAILED";
     search: string;
   }> = {}
 ) {
@@ -1126,7 +1126,7 @@ export function createTestStatusEvent(
   overrides: Partial<{
     importId: string;
     noteId: string;
-    status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
+    status: "AWAITING_PARSING" | "PROCESSING" | "COMPLETED" | "FAILED";
     message: string;
     context: string;
     currentCount: number;

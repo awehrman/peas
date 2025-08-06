@@ -204,7 +204,7 @@ function parseContentLines(contents: string[]): {
             instructions.push({
               reference: cleanText,
               lineIndex: instructions.length, // Start at 0 and increment for each instruction
-              parseStatus: "PENDING",
+              parseStatus: "AWAITING_PARSING",
             });
           } else {
             // Short line that doesn't qualify as instruction - treat as ingredient
@@ -235,7 +235,7 @@ function parseContentLines(contents: string[]): {
         blockIndex,
         lineIndex: lineIndexInBlock,
         reference: item.text,
-        parseStatus: "PENDING",
+        parseStatus: "AWAITING_PARSING",
       });
     });
   });

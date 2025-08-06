@@ -56,7 +56,7 @@ describe("Instruction Dependencies", () => {
         importId: "test-import-id",
         jobId: "test-job-id",
         metadata: { key: "value" },
-        parseStatus: ParseStatus.PENDING,
+        parseStatus: ParseStatus.AWAITING_PARSING,
         isActive: true,
       };
 
@@ -66,7 +66,7 @@ describe("Instruction Dependencies", () => {
       expect(testData.importId).toBe("test-import-id");
       expect(testData.jobId).toBe("test-job-id");
       expect(testData.metadata).toEqual({ key: "value" });
-      expect(testData.parseStatus).toBe(ParseStatus.PENDING);
+      expect(testData.parseStatus).toBe(ParseStatus.AWAITING_PARSING);
       expect(testData.isActive).toBe(true);
     });
 
@@ -75,7 +75,7 @@ describe("Instruction Dependencies", () => {
         noteId: "test-note-id",
         instructionReference: "Test instruction",
         lineIndex: 0,
-        parseStatus: ParseStatus.PENDING,
+        parseStatus: ParseStatus.AWAITING_PARSING,
         isActive: true,
       };
 
@@ -181,7 +181,7 @@ describe("Instruction Dependencies", () => {
         noteId: "test-note",
         instructionReference: "test instruction",
         lineIndex: 0,
-        parseStatus: ParseStatus.PENDING,
+        parseStatus: ParseStatus.AWAITING_PARSING,
         isActive: true,
       };
 
@@ -197,7 +197,7 @@ describe("Instruction Dependencies", () => {
         noteId: "test-note",
         instructionReference: "test instruction",
         lineIndex: 0,
-        parseStatus: ParseStatus.PENDING,
+        parseStatus: ParseStatus.AWAITING_PARSING,
         isActive: true,
       };
 

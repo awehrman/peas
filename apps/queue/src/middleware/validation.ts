@@ -13,7 +13,7 @@ export const ValidationSchemas = {
   query: {
     page: z.coerce.number().min(1).default(1),
     limit: z.coerce.number().min(1).max(100).default(20),
-    status: z.enum(["PENDING", "PROCESSING", "COMPLETED", "FAILED"]).optional(),
+    status: z.enum(["AWAITING_PARSING", "PROCESSING", "COMPLETED", "FAILED"]).optional(),
     search: z.string().min(1).max(100).optional(),
     detailed: z
       .enum(["true", "false"])

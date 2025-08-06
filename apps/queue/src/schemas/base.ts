@@ -63,7 +63,7 @@ export const BaseJobDataSchema = z.object({
  */
 export const StatusEventSchema = z.object({
   jobId: z.string().min(1, "Job ID is required"),
-  status: z.enum(["PENDING", "PROCESSING", "COMPLETED", "FAILED", "CANCELLED"]),
+  status: z.enum(["AWAITING_PARSING", "PROCESSING", "COMPLETED", "FAILED", "CANCELLED"]),
   message: z.string().min(1, "Status message is required"),
   timestamp: z.date().default(() => new Date()),
   metadata: z.record(z.string(), z.unknown()).optional(),
@@ -110,7 +110,7 @@ export const ParsedSegmentSchema = z.object({
  */
 export const ParseResultSchema = z.object({
   success: z.boolean(),
-  parseStatus: z.enum(["PENDING", "CORRECT", "INCORRECT", "ERROR"]),
+  parseStatus: z.enum(["AWAITING_PARSING", "COMPLETED_SUCCESSFULLY", "COMPLETED_SUCCESSFULLY", "COMPLETED_WITH_ERROR"]),
   segments: z.array(ParsedSegmentSchema).optional(),
   errorMessage: z.string().optional(),
   processingTime: z.number().int().min(0),

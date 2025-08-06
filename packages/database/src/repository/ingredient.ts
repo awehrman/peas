@@ -30,7 +30,7 @@ export async function getIngredientCompletionStatus(noteId: string): Promise<{
             OR: [
               {
                 parseStatus: {
-                  in: ["CORRECT", "ERROR"],
+                  in: ["COMPLETED_SUCCESSFULLY", "COMPLETED_WITH_ERROR"],
                 },
               },
               {

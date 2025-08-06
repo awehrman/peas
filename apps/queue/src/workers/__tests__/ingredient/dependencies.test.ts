@@ -126,7 +126,7 @@ describe("Ingredient Dependencies", () => {
         noteId: "test-note-id",
         ingredientReference: "1 cup flour",
         lineIndex: 0,
-        parseStatus: ParseStatus.PENDING,
+        parseStatus: ParseStatus.AWAITING_PARSING,
         isActive: true,
       };
 
@@ -153,7 +153,7 @@ describe("Ingredient Dependencies", () => {
         noteId: "test-note-id",
         ingredientReference: "1 cup flour",
         lineIndex: 0,
-        parseStatus: ParseStatus.PENDING,
+        parseStatus: ParseStatus.AWAITING_PARSING,
         isActive: true,
       };
 
@@ -176,7 +176,7 @@ describe("Ingredient Dependencies", () => {
         noteId: "test-note-id",
         ingredientReference: "1 cup flour",
         lineIndex: 0,
-        parseStatus: ParseStatus.CORRECT,
+        parseStatus: ParseStatus.COMPLETED_SUCCESSFULLY,
         isActive: true,
       };
 
@@ -200,7 +200,7 @@ describe("Ingredient Dependencies", () => {
         noteId: "test-note-id",
         ingredientReference: "1 cup flour",
         lineIndex: 0,
-        parseStatus: ParseStatus.CORRECT,
+        parseStatus: ParseStatus.COMPLETED_SUCCESSFULLY,
         isActive: true,
       };
 
@@ -228,7 +228,7 @@ describe("Ingredient Dependencies", () => {
         noteId: "test-note-id",
         ingredientReference: "1 cup flour",
         lineIndex: 0,
-        parseStatus: ParseStatus.CORRECT,
+        parseStatus: ParseStatus.COMPLETED_SUCCESSFULLY,
         isActive: true,
       };
 
@@ -245,7 +245,7 @@ describe("Ingredient Dependencies", () => {
         noteId: "test-note-id",
         ingredientReference: "1 cup flour",
         lineIndex: 0,
-        parseStatus: ParseStatus.PENDING,
+        parseStatus: ParseStatus.AWAITING_PARSING,
         isActive: true,
       };
 
@@ -260,7 +260,7 @@ describe("Ingredient Dependencies", () => {
         importId: "test-import-id",
         jobId: "test-job-id",
         metadata: { test: "data" },
-        parseStatus: ParseStatus.CORRECT,
+        parseStatus: ParseStatus.COMPLETED_SUCCESSFULLY,
         isActive: false,
       };
 

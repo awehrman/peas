@@ -38,27 +38,25 @@ export function DashboardPageContent(): ReactNode {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white shadow rounded-lg p-6 md:w-1/3">
+    <div className="space-y-6 md:w-1/3">
+      <div className="bg-white shadow rounded-lg p-6">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">
           Database Management
         </h2>
 
         <div className="space-y-4">
-          <div className="border-l-4 border-red-500 bg-red-50 p-4">
-            <Button
-              onClick={handleCleanupAll}
-              disabled={isCleaning}
-              variant="destructive"
-              className="w-full sm:w-auto"
-            >
-              {isCleaning ? "🧹 Cleaning..." : "🗑️ Delete All Data"}
-            </Button>
-          </div>
+          <Button
+            onClick={handleCleanupAll}
+            disabled={isCleaning}
+            variant="destructive"
+            className="sm:w-auto"
+          >
+            {isCleaning ? "🧹 Cleaning..." : "🗑️ Delete All Data"}
+          </Button>
 
           {cleanupResult && (
             <div
-              className={`border-l-4 p-4 ${
+              className={`border-l-4 p-4 max-w-full overflow-hidden ${
                 cleanupResult.success
                   ? "border-green-500 bg-green-50"
                   : "border-red-500 bg-red-50"
@@ -74,24 +72,26 @@ export function DashboardPageContent(): ReactNode {
                   : "❌ Cleanup Failed"}
               </h4>
               <p
-                className={
+                className={`${
                   cleanupResult.success ? "text-green-700" : "text-red-700"
-                }
+                } break-words`}
               >
                 {cleanupResult.message}
               </p>
 
               {cleanupResult.deletedCounts && (
-                <div className="mt-3 text-sm">
+                <div className="mt-3 text-sm max-w-full overflow-hidden">
                   <h5 className="font-medium mb-1">Deleted Records:</h5>
                   <ul className="space-y-1">
                     {Object.entries(cleanupResult.deletedCounts).map(
                       ([key, count]) => (
                         <li key={key} className="flex justify-between">
-                          <span className="capitalize">
+                          <span className="capitalize truncate">
                             {key.replace(/([A-Z])/g, " $1").trim()}:
                           </span>
-                          <span className="font-mono">{count}</span>
+                          <span className="font-mono ml-2 flex-shrink-0">
+                            {count}
+                          </span>
                         </li>
                       )
                     )}

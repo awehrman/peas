@@ -9,6 +9,7 @@ import {
   registerActions,
 } from "../../workers/shared/action-registry";
 
+import { CheckInstructionCompletionAction } from "./actions/check-completion/action";
 import { FormatInstructionAction } from "./actions/format-instruction/action";
 import { SaveInstructionAction } from "./actions/save-instruction/action";
 
@@ -36,5 +37,13 @@ export function registerInstructionActions(
       InstructionWorkerDependencies,
       InstructionJobData
     >(ActionName.SAVE_INSTRUCTION_LINE, SaveInstructionAction),
+    createActionRegistration<
+      InstructionJobData,
+      InstructionWorkerDependencies,
+      InstructionJobData
+    >(
+      ActionName.CHECK_INSTRUCTION_COMPLETION,
+      CheckInstructionCompletionAction
+    ),
   ]);
 }

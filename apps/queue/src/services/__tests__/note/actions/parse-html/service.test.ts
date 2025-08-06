@@ -34,13 +34,13 @@ describe("parseHtml", () => {
           {
             blockIndex: 0,
             lineIndex: 0,
-            parseStatus: "PENDING",
+            parseStatus: "AWAITING_PARSING",
             reference: "1 cup flour",
           },
           {
             blockIndex: 0,
             lineIndex: 1,
-            parseStatus: "PENDING",
+            parseStatus: "AWAITING_PARSING",
             reference: "2 eggs",
           },
         ],

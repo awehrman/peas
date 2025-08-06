@@ -36,7 +36,7 @@ describe("Save Ingredient Line Service", () => {
       noteId: "test-note-id",
       ingredientReference: "1 cup flour",
       lineIndex: 0,
-      parseStatus: "CORRECT" as const,
+      parseStatus: "COMPLETED_SUCCESSFULLY" as const,
       isActive: true,
       importId: "test-import-id",
     };
@@ -98,9 +98,9 @@ describe("Save Ingredient Line Service", () => {
         "test-note-id",
         0,
         "1 cup flour",
-        "CORRECT",
-        "test_rule",
-        5,
+        "COMPLETED_SUCCESSFULLY",
+        undefined,
+        0,
         true
       );
       expect(
@@ -166,8 +166,8 @@ describe("Save Ingredient Line Service", () => {
         "test-note-id",
         0,
         "1 cup flour",
-        "CORRECT",
-        "ingredient_line",
+        "COMPLETED_SUCCESSFULLY",
+        undefined,
         0,
         true
       );
@@ -374,7 +374,8 @@ describe("Save Ingredient Line Service", () => {
         mockStatusBroadcaster.addStatusEventAndBroadcast
       ).toHaveBeenCalledWith({
         importId: "test-import-id",
-        status: "PENDING",
+        noteId: "test-note-id",
+        status: "AWAITING_PARSING",
         message: "Processing 5/10 ingredients",
         context: "ingredient_processing",
         currentCount: 5,
@@ -383,6 +384,7 @@ describe("Save Ingredient Line Service", () => {
         metadata: {
           totalIngredients: 10,
           completedIngredients: 5,
+          savedIngredientId: "line-123",
           lineIndex: 0,
         },
       });
@@ -469,7 +471,7 @@ describe("Save Ingredient Line Service", () => {
         "test-note-id",
         0,
         "1 cup flour",
-        "CORRECT",
+        "COMPLETED_SUCCESSFULLY",
         undefined,
         0,
         true

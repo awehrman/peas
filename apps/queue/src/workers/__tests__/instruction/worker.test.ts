@@ -85,7 +85,7 @@ describe("Instruction Worker", () => {
       noteId: "test-note-id",
       instructionReference: "Test instruction",
       lineIndex: 0,
-      parseStatus: "PENDING",
+      parseStatus: "AWAITING_PARSING",
       isActive: true,
     };
 

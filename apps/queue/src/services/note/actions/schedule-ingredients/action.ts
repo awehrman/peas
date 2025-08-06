@@ -53,7 +53,7 @@ export class ScheduleIngredientsAction extends BaseAction<
           await deps.statusBroadcaster.addStatusEventAndBroadcast({
             importId: data.importId || "",
             noteId: data.noteId,
-            status: "PENDING",
+            status: "AWAITING_PARSING",
             message: `Processing 0/${data.file.ingredients.length} ingredients`,
             context: "ingredient_processing",
             currentCount: 0,

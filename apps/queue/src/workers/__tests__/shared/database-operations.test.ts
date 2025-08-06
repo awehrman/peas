@@ -96,7 +96,7 @@ describe("DatabaseOperations", () => {
       lineIndex: 2,
       reference: "test reference",
       noteId: "note-123",
-      parseStatus: "CORRECT" as const,
+      parseStatus: "COMPLETED_SUCCESSFULLY" as const,
       parsedAt: new Date("2023-01-01"),
     };
 
@@ -110,7 +110,7 @@ describe("DatabaseOperations", () => {
       expect(mockPrisma.parsedIngredientLine.update).toHaveBeenCalledWith({
         where: { id: "line-123" },
         data: {
-          parseStatus: "CORRECT",
+          parseStatus: "COMPLETED_SUCCESSFULLY",
           parsedAt: new Date("2023-01-01"),
         },
       });
@@ -133,7 +133,7 @@ describe("DatabaseOperations", () => {
           lineIndex: 2,
           reference: "test reference",
           noteId: "note-123",
-          parseStatus: "CORRECT",
+          parseStatus: "COMPLETED_SUCCESSFULLY",
           parsedAt: new Date("2023-01-01"),
         },
       });
@@ -159,7 +159,7 @@ describe("DatabaseOperations", () => {
           lineIndex: 2,
           reference: "test reference",
           noteId: null,
-          parseStatus: "CORRECT",
+          parseStatus: "COMPLETED_SUCCESSFULLY",
           parsedAt: new Date("2023-01-01"),
         },
       });
@@ -217,7 +217,7 @@ describe("DatabaseOperations", () => {
         id: "line-123",
       });
 
-      const statuses = ["CORRECT", "INCORRECT", "ERROR"] as const;
+      const statuses = ["COMPLETED_SUCCESSFULLY", "COMPLETED_SUCCESSFULLY", "COMPLETED_WITH_ERROR"] as const;
       for (const status of statuses) {
         await dbOps.createOrUpdateParsedIngredientLine("line-123", {
           ...validData,
@@ -237,7 +237,7 @@ describe("DatabaseOperations", () => {
 
   describe("updateParsedIngredientLine", () => {
     const validData = {
-      parseStatus: "CORRECT" as const,
+      parseStatus: "COMPLETED_SUCCESSFULLY" as const,
       parsedAt: new Date("2023-01-01"),
     };
 
@@ -251,7 +251,7 @@ describe("DatabaseOperations", () => {
       expect(mockPrisma.parsedIngredientLine.update).toHaveBeenCalledWith({
         where: { id: "line-123" },
         data: {
-          parseStatus: "CORRECT",
+          parseStatus: "COMPLETED_SUCCESSFULLY",
           parsedAt: new Date("2023-01-01"),
         },
       });
@@ -263,7 +263,7 @@ describe("DatabaseOperations", () => {
       });
 
       await dbOps.updateParsedIngredientLine("line-123", {
-        parseStatus: "CORRECT",
+        parseStatus: "COMPLETED_SUCCESSFULLY",
       });
 
       const updateCall =
@@ -289,7 +289,7 @@ describe("DatabaseOperations", () => {
         id: "line-123",
       });
 
-      const statuses = ["CORRECT", "INCORRECT", "ERROR"] as const;
+      const statuses = ["COMPLETED_SUCCESSFULLY", "COMPLETED_SUCCESSFULLY", "COMPLETED_WITH_ERROR"] as const;
       for (const status of statuses) {
         await dbOps.updateParsedIngredientLine("line-123", {
           parseStatus: status,

@@ -140,14 +140,14 @@ describe("addStatusEventAndBroadcast", () => {
       addStatusEventAndBroadcast({
         importId: "import-1",
         noteId: "note-123",
-        status: "ERROR" as NoteStatus,
+        status: "COMPLETED_WITH_ERROR" as NoteStatus,
         message: "Database error",
       })
     ).rejects.toThrow("Database connection failed");
 
     expect(mockAddStatusEvent).toHaveBeenCalledWith({
       noteId: "note-123",
-      status: "ERROR",
+      status: "COMPLETED_WITH_ERROR",
       message: "Database error",
       context: undefined,
       currentCount: undefined,
@@ -267,7 +267,7 @@ describe("addStatusEventAndBroadcast", () => {
       addStatusEventAndBroadcast({
         importId: "import-1",
         noteId: "note-123",
-        status: "ERROR" as NoteStatus,
+        status: "COMPLETED_WITH_ERROR" as NoteStatus,
         message: "Database error",
       })
     ).rejects.toThrow("Database connection failed");

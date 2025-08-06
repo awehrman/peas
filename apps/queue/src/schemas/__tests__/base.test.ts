@@ -236,7 +236,7 @@ describe("Base Schemas", () => {
 
     it("should validate all status values", () => {
       const statuses = [
-        "PENDING",
+        "AWAITING_PARSING",
         "PROCESSING",
         "COMPLETED",
         "FAILED",
@@ -476,7 +476,7 @@ describe("Base Schemas", () => {
       ParseResultSchema,
       {
         success: false,
-        parseStatus: "ERROR" as const,
+        parseStatus: "COMPLETED_WITH_ERROR" as const,
         segments: [],
         errorMessage: "Failed to parse ingredient",
         processingTime: 100,
@@ -489,18 +489,18 @@ describe("Base Schemas", () => {
       ParseResultSchema,
       {
         success: true,
-        parseStatus: "PENDING" as const,
+        parseStatus: "AWAITING_PARSING" as const,
         processingTime: 0,
       },
       "minimal parse result"
     );
 
     it("should validate all parse status values", () => {
-      const statuses = ["PENDING", "CORRECT", "INCORRECT", "ERROR"] as const;
+      const statuses = ["AWAITING_PARSING", "COMPLETED_SUCCESSFULLY", "COMPLETED_SUCCESSFULLY", "COMPLETED_WITH_ERROR"] as const;
 
       statuses.forEach((status) => {
         const parseResult = {
-          success: status === "CORRECT",
+          success: status === "COMPLETED_SUCCESSFULLY",
           parseStatus: status,
           processingTime: 100,
         };
@@ -528,7 +528,7 @@ describe("Base Schemas", () => {
       ParseResultSchema,
       {
         success: true,
-        parseStatus: "CORRECT" as const,
+        parseStatus: "COMPLETED_SUCCESSFULLY" as const,
         processingTime: -100,
       },
       undefined,
@@ -693,7 +693,7 @@ describe("Base Schemas", () => {
       it("should validate valid parse result", () => {
         const validData = {
           success: true,
-          parseStatus: "CORRECT" as const,
+          parseStatus: "COMPLETED_SUCCESSFULLY" as const,
           processingTime: 100,
         };
 

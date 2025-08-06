@@ -18,102 +18,100 @@ export async function saveIngredientLine(
     ) => Promise<Record<string, unknown>>;
   }
 ): Promise<IngredientJobData> {
-  // Validate that we have a note ID
-  if (!data.noteId) {
-    throw new Error("No note ID available for ingredient saving");
-  }
-
-  // Validate that we have an ingredient reference
-  if (!data.ingredientReference) {
-    throw new Error("No ingredient reference available for saving");
-  }
-
   try {
+    // Validate that we have required data
+    if (!data.noteId) {
+      throw new Error("No note ID available for ingredient saving");
+    }
+
+    if (!data.ingredientReference) {
+      throw new Error("No ingredient reference available for saving");
+    }
+
     logger.log(
-      `[SAVE_INGREDIENT_LINE] Starting to save ingredient: "${data.ingredientReference}" for note: ${data.noteId}`
+      `[SAVE_INGREDIENT_LINE] Starting to save ingredient: noteId=${data.noteId}, lineIndex=${data.lineIndex}, jobId=${data.jobId}`
     );
 
-    // Extract typed metadata
-    const metadata = data.metadata as
-      | {
-          rule?: string;
-          blockIndex?: number;
-          parsedSegments?: Array<{
-            index: number;
-            rule: string;
-            type: string;
-            value: string;
-            processingTime?: number;
-          }>;
-        }
-      | undefined;
-
-    // 1. Upsert the ParsedIngredientLine record
-    const { id: lineId } = await upsertParsedIngredientLine(
+    // Update the ingredient line in the database
+    const result = await upsertParsedIngredientLine(
       data.noteId,
       data.lineIndex,
       data.ingredientReference,
       data.parseStatus,
-      metadata?.rule,
-      metadata?.blockIndex ?? 0,
+      undefined, // rule
+      0, // blockIndex
       data.isActive
     );
 
-    // 2. Replace parsed segments if any exist
-    if (metadata?.parsedSegments) {
-      await replaceParsedSegments(lineId, metadata.parsedSegments);
+    // Handle parsed segments if they exist
+    const parsedSegments = data.metadata?.parsedSegments as
+      | Array<{
+          index: number;
+          rule: string;
+          type: string;
+          value: string;
+          processingTime?: number;
+        }>
+      | undefined;
 
-      // 3. Process ingredient segments and create ingredient references
-      let ingredientCount = 0;
-      for (const segment of metadata.parsedSegments) {
+    if (parsedSegments && parsedSegments.length > 0) {
+      // Replace parsed segments
+      await replaceParsedSegments(result.id, parsedSegments);
+
+      // Process ingredient segments
+      for (const segment of parsedSegments) {
         if (segment.type === "ingredient") {
-          ingredientCount++;
-
-          // Find or create ingredient with pluralization support
-          const { id: ingredientId, isNew } = await findOrCreateIngredient(
-            segment.value
-          );
-
-          // Create ingredient reference linking ingredient to this parsed line
+          const ingredient = await findOrCreateIngredient(segment.value);
           await createIngredientReference(
-            ingredientId,
-            lineId,
+            ingredient.id,
+            result.id,
             segment.index,
             data.ingredientReference,
             data.noteId,
-            isNew ? "new_ingredient" : "existing_ingredient"
-          );
-
-          logger.log(
-            `[SAVE_INGREDIENT_LINE] Processed ingredient "${segment.value}" (${isNew ? "new" : "existing"}) for line: ${data.ingredientReference}`
+            ingredient.isNew ? "new_ingredient" : "existing_ingredient"
           );
         }
       }
-
-      if (ingredientCount > 0) {
-        logger.log(
-          `[SAVE_INGREDIENT_LINE] Created ${ingredientCount} ingredient reference(s) for line: ${data.ingredientReference}`
-        );
-      }
     }
+
     // Broadcast completion message if statusBroadcaster is available
     if (statusBroadcaster) {
-      const completionStatus = await getIngredientCompletionStatus(data.noteId);
+      logger.log(
+        `[SAVE_INGREDIENT_LINE] StatusBroadcaster is available, broadcasting completion`
+      );
 
-      await statusBroadcaster.addStatusEventAndBroadcast({
-        importId: data.importId,
-        status: "PENDING",
-        message: `Processing ${completionStatus.completedIngredients}/${completionStatus.totalIngredients} ingredients`,
-        context: "ingredient_processing",
-        currentCount: completionStatus.completedIngredients,
-        totalCount: completionStatus.totalIngredients,
-        indentLevel: 1,
-        metadata: {
-          totalIngredients: completionStatus.totalIngredients,
-          completedIngredients: completionStatus.completedIngredients,
-          lineIndex: data.lineIndex,
-        },
-      });
+      try {
+        // Get completion status for broadcasting
+        const completionStatus = await getIngredientCompletionStatus(
+          data.noteId
+        );
+
+        await statusBroadcaster.addStatusEventAndBroadcast({
+          importId: data.importId,
+          noteId: data.noteId,
+          status: "AWAITING_PARSING",
+          message: `Processing ${completionStatus.completedIngredients}/${completionStatus.totalIngredients} ingredients`,
+          context: "ingredient_processing",
+          currentCount: completionStatus.completedIngredients,
+          totalCount: completionStatus.totalIngredients,
+          indentLevel: 1,
+          metadata: {
+            totalIngredients: completionStatus.totalIngredients,
+            completedIngredients: completionStatus.completedIngredients,
+            savedIngredientId: result.id,
+            lineIndex: data.lineIndex,
+          },
+        });
+        logger.log(
+          `[SAVE_INGREDIENT_LINE] Successfully broadcasted ingredient completion for line ${data.lineIndex} with ID ${result.id}`
+        );
+      } catch (broadcastError) {
+        logger.log(
+          `[SAVE_INGREDIENT_LINE] Failed to broadcast ingredient completion: ${broadcastError}`
+        );
+      }
+    } else {
+      logger.log(`[SAVE_INGREDIENT_LINE] StatusBroadcaster is not available`);
     }
 
     return data;

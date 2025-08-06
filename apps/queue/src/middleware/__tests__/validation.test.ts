@@ -83,7 +83,7 @@ describe("ValidationSchemas", () => {
 
     describe("status", () => {
       it("should validate valid status values", () => {
-        expect(ValidationSchemas.query.status.parse("PENDING")).toBe("PENDING");
+        expect(ValidationSchemas.query.status.parse("AWAITING_PARSING")).toBe("AWAITING_PARSING");
         expect(ValidationSchemas.query.status.parse("PROCESSING")).toBe(
           "PROCESSING"
         );

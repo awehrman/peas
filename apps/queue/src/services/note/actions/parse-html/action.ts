@@ -1,12 +1,16 @@
 import { parseHtml } from "./service";
 
 import { ActionName } from "../../../../types";
-import { BaseAction } from "../../../../workers/core/base-action";
-import type { ActionContext } from "../../../../workers/core/types";
 import type {
   NotePipelineData,
   NoteWorkerDependencies,
 } from "../../../../types/notes";
+import { BaseAction } from "../../../../workers/core/base-action";
+import type { ActionContext } from "../../../../workers/core/types";
+import {
+  initializeNoteCompletion,
+  markWorkerCompleted,
+} from "../track-completion/service";
 
 export class ParseHtmlAction extends BaseAction<
   NotePipelineData,
@@ -33,16 +37,24 @@ export class ParseHtmlAction extends BaseAction<
     console.log(`[PARSE_HTML_ACTION] Result:`, result);
 
     // Broadcast initial status messages for ingredients and instructions
-    if (deps.statusBroadcaster && result && result.file) {
+    if (deps.statusBroadcaster && result && result.file && data) {
       const ingredientCount = result.file.ingredients?.length || 0;
       const instructionCount = result.file.instructions?.length || 0;
+
+      // Initialize completion tracking for this note
+      if (data.noteId && data.importId) {
+        initializeNoteCompletion(data.noteId, data.importId);
+        deps.logger.log(
+          `[PARSE_HTML] Initialized completion tracking for note ${data.noteId}`
+        );
+      }
 
       // Broadcast initial ingredient status
       if (ingredientCount > 0) {
         await deps.statusBroadcaster.addStatusEventAndBroadcast({
           importId: data.importId || "",
           noteId: data.noteId,
-          status: "PENDING",
+          status: "AWAITING_PARSING",
           message: `Processing 0/${ingredientCount} ingredients`,
           context: "ingredient_processing",
           currentCount: 0,
@@ -59,7 +71,7 @@ export class ParseHtmlAction extends BaseAction<
         await deps.statusBroadcaster.addStatusEventAndBroadcast({
           importId: data.importId || "",
           noteId: data.noteId,
-          status: "PENDING",
+          status: "AWAITING_PARSING",
           message: `Processing 0/${instructionCount} instructions`,
           context: "instruction_processing",
           currentCount: 0,
@@ -70,6 +82,16 @@ export class ParseHtmlAction extends BaseAction<
           },
         });
       }
+    }
+
+    // Mark note worker as completed
+    if (data && data.noteId) {
+      markWorkerCompleted(
+        data.noteId,
+        "note",
+        deps.logger,
+        deps.statusBroadcaster
+      );
     }
 
     return result;

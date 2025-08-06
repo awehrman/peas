@@ -7,7 +7,9 @@ export async function updateInstructionLine(
   noteId: string,
   lineIndex: number,
   processedText: string,
-  parseStatus: "CORRECT" | "ERROR" = "CORRECT",
+  parseStatus:
+    | "COMPLETED_SUCCESSFULLY"
+    | "COMPLETED_WITH_ERROR" = "COMPLETED_SUCCESSFULLY",
   isActive: boolean = true
 ): Promise<{
   id: string;
@@ -76,7 +78,7 @@ export async function getInstructionCompletionStatus(noteId: string): Promise<{
             OR: [
               {
                 parseStatus: {
-                  in: ["CORRECT", "ERROR"],
+                  in: ["COMPLETED_SUCCESSFULLY", "COMPLETED_WITH_ERROR"],
                 },
               },
               {

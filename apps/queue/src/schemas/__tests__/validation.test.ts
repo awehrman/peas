@@ -213,7 +213,7 @@ describe("Validation Schemas", () => {
 
     it("should validate all status values", () => {
       const statuses = [
-        "PENDING",
+        "AWAITING_PARSING",
         "PROCESSING",
         "COMPLETED",
         "FAILED",
@@ -603,7 +603,7 @@ describe("Validation Schemas", () => {
 
     it("should validate all status values", () => {
       const statuses = [
-        "PENDING",
+        "AWAITING_PARSING",
         "PROCESSING",
         "COMPLETED",
         "FAILED",

@@ -8,6 +8,7 @@ import {
   createActionRegistration,
   registerActions,
 } from "../../../workers/shared/action-registry";
+import { CheckInstructionCompletionAction } from "../../instruction/actions/check-completion/action";
 import { FormatInstructionAction } from "../../instruction/actions/format-instruction/action";
 import { SaveInstructionAction } from "../../instruction/actions/save-instruction/action";
 import { registerInstructionActions } from "../../instruction/register";
@@ -50,10 +51,15 @@ describe("registerInstructionActions", () => {
         name: ActionName.SAVE_INSTRUCTION_LINE,
         factory: vi.fn(),
       };
+      const checkCompletionRegistration = {
+        name: ActionName.CHECK_INSTRUCTION_COMPLETION,
+        factory: vi.fn(),
+      };
 
       mockCreateActionRegistration
         .mockReturnValueOnce(formatRegistration)
-        .mockReturnValueOnce(saveRegistration);
+        .mockReturnValueOnce(saveRegistration)
+        .mockReturnValueOnce(checkCompletionRegistration);
 
       registerInstructionActions(mockFactory);
 
@@ -67,9 +73,15 @@ describe("registerInstructionActions", () => {
         SaveInstructionAction
       );
 
+      expect(mockCreateActionRegistration).toHaveBeenCalledWith(
+        ActionName.CHECK_INSTRUCTION_COMPLETION,
+        CheckInstructionCompletionAction
+      );
+
       expect(mockRegisterActions).toHaveBeenCalledWith(mockFactory, [
         formatRegistration,
         saveRegistration,
+        checkCompletionRegistration,
       ]);
     });
 
