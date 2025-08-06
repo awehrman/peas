@@ -1,4 +1,4 @@
-import { updateInstructionLine } from "@peas/database";
+import { updateInstructionLine, getInstructionCompletionStatus } from "@peas/database";
 
 import type { StructuredLogger } from "../../../../types";
 import type { InstructionJobData } from "../../../../workers/instruction/dependencies";
@@ -42,14 +42,21 @@ export async function saveInstruction(
       );
 
       try {
+        // Get completion status for broadcasting
+        const completionStatus = await getInstructionCompletionStatus(data.noteId);
+        
         await statusBroadcaster.addStatusEventAndBroadcast({
           importId: data.importId,
           noteId: data.noteId,
-          status: "AWAITING_PARSING",
-          message: `Processing instruction line ${data.lineIndex}`,
+          status: "PROCESSING",
+          message: `Processing ${completionStatus.completedInstructions}/${completionStatus.totalInstructions} instructions`,
           context: "instruction_processing",
+          currentCount: completionStatus.completedInstructions,
+          totalCount: completionStatus.totalInstructions,
           indentLevel: 1,
           metadata: {
+            totalInstructions: completionStatus.totalInstructions,
+            completedInstructions: completionStatus.completedInstructions,
             savedInstructionId: result.id,
             lineIndex: data.lineIndex,
           },

@@ -21,18 +21,14 @@ export class ProcessImageAction extends BaseAction<
     deps: ImageWorkerDependencies,
     context: ActionContext
   ): Promise<ImageSaveData> {
-    console.log(
-      `[PROCESS_IMAGE_ACTION] Starting execution for job ${context.jobId}`
-    );
-    console.log(`[PROCESS_IMAGE_ACTION] Input data:`, data);
-
-    const result = await processImage(data, deps.logger);
-
-    console.log(
-      `[PROCESS_IMAGE_ACTION] Processing completed for job ${context.jobId}`
-    );
-    console.log(`[PROCESS_IMAGE_ACTION] Result:`, result);
-
-    return result;
+    return this.executeServiceAction({
+      data,
+      deps,
+      context,
+      serviceCall: () => processImage(data, deps.logger),
+      contextName: "image_processing",
+      startMessage: "Image processing started",
+      completionMessage: "Image processing completed",
+    });
   }
 }

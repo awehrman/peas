@@ -375,7 +375,7 @@ describe("Save Ingredient Line Service", () => {
       ).toHaveBeenCalledWith({
         importId: "test-import-id",
         noteId: "test-note-id",
-        status: "AWAITING_PARSING",
+        status: "PROCESSING",
         message: "Processing 5/10 ingredients",
         context: "ingredient_processing",
         currentCount: 5,

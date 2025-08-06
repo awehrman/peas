@@ -9,9 +9,11 @@ export interface UseStatusWebSocketOptions {
   autoReconnect?: boolean;
   reconnectInterval?: number;
   maxReconnectAttempts?: number;
+  initialRetryDelay?: number;
+  showErrorAfterAttempts?: number;
 }
 
-interface StatusEvent {
+export interface StatusEvent {
   importId: string; // Temporary ID for frontend grouping
   noteId?: string; // Actual note ID once saved
   status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
@@ -39,12 +41,14 @@ export function useStatusWebSocket(options: UseStatusWebSocketOptions = {}) {
     autoReconnect = true,
     reconnectInterval = 3000,
     maxReconnectAttempts = 5,
+    initialRetryDelay = 1000,
+    showErrorAfterAttempts = 3,
   } = options;
 
   const [events, setEvents] = useState<StatusEvent[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<
-    "connecting" | "connected" | "disconnected" | "error"
+    "connecting" | "connected" | "disconnected" | "error" | "retrying"
   >("disconnected");
   const [error, setError] = useState<string | null>(null);
 
@@ -53,12 +57,16 @@ export function useStatusWebSocket(options: UseStatusWebSocketOptions = {}) {
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null
   );
+  const initialRetryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
 
   const connect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       return;
     }
 
+    console.log("🔌 WebSocket: Attempting to connect to:", wsUrl);
     setConnectionStatus("connecting");
     setError(null);
 
@@ -67,8 +75,10 @@ export function useStatusWebSocket(options: UseStatusWebSocketOptions = {}) {
       wsRef.current = ws;
 
       ws.onopen = () => {
+        console.log("🔌 WebSocket: Connection opened successfully");
         setIsConnected(true);
         setConnectionStatus("connected");
+        setError(null); // Clear any previous errors
         reconnectAttemptsRef.current = 0;
       };
 
@@ -106,7 +116,7 @@ export function useStatusWebSocket(options: UseStatusWebSocketOptions = {}) {
 
             case "connection_established":
               console.log("🔌 WebSocket: Connection established");
-              // Connection established - no action needed
+              setError(null); // Clear any previous errors
               break;
 
             case "pong":
@@ -123,7 +133,12 @@ export function useStatusWebSocket(options: UseStatusWebSocketOptions = {}) {
         }
       };
 
-      ws.onclose = (_event) => {
+      ws.onclose = (event) => {
+        console.log(
+          "🔌 WebSocket: Connection closed:",
+          event.code,
+          event.reason
+        );
         setIsConnected(false);
         setConnectionStatus("disconnected");
 
@@ -132,18 +147,34 @@ export function useStatusWebSocket(options: UseStatusWebSocketOptions = {}) {
           reconnectAttemptsRef.current < maxReconnectAttempts
         ) {
           reconnectAttemptsRef.current++;
+
+          // Use shorter delay for initial retries, longer for later ones
+          const delay =
+            reconnectAttemptsRef.current <= showErrorAfterAttempts
+              ? initialRetryDelay
+              : reconnectInterval;
+
           reconnectTimeoutRef.current = setTimeout(() => {
             connect();
-          }, reconnectInterval);
+          }, delay);
         } else if (reconnectAttemptsRef.current >= maxReconnectAttempts) {
           setConnectionStatus("error");
           setError("Failed to reconnect after maximum attempts");
         }
       };
 
-      ws.onerror = () => {
-        setConnectionStatus("error");
-        setError("WebSocket connection error");
+      ws.onerror = (error) => {
+        console.error("❌ WebSocket: Connection error:", error);
+
+        // Only show error after multiple failed attempts
+        if (reconnectAttemptsRef.current >= showErrorAfterAttempts) {
+          setConnectionStatus("error");
+          setError("WebSocket connection error");
+        } else {
+          // Set to retrying state for initial attempts
+          setConnectionStatus("retrying");
+          setError(null);
+        }
       };
     } catch (err) {
       console.error("❌ WebSocket: Failed to create connection:", err);
@@ -156,6 +187,11 @@ export function useStatusWebSocket(options: UseStatusWebSocketOptions = {}) {
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
       reconnectTimeoutRef.current = null;
+    }
+
+    if (initialRetryTimeoutRef.current) {
+      clearTimeout(initialRetryTimeoutRef.current);
+      initialRetryTimeoutRef.current = null;
     }
 
     if (wsRef.current) {
@@ -177,9 +213,12 @@ export function useStatusWebSocket(options: UseStatusWebSocketOptions = {}) {
     setEvents([]);
   }, []);
 
-  // Connect on mount
+  // Connect on mount with initial delay to avoid immediate errors
   useEffect(() => {
-    connect();
+    // Add a small delay before first connection attempt to avoid React dev mode issues
+    initialRetryTimeoutRef.current = setTimeout(() => {
+      connect();
+    }, 500);
 
     return () => {
       disconnect();

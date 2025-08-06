@@ -37,8 +37,8 @@ export class CheckDuplicatesAction extends BaseAction<
       context,
       serviceCall: () => checkForDuplicates(data, deps.logger),
       contextName: "CHECK_DUPLICATES",
-      startMessage: "Checking for duplicate recipes...",
-      completionMessage: "Duplicate check completed",
+      startMessage: "Checking for duplicate notes...",
+      completionMessage: "Verified no duplicates!",
     });
   }
 }

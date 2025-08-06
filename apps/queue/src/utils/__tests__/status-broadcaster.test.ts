@@ -76,7 +76,7 @@ describe("addStatusEventAndBroadcast", () => {
       status: "PROCESSING",
       message: "Test message",
       context: "Test context",
-      errorMessage: "Test message",
+      errorMessage: undefined,
       currentCount: 5,
       totalCount: 10,
       createdAt: mockDbEvent.createdAt,
@@ -114,7 +114,7 @@ describe("addStatusEventAndBroadcast", () => {
       status: "COMPLETED",
       message: "Import completed",
       context: "Import context",
-      errorMessage: "Import completed",
+      errorMessage: undefined,
       currentCount: 100,
       totalCount: 100,
       createdAt: expect.any(Date),
@@ -232,25 +232,6 @@ describe("addStatusEventAndBroadcast", () => {
       status: "PROCESSING" as NoteStatus,
       message: "Test message",
     });
-
-    expect(console.log).toHaveBeenCalledWith(
-      "[addStatusEventAndBroadcast] called with:",
-      expect.objectContaining({
-        importId: "import-1",
-        noteId: "note-123",
-        status: "PROCESSING",
-        message: "Test message",
-      })
-    );
-
-    expect(console.log).toHaveBeenCalledWith(
-      "[addStatusEventAndBroadcast] DB event created:",
-      mockDbEvent
-    );
-
-    expect(console.log).toHaveBeenCalledWith(
-      "[addStatusEventAndBroadcast] Broadcasted to websocket"
-    );
 
     expect(mockBroadcastStatusEvent).toHaveBeenCalled();
   });
@@ -385,7 +366,7 @@ describe("addStatusEventAndBroadcast", () => {
         status,
         message: `Status: ${status}`,
         context: undefined,
-        errorMessage: `Status: ${status}`,
+        errorMessage: undefined,
         currentCount: undefined,
         totalCount: undefined,
         createdAt: mockDbEvent.createdAt,

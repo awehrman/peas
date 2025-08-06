@@ -34,8 +34,19 @@ export class WebSocketManager {
 
   constructor(port: number = 8080) {
     this.port = port;
-    this.wss = new WebSocketServer({ port });
-    this.setupEventHandlers();
+    try {
+      this.wss = new WebSocketServer({ port });
+      this.setupEventHandlers();
+      console.log(
+        `🔌 WebSocket: Server created successfully on port ${this.port}`
+      );
+    } catch (error) {
+      console.error(
+        `❌ WebSocket: Failed to create server on port ${this.port}:`,
+        error
+      );
+      throw error;
+    }
   }
 
   private setupEventHandlers() {
@@ -136,6 +147,7 @@ export class WebSocketManager {
       `[WebSocket] Broadcasting status event to ${this.clients.size} clients:`,
       message
     );
+    console.log(`[WebSocket] Message string:`, messageStr);
 
     if (this.clients.size === 0) {
       console.log("[WebSocket] No clients connected to receive the broadcast");
@@ -178,7 +190,14 @@ let wsManager: WebSocketManager | null = null;
 
 export function initializeWebSocketServer(port?: number): WebSocketManager {
   if (!wsManager) {
-    wsManager = new WebSocketManager(port);
+    try {
+      console.log(`🔌 WebSocket: Initializing server on port ${port || 8080}`);
+      wsManager = new WebSocketManager(port);
+      console.log(`🔌 WebSocket: Server initialized successfully`);
+    } catch (error) {
+      console.error(`❌ WebSocket: Failed to initialize server:`, error);
+      throw error;
+    }
   }
   return wsManager;
 }

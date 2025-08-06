@@ -89,7 +89,7 @@ export async function saveIngredientLine(
         await statusBroadcaster.addStatusEventAndBroadcast({
           importId: data.importId,
           noteId: data.noteId,
-          status: "AWAITING_PARSING",
+          status: "PROCESSING",
           message: `Processing ${completionStatus.completedIngredients}/${completionStatus.totalIngredients} ingredients`,
           context: "ingredient_processing",
           currentCount: completionStatus.completedIngredients,

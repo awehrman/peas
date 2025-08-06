@@ -1,6 +1,7 @@
 import type { StructuredLogger } from "../../../../types";
 import type { NotePipelineData } from "../../../../types/notes";
 import type { NoteWithParsedLines } from "../../../../types/notes";
+import { initializeNoteCompletion } from "../track-completion/service";
 
 export async function saveNote(
   data: NotePipelineData,
@@ -31,6 +32,14 @@ export async function saveNote(
     logger.log(
       `[SAVE_NOTE] Successfully created note with ID: ${dbNote.id}, title: "${dbNote.title}", evernoteMetadataId: ${dbNote.evernoteMetadataId || "none"}`
     );
+
+    // Initialize completion tracking for this note
+    if (data.importId) {
+      initializeNoteCompletion(dbNote.id, data.importId);
+      logger.log(
+        `[SAVE_NOTE] Initialized completion tracking for note ${dbNote.id} with import ${data.importId}`
+      );
+    }
 
     // Transform the database result to match the expected NoteWithParsedLines interface
     const note: NoteWithParsedLines = {

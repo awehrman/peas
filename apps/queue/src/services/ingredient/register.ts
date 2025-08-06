@@ -9,6 +9,7 @@ import {
   registerActions,
 } from "../../workers/shared/action-registry";
 
+import { CheckIngredientCompletionAction } from "./actions/check-completion/action";
 import { ParseIngredientLineAction } from "./actions/parse-ingredient-line/action";
 import { SaveIngredientLineAction } from "./actions/save-ingredient-line/action";
 
@@ -36,5 +37,10 @@ export function registerIngredientActions(
       IngredientWorkerDependencies,
       IngredientJobData
     >(ActionName.SAVE_INGREDIENT_LINE, SaveIngredientLineAction),
+    createActionRegistration<
+      IngredientJobData,
+      IngredientWorkerDependencies,
+      IngredientJobData
+    >(ActionName.CHECK_INGREDIENT_COMPLETION, CheckIngredientCompletionAction),
   ]);
 }

@@ -45,5 +45,10 @@ export function createIngredientPipeline(
     actionFactory.create(ActionName.SAVE_INGREDIENT_LINE, dependencies)
   );
 
+  // Check completion after saving
+  actions.push(
+    actionFactory.create(ActionName.CHECK_INGREDIENT_COMPLETION, dependencies)
+  );
+
   return actions;
 }

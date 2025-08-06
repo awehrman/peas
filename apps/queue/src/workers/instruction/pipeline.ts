@@ -41,7 +41,14 @@ export function createInstructionPipeline(
   );
 
   // Always save the formatted instruction
-  actions.push(actionFactory.create(ActionName.SAVE_INSTRUCTION_LINE, dependencies));
+  actions.push(
+    actionFactory.create(ActionName.SAVE_INSTRUCTION_LINE, dependencies)
+  );
+
+  // Check completion after saving
+  actions.push(
+    actionFactory.create(ActionName.CHECK_INSTRUCTION_COMPLETION, dependencies)
+  );
 
   return actions;
 }

@@ -1,6 +1,6 @@
-import type { ImageSaveData } from "../../../../workers/image/types";
 import type { IServiceContainer } from "../../../../services/container";
 import type { StructuredLogger } from "../../../../types";
+import type { ImageSaveData } from "../../../../workers/image/types";
 
 export async function imageCompletedStatus(
   data: ImageSaveData,
@@ -23,39 +23,50 @@ export async function imageCompletedStatus(
       throw new Error(`Image record not found for ID: ${data.imageId}`);
     }
 
-    // Broadcast completion to frontend via WebSocket
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const webSocketManager = (serviceContainer as any).webSocketManager;
-    if (webSocketManager) {
-      await webSocketManager.broadcast("image_processing_completed", {
-        noteId: data.noteId,
-        importId: data.importId,
-        imageId: data.imageId,
-        image: {
-          id: image.id,
-          originalImageUrl: image.originalImageUrl,
-          thumbnailImageUrl: image.thumbnailImageUrl,
-          crop3x2ImageUrl: image.crop3x2ImageUrl,
-          crop4x3ImageUrl: image.crop4x3ImageUrl,
-          crop16x9ImageUrl: image.crop16x9ImageUrl,
-          originalWidth: image.originalWidth,
-          originalHeight: image.originalHeight,
-          originalSize: image.originalSize,
-          originalFormat: image.originalFormat,
-          processingStatus: image.processingStatus,
-        },
-        processingTime: Date.now(),
-      });
-    }
+    // Broadcast completion using standard status broadcasting system
+    const statusBroadcaster = serviceContainer.statusBroadcaster;
+    if (statusBroadcaster && data.importId) {
+      try {
+        await statusBroadcaster.addStatusEventAndBroadcast({
+          importId: data.importId,
+          noteId: data.noteId,
+          status: "COMPLETED",
+          message: "Added image...",
+          context: "image_processing",
+          indentLevel: 1,
+          metadata: {
+            imageId: data.imageId,
+            originalImageUrl: image.originalImageUrl,
+            thumbnailImageUrl: image.thumbnailImageUrl,
+            crop3x2ImageUrl: image.crop3x2ImageUrl,
+            crop4x3ImageUrl: image.crop4x3ImageUrl,
+            crop16x9ImageUrl: image.crop16x9ImageUrl,
+            originalWidth: image.originalWidth,
+            originalHeight: image.originalHeight,
+            originalSize: image.originalSize,
+            originalFormat: image.originalFormat,
+            processingStatus: image.processingStatus,
+          },
+        });
 
-    logger.log(
-      `[IMAGE_COMPLETED_STATUS] Completion broadcast sent for image: ${data.imageId}`
-    );
+        logger.log(
+          `[IMAGE_COMPLETED_STATUS] Status broadcast sent for image: ${data.imageId}`
+        );
+      } catch (broadcastError) {
+        logger.log(
+          `[IMAGE_COMPLETED_STATUS] Failed to broadcast status: ${broadcastError}`
+        );
+      }
+    } else {
+      logger.log(
+        `[IMAGE_COMPLETED_STATUS] Status broadcaster not available or no importId`
+      );
+    }
 
     return data;
   } catch (error) {
     logger.log(
-      `[IMAGE_COMPLETED_STATUS] Failed to broadcast completion: ${error}`
+      `[IMAGE_COMPLETED_STATUS] Failed to process completion: ${error}`
     );
     // Don't throw error here as the main processing was successful
     return data;

@@ -68,7 +68,7 @@ describe("Ingredient Pipeline", () => {
   });
 
   describe("createIngredientPipeline", () => {
-    it("should create a pipeline with parse and save actions", () => {
+    it("should create a pipeline with parse, save, and completion actions", () => {
       const actions = createIngredientPipeline(
         mockActionFactory,
         mockDependencies,
@@ -76,8 +76,8 @@ describe("Ingredient Pipeline", () => {
         mockContext
       );
 
-      expect(actions).toHaveLength(2);
-      expect(mockActionFactory.create).toHaveBeenCalledTimes(2);
+      expect(actions).toHaveLength(3);
+      expect(mockActionFactory.create).toHaveBeenCalledTimes(3);
     });
 
     it("should create parse ingredient action first", () => {
@@ -110,15 +110,45 @@ describe("Ingredient Pipeline", () => {
       );
     });
 
+    it("should create completion action third", () => {
+      createIngredientPipeline(
+        mockActionFactory,
+        mockDependencies,
+        mockData,
+        mockContext
+      );
+
+      expect(mockActionFactory.create).toHaveBeenNthCalledWith(
+        3,
+        ActionName.CHECK_INGREDIENT_COMPLETION,
+        mockDependencies
+      );
+    });
+
     it("should return actions in correct order", () => {
-      const mockParseAction = { name: "parse", execute: vi.fn() };
-      const mockSaveAction = { name: "save", execute: vi.fn() };
+      const mockParseAction = {
+        name: "parse",
+        execute: vi.fn(),
+        executeWithTiming: vi.fn(),
+      };
+      const mockSaveAction = {
+        name: "save",
+        execute: vi.fn(),
+        executeWithTiming: vi.fn(),
+      };
+      const mockCompletionAction = {
+        name: "completion",
+        execute: vi.fn(),
+        executeWithTiming: vi.fn(),
+      };
 
       vi.mocked(mockActionFactory.create)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .mockReturnValueOnce(mockParseAction as any)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .mockReturnValueOnce(mockSaveAction as any);
+        .mockReturnValueOnce(mockSaveAction as any)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .mockReturnValueOnce(mockCompletionAction as any);
 
       const actions = createIngredientPipeline(
         mockActionFactory,
@@ -127,7 +157,11 @@ describe("Ingredient Pipeline", () => {
         mockContext
       );
 
-      expect(actions).toEqual([mockParseAction, mockSaveAction]);
+      expect(actions).toEqual([
+        mockParseAction,
+        mockSaveAction,
+        mockCompletionAction,
+      ]);
     });
 
     it("should work with different job data", () => {
@@ -149,7 +183,7 @@ describe("Ingredient Pipeline", () => {
         mockContext
       );
 
-      expect(mockActionFactory.create).toHaveBeenCalledTimes(2);
+      expect(mockActionFactory.create).toHaveBeenCalledTimes(3);
     });
 
     it("should work with different context", () => {
@@ -170,7 +204,7 @@ describe("Ingredient Pipeline", () => {
         differentContext
       );
 
-      expect(mockActionFactory.create).toHaveBeenCalledTimes(2);
+      expect(mockActionFactory.create).toHaveBeenCalledTimes(3);
     });
 
     it("should work without statusBroadcaster", () => {
@@ -186,7 +220,7 @@ describe("Ingredient Pipeline", () => {
         mockContext
       );
 
-      expect(mockActionFactory.create).toHaveBeenCalledTimes(2);
+      expect(mockActionFactory.create).toHaveBeenCalledTimes(3);
     });
 
     it("should always create the same pipeline regardless of data", () => {
@@ -221,7 +255,7 @@ describe("Ingredient Pipeline", () => {
       );
 
       expect(actions1).toHaveLength(actions2.length);
-      expect(mockActionFactory.create).toHaveBeenCalledTimes(4);
+      expect(mockActionFactory.create).toHaveBeenCalledTimes(6);
     });
 
     it("should handle action factory errors gracefully", () => {

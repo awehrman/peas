@@ -61,10 +61,10 @@ describe("Ingredient Service Register", () => {
   });
 
   describe("registerIngredientActions", () => {
-    it("should register parse and save ingredient actions", () => {
+    it("should register parse, save, and completion ingredient actions", () => {
       registerIngredientActions(mockFactory);
 
-      expect(mockCreateActionRegistration).toHaveBeenCalledTimes(2);
+      expect(mockCreateActionRegistration).toHaveBeenCalledTimes(3);
       expect(mockRegisterActions).toHaveBeenCalledTimes(1);
       expect(mockRegisterActions).toHaveBeenCalledWith(
         mockFactory,
@@ -93,16 +93,19 @@ describe("Ingredient Service Register", () => {
     it("should pass correct array of registrations to registerActions", () => {
       const mockRegistration1 = { name: "parse-action", actionClass: vi.fn() };
       const mockRegistration2 = { name: "save-action", actionClass: vi.fn() };
+      const mockRegistration3 = { name: "completion-action", actionClass: vi.fn() };
 
       mockCreateActionRegistration
         .mockReturnValueOnce(mockRegistration1)
-        .mockReturnValueOnce(mockRegistration2);
+        .mockReturnValueOnce(mockRegistration2)
+        .mockReturnValueOnce(mockRegistration3);
 
       registerIngredientActions(mockFactory);
 
       expect(mockRegisterActions).toHaveBeenCalledWith(mockFactory, [
         mockRegistration1,
         mockRegistration2,
+        mockRegistration3,
       ]);
     });
 

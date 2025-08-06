@@ -101,8 +101,8 @@ describe("CleanHtmlAction", () => {
         context: mockContext,
         serviceCall: expect.any(Function),
         contextName: "clean_html",
-        startMessage: "HTML cleaning started",
-        completionMessage: "HTML cleaning completed (1.5KB removed)",
+        startMessage: "Cleaning .html files...",
+        completionMessage: "Cleaned .html files!",
       });
     });
 
@@ -119,17 +119,6 @@ describe("CleanHtmlAction", () => {
       expect(result).toBe(cleanedData);
     });
 
-    it("should calculate removed size correctly", async () => {
-      mockCalculateRemovedSize.mockReturnValue("2.3MB");
-
-      await action.execute(mockData, mockDeps, mockContext);
-
-      expect(mockCalculateRemovedSize).toHaveBeenCalledWith(
-        mockData.content.length,
-        mockData.content.length
-      );
-    });
-
     it("should handle different content lengths", async () => {
       const longContent = "a".repeat(10000);
       const dataWithLongContent = {
@@ -137,12 +126,10 @@ describe("CleanHtmlAction", () => {
         content: longContent,
       };
 
-      await action.execute(dataWithLongContent, mockDeps, mockContext);
+      const result = await action.execute(dataWithLongContent, mockDeps, mockContext);
 
-      expect(mockCalculateRemovedSize).toHaveBeenCalledWith(
-        longContent.length,
-        longContent.length
-      );
+      expect(result).toBe(mockData);
+      expect(mockDeps.services.cleanHtml).toHaveBeenCalledWith(dataWithLongContent);
     });
 
     it("should handle empty content", async () => {
@@ -151,9 +138,10 @@ describe("CleanHtmlAction", () => {
         content: "",
       };
 
-      await action.execute(dataWithEmptyContent, mockDeps, mockContext);
+      const result = await action.execute(dataWithEmptyContent, mockDeps, mockContext);
 
-      expect(mockCalculateRemovedSize).toHaveBeenCalledWith(0, 0);
+      expect(result).toBe(mockData);
+      expect(mockDeps.services.cleanHtml).toHaveBeenCalledWith(dataWithEmptyContent);
     });
 
     it("should handle service errors", async () => {
@@ -210,9 +198,12 @@ describe("CleanHtmlAction", () => {
     it("should handle null or undefined data gracefully", async () => {
       const nullData = null as unknown as NotePipelineData;
 
-      await expect(
-        action.execute(nullData, mockDeps, mockContext)
-      ).rejects.toThrow();
+      // Mock the service to return the null data
+      (mockDeps.services.cleanHtml as any).mockResolvedValue(nullData);
+
+      const result = await action.execute(nullData, mockDeps, mockContext);
+
+      expect(result).toBe(nullData);
     });
 
     it("should handle data without content property", async () => {
@@ -223,9 +214,12 @@ describe("CleanHtmlAction", () => {
         metadata: { source: "test" },
       } as unknown as NotePipelineData;
 
-      await expect(
-        action.execute(dataWithoutContent, mockDeps, mockContext)
-      ).rejects.toThrow();
+      // Mock the service to return the data without content
+      (mockDeps.services.cleanHtml as any).mockResolvedValue(dataWithoutContent);
+
+      const result = await action.execute(dataWithoutContent, mockDeps, mockContext);
+
+      expect(result).toBe(dataWithoutContent);
     });
   });
 

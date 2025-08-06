@@ -64,6 +64,7 @@ export enum ActionName {
   // Ingredient actions
   PARSE_INGREDIENT_LINE = "parse_ingredient_line",
   SAVE_INGREDIENT_LINE = "save_ingredient_line",
+  CHECK_INGREDIENT_COMPLETION = "check_ingredient_completion",
   INGREDIENT_COMPLETED_STATUS = "ingredient_completed_status",
   UPDATE_INGREDIENT_COUNT = "update_ingredient_count",
   SCHEDULE_CATEGORIZATION_AFTER_COMPLETION = "schedule_categorization_after_completion",
@@ -281,6 +282,7 @@ export const ACTION_CATEGORIES: Record<ActionName, ActionCategory> = {
   // Ingredient actions
   [ActionName.PARSE_INGREDIENT_LINE]: ActionCategory.INGREDIENT,
   [ActionName.SAVE_INGREDIENT_LINE]: ActionCategory.INGREDIENT,
+  [ActionName.CHECK_INGREDIENT_COMPLETION]: ActionCategory.INGREDIENT,
   [ActionName.INGREDIENT_COMPLETED_STATUS]: ActionCategory.INGREDIENT,
   [ActionName.UPDATE_INGREDIENT_COUNT]: ActionCategory.INGREDIENT,
   [ActionName.SCHEDULE_INGREDIENT_LINES]: ActionCategory.INGREDIENT,

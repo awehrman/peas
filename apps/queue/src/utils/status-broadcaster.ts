@@ -24,17 +24,6 @@ export async function addStatusEventAndBroadcast({
   indentLevel?: number;
   metadata?: Record<string, unknown>;
 }) {
-  console.log("[addStatusEventAndBroadcast] called with:", {
-    importId,
-    noteId,
-    status,
-    message,
-    context,
-    currentCount,
-    totalCount,
-    indentLevel,
-    metadata,
-  });
   try {
     // Add to database (only if we have a noteId)
     let dbEvent = null;
@@ -47,7 +36,6 @@ export async function addStatusEventAndBroadcast({
         currentCount,
         totalCount,
       });
-      console.log("[addStatusEventAndBroadcast] DB event created:", dbEvent);
     }
 
     // Broadcast to WebSocket clients (always use importId for frontend grouping)
@@ -57,15 +45,13 @@ export async function addStatusEventAndBroadcast({
       status,
       message,
       context,
-      errorMessage: message,
+      errorMessage: undefined, // Only set errorMessage for actual errors
       currentCount,
       totalCount,
       createdAt: dbEvent?.createdAt || new Date(),
       indentLevel,
       metadata,
     });
-
-    console.log("[addStatusEventAndBroadcast] Broadcasted to websocket");
 
     return dbEvent;
   } catch (error) {

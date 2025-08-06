@@ -65,6 +65,9 @@ describe("Instruction Pipeline", () => {
         formatInstruction: vi.fn().mockResolvedValue({} as InstructionJobData),
         saveInstruction: vi.fn().mockResolvedValue({} as InstructionJobData),
       },
+      statusBroadcaster: {
+        addStatusEventAndBroadcast: vi.fn().mockResolvedValue({}),
+      },
     } as InstructionWorkerDependencies;
 
     mockData = {
@@ -89,10 +92,17 @@ describe("Instruction Pipeline", () => {
   });
 
   describe("createInstructionPipeline", () => {
-    it("should create a pipeline with format and save actions", () => {
+    it("should create a pipeline with format, save, and completion actions", () => {
+      const mockCompletionAction = {
+        name: ActionName.CHECK_INSTRUCTION_COMPLETION,
+        execute: vi.fn(),
+        executeWithTiming: vi.fn(),
+      };
+
       vi.mocked(mockActionFactory.create)
         .mockReturnValueOnce(mockFormatAction)
-        .mockReturnValueOnce(mockSaveAction);
+        .mockReturnValueOnce(mockSaveAction)
+        .mockReturnValueOnce(mockCompletionAction);
 
       const pipeline = createInstructionPipeline(
         mockActionFactory,
@@ -101,9 +111,10 @@ describe("Instruction Pipeline", () => {
         mockContext
       );
 
-      expect(pipeline).toHaveLength(2);
+      expect(pipeline).toHaveLength(3);
       expect(pipeline[0]).toBe(mockFormatAction);
       expect(pipeline[1]).toBe(mockSaveAction);
+      expect(pipeline[2]).toBe(mockCompletionAction);
     });
 
     it("should call actionFactory.create for format instruction action", () => {
@@ -125,9 +136,16 @@ describe("Instruction Pipeline", () => {
     });
 
     it("should call actionFactory.create for save instruction action", () => {
+      const mockCompletionAction = {
+        name: ActionName.CHECK_INSTRUCTION_COMPLETION,
+        execute: vi.fn(),
+        executeWithTiming: vi.fn(),
+      };
+
       vi.mocked(mockActionFactory.create)
         .mockReturnValueOnce(mockFormatAction)
-        .mockReturnValueOnce(mockSaveAction);
+        .mockReturnValueOnce(mockSaveAction)
+        .mockReturnValueOnce(mockCompletionAction);
 
       createInstructionPipeline(
         mockActionFactory,
@@ -143,9 +161,16 @@ describe("Instruction Pipeline", () => {
     });
 
     it("should call actionFactory.create in correct order", () => {
+      const mockCompletionAction = { 
+        name: ActionName.CHECK_INSTRUCTION_COMPLETION, 
+        execute: vi.fn(),
+        executeWithTiming: vi.fn(),
+      };
+      
       vi.mocked(mockActionFactory.create)
         .mockReturnValueOnce(mockFormatAction)
-        .mockReturnValueOnce(mockSaveAction);
+        .mockReturnValueOnce(mockSaveAction)
+        .mockReturnValueOnce(mockCompletionAction);
 
       createInstructionPipeline(
         mockActionFactory,
@@ -164,12 +189,24 @@ describe("Instruction Pipeline", () => {
         ActionName.SAVE_INSTRUCTION_LINE,
         mockDependencies
       );
+      expect(mockActionFactory.create).toHaveBeenNthCalledWith(
+        3,
+        ActionName.CHECK_INSTRUCTION_COMPLETION,
+        mockDependencies
+      );
     });
 
     it("should return actions in correct order", () => {
+      const mockCompletionAction = { 
+        name: ActionName.CHECK_INSTRUCTION_COMPLETION, 
+        execute: vi.fn(),
+        executeWithTiming: vi.fn(),
+      };
+      
       vi.mocked(mockActionFactory.create)
         .mockReturnValueOnce(mockFormatAction)
-        .mockReturnValueOnce(mockSaveAction);
+        .mockReturnValueOnce(mockSaveAction)
+        .mockReturnValueOnce(mockCompletionAction);
 
       const pipeline = createInstructionPipeline(
         mockActionFactory,
@@ -180,6 +217,7 @@ describe("Instruction Pipeline", () => {
 
       expect(pipeline[0]?.name).toBe(ActionName.FORMAT_INSTRUCTION_LINE);
       expect(pipeline[1]?.name).toBe(ActionName.SAVE_INSTRUCTION_LINE);
+      expect(pipeline[2]?.name).toBe(ActionName.CHECK_INSTRUCTION_COMPLETION);
     });
 
     it("should work with different job data", () => {
@@ -191,9 +229,16 @@ describe("Instruction Pipeline", () => {
         isActive: false,
       };
 
+      const mockCompletionAction = { 
+        name: ActionName.CHECK_INSTRUCTION_COMPLETION, 
+        execute: vi.fn(),
+        executeWithTiming: vi.fn(),
+      };
+      
       vi.mocked(mockActionFactory.create)
         .mockReturnValueOnce(mockFormatAction)
-        .mockReturnValueOnce(mockSaveAction);
+        .mockReturnValueOnce(mockSaveAction)
+        .mockReturnValueOnce(mockCompletionAction);
 
       const pipeline = createInstructionPipeline(
         mockActionFactory,
@@ -202,9 +247,10 @@ describe("Instruction Pipeline", () => {
         mockContext
       );
 
-      expect(pipeline).toHaveLength(2);
+      expect(pipeline).toHaveLength(3);
       expect(pipeline[0]).toBe(mockFormatAction);
       expect(pipeline[1]).toBe(mockSaveAction);
+      expect(pipeline[2]).toBe(mockCompletionAction);
     });
 
     it("should work with different context", () => {
@@ -218,9 +264,16 @@ describe("Instruction Pipeline", () => {
         attemptNumber: 3,
       };
 
+      const mockCompletionAction = { 
+        name: ActionName.CHECK_INSTRUCTION_COMPLETION, 
+        execute: vi.fn(),
+        executeWithTiming: vi.fn(),
+      };
+      
       vi.mocked(mockActionFactory.create)
         .mockReturnValueOnce(mockFormatAction)
-        .mockReturnValueOnce(mockSaveAction);
+        .mockReturnValueOnce(mockSaveAction)
+        .mockReturnValueOnce(mockCompletionAction);
 
       const pipeline = createInstructionPipeline(
         mockActionFactory,
@@ -229,9 +282,10 @@ describe("Instruction Pipeline", () => {
         differentContext
       );
 
-      expect(pipeline).toHaveLength(2);
+      expect(pipeline).toHaveLength(3);
       expect(pipeline[0]).toBe(mockFormatAction);
       expect(pipeline[1]).toBe(mockSaveAction);
+      expect(pipeline[2]).toBe(mockCompletionAction);
     });
 
     it("should work with different dependencies", () => {
@@ -250,9 +304,16 @@ describe("Instruction Pipeline", () => {
         },
       };
 
+      const mockCompletionAction = { 
+        name: ActionName.CHECK_INSTRUCTION_COMPLETION, 
+        execute: vi.fn(),
+        executeWithTiming: vi.fn(),
+      };
+      
       vi.mocked(mockActionFactory.create)
         .mockReturnValueOnce(mockFormatAction)
-        .mockReturnValueOnce(mockSaveAction);
+        .mockReturnValueOnce(mockSaveAction)
+        .mockReturnValueOnce(mockCompletionAction);
 
       const pipeline = createInstructionPipeline(
         mockActionFactory,
@@ -261,7 +322,7 @@ describe("Instruction Pipeline", () => {
         mockContext
       );
 
-      expect(pipeline).toHaveLength(2);
+      expect(pipeline).toHaveLength(3);
       expect(mockActionFactory.create).toHaveBeenCalledWith(
         ActionName.FORMAT_INSTRUCTION_LINE,
         differentDeps
@@ -273,11 +334,24 @@ describe("Instruction Pipeline", () => {
     });
 
     it("should always return the same pipeline structure regardless of input", () => {
+      const mockCompletionAction1 = { 
+        name: ActionName.CHECK_INSTRUCTION_COMPLETION, 
+        execute: vi.fn(),
+        executeWithTiming: vi.fn(),
+      };
+      const mockCompletionAction2 = { 
+        name: ActionName.CHECK_INSTRUCTION_COMPLETION, 
+        execute: vi.fn(),
+        executeWithTiming: vi.fn(),
+      };
+      
       vi.mocked(mockActionFactory.create)
         .mockReturnValueOnce(mockFormatAction)
         .mockReturnValueOnce(mockSaveAction)
+        .mockReturnValueOnce(mockCompletionAction1)
         .mockReturnValueOnce(mockFormatAction)
-        .mockReturnValueOnce(mockSaveAction);
+        .mockReturnValueOnce(mockSaveAction)
+        .mockReturnValueOnce(mockCompletionAction2);
 
       const pipeline1 = createInstructionPipeline(
         mockActionFactory,
@@ -293,10 +367,11 @@ describe("Instruction Pipeline", () => {
         { ...mockContext, jobId: "different" }
       );
 
-      expect(pipeline1).toHaveLength(2);
-      expect(pipeline2).toHaveLength(2);
+      expect(pipeline1).toHaveLength(3);
+      expect(pipeline2).toHaveLength(3);
       expect(pipeline1[0]?.name).toBe(pipeline2[0]?.name);
       expect(pipeline1[1]?.name).toBe(pipeline2[1]?.name);
+      expect(pipeline1[2]?.name).toBe(pipeline2[2]?.name);
     });
   });
 });

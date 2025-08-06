@@ -1,4 +1,7 @@
-import { updateInstructionLine } from "@peas/database";
+import {
+  getInstructionCompletionStatus,
+  updateInstructionLine,
+} from "@peas/database";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { StructuredLogger } from "../../../../../types";
@@ -8,6 +11,7 @@ import { saveInstruction } from "../../../../instruction/actions/save-instructio
 // Mock the database functions
 vi.mock("@peas/database", () => ({
   updateInstructionLine: vi.fn(),
+  getInstructionCompletionStatus: vi.fn(),
 }));
 
 describe("saveInstruction", () => {
@@ -44,6 +48,9 @@ describe("saveInstruction", () => {
   describe("successful saving", () => {
     it("should save instruction and broadcast completion", async () => {
       const mockUpdateInstructionLine = vi.mocked(updateInstructionLine);
+      const mockGetInstructionCompletionStatus = vi.mocked(
+        getInstructionCompletionStatus
+      );
 
       mockUpdateInstructionLine.mockResolvedValue({
         id: "instruction-1",
@@ -51,6 +58,13 @@ describe("saveInstruction", () => {
         originalText: "Original instruction",
         normalizedText: "Test instruction",
         parseStatus: "COMPLETED_SUCCESSFULLY",
+      });
+
+      mockGetInstructionCompletionStatus.mockResolvedValue({
+        totalInstructions: 5,
+        completedInstructions: 3,
+        progress: "3/5",
+        isComplete: false,
       });
 
       const result = await saveInstruction(
@@ -67,16 +81,24 @@ describe("saveInstruction", () => {
         true
       );
 
+      expect(mockGetInstructionCompletionStatus).toHaveBeenCalledWith(
+        "test-note-id"
+      );
+
       expect(
         mockStatusBroadcaster.addStatusEventAndBroadcast
       ).toHaveBeenCalledWith({
         importId: "test-import-id",
         noteId: "test-note-id",
-        status: "AWAITING_PARSING",
-        message: "Processing instruction line 0",
+        status: "PROCESSING",
+        message: "Processing 3/5 instructions",
         context: "instruction_processing",
+        currentCount: 3,
+        totalCount: 5,
         indentLevel: 1,
         metadata: {
+          totalInstructions: 5,
+          completedInstructions: 3,
           savedInstructionId: "instruction-1",
           lineIndex: 0,
         },
@@ -141,6 +163,7 @@ describe("saveInstruction", () => {
 
     it("should handle data without importId", async () => {
       const mockUpdateInstructionLine = vi.mocked(updateInstructionLine);
+      const mockGetInstructionCompletionStatus = vi.mocked(getInstructionCompletionStatus);
 
       const dataWithoutImportId = { ...mockData, importId: undefined };
 
@@ -150,6 +173,13 @@ describe("saveInstruction", () => {
         originalText: "Original instruction",
         normalizedText: "Test instruction",
         parseStatus: "COMPLETED_SUCCESSFULLY",
+      });
+
+      mockGetInstructionCompletionStatus.mockResolvedValue({
+        totalInstructions: 5,
+        completedInstructions: 3,
+        progress: "3/5",
+        isComplete: false,
       });
 
       const result = await saveInstruction(
@@ -163,11 +193,15 @@ describe("saveInstruction", () => {
       ).toHaveBeenCalledWith({
         importId: undefined,
         noteId: "test-note-id",
-        status: "AWAITING_PARSING",
-        message: "Processing instruction line 0",
+        status: "PROCESSING",
+        message: "Processing 3/5 instructions",
         context: "instruction_processing",
+        currentCount: 3,
+        totalCount: 5,
         indentLevel: 1,
         metadata: {
+          totalInstructions: 5,
+          completedInstructions: 3,
           savedInstructionId: "instruction-1",
           lineIndex: 0,
         },

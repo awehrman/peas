@@ -7,10 +7,7 @@ import type {
 } from "../../../../types/notes";
 import { BaseAction } from "../../../../workers/core/base-action";
 import type { ActionContext } from "../../../../workers/core/types";
-import {
-  initializeNoteCompletion,
-  markWorkerCompleted,
-} from "../track-completion/service";
+import { markWorkerCompleted } from "../track-completion/service";
 
 export class ParseHtmlAction extends BaseAction<
   NotePipelineData,
@@ -41,25 +38,31 @@ export class ParseHtmlAction extends BaseAction<
       const ingredientCount = result.file.ingredients?.length || 0;
       const instructionCount = result.file.instructions?.length || 0;
 
-      // Initialize completion tracking for this note
-      if (data.noteId && data.importId) {
-        initializeNoteCompletion(data.noteId, data.importId);
-        deps.logger.log(
-          `[PARSE_HTML] Initialized completion tracking for note ${data.noteId}`
-        );
-      }
+      // Broadcast "Processing note" container message
+      await deps.statusBroadcaster.addStatusEventAndBroadcast({
+        importId: data.importId || "",
+        noteId: data.noteId,
+        status: "PROCESSING",
+        message: "Processing note",
+        context: "note_processing",
+        indentLevel: 1,
+        metadata: {
+          totalIngredients: ingredientCount,
+          totalInstructions: instructionCount,
+        },
+      });
 
       // Broadcast initial ingredient status
       if (ingredientCount > 0) {
         await deps.statusBroadcaster.addStatusEventAndBroadcast({
           importId: data.importId || "",
           noteId: data.noteId,
-          status: "AWAITING_PARSING",
+          status: "PROCESSING",
           message: `Processing 0/${ingredientCount} ingredients`,
           context: "ingredient_processing",
           currentCount: 0,
           totalCount: ingredientCount,
-          indentLevel: 1,
+          indentLevel: 2,
           metadata: {
             totalIngredients: ingredientCount,
           },
@@ -71,12 +74,12 @@ export class ParseHtmlAction extends BaseAction<
         await deps.statusBroadcaster.addStatusEventAndBroadcast({
           importId: data.importId || "",
           noteId: data.noteId,
-          status: "AWAITING_PARSING",
+          status: "PROCESSING",
           message: `Processing 0/${instructionCount} instructions`,
           context: "instruction_processing",
           currentCount: 0,
           totalCount: instructionCount,
-          indentLevel: 1,
+          indentLevel: 2,
           metadata: {
             totalInstructions: instructionCount,
           },

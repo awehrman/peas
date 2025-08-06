@@ -51,8 +51,8 @@ export class ProcessSourceAction extends BaseAction<
       context,
       serviceCall: () => processSource(data, deps.logger),
       contextName: "PROCESS_SOURCE",
-      startMessage: `Processing source for note...`,
-      completionMessage: `Successfully processed source for note!`,
+      startMessage: "Processing source...",
+      completionMessage: "Added source...",
     });
   }
 }
