@@ -5,41 +5,7 @@ import type { ParserResult } from "./types";
 import type { ParsedSegment } from "../../../../schemas/base";
 import type { StructuredLogger } from "../../../../types";
 import type { IngredientJobData } from "../../../../workers/ingredient/dependencies";
-import type { PatternRule } from "../../../../workers/shared/pattern-tracker";
 import { CachedIngredientParser } from "../../cached-ingredient-parser";
-
-/**
- * Convert parsed segments to pattern rules for tracking and add ruleIds to segments.
- * @param segments - Array of parsed segments
- * @returns Object with pattern rules and updated segments with ruleIds
- */
-async function segmentsToPatternRules(segments: ParsedSegment[]): Promise<{
-  patternRules: PatternRule[];
-  segmentsWithRuleIds: Array<ParsedSegment & { ruleId?: string }>;
-}> {
-  const { findOrCreateParsingRule } = await import("@peas/database");
-
-  const patternRules: PatternRule[] = [];
-  const segmentsWithRuleIds: Array<ParsedSegment & { ruleId?: string }> = [];
-
-  for (let i = 0; i < segments.length; i++) {
-    const segment = segments[i];
-    if (segment) {
-      const rule = await findOrCreateParsingRule(segment.rule);
-      patternRules.push({
-        ruleId: rule.id,
-        ruleNumber: i + 1,
-      });
-
-      segmentsWithRuleIds.push({
-        ...segment,
-        ruleId: rule.id,
-      });
-    }
-  }
-
-  return { patternRules, segmentsWithRuleIds };
-}
 
 /**
  * Parse an ingredient line into structured segments.
@@ -153,17 +119,9 @@ export async function parseIngredientLine(
       }));
     }
 
-    // Generate pattern rules and track pattern
-    const { patternRules, segmentsWithRuleIds } =
-      await segmentsToPatternRules(parsedSegments);
-
+    // Store raw segments for later processing (parsing rules will be created during save)
     logger.log(
-      `[PARSE_INGREDIENT_LINE] Generated pattern rules: ${patternRules.map((r) => `${r.ruleNumber}:${r.ruleId}`).join("_")}`
-    );
-
-    // Store pattern data for later processing (will be handled by separate queue)
-    logger.log(
-      `[PARSE_INGREDIENT_LINE] Generated pattern rules: ${patternRules.map((r) => `${r.ruleNumber}:${r.ruleId}`).join("_")}`
+      `[PARSE_INGREDIENT_LINE] Parsed ${parsedSegments.length} segments for: "${data.ingredientReference}"`
     );
 
     const updatedData: IngredientJobData = {
@@ -174,12 +132,12 @@ export async function parseIngredientLine(
           : "COMPLETED_WITH_ERROR",
       metadata: {
         ...data.metadata,
-        parsedSegments: segmentsWithRuleIds,
+        parsedSegments,
         parseResult,
         rule: parseResult.rule,
         usedCache,
         parserVersion: usedCache ? "cached" : "v1",
-        patternRules,
+        // Note: patternRules will be generated during save step
       },
     };
 

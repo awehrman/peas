@@ -134,6 +134,76 @@ export async function getAllParsingRules(): Promise<
 }
 
 /**
+ * Find orphaned parsing rules (those with no connected parsed segments)
+ */
+export async function findOrphanedParsingRules(): Promise<
+  Array<{
+    id: string;
+    name: string;
+    createdAt: Date;
+    segmentCount: number;
+  }>
+> {
+  return prisma.parsingRule
+    .findMany({
+      where: {
+        parsedSegments: {
+          none: {},
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        createdAt: true,
+        _count: {
+          select: {
+            parsedSegments: true,
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    })
+    .then((rules) =>
+      rules.map((rule) => ({
+        id: rule.id,
+        name: rule.name,
+        createdAt: rule.createdAt,
+        segmentCount: rule._count.parsedSegments,
+      }))
+    );
+}
+
+/**
+ * Delete orphaned parsing rules (those with no connected parsed segments)
+ */
+export async function deleteOrphanedParsingRules(): Promise<{
+  deletedCount: number;
+  deletedRules: Array<{ id: string; name: string }>;
+}> {
+  const orphanedRules = await findOrphanedParsingRules();
+
+  if (orphanedRules.length === 0) {
+    return { deletedCount: 0, deletedRules: [] };
+  }
+
+  const deletedRules = await prisma.parsingRule.deleteMany({
+    where: {
+      id: {
+        in: orphanedRules.map((rule) => rule.id),
+      },
+    },
+  });
+
+  return {
+    deletedCount: deletedRules.count,
+    deletedRules: orphanedRules.map((rule) => ({
+      id: rule.id,
+      name: rule.name,
+    })),
+  };
+}
+
+/**
  * Get parsing rule usage count
  */
 export async function getParsingRuleUsageCount(

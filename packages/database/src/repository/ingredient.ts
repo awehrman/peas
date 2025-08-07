@@ -324,6 +324,38 @@ export async function createIngredientReference(
 }
 
 /**
+ * Get parsing rule statistics
+ */
+export async function getParsingRuleStatistics(): Promise<{
+  totalRules: number;
+  rulesWithSegments: number;
+  orphanedRules: number;
+  orphanedPercentage: number;
+}> {
+  const [totalRules, rulesWithSegments] = await Promise.all([
+    prisma.parsingRule.count(),
+    prisma.parsingRule.count({
+      where: {
+        parsedSegments: {
+          some: {},
+        },
+      },
+    }),
+  ]);
+
+  const orphanedRules = totalRules - rulesWithSegments;
+  const orphanedPercentage =
+    totalRules > 0 ? (orphanedRules / totalRules) * 100 : 0;
+
+  return {
+    totalRules,
+    rulesWithSegments,
+    orphanedRules,
+    orphanedPercentage,
+  };
+}
+
+/**
  * Clean up all data from the database (DANGEROUS - deletes everything)
  */
 export async function cleanupAllData(): Promise<{
@@ -332,6 +364,7 @@ export async function cleanupAllData(): Promise<{
     ingredients: number;
     parsedSegments: number;
     uniqueLinePatterns: number;
+    parsingRules: number;
     evernoteMetadata: number;
     sources: number;
     websites: number;
@@ -348,6 +381,7 @@ export async function cleanupAllData(): Promise<{
       ingredients: 0,
       parsedSegments: 0,
       uniqueLinePatterns: 0,
+      parsingRules: 0,
       evernoteMetadata: 0,
       sources: 0,
       websites: 0,
@@ -365,7 +399,7 @@ export async function cleanupAllData(): Promise<{
     const statusEventsResult = await prisma.noteStatusEvent.deleteMany({});
     deletedCounts.statusEvents = statusEventsResult.count;
 
-    // Delete parsed segments (they reference ingredient lines)
+    // Delete parsed segments (they reference ingredient lines and parsing rules)
     const parsedSegmentsResult = await prisma.parsedSegment.deleteMany({});
     deletedCounts.parsedSegments = parsedSegmentsResult.count;
 
@@ -391,6 +425,10 @@ export async function cleanupAllData(): Promise<{
       {}
     );
     deletedCounts.uniqueLinePatterns = uniqueLinePatternsResult.count;
+
+    // Delete parsing rules (after parsed segments are deleted)
+    const parsingRulesResult = await prisma.parsingRule.deleteMany({});
+    deletedCounts.parsingRules = parsingRulesResult.count;
 
     // Delete Evernote metadata
     const evernoteMetadataResult = await prisma.evernoteMetadata.deleteMany({});

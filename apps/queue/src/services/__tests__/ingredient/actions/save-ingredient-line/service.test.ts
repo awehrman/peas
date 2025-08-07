@@ -10,6 +10,8 @@ vi.mock("@peas/database", () => ({
   findOrCreateIngredient: vi.fn(),
   createIngredientReference: vi.fn(),
   getIngredientCompletionStatus: vi.fn(),
+  // New: ensure parsing rule creation is available for dynamic import in service
+  findOrCreateParsingRule: vi.fn(async (ruleName: string) => ({ id: `rule-${ruleName}` })),
 }));
 
 describe("Save Ingredient Line Service", () => {
@@ -171,10 +173,16 @@ describe("Save Ingredient Line Service", () => {
         0,
         true
       );
-      expect(mockDatabase.replaceParsedSegments).toHaveBeenCalledWith(
-        "line-123",
-        dataWithSegments.metadata?.parsedSegments
-      );
+      // Now segments include ruleId and may differ from raw parsedSegments; just assert it's an array
+      expect(mockDatabase.replaceParsedSegments).toHaveBeenCalled();
+      const replaceArgs = vi.mocked(mockDatabase.replaceParsedSegments).mock.calls[0];
+      expect(replaceArgs[0]).toBe("line-123");
+      expect(Array.isArray(replaceArgs[1])).toBe(true);
+      expect(replaceArgs[1]).toHaveLength(3);
+      // Each segment should have a ruleId
+      for (const seg of replaceArgs[1] as Array<Record<string, unknown>>) {
+        expect(typeof seg.ruleId).toBe("string");
+      }
       expect(mockDatabase.findOrCreateIngredient).toHaveBeenCalledWith("flour");
       expect(mockDatabase.createIngredientReference).toHaveBeenCalledWith(
         "ingredient-456",

@@ -51,16 +51,52 @@ export async function saveIngredientLine(
           type: string;
           value: string;
           processingTime?: number;
-          ruleId?: string;
         }>
       | undefined;
 
     if (parsedSegments && parsedSegments.length > 0) {
-      // Replace parsed segments
-      await replaceParsedSegments(result.id, parsedSegments);
+      // Create parsing rules and get rule IDs for segments
+      const { findOrCreateParsingRule } = await import("@peas/database");
+      const segmentsWithRuleIds: Array<{
+        index: number;
+        rule: string;
+        type: string;
+        value: string;
+        processingTime?: number;
+        ruleId: string;
+      }> = [];
+      const patternRules: Array<{
+        ruleId: string;
+        ruleNumber: number;
+      }> = [];
+
+      // Create parsing rules and build pattern rules
+      for (let i = 0; i < parsedSegments.length; i++) {
+        const segment = parsedSegments[i];
+        if (!segment) continue; // Skip undefined segments
+        
+        const rule = await findOrCreateParsingRule(segment.rule);
+        
+        segmentsWithRuleIds.push({
+          index: segment.index,
+          rule: segment.rule,
+          type: segment.type,
+          value: segment.value,
+          processingTime: segment.processingTime,
+          ruleId: rule.id,
+        });
+
+        patternRules.push({
+          ruleId: rule.id,
+          ruleNumber: i + 1,
+        });
+      }
+
+      // Replace parsed segments with rule IDs
+      await replaceParsedSegments(result.id, segmentsWithRuleIds);
 
       // Process ingredient segments
-      for (const segment of parsedSegments) {
+      for (const segment of segmentsWithRuleIds) {
         if (segment.type === "ingredient") {
           const ingredient = await findOrCreateIngredient(segment.value);
           await createIngredientReference(
@@ -73,55 +109,48 @@ export async function saveIngredientLine(
           );
         }
       }
-    }
 
-    // Queue pattern tracking for later processing
-    const patternRules = data.metadata?.patternRules as
-      | Array<{
-          ruleId: string;
-          ruleNumber: number;
-        }>
-      | undefined;
+      // Queue pattern tracking for later processing
+      if (patternRules.length > 0) {
+        try {
+          // Import queue dynamically to avoid circular dependencies
+          const { createQueue } = await import("../../../../queues/create-queue");
+          const patternQueue = createQueue("patternTracking");
 
-    if (patternRules && patternRules.length > 0) {
-      try {
-        // Import queue dynamically to avoid circular dependencies
-        const { createQueue } = await import("../../../../queues/create-queue");
-        const patternQueue = createQueue("patternTracking");
-
-        await patternQueue.add(
-          "track-pattern",
-          {
-            jobId: `pattern-${data.jobId}-${Date.now()}`,
-            patternRules,
-            exampleLine: data.ingredientReference,
-            noteId: data.noteId,
-            importId: data.importId,
-            metadata: {
-              originalJobId: data.jobId,
-              lineIndex: data.lineIndex,
-              ingredientLineId: result.id,
+          await patternQueue.add(
+            "track-pattern",
+            {
+              jobId: `pattern-${data.jobId}-${Date.now()}`,
+              patternRules,
+              exampleLine: data.ingredientReference,
+              noteId: data.noteId,
+              importId: data.importId,
+              metadata: {
+                originalJobId: data.jobId,
+                lineIndex: data.lineIndex,
+                ingredientLineId: result.id,
+              },
             },
-          },
-          {
-            removeOnComplete: 100,
-            removeOnFail: 50,
-            attempts: 3,
-            backoff: {
-              type: "exponential",
-              delay: 2000,
-            },
-          }
-        );
+            {
+              removeOnComplete: 100,
+              removeOnFail: 50,
+              attempts: 3,
+              backoff: {
+                type: "exponential",
+                delay: 2000,
+              },
+            }
+          );
 
-        logger.log(
-          `[SAVE_INGREDIENT_LINE] Queued pattern tracking for job ${data.jobId}`
-        );
-      } catch (queueError) {
-        logger.log(
-          `[SAVE_INGREDIENT_LINE] Failed to queue pattern tracking: ${queueError}`
-        );
-        // Don't fail the main save operation if pattern tracking fails
+          logger.log(
+            `[SAVE_INGREDIENT_LINE] Queued pattern tracking for job ${data.jobId}`
+          );
+        } catch (queueError) {
+          logger.log(
+            `[SAVE_INGREDIENT_LINE] Failed to queue pattern tracking: ${queueError}`
+          );
+          // Don't fail the main save operation if pattern tracking fails
+        }
       }
     }
 

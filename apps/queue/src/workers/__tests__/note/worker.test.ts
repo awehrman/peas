@@ -369,9 +369,6 @@ describe("createNoteWorker", () => {
         classifyError: vi.fn(),
         logError: vi.fn(),
       },
-      statusBroadcaster: {
-        addStatusEventAndBroadcast: vi.fn(),
-      },
       queues: {
         noteQueue: { name: "note" } as any,
         imageQueue: { name: "image" } as any,
@@ -379,14 +376,19 @@ describe("createNoteWorker", () => {
         instructionQueue: { name: "instruction" } as any,
         categorizationQueue: { name: "categorization" } as any,
         sourceQueue: { name: "source" } as any,
+        patternTrackingQueue: { name: "patternTracking" } as any,
       },
-      cache: {} as any,
-      database: {} as any,
-      healthMonitor: {} as any,
-      webSocket: {} as any,
-      config: {} as any,
+      database: {
+        prisma: vi.fn(),
+      },
+      statusBroadcaster: {
+        addStatusEventAndBroadcast: vi.fn(),
+      },
+      healthMonitor: vi.fn(),
+      webSocket: vi.fn(),
+      config: vi.fn(),
       close: vi.fn(),
-    } as IServiceContainer;
+    } as unknown as IServiceContainer;
 
     mockDependencies = {
       logger: {

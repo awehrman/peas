@@ -13,6 +13,14 @@ export interface PatternTrackingJobData {
   metadata?: Record<string, unknown>;
 }
 
+export interface PatternAnalysisJobData {
+  jobId: string;
+  maxPatterns?: number;
+  noteId?: string;
+  importId?: string;
+  metadata?: Record<string, unknown>;
+}
+
 export interface PatternTrackingWorkerDependencies {
   logger: StructuredLogger;
 }
