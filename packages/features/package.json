@@ -18,9 +18,9 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist",
-    "build": "tsc && tsc-alias && npx @tailwindcss/cli -i ./src/styles.css -o ./dist/styles.css --minify",
+    "build": "tsc && tsc-alias && npx @tailwindcss/cli -i ./src/styles.css -o ./dist/styles.css --config ./tailwind.config.js --minify",
     "dev": "tsc --watch",
-    "watch": "concurrently \"tsc --watch\" \"npx @tailwindcss/cli -i ./src/styles.css -o ./dist/styles.css --watch\"",
+    "watch": "concurrently \"tsc --watch\" \"npx @tailwindcss/cli -i ./src/styles.css -o ./dist/styles.css --config ./tailwind.config.js --watch\"",
     "check-types": "tsc --noEmit",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\""
   },

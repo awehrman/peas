@@ -11,11 +11,11 @@ export function ImportStatusItem({
   importStatus,
 }: ImportStatusItemProps): ReactNode {
   return (
-    <div className="p-4">
+    <div className="bg-green-50 border border-green-200 p-4 rounded">
       {/* Import Header */}
-      <div className="flex items-center justify-between mb-3">
+      <div className="bg-purple-50 border border-purple-200 p-2 rounded flex items-center justify-between mb-3">
         <div className="flex items-center space-x-2">
-          <span className="text-lg font-medium">
+          <div className="text-lg font-medium">
             {importStatus.status === "completed"
               ? `Added Note ${
                   importStatus.noteTitle
@@ -27,27 +27,27 @@ export function ImportStatusItem({
                     : importStatus.importId.slice(0, 8)
                 }`
               : `Importing Note ${importStatus.importId.slice(0, 8)}`}
-          </span>
+          </div>
           {importStatus.status === "completed" && (
-            <span className="text-green-600">✅</span>
+            <div className="text-green-600">✅</div>
           )}
           {importStatus.status === "failed" && (
-            <span className="text-red-600">❌</span>
+            <div className="text-red-600">❌</div>
           )}
         </div>
-        <span className="text-sm text-gray-500">
+        <div className="text-sm text-gray-500">
           {importStatus.createdAt.toLocaleTimeString()}
-        </span>
+        </div>
       </div>
 
       {/* Import Steps */}
       <div className="space-y-2 text-sm">
         {/* Cleaning */}
         <div className="flex items-center">
-          <span className="mr-3 text-center" style={{ minWidth: "20px" }}>
+          <div className="mr-3 text-center" style={{ minWidth: "20px" }}>
             {getStepIcon(importStatus.steps.cleaning.status)}
-          </span>
-          <span
+          </div>
+          <div
             className={
               importStatus.steps.cleaning.status === "failed"
                 ? "text-red-600"
@@ -57,20 +57,20 @@ export function ImportStatusItem({
             {importStatus.steps.cleaning.status === "completed"
               ? "Cleaned .html files!"
               : "Cleaning .html files..."}
-          </span>
+          </div>
           {importStatus.steps.cleaning.error && (
-            <span className="text-red-500 text-xs">
+            <div className="text-red-500 text-xs">
               ({importStatus.steps.cleaning.error})
-            </span>
+            </div>
           )}
         </div>
 
         {/* Structure */}
         <div className="flex items-center">
-          <span className="mr-3 text-center" style={{ minWidth: "20px" }}>
+          <div className="mr-3 text-center" style={{ minWidth: "20px" }}>
             {getStepIcon(importStatus.steps.structure.status)}
-          </span>
-          <span
+          </div>
+          <div
             className={
               importStatus.steps.structure.status === "failed"
                 ? "text-red-600"
@@ -80,29 +80,29 @@ export function ImportStatusItem({
             {importStatus.steps.structure.status === "completed"
               ? "Created note structure!"
               : "Creating note structure..."}
-          </span>
+          </div>
           {importStatus.steps.structure.error && (
-            <span className="text-red-500 text-xs">
+            <div className="text-red-500 text-xs">
               ({importStatus.steps.structure.error})
-            </span>
+            </div>
           )}
         </div>
 
         {/* Processing Note Container */}
         <div className="ml-4 space-y-1">
           <div className="flex items-center">
-            <span className="mr-3 text-center" style={{ minWidth: "20px" }}>
+            <div className="mr-3 text-center" style={{ minWidth: "20px" }}>
               📝
-            </span>
-            <span>Processing note</span>
+            </div>
+            <div>Processing note</div>
           </div>
 
           {/* Ingredients */}
           <div className="ml-8 flex items-center">
-            <span className="mr-3 text-center" style={{ minWidth: "20px" }}>
+            <div className="mr-3 text-center" style={{ minWidth: "20px" }}>
               {getStepIcon(importStatus.steps.ingredients.status)}
-            </span>
-            <span
+            </div>
+            <div
               className={
                 importStatus.steps.ingredients.status === "failed"
                   ? "text-red-600"
@@ -110,15 +110,15 @@ export function ImportStatusItem({
               }
             >
               {getStepText(importStatus.steps.ingredients, "ingredients")}
-            </span>
+            </div>
           </div>
 
           {/* Instructions */}
           <div className="ml-8 flex items-center">
-            <span className="mr-3 text-center" style={{ minWidth: "20px" }}>
+            <div className="mr-3 text-center" style={{ minWidth: "20px" }}>
               {getStepIcon(importStatus.steps.instructions.status)}
-            </span>
-            <span
+            </div>
+            <div
               className={
                 importStatus.steps.instructions.status === "failed"
                   ? "text-red-600"
@@ -126,15 +126,15 @@ export function ImportStatusItem({
               }
             >
               {getStepText(importStatus.steps.instructions, "instructions")}
-            </span>
+            </div>
           </div>
 
           {/* Source */}
           <div className="ml-4 flex items-center">
-            <span className="mr-3 text-center" style={{ minWidth: "20px" }}>
+            <div className="mr-3 text-center" style={{ minWidth: "20px" }}>
               {getStepIcon(importStatus.steps.source.status)}
-            </span>
-            <span
+            </div>
+            <div
               className={
                 importStatus.steps.source.status === "failed"
                   ? "text-red-600"
@@ -144,20 +144,20 @@ export function ImportStatusItem({
               {importStatus.steps.source.status === "completed"
                 ? "Added source..."
                 : "Processing source..."}
-            </span>
+            </div>
             {importStatus.steps.source.error && (
-              <span className="text-red-500 text-xs">
+              <div className="text-red-500 text-xs">
                 ({importStatus.steps.source.error})
-              </span>
+              </div>
             )}
           </div>
 
           {/* Image */}
           <div className="ml-4 flex items-center">
-            <span className="mr-3 text-center" style={{ minWidth: "20px" }}>
+            <div className="mr-3 text-center" style={{ minWidth: "20px" }}>
               {getStepIcon(importStatus.steps.image.status)}
-            </span>
-            <span
+            </div>
+            <div
               className={
                 importStatus.steps.image.status === "failed"
                   ? "text-red-600"
@@ -167,21 +167,21 @@ export function ImportStatusItem({
               {importStatus.steps.image.status === "completed"
                 ? "Added image..."
                 : "Processing image..."}
-            </span>
+            </div>
             {importStatus.steps.image.error && (
-              <span className="text-red-500 text-xs">
+              <div className="text-red-500 text-xs">
                 ({importStatus.steps.image.error})
-              </span>
+              </div>
             )}
           </div>
         </div>
 
         {/* Duplicates */}
         <div className="flex items-center">
-          <span className="mr-3 text-center" style={{ minWidth: "20px" }}>
+          <div className="mr-3 text-center" style={{ minWidth: "20px" }}>
             {getStepIcon(importStatus.steps.duplicates.status)}
-          </span>
-          <span
+          </div>
+          <div
             className={
               importStatus.steps.duplicates.status === "failed"
                 ? "text-red-600"
@@ -191,11 +191,11 @@ export function ImportStatusItem({
             {importStatus.steps.duplicates.status === "completed"
               ? "Verified no duplicates!"
               : "Checking for duplicate notes..."}
-          </span>
+          </div>
           {importStatus.steps.duplicates.error && (
-            <span className="text-red-500 text-xs">
+            <div className="text-red-500 text-xs">
               ({importStatus.steps.duplicates.error})
-            </span>
+            </div>
           )}
         </div>
       </div>

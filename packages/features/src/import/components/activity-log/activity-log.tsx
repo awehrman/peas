@@ -55,7 +55,7 @@ export function ActivityLog({ className }: Props): ReactNode {
   }
 
   return (
-    <div className={`space-y-4 ${className || ""}`}>
+    <div className={`${className || ""}`}>
       {importStatuses.map((importStatus) => (
         <ImportStatusItem
           key={importStatus.importId}
