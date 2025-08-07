@@ -10,6 +10,7 @@ export interface IQueueService {
   instructionQueue: Queue;
   categorizationQueue: Queue;
   sourceQueue: Queue;
+  patternTrackingQueue: Queue;
 }
 
 // Default queue service implementation
@@ -20,6 +21,7 @@ export class QueueService implements IQueueService {
   public readonly instructionQueue: Queue;
   public readonly categorizationQueue: Queue;
   public readonly sourceQueue: Queue;
+  public readonly patternTrackingQueue: Queue;
 
   constructor() {
     this.noteQueue = createQueue(QueueName.NOTE);
@@ -28,6 +30,7 @@ export class QueueService implements IQueueService {
     this.instructionQueue = createQueue(QueueName.INSTRUCTION);
     this.categorizationQueue = createQueue(QueueName.CATEGORIZATION);
     this.sourceQueue = createQueue(QueueName.SOURCE);
+    this.patternTrackingQueue = createQueue(QueueName.PATTERN_TRACKING);
   }
 }
 

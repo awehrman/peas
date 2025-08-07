@@ -9,6 +9,7 @@ interface ParsedSegment {
   type: string;
   value: string;
   processingTime?: number;
+  ruleId?: string; // Optional reference to ParsingRule
 }
 
 /**
@@ -224,6 +225,7 @@ export async function replaceParsedSegments(
         type: seg.type,
         value: seg.value,
         processingTime: seg.processingTime,
+        ruleId: seg.ruleId, // Include the ParsingRule reference if available
       })),
     });
   }

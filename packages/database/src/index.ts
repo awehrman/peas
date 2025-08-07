@@ -1,6 +1,7 @@
 export * from "./repository/ingredient";
 export * from "./repository/instruction";
 export * from "./repository/note";
+export * from "./repository/parsing-rule";
 export * from "./repository/source";
 export * from "./repository/status";
 export { prisma } from "./client";

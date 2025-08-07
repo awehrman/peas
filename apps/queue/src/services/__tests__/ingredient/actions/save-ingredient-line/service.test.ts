@@ -480,6 +480,65 @@ describe("Save Ingredient Line Service", () => {
       expect(result).toBe(dataWithoutMetadata);
     });
 
+    it("should save ingredient line with pattern information", async () => {
+      const dataWithPatterns = {
+        ...mockData,
+        metadata: {
+          parsedSegments: [
+            {
+              index: 0,
+              rule: "amount",
+              type: "amount",
+              value: "2",
+              processingTime: 50,
+            },
+            {
+              index: 1,
+              rule: "unit",
+              type: "unit",
+              value: "cups",
+              processingTime: 50,
+            },
+            {
+              index: 2,
+              rule: "ingredient",
+              type: "ingredient",
+              value: "flour",
+              processingTime: 50,
+            },
+          ],
+          patternCode: "1:amount_2:unit_3:ingredient",
+        },
+      };
+
+      vi.mocked(mockDatabase.upsertParsedIngredientLine).mockResolvedValue({
+        id: "line-123",
+      });
+      vi.mocked(mockDatabase.replaceParsedSegments).mockResolvedValue();
+      vi.mocked(mockDatabase.findOrCreateIngredient).mockResolvedValue({
+        id: "ingredient-456",
+        isNew: false,
+      });
+      vi.mocked(mockDatabase.createIngredientReference).mockResolvedValue();
+
+      const result = await saveIngredientLine(
+        dataWithPatterns,
+        mockLogger,
+        mockStatusBroadcaster
+      );
+
+      expect(mockDatabase.upsertParsedIngredientLine).toHaveBeenCalledWith(
+        "test-note-id",
+        0,
+        "1 cup flour",
+        "COMPLETED_SUCCESSFULLY",
+        undefined,
+        0,
+        true
+      );
+      expect(result).toBe(dataWithPatterns);
+    });
+
     it("should have correct function signature", () => {
       expect(typeof saveIngredientLine).toBe("function");
       expect(saveIngredientLine.name).toBe("saveIngredientLine");

@@ -45,6 +45,7 @@ export enum QueueName {
   SOURCE = "source",
   IMAGE = "image",
   CATEGORIZATION = "categorization",
+  PATTERN_TRACKING = "patternTracking",
 }
 
 /**
@@ -265,6 +266,7 @@ export const QUEUE_ACTIONS: Record<QueueName, ActionName[]> = {
     ActionName.SAVE_CATEGORIZATION,
   ],
   [QueueName.SOURCE]: [ActionName.SAVE_SOURCE],
+  [QueueName.PATTERN_TRACKING]: [ActionName.TRACK_PATTERN],
 };
 
 /**

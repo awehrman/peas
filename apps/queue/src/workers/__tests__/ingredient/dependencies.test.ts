@@ -9,7 +9,7 @@ import {
 } from "../../../test-utils/helpers";
 import { buildIngredientDependencies } from "../../ingredient/dependencies";
 import type { IngredientJobData } from "../../ingredient/dependencies";
-import { PatternTracker } from "../../shared/pattern-tracker";
+import type { PatternTracker } from "../../shared/pattern-tracker";
 
 // Mock the service imports
 vi.mock(
@@ -47,6 +47,7 @@ describe("Ingredient Dependencies", () => {
         instructionQueue: {} as Queue,
         categorizationQueue: {} as Queue,
         sourceQueue: {} as Queue,
+        patternTrackingQueue: {} as Queue,
       },
       database: {
         prisma: {} as Partial<PrismaClient> as PrismaClient,

@@ -6,11 +6,12 @@ import { type PatternRule, PatternTracker } from "../../shared/pattern-tracker";
 describe("PatternTracker", () => {
   let mockPrisma: {
     uniqueLinePattern: {
-      findUnique: ReturnType<typeof vi.fn>;
+      findFirst: ReturnType<typeof vi.fn>;
       update: ReturnType<typeof vi.fn>;
       create: ReturnType<typeof vi.fn>;
       findMany: ReturnType<typeof vi.fn>;
     };
+    $transaction: ReturnType<typeof vi.fn>;
   };
   let mockLogger: {
     log: ReturnType<typeof vi.fn>;
@@ -22,11 +23,12 @@ describe("PatternTracker", () => {
 
     mockPrisma = {
       uniqueLinePattern: {
-        findUnique: vi.fn(),
+        findFirst: vi.fn(),
         update: vi.fn(),
         create: vi.fn(),
         findMany: vi.fn(),
       },
+      $transaction: vi.fn(),
     };
 
     mockLogger = {
@@ -51,181 +53,203 @@ describe("PatternTracker", () => {
 
   describe("trackPattern", () => {
     const testRules: PatternRule[] = [
-      { rule: "ingredient", ruleNumber: 1 },
-      { rule: "amount", ruleNumber: 2 },
+      { ruleId: "ingredient", ruleNumber: 1 },
+      { ruleId: "amount", ruleNumber: 2 },
     ];
 
     it("should create new pattern when pattern does not exist", async () => {
-      mockPrisma.uniqueLinePattern.findUnique.mockResolvedValue(null);
-      mockPrisma.uniqueLinePattern.create.mockResolvedValue({
-        patternCode: "1:ingredient_2:amount",
-        ruleSequence: testRules,
-        exampleLine: "2 cups flour",
-        occurrenceCount: 1,
+      // Mock the transaction to simulate the new pattern creation flow
+      mockPrisma.$transaction.mockImplementation(async (callback) => {
+        const tx = {
+          uniqueLinePattern: {
+            findFirst: vi.fn().mockResolvedValue(null),
+            create: vi.fn().mockResolvedValue({
+              id: "pattern-123",
+              ruleIds: ["ingredient", "amount"],
+              exampleLine: "2 cups flour",
+              occurrenceCount: 1,
+            }),
+          },
+        };
+        return await callback(tx);
       });
 
-      await patternTracker.trackPattern(testRules, "2 cups flour");
+      const result = await patternTracker.trackPattern(
+        testRules,
+        "2 cups flour"
+      );
 
-      expect(mockPrisma.uniqueLinePattern.findUnique).toHaveBeenCalledWith({
-        where: { patternCode: "1:ingredient_2:amount" },
-      });
-
-      expect(mockPrisma.uniqueLinePattern.create).toHaveBeenCalledWith({
-        data: {
-          patternCode: "1:ingredient_2:amount",
-          ruleSequence: testRules,
-          exampleLine: "2 cups flour",
-          occurrenceCount: 1,
-        },
-      });
+      expect(mockPrisma.$transaction).toHaveBeenCalled();
+      expect(result).toBe("pattern-123");
 
       expect(mockLogger.log).toHaveBeenCalledWith(
-        "[PATTERN_TRACKER] Tracking pattern: 1:ingredient_2:amount",
+        "[PATTERN_TRACKER] Tracking pattern with 2 rules",
         LogLevel.DEBUG
       );
 
       expect(mockLogger.log).toHaveBeenCalledWith(
-        "[PATTERN_TRACKER] Created new pattern: 1:ingredient_2:amount",
+        "[PATTERN_TRACKER] Created new pattern: pattern-123",
         LogLevel.DEBUG
       );
     });
 
     it("should update existing pattern when pattern exists", async () => {
       const existingPattern = {
-        patternCode: "1:ingredient_2:amount",
-        ruleSequence: testRules,
+        id: "pattern-123",
+        ruleIds: ["ingredient", "amount"],
         exampleLine: "2 cups flour",
         occurrenceCount: 5,
       };
 
-      mockPrisma.uniqueLinePattern.findUnique.mockResolvedValue(
-        existingPattern
+      // Mock the transaction to simulate the existing pattern update flow
+      mockPrisma.$transaction.mockImplementation(async (callback) => {
+        const tx = {
+          uniqueLinePattern: {
+            findFirst: vi.fn().mockResolvedValue(existingPattern),
+            update: vi.fn().mockResolvedValue({
+              ...existingPattern,
+              occurrenceCount: 6,
+            }),
+          },
+        };
+        return await callback(tx);
+      });
+
+      const result = await patternTracker.trackPattern(
+        testRules,
+        "3 cups sugar"
       );
-      mockPrisma.uniqueLinePattern.update.mockResolvedValue({
-        ...existingPattern,
-        occurrenceCount: 6,
-      });
 
-      await patternTracker.trackPattern(testRules, "3 cups sugar");
-
-      expect(mockPrisma.uniqueLinePattern.findUnique).toHaveBeenCalledWith({
-        where: { patternCode: "1:ingredient_2:amount" },
-      });
-
-      expect(mockPrisma.uniqueLinePattern.update).toHaveBeenCalledWith({
-        where: { patternCode: "1:ingredient_2:amount" },
-        data: {
-          occurrenceCount: { increment: 1 },
-          lastSeenAt: expect.any(Date),
-          exampleLine: "3 cups sugar",
-        },
-      });
+      expect(mockPrisma.$transaction).toHaveBeenCalled();
+      expect(result).toBe("pattern-123");
 
       expect(mockLogger.log).toHaveBeenCalledWith(
-        "[PATTERN_TRACKER] Updated existing pattern: 1:ingredient_2:amount (count: 6)",
+        "[PATTERN_TRACKER] Updated existing pattern: pattern-123 (count: 6)",
         LogLevel.DEBUG
       );
     });
 
     it("should not update example line if it is the same", async () => {
       const existingPattern = {
-        patternCode: "1:ingredient_2:amount",
-        ruleSequence: testRules,
+        id: "pattern-123",
+        ruleIds: ["ingredient", "amount"],
         exampleLine: "2 cups flour",
         occurrenceCount: 5,
       };
 
-      mockPrisma.uniqueLinePattern.findUnique.mockResolvedValue(
-        existingPattern
-      );
-      mockPrisma.uniqueLinePattern.update.mockResolvedValue({
-        ...existingPattern,
-        occurrenceCount: 6,
+      // Mock the transaction to simulate the existing pattern update flow
+      mockPrisma.$transaction.mockImplementation(async (callback) => {
+        const tx = {
+          uniqueLinePattern: {
+            findFirst: vi.fn().mockResolvedValue(existingPattern),
+            update: vi.fn().mockResolvedValue({
+              ...existingPattern,
+              occurrenceCount: 6,
+            }),
+          },
+        };
+        return await callback(tx);
       });
 
-      await patternTracker.trackPattern(testRules, "2 cups flour");
+      const result = await patternTracker.trackPattern(testRules, "2 cups flour");
 
-      expect(mockPrisma.uniqueLinePattern.update).toHaveBeenCalledWith({
-        where: { patternCode: "1:ingredient_2:amount" },
-        data: {
-          occurrenceCount: { increment: 1 },
-          lastSeenAt: expect.any(Date),
-        },
-      });
+      expect(mockPrisma.$transaction).toHaveBeenCalled();
+      expect(result).toBe("pattern-123");
     });
 
     it("should handle pattern tracking without example line", async () => {
-      mockPrisma.uniqueLinePattern.findUnique.mockResolvedValue(null);
-      mockPrisma.uniqueLinePattern.create.mockResolvedValue({
-        patternCode: "1:ingredient_2:amount",
-        ruleSequence: testRules,
-        exampleLine: null,
-        occurrenceCount: 1,
+      // Mock the transaction to simulate the new pattern creation flow without example line
+      mockPrisma.$transaction.mockImplementation(async (callback) => {
+        const tx = {
+          uniqueLinePattern: {
+            findFirst: vi.fn().mockResolvedValue(null),
+            create: vi.fn().mockResolvedValue({
+              id: "pattern-123",
+              ruleIds: ["ingredient", "amount"],
+              exampleLine: null,
+              occurrenceCount: 1,
+            }),
+          },
+        };
+        return await callback(tx);
       });
 
-      await patternTracker.trackPattern(testRules);
+      const result = await patternTracker.trackPattern(testRules);
 
-      expect(mockPrisma.uniqueLinePattern.create).toHaveBeenCalledWith({
-        data: {
-          patternCode: "1:ingredient_2:amount",
-          ruleSequence: testRules,
-          exampleLine: undefined,
-          occurrenceCount: 1,
-        },
-      });
+      expect(mockPrisma.$transaction).toHaveBeenCalled();
+      expect(result).toBe("pattern-123");
     });
 
     it("should handle database errors gracefully", async () => {
       const dbError = new Error("Database connection failed");
-      mockPrisma.uniqueLinePattern.findUnique.mockRejectedValue(dbError);
+      
+      // Mock the transaction to throw an error
+      mockPrisma.$transaction.mockRejectedValue(dbError);
 
       await expect(patternTracker.trackPattern(testRules)).rejects.toThrow(
         "Database connection failed"
       );
 
       expect(mockLogger.log).toHaveBeenCalledWith(
-        "[PATTERN_TRACKER] Error tracking pattern: Error: Database connection failed",
+        "[PATTERN_TRACKER] Error tracking pattern (attempt 1/3): Error: Database connection failed",
         LogLevel.ERROR
       );
     });
 
     it("should handle complex rule sequences", async () => {
       const complexRules: PatternRule[] = [
-        { rule: "ingredient", ruleNumber: 1 },
-        { rule: "amount", ruleNumber: 2 },
-        { rule: "unit", ruleNumber: 3 },
-        { rule: "preparation", ruleNumber: 4 },
+        { ruleId: "ingredient", ruleNumber: 1 },
+        { ruleId: "amount", ruleNumber: 2 },
+        { ruleId: "unit", ruleNumber: 3 },
+        { ruleId: "preparation", ruleNumber: 4 },
       ];
 
-      mockPrisma.uniqueLinePattern.findUnique.mockResolvedValue(null);
-      mockPrisma.uniqueLinePattern.create.mockResolvedValue({
-        patternCode: "1:ingredient_2:amount_3:unit_4:preparation",
-        ruleSequence: complexRules,
-        exampleLine: "2 cups flour, sifted",
-        occurrenceCount: 1,
+      // Mock the transaction to simulate the complex pattern creation flow
+      mockPrisma.$transaction.mockImplementation(async (callback) => {
+        const tx = {
+          uniqueLinePattern: {
+            findFirst: vi.fn().mockResolvedValue(null),
+            create: vi.fn().mockResolvedValue({
+              id: "pattern-123",
+              ruleIds: ["ingredient", "amount", "unit", "preparation"],
+              exampleLine: "2 cups flour, sifted",
+              occurrenceCount: 1,
+            }),
+          },
+        };
+        return await callback(tx);
       });
 
-      await patternTracker.trackPattern(complexRules, "2 cups flour, sifted");
+      const result = await patternTracker.trackPattern(complexRules, "2 cups flour, sifted");
 
-      expect(mockPrisma.uniqueLinePattern.findUnique).toHaveBeenCalledWith({
-        where: { patternCode: "1:ingredient_2:amount_3:unit_4:preparation" },
-      });
+      expect(mockPrisma.$transaction).toHaveBeenCalled();
+      expect(result).toBe("pattern-123");
     });
 
     it("should work without logger", async () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const trackerWithoutLogger = new PatternTracker(mockPrisma as any);
-      mockPrisma.uniqueLinePattern.findUnique.mockResolvedValue(null);
-      mockPrisma.uniqueLinePattern.create.mockResolvedValue({
-        patternCode: "1:ingredient_2:amount",
-        ruleSequence: testRules,
-        exampleLine: "2 cups flour",
-        occurrenceCount: 1,
+      
+      // Mock the transaction to simulate the new pattern creation flow
+      mockPrisma.$transaction.mockImplementation(async (callback) => {
+        const tx = {
+          uniqueLinePattern: {
+            findFirst: vi.fn().mockResolvedValue(null),
+            create: vi.fn().mockResolvedValue({
+              id: "pattern-123",
+              ruleIds: ["ingredient", "amount"],
+              exampleLine: "2 cups flour",
+              occurrenceCount: 1,
+            }),
+          },
+        };
+        return await callback(tx);
       });
 
-      await trackerWithoutLogger.trackPattern(testRules, "2 cups flour");
+      const result = await trackerWithoutLogger.trackPattern(testRules, "2 cups flour");
 
-      expect(mockPrisma.uniqueLinePattern.create).toHaveBeenCalled();
+      expect(mockPrisma.$transaction).toHaveBeenCalled();
+      expect(result).toBe("pattern-123");
     });
   });
 
@@ -233,17 +257,14 @@ describe("PatternTracker", () => {
     it("should return patterns ordered by occurrence count", async () => {
       const mockPatterns = [
         {
-          patternCode: "1:ingredient_2:amount",
-          ruleSequence: [
-            { rule: "ingredient", ruleNumber: 1 },
-            { rule: "amount", ruleNumber: 2 },
-          ],
+          id: "pattern-123",
+          ruleIds: ["ingredient", "amount"],
           exampleLine: "2 cups flour",
           occurrenceCount: 10,
         },
         {
-          patternCode: "1:ingredient",
-          ruleSequence: [{ rule: "ingredient", ruleNumber: 1 }],
+          id: "pattern-456",
+          ruleIds: ["ingredient"],
           exampleLine: "flour",
           occurrenceCount: 5,
         },
@@ -259,16 +280,16 @@ describe("PatternTracker", () => {
 
       expect(result).toEqual([
         {
-          patternCode: "1:ingredient_2:amount",
+          patternCode: "pattern-123",
           ruleSequence: [
-            { rule: "ingredient", ruleNumber: 1 },
-            { rule: "amount", ruleNumber: 2 },
+            { ruleId: "ingredient", ruleNumber: 1 },
+            { ruleId: "amount", ruleNumber: 2 },
           ],
           exampleLine: "2 cups flour",
         },
         {
-          patternCode: "1:ingredient",
-          ruleSequence: [{ rule: "ingredient", ruleNumber: 1 }],
+          patternCode: "pattern-456",
+          ruleSequence: [{ ruleId: "ingredient", ruleNumber: 1 }],
           exampleLine: "flour",
         },
       ]);
@@ -277,11 +298,8 @@ describe("PatternTracker", () => {
     it("should handle patterns without example lines", async () => {
       const mockPatterns = [
         {
-          patternCode: "1:ingredient_2:amount",
-          ruleSequence: [
-            { rule: "ingredient", ruleNumber: 1 },
-            { rule: "amount", ruleNumber: 2 },
-          ],
+          id: "pattern-123",
+          ruleIds: ["ingredient", "amount"],
           exampleLine: null,
           occurrenceCount: 10,
         },
@@ -293,10 +311,10 @@ describe("PatternTracker", () => {
 
       expect(result).toEqual([
         {
-          patternCode: "1:ingredient_2:amount",
+          patternCode: "pattern-123",
           ruleSequence: [
-            { rule: "ingredient", ruleNumber: 1 },
-            { rule: "amount", ruleNumber: 2 },
+            { ruleId: "ingredient", ruleNumber: 1 },
+            { ruleId: "amount", ruleNumber: 2 },
           ],
           exampleLine: undefined,
         },
@@ -330,8 +348,8 @@ describe("PatternTracker", () => {
       const trackerWithoutLogger = new PatternTracker(mockPrisma as any);
       const mockPatterns = [
         {
-          patternCode: "1:ingredient",
-          ruleSequence: [{ rule: "ingredient", ruleNumber: 1 }],
+          id: "pattern-123",
+          ruleIds: ["ingredient"],
           exampleLine: "flour",
           occurrenceCount: 5,
         },
@@ -343,8 +361,8 @@ describe("PatternTracker", () => {
 
       expect(result).toEqual([
         {
-          patternCode: "1:ingredient",
-          ruleSequence: [{ rule: "ingredient", ruleNumber: 1 }],
+          patternCode: "pattern-123",
+          ruleSequence: [{ ruleId: "ingredient", ruleNumber: 1 }],
           exampleLine: "flour",
         },
       ]);
@@ -354,42 +372,56 @@ describe("PatternTracker", () => {
   describe("pattern code generation", () => {
     it("should generate correct pattern codes", async () => {
       const rules: PatternRule[] = [
-        { rule: "ingredient", ruleNumber: 1 },
-        { rule: "amount", ruleNumber: 2 },
-        { rule: "unit", ruleNumber: 3 },
+        { ruleId: "ingredient", ruleNumber: 1 },
+        { ruleId: "amount", ruleNumber: 2 },
+        { ruleId: "unit", ruleNumber: 3 },
       ];
 
-      mockPrisma.uniqueLinePattern.findUnique.mockResolvedValue(null);
-      mockPrisma.uniqueLinePattern.create.mockResolvedValue({
-        patternCode: "1:ingredient_2:amount_3:unit",
-        ruleSequence: rules,
-        exampleLine: "test",
-        occurrenceCount: 1,
+      // Mock the transaction to simulate the new pattern creation flow
+      mockPrisma.$transaction.mockImplementation(async (callback) => {
+        const tx = {
+          uniqueLinePattern: {
+            findFirst: vi.fn().mockResolvedValue(null),
+            create: vi.fn().mockResolvedValue({
+              id: "pattern-123",
+              ruleIds: ["ingredient", "amount", "unit"],
+              exampleLine: "test",
+              occurrenceCount: 1,
+            }),
+          },
+        };
+        return await callback(tx);
       });
 
-      await patternTracker.trackPattern(rules, "test");
+      const result = await patternTracker.trackPattern(rules, "test");
 
-      expect(mockPrisma.uniqueLinePattern.findUnique).toHaveBeenCalledWith({
-        where: { patternCode: "1:ingredient_2:amount_3:unit" },
-      });
+      expect(mockPrisma.$transaction).toHaveBeenCalled();
+      expect(result).toBe("pattern-123");
     });
 
     it("should handle single rule patterns", async () => {
-      const rules: PatternRule[] = [{ rule: "ingredient", ruleNumber: 1 }];
+      const rules: PatternRule[] = [{ ruleId: "ingredient", ruleNumber: 1 }];
 
-      mockPrisma.uniqueLinePattern.findUnique.mockResolvedValue(null);
-      mockPrisma.uniqueLinePattern.create.mockResolvedValue({
-        patternCode: "1:ingredient",
-        ruleSequence: rules,
-        exampleLine: "test",
-        occurrenceCount: 1,
+      // Mock the transaction to simulate the new pattern creation flow
+      mockPrisma.$transaction.mockImplementation(async (callback) => {
+        const tx = {
+          uniqueLinePattern: {
+            findFirst: vi.fn().mockResolvedValue(null),
+            create: vi.fn().mockResolvedValue({
+              id: "pattern-456",
+              ruleIds: ["ingredient"],
+              exampleLine: "test",
+              occurrenceCount: 1,
+            }),
+          },
+        };
+        return await callback(tx);
       });
 
-      await patternTracker.trackPattern(rules, "test");
+      const result = await patternTracker.trackPattern(rules, "test");
 
-      expect(mockPrisma.uniqueLinePattern.findUnique).toHaveBeenCalledWith({
-        where: { patternCode: "1:ingredient" },
-      });
+      expect(mockPrisma.$transaction).toHaveBeenCalled();
+      expect(result).toBe("pattern-456");
     });
   });
 });

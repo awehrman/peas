@@ -29,6 +29,7 @@ describe("buildBaseDependencies", () => {
         instructionQueue: { name: "instruction" } as any,
         categorizationQueue: { name: "categorization" } as any,
         sourceQueue: { name: "source" } as any,
+        patternTrackingQueue: { name: "patternTracking" } as any,
       },
       cache: {} as any,
       database: {} as any,

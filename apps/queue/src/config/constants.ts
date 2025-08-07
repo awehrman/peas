@@ -214,6 +214,7 @@ export const WORKER_CONSTANTS = {
     INSTRUCTION: "instruction_processing",
     INGREDIENT: "ingredient_processing",
     IMAGE: "image_processing",
+    PATTERN_TRACKING: "pattern_tracking",
   },
   /** Job types */
   JOB_TYPES: {

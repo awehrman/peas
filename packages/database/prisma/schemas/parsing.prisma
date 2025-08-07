@@ -35,11 +35,16 @@ model ParsedIngredientLine {
   Note   Note?   @relation(fields: [noteId], references: [id], onDelete: Cascade)
   noteId String?
 
+  // Link to the unique line pattern
+  uniqueLinePattern   UniqueLinePattern? @relation(fields: [uniqueLinePatternId], references: [id])
+  uniqueLinePatternId String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([noteId])
   @@index([isActive])
+  @@index([uniqueLinePatternId])
 }
 
 model ParsedInstructionLine {
@@ -65,6 +70,21 @@ model ParsedInstructionLine {
   @@index([isActive])
 }
 
+model ParsingRule {
+  id String @id @default(cuid())
+
+  // "#1_ingredientLine >> #3_ingredients >> #2_ingredientExpression >> #2_ingredient"
+  name String @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Related parsed segments
+  parsedSegments ParsedSegment[]
+
+  @@index([name])
+}
+
 model ParsedSegment {
   id String @id @default(cuid())
 
@@ -77,20 +97,22 @@ model ParsedSegment {
   ingredientLine   ParsedIngredientLine @relation(fields: [ingredientLineId], references: [id], onDelete: Cascade)
   ingredientLineId String
 
+  // Reference to the parsing rule
+  parsingRule   ParsingRule? @relation(fields: [ruleId], references: [id])
+  ruleId        String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([ingredientLineId])
+  @@index([ruleId])
 }
 
 model UniqueLinePattern {
   id String @id @default(cuid())
 
-  // Short code for the pattern (e.g., "AMOUNT_UNIT_INGREDIENT")
-  patternCode String @unique
-
-  // JSON array of rule strings in order
-  ruleSequence Json
+  // Array of parsing rule IDs in order
+  ruleIds String[]
 
   // Example line that matches this pattern
   exampleLine String?
@@ -98,15 +120,12 @@ model UniqueLinePattern {
   // Count of times this pattern has been seen
   occurrenceCount Int @default(1)
 
-  // First time this pattern was seen
-  firstSeenAt DateTime @default(now())
-
-  // Last time this pattern was seen
-  lastSeenAt DateTime @updatedAt
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([patternCode])
+  // Related parsed ingredient lines
+  parsedIngredientLines ParsedIngredientLine[]
+
+  @@unique([ruleIds])
   @@index([occurrenceCount])
 } 

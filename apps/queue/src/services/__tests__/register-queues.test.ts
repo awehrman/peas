@@ -38,6 +38,7 @@ describe("register-queues.ts", () => {
         instructionQueue: mockQueue,
         categorizationQueue: mockQueue,
         sourceQueue: mockQueue,
+        patternTrackingQueue: mockQueue,
       };
 
       expect(queueService).toHaveProperty("noteQueue");
@@ -46,6 +47,7 @@ describe("register-queues.ts", () => {
       expect(queueService).toHaveProperty("instructionQueue");
       expect(queueService).toHaveProperty("categorizationQueue");
       expect(queueService).toHaveProperty("sourceQueue");
+      expect(queueService).toHaveProperty("patternTrackingQueue");
     });
   });
 
@@ -65,16 +67,18 @@ describe("register-queues.ts", () => {
         expect(queueService).toHaveProperty("instructionQueue");
         expect(queueService).toHaveProperty("categorizationQueue");
         expect(queueService).toHaveProperty("sourceQueue");
+        expect(queueService).toHaveProperty("patternTrackingQueue");
       });
 
       it("should call createQueue for each queue type", () => {
-        expect(mockCreateQueue).toHaveBeenCalledTimes(6);
+        expect(mockCreateQueue).toHaveBeenCalledTimes(7);
         expect(mockCreateQueue).toHaveBeenCalledWith("note");
         expect(mockCreateQueue).toHaveBeenCalledWith("image");
         expect(mockCreateQueue).toHaveBeenCalledWith("ingredient");
         expect(mockCreateQueue).toHaveBeenCalledWith("instruction");
         expect(mockCreateQueue).toHaveBeenCalledWith("categorization");
         expect(mockCreateQueue).toHaveBeenCalledWith("source");
+        expect(mockCreateQueue).toHaveBeenCalledWith("patternTracking");
       });
 
       it("should assign created queues to readonly properties", () => {
@@ -84,6 +88,7 @@ describe("register-queues.ts", () => {
         expect(queueService.instructionQueue).toBeDefined();
         expect(queueService.categorizationQueue).toBeDefined();
         expect(queueService.sourceQueue).toBeDefined();
+        expect(queueService.patternTrackingQueue).toBeDefined();
 
         expect(queueService.noteQueue.name).toBe("note");
         expect(queueService.imageQueue.name).toBe("image");
@@ -91,6 +96,7 @@ describe("register-queues.ts", () => {
         expect(queueService.instructionQueue.name).toBe("instruction");
         expect(queueService.categorizationQueue.name).toBe("categorization");
         expect(queueService.sourceQueue.name).toBe("source");
+        expect(queueService.patternTrackingQueue.name).toBe("patternTracking");
       });
 
       it("should implement IQueueService interface", () => {
@@ -106,6 +112,7 @@ describe("register-queues.ts", () => {
         expect(queueService.instructionQueue).toBeInstanceOf(Object);
         expect(queueService.categorizationQueue).toBeInstanceOf(Object);
         expect(queueService.sourceQueue).toBeInstanceOf(Object);
+        expect(queueService.patternTrackingQueue).toBeInstanceOf(Object);
       });
 
       it("should have queue methods available", () => {
@@ -135,6 +142,7 @@ describe("register-queues.ts", () => {
           "instruction",
           "categorization",
           "source",
+          "patternTracking",
         ];
 
         const actualNames = [
@@ -144,6 +152,7 @@ describe("register-queues.ts", () => {
           queueService.instructionQueue.name,
           queueService.categorizationQueue.name,
           queueService.sourceQueue.name,
+          queueService.patternTrackingQueue.name,
         ];
 
         expect(actualNames).toEqual(expectedNames);
@@ -200,6 +209,7 @@ describe("register-queues.ts", () => {
       expect(service).toHaveProperty("instructionQueue");
       expect(service).toHaveProperty("categorizationQueue");
       expect(service).toHaveProperty("sourceQueue");
+      expect(service).toHaveProperty("patternTrackingQueue");
     });
 
     it("should implement IQueueService interface", () => {
@@ -218,6 +228,7 @@ describe("register-queues.ts", () => {
       expect(service.instructionQueue.name).toBe("instruction");
       expect(service.categorizationQueue.name).toBe("categorization");
       expect(service.sourceQueue.name).toBe("source");
+      expect(service.patternTrackingQueue.name).toBe("patternTracking");
     });
 
     it("should return different instances on multiple calls", () => {
@@ -233,12 +244,12 @@ describe("register-queues.ts", () => {
       vi.clearAllMocks();
 
       registerQueues();
-      expect(mockCreateQueue).toHaveBeenCalledTimes(6);
+      expect(mockCreateQueue).toHaveBeenCalledTimes(7);
 
       vi.clearAllMocks();
 
       registerQueues();
-      expect(mockCreateQueue).toHaveBeenCalledTimes(6);
+      expect(mockCreateQueue).toHaveBeenCalledTimes(7);
     });
   });
 
@@ -262,6 +273,7 @@ describe("register-queues.ts", () => {
         "instructionQueue",
         "categorizationQueue",
         "sourceQueue",
+        "patternTrackingQueue",
       ];
 
       requiredProperties.forEach((prop) => {

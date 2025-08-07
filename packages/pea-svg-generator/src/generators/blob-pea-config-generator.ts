@@ -1,34 +1,15 @@
+import { BaseGenerator } from "./base-generator.js";
+import { DEFAULT_HIGHLIGHT_CONFIG } from "./constants.js";
+import type { HighlightConfig } from "./types.js";
+
+import { MIXED_COLOR_COMBINATIONS, PEA_COLORS } from "../colors.js";
 import type {
   BlobPeaConfig,
   BlobPeaHighlight,
   PeaHighlight,
 } from "../types.js";
-import { PEA_COLORS, MIXED_COLOR_COMBINATIONS } from "../colors.js";
-import { BaseGenerator } from "./base-generator.js";
-import { clamp } from "../utils/geometry-utils.js";
 import { findNonCollidingPosition } from "../utils/collision-utils.js";
-
-/**
- * Configuration for highlight generation
- */
-interface HighlightConfig {
-  minScale: number;
-  maxScale: number;
-  clusterSpread: number;
-  nudgeIntensity: number;
-  maxSafeDistance: number;
-}
-
-/**
- * Default highlight configuration
- */
-const DEFAULT_HIGHLIGHT_CONFIG: HighlightConfig = {
-  minScale: 0.1,
-  maxScale: 0.2,
-  clusterSpread: 0.7,
-  nudgeIntensity: 0.3,
-  maxSafeDistance: 0.6,
-};
+import { clamp } from "../utils/geometry-utils.js";
 
 /**
  * Generates blob pea configurations

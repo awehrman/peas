@@ -51,6 +51,7 @@ export async function saveIngredientLine(
           type: string;
           value: string;
           processingTime?: number;
+          ruleId?: string;
         }>
       | undefined;
 
@@ -71,6 +72,56 @@ export async function saveIngredientLine(
             ingredient.isNew ? "new_ingredient" : "existing_ingredient"
           );
         }
+      }
+    }
+
+    // Queue pattern tracking for later processing
+    const patternRules = data.metadata?.patternRules as
+      | Array<{
+          ruleId: string;
+          ruleNumber: number;
+        }>
+      | undefined;
+
+    if (patternRules && patternRules.length > 0) {
+      try {
+        // Import queue dynamically to avoid circular dependencies
+        const { createQueue } = await import("../../../../queues/create-queue");
+        const patternQueue = createQueue("patternTracking");
+
+        await patternQueue.add(
+          "track-pattern",
+          {
+            jobId: `pattern-${data.jobId}-${Date.now()}`,
+            patternRules,
+            exampleLine: data.ingredientReference,
+            noteId: data.noteId,
+            importId: data.importId,
+            metadata: {
+              originalJobId: data.jobId,
+              lineIndex: data.lineIndex,
+              ingredientLineId: result.id,
+            },
+          },
+          {
+            removeOnComplete: 100,
+            removeOnFail: 50,
+            attempts: 3,
+            backoff: {
+              type: "exponential",
+              delay: 2000,
+            },
+          }
+        );
+
+        logger.log(
+          `[SAVE_INGREDIENT_LINE] Queued pattern tracking for job ${data.jobId}`
+        );
+      } catch (queueError) {
+        logger.log(
+          `[SAVE_INGREDIENT_LINE] Failed to queue pattern tracking: ${queueError}`
+        );
+        // Don't fail the main save operation if pattern tracking fails
       }
     }
 

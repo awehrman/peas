@@ -7,7 +7,7 @@ import type { BaseWorkerDependencies } from "../core/types";
  * Represents a single pattern rule.
  */
 export interface PatternRule {
-  rule: string;
+  ruleId: string;
   ruleNumber: number;
 }
 
@@ -31,78 +31,155 @@ export class PatternTracker {
 
   /**
    * Generate a pattern code from rule sequence.
-   * Includes rule numbers in the pattern code for better identification.
    * @param rules - Array of pattern rules
    * @returns Pattern code string
    */
   private generatePatternCode(rules: PatternRule[]): string {
-    return rules.map((rule) => `${rule.ruleNumber}:${rule.rule}`).join("_");
+    return rules.map((rule) => `${rule.ruleNumber}:${rule.ruleId}`).join("_");
   }
 
   /**
    * Track a pattern and save/update it in the database.
    * @param rules - Array of pattern rules
    * @param exampleLine - Optional example line
+   * @returns The pattern ID
    */
   async trackPattern(
     rules: PatternRule[],
     exampleLine?: string
-  ): Promise<void> {
-    try {
-      const patternCode = this.generatePatternCode(rules);
+  ): Promise<string> {
+    const maxRetries = 3;
+    let lastError: unknown;
 
-      this.logger?.log(
-        `[PATTERN_TRACKER] Tracking pattern: ${patternCode}`,
-        LogLevel.DEBUG
-      );
-
-      // Try to find existing pattern
-      const existingPattern = await this.prisma.uniqueLinePattern.findUnique({
-        where: { patternCode },
-      });
-
-      if (existingPattern) {
-        // Update existing pattern
-        await this.prisma.uniqueLinePattern.update({
-          where: { patternCode },
-          data: {
-            occurrenceCount: { increment: 1 },
-            lastSeenAt: new Date(),
-            // Update example line if provided and different
-            ...(exampleLine && exampleLine !== existingPattern.exampleLine
-              ? { exampleLine }
-              : {}),
-          },
-        });
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const ruleIds = rules.map((rule) => rule.ruleId);
 
         this.logger?.log(
-          `[PATTERN_TRACKER] Updated existing pattern: ${patternCode} (count: ${existingPattern.occurrenceCount + 1})`,
+          `[PATTERN_TRACKER] Tracking pattern with ${rules.length} rules`,
           LogLevel.DEBUG
         );
-      } else {
-        // Create new pattern
-        await this.prisma.uniqueLinePattern.create({
-          data: {
-            patternCode,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            ruleSequence: rules as unknown as any, // Type assertion for JSON field
-            exampleLine,
-            occurrenceCount: 1,
-          },
+
+        return await this.prisma.$transaction(async (tx) => {
+          // Try to find existing pattern by ruleIds array
+          const existingPattern = await tx.uniqueLinePattern.findFirst({
+            where: {
+              ruleIds: {
+                equals: ruleIds,
+              },
+            },
+          });
+
+          if (existingPattern) {
+            // Update existing pattern
+            await tx.uniqueLinePattern.update({
+              where: { id: existingPattern.id },
+              data: {
+                occurrenceCount: { increment: 1 },
+                // Update example line if provided and different
+                ...(exampleLine && exampleLine !== existingPattern.exampleLine
+                  ? { exampleLine }
+                  : {}),
+              },
+            });
+
+            this.logger?.log(
+              `[PATTERN_TRACKER] Updated existing pattern: ${existingPattern.id} (count: ${existingPattern.occurrenceCount + 1})`,
+              LogLevel.DEBUG
+            );
+            return existingPattern.id;
+          } else {
+            // Create new pattern
+            try {
+              const newPattern = await tx.uniqueLinePattern.create({
+                data: {
+                  ruleIds,
+                  exampleLine,
+                  occurrenceCount: 1,
+                },
+              });
+
+              this.logger?.log(
+                `[PATTERN_TRACKER] Created new pattern: ${newPattern.id}`,
+                LogLevel.DEBUG
+              );
+              return newPattern.id;
+            } catch (error) {
+              // Handle race condition where another process created the pattern
+              if (
+                error &&
+                typeof error === "object" &&
+                "code" in error &&
+                error.code === "P2002"
+              ) {
+                // Unique constraint violation - pattern was created by another process
+                // Try to find it again
+                const createdPattern = await tx.uniqueLinePattern.findFirst({
+                  where: {
+                    ruleIds: {
+                      equals: ruleIds,
+                    },
+                  },
+                });
+
+                if (createdPattern) {
+                  // Update the occurrence count since we found it
+                  await tx.uniqueLinePattern.update({
+                    where: { id: createdPattern.id },
+                    data: {
+                      occurrenceCount: { increment: 1 },
+                      ...(exampleLine &&
+                      exampleLine !== createdPattern.exampleLine
+                        ? { exampleLine }
+                        : {}),
+                    },
+                  });
+
+                  this.logger?.log(
+                    `[PATTERN_TRACKER] Found and updated pattern created by another process: ${createdPattern.id}`,
+                    LogLevel.DEBUG
+                  );
+                  return createdPattern.id;
+                }
+              }
+
+              // Re-throw if it's not a unique constraint violation or if we still can't find the pattern
+              throw error;
+            }
+          }
         });
+      } catch (error) {
+        lastError = error;
 
         this.logger?.log(
-          `[PATTERN_TRACKER] Created new pattern: ${patternCode}`,
-          LogLevel.DEBUG
+          `[PATTERN_TRACKER] Error tracking pattern (attempt ${attempt}/${maxRetries}): ${error}`,
+          LogLevel.ERROR
         );
+
+        // If this is the last attempt, throw the error
+        if (attempt === maxRetries) {
+          throw error;
+        }
+
+        // If it's a transaction abort error, wait a bit before retrying
+        if (
+          error &&
+          typeof error === "object" &&
+          "message" in error &&
+          typeof error.message === "string" &&
+          error.message.includes("current transaction is aborted")
+        ) {
+          await new Promise((resolve) => setTimeout(resolve, 100 * attempt)); // Exponential backoff
+          continue;
+        }
+
+        // For other errors, don't retry
+        throw error;
       }
-    } catch (error) {
-      this.logger?.log(
-        `[PATTERN_TRACKER] Error tracking pattern: ${error}`,
-        LogLevel.ERROR
-      );
-      throw error;
     }
+
+    // This should never be reached, but TypeScript requires it
+    throw lastError;
   }
 
   /**
@@ -116,8 +193,11 @@ export class PatternTracker {
       });
 
       return patterns.map((pattern) => ({
-        patternCode: pattern.patternCode,
-        ruleSequence: pattern.ruleSequence as unknown as PatternRule[],
+        patternCode: pattern.id, // Use the ID as pattern code
+        ruleSequence: pattern.ruleIds.map((ruleId, index) => ({
+          ruleId,
+          ruleNumber: index + 1,
+        })),
         exampleLine: pattern.exampleLine || undefined,
       }));
     } catch (error) {

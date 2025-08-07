@@ -397,6 +397,7 @@ describe("Service Interface Testing Utilities", () => {
         instructionQueue: { name: "instruction" } as Queue,
         categorizationQueue: { name: "categorization" } as Queue,
         sourceQueue: { name: "source" } as Queue,
+        patternTrackingQueue: { name: "patternTracking" } as Queue,
       };
 
       expect(() => testQueueInterface(queues)).not.toThrow();
@@ -410,6 +411,7 @@ describe("Service Interface Testing Utilities", () => {
         instructionQueue: Queue;
         categorizationQueue: Queue;
         sourceQueue: Queue;
+        patternTrackingQueue: Queue;
       }> = {
         noteQueue: { name: "note" } as Queue,
         // Missing other queues
@@ -424,6 +426,7 @@ describe("Service Interface Testing Utilities", () => {
             instructionQueue: Queue;
             categorizationQueue: Queue;
             sourceQueue: Queue;
+            patternTrackingQueue: Queue;
           }
         )
       ).toThrow();

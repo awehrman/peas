@@ -82,6 +82,7 @@ export function createMockQueueService() {
     instructionQueue: { name: "instruction" } as Partial<Queue> as Queue,
     categorizationQueue: { name: "categorization" } as Partial<Queue> as Queue,
     sourceQueue: { name: "source" } as Partial<Queue> as Queue,
+    patternTrackingQueue: { name: "patternTracking" } as Partial<Queue> as Queue,
   };
 }
 
@@ -191,6 +192,7 @@ export function testQueueInterface(queues: {
   instructionQueue: Queue;
   categorizationQueue: Queue;
   sourceQueue: Queue;
+  patternTrackingQueue: Queue;
 }) {
   expect(queues).toHaveProperty("noteQueue");
   expect(queues).toHaveProperty("imageQueue");
@@ -198,6 +200,7 @@ export function testQueueInterface(queues: {
   expect(queues).toHaveProperty("instructionQueue");
   expect(queues).toHaveProperty("categorizationQueue");
   expect(queues).toHaveProperty("sourceQueue");
+  expect(queues).toHaveProperty("patternTrackingQueue");
 }
 
 /**
