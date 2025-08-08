@@ -17,13 +17,11 @@ export async function trackPattern(
       `[TRACK_PATTERN] Starting pattern tracking for job ${data.jobId} with ${data.patternRules.length} rules`
     );
 
-    const { PatternTracker } = await import(
-      "../../../../workers/shared/pattern-tracker"
-    );
+    const { PatternTracker } = await import("../../pattern-tracker");
     const { prisma } = await import("@peas/database");
 
     const patternTracker = new PatternTracker(prisma, logger);
-    
+
     // Get the ingredient line ID from metadata
     const ingredientLineId = data.metadata?.ingredientLineId as
       | string

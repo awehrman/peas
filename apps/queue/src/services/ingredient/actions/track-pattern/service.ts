@@ -1,5 +1,5 @@
 import type { StructuredLogger } from "../../../../types";
-import type { PatternRule } from "../../../../workers/shared/pattern-tracker";
+import type { PatternRule } from "../../../pattern-tracking/pattern-tracker";
 
 export interface TrackPatternJobData {
   jobId: string;
@@ -32,7 +32,9 @@ export async function trackPattern(
     );
 
     // Import the pattern tracker dynamically to avoid circular dependencies
-    const { PatternTracker } = await import("../../../../workers/shared/pattern-tracker");
+    const { PatternTracker } = await import(
+      "../../../pattern-tracking/pattern-tracker"
+    );
     const { prisma } = await import("@peas/database");
 
     // Create a pattern tracker instance

@@ -3,13 +3,13 @@ import { Queue } from "bullmq";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { IServiceContainer } from "../../../services/container";
+import type { PatternTracker } from "../../../services/pattern-tracking";
 import {
   createMockLogger,
   createMockStatusBroadcaster,
 } from "../../../test-utils/helpers";
 import { buildIngredientDependencies } from "../../ingredient/dependencies";
 import type { IngredientJobData } from "../../ingredient/dependencies";
-import type { PatternTracker } from "../../shared/pattern-tracker";
 
 // Mock the service imports
 vi.mock(

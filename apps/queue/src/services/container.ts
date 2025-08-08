@@ -1,4 +1,5 @@
 import { ServiceFactory } from "./factory";
+import type { PatternTracker } from "./pattern-tracking";
 import { registerDatabase } from "./register-database";
 import { registerQueues } from "./register-queues";
 
@@ -10,7 +11,6 @@ import type {
 import type { Queue, Worker } from "bullmq";
 
 import type { OperationContext } from "../types/common";
-import type { PatternTracker } from "../workers/shared/pattern-tracker";
 
 // ============================================================================
 // SERVICE INTERFACES

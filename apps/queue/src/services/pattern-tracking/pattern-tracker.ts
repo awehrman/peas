@@ -1,7 +1,7 @@
 import type { PrismaClient } from "@peas/database";
 
 import { LogLevel } from "../../types";
-import type { BaseWorkerDependencies } from "../core/types";
+import type { BaseWorkerDependencies } from "../../workers/core/types";
 
 /**
  * Represents a single pattern rule.

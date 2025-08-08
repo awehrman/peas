@@ -7,4 +7,4 @@ export * from "./database-operations";
 export * from "./worker-factory";
 export * from "./constants";
 export * from "./status-utils";
-export * from "./pattern-tracker";
+// Pattern tracker moved to services/pattern-tracking/

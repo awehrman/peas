@@ -51,8 +51,4 @@ describe("Shared Worker Index", () => {
   it("should export status utils", () => {
     expect(shared).toHaveProperty("StatusUtils");
   });
-
-  it("should export pattern tracker", () => {
-    expect(shared).toHaveProperty("PatternTracker");
-  });
 });

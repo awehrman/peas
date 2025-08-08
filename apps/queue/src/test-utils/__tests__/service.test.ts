@@ -10,7 +10,7 @@ import type {
   IStatusBroadcasterService,
   IWebSocketService,
 } from "../../services/container";
-import type { PatternTracker } from "../../workers/shared/pattern-tracker";
+import type { PatternTracker } from "../../services/pattern-tracking";
 import {
   clearServiceMocks,
   createMockDatabaseService,

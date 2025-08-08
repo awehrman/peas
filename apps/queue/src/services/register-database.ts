@@ -1,8 +1,9 @@
+import { PatternTracker } from "./pattern-tracking";
+
 import type { NoteWithParsedLines, ParsedHTMLFile } from "@peas/database";
 
 import { prisma } from "../config/database";
 import { createLogger } from "../utils/standardized-logger";
-import { PatternTracker } from "../workers/shared/pattern-tracker";
 
 const logger = createLogger("DatabaseService");
 

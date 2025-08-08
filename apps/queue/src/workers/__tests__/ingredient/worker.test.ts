@@ -3,6 +3,7 @@ import { Queue } from "bullmq";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { IServiceContainer } from "../../../services/container";
+import { PatternTracker } from "../../../services/pattern-tracking";
 import {
   createMockLogger,
   createMockStatusBroadcaster,
@@ -17,7 +18,6 @@ import {
   IngredientWorker,
   createIngredientWorker,
 } from "../../ingredient/worker";
-import { PatternTracker } from "../../shared/pattern-tracker";
 
 // Mock the action registration
 vi.mock("../../../services/ingredient/register", () => ({

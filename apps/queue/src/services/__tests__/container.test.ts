@@ -13,10 +13,10 @@ import {
   testStatusBroadcasterInterface,
   testWebSocketInterface,
 } from "../../test-utils/service";
-import type { PatternTracker } from "../../workers/shared/pattern-tracker";
 import { type IServiceContainer, ServiceContainer } from "../container";
 // Import the mocked modules
 import { ServiceFactory } from "../factory";
+import type { PatternTracker } from "../pattern-tracking";
 import { registerDatabase } from "../register-database";
 import { registerQueues } from "../register-queues";
 

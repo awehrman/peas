@@ -10,7 +10,7 @@ import type {
   IStatusBroadcasterService,
   IWebSocketService,
 } from "../services/container";
-import type { PatternTracker } from "../workers/shared/pattern-tracker";
+import type { PatternTracker } from "../services/pattern-tracking";
 
 // ============================================================================
 // SERVICE MOCK UTILITIES
@@ -82,7 +82,9 @@ export function createMockQueueService() {
     instructionQueue: { name: "instruction" } as Partial<Queue> as Queue,
     categorizationQueue: { name: "categorization" } as Partial<Queue> as Queue,
     sourceQueue: { name: "source" } as Partial<Queue> as Queue,
-    patternTrackingQueue: { name: "patternTracking" } as Partial<Queue> as Queue,
+    patternTrackingQueue: {
+      name: "patternTracking",
+    } as Partial<Queue> as Queue,
   };
 }
 

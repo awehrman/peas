@@ -1,6 +1,6 @@
-import { PatternTracker } from "./pattern-tracker";
-
 import type { PrismaClient } from "@peas/database";
+
+import { PatternTracker } from "../../services/pattern-tracking";
 
 /**
  * Shared database operations for workers.
