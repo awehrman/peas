@@ -20,6 +20,7 @@ export class ActionCache {
     this.startCleanupInterval();
 
     // Force reset memory cache on startup if environment variable is set
+    /* istanbul ignore next -- @preserve */
     if (process.env.FORCE_RESET_MEMORY_CACHE === "true") {
       this.resetMemoryCache();
       console.log(

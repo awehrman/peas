@@ -294,7 +294,7 @@ describe("HTML Parser", () => {
       });
     });
 
-    it("should handle empty tags gracefully", () => {
+    it("should handle empty tags gracefully", async () => {
       const mockHtml =
         "<html><body><en-note><h1>Test Recipe</h1></en-note></body></html>";
 
@@ -337,6 +337,185 @@ describe("HTML Parser", () => {
       const result = parseHTMLContent(mockHtml, { measurePerformance: false });
 
       expect(result.evernoteMetadata?.tags).toBeUndefined();
+    });
+
+    it("should handle missing title and throw error", () => {
+      const mockHtml = "<html><body><en-note></en-note></body></html>";
+
+      const mock$ = vi.fn();
+      const mockEnNote = {
+        children: vi.fn().mockReturnValue({
+          length: 0,
+        }),
+        find: vi.fn().mockReturnValue({
+          length: 0,
+        }),
+      };
+
+      mock$.mockImplementation((selector: string) => {
+        if (selector === HTML_PARSING_CONSTANTS.SELECTORS.EN_NOTE) {
+          return mockEnNote;
+        }
+        if (selector === HTML_PARSING_CONSTANTS.SELECTORS.META_TITLE) {
+          return { attr: vi.fn().mockReturnValue(null) };
+        }
+        return { attr: vi.fn().mockReturnValue(null) };
+      });
+
+      mockLoad.mockReturnValue(mock$);
+
+      expect(() =>
+        parseHTMLContent(mockHtml, { measurePerformance: false })
+      ).toThrow(HTML_PARSING_CONSTANTS.ERRORS.NO_TITLE);
+    });
+
+    it("should handle tags with content and return them", () => {
+      const mockHtml =
+        "<html><body><en-note><h1>Test Recipe</h1></en-note></body></html>";
+
+      const mock$ = vi.fn();
+      const mockEnNote = {
+        children: vi.fn().mockReturnValue({
+          length: 1,
+          text: vi.fn().mockReturnValue("Test Recipe"),
+        }),
+        find: vi.fn().mockReturnValue({
+          length: 1,
+          nextAll: vi.fn().mockReturnValue({
+            map: vi.fn().mockReturnValue({
+              get: vi.fn().mockReturnValue([]),
+            }),
+          }),
+        }),
+      };
+
+      // Mock the $ function to handle both selector calls and element calls
+      mock$.mockImplementation((selector: string | any) => {
+        if (selector === HTML_PARSING_CONSTANTS.SELECTORS.EN_NOTE) {
+          return mockEnNote;
+        }
+        if (selector === HTML_PARSING_CONSTANTS.SELECTORS.META_TITLE) {
+          return { attr: vi.fn().mockReturnValue("Meta Title") };
+        }
+        if (selector === HTML_PARSING_CONSTANTS.SELECTORS.META_TAG) {
+          return {
+            each: vi.fn().mockImplementation((callback) => {
+              callback(0, { attr: vi.fn().mockReturnValue("tag1") });
+              callback(1, { attr: vi.fn().mockReturnValue("tag2") });
+            }),
+          };
+        }
+        // Handle element calls (when $ is called with an element)
+        if (selector && typeof selector === 'object' && selector.attr) {
+          return selector; // Return the element as-is
+        }
+        return { attr: vi.fn().mockReturnValue(null) };
+      });
+
+      mockLoad.mockReturnValue(mock$);
+
+      const result = parseHTMLContent(mockHtml, { measurePerformance: false });
+
+      expect(result.evernoteMetadata?.tags).toEqual(["tag1", "tag2"]);
+    });
+
+    it("should handle content extraction without h1 tag", () => {
+      const mockHtml =
+        "<html><body><en-note><div>Content without h1</div></en-note></body></html>";
+
+      const mock$ = vi.fn();
+      const mockEnNote = {
+        children: vi.fn().mockImplementation((selector) => {
+          if (selector === HTML_PARSING_CONSTANTS.SELECTORS.H1) {
+            return { length: 0 }; // No h1 found
+          }
+          return {
+            length: 1,
+            map: vi.fn().mockReturnValue({
+              get: vi.fn().mockReturnValue(["Content without h1"]),
+            }),
+          };
+        }),
+        find: vi.fn().mockReturnValue({
+          length: 0, // No h1 found
+        }),
+      };
+
+      mock$.mockImplementation((selector: string) => {
+        if (selector === HTML_PARSING_CONSTANTS.SELECTORS.EN_NOTE) {
+          return mockEnNote;
+        }
+        if (selector === HTML_PARSING_CONSTANTS.SELECTORS.META_TITLE) {
+          return { attr: vi.fn().mockReturnValue("Meta Title") };
+        }
+        if (selector === HTML_PARSING_CONSTANTS.SELECTORS.META_TAG) {
+          return {
+            each: vi.fn().mockImplementation((_callback) => {
+              // Don't call callback for empty tags
+            }),
+          };
+        }
+        return { attr: vi.fn().mockReturnValue(null) };
+      });
+
+      mockLoad.mockReturnValue(mock$);
+
+      const result = parseHTMLContent(mockHtml, { measurePerformance: false });
+
+      expect(result.title).toBe("Meta Title");
+    });
+
+    it("should handle content extraction with h1 tag", () => {
+      const mockHtml =
+        "<html><body><en-note><h1>Test Recipe</h1><div>Content after h1</div></en-note></body></html>";
+
+      const mock$ = vi.fn();
+      const mockEnNote = {
+        children: vi.fn().mockImplementation((selector) => {
+          if (selector === HTML_PARSING_CONSTANTS.SELECTORS.H1) {
+            return {
+              length: 0, // No h1 found in children, so it will use meta title
+            };
+          }
+          return {
+            length: 1,
+            map: vi.fn().mockReturnValue({
+              get: vi.fn().mockReturnValue(["Content after h1"]),
+            }),
+          };
+        }),
+        find: vi.fn().mockReturnValue({
+          length: 1, // h1 found
+          nextAll: vi.fn().mockReturnValue({
+            map: vi.fn().mockReturnValue({
+              get: vi.fn().mockReturnValue(["Content after h1"]),
+            }),
+          }),
+        }),
+      };
+
+      mock$.mockImplementation((selector: string) => {
+        if (selector === HTML_PARSING_CONSTANTS.SELECTORS.EN_NOTE) {
+          return mockEnNote;
+        }
+        if (selector === HTML_PARSING_CONSTANTS.SELECTORS.META_TITLE) {
+          return { attr: vi.fn().mockReturnValue("Meta Title") };
+        }
+        if (selector === HTML_PARSING_CONSTANTS.SELECTORS.META_TAG) {
+          return {
+            each: vi.fn().mockImplementation((_callback) => {
+              // Don't call callback for empty tags
+            }),
+          };
+        }
+        return { attr: vi.fn().mockReturnValue(null) };
+      });
+
+      mockLoad.mockReturnValue(mock$);
+
+      const result = parseHTMLContent(mockHtml, { measurePerformance: false });
+
+      expect(result.title).toBe("Meta Title");
     });
   });
 });

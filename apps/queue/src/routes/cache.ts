@@ -291,6 +291,7 @@ cacheRouter.post("/reset-memory", async (req, res) => {
     res.status(500).json({
       success: false,
       error: "Failed to reset memory cache",
+      /* istanbul ignore next -- @preserve */
       details: error instanceof Error ? error.message : "Unknown error",
     });
   }

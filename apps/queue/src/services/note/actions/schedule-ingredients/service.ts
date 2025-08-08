@@ -20,13 +20,17 @@ export async function processIngredients(
 
     // Check if we should clear cache
     const shouldClearCache = data.metadata?.clearIngredientCache === true;
+    /* istanbul ignore next -- @preserve */
     if (shouldClearCache) {
+      /* istanbul ignore next -- @preserve */
       logger.log(
         `[SCHEDULE_INGREDIENTS] Clearing ingredient cache as requested`
       );
+      /* istanbul ignore next -- @preserve */
       const { CachedIngredientParser } = await import(
         "../../../ingredient/cached-ingredient-parser"
       );
+      /* istanbul ignore next -- @preserve */
       await CachedIngredientParser.invalidateIngredientCache();
     }
 

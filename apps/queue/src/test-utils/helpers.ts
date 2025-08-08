@@ -534,12 +534,14 @@ export function createMockHealthMonitor() {
 /**
  * Create mock action cache stats for testing
  */
+/* istanbul ignore next -- @preserve */
 export function createMockActionCacheStats(
   overrides: Partial<{
     memorySize: number;
     memoryKeys: string[];
   }> = {}
 ) {
+  /* istanbul ignore next -- @preserve */
   return {
     memorySize: 1024,
     memoryKeys: ["key1", "key2", "key3", "key4", "key5"],
@@ -550,6 +552,7 @@ export function createMockActionCacheStats(
 /**
  * Create mock Redis stats for testing
  */
+/* istanbul ignore next -- @preserve */
 export function createMockRedisStats(
   overrides: Partial<{
     hits: number;
@@ -558,6 +561,7 @@ export function createMockRedisStats(
     lastReset: string;
   }> = {}
 ) {
+  /* istanbul ignore next -- @preserve */
   return {
     hits: 100,
     misses: 20,

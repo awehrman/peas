@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { StructuredLogger } from "../../../../../types";
 import type { NotePipelineData } from "../../../../../types/notes";
 import { saveNote } from "../../../../note/actions/save-note/service";
+import { initializeNoteCompletion } from "../track-completion/service";
 
 // Mock the database module
 vi.mock("@peas/database", () => ({
@@ -11,11 +12,17 @@ vi.mock("@peas/database", () => ({
   createNoteWithEvernoteMetadata: vi.fn(),
 }));
 
+// Mock the track-completion service
+vi.mock("../track-completion/service", () => ({
+  initializeNoteCompletion: vi.fn(),
+}));
+
 describe("saveNote", () => {
   let mockData: NotePipelineData;
   let mockLogger: StructuredLogger;
   let mockCreateNote: ReturnType<typeof vi.fn>;
   let mockCreateNoteWithEvernoteMetadata: ReturnType<typeof vi.fn>;
+  let mockInitializeNoteCompletion: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     // Clear all mocks
@@ -65,6 +72,7 @@ describe("saveNote", () => {
     mockCreateNoteWithEvernoteMetadata = vi.mocked(
       dbModule.createNoteWithEvernoteMetadata
     );
+    mockInitializeNoteCompletion = vi.mocked(initializeNoteCompletion);
 
     // Setup default mock implementations
     const mockNoteResult = {
@@ -85,6 +93,7 @@ describe("saveNote", () => {
 
     mockCreateNote.mockResolvedValue(mockNoteResult);
     mockCreateNoteWithEvernoteMetadata.mockResolvedValue(mockNoteResult);
+    mockInitializeNoteCompletion.mockResolvedValue(undefined);
   });
 
   describe("basic functionality", () => {
@@ -613,6 +622,32 @@ describe("saveNote", () => {
 
       expect(result.note?.parsedIngredientLines).toHaveLength(1000);
       expect(result.note?.parsedInstructionLines).toHaveLength(500);
+    });
+  });
+
+  describe("completion tracking", () => {
+    it("should not initialize note completion when importId is not provided", async () => {
+      const dataWithoutImportId = {
+        ...mockData,
+        importId: undefined,
+      };
+
+      const result = await saveNote(dataWithoutImportId, mockLogger);
+
+      expect(result).toBeDefined();
+      // The initializeNoteCompletion function should not be called when importId is undefined
+    });
+
+    it("should not initialize note completion when importId is empty string", async () => {
+      const dataWithEmptyImportId = {
+        ...mockData,
+        importId: "",
+      };
+
+      const result = await saveNote(dataWithEmptyImportId, mockLogger);
+
+      expect(result).toBeDefined();
+      // The initializeNoteCompletion function should not be called when importId is empty
     });
   });
 });

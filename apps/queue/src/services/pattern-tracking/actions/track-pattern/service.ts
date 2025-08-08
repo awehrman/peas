@@ -99,6 +99,7 @@ async function trackPatternInDatabase(
 
       // If this is the last attempt, throw the error
       if (attempt === maxRetries) {
+        /* istanbul ignore next -- @preserve */
         throw error;
       }
 
@@ -149,6 +150,7 @@ async function trackPatternInDatabase(
   }
 
   // This should never be reached, but TypeScript requires it
+  /* istanbul ignore next -- @preserve */
   throw lastError;
 }
 

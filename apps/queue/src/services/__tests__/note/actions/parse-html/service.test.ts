@@ -205,5 +205,54 @@ describe("Parse HTML Service", () => {
         "[PARSE_HTML] HTML parsing failed: Error: HTML content is empty or invalid"
       );
     });
+
+    it("should call logger callback when HTML parser logs messages", async () => {
+      const mockData: NotePipelineData = {
+        noteId: "test-note-123",
+        importId: "test-import-123",
+        content:
+          '<html><head><meta itemprop="title" content="Test Recipe" /></head><body><h1>Test Recipe</h1></body></html>',
+      };
+
+      const mockParsedFile = {
+        title: "Test Recipe",
+        ingredients: [
+          {
+            reference: "1 cup flour",
+            lineIndex: 0,
+            parseStatus: "AWAITING_PARSING",
+          },
+        ],
+        instructions: [
+          {
+            reference: "Mix ingredients",
+            lineIndex: 0,
+            parseStatus: "AWAITING_PARSING",
+          },
+        ],
+        contents: "Test content",
+        evernoteMetadata: {},
+      };
+
+      // Mock the HTML parser to call the logger callback
+      mockParseHTMLContent.mockImplementation((content, options) => {
+        if (options.logger) {
+          options.logger("Test log message from HTML parser");
+        }
+        return mockParsedFile;
+      });
+
+      const result = await parseHtml(mockData, mockLogger);
+
+      expect(result).toEqual({
+        ...mockData,
+        file: mockParsedFile,
+      });
+
+      // Verify that the logger callback was called and the message was logged
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        "[PARSE_HTML] Test log message from HTML parser"
+      );
+    });
   });
 });
