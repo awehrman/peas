@@ -16,7 +16,6 @@ import {
 import { type IServiceContainer, ServiceContainer } from "../container";
 // Import the mocked modules
 import { ServiceFactory } from "../factory";
-import type { PatternTracker } from "../pattern-tracking";
 import { registerDatabase } from "../register-database";
 import { registerQueues } from "../register-queues";
 
@@ -132,7 +131,7 @@ describe("ServiceContainer", () => {
       testQueueInterface(container.queues);
     });
 
-    it("should have database with prisma and patternTracker", async () => {
+    it("should have database with prisma", async () => {
       const container = await ServiceContainer.getInstance();
       testDatabaseInterface(container.database);
     });
@@ -158,7 +157,6 @@ describe("ServiceContainer", () => {
         prisma: {
           $disconnect: mockDisconnect,
         } as Partial<PrismaClient> as PrismaClient,
-        patternTracker: {} as PatternTracker,
       });
 
       const container = await ServiceContainer.getInstance();
@@ -170,7 +168,6 @@ describe("ServiceContainer", () => {
     it("should handle missing prisma gracefully", async () => {
       vi.mocked(registerDatabase).mockReturnValue({
         prisma: null as unknown as PrismaClient,
-        patternTracker: {} as PatternTracker,
       });
 
       const container = await ServiceContainer.getInstance();
@@ -182,7 +179,6 @@ describe("ServiceContainer", () => {
     it("should handle missing $disconnect method gracefully", async () => {
       vi.mocked(registerDatabase).mockReturnValue({
         prisma: {} as Partial<PrismaClient> as PrismaClient,
-        patternTracker: {} as PatternTracker,
       });
 
       const container = await ServiceContainer.getInstance();

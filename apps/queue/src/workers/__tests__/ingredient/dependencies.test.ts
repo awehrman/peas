@@ -3,7 +3,6 @@ import { Queue } from "bullmq";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { IServiceContainer } from "../../../services/container";
-import type { PatternTracker } from "../../../services/pattern-tracking";
 import {
   createMockLogger,
   createMockStatusBroadcaster,
@@ -51,7 +50,6 @@ describe("Ingredient Dependencies", () => {
       },
       database: {
         prisma: {} as Partial<PrismaClient> as PrismaClient,
-        patternTracker: {} as PatternTracker,
       },
       errorHandler: {
         withErrorHandling: vi.fn(),

@@ -13,6 +13,7 @@ import { TrackPatternAction } from "./actions/track-pattern/action";
 
 /**
  * Register all pattern tracking actions in the given ActionFactory with type safety
+ * Uses the unified track-pattern action from the ingredient service
  */
 export function registerPatternTrackingActions(
   factory: ActionFactory<

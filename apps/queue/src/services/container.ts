@@ -1,5 +1,4 @@
 import { ServiceFactory } from "./factory";
-import type { PatternTracker } from "./pattern-tracking";
 import { registerDatabase } from "./register-database";
 import { registerQueues } from "./register-queues";
 
@@ -34,7 +33,6 @@ export interface IQueueService {
  */
 export interface IDatabaseService {
   prisma: PrismaClient;
-  patternTracker: PatternTracker;
   createNote?: (file: ParsedHTMLFile) => Promise<NoteWithParsedLines>;
   createNoteCompletionTracker?: (
     noteId: string,

@@ -1,7 +1,5 @@
 import type { PrismaClient } from "@peas/database";
 
-import { PatternTracker } from "../../services/pattern-tracking";
-
 /**
  * Shared database operations for workers.
  * Handles parsed ingredient lines, segments, ingredient references, and ingredient lookup/creation.
@@ -10,14 +8,6 @@ import { PatternTracker } from "../../services/pattern-tracking";
  */
 export class DatabaseOperations<TPrisma extends PrismaClient = PrismaClient> {
   constructor(private prisma: TPrisma) {}
-
-  /**
-   * Get pattern tracker instance.
-   * @returns PatternTracker instance
-   */
-  get patternTracker(): PatternTracker {
-    return new PatternTracker(this.prisma);
-  }
 
   /**
    * Create or update parsed ingredient line.

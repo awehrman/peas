@@ -27,14 +27,6 @@ vi.mock("../../utils/standardized-logger", () => ({
   })),
 }));
 
-vi.mock("../../workers/shared/pattern-tracker", () => ({
-  PatternTracker: vi.fn().mockImplementation(() => ({
-    generatePatternCode: vi.fn(),
-    trackPattern: vi.fn(),
-    getPatterns: vi.fn(),
-  })),
-}));
-
 // Helper to set prisma.note.findUnique for tests
 function setPrismaFindUnique(
   service: DatabaseService,
@@ -64,7 +56,7 @@ describe("register-database.ts", () => {
 
         expect(service).toBeInstanceOf(DatabaseService);
         expect(service).toHaveProperty("prisma");
-        expect(service).toHaveProperty("patternTracker");
+
         expect(service).toHaveProperty("createNote");
         expect(service).toHaveProperty("createNoteCompletionTracker");
         expect(service).toHaveProperty("updateNoteCompletionTracker");
@@ -352,7 +344,6 @@ describe("register-database.ts", () => {
 
       expect(service).toBeInstanceOf(DatabaseService);
       expect(service).toHaveProperty("prisma");
-      expect(service).toHaveProperty("patternTracker");
     });
 
     it("should implement IDatabaseService interface", () => {

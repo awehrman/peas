@@ -10,7 +10,6 @@ import type {
   IStatusBroadcasterService,
   IWebSocketService,
 } from "../services/container";
-import type { PatternTracker } from "../services/pattern-tracking";
 
 // ============================================================================
 // SERVICE MOCK UTILITIES
@@ -67,7 +66,6 @@ export function createMockServiceInstances() {
 export function createMockDatabaseService() {
   return {
     prisma: { $disconnect: vi.fn() } as Partial<PrismaClient> as PrismaClient,
-    patternTracker: {} as PatternTracker,
   };
 }
 
@@ -208,12 +206,8 @@ export function testQueueInterface(queues: {
 /**
  * Test interface compliance for database service
  */
-export function testDatabaseInterface(database: {
-  prisma: PrismaClient;
-  patternTracker: PatternTracker;
-}) {
+export function testDatabaseInterface(database: { prisma: PrismaClient }) {
   expect(database).toHaveProperty("prisma");
-  expect(database).toHaveProperty("patternTracker");
 }
 
 // ============================================================================

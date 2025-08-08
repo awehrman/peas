@@ -23,11 +23,14 @@ export class TrackPatternAction extends BaseAction<
     deps.logger.log(
       `[TRACK_PATTERN_ACTION] Starting execution for job ${data.jobId}`
     );
+
     try {
       const result = await trackPattern(data, deps.logger);
+
       deps.logger.log(
         `[TRACK_PATTERN_ACTION] Processing completed for job ${data.jobId}`
       );
+
       return result;
     } catch (error) {
       deps.logger.log(

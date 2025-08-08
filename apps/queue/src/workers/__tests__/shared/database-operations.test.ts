@@ -2,18 +2,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DatabaseOperations } from "../../shared/database-operations";
 
-// Mock PatternTracker
-vi.mock("../../shared/pattern-tracker", () => {
-  const MockPatternTracker = vi.fn().mockImplementation(() => ({
-    trackPattern: vi.fn(),
-    getPatterns: vi.fn(),
-  }));
-
-  return {
-    PatternTracker: MockPatternTracker,
-  };
-});
-
 // Mock pluralize
 vi.mock("pluralize", () => ({
   default: {
@@ -72,21 +60,6 @@ describe("DatabaseOperations", () => {
   describe("constructor", () => {
     it("should create instance with prisma client", () => {
       expect(dbOps).toBeInstanceOf(DatabaseOperations);
-    });
-  });
-
-  describe("patternTracker", () => {
-    it("should return new PatternTracker instance", () => {
-      const tracker = dbOps.patternTracker;
-      expect(tracker).toBeDefined();
-      // We can't easily test the constructor call with the current mock setup
-      // but we can verify the tracker is created
-    });
-
-    it("should create new instance each time", () => {
-      const tracker1 = dbOps.patternTracker;
-      const tracker2 = dbOps.patternTracker;
-      expect(tracker1).not.toBe(tracker2);
     });
   });
 
@@ -217,7 +190,11 @@ describe("DatabaseOperations", () => {
         id: "line-123",
       });
 
-      const statuses = ["COMPLETED_SUCCESSFULLY", "COMPLETED_SUCCESSFULLY", "COMPLETED_WITH_ERROR"] as const;
+      const statuses = [
+        "COMPLETED_SUCCESSFULLY",
+        "COMPLETED_SUCCESSFULLY",
+        "COMPLETED_WITH_ERROR",
+      ] as const;
       for (const status of statuses) {
         await dbOps.createOrUpdateParsedIngredientLine("line-123", {
           ...validData,
@@ -289,7 +266,11 @@ describe("DatabaseOperations", () => {
         id: "line-123",
       });
 
-      const statuses = ["COMPLETED_SUCCESSFULLY", "COMPLETED_SUCCESSFULLY", "COMPLETED_WITH_ERROR"] as const;
+      const statuses = [
+        "COMPLETED_SUCCESSFULLY",
+        "COMPLETED_SUCCESSFULLY",
+        "COMPLETED_WITH_ERROR",
+      ] as const;
       for (const status of statuses) {
         await dbOps.updateParsedIngredientLine("line-123", {
           parseStatus: status,

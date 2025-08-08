@@ -1,5 +1,3 @@
-import { PatternTracker } from "./pattern-tracking";
-
 import type { NoteWithParsedLines, ParsedHTMLFile } from "@peas/database";
 
 import { prisma } from "../config/database";
@@ -9,7 +7,6 @@ const logger = createLogger("DatabaseService");
 
 export interface IDatabaseService {
   prisma: typeof prisma;
-  patternTracker: PatternTracker;
   createNote?: (file: ParsedHTMLFile) => Promise<NoteWithParsedLines>;
   createNoteCompletionTracker?: (
     noteId: string,
@@ -53,7 +50,6 @@ export class DatabaseService implements IDatabaseService {
     jobCompletionTracker.clear();
   }
   public prisma = prisma;
-  public patternTracker = new PatternTracker(prisma);
 
   get createNote() {
     return async (file: ParsedHTMLFile): Promise<NoteWithParsedLines> => {

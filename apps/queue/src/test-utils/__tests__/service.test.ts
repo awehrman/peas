@@ -10,7 +10,6 @@ import type {
   IStatusBroadcasterService,
   IWebSocketService,
 } from "../../services/container";
-import type { PatternTracker } from "../../services/pattern-tracking";
 import {
   clearServiceMocks,
   createMockDatabaseService,
@@ -158,7 +157,6 @@ describe("Service Mock Utilities", () => {
       const database = createMockDatabaseService();
 
       expect(database).toHaveProperty("prisma");
-      expect(database).toHaveProperty("patternTracker");
 
       expect(database.prisma).toHaveProperty("$disconnect");
       expect(typeof database.prisma.$disconnect).toBe("function");
@@ -437,7 +435,6 @@ describe("Service Interface Testing Utilities", () => {
     it("should test database interface compliance", () => {
       const database = {
         prisma: { $disconnect: vi.fn() } as unknown as PrismaClient,
-        patternTracker: {} as PatternTracker,
       };
 
       expect(() => testDatabaseInterface(database)).not.toThrow();
@@ -446,17 +443,14 @@ describe("Service Interface Testing Utilities", () => {
     it("should fail when database is missing required properties", () => {
       const invalidDatabase: Partial<{
         prisma: PrismaClient;
-        patternTracker: PatternTracker;
       }> = {
-        prisma: { $disconnect: vi.fn() } as unknown as PrismaClient,
-        // Missing patternTracker
+        // Missing prisma
       };
 
       expect(() =>
         testDatabaseInterface(
           invalidDatabase as {
             prisma: PrismaClient;
-            patternTracker: PatternTracker;
           }
         )
       ).toThrow();
