@@ -7,6 +7,7 @@ import type {
 } from "../../../services/container";
 import { ActionFactory } from "../../core/action-factory";
 import { BaseWorker } from "../../core/base-worker";
+import type { WorkerAction } from "../../core/types";
 import {
   type PatternTrackingJobData,
   type PatternTrackingWorkerDependencies,
@@ -17,11 +18,38 @@ import {
   createPatternTrackingWorker,
 } from "../../pattern-tracking/worker";
 
+// Helper function to set worker properties for testing
+function setWorkerProperties(
+  worker: PatternTrackingWorker,
+  dependencies: PatternTrackingWorkerDependencies,
+  actionFactory: ActionFactory<
+    PatternTrackingJobData,
+    PatternTrackingWorkerDependencies,
+    PatternTrackingJobData
+  >
+): void {
+  (
+    worker as unknown as {
+      dependencies: PatternTrackingWorkerDependencies;
+      actionFactory: typeof actionFactory;
+    }
+  ).dependencies = dependencies;
+  (
+    worker as unknown as {
+      dependencies: PatternTrackingWorkerDependencies;
+      actionFactory: typeof actionFactory;
+    }
+  ).actionFactory = actionFactory;
+}
+
 // Mock the dependencies
 vi.mock("../../core/base-worker");
 vi.mock("../../core/action-factory");
 vi.mock("../../../services/pattern-tracking/register");
 vi.mock("../../pattern-tracking/dependencies");
+vi.mock("../../pattern-tracking/pipeline", () => ({
+  createPatternTrackingPipeline: vi.fn(),
+}));
 
 describe("PatternTrackingWorker", () => {
   let mockQueue: Queue;
@@ -165,6 +193,131 @@ describe("PatternTrackingWorker", () => {
             }
           ).createActionPipeline
         ).toBe("function");
+      });
+
+      it("should call createPatternTrackingPipeline with correct parameters", async () => {
+        // Arrange
+        const worker = new PatternTrackingWorker(
+          mockQueue,
+          mockDependencies,
+          mockActionFactory,
+          mockContainer
+        );
+
+        // Manually set the dependencies and actionFactory on the worker instance
+        setWorkerProperties(worker, mockDependencies, mockActionFactory);
+
+        const mockJobData: PatternTrackingJobData = {
+          jobId: "test-job-123",
+          patternRules: [
+            { ruleId: "rule-1", ruleNumber: 1 },
+            { ruleId: "rule-2", ruleNumber: 2 },
+          ],
+          exampleLine: "test example line",
+          metadata: {
+            ingredientLineId: "ingredient-line-123",
+          },
+        };
+
+        const mockContext = {
+          jobId: "test-job-123",
+          operation: "pattern-tracking",
+          timestamp: new Date(),
+        };
+
+        // Mock the pipeline creation
+        const mockPipeline = [
+          {
+            name: "track_pattern",
+            execute: vi.fn(),
+          },
+        ] as unknown as WorkerAction<
+          PatternTrackingJobData,
+          PatternTrackingWorkerDependencies,
+          PatternTrackingJobData
+        >[];
+
+        const { createPatternTrackingPipeline } = await import(
+          "../../pattern-tracking/pipeline"
+        );
+        vi.mocked(createPatternTrackingPipeline).mockReturnValue(mockPipeline);
+
+        // Act
+        const result = (
+          worker as PatternTrackingWorker & {
+            createActionPipeline(
+              data: PatternTrackingJobData,
+              context: { jobId: string; operation: string; timestamp: Date }
+            ): unknown[];
+          }
+        ).createActionPipeline(mockJobData, mockContext);
+
+        // Assert
+        expect(createPatternTrackingPipeline).toHaveBeenCalledWith(
+          mockActionFactory,
+          mockDependencies,
+          mockJobData,
+          mockContext
+        );
+        expect(result).toBe(mockPipeline);
+      });
+
+      it("should handle empty pattern rules", async () => {
+        // Arrange
+        const worker = new PatternTrackingWorker(
+          mockQueue,
+          mockDependencies,
+          mockActionFactory,
+          mockContainer
+        );
+
+        // Manually set the dependencies and actionFactory on the worker instance
+        setWorkerProperties(worker, mockDependencies, mockActionFactory);
+
+        const mockJobData: PatternTrackingJobData = {
+          jobId: "test-job-123",
+          patternRules: [],
+          exampleLine: "test example line",
+          metadata: {},
+        };
+
+        const mockContext = {
+          jobId: "test-job-123",
+          operation: "pattern-tracking",
+          timestamp: new Date(),
+        };
+
+        // Mock the pipeline creation
+        const mockPipeline = [] as unknown as WorkerAction<
+          PatternTrackingJobData,
+          PatternTrackingWorkerDependencies,
+          PatternTrackingJobData
+        >[];
+
+        const { createPatternTrackingPipeline } = await import(
+          "../../pattern-tracking/pipeline"
+        );
+        vi.mocked(createPatternTrackingPipeline).mockReturnValue(mockPipeline);
+
+        // Act
+        const result = (
+          worker as PatternTrackingWorker & {
+            createActionPipeline(
+              data: PatternTrackingJobData,
+              context: { jobId: string; operation: string; timestamp: Date }
+            ): unknown[];
+          }
+        ).createActionPipeline(mockJobData, mockContext);
+
+        // Assert
+        expect(createPatternTrackingPipeline).toHaveBeenCalledWith(
+          mockActionFactory,
+          mockDependencies,
+          mockJobData,
+          mockContext
+        );
+        expect(result).toBe(mockPipeline);
+        expect(result).toHaveLength(0);
       });
     });
 
