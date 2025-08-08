@@ -1,33 +1,57 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { StructuredLogger } from "../../../../../types";
 import type { IngredientJobData } from "../../../../../workers/ingredient/dependencies";
 import { parseIngredientLine } from "../../../../ingredient/actions/parse-ingredient-line/service";
-import type { IngredientParseResult } from "../../../../ingredient/cached-ingredient-parser";
+
+// Define types that match the actual service implementation
+interface CachedParserSegment {
+  index: number;
+  rule: string;
+  type: string;
+  value: string;
+  processingTime: number;
+}
+
+interface CachedParserResult {
+  rule: string;
+  type: string;
+  values: CachedParserSegment[];
+  processingTime: number;
+}
+
+interface V1ParserSegment {
+  rule: string;
+  type: string;
+  value: string | number;
+}
+
+interface V1ParserResult {
+  rule: string;
+  type: string;
+  values: V1ParserSegment[];
+}
 
 // Mock the CachedIngredientParser
 vi.mock("../../../../ingredient/cached-ingredient-parser", () => ({
   CachedIngredientParser: {
-    invalidateIngredientCache: vi.fn(),
     parseIngredientLine: vi.fn(),
+    invalidateIngredientCache: vi.fn(),
   },
 }));
 
-// Mock the parser module
+// Mock the v1 parser module
 vi.mock("@peas/parser/v1/minified", () => ({
   parse: vi.fn(),
 }));
 
 describe("Parse Ingredient Line Service", () => {
-  let mockLogger: { log: ReturnType<typeof vi.fn> };
-  let mockData: IngredientJobData;
-  let mockCachedIngredientParser: ReturnType<
-    typeof vi.mocked<
-      typeof import("../../../../ingredient/cached-ingredient-parser").CachedIngredientParser
-    >
-  >;
-  let mockParser: ReturnType<
-    typeof vi.mocked<typeof import("@peas/parser/v1/minified").parse>
-  >;
+  let mockLogger: StructuredLogger;
+  let mockCachedIngredientParser: {
+    parseIngredientLine: ReturnType<typeof vi.fn>;
+    invalidateIngredientCache: ReturnType<typeof vi.fn>;
+  };
+  let mockV1Parser: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -36,31 +60,33 @@ describe("Parse Ingredient Line Service", () => {
       log: vi.fn(),
     };
 
-    mockData = {
-      noteId: "test-note-id",
-      ingredientReference: "1 cup flour",
-      lineIndex: 0,
-      parseStatus: "AWAITING_PARSING" as const,
-      isActive: true,
-      importId: "test-import-id",
-    };
-
     // Get the mocked modules
-    const cachedModule = await import(
+    const cachedParserModule = await import(
       "../../../../ingredient/cached-ingredient-parser"
     );
-    mockCachedIngredientParser = vi.mocked(cachedModule.CachedIngredientParser);
+    mockCachedIngredientParser = vi.mocked(
+      cachedParserModule.CachedIngredientParser
+    );
 
-    const parserModule = await import("@peas/parser/v1/minified");
-    mockParser = vi.mocked(parserModule.parse);
+    const v1ParserModule = await import("@peas/parser/v1/minified");
+    mockV1Parser = vi.mocked(v1ParserModule.parse);
   });
 
   describe("parseIngredientLine", () => {
-    it("should parse ingredient successfully with cached result", async () => {
-      const mockCachedResult: IngredientParseResult = {
+    it("should parse ingredient line successfully with cached result", async () => {
+      const mockData: IngredientJobData = {
+        jobId: "test-job-123",
+        noteId: "test-note-123",
+        ingredientReference: "1 cup flour",
+        lineIndex: 0,
+        parseStatus: "AWAITING_PARSING",
+        isActive: true,
+        importId: "test-import-123",
+      };
+
+      const mockCachedResult: CachedParserResult = {
         rule: "ingredient",
         type: "ingredient",
-        processingTime: 30,
         values: [
           {
             index: 0,
@@ -84,6 +110,7 @@ describe("Parse Ingredient Line Service", () => {
             processingTime: 15,
           },
         ],
+        processingTime: 30,
       };
 
       mockCachedIngredientParser.parseIngredientLine.mockResolvedValue(
@@ -92,91 +119,153 @@ describe("Parse Ingredient Line Service", () => {
 
       const result = await parseIngredientLine(mockData, mockLogger);
 
-      expect(result.parseStatus).toBe("COMPLETED_SUCCESSFULLY");
-      expect(result.metadata?.parsedSegments).toHaveLength(3);
-      expect(result.metadata?.usedCache).toBe(true);
-      expect(result.metadata?.parserVersion).toBe("cached");
-      expect(result.metadata?.rule).toBe("ingredient");
-      expect(result.metadata?.parseResult).toEqual(mockCachedResult);
-
       expect(
         mockCachedIngredientParser.parseIngredientLine
       ).toHaveBeenCalledWith("1 cup flour", { cacheResults: true }, mockLogger);
+
+      expect(result).toEqual({
+        ...mockData,
+        parseStatus: "COMPLETED_SUCCESSFULLY",
+        metadata: {
+          ...mockData.metadata,
+          parsedSegments: [
+            {
+              index: 0,
+              rule: "quantity",
+              type: "quantity",
+              value: "1",
+              processingTime: 10,
+            },
+            {
+              index: 1,
+              rule: "unit",
+              type: "unit",
+              value: "cup",
+              processingTime: 5,
+            },
+            {
+              index: 2,
+              rule: "ingredient",
+              type: "ingredient",
+              value: "flour",
+              processingTime: 15,
+            },
+          ],
+          parseResult: mockCachedResult,
+          rule: "ingredient",
+          usedCache: true,
+          parserVersion: "cached",
+        },
+      });
     });
 
-    it("should parse ingredient successfully with v1 parser when cache fails", async () => {
-      const mockParserResult = {
+    it("should parse ingredient line with v1 parser when cache fails", async () => {
+      const mockData: IngredientJobData = {
+        jobId: "test-job-123",
+        noteId: "test-note-123",
+        ingredientReference: "2 tbsp butter",
+        lineIndex: 1,
+        parseStatus: "AWAITING_PARSING",
+        isActive: true,
+        importId: "test-import-123",
+      };
+
+      const mockV1Result: V1ParserResult = {
         rule: "ingredient",
         type: "ingredient",
-        processingTime: 25,
+        values: [
+          { type: "quantity", value: 2, rule: "quantity" },
+          { type: "unit", value: "tbsp", rule: "unit" },
+          { type: "ingredient", value: "butter", rule: "ingredient" },
+        ],
+      };
+
+      mockCachedIngredientParser.parseIngredientLine.mockRejectedValue(
+        new Error("Cache failed")
+      );
+      mockV1Parser.mockReturnValue(mockV1Result);
+
+      const result = await parseIngredientLine(mockData, mockLogger);
+
+      expect(mockV1Parser).toHaveBeenCalledWith("2 tbsp butter");
+      expect(result).toEqual({
+        ...mockData,
+        parseStatus: "COMPLETED_SUCCESSFULLY",
+        metadata: {
+          ...mockData.metadata,
+          parsedSegments: [
+            {
+              index: 0,
+              rule: "quantity",
+              type: "quantity",
+              value: "2",
+              processingTime: expect.any(Number),
+            },
+            {
+              index: 1,
+              rule: "unit",
+              type: "unit",
+              value: "tbsp",
+              processingTime: expect.any(Number),
+            },
+            {
+              index: 2,
+              rule: "ingredient",
+              type: "ingredient",
+              value: "butter",
+              processingTime: expect.any(Number),
+            },
+          ],
+          parseResult: mockV1Result,
+          rule: "ingredient",
+          usedCache: false,
+          parserVersion: "v1",
+        },
+      });
+    });
+
+    it("should clear cache when requested", async () => {
+      const mockData: IngredientJobData = {
+        jobId: "test-job-123",
+        noteId: "test-note-123",
+        ingredientReference: "3 eggs",
+        lineIndex: 2,
+        parseStatus: "AWAITING_PARSING",
+        isActive: true,
+        importId: "test-import-123",
+        metadata: {
+          clearCache: true,
+        },
+      };
+
+      const mockCachedResult: CachedParserResult = {
+        rule: "ingredient",
+        type: "ingredient",
         values: [
           {
             index: 0,
             rule: "quantity",
             type: "quantity",
-            value: "1",
+            value: "3",
             processingTime: 10,
           },
           {
             index: 1,
-            rule: "unit",
-            type: "unit",
-            value: "cup",
-            processingTime: 5,
-          },
-          {
-            index: 2,
             rule: "ingredient",
             type: "ingredient",
-            value: "flour",
-            processingTime: 10,
+            value: "eggs",
+            processingTime: 15,
           },
         ],
+        processingTime: 25,
       };
 
-      mockCachedIngredientParser.parseIngredientLine.mockRejectedValue(
-        new Error("Cache miss")
-      );
-      mockParser.mockReturnValue(mockParserResult);
-
-      const result = await parseIngredientLine(mockData, mockLogger);
-
-      expect(result.parseStatus).toBe("COMPLETED_SUCCESSFULLY");
-      expect(result.metadata?.parsedSegments).toHaveLength(3);
-      expect(result.metadata?.usedCache).toBe(false);
-      expect(result.metadata?.parserVersion).toBe("v1");
-      expect(result.metadata?.rule).toBe("ingredient");
-      expect(result.metadata?.parseResult).toEqual(mockParserResult);
-
-      expect(mockParser).toHaveBeenCalledWith("1 cup flour");
-    });
-
-    it("should clear cache when clearCache is true", async () => {
-      const dataWithClearCache = {
-        ...mockData,
-        metadata: { clearCache: true },
-      };
-
-      const mockCachedResult: IngredientParseResult = {
-        rule: "ingredient",
-        type: "ingredient",
-        values: [
-          {
-            index: 0,
-            rule: "ingredient",
-            type: "ingredient",
-            value: "flour",
-            processingTime: 10,
-          },
-        ],
-        processingTime: 15,
-      };
-
+      mockCachedIngredientParser.invalidateIngredientCache.mockResolvedValue(5);
       mockCachedIngredientParser.parseIngredientLine.mockResolvedValue(
         mockCachedResult
       );
 
-      await parseIngredientLine(dataWithClearCache, mockLogger);
+      const result = await parseIngredientLine(mockData, mockLogger);
 
       expect(
         mockCachedIngredientParser.invalidateIngredientCache
@@ -184,14 +273,25 @@ describe("Parse Ingredient Line Service", () => {
       expect(mockLogger.log).toHaveBeenCalledWith(
         "[PARSE_INGREDIENT_LINE] Clearing ingredient cache as requested"
       );
+      expect(result.parseStatus).toBe("COMPLETED_SUCCESSFULLY");
     });
 
     it("should handle empty parsed segments", async () => {
-      const mockCachedResult: IngredientParseResult = {
-        rule: "unknown",
-        type: "unknown",
+      const mockData: IngredientJobData = {
+        jobId: "test-job-123",
+        noteId: "test-note-123",
+        ingredientReference: "invalid ingredient",
+        lineIndex: 3,
+        parseStatus: "AWAITING_PARSING",
+        isActive: true,
+        importId: "test-import-123",
+      };
+
+      const mockCachedResult: CachedParserResult = {
+        rule: "ingredient",
+        type: "ingredient",
         values: [],
-        processingTime: 5,
+        processingTime: 10,
       };
 
       mockCachedIngredientParser.parseIngredientLine.mockResolvedValue(
@@ -201,14 +301,24 @@ describe("Parse Ingredient Line Service", () => {
       const result = await parseIngredientLine(mockData, mockLogger);
 
       expect(result.parseStatus).toBe("COMPLETED_WITH_ERROR");
-      expect(result.metadata?.parsedSegments).toHaveLength(0);
+      expect(result.metadata?.parsedSegments).toEqual([]);
     });
 
     it("should handle v1 parser failure", async () => {
+      const mockData: IngredientJobData = {
+        jobId: "test-job-123",
+        noteId: "test-note-123",
+        ingredientReference: "invalid ingredient",
+        lineIndex: 4,
+        parseStatus: "AWAITING_PARSING",
+        isActive: true,
+        importId: "test-import-123",
+      };
+
       mockCachedIngredientParser.parseIngredientLine.mockRejectedValue(
-        new Error("Cache miss")
+        new Error("Cache failed")
       );
-      mockParser.mockImplementation(() => {
+      mockV1Parser.mockImplementation(() => {
         throw new Error("Parser failed");
       });
 
@@ -219,45 +329,120 @@ describe("Parse Ingredient Line Service", () => {
       expect(result.metadata?.errorTimestamp).toBeDefined();
     });
 
-    it("should handle missing noteId", async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const dataWithoutNoteId = { ...mockData, noteId: undefined as any };
-
-      await expect(
-        parseIngredientLine(dataWithoutNoteId, mockLogger)
-      ).rejects.toThrow("No note ID available for ingredient parsing");
-    });
-
-    it("should handle missing ingredientReference", async () => {
-      const dataWithoutReference = {
-        ...mockData,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ingredientReference: undefined as any,
+    it("should throw error when noteId is missing", async () => {
+      const mockData: IngredientJobData = {
+        jobId: "test-job-123",
+        noteId: undefined as unknown as string,
+        ingredientReference: "1 cup flour",
+        lineIndex: 0,
+        parseStatus: "AWAITING_PARSING",
+        isActive: true,
+        importId: "test-import-123",
       };
 
-      await expect(
-        parseIngredientLine(dataWithoutReference, mockLogger)
-      ).rejects.toThrow("No ingredient reference available for parsing");
+      await expect(parseIngredientLine(mockData, mockLogger)).rejects.toThrow(
+        "No note ID available for ingredient parsing"
+      );
     });
 
-    it("should handle empty ingredientReference", async () => {
-      const dataWithEmptyReference = { ...mockData, ingredientReference: "" };
+    it("should throw error when ingredientReference is missing", async () => {
+      const mockData: IngredientJobData = {
+        jobId: "test-job-123",
+        noteId: "test-note-123",
+        ingredientReference: undefined as unknown as string,
+        lineIndex: 0,
+        parseStatus: "AWAITING_PARSING",
+        isActive: true,
+        importId: "test-import-123",
+      };
 
-      await expect(
-        parseIngredientLine(dataWithEmptyReference, mockLogger)
-      ).rejects.toThrow("No ingredient reference available for parsing");
+      await expect(parseIngredientLine(mockData, mockLogger)).rejects.toThrow(
+        "No ingredient reference available for parsing"
+      );
     });
 
-    it("should preserve existing metadata when parsing succeeds", async () => {
-      const dataWithMetadata = {
-        ...mockData,
+    it("should handle v1 parser module import failure", async () => {
+      const mockData: IngredientJobData = {
+        jobId: "test-job-123",
+        noteId: "test-note-123",
+        ingredientReference: "1 cup flour",
+        lineIndex: 0,
+        parseStatus: "AWAITING_PARSING",
+        isActive: true,
+        importId: "test-import-123",
+      };
+
+      mockCachedIngredientParser.parseIngredientLine.mockRejectedValue(
+        new Error("Cache failed")
+      );
+
+      // Mock the v1 parser to throw an error
+      mockV1Parser.mockImplementation(() => {
+        throw new Error(
+          "Failed to load v1 ingredient parser: Error: Module not found"
+        );
+      });
+
+      const result = await parseIngredientLine(mockData, mockLogger);
+
+      expect(result.parseStatus).toBe("COMPLETED_WITH_ERROR");
+      expect(result.metadata?.error).toContain(
+        "Failed to load v1 ingredient parser: Error: Module not found"
+      );
+    });
+
+    it("should handle non-string values from v1 parser", async () => {
+      const mockData: IngredientJobData = {
+        jobId: "test-job-123",
+        noteId: "test-note-123",
+        ingredientReference: "1.5 cups flour",
+        lineIndex: 0,
+        parseStatus: "AWAITING_PARSING",
+        isActive: true,
+        importId: "test-import-123",
+      };
+
+      const mockV1Result: V1ParserResult = {
+        rule: "ingredient",
+        type: "ingredient",
+        values: [
+          { type: "quantity", value: 1.5, rule: "quantity" },
+          { type: "unit", value: "cups", rule: "unit" },
+          { type: "ingredient", value: "flour", rule: "ingredient" },
+        ],
+      };
+
+      mockCachedIngredientParser.parseIngredientLine.mockRejectedValue(
+        new Error("Cache failed")
+      );
+      mockV1Parser.mockReturnValue(mockV1Result);
+
+      const result = await parseIngredientLine(mockData, mockLogger);
+
+      const parsedSegments = result.metadata?.parsedSegments as Array<{
+        value: string;
+      }>;
+      expect(parsedSegments?.[0]?.value).toBe("1.5");
+      expect(parsedSegments?.[1]?.value).toBe("cups");
+      expect(parsedSegments?.[2]?.value).toBe("flour");
+    });
+
+    it("should preserve existing metadata", async () => {
+      const mockData: IngredientJobData = {
+        jobId: "test-job-123",
+        noteId: "test-note-123",
+        ingredientReference: "1 cup flour",
+        lineIndex: 0,
+        parseStatus: "AWAITING_PARSING",
+        isActive: true,
+        importId: "test-import-123",
         metadata: {
-          existingKey: "existingValue",
-          clearCache: false,
+          customField: "custom-value",
+          existingData: { key: "value" },
         },
       };
 
-      const mockCachedResult: IngredientParseResult = {
+      const mockCachedResult: CachedParserResult = {
         rule: "ingredient",
         type: "ingredient",
         values: [
@@ -269,40 +454,50 @@ describe("Parse Ingredient Line Service", () => {
             processingTime: 10,
           },
         ],
-        processingTime: 15,
+        processingTime: 10,
       };
 
       mockCachedIngredientParser.parseIngredientLine.mockResolvedValue(
         mockCachedResult
       );
 
-      const result = await parseIngredientLine(dataWithMetadata, mockLogger);
+      const result = await parseIngredientLine(mockData, mockLogger);
 
-      expect(result.metadata?.existingKey).toBe("existingValue");
+      expect(result.metadata?.customField).toBe("custom-value");
+      expect(result.metadata?.existingData).toEqual({ key: "value" });
       expect(result.metadata?.parsedSegments).toBeDefined();
       expect(result.metadata?.usedCache).toBe(true);
     });
 
-    it("should preserve existing metadata when parsing fails", async () => {
-      const dataWithMetadata = {
-        ...mockData,
-        metadata: {
-          existingKey: "existingValue",
-        },
+    it("should handle cache check failure gracefully", async () => {
+      const mockData: IngredientJobData = {
+        jobId: "test-job-123",
+        noteId: "test-note-123",
+        ingredientReference: "1 cup flour",
+        lineIndex: 0,
+        parseStatus: "AWAITING_PARSING",
+        isActive: true,
+        importId: "test-import-123",
+      };
+
+      const mockV1Result: V1ParserResult = {
+        rule: "ingredient",
+        type: "ingredient",
+        values: [{ type: "ingredient", value: "flour", rule: "ingredient" }],
       };
 
       mockCachedIngredientParser.parseIngredientLine.mockRejectedValue(
-        new Error("Cache miss")
+        new Error("Cache check failed")
       );
-      mockParser.mockImplementation(() => {
-        throw new Error("Parser failed");
-      });
+      mockV1Parser.mockReturnValue(mockV1Result);
 
-      const result = await parseIngredientLine(dataWithMetadata, mockLogger);
+      const result = await parseIngredientLine(mockData, mockLogger);
 
-      expect(result.metadata?.existingKey).toBe("existingValue");
-      expect(result.metadata?.error).toBeDefined();
-      expect(result.metadata?.errorTimestamp).toBeDefined();
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        "[PARSE_INGREDIENT_LINE] Cache check failed: Error: Cache check failed"
+      );
+      expect(result.metadata?.usedCache).toBe(false);
+      expect(result.metadata?.parserVersion).toBe("v1");
     });
   });
 });

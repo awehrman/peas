@@ -1,343 +1,421 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ActionName } from "../../../../../types";
-import type { NotePipelineData } from "../../../../../types/notes";
-import type { NoteWorkerDependencies } from "../../../../../types/notes";
-import type { ActionContext } from "../../../../../workers/core/types";
+import type {
+  NotePipelineData,
+  NoteWorkerDependencies,
+} from "../../../../../types/notes";
+import { BaseAction } from "../../../../../workers/core/base-action";
+import { ActionContext } from "../../../../../workers/core/types";
 import { ParseHtmlAction } from "../../../../note/actions/parse-html/action";
 
-// Mock the schema
-vi.mock("../../../../../schemas/note", () => ({
-  ParseHtmlDataSchema: {
-    parse: vi.fn(),
-  },
-}));
-
-// Mock the service
+// Mock the parseHtml service
 vi.mock("../../../../note/actions/parse-html/service", () => ({
   parseHtml: vi.fn(),
 }));
 
+// Mock the markWorkerCompleted function
+vi.mock("../../../../note/actions/track-completion/service", () => ({
+  markWorkerCompleted: vi.fn(),
+}));
+
 describe("ParseHtmlAction", () => {
   let action: ParseHtmlAction;
-  let mockData: NotePipelineData;
-  let mockDeps: NoteWorkerDependencies;
+  let mockDependencies: NoteWorkerDependencies;
   let mockContext: ActionContext;
-  let mockParseHtmlDataSchema: ReturnType<typeof vi.fn>;
+  let mockData: NotePipelineData;
+  let mockParseHtml: ReturnType<typeof vi.fn>;
+  let mockMarkWorkerCompleted: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
-    // Clear all mocks
     vi.clearAllMocks();
 
-    // Create action instance
     action = new ParseHtmlAction();
 
-    // Create mock data
-    mockData = {
-      content:
-        "<html><body><h1>Test Recipe</h1><ul><li>Ingredient 1</li><li>Ingredient 2</li></ul><ol><li>Step 1</li><li>Step 2</li></ol></body></html>",
-      jobId: "test-job-123",
-      noteId: "test-note-456",
-      importId: "test-import-789",
-      metadata: { source: "test" },
+    const mockStatusBroadcaster = {
+      addStatusEventAndBroadcast: vi.fn().mockResolvedValue({}),
     };
 
-    // Create mock dependencies
-    mockDeps = {
+    mockDependencies = {
+      logger: {
+        log: vi.fn(),
+      },
+      statusBroadcaster: mockStatusBroadcaster,
       services: {
         parseHtml: vi.fn(),
         cleanHtml: vi.fn(),
         saveNote: vi.fn(),
       },
-      logger: {
-        log: vi.fn(),
-      },
-      statusBroadcaster: {
-        addStatusEventAndBroadcast: vi.fn(),
-      },
     } as NoteWorkerDependencies;
 
-    // Create mock context
     mockContext = {
-      jobId: "test-job-123",
-      queueName: "notes",
+      jobId: "test-job-id",
       retryCount: 0,
+      queueName: "test-queue",
+      operation: "test-operation",
       startTime: Date.now(),
-      operation: "parse_html",
       workerName: "test-worker",
       attemptNumber: 1,
     };
 
-    // Get mocked schema
-    const schemaModule = await import("../../../../../schemas/note");
-    mockParseHtmlDataSchema = vi.mocked(schemaModule.ParseHtmlDataSchema.parse);
+    mockData = {
+      noteId: "test-note-123",
+      importId: "test-import-123",
+      content: "<html><body><h1>Test Recipe</h1></body></html>",
+      file: {
+        title: "Test Recipe",
+        ingredients: [
+          {
+            reference: "1 cup flour",
+            lineIndex: 0,
+            blockIndex: 0,
+            parseStatus: "AWAITING_PARSING",
+          },
+          {
+            reference: "2 tbsp butter",
+            lineIndex: 1,
+            blockIndex: 0,
+            parseStatus: "AWAITING_PARSING",
+          },
+        ],
+        instructions: [
+          {
+            reference: "Mix ingredients",
+            lineIndex: 0,
+            parseStatus: "AWAITING_PARSING",
+          },
+        ],
+        contents: "Test content",
+        evernoteMetadata: {},
+      },
+    };
 
-    // Setup default mock implementations
-    mockParseHtmlDataSchema.mockReturnValue(mockData);
-
-    // Mock the parseHtml function from the service module
-    const { parseHtml } = await import(
+    // Get the mocked functions
+    const parseHtmlModule = await import(
       "../../../../note/actions/parse-html/service"
     );
-    vi.mocked(parseHtml).mockResolvedValue(mockData);
+    mockParseHtml = vi.mocked(parseHtmlModule.parseHtml);
+
+    const trackCompletionModule = await import(
+      "../../../../note/actions/track-completion/service"
+    );
+    mockMarkWorkerCompleted = vi.mocked(
+      trackCompletionModule.markWorkerCompleted
+    );
+
+    // Setup default mock implementations
+    mockParseHtml.mockResolvedValue(mockData);
+    mockMarkWorkerCompleted.mockImplementation(() => {});
   });
 
   describe("name", () => {
-    it("should have the correct action name", () => {
+    it("should have correct action name", () => {
       expect(action.name).toBe(ActionName.PARSE_HTML);
     });
   });
 
   describe("execute", () => {
-    it("should execute the service action with correct parameters", async () => {
-      const result = await action.execute(mockData, mockDeps, mockContext);
-
-      expect(result).toBe(mockData);
-    });
-
-    it("should call parseHtml with correct parameters", async () => {
-      // Mock the parseHtml function from the service module
-      const { parseHtml } = await import(
-        "../../../../note/actions/parse-html/service"
+    it("should execute parseHtml successfully", async () => {
+      const result = await action.execute(
+        mockData,
+        mockDependencies,
+        mockContext
       );
-      const parseHtmlSpy = vi.mocked(parseHtml);
 
-      await action.execute(mockData, mockDeps, mockContext);
-
-      expect(parseHtmlSpy).toHaveBeenCalledWith(mockData, mockDeps.logger);
+      expect(mockParseHtml).toHaveBeenCalledWith(
+        mockData,
+        mockDependencies.logger
+      );
+      expect(result).toEqual(mockData);
     });
 
-    it("should handle service call correctly", async () => {
-      const parsedData = {
+    it("should broadcast status messages when statusBroadcaster is available", async () => {
+      await action.execute(mockData, mockDependencies, mockContext);
+
+      expect(
+        mockDependencies.statusBroadcaster?.addStatusEventAndBroadcast
+      ).toHaveBeenCalledWith({
+        importId: "test-import-123",
+        noteId: "test-note-123",
+        status: "PROCESSING",
+        message: "Processing note",
+        context: "note_processing",
+        indentLevel: 1,
+        metadata: {
+          totalIngredients: 2,
+          totalInstructions: 1,
+        },
+      });
+
+      // Check ingredient status broadcast
+      expect(
+        mockDependencies.statusBroadcaster?.addStatusEventAndBroadcast
+      ).toHaveBeenCalledWith({
+        importId: "test-import-123",
+        noteId: "test-note-123",
+        status: "PROCESSING",
+        message: "Processing 0/2 ingredients",
+        context: "ingredient_processing",
+        currentCount: 0,
+        totalCount: 2,
+        indentLevel: 2,
+        metadata: {
+          totalIngredients: 2,
+        },
+      });
+
+      // Check instruction status broadcast
+      expect(
+        mockDependencies.statusBroadcaster?.addStatusEventAndBroadcast
+      ).toHaveBeenCalledWith({
+        importId: "test-import-123",
+        noteId: "test-note-123",
+        status: "PROCESSING",
+        message: "Processing 0/1 instructions",
+        context: "instruction_processing",
+        currentCount: 0,
+        totalCount: 1,
+        indentLevel: 2,
+        metadata: {
+          totalInstructions: 1,
+        },
+      });
+    });
+
+    it("should not broadcast when statusBroadcaster is not available", async () => {
+      const dependenciesWithoutBroadcaster = {
+        ...mockDependencies,
+        statusBroadcaster: undefined,
+      };
+
+      await action.execute(
+        mockData,
+        dependenciesWithoutBroadcaster,
+        mockContext
+      );
+
+      expect(mockParseHtml).toHaveBeenCalledWith(
+        mockData,
+        mockDependencies.logger
+      );
+      expect(mockMarkWorkerCompleted).toHaveBeenCalledWith(
+        "test-note-123",
+        "note",
+        mockDependencies.logger,
+        undefined
+      );
+    });
+
+    it("should not broadcast when result is null", async () => {
+      mockParseHtml.mockResolvedValue(null as unknown as NotePipelineData);
+
+      await action.execute(mockData, mockDependencies, mockContext);
+
+      expect(
+        mockDependencies.statusBroadcaster?.addStatusEventAndBroadcast
+      ).not.toHaveBeenCalled();
+    });
+
+    it("should not broadcast when result.file is null", async () => {
+      const resultWithoutFile = {
+        ...mockData,
+        file: null as unknown as NotePipelineData["file"],
+      };
+      mockParseHtml.mockResolvedValue(resultWithoutFile);
+
+      await action.execute(mockData, mockDependencies, mockContext);
+
+      expect(
+        mockDependencies.statusBroadcaster?.addStatusEventAndBroadcast
+      ).not.toHaveBeenCalled();
+    });
+
+    it("should not broadcast when data is null", async () => {
+      mockParseHtml.mockResolvedValue(mockData);
+
+      await action.execute(
+        null as unknown as NotePipelineData,
+        mockDependencies,
+        mockContext
+      );
+
+      expect(
+        mockDependencies.statusBroadcaster?.addStatusEventAndBroadcast
+      ).not.toHaveBeenCalled();
+    });
+
+    it("should handle empty ingredients array", async () => {
+      const dataWithNoIngredients = {
         ...mockData,
         file: {
-          title: "Parsed Recipe",
-          contents: mockData.content,
+          ...mockData.file,
           ingredients: [],
+        },
+      };
+      mockParseHtml.mockResolvedValue(dataWithNoIngredients);
+
+      await action.execute(mockData, mockDependencies, mockContext);
+
+      // Should not broadcast ingredient status when there are no ingredients
+      const ingredientBroadcasts = (
+        mockDependencies.statusBroadcaster
+          ?.addStatusEventAndBroadcast as ReturnType<typeof vi.fn>
+      ).mock.calls.filter(
+        (call: unknown[]) =>
+          (call[0] as { context: string }).context === "ingredient_processing"
+      );
+      expect(ingredientBroadcasts).toHaveLength(0);
+    });
+
+    it("should handle empty instructions array", async () => {
+      const dataWithNoInstructions = {
+        ...mockData,
+        file: {
+          ...mockData.file,
           instructions: [],
         },
       };
+      mockParseHtml.mockResolvedValue(dataWithNoInstructions);
 
-      // Mock the parseHtml function from the service module
-      const { parseHtml } = await import(
-        "../../../../note/actions/parse-html/service"
+      await action.execute(mockData, mockDependencies, mockContext);
+
+      // Should not broadcast instruction status when there are no instructions
+      const instructionBroadcasts = (
+        mockDependencies.statusBroadcaster
+          ?.addStatusEventAndBroadcast as ReturnType<typeof vi.fn>
+      ).mock.calls.filter(
+        (call: unknown[]) =>
+          (call[0] as { context: string }).context === "instruction_processing"
       );
-      vi.mocked(parseHtml).mockResolvedValue(parsedData);
-
-      const result = await action.execute(mockData, mockDeps, mockContext);
-
-      expect(result).toBe(parsedData);
+      expect(instructionBroadcasts).toHaveLength(0);
     });
 
-    it("should handle complex parsed data", async () => {
-      const parsedData = {
-        ...mockData,
-        file: {
-          title: "Test Recipe",
-          contents: mockData.content,
-          ingredients: [
-            { reference: "Ingredient 1", blockIndex: 0, lineIndex: 0 },
-            { reference: "Ingredient 2", blockIndex: 0, lineIndex: 1 },
-          ],
-          instructions: [
-            { reference: "Step 1", lineIndex: 0 },
-            { reference: "Step 2", lineIndex: 1 },
-          ],
-        },
-      };
-
-      // Mock the parseHtml function from the service module
-      const { parseHtml } = await import(
-        "../../../../note/actions/parse-html/service"
-      );
-      vi.mocked(parseHtml).mockResolvedValue(parsedData);
-
-      const result = await action.execute(mockData, mockDeps, mockContext);
-
-      expect(result).toBe(parsedData);
-    });
-
-    it("should handle data without importId", async () => {
+    it("should handle undefined importId", async () => {
       const dataWithoutImportId = {
         ...mockData,
         importId: undefined,
       };
-      const parsedData = {
-        ...dataWithoutImportId,
-        file: {
-          title: "Test Recipe",
-          contents: mockData.content,
-          ingredients: [],
-          instructions: [],
-        },
-      };
+      mockParseHtml.mockResolvedValue(dataWithoutImportId);
 
-      // Mock the parseHtml function from the service module
-      const { parseHtml } = await import(
-        "../../../../note/actions/parse-html/service"
+      await action.execute(dataWithoutImportId, mockDependencies, mockContext);
+
+      // Should use empty string for importId in broadcasts
+      expect(
+        mockDependencies.statusBroadcaster?.addStatusEventAndBroadcast
+      ).toHaveBeenCalledWith(
+        expect.objectContaining({
+          importId: "",
+        })
       );
-      vi.mocked(parseHtml).mockResolvedValue(parsedData);
-
-      const result = await action.execute(dataWithoutImportId, mockDeps, mockContext);
-
-      expect(result).toBe(parsedData);
     });
 
-    it("should handle dependencies without statusBroadcaster", async () => {
-      const depsWithoutBroadcaster = {
-        ...mockDeps,
-        statusBroadcaster: undefined,
-      } as NoteWorkerDependencies;
-      const parsedData = {
+    it("should mark worker as completed when noteId is available", async () => {
+      await action.execute(mockData, mockDependencies, mockContext);
+
+      expect(mockMarkWorkerCompleted).toHaveBeenCalledWith(
+        "test-note-123",
+        "note",
+        mockDependencies.logger,
+        mockDependencies.statusBroadcaster
+      );
+    });
+
+    it("should not mark worker as completed when noteId is missing", async () => {
+      const dataWithoutNoteId = {
         ...mockData,
-        file: {
-          title: "Test Recipe",
-          contents: mockData.content,
-          ingredients: [],
-          instructions: [],
-        },
+        noteId: undefined,
       };
+      mockParseHtml.mockResolvedValue(dataWithoutNoteId);
 
-      // Mock the parseHtml function from the service module
-      const { parseHtml } = await import(
-        "../../../../note/actions/parse-html/service"
-      );
-      vi.mocked(parseHtml).mockResolvedValue(parsedData);
+      await action.execute(dataWithoutNoteId, mockDependencies, mockContext);
 
-      const result = await action.execute(mockData, depsWithoutBroadcaster, mockContext);
-
-      expect(result).toBe(parsedData);
+      expect(mockMarkWorkerCompleted).not.toHaveBeenCalled();
     });
 
-    it("should handle empty ingredients and instructions arrays", async () => {
-      const parsedData = {
-        ...mockData,
-        file: {
-          title: "Test Recipe",
-          contents: mockData.content,
-          ingredients: [],
-          instructions: [],
-        },
-      };
+    it("should not mark worker as completed when data is null", async () => {
+      mockParseHtml.mockResolvedValue(null as unknown as NotePipelineData);
 
-      // Mock the parseHtml function from the service module
-      const { parseHtml } = await import(
-        "../../../../note/actions/parse-html/service"
+      await action.execute(
+        null as unknown as NotePipelineData,
+        mockDependencies,
+        mockContext
       );
-      vi.mocked(parseHtml).mockResolvedValue(parsedData);
 
-      const result = await action.execute(mockData, mockDeps, mockContext);
-
-      expect(result).toBe(parsedData);
+      expect(mockMarkWorkerCompleted).not.toHaveBeenCalled();
     });
 
-    it("should handle undefined ingredients and instructions", async () => {
-      const parsedData = {
-        ...mockData,
-        file: {
-          title: "Test Recipe",
-          contents: mockData.content,
-          ingredients: [],
-          instructions: [],
-        },
-      };
-
-      // Mock the parseHtml function from the service module
-      const { parseHtml } = await import(
-        "../../../../note/actions/parse-html/service"
-      );
-      vi.mocked(parseHtml).mockResolvedValue(parsedData);
-
-      const result = await action.execute(mockData, mockDeps, mockContext);
-
-      expect(result).toBe(parsedData);
-    });
-
-    it("should handle service errors", async () => {
-      const serviceError = new Error("Service error");
-
-      // Mock the parseHtml function from the service module
-      const { parseHtml } = await import(
-        "../../../../note/actions/parse-html/service"
-      );
-      vi.mocked(parseHtml).mockRejectedValue(serviceError);
+    it("should handle parseHtml errors", async () => {
+      const error = new Error("HTML parsing failed");
+      mockParseHtml.mockRejectedValue(error);
 
       await expect(
-        action.execute(mockData, mockDeps, mockContext)
-      ).rejects.toThrow("Service error");
+        action.execute(mockData, mockDependencies, mockContext)
+      ).rejects.toThrow("HTML parsing failed");
+
+      expect(mockMarkWorkerCompleted).not.toHaveBeenCalled();
     });
 
-    it("should maintain retryable configuration", () => {
-      expect(action.retryable).toBe(true);
+    it("should handle status broadcasting errors gracefully", async () => {
+      (
+        mockDependencies.statusBroadcaster!
+          .addStatusEventAndBroadcast as ReturnType<typeof vi.fn>
+      ).mockRejectedValue(new Error("Broadcast failed"));
+
+      await expect(
+        action.execute(mockData, mockDependencies, mockContext)
+      ).rejects.toThrow("Broadcast failed");
     });
 
-    it("should maintain priority configuration", () => {
-      expect(action.priority).toBe(0);
+    it("should handle markWorkerCompleted errors gracefully", async () => {
+      mockMarkWorkerCompleted.mockImplementation(() => {
+        throw new Error("Worker completion failed");
+      });
+
+      await expect(
+        action.execute(mockData, mockDependencies, mockContext)
+      ).rejects.toThrow("Worker completion failed");
     });
 
-    it("should work with different dependency configurations", async () => {
-      const minimalDeps = {
-        services: {
-          parseHtml: vi.fn().mockResolvedValue(mockData),
-          cleanHtml: vi.fn(),
-          saveNote: vi.fn(),
-        },
-        logger: {
-          log: vi.fn(),
-        },
-      } as NoteWorkerDependencies;
+    it("should log execution start and completion", async () => {
+      const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
 
-      const result = await action.execute(mockData, minimalDeps, mockContext);
+      await action.execute(mockData, mockDependencies, mockContext);
 
-      expect(result).toBe(mockData);
-    });
-
-    it("should work with different context configurations", async () => {
-      const differentContext = {
-        jobId: "different-job",
-        queueName: "different-queue",
-        retryCount: 1,
-        startTime: Date.now() - 1000,
-        operation: "parse_html",
-        workerName: "different-worker",
-        attemptNumber: 2,
-      };
-
-      const result = await action.execute(mockData, mockDeps, differentContext);
-
-      expect(result).toBe(mockData);
-    });
-
-    it("should handle null or undefined data gracefully", async () => {
-      const nullData = null as unknown as NotePipelineData;
-
-      // Mock the parseHtml function from the service module
-      const { parseHtml } = await import(
-        "../../../../note/actions/parse-html/service"
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "[PARSE_HTML_ACTION] Starting execution for job test-job-id"
       );
-      vi.mocked(parseHtml).mockResolvedValue(nullData);
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "[PARSE_HTML_ACTION] Processing completed for job test-job-id"
+      );
 
-      const result = await action.execute(nullData, mockDeps, mockContext);
+      consoleSpy.mockRestore();
+    });
 
-      expect(result).toBe(nullData);
+    it("should log input data and result", async () => {
+      const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+      await action.execute(mockData, mockDependencies, mockContext);
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "[PARSE_HTML_ACTION] Input data:",
+        mockData
+      );
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "[PARSE_HTML_ACTION] Result:",
+        mockData
+      );
+
+      consoleSpy.mockRestore();
     });
   });
 
-  describe("inheritance and type safety", () => {
-    it("should extend BaseAction correctly", () => {
-      expect(action).toBeInstanceOf(ParseHtmlAction);
-      expect(action).toHaveProperty("execute");
-      expect(action).toHaveProperty("name");
-    });
-
-    it("should implement required interface methods", () => {
-      expect(typeof action.execute).toBe("function");
-      expect(typeof action.name).toBe("string");
+  describe("inheritance", () => {
+    it("should extend BaseAction", () => {
+      expect(action).toBeInstanceOf(BaseAction);
     });
 
     it("should have correct generic types", () => {
-      const typedAction: ParseHtmlAction = action;
-      expect(typedAction).toBeDefined();
+      expect(action).toBeInstanceOf(ParseHtmlAction);
     });
   });
 });
