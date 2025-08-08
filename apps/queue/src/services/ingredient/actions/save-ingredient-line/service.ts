@@ -74,9 +74,9 @@ export async function saveIngredientLine(
       for (let i = 0; i < parsedSegments.length; i++) {
         const segment = parsedSegments[i];
         if (!segment) continue; // Skip undefined segments
-        
+
         const rule = await findOrCreateParsingRule(segment.rule);
-        
+
         segmentsWithRuleIds.push({
           index: segment.index,
           rule: segment.rule,
@@ -104,8 +104,7 @@ export async function saveIngredientLine(
             result.id,
             segment.index,
             data.ingredientReference,
-            data.noteId,
-            ingredient.isNew ? "new_ingredient" : "existing_ingredient"
+            data.noteId
           );
         }
       }
@@ -114,7 +113,9 @@ export async function saveIngredientLine(
       if (patternRules.length > 0) {
         try {
           // Import queue dynamically to avoid circular dependencies
-          const { createQueue } = await import("../../../../queues/create-queue");
+          const { createQueue } = await import(
+            "../../../../queues/create-queue"
+          );
           const patternQueue = createQueue("patternTracking");
 
           await patternQueue.add(

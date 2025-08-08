@@ -404,7 +404,6 @@ describe("DatabaseOperations", () => {
       segmentIndex: 0,
       reference: "flour",
       noteId: "note-123",
-      context: "main_ingredient",
     };
 
     it("should create reference successfully", async () => {
@@ -421,18 +420,16 @@ describe("DatabaseOperations", () => {
           segmentIndex: 0,
           reference: "flour",
           noteId: "note-123",
-          context: "main_ingredient",
         },
       });
     });
 
-    it("should use default context when context is undefined", async () => {
+    it("should create reference without context", async () => {
       mockPrisma.ingredientReference.create.mockResolvedValue({
         id: "ref-123",
       });
 
-      const dataWithoutContext = { ...validData, context: undefined };
-      await dbOps.createIngredientReference(dataWithoutContext);
+      await dbOps.createIngredientReference(validData);
 
       expect(mockPrisma.ingredientReference.create).toHaveBeenCalledWith({
         data: {
@@ -441,7 +438,6 @@ describe("DatabaseOperations", () => {
           segmentIndex: 0,
           reference: "flour",
           noteId: "note-123",
-          context: "main_ingredient",
         },
       });
     });

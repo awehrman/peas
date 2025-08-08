@@ -139,7 +139,6 @@ export class DatabaseOperations<TPrisma extends PrismaClient = PrismaClient> {
     segmentIndex: number;
     reference: string;
     noteId?: string;
-    context?: string;
   }): Promise<void> {
     if (!data.ingredientId) {
       throw new Error("ingredientId is required for createIngredientReference");
@@ -156,7 +155,6 @@ export class DatabaseOperations<TPrisma extends PrismaClient = PrismaClient> {
           segmentIndex: data.segmentIndex,
           reference: data.reference,
           noteId: data.noteId,
-          context: data.context || "main_ingredient",
         },
       });
     } catch (error) {

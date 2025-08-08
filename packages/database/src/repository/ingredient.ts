@@ -299,8 +299,7 @@ export async function createIngredientReference(
   parsedLineId: string,
   segmentIndex: number,
   reference: string,
-  noteId?: string,
-  context?: string
+  noteId?: string
 ): Promise<void> {
   try {
     await prisma.ingredientReference.create({
@@ -310,7 +309,6 @@ export async function createIngredientReference(
         segmentIndex,
         reference,
         noteId,
-        context: context || "main_ingredient",
       },
     });
   } catch (error) {

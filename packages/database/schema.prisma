@@ -553,9 +553,6 @@ model IngredientReference {
   reference         String      // The full original text (e.g., "2 cups flour")
   noteId            String?     // Optional link to the note
   
-  // Metadata
-  context           String?     // Additional context (e.g., "main ingredient", "garnish")
-  
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
 
