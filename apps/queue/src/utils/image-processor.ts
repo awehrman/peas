@@ -280,6 +280,20 @@ export class ImageProcessor {
     const left = Math.round((width - cropWidth) / 2);
     const top = Math.round((height - cropHeight) / 2);
 
+    // Validate crop dimensions
+    if (
+      left < 0 ||
+      top < 0 ||
+      cropWidth <= 0 ||
+      cropHeight <= 0 ||
+      left + cropWidth > width ||
+      top + cropHeight > height
+    ) {
+      throw new Error(
+        `Invalid crop dimensions: left=${left}, top=${top}, width=${cropWidth}, height=${cropHeight} for image ${width}x${height}`
+      );
+    }
+
     return image
       .extract({ left, top, width: cropWidth, height: cropHeight })
       .resize(targetWidth, targetHeight, {

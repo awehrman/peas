@@ -66,78 +66,82 @@ export function ImportFileUpload({
         );
       }
 
-      // Process HTML files first
+      // Create FormData for unified upload (HTML + images together)
+      const formData = new FormData();
+
+      // Add all HTML files
       for (const htmlFile of htmlFiles) {
-        console.log(`[FRONTEND] Processing HTML file: ${htmlFile.name}`);
-        const content = await readFileAsText(htmlFile);
         console.log(
-          `[FRONTEND] HTML content length: ${content.length} characters`
+          `[FRONTEND] Adding HTML file to FormData: ${htmlFile.name}`
         );
+        formData.append("files", htmlFile);
+      }
 
-        const requestBody = {
-          content,
-          imageFiles: nonHtmlFiles.map((file) => ({
-            name: file.name,
-            type: file.type,
-            size: file.size,
-          })),
-        };
+      // Add all image files (filter out directories)
+      const imageFiles = nonHtmlFiles.filter(
+        (file) =>
+          file.type.startsWith("image/") ||
+          /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(file.name)
+      );
 
+      for (const imageFile of imageFiles) {
         console.log(
-          "[FRONTEND] Sending HTML to /notes with body:",
-          requestBody
+          `[FRONTEND] Adding image file to FormData: ${imageFile.name}`
         );
+        formData.append("files", imageFile);
+      }
 
-        // Use globalThis.fetch to avoid "fetch is not defined" error in environments where fetch is not globally available
-        const res = await globalThis.fetch(`${QUEUE_API_BASE}/notes`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(requestBody),
-        });
+      // Check for directories and warn user
+      const directories = nonHtmlFiles.filter(
+        (file) => file.type === "" && file.size < 1000
+      );
 
-        console.log(`[FRONTEND] /notes response status: ${res.status}`);
+      if (directories.length > 0) {
+        console.log(
+          `[FRONTEND] Found ${directories.length} directories:`,
+          directories.map((d) => d.name)
+        );
+        console.log(
+          `[FRONTEND] Note: Directories cannot be processed directly. Only individual image files will be processed.`
+        );
+      }
 
-        if (!res.ok) {
-          const errorText = await res.text();
-          console.error("[FRONTEND] /notes error response:", errorText);
-          throw new Error(`Queue API responded ${res.status}: ${errorText}`);
-        }
+      console.log(
+        `[FRONTEND] Sending ${htmlFiles.length} HTML files and ${imageFiles.length} image files to /upload`
+      );
+      console.log(
+        `[FRONTEND] FormData entries:`,
+        Array.from(formData.entries()).map(([key, value]) => [
+          key,
+          value instanceof File ? value.name : value,
+        ])
+      );
 
-        const result = await res.json();
-        console.log("[FRONTEND] /notes response:", result);
+      // Send unified upload request
+      const res = await globalThis.fetch(`${QUEUE_API_BASE}/upload`, {
+        method: "POST",
+        body: formData,
+      });
 
-        // If we have non-HTML files (directories or images), upload them
-        if (nonHtmlFiles.length > 0) {
-          console.log(
-            `[FRONTEND] Uploading ${nonHtmlFiles.length} non-HTML files`
-          );
+      console.log(`[FRONTEND] /upload response status: ${res.status}`);
 
-          // Check if any of the files are directories
-          const directories = nonHtmlFiles.filter(
-            (file) => file.type === "" && file.size < 1000
-          );
-          if (directories.length > 0) {
-            console.log(
-              `[FRONTEND] Found ${directories.length} directories:`,
-              directories.map((d) => d.name)
-            );
-            setMessage(
-              `Note: Directories cannot be processed directly. Please select individual image files from the directories. Processing HTML file only.`
-            );
-          } else {
-            await uploadImages(result.importId, nonHtmlFiles);
-            setMessage(
-              `Files queued successfully! Import ID: ${result.importId}`
-            );
-          }
-        } else {
-          console.log("[FRONTEND] No non-HTML files to upload");
-          setMessage(
-            `Files queued successfully! Import ID: ${result.importId}`
-          );
-        }
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error("[FRONTEND] /upload error response:", errorText);
+        throw new Error(`Queue API responded ${res.status}: ${errorText}`);
+      }
+
+      const result = await res.json();
+      console.log("[FRONTEND] /upload response:", result);
+
+      if (directories.length > 0) {
+        setMessage(
+          `Files uploaded successfully! Import ID: ${result.data.importId}. Note: ${directories.length} directories were skipped - please select individual image files from directories.`
+        );
+      } else {
+        setMessage(
+          `Files uploaded successfully! Import ID: ${result.data.importId}. Processed ${result.data.htmlFiles} HTML files and ${result.data.imageFiles} images.`
+        );
       }
     } catch (err) {
       console.error("[FRONTEND] Upload error:", err);
@@ -150,80 +154,6 @@ export function ImportFileUpload({
 
   const handleFileUpload = (file: File) => {
     handleFilesUpload([file]);
-  };
-
-  const readFileAsText = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const content = e.target?.result;
-        if (typeof content === "string") {
-          resolve(content);
-        } else {
-          reject(new Error("Failed to read file"));
-        }
-      };
-      reader.onerror = () => reject(new Error("Failed to read file"));
-      reader.readAsText(file);
-    });
-  };
-
-  const uploadImages = async (importId: string, files: File[]) => {
-    console.log(`[FRONTEND] uploadImages called with importId: ${importId}`);
-    console.log(
-      `[FRONTEND] Files to upload:`,
-      files.map((f) => f.name)
-    );
-
-    const formData = new FormData();
-    formData.append("importId", importId);
-
-    // Process each file - if it's a directory, we need to handle it specially
-    for (const file of files) {
-      console.log(
-        `[FRONTEND] Processing file: ${file.name}, type: ${file.type}, size: ${file.size}`
-      );
-
-      if (file.type === "" && file.size < 1000) {
-        // This is likely a directory - we can't directly access its contents from the browser
-        // For now, we'll send the directory info and let the backend handle it
-        console.log(`[FRONTEND] Detected directory: ${file.name}`);
-        formData.append("directories", file.name);
-      } else if (
-        file.type.startsWith("image/") ||
-        /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(file.name)
-      ) {
-        // This is an image file
-        console.log(`[FRONTEND] Appending image to FormData: ${file.name}`);
-        formData.append("images", file);
-      } else {
-        // This is some other file type
-        console.log(
-          `[FRONTEND] Appending other file to FormData: ${file.name}`
-        );
-        formData.append("files", file);
-      }
-    }
-
-    console.log(`[FRONTEND] Sending FormData to ${QUEUE_API_BASE}/images`);
-    console.log(`[FRONTEND] FormData entries:`, Array.from(formData.entries()));
-
-    const res = await globalThis.fetch(`${QUEUE_API_BASE}/images`, {
-      method: "POST",
-      body: formData,
-    });
-
-    console.log(`[FRONTEND] /images response status: ${res.status}`);
-
-    if (!res.ok) {
-      const errorText = await res.text();
-      console.error("[FRONTEND] /images error response:", errorText);
-      throw new Error(`Image upload failed: ${res.status}: ${errorText}`);
-    }
-
-    const result = await res.json();
-    console.log("[FRONTEND] /images response:", result);
-    return result;
   };
 
   return (

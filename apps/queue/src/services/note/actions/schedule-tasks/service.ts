@@ -3,7 +3,7 @@ import type { NotePipelineData } from "../../../../types/notes";
 import type { NoteWorkerDependencies } from "../../../../types/notes";
 import { ActionContext } from "../../../../workers/core/types";
 import { ProcessSourceAction } from "../process-source/action";
-// import { ScheduleImagesAction } from "../../schedule-images";
+import { ScheduleImagesAction } from "../schedule-images/action";
 import { ScheduleIngredientsAction } from "../schedule-ingredients/action";
 import { ScheduleInstructionsAction } from "../schedule-instructions/action";
 
@@ -31,7 +31,7 @@ export async function scheduleAllFollowupTasks(
     const sourceAction = new ProcessSourceAction();
     const instructionsAction = new ScheduleInstructionsAction();
     const ingredientAction = new ScheduleIngredientsAction();
-    // const imageAction = new ScheduleImagesAction();
+    const imageAction = new ScheduleImagesAction();
 
     // Create a mock context for the actions
     const context: ActionContext = {
@@ -57,7 +57,7 @@ export async function scheduleAllFollowupTasks(
       ingredientAction.execute(data, deps, context),
 
       // Schedule image processing
-      // imageAction.execute(data, deps, context),
+      imageAction.execute(data, deps, context),
     ]);
 
     logger.log(

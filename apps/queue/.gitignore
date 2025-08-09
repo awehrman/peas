@@ -34,5 +34,10 @@ next-env.d.ts
 /logs/*
 *.log
 
+# uploads directory - contains temporary and processed files
+/uploads
+/uploads/*
+/uploads/**/*
+
 # /public/files/*
 # /public/files/**/*

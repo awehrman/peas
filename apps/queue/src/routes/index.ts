@@ -1,4 +1,5 @@
 export { importRouter } from "./import";
+export { uploadRouter } from "./upload";
 export { notesRouter } from "./notes";
 export { imagesRouter } from "./images";
 export { healthEnhancedRouter } from "./health-enhanced";

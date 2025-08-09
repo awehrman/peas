@@ -7,6 +7,7 @@ import {
   metricsRouter,
   notesRouter,
   performanceRouter,
+  uploadRouter,
 } from "./routes";
 import { ServiceContainer } from "./services";
 import { ErrorSeverity, ErrorType, HttpStatus } from "./types";
@@ -222,6 +223,7 @@ initializeApp()
   .then(({ app, serviceContainer }) => {
     // Routes
     app.use("/import", importRouter);
+    app.use("/upload", uploadRouter); // Unified HTML + image upload
     app.use("/notes", notesRouter);
     app.use("/images", imagesRouter);
     app.use("/health", healthEnhancedRouter); // Enhanced health endpoints

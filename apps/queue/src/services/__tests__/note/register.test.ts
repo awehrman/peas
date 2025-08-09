@@ -51,6 +51,30 @@ vi.mock("../actions/process-source/action", () => ({
   },
 }));
 
+vi.mock("../actions/schedule-instructions/action", () => ({
+  ScheduleInstructionsAction: class MockScheduleInstructionsAction {
+    constructor() {
+      // Mock constructor
+    }
+  },
+}));
+
+vi.mock("../actions/schedule-images/action", () => ({
+  ScheduleImagesAction: class MockScheduleImagesAction {
+    constructor() {
+      // Mock constructor
+    }
+  },
+}));
+
+vi.mock("../actions/check-duplicates/action", () => ({
+  CheckDuplicatesAction: class MockCheckDuplicatesAction {
+    constructor() {
+      // Mock constructor
+    }
+  },
+}));
+
 // Mock the action registry functions
 vi.mock("../../../workers/shared/action-registry", () => ({
   createActionRegistration: vi.fn(),
@@ -98,11 +122,11 @@ describe("registerNoteActions", () => {
     );
   });
 
-  it("should register exactly 6 actions", () => {
+  it("should register exactly 8 actions", () => {
     registerNoteActions(mockFactory);
 
     const registeredActions = mockRegisterActions.mock.calls[0]?.[1];
-    expect(registeredActions).toHaveLength(7);
+    expect(registeredActions).toHaveLength(8);
   });
 
   it("should register PARSE_HTML action", () => {
@@ -150,10 +174,10 @@ describe("registerNoteActions", () => {
     );
   });
 
-  it("should call createActionRegistration exactly 6 times", () => {
+  it("should call createActionRegistration exactly 8 times", () => {
     registerNoteActions(mockFactory);
 
-    expect(mockCreateActionRegistration).toHaveBeenCalledTimes(7);
+    expect(mockCreateActionRegistration).toHaveBeenCalledTimes(8);
   });
 
   it("should register actions in the correct order", () => {
@@ -166,6 +190,8 @@ describe("registerNoteActions", () => {
     expect(calls[3]?.[0]).toBe(ActionName.SCHEDULE_ALL_FOLLOWUP_TASKS);
     expect(calls[4]?.[0]).toBe(ActionName.PROCESS_SOURCE);
     expect(calls[5]?.[0]).toBe(ActionName.SCHEDULE_INSTRUCTION_LINES);
+    expect(calls[6]?.[0]).toBe(ActionName.SCHEDULE_IMAGES);
+    expect(calls[7]?.[0]).toBe(ActionName.CHECK_DUPLICATES);
   });
 
   it("should pass the correct action classes to createActionRegistration", async () => {
@@ -191,6 +217,9 @@ describe("registerNoteActions", () => {
     const { CheckDuplicatesAction } = await import(
       "../../note/actions/check-duplicates/action"
     );
+    const { ScheduleImagesAction } = await import(
+      "../../note/actions/schedule-images/action"
+    );
 
     registerNoteActions(mockFactory);
 
@@ -201,7 +230,8 @@ describe("registerNoteActions", () => {
     expect(calls[3]?.[1]).toBe(ScheduleAllFollowupTasksAction);
     expect(calls[4]?.[1]).toBe(ProcessSourceAction);
     expect(calls[5]?.[1]).toBe(ScheduleInstructionsAction);
-    expect(calls[6]?.[1]).toBe(CheckDuplicatesAction);
+    expect(calls[6]?.[1]).toBe(ScheduleImagesAction);
+    expect(calls[7]?.[1]).toBe(CheckDuplicatesAction);
   });
 
   it("should return void", () => {
@@ -228,6 +258,7 @@ describe("registerNoteActions", () => {
       { name: ActionName.SCHEDULE_ALL_FOLLOWUP_TASKS, factory: vi.fn() },
       { name: ActionName.PROCESS_SOURCE, factory: vi.fn() },
       { name: ActionName.SCHEDULE_INSTRUCTION_LINES, factory: vi.fn() },
+      { name: ActionName.SCHEDULE_IMAGES, factory: vi.fn() },
       { name: ActionName.CHECK_DUPLICATES, factory: vi.fn() },
     ];
 
@@ -238,7 +269,8 @@ describe("registerNoteActions", () => {
       .mockReturnValueOnce(mockRegistrations[3])
       .mockReturnValueOnce(mockRegistrations[4])
       .mockReturnValueOnce(mockRegistrations[5])
-      .mockReturnValueOnce(mockRegistrations[6]);
+      .mockReturnValueOnce(mockRegistrations[6])
+      .mockReturnValueOnce(mockRegistrations[7]);
 
     registerNoteActions(mockFactory);
 

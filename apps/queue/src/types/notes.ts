@@ -22,6 +22,9 @@ export interface NotePipelineData extends BaseJobData {
   // Processing options
   options?: ProcessingOptions;
 
+  // File path information (for coordinated uploads)
+  originalFilePath?: string;
+
   // Pipeline stage data (added by actions)
   file?: ParsedHTMLFile;
   note?: NoteWithParsedLines;
