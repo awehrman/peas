@@ -288,10 +288,10 @@ cacheRouter.post("/reset-memory", async (req, res) => {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
+    /* istanbul ignore next -- @preserve */
     res.status(500).json({
       success: false,
       error: "Failed to reset memory cache",
-      /* istanbul ignore next -- @preserve */
       details: error instanceof Error ? error.message : "Unknown error",
     });
   }

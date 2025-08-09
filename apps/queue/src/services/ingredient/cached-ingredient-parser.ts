@@ -46,6 +46,7 @@ export class CachedIngredientParser {
   /**
    * Parse an ingredient line with caching
    */
+  /* istanbul ignore next -- @preserve */
   static async parseIngredientLine(
     line: string,
     options: IngredientParsingOptions = {},

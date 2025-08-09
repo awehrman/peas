@@ -390,7 +390,7 @@ describe("HTML Parser", () => {
       };
 
       // Mock the $ function to handle both selector calls and element calls
-      mock$.mockImplementation((selector: string | any) => {
+      mock$.mockImplementation((selector: string | unknown) => {
         if (selector === HTML_PARSING_CONSTANTS.SELECTORS.EN_NOTE) {
           return mockEnNote;
         }
@@ -406,7 +406,7 @@ describe("HTML Parser", () => {
           };
         }
         // Handle element calls (when $ is called with an element)
-        if (selector && typeof selector === 'object' && selector.attr) {
+        if (selector && typeof selector === "object" && "attr" in selector) {
           return selector; // Return the element as-is
         }
         return { attr: vi.fn().mockReturnValue(null) };

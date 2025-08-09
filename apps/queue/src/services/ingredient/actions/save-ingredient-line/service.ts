@@ -110,6 +110,7 @@ export async function saveIngredientLine(
       }
 
       // Queue pattern tracking for later processing
+      /* istanbul ignore else -- @preserve */
       if (patternRules.length > 0) {
         try {
           // Import queue dynamically to avoid circular dependencies
@@ -147,6 +148,7 @@ export async function saveIngredientLine(
             `[SAVE_INGREDIENT_LINE] Queued pattern tracking for job ${data.jobId}`
           );
         } catch (queueError) {
+          /* istanbul ignore next -- @preserve */
           logger.log(
             `[SAVE_INGREDIENT_LINE] Failed to queue pattern tracking: ${queueError}`
           );

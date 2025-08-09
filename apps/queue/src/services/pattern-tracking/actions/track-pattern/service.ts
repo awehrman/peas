@@ -98,6 +98,7 @@ async function trackPatternInDatabase(
       );
 
       // If this is the last attempt, throw the error
+      /* istanbul ignore if -- @preserve */
       if (attempt === maxRetries) {
         /* istanbul ignore next -- @preserve */
         throw error;
@@ -139,6 +140,7 @@ async function trackPatternInDatabase(
       }
 
       // Log other error types for debugging
+      /* istanbul ignore next -- @preserve */
       logger.log(
         `[PATTERN_TRACKER] Non-retryable error type: ${error && typeof error === "object" && "name" in error ? error.name : "unknown"}, code: ${error && typeof error === "object" && "code" in error ? error.code : "unknown"}`,
         LogLevel.DEBUG

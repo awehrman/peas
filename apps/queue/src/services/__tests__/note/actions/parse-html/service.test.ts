@@ -254,5 +254,100 @@ describe("Parse HTML Service", () => {
         "[PARSE_HTML] Test log message from HTML parser"
       );
     });
+
+    it("should log ingredient details when ingredients are found", async () => {
+      const mockData: NotePipelineData = {
+        noteId: "test-note-123",
+        importId: "test-import-123",
+        content: "<html><body><h1>Test Recipe</h1></body></html>",
+      };
+
+      const mockParsedFile = {
+        title: "Test Recipe",
+        ingredients: [
+          { reference: "1 cup flour", blockIndex: 0, lineIndex: 0 },
+          { reference: "2 cups sugar", blockIndex: 0, lineIndex: 1 },
+          { reference: "3 eggs", blockIndex: 0, lineIndex: 2 },
+        ],
+        instructions: [],
+        contents: "Test content",
+        evernoteMetadata: {},
+      };
+
+      mockParseHTMLContent.mockReturnValue(mockParsedFile);
+
+      await parseHtml(mockData, mockLogger);
+
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        "[PARSE_HTML] Found 3 ingredients"
+      );
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        "[PARSE_HTML] First few ingredients: 1 cup flour, 2 cups sugar, 3 eggs"
+      );
+    });
+
+    it("should log instruction details when instructions are found", async () => {
+      const mockData: NotePipelineData = {
+        noteId: "test-note-123",
+        importId: "test-import-123",
+        content: "<html><body><h1>Test Recipe</h1></body></html>",
+      };
+
+      const mockParsedFile = {
+        title: "Test Recipe",
+        ingredients: [],
+        instructions: [
+          { reference: "Preheat oven to 350°F", lineIndex: 0 },
+          { reference: "Mix dry ingredients", lineIndex: 1 },
+          { reference: "Combine wet ingredients", lineIndex: 2 },
+        ],
+        contents: "Test content",
+        evernoteMetadata: {},
+      };
+
+      mockParseHTMLContent.mockReturnValue(mockParsedFile);
+
+      await parseHtml(mockData, mockLogger);
+
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        "[PARSE_HTML] Found 3 instructions"
+      );
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        "[PARSE_HTML] First few instructions: Preheat oven to 350°F, Mix dry ingredients, Combine wet ingredients"
+      );
+    });
+
+    it("should not log ingredient details when no ingredients are found", async () => {
+      const mockData: NotePipelineData = {
+        noteId: "test-note-123",
+        importId: "test-import-123",
+        content: "<html><body><h1>Test Recipe</h1></body></html>",
+      };
+
+      const mockParsedFile = {
+        title: "Test Recipe",
+        ingredients: [],
+        instructions: [],
+        contents: "Test content",
+        evernoteMetadata: {},
+      };
+
+      mockParseHTMLContent.mockReturnValue(mockParsedFile);
+
+      await parseHtml(mockData, mockLogger);
+
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        "[PARSE_HTML] Found 0 ingredients"
+      );
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        "[PARSE_HTML] Found 0 instructions"
+      );
+      expect(mockLogger.log).not.toHaveBeenCalledWith(
+        expect.stringContaining("[PARSE_HTML] First few ingredients:")
+      );
+      expect(mockLogger.log).not.toHaveBeenCalledWith(
+        expect.stringContaining("[PARSE_HTML] First few instructions:")
+      );
+    });
   });
 });

@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { StructuredLogger } from "../../../../../types";
 import type { NotePipelineData } from "../../../../../types/notes";
 import { saveNote } from "../../../../note/actions/save-note/service";
-import { initializeNoteCompletion } from "../track-completion/service";
+import { initializeNoteCompletion } from "../../../../note/actions/track-completion/service";
 
 // Mock the database module
 vi.mock("@peas/database", () => ({
@@ -13,7 +13,7 @@ vi.mock("@peas/database", () => ({
 }));
 
 // Mock the track-completion service
-vi.mock("../track-completion/service", () => ({
+vi.mock("../../../../note/actions/track-completion/service", () => ({
   initializeNoteCompletion: vi.fn(),
 }));
 

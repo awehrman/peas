@@ -1,18 +1,18 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
 import { ActionName } from "../../../../../types";
 import type { NotePipelineData } from "../../../../../types/notes";
 import type { NoteWorkerDependencies } from "../../../../../types/notes";
-import { ActionContext } from "../../../../../workers/core/types";
 import { BaseAction } from "../../../../../workers/core/base-action";
+import { ActionContext } from "../../../../../workers/core/types";
 import { ScheduleIngredientsAction } from "../../../../note/actions/schedule-ingredients/action";
+// Import the mocked function
+import { processIngredients } from "../../../../note/actions/schedule-ingredients/service";
 
 // Mock the service module
 vi.mock("../../../../note/actions/schedule-ingredients/service", () => ({
   processIngredients: vi.fn(),
 }));
-
-// Import the mocked function
-import { processIngredients } from "../../../../note/actions/schedule-ingredients/service";
 
 describe("ScheduleIngredientsAction", () => {
   let action: ScheduleIngredientsAction;
@@ -134,7 +134,7 @@ describe("ScheduleIngredientsAction", () => {
   describe("execute", () => {
     it("should call processIngredients service", async () => {
       // Mock the service to return successfully
-      (processIngredients as any).mockResolvedValue(mockData);
+      vi.mocked(processIngredients).mockResolvedValue(mockData);
 
       const result = await action.execute(
         mockData,
@@ -167,27 +167,40 @@ describe("ScheduleIngredientsAction", () => {
       };
 
       const mockQueues = {
-        ingredient: {
+        ingredientQueue: {
           add: vi.fn().mockRejectedValue(new Error("Queue error")),
-        },
+        } as unknown as NonNullable<
+          NoteWorkerDependencies["queues"]
+        >["ingredientQueue"],
       };
 
       const mockDeps: NoteWorkerDependencies = {
         logger: mockLogger,
         queues: mockQueues,
-        statusBroadcaster: null,
+        statusBroadcaster: {
+          addStatusEventAndBroadcast: vi.fn(),
+        },
+        services: {
+          parseHtml: vi.fn(),
+          cleanHtml: vi.fn(),
+          saveNote: vi.fn(),
+        },
       };
 
       const mockContext: ActionContext = {
         jobId: "test-job-123",
-        attempt: 1,
-        maxAttempts: 3,
+        retryCount: 0,
+        queueName: "test-queue",
+        operation: "test-operation",
+        startTime: Date.now(),
+        workerName: "test-worker",
+        attemptNumber: 1,
       };
 
       const action = new ScheduleIngredientsAction();
 
       // Mock the service to throw an error
-      (processIngredients as any).mockRejectedValue(
+      vi.mocked(processIngredients).mockRejectedValue(
         new Error("Service error")
       );
 
@@ -202,10 +215,23 @@ describe("ScheduleIngredientsAction", () => {
         importId: "test-import-123",
         content: "Test content",
         file: {
+          title: "Test Recipe",
+          contents: "Test recipe content",
           ingredients: [
-            { id: "ing1", text: "ingredient 1" },
-            { id: "ing2", text: "ingredient 2" },
+            {
+              reference: "ingredient 1",
+              lineIndex: 0,
+              blockIndex: 0,
+              parseStatus: "AWAITING_PARSING",
+            },
+            {
+              reference: "ingredient 2",
+              lineIndex: 1,
+              blockIndex: 0,
+              parseStatus: "AWAITING_PARSING",
+            },
           ],
+          instructions: [],
         },
       };
 
@@ -218,9 +244,11 @@ describe("ScheduleIngredientsAction", () => {
       };
 
       const mockQueues = {
-        ingredient: {
+        ingredientQueue: {
           add: vi.fn().mockResolvedValue(undefined),
-        },
+        } as unknown as NonNullable<
+          NoteWorkerDependencies["queues"]
+        >["ingredientQueue"],
       };
 
       const mockStatusBroadcaster = {
@@ -231,18 +259,27 @@ describe("ScheduleIngredientsAction", () => {
         logger: mockLogger,
         queues: mockQueues,
         statusBroadcaster: mockStatusBroadcaster,
+        services: {
+          parseHtml: vi.fn(),
+          cleanHtml: vi.fn(),
+          saveNote: vi.fn(),
+        },
       };
 
       const mockContext: ActionContext = {
         jobId: "test-job-123",
-        attempt: 1,
-        maxAttempts: 3,
+        retryCount: 0,
+        queueName: "test-queue",
+        operation: "test-operation",
+        startTime: Date.now(),
+        workerName: "test-worker",
+        attemptNumber: 1,
       };
 
       const action = new ScheduleIngredientsAction();
 
       // Mock the service to return successfully
-      (processIngredients as any).mockResolvedValue(mockData);
+      vi.mocked(processIngredients).mockResolvedValue(mockData);
 
       const result = await action.execute(mockData, mockDeps, mockContext);
 

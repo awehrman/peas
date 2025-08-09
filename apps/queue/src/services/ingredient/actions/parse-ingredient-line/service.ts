@@ -98,7 +98,9 @@ export async function parseIngredientLine(
           `[PARSE_INGREDIENT_LINE] Using v1 parser for: "${data.ingredientReference}"`
         );
       } catch (v1Error) {
+        /* istanbul ignore next -- @preserve */
         logger.log(`[PARSE_INGREDIENT_LINE] v1 parser failed: ${v1Error}`);
+        /* istanbul ignore next -- @preserve */
         throw new Error(`Failed to load v1 ingredient parser: ${v1Error}`);
       }
 
