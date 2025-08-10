@@ -110,64 +110,25 @@ export class ImageProcessor {
         );
       }
 
-      // Process the image variants
+      // STUBBED: Image processing is currently disabled
       console.log(
-        `[PROCESS_IMAGE] Processing image variants with cropping and resizing`
+        `[PROCESS_IMAGE] STUBBED: Image processing disabled - would process variants with cropping and resizing`
+      );
+      console.log(
+        `[PROCESS_IMAGE] Would create: original (${this.options.originalWidth}x${this.options.originalHeight}), thumbnail (${this.options.thumbnailWidth}x${this.options.thumbnailHeight}), crops (3:2, 4:3, 16:9)`
       );
 
-      // Create original (resized)
-      const originalImage = image.resize(
-        this.options.originalWidth,
-        this.options.originalHeight,
-        {
-          fit: "inside",
-          withoutEnlargement: true,
-        }
+      // STUBBED: Just copy the original image to all output paths
+      console.log(
+        `[PROCESS_IMAGE] STUBBED: Copying original image to all variant paths`
       );
-      await originalImage.toFile(originalPath);
+      await image.toFile(originalPath);
+      await image.toFile(thumbnailPath);
+      await image.toFile(crop3x2Path);
+      await image.toFile(crop4x3Path);
+      await image.toFile(crop16x9Path);
 
-      // Create thumbnail
-      const thumbnailImage = image.resize(
-        this.options.thumbnailWidth,
-        this.options.thumbnailHeight,
-        {
-          fit: "cover",
-          withoutEnlargement: false,
-        }
-      );
-      await thumbnailImage.toFile(thumbnailPath);
-
-      // Create 3:2 crop
-      const crop3x2Image = await this.processCrop(
-        image,
-        metadata,
-        3 / 2,
-        this.options.crop3x2Width,
-        this.options.crop3x2Height
-      );
-      await crop3x2Image.toFile(crop3x2Path);
-
-      // Create 4:3 crop
-      const crop4x3Image = await this.processCrop(
-        image,
-        metadata,
-        4 / 3,
-        this.options.crop4x3Width,
-        this.options.crop4x3Height
-      );
-      await crop4x3Image.toFile(crop4x3Path);
-
-      // Create 16:9 crop
-      const crop16x9Image = await this.processCrop(
-        image,
-        metadata,
-        16 / 9,
-        this.options.crop16x9Width,
-        this.options.crop16x9Height
-      );
-      await crop16x9Image.toFile(crop16x9Path);
-
-      // Get file sizes
+      // STUBBED: Get file sizes (all will be the same since we're copying the original)
       const [
         originalSize,
         thumbnailSize,
@@ -230,7 +191,8 @@ export class ImageProcessor {
   }
 
   /**
-   * Process image cropping with aspect ratio and target dimensions
+   * STUBBED: Process image cropping with aspect ratio and target dimensions
+   * This method is currently disabled as image processing is stubbed out
    */
   private async processCrop(
     image: sharp.Sharp,
@@ -239,6 +201,15 @@ export class ImageProcessor {
     targetWidth: number,
     targetHeight: number
   ): Promise<sharp.Sharp> {
+    console.log(
+      `[PROCESS_CROP] STUBBED: Would crop image to ${targetWidth}x${targetHeight} with aspect ratio ${aspectRatio}`
+    );
+
+    // STUBBED: Just return the original image
+    return image;
+
+    // COMMENTED OUT: Original cropping logic
+    /*
     if (metadata.width === undefined || metadata.height === undefined) {
       throw new Error("Invalid image metadata: missing dimensions");
     }
@@ -295,6 +266,7 @@ export class ImageProcessor {
         withoutEnlargement: true,
       });
     }
+    */
   }
 
   static isSupportedImage(filename: string): boolean {

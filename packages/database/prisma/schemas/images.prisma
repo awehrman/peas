@@ -26,10 +26,13 @@ model Image {
   // Relations
   note Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
   noteId String
+  importId String? // Import session identifier for tracking and upserts
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
   @@index([noteId])
   @@index([processingStatus])
+  @@index([importId]) // Index for import tracking and upserts
+  @@unique([importId]) // Unique constraint for upsert operations
 } 

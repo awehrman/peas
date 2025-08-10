@@ -43,6 +43,7 @@ model Note {
   title               String?
   html                String @db.Text // For large HTML content
   status              NoteStatus @default(PENDING)
+  importId            String? // Import session identifier for tracking and upserts
 
   evernoteMetadataId String? @unique
   evernoteMetadata   EvernoteMetadata? @relation(fields: [evernoteMetadataId], references: [id], onDelete: Cascade)
@@ -71,6 +72,7 @@ model Note {
   updatedAt DateTime @updatedAt
 
   @@index([titleSimHash]) // Index for SimHash similarity queries
+  @@index([importId]) // Index for import tracking and upserts
 }
 
 model NoteStatusEvent {

@@ -275,7 +275,8 @@ export async function createNote(
 }
 
 export async function createNoteWithEvernoteMetadata(
-  file: ParsedHTMLFile
+  file: ParsedHTMLFile,
+  importId?: string
 ): Promise<NoteWithParsedLines & { evernoteMetadataId: string | null }> {
   try {
     // Extract Evernote metadata from the file
@@ -287,6 +288,7 @@ export async function createNoteWithEvernoteMetadata(
       data: {
         title: file.title,
         html: file.contents,
+        importId: importId || null, // Add importId to the note
         // Counters
         totalIngredientLines: file.ingredients.length,
         totalInstructionLines: file.instructions.length,

@@ -101,7 +101,8 @@ describe("saveNote", () => {
       const result = await saveNote(mockData, mockLogger);
 
       expect(mockCreateNoteWithEvernoteMetadata).toHaveBeenCalledWith(
-        mockData.file!
+        mockData.file!,
+        mockData.importId
       );
       expect(result).toEqual({
         ...mockData,
@@ -150,7 +151,8 @@ describe("saveNote", () => {
       await saveNote(mockData, mockLogger);
 
       expect(mockCreateNoteWithEvernoteMetadata).toHaveBeenCalledWith(
-        mockData.file!
+        mockData.file!,
+        mockData.importId
       );
     });
   });
@@ -445,7 +447,8 @@ describe("saveNote", () => {
 
       expect(result.note?.title).toBe("Test Recipe");
       expect(mockCreateNoteWithEvernoteMetadata).toHaveBeenCalledWith(
-        fileWithEvernoteMetadata.file
+        fileWithEvernoteMetadata.file,
+        fileWithEvernoteMetadata.importId
       );
     });
 
@@ -464,7 +467,8 @@ describe("saveNote", () => {
 
       expect(result.note?.title).toBe("Test Recipe");
       expect(mockCreateNoteWithEvernoteMetadata).toHaveBeenCalledWith(
-        fileWithSourceOnly.file
+        fileWithSourceOnly.file,
+        fileWithSourceOnly.importId
       );
     });
 
@@ -483,7 +487,8 @@ describe("saveNote", () => {
 
       expect(result.note?.title).toBe("Test Recipe");
       expect(mockCreateNoteWithEvernoteMetadata).toHaveBeenCalledWith(
-        fileWithTagsOnly.file
+        fileWithTagsOnly.file,
+        fileWithTagsOnly.importId
       );
     });
 
@@ -502,7 +507,8 @@ describe("saveNote", () => {
 
       expect(result.note?.title).toBe("Test Recipe");
       expect(mockCreateNoteWithEvernoteMetadata).toHaveBeenCalledWith(
-        fileWithDateOnly.file
+        fileWithDateOnly.file,
+        fileWithDateOnly.importId
       );
     });
 
@@ -519,7 +525,8 @@ describe("saveNote", () => {
 
       expect(result.note?.title).toBe("Test Recipe");
       expect(mockCreateNoteWithEvernoteMetadata).toHaveBeenCalledWith(
-        fileWithEmptyMetadata.file
+        fileWithEmptyMetadata.file,
+        fileWithEmptyMetadata.importId
       );
     });
 
@@ -540,7 +547,8 @@ describe("saveNote", () => {
 
       expect(result.note?.title).toBe("Test Recipe");
       expect(mockCreateNoteWithEvernoteMetadata).toHaveBeenCalledWith(
-        fileWithUndefinedValues.file
+        fileWithUndefinedValues.file,
+        fileWithUndefinedValues.importId
       );
     });
 
@@ -557,7 +565,8 @@ describe("saveNote", () => {
 
       expect(result.note?.title).toBe("Test Recipe");
       expect(mockCreateNoteWithEvernoteMetadata).toHaveBeenCalledWith(
-        fileWithoutMetadata.file
+        fileWithoutMetadata.file,
+        fileWithoutMetadata.importId
       );
     });
   });

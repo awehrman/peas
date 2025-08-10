@@ -28,10 +28,30 @@ export async function saveImage(
     const crop16x9Url =
       data.r2Crop16x9Url || `${baseUrl}/${path.basename(data.crop16x9Path)}`;
 
-    // Create Image record in database
+    // Upsert Image record in database using importId as unique identifier
     const prisma = serviceContainer.database.prisma;
-    const image = await prisma.image.create({
-      data: {
+    
+    logger.log(`[SAVE_IMAGE] Upserting image record for importId: ${data.importId}`);
+    
+    const image = await prisma.image.upsert({
+      where: {
+        importId: data.importId, // Use importId as the unique identifier for upsert
+      },
+      update: {
+        originalImageUrl: originalUrl,
+        thumbnailImageUrl: thumbnailUrl,
+        crop3x2ImageUrl: crop3x2Url,
+        crop4x3ImageUrl: crop4x3Url,
+        crop16x9ImageUrl: crop16x9Url,
+        originalWidth: data.metadata.width,
+        originalHeight: data.metadata.height,
+        originalSize: data.originalSize,
+        originalFormat: data.metadata.format,
+        processingStatus: "COMPLETED",
+        processingError: null, // Clear any previous errors
+        noteId: data.noteId, // Update noteId in case it changed
+      },
+      create: {
         originalImageUrl: originalUrl,
         thumbnailImageUrl: thumbnailUrl,
         crop3x2ImageUrl: crop3x2Url,
@@ -43,10 +63,12 @@ export async function saveImage(
         originalFormat: data.metadata.format,
         processingStatus: "COMPLETED",
         noteId: data.noteId,
+        importId: data.importId,
       },
     });
+    
+    logger.log(`[SAVE_IMAGE] Image record upserted with ID: ${image.id}`);
 
-    logger.log(`[SAVE_IMAGE] Image record created with ID: ${image.id}`);
     logger.log(
       `[SAVE_IMAGE] Original: ${originalUrl} ${data.r2OriginalUrl ? "(R2)" : "(local)"}`
     );

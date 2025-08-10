@@ -27,7 +27,7 @@ export async function saveNote(
     );
 
     // Create the note in the database with Evernote metadata
-    const dbNote = await db.createNoteWithEvernoteMetadata(data.file);
+    const dbNote = await db.createNoteWithEvernoteMetadata(data.file, data.importId);
 
     logger.log(
       `[SAVE_NOTE] Successfully created note with ID: ${dbNote.id}, title: "${dbNote.title}", evernoteMetadataId: ${dbNote.evernoteMetadataId || "none"}`
