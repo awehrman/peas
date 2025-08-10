@@ -12,9 +12,9 @@ export async function saveImage(
   try {
     logger.log(`[SAVE_IMAGE] Saving image URLs for note: ${data.noteId}`);
 
-    // Convert file paths to URLs
+    // Use R2 URL for original if available, otherwise use local path
     const baseUrl = process.env.IMAGE_BASE_URL || "/images";
-    const originalUrl = `${baseUrl}/${path.basename(data.originalPath)}`;
+    const originalUrl = data.r2Url || `${baseUrl}/${path.basename(data.originalPath)}`;
     const thumbnailUrl = `${baseUrl}/${path.basename(data.thumbnailPath)}`;
     const crop3x2Url = `${baseUrl}/${path.basename(data.crop3x2Path)}`;
     const crop4x3Url = `${baseUrl}/${path.basename(data.crop4x3Path)}`;
@@ -39,7 +39,7 @@ export async function saveImage(
     });
 
     logger.log(`[SAVE_IMAGE] Image record created with ID: ${image.id}`);
-    logger.log(`[SAVE_IMAGE] Original: ${originalUrl}`);
+    logger.log(`[SAVE_IMAGE] Original: ${originalUrl} ${data.r2Url ? '(R2)' : '(local)'}`);
     logger.log(`[SAVE_IMAGE] Thumbnail: ${thumbnailUrl}`);
     logger.log(`[SAVE_IMAGE] 3:2 crop: ${crop3x2Url}`);
     logger.log(`[SAVE_IMAGE] 4:3 crop: ${crop4x3Url}`);

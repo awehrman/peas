@@ -42,4 +42,6 @@ export interface ImageSaveData {
     height: number;
     format: string;
   };
+  r2Key?: string;
+  r2Url?: string;
 }

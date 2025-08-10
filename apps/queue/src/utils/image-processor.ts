@@ -104,8 +104,31 @@ export class ImageProcessor {
       const image = sharp(inputPath);
       const metadata = await image.metadata();
 
+      // Add input validation and debug logging
+      console.log(`[PROCESS_IMAGE] Processing image: ${filename}`);
+      console.log(`[PROCESS_IMAGE] Image dimensions: ${metadata.width}x${metadata.height}`);
+      console.log(`[PROCESS_IMAGE] Image format: ${metadata.format || 'unknown'}`);
+      console.log(`[PROCESS_IMAGE] Input path: ${inputPath}`);
+
+      // Validate image dimensions first
+      const minDimension = 1;
+      const maxDimension = 10000; // Reasonable maximum
+      
+      if (metadata.width < minDimension || metadata.height < minDimension) {
+        throw new Error(`Image too small: ${metadata.width}x${metadata.height}. Minimum dimensions: ${minDimension}x${minDimension}`);
+      }
+      
       if (!metadata.width || !metadata.height) {
         throw new Error("Invalid image: unable to determine dimensions");
+      }
+      
+      if (metadata.width > maxDimension || metadata.height > maxDimension) {
+        console.log(`[PROCESS_IMAGE] Warning: Large image detected (${metadata.width}x${metadata.height}), processing may be slow`);
+      }
+
+      // Validate image format
+      if (!metadata.format || !['jpeg', 'jpg', 'png', 'webp', 'gif', 'bmp'].includes(metadata.format.toLowerCase())) {
+        console.log(`[PROCESS_IMAGE] Warning: Unsupported format: ${metadata.format}, attempting to process anyway`);
       }
 
       // Process original image (resize if too large)
@@ -264,6 +287,20 @@ export class ImageProcessor {
       throw new Error("Invalid image dimensions");
     }
 
+    // Add debug logging for troubleshooting
+    console.log(`[PROCESS_CROP] Image: ${width}x${height}, Target ratio: ${targetRatio}`);
+    console.log(`[PROCESS_CROP] Target dimensions: ${targetWidth}x${targetHeight}`);
+
+    // Check if image is too small for meaningful cropping
+    const minImageSize = 10; // Minimum size for cropping
+    if (width < minImageSize || height < minImageSize) {
+      console.log(`[PROCESS_CROP] Image too small for cropping (${width}x${height}), using resize fallback`);
+      return image.resize(targetWidth, targetHeight, {
+        fit: "inside",
+        withoutEnlargement: true,
+      });
+    }
+
     // Calculate crop dimensions to maintain target aspect ratio
     let cropWidth = width;
     let cropHeight = height;
@@ -276,30 +313,59 @@ export class ImageProcessor {
       cropHeight = Math.round(width / targetRatio);
     }
 
+    // Ensure minimum crop dimensions
+    const minCropSize = 1;
+    cropWidth = Math.max(cropWidth, minCropSize);
+    cropHeight = Math.max(cropHeight, minCropSize);
+
+    // Ensure crop doesn't exceed image boundaries
+    cropWidth = Math.min(cropWidth, width);
+    cropHeight = Math.min(cropHeight, height);
+
     // Center the crop
     const left = Math.round((width - cropWidth) / 2);
     const top = Math.round((height - cropHeight) / 2);
 
-    // Validate crop dimensions
+    // Ensure crop position is within bounds
+    const finalLeft = Math.max(0, Math.min(left, width - cropWidth));
+    const finalTop = Math.max(0, Math.min(top, height - cropHeight));
+
+    console.log(`[PROCESS_CROP] Calculated crop: ${cropWidth}x${cropHeight} at (${finalLeft},${finalTop})`);
+
+    // Final validation of crop dimensions
     if (
-      left < 0 ||
-      top < 0 ||
+      finalLeft < 0 ||
+      finalTop < 0 ||
       cropWidth <= 0 ||
       cropHeight <= 0 ||
-      left + cropWidth > width ||
-      top + cropHeight > height
+      finalLeft + cropWidth > width ||
+      finalTop + cropHeight > height
     ) {
-      throw new Error(
-        `Invalid crop dimensions: left=${left}, top=${top}, width=${cropWidth}, height=${cropHeight} for image ${width}x${height}`
-      );
-    }
-
-    return image
-      .extract({ left, top, width: cropWidth, height: cropHeight })
-      .resize(targetWidth, targetHeight, {
-        fit: "fill",
+      console.log(`[PROCESS_CROP] Invalid crop dimensions detected, using resize fallback`);
+      console.log(`[PROCESS_CROP] Final crop: left=${finalLeft}, top=${finalTop}, width=${cropWidth}, height=${cropHeight} for image ${width}x${height}`);
+      
+      // Fall back to resizing without cropping
+      return image.resize(targetWidth, targetHeight, {
+        fit: "inside",
         withoutEnlargement: true,
       });
+    }
+
+    try {
+      return image
+        .extract({ left: finalLeft, top: finalTop, width: cropWidth, height: cropHeight })
+        .resize(targetWidth, targetHeight, {
+          fit: "fill",
+          withoutEnlargement: true,
+        });
+    } catch (extractError) {
+      console.log(`[PROCESS_CROP] Sharp extract failed: ${extractError}, using resize fallback`);
+      // Fall back to resizing without cropping if extract fails
+      return image.resize(targetWidth, targetHeight, {
+        fit: "inside",
+        withoutEnlargement: true,
+      });
+    }
   }
 
   /**

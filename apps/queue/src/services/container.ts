@@ -1,6 +1,7 @@
 import { ServiceFactory } from "./factory";
 import { registerDatabase } from "./register-database";
 import { registerQueues } from "./register-queues";
+import { R2Service } from "./r2";
 
 import type {
   NoteWithParsedLines,
@@ -103,6 +104,31 @@ export interface IStatusBroadcasterService {
 }
 
 /**
+ * R2 Storage service interface
+ */
+export interface IR2Service {
+  uploadFile: (
+    filePath: string,
+    key: string,
+    contentType?: string
+  ) => Promise<{ key: string; url: string; size: number; etag?: string }>;
+  uploadBuffer: (
+    buffer: Buffer,
+    key: string,
+    contentType?: string
+  ) => Promise<{ key: string; url: string; size: number; etag?: string }>;
+  generatePresignedUploadUrl: (
+    key: string,
+    contentType: string,
+    expiresIn?: number
+  ) => Promise<string>;
+  generatePresignedDownloadUrl: (
+    key: string,
+    expiresIn?: number
+  ) => Promise<string>;
+}
+
+/**
  * Logger service interface
  */
 export interface ILoggerService {
@@ -148,6 +174,7 @@ export interface IServiceContainer {
   statusBroadcaster: IStatusBroadcasterService;
   logger: ILoggerService;
   config: IConfigService;
+  r2?: IR2Service;
   _workers?: {
     noteWorker?: Worker;
     imageWorker?: Worker;
@@ -168,6 +195,7 @@ export class ServiceContainer implements IServiceContainer {
   public readonly statusBroadcaster: IStatusBroadcasterService;
   public readonly logger: ILoggerService;
   public readonly config: IConfigService;
+  public readonly r2?: IR2Service;
   public queues!: IQueueService;
   public database!: IDatabaseService;
   public _workers?: {
@@ -182,6 +210,14 @@ export class ServiceContainer implements IServiceContainer {
     this.statusBroadcaster = ServiceFactory.createStatusBroadcaster();
     this.logger = ServiceFactory.createLoggerService();
     this.config = ServiceFactory.createConfigService();
+    
+    // Initialize R2 service if configured
+    if (R2Service.isConfigured()) {
+      const r2Service = R2Service.fromEnvironment();
+      if (r2Service) {
+        this.r2 = r2Service;
+      }
+    }
   }
 
   public static async getInstance(): Promise<ServiceContainer> {

@@ -43,6 +43,7 @@ export class ImageWorker extends BaseWorker<
   >[] {
     console.log("[IMAGE_WORKER] Creating action pipeline");
     const pipeline = [
+      this.actionFactory.create(ActionName.UPLOAD_ORIGINAL, this.dependencies),
       this.actionFactory.create(ActionName.PROCESS_IMAGE, this.dependencies),
       this.actionFactory.create(ActionName.SAVE_IMAGE, this.dependencies),
       this.actionFactory.create(

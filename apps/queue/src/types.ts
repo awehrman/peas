@@ -77,6 +77,7 @@ export enum ActionName {
 
   // Image actions
   PROCESS_IMAGE = "process_image",
+  UPLOAD_ORIGINAL = "upload_original",
   SAVE_IMAGE = "save_image",
   IMAGE_COMPLETED_STATUS = "image_completed_status",
 
@@ -299,6 +300,7 @@ export const ACTION_CATEGORIES: Record<ActionName, ActionCategory> = {
 
   // Image actions
   [ActionName.PROCESS_IMAGE]: ActionCategory.IMAGE,
+  [ActionName.UPLOAD_ORIGINAL]: ActionCategory.IMAGE,
   [ActionName.SAVE_IMAGE]: ActionCategory.IMAGE,
   [ActionName.IMAGE_COMPLETED_STATUS]: ActionCategory.IMAGE,
 

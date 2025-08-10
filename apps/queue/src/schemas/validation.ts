@@ -63,6 +63,13 @@ export const EnvironmentSchema = z.object({
     .transform((val) => parseInt(val, 10))
     .pipe(z.number().positive())
     .default(10485760), // 10MB
+
+  // Cloudflare R2 Storage configuration
+  R2_ACCOUNT_ID: z.string().optional(),
+  R2_ACCESS_KEY_ID: z.string().optional(),
+  R2_SECRET_ACCESS_KEY: z.string().optional(),
+  R2_BUCKET_NAME: z.string().optional(),
+  R2_PUBLIC_URL: z.string().url().optional(),
 });
 
 export type Environment = z.infer<typeof EnvironmentSchema>;

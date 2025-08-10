@@ -10,9 +10,10 @@ import {
   registerActions,
 } from "../../workers/shared/action-registry";
 
+import { ImageCompletedStatusAction } from "./actions/image-completed-status/action";
 import { ProcessImageAction } from "./actions/process-image/action";
 import { SaveImageAction } from "./actions/save-image/action";
-import { ImageCompletedStatusAction } from "./actions/image-completed-status/action";
+import { UploadOriginalAction } from "./actions/upload-original/action";
 
 /**
  * Register all image actions in the given ActionFactory with type safety
@@ -26,15 +27,20 @@ export function registerImageActions(
 ): void {
   console.log("[IMAGE_SERVICE_REGISTER] Starting image action registration");
   console.log("[IMAGE_SERVICE_REGISTER] Factory available:", !!factory);
-  
+
   if (!factory || typeof factory !== "object") {
     console.error("[IMAGE_SERVICE_REGISTER] Invalid factory provided");
     throw new Error("Invalid factory");
   }
-  
+
   console.log("[IMAGE_SERVICE_REGISTER] Registering actions with factory");
-  
+
   registerActions(factory, [
+    createActionRegistration<
+      ImageProcessingData,
+      ImageWorkerDependencies,
+      ImageSaveData
+    >(ActionName.UPLOAD_ORIGINAL, UploadOriginalAction),
     createActionRegistration<
       ImageProcessingData,
       ImageWorkerDependencies,
@@ -51,6 +57,6 @@ export function registerImageActions(
       ImageSaveData
     >(ActionName.IMAGE_COMPLETED_STATUS, ImageCompletedStatusAction),
   ]);
-  
+
   console.log("[IMAGE_SERVICE_REGISTER] Image actions registered successfully");
-} 
+}

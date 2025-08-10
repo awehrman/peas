@@ -4,6 +4,7 @@ import type {
   ImageProcessingData,
   ImageSaveData,
 } from "../../../../workers/image/types";
+import { LogLevel } from "../../../../types";
 
 export async function processImage(
   data: ImageProcessingData,
@@ -16,6 +17,18 @@ export async function processImage(
       `[PROCESS_IMAGE] Starting image processing for note: ${data.noteId}`
     );
     logger.log(`[PROCESS_IMAGE] Input path: ${data.imagePath}`);
+    logger.log(`[PROCESS_IMAGE] Filename: ${data.filename}`);
+    logger.log(`[PROCESS_IMAGE] Output directory: ${data.outputDir}`);
+
+    // Validate input file exists
+    try {
+      const fs = await import("fs/promises");
+      await fs.access(data.imagePath);
+    } catch {
+      throw new Error(
+        `Input file not found or not accessible: ${data.imagePath}`
+      );
+    }
 
     // Initialize image processor
     const processor = new ImageProcessor();
@@ -53,7 +66,28 @@ export async function processImage(
       metadata: result.metadata,
     };
   } catch (error) {
-    logger.log(`[PROCESS_IMAGE] Image processing failed: ${error}`);
+    const processingTime = Date.now() - startTime;
+    const errorMessage = error instanceof Error ? error.message : String(error);
+
+    logger.log(
+      `[PROCESS_IMAGE] Image processing failed after ${processingTime}ms: ${errorMessage}`
+    );
+    logger.log(`[PROCESS_IMAGE] Error details:`, LogLevel.ERROR, {
+      error: errorMessage,
+      noteId: data.noteId,
+      importId: data.importId,
+      imagePath: data.imagePath,
+      filename: data.filename,
+      processingTime
+    });
+
+    // Add specific handling for extract_area errors
+    if (errorMessage.includes("extract_area")) {
+      logger.log(
+        `[PROCESS_IMAGE] Extract area error detected - this may be due to invalid image dimensions or format`
+      );
+    }
+
     throw error;
   }
 }
