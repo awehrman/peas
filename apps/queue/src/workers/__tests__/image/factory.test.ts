@@ -5,6 +5,7 @@ import type { IServiceContainer } from "../../../services/container";
 import type { StructuredLogger } from "../../../types";
 import { createImageWorker } from "../../image/factory";
 import type { ImageWorkerDependencies } from "../../image/types";
+import { ImageWorker } from "../../image/worker";
 
 // Mock dependencies
 vi.mock("../../image/dependencies");
@@ -29,7 +30,7 @@ describe("Image Worker Factory", () => {
       warn: vi.fn(),
       info: vi.fn(),
       debug: vi.fn(),
-    } as any;
+    } as StructuredLogger;
 
     mockContainer = {
       logger: mockLogger,
@@ -56,7 +57,7 @@ describe("Image Worker Factory", () => {
     const { ImageWorker } = await import("../../image/worker");
 
     vi.mocked(buildImageWorkerDependencies).mockReturnValue(mockDependencies);
-    vi.mocked(ImageWorker).mockImplementation(() => mockImageWorker as any);
+    vi.mocked(ImageWorker).mockImplementation(() => mockImageWorker as ImageWorker);
   });
 
   describe("createImageWorker", () => {

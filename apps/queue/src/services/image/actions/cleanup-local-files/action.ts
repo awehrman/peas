@@ -1,4 +1,4 @@
-import { updateImageCompletedStatus } from "./service";
+import { cleanupLocalFiles } from "./service";
 
 import { ActionName } from "../../../../types";
 import { BaseAction } from "../../../../workers/core/base-action";
@@ -8,12 +8,12 @@ import type {
   ImageWorkerDependencies,
 } from "../../../../workers/image/types";
 
-export class ImageCompletedStatusAction extends BaseAction<
+export class CleanupLocalFilesAction extends BaseAction<
   ImageJobData,
   ImageWorkerDependencies,
   ImageJobData
 > {
-  name = ActionName.IMAGE_COMPLETED_STATUS;
+  name = ActionName.CLEANUP_LOCAL_FILES;
 
   async execute(
     data: ImageJobData,
@@ -24,10 +24,11 @@ export class ImageCompletedStatusAction extends BaseAction<
       data,
       deps,
       context,
-      serviceCall: () => updateImageCompletedStatus(data, deps.serviceContainer, deps.logger),
-      contextName: "image_completed_status",
-      startMessage: "Image completed status update started",
-      completionMessage: "Image completed status update completed",
+      serviceCall: () =>
+        cleanupLocalFiles(data, deps.serviceContainer, deps.logger),
+      contextName: "cleanup_local_files",
+      startMessage: "Cleanup local files started",
+      completionMessage: "Cleanup local files completed",
     });
   }
 }

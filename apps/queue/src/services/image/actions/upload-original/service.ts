@@ -1,17 +1,17 @@
 import path from "path";
 import { promises as fs } from "fs";
 
-import type { ImageProcessingData } from "../../../../workers/image/types";
+import type { ImageJobData } from "../../../../workers/image/types";
 import type { IServiceContainer } from "../../../../services/container";
 import type { StructuredLogger } from "../../../../types";
 
-export interface UploadOriginalData extends ImageProcessingData {
+export interface UploadOriginalData extends ImageJobData {
   r2Key?: string;
   r2Url?: string;
 }
 
 export async function uploadOriginal(
-  data: ImageProcessingData,
+  data: ImageJobData,
   serviceContainer: IServiceContainer,
   logger: StructuredLogger
 ): Promise<UploadOriginalData> {

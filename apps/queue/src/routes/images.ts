@@ -50,23 +50,27 @@ imagesRouter.post(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const files = (req as any).files as any[];
       console.log(`[IMAGES_ROUTE] Received ${files?.length || 0} files`);
-      
+
       // Also check for directories and other files
       const formData = req.body;
       console.log("[IMAGES_ROUTE] Form data:", formData);
-      
+
       if (!files || files.length === 0) {
         console.log("[IMAGES_ROUTE] No files uploaded");
-        
+
         // Check if directories were sent
         if (formData.directories) {
-          console.log("[IMAGES_ROUTE] Directories detected:", formData.directories);
-          return res.status(HttpStatus.BAD_REQUEST).json({ 
-            error: "Directories cannot be processed directly. Please select individual image files from the directory.",
-            directories: formData.directories
+          console.log(
+            "[IMAGES_ROUTE] Directories detected:",
+            formData.directories
+          );
+          return res.status(HttpStatus.BAD_REQUEST).json({
+            error:
+              "Directories cannot be processed directly. Please select individual image files from the directory.",
+            directories: formData.directories,
           });
         }
-        
+
         return res
           .status(HttpStatus.BAD_REQUEST)
           .json({ error: "No images uploaded" });
@@ -93,23 +97,28 @@ imagesRouter.post(
       const results = [];
 
       for (const file of files) {
-        console.log(`[IMAGES_ROUTE] Processing file: ${file.originalname} -> ${file.filename}`);
-        
+        console.log(
+          `[IMAGES_ROUTE] Processing file: ${file.originalname} -> ${file.filename}`
+        );
+
         // Check if this is actually an image file
-        const isImage = file.mimetype.startsWith('image/') || 
-                       /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(file.originalname);
-        
+        const isImage =
+          file.mimetype.startsWith("image/") ||
+          /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(file.originalname);
+
         if (!isImage) {
-          console.log(`[IMAGES_ROUTE] Skipping non-image file: ${file.originalname}`);
+          console.log(
+            `[IMAGES_ROUTE] Skipping non-image file: ${file.originalname}`
+          );
           results.push({
             originalName: file.originalname,
             filename: file.filename,
             status: "skipped",
-            reason: "Not an image file"
+            reason: "Not an image file",
           });
           continue;
         }
-        
+
         const importId = `import-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
         const jobData = {
@@ -118,14 +127,40 @@ imagesRouter.post(
           imagePath: file.path,
           outputDir: path.join(process.cwd(), "uploads", "processed"),
           filename: file.filename,
+          // Initialize processed image paths (will be set by PROCESS_IMAGE)
+          originalPath: "",
+          thumbnailPath: "",
+          crop3x2Path: "",
+          crop4x3Path: "",
+          crop16x9Path: "",
+          // Initialize file sizes (will be set by PROCESS_IMAGE)
+          originalSize: 0,
+          thumbnailSize: 0,
+          crop3x2Size: 0,
+          crop4x3Size: 0,
+          crop16x9Size: 0,
+          // Initialize metadata (will be set by PROCESS_IMAGE)
+          metadata: {
+            width: 0,
+            height: 0,
+            format: "unknown",
+          },
+          // R2 information (will be set by UPLOAD_ORIGINAL)
+          r2Key: undefined,
+          r2Url: undefined,
         };
 
-        console.log(`[IMAGES_ROUTE] Adding job to image queue with data:`, jobData);
+        console.log(
+          `[IMAGES_ROUTE] Adding job to image queue with data:`,
+          jobData
+        );
 
         // Add image processing job to queue
-        await imageQueue.add(ActionName.PROCESS_IMAGE, jobData);
+        await imageQueue.add(ActionName.UPLOAD_ORIGINAL, jobData);
 
-        console.log(`[IMAGES_ROUTE] Job added to queue for file: ${file.originalname}`);
+        console.log(
+          `[IMAGES_ROUTE] Job added to queue for file: ${file.originalname}`
+        );
 
         results.push({
           originalName: file.originalname,
@@ -135,7 +170,9 @@ imagesRouter.post(
         });
       }
 
-      console.log(`[IMAGES_ROUTE] Successfully processed ${files.length} image(s)`);
+      console.log(
+        `[IMAGES_ROUTE] Successfully processed ${files.length} image(s)`
+      );
       res.status(HttpStatus.OK).json({
         message: `${files.length} image(s) uploaded and queued for processing`,
         results,

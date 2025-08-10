@@ -78,7 +78,9 @@ export enum ActionName {
   // Image actions
   PROCESS_IMAGE = "process_image",
   UPLOAD_ORIGINAL = "upload_original",
+  UPLOAD_PROCESSED = "upload_processed",
   SAVE_IMAGE = "save_image",
+  CLEANUP_LOCAL_FILES = "cleanup_local_files",
   IMAGE_COMPLETED_STATUS = "image_completed_status",
 
   // Categorization actions
@@ -261,12 +263,25 @@ export const QUEUE_ACTIONS: Record<QueueName, ActionName[]> = {
     ActionName.FORMAT_INSTRUCTION_LINE,
     ActionName.SAVE_INSTRUCTION_LINE,
   ],
-  [QueueName.IMAGE]: [ActionName.SAVE_IMAGE, ActionName.IMAGE_COMPLETED_STATUS],
+  [QueueName.IMAGE]: [
+    ActionName.UPLOAD_ORIGINAL,
+    ActionName.PROCESS_IMAGE,
+    ActionName.UPLOAD_PROCESSED,
+    ActionName.SAVE_IMAGE,
+    ActionName.CLEANUP_LOCAL_FILES,
+    ActionName.IMAGE_COMPLETED_STATUS,
+  ],
   [QueueName.CATEGORIZATION]: [
     ActionName.PROCESS_CATEGORIZATION,
     ActionName.SAVE_CATEGORIZATION,
   ],
-  [QueueName.SOURCE]: [ActionName.SAVE_SOURCE],
+  [QueueName.SOURCE]: [
+    ActionName.PROCESS_SOURCE,
+    ActionName.SAVE_SOURCE,
+    ActionName.SOURCE_PROCESSING_STATUS,
+    ActionName.SOURCE_COMPLETED_STATUS,
+    ActionName.BROADCAST_SOURCE_COMPLETED,
+  ],
   [QueueName.PATTERN_TRACKING]: [ActionName.TRACK_PATTERN],
 };
 
@@ -301,7 +316,9 @@ export const ACTION_CATEGORIES: Record<ActionName, ActionCategory> = {
   // Image actions
   [ActionName.PROCESS_IMAGE]: ActionCategory.IMAGE,
   [ActionName.UPLOAD_ORIGINAL]: ActionCategory.IMAGE,
+  [ActionName.UPLOAD_PROCESSED]: ActionCategory.IMAGE,
   [ActionName.SAVE_IMAGE]: ActionCategory.IMAGE,
+  [ActionName.CLEANUP_LOCAL_FILES]: ActionCategory.IMAGE,
   [ActionName.IMAGE_COMPLETED_STATUS]: ActionCategory.IMAGE,
 
   // Categorization actions

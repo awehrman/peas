@@ -1,15 +1,12 @@
 import type { StructuredLogger } from "../../../../types";
-import { ImageProcessor } from "../../../../utils/image-processor";
-import type {
-  ImageProcessingData,
-  ImageSaveData,
-} from "../../../../workers/image/types";
 import { LogLevel } from "../../../../types";
+import { ImageProcessor } from "../../../../utils/image-processor";
+import type { ImageJobData } from "../../../../workers/image/types";
 
 export async function processImage(
-  data: ImageProcessingData,
+  data: ImageJobData,
   logger: StructuredLogger
-): Promise<ImageSaveData> {
+): Promise<ImageJobData> {
   const startTime = Date.now();
 
   try {
@@ -51,8 +48,7 @@ export async function processImage(
     logger.log(`[PROCESS_IMAGE] 16:9 crop size: ${result.crop16x9Size} bytes`);
 
     return {
-      noteId: data.noteId,
-      importId: data.importId,
+      ...data,
       originalPath: result.originalPath,
       thumbnailPath: result.thumbnailPath,
       crop3x2Path: result.crop3x2Path,
@@ -78,7 +74,7 @@ export async function processImage(
       importId: data.importId,
       imagePath: data.imagePath,
       filename: data.filename,
-      processingTime
+      processingTime,
     });
 
     // Add specific handling for extract_area errors

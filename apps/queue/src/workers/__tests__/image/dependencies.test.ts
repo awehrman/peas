@@ -20,7 +20,7 @@ describe("Image Worker Dependencies", () => {
       warn: vi.fn(),
       info: vi.fn(),
       debug: vi.fn(),
-    } as any;
+    } as StructuredLogger;
 
     mockContainer = {
       logger: mockLogger,

@@ -1,24 +1,32 @@
 import path from "path";
 
-import type { ImageSaveData } from "../../../../workers/image/types";
 import type { IServiceContainer } from "../../../../services/container";
 import type { StructuredLogger } from "../../../../types";
+import type { ImageJobData } from "../../../../workers/image/types";
 
 export async function saveImage(
-  data: ImageSaveData,
+  data: ImageJobData,
   serviceContainer: IServiceContainer,
   logger: StructuredLogger
-): Promise<ImageSaveData> {
+): Promise<ImageJobData> {
   try {
     logger.log(`[SAVE_IMAGE] Saving image URLs for note: ${data.noteId}`);
 
-    // Use R2 URL for original if available, otherwise use local path
+    // Use R2 URLs if available, otherwise fall back to local paths
     const baseUrl = process.env.IMAGE_BASE_URL || "/images";
-    const originalUrl = data.r2Url || `${baseUrl}/${path.basename(data.originalPath)}`;
-    const thumbnailUrl = `${baseUrl}/${path.basename(data.thumbnailPath)}`;
-    const crop3x2Url = `${baseUrl}/${path.basename(data.crop3x2Path)}`;
-    const crop4x3Url = `${baseUrl}/${path.basename(data.crop4x3Path)}`;
-    const crop16x9Url = `${baseUrl}/${path.basename(data.crop16x9Path)}`;
+
+    const originalUrl =
+      data.r2OriginalUrl ||
+      data.r2Url ||
+      `${baseUrl}/${path.basename(data.originalPath)}`;
+    const thumbnailUrl =
+      data.r2ThumbnailUrl || `${baseUrl}/${path.basename(data.thumbnailPath)}`;
+    const crop3x2Url =
+      data.r2Crop3x2Url || `${baseUrl}/${path.basename(data.crop3x2Path)}`;
+    const crop4x3Url =
+      data.r2Crop4x3Url || `${baseUrl}/${path.basename(data.crop4x3Path)}`;
+    const crop16x9Url =
+      data.r2Crop16x9Url || `${baseUrl}/${path.basename(data.crop16x9Path)}`;
 
     // Create Image record in database
     const prisma = serviceContainer.database.prisma;
@@ -39,11 +47,21 @@ export async function saveImage(
     });
 
     logger.log(`[SAVE_IMAGE] Image record created with ID: ${image.id}`);
-    logger.log(`[SAVE_IMAGE] Original: ${originalUrl} ${data.r2Url ? '(R2)' : '(local)'}`);
-    logger.log(`[SAVE_IMAGE] Thumbnail: ${thumbnailUrl}`);
-    logger.log(`[SAVE_IMAGE] 3:2 crop: ${crop3x2Url}`);
-    logger.log(`[SAVE_IMAGE] 4:3 crop: ${crop4x3Url}`);
-    logger.log(`[SAVE_IMAGE] 16:9 crop: ${crop16x9Url}`);
+    logger.log(
+      `[SAVE_IMAGE] Original: ${originalUrl} ${data.r2OriginalUrl ? "(R2)" : "(local)"}`
+    );
+    logger.log(
+      `[SAVE_IMAGE] Thumbnail: ${thumbnailUrl} ${data.r2ThumbnailUrl ? "(R2)" : "(local)"}`
+    );
+    logger.log(
+      `[SAVE_IMAGE] 3:2 crop: ${crop3x2Url} ${data.r2Crop3x2Url ? "(R2)" : "(local)"}`
+    );
+    logger.log(
+      `[SAVE_IMAGE] 4:3 crop: ${crop4x3Url} ${data.r2Crop4x3Url ? "(R2)" : "(local)"}`
+    );
+    logger.log(
+      `[SAVE_IMAGE] 16:9 crop: ${crop16x9Url} ${data.r2Crop16x9Url ? "(R2)" : "(local)"}`
+    );
 
     return {
       ...data,
@@ -53,4 +71,4 @@ export async function saveImage(
     logger.log(`[SAVE_IMAGE] Failed to save image URLs: ${error}`);
     throw error;
   }
-} 
+}

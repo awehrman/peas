@@ -1,4 +1,4 @@
-import { promises as fs } from "fs";
+import fs from "fs/promises";
 import path from "path";
 import sharp from "sharp";
 
@@ -51,21 +51,18 @@ export class ImageProcessor {
       originalWidth: options.originalWidth || 1920,
       originalHeight: options.originalHeight || 1080,
       thumbnailWidth: options.thumbnailWidth || 300,
-      thumbnailHeight: options.thumbnailHeight || 300, // 1:1 aspect ratio
+      thumbnailHeight: options.thumbnailHeight || 300,
       crop3x2Width: options.crop3x2Width || 1200,
-      crop3x2Height: options.crop3x2Height || 800, // 3:2 aspect ratio
+      crop3x2Height: options.crop3x2Height || 800,
       crop4x3Width: options.crop4x3Width || 1200,
-      crop4x3Height: options.crop4x3Height || 900, // 4:3 aspect ratio
+      crop4x3Height: options.crop4x3Height || 900,
       crop16x9Width: options.crop16x9Width || 1280,
-      crop16x9Height: options.crop16x9Height || 720, // 16:9 aspect ratio
+      crop16x9Height: options.crop16x9Height || 720,
       quality: options.quality || 85,
       format: options.format || "jpeg",
     };
   }
 
-  /**
-   * Process an image file to create original and multiple aspect ratio crops
-   */
   async processImage(
     inputPath: string,
     outputDir: string,
@@ -76,70 +73,71 @@ export class ImageProcessor {
     // Ensure output directory exists
     await fs.mkdir(outputDir, { recursive: true });
 
-    // Generate output file paths
+    // Generate output filenames with consistent naming
     const baseName = path.parse(filename).name;
-    const originalPath = path.join(
-      outputDir,
-      `${baseName}_original.${this.options.format}`
-    );
+    const fileExt = path.extname(filename);
+
+    const originalPath = path.join(outputDir, `${baseName}-original${fileExt}`);
     const thumbnailPath = path.join(
       outputDir,
-      `${baseName}_thumbnail.${this.options.format}`
+      `${baseName}-thumbnail${fileExt}`
     );
-    const crop3x2Path = path.join(
-      outputDir,
-      `${baseName}_3x2.${this.options.format}`
-    );
-    const crop4x3Path = path.join(
-      outputDir,
-      `${baseName}_4x3.${this.options.format}`
-    );
-    const crop16x9Path = path.join(
-      outputDir,
-      `${baseName}_16x9.${this.options.format}`
-    );
+    const crop3x2Path = path.join(outputDir, `${baseName}-crop3x2${fileExt}`);
+    const crop4x3Path = path.join(outputDir, `${baseName}-crop4x3${fileExt}`);
+    const crop16x9Path = path.join(outputDir, `${baseName}-crop16x9${fileExt}`);
 
     try {
-      // Load the image
+      // Load the image and get metadata
       const image = sharp(inputPath);
       const metadata = await image.metadata();
 
-      // Add input validation and debug logging
       console.log(`[PROCESS_IMAGE] Processing image: ${filename}`);
-      console.log(`[PROCESS_IMAGE] Image dimensions: ${metadata.width}x${metadata.height}`);
-      console.log(`[PROCESS_IMAGE] Image format: ${metadata.format || 'unknown'}`);
-      console.log(`[PROCESS_IMAGE] Input path: ${inputPath}`);
+      console.log(
+        `[PROCESS_IMAGE] Image dimensions: ${metadata.width}x${metadata.height}`
+      );
+      console.log(
+        `[PROCESS_IMAGE] Image format: ${metadata.format || "unknown"}`
+      );
 
-      // Validate image dimensions first
-      const minDimension = 1;
-      const maxDimension = 10000; // Reasonable maximum
-      
-      if (metadata.width < minDimension || metadata.height < minDimension) {
-        throw new Error(`Image too small: ${metadata.width}x${metadata.height}. Minimum dimensions: ${minDimension}x${minDimension}`);
-      }
-      
-      if (!metadata.width || !metadata.height) {
+      // Validate image dimensions
+      if (metadata.width === undefined || metadata.height === undefined) {
         throw new Error("Invalid image: unable to determine dimensions");
       }
-      
-      if (metadata.width > maxDimension || metadata.height > maxDimension) {
-        console.log(`[PROCESS_IMAGE] Warning: Large image detected (${metadata.width}x${metadata.height}), processing may be slow`);
+
+      if (metadata.width < 1 || metadata.height < 1) {
+        throw new Error(
+          `Image too small: ${metadata.width}x${metadata.height}. Minimum dimensions: 1x1`
+        );
       }
 
-      // Validate image format
-      if (!metadata.format || !['jpeg', 'jpg', 'png', 'webp', 'gif', 'bmp'].includes(metadata.format.toLowerCase())) {
-        console.log(`[PROCESS_IMAGE] Warning: Unsupported format: ${metadata.format}, attempting to process anyway`);
-      }
+      // Process the image variants
+      console.log(
+        `[PROCESS_IMAGE] Processing image variants with cropping and resizing`
+      );
 
-      // Process original image (resize if too large)
-      const originalImage = await this.processOriginal(image, metadata);
+      // Create original (resized)
+      const originalImage = image.resize(
+        this.options.originalWidth,
+        this.options.originalHeight,
+        {
+          fit: "inside",
+          withoutEnlargement: true,
+        }
+      );
       await originalImage.toFile(originalPath);
 
-      // Process thumbnail (1:1 aspect ratio)
-      const thumbnailImage = await this.processThumbnail(image, metadata);
+      // Create thumbnail
+      const thumbnailImage = image.resize(
+        this.options.thumbnailWidth,
+        this.options.thumbnailHeight,
+        {
+          fit: "cover",
+          withoutEnlargement: false,
+        }
+      );
       await thumbnailImage.toFile(thumbnailPath);
 
-      // Process 3:2 crop
+      // Create 3:2 crop
       const crop3x2Image = await this.processCrop(
         image,
         metadata,
@@ -149,7 +147,7 @@ export class ImageProcessor {
       );
       await crop3x2Image.toFile(crop3x2Path);
 
-      // Process 4:3 crop
+      // Create 4:3 crop
       const crop4x3Image = await this.processCrop(
         image,
         metadata,
@@ -159,7 +157,7 @@ export class ImageProcessor {
       );
       await crop4x3Image.toFile(crop4x3Path);
 
-      // Process 16:9 crop
+      // Create 16:9 crop
       const crop16x9Image = await this.processCrop(
         image,
         metadata,
@@ -218,177 +216,6 @@ export class ImageProcessor {
   }
 
   /**
-   * Process original image - resize if too large
-   */
-  private async processOriginal(
-    image: sharp.Sharp,
-    metadata: sharp.Metadata
-  ): Promise<sharp.Sharp> {
-    const { width, height } = metadata;
-
-    if (!width || !height) {
-      throw new Error("Invalid image dimensions");
-    }
-
-    // If image is larger than max dimensions, resize it
-    if (
-      width > this.options.originalWidth ||
-      height > this.options.originalHeight
-    ) {
-      return image.resize(
-        this.options.originalWidth,
-        this.options.originalHeight,
-        {
-          fit: "inside",
-          withoutEnlargement: true,
-        }
-      );
-    }
-
-    return image;
-  }
-
-  /**
-   * Process thumbnail image (1:1 aspect ratio)
-   */
-  private async processThumbnail(
-    image: sharp.Sharp,
-    metadata: sharp.Metadata
-  ): Promise<sharp.Sharp> {
-    const { width, height } = metadata;
-
-    if (!width || !height) {
-      throw new Error("Invalid image dimensions");
-    }
-
-    return image.resize(
-      this.options.thumbnailWidth,
-      this.options.thumbnailHeight,
-      {
-        fit: "cover",
-        position: "center",
-      }
-    );
-  }
-
-  /**
-   * Process crop with specified aspect ratio
-   */
-  private async processCrop(
-    image: sharp.Sharp,
-    metadata: sharp.Metadata,
-    targetRatio: number,
-    targetWidth: number,
-    targetHeight: number
-  ): Promise<sharp.Sharp> {
-    const { width, height } = metadata;
-
-    if (!width || !height) {
-      throw new Error("Invalid image dimensions");
-    }
-
-    // Add debug logging for troubleshooting
-    console.log(`[PROCESS_CROP] Image: ${width}x${height}, Target ratio: ${targetRatio}`);
-    console.log(`[PROCESS_CROP] Target dimensions: ${targetWidth}x${targetHeight}`);
-
-    // Check if image is too small for meaningful cropping
-    const minImageSize = 10; // Minimum size for cropping
-    if (width < minImageSize || height < minImageSize) {
-      console.log(`[PROCESS_CROP] Image too small for cropping (${width}x${height}), using resize fallback`);
-      return image.resize(targetWidth, targetHeight, {
-        fit: "inside",
-        withoutEnlargement: true,
-      });
-    }
-
-    // Calculate crop dimensions to maintain target aspect ratio
-    let cropWidth = width;
-    let cropHeight = height;
-
-    if (width / height > targetRatio) {
-      // Image is wider than target ratio, crop width
-      cropWidth = Math.round(height * targetRatio);
-    } else {
-      // Image is taller than target ratio, crop height
-      cropHeight = Math.round(width / targetRatio);
-    }
-
-    // Ensure minimum crop dimensions
-    const minCropSize = 1;
-    cropWidth = Math.max(cropWidth, minCropSize);
-    cropHeight = Math.max(cropHeight, minCropSize);
-
-    // Ensure crop doesn't exceed image boundaries
-    cropWidth = Math.min(cropWidth, width);
-    cropHeight = Math.min(cropHeight, height);
-
-    // Center the crop
-    const left = Math.round((width - cropWidth) / 2);
-    const top = Math.round((height - cropHeight) / 2);
-
-    // Ensure crop position is within bounds
-    const finalLeft = Math.max(0, Math.min(left, width - cropWidth));
-    const finalTop = Math.max(0, Math.min(top, height - cropHeight));
-
-    console.log(`[PROCESS_CROP] Calculated crop: ${cropWidth}x${cropHeight} at (${finalLeft},${finalTop})`);
-
-    // Final validation of crop dimensions
-    if (
-      finalLeft < 0 ||
-      finalTop < 0 ||
-      cropWidth <= 0 ||
-      cropHeight <= 0 ||
-      finalLeft + cropWidth > width ||
-      finalTop + cropHeight > height
-    ) {
-      console.log(`[PROCESS_CROP] Invalid crop dimensions detected, using resize fallback`);
-      console.log(`[PROCESS_CROP] Final crop: left=${finalLeft}, top=${finalTop}, width=${cropWidth}, height=${cropHeight} for image ${width}x${height}`);
-      
-      // Fall back to resizing without cropping
-      return image.resize(targetWidth, targetHeight, {
-        fit: "inside",
-        withoutEnlargement: true,
-      });
-    }
-
-    try {
-      return image
-        .extract({ left: finalLeft, top: finalTop, width: cropWidth, height: cropHeight })
-        .resize(targetWidth, targetHeight, {
-          fit: "fill",
-          withoutEnlargement: true,
-        });
-    } catch (extractError) {
-      console.log(`[PROCESS_CROP] Sharp extract failed: ${extractError}, using resize fallback`);
-      // Fall back to resizing without cropping if extract fails
-      return image.resize(targetWidth, targetHeight, {
-        fit: "inside",
-        withoutEnlargement: true,
-      });
-    }
-  }
-
-  /**
-   * Get image metadata
-   */
-  async getImageMetadata(filePath: string): Promise<ImageMetadata> {
-    const metadata = await sharp(filePath).metadata();
-
-    if (!metadata.width || !metadata.height || !metadata.format) {
-      throw new Error("Unable to read image metadata");
-    }
-
-    const stats = await fs.stat(filePath);
-
-    return {
-      width: metadata.width,
-      height: metadata.height,
-      format: metadata.format,
-      size: stats.size,
-    };
-  }
-
-  /**
    * Clean up files on error
    */
   private async cleanupFiles(filePaths: string[]): Promise<void> {
@@ -403,15 +230,80 @@ export class ImageProcessor {
   }
 
   /**
-   * Validate if file is a supported image
+   * Process image cropping with aspect ratio and target dimensions
    */
+  private async processCrop(
+    image: sharp.Sharp,
+    metadata: sharp.Metadata,
+    aspectRatio: number,
+    targetWidth: number,
+    targetHeight: number
+  ): Promise<sharp.Sharp> {
+    if (metadata.width === undefined || metadata.height === undefined) {
+      throw new Error("Invalid image metadata: missing dimensions");
+    }
+
+    const { width: originalWidth, height: originalHeight } = metadata;
+
+    // Calculate crop dimensions to maintain aspect ratio
+    let cropWidth = originalWidth;
+    let cropHeight = originalHeight;
+
+    if (originalWidth / originalHeight > aspectRatio) {
+      // Image is wider than target aspect ratio - crop width
+      cropWidth = Math.round(originalHeight * aspectRatio);
+    } else {
+      // Image is taller than target aspect ratio - crop height
+      cropHeight = Math.round(originalWidth / aspectRatio);
+    }
+
+    // Ensure crop dimensions don't exceed original dimensions
+    cropWidth = Math.min(cropWidth, originalWidth);
+    cropHeight = Math.min(cropHeight, originalHeight);
+
+    // Calculate crop position (center the crop)
+    const left = Math.max(0, Math.round((originalWidth - cropWidth) / 2));
+    const top = Math.max(0, Math.round((originalHeight - cropHeight) / 2));
+
+    // If the image is too small to crop meaningfully, just resize
+    if (cropWidth < 5 || cropHeight < 5) {
+      return image.resize(targetWidth, targetHeight, {
+        fit: "inside",
+        withoutEnlargement: true,
+      });
+    }
+
+    try {
+      // Perform the crop
+      const croppedImage = image.extract({
+        left,
+        top,
+        width: cropWidth,
+        height: cropHeight,
+      });
+
+      // Resize to target dimensions
+      return croppedImage.resize(targetWidth, targetHeight, {
+        fit: "fill",
+        withoutEnlargement: false,
+      });
+    } catch (error) {
+      // If extract fails, fall back to resize
+      console.warn(`Crop failed, falling back to resize: ${error}`);
+      return image.resize(targetWidth, targetHeight, {
+        fit: "inside",
+        withoutEnlargement: true,
+      });
+    }
+  }
+
   static isSupportedImage(filename: string): boolean {
     const supportedExtensions = [
       ".jpg",
       ".jpeg",
       ".png",
-      ".webp",
       ".gif",
+      ".webp",
       ".bmp",
     ];
     const ext = path.extname(filename).toLowerCase();

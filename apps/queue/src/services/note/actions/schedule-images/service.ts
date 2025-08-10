@@ -135,25 +135,36 @@ export async function processImages(
         importId: data.importId,
         imagePath: imageFile.filePath,
         filename: imageFile.fileName,
-        originalImageUrl: `file://${imageFile.filePath}`,
-        originalSize: imageFile.size,
-        originalFormat: imageFile.extension.replace(".", ""),
-        processingStatus: "pending",
-        jobId: `${data.noteId}-image-${index}`,
         outputDir: path.join(process.cwd(), "uploads", "processed"),
+        // Initialize processed image paths (will be set by PROCESS_IMAGE)
+        originalPath: "",
+        thumbnailPath: "",
+        crop3x2Path: "",
+        crop4x3Path: "",
+        crop16x9Path: "",
+        // Initialize file sizes (will be set by PROCESS_IMAGE)
+        originalSize: 0,
+        thumbnailSize: 0,
+        crop3x2Size: 0,
+        crop4x3Size: 0,
+        crop16x9Size: 0,
+        // Initialize metadata (will be set by PROCESS_IMAGE)
         metadata: {
-          imageIndex: index,
-          totalImages: imageFiles.length,
-          originalDirectory: imageDirectory,
+          width: 0,
+          height: 0,
+          format: "unknown",
         },
+        // R2 information (will be set by UPLOAD_ORIGINAL)
+        r2Key: undefined,
+        r2Url: undefined,
       };
 
       logger.log(
         `[SCHEDULE_IMAGES] Adding job to queue for image ${index}: ${imageFile.fileName}`
       );
 
-      // Schedule a single job - the worker pipeline will handle process + save
-      await imageQueue.add(ActionName.PROCESS_IMAGE, imageJobData);
+      // Schedule a single job - the worker pipeline will handle upload + process + save
+      await imageQueue.add(ActionName.UPLOAD_ORIGINAL, imageJobData);
     }
 
     logger.log(

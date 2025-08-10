@@ -4,23 +4,22 @@ import { ActionName } from "../../../../types";
 import { BaseAction } from "../../../../workers/core/base-action";
 import type { ActionContext } from "../../../../workers/core/types";
 import type {
-  ImageProcessingData,
-  ImageSaveData,
+  ImageJobData,
   ImageWorkerDependencies,
 } from "../../../../workers/image/types";
 
 export class ProcessImageAction extends BaseAction<
-  ImageProcessingData,
+  ImageJobData,
   ImageWorkerDependencies,
-  ImageSaveData
+  ImageJobData
 > {
   name = ActionName.PROCESS_IMAGE;
 
   async execute(
-    data: ImageProcessingData,
+    data: ImageJobData,
     deps: ImageWorkerDependencies,
     context: ActionContext
-  ): Promise<ImageSaveData> {
+  ): Promise<ImageJobData> {
     return this.executeServiceAction({
       data,
       deps,

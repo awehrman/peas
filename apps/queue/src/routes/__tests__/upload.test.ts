@@ -1,6 +1,6 @@
 import express from "express";
 import { promises as fs } from "fs";
-import path from "path";
+import type { Stats } from "node:fs";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -41,14 +41,16 @@ vi.mock("fs", () => ({
 }));
 
 // Mock path module
-vi.mock("path", () => ({
-  default: {
-    join: vi.fn(),
+vi.mock("path", async () => {
+  const actual = await vi.importActual("path");
+  return {
+    ...actual,
+    join: vi.fn((...args) => args.join("/")),
     extname: vi.fn(),
     dirname: vi.fn(),
     basename: vi.fn(),
-  },
-}));
+  };
+});
 
 // Mock utils
 vi.mock("../../utils/image-utils", () => ({
@@ -118,17 +120,12 @@ describe("Upload Router", () => {
     );
     vi.mocked(fs.unlink).mockResolvedValue(undefined);
     vi.mocked(fs.rename).mockResolvedValue(undefined);
-    vi.mocked(fs.stat).mockResolvedValue({ size: 1024 } as any);
+    vi.mocked(fs.stat).mockResolvedValue({ size: 1024 } as Stats);
     vi.mocked(fs.readdir).mockResolvedValue([
       "image1.jpg",
       "image2.png",
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Intentional for test mocking
     ] as any);
-
-    // Setup path mocks
-    vi.mocked(path.join).mockImplementation((...args) => args.join("/"));
-    vi.mocked(path.extname).mockReturnValue(".html");
-    vi.mocked(path.dirname).mockReturnValue("/test/dir");
-    vi.mocked(path.basename).mockReturnValue("test");
 
     // Setup utils mocks
     vi.mocked(isImageFile).mockReturnValue(false);
@@ -138,16 +135,17 @@ describe("Upload Router", () => {
       message: "Success",
       context: undefined,
       timestamp: "2023-01-01T00:00:00.000Z",
-    } as any);
+    } as ReturnType<typeof ErrorHandler.createHttpSuccessResponse>);
     vi.mocked(ErrorHandler.handleRouteError).mockReturnValue({
+      success: false,
       error: {
         message: "Test error",
-        type: "ValidationError" as any,
+        type: "UNKNOWN_ERROR" as const,
         code: undefined,
       },
       context: {},
       timestamp: "2023-01-01T00:00:00.000Z",
-    } as any);
+    } as ReturnType<typeof ErrorHandler.handleRouteError>);
     vi.mocked(formatLogMessage).mockReturnValue("Formatted log message");
     vi.mocked(measureExecutionTime).mockImplementation(
       async (operation, _operationName) => {
@@ -416,7 +414,7 @@ describe("Upload Router", () => {
 
       // Mock fs.stat to throw an error for source file
       vi.mocked(fs.stat)
-        .mockResolvedValueOnce({ size: 1024 } as any) // First call succeeds
+        .mockResolvedValueOnce({ size: 1024 } as Stats) // First call succeeds
         .mockRejectedValueOnce(new Error("Source file missing")); // Second call fails
 
       const response = await request(app)
@@ -452,8 +450,8 @@ describe("Upload Router", () => {
 
       // Mock fs.stat to succeed for source but fail for target
       vi.mocked(fs.stat)
-        .mockResolvedValueOnce({ size: 1024 } as any) // Source file
-        .mockResolvedValueOnce({ size: 1024 } as any) // Target file (after move)
+        .mockResolvedValueOnce({ size: 1024 } as Stats) // Source file
+        .mockResolvedValueOnce({ size: 1024 } as Stats) // Target file (after move)
         .mockRejectedValueOnce(new Error("Target verification error")); // Target verification
 
       const response = await request(app)
@@ -533,9 +531,10 @@ describe("Upload Router", () => {
         .expect(HttpStatus.INTERNAL_SERVER_ERROR);
 
       expect(response.body).toEqual({
+        success: false,
         error: {
           message: "Test error",
-          type: "ValidationError",
+          type: "UNKNOWN_ERROR",
         },
         context: {},
         timestamp: "2023-01-01T00:00:00.000Z",

@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-
 import { execSync } from "child_process";
 import fs from "fs";
 
@@ -47,5 +46,22 @@ export * as v2 from './v2/index.js';
 export * from './v2/index.js';
 `;
 fs.writeFileSync("dist/index.js", mainIndex);
+
+// Minify both versions
+console.log("Minifying v1 parser...");
+execSync(
+  "npx terser dist/v1/index.js --compress --mangle -o dist/v1/index.min.js",
+  {
+    stdio: "inherit",
+  }
+);
+
+console.log("Minifying v2 parser...");
+execSync(
+  "npx terser dist/v2/index.js --compress --mangle -o dist/v2/index.min.js",
+  {
+    stdio: "inherit",
+  }
+);
 
 console.log("Build completed successfully!");

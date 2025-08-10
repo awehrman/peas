@@ -1,8 +1,7 @@
 import { ActionName } from "../../types";
 import { ActionFactory } from "../../workers/core/action-factory";
 import type {
-  ImageProcessingData,
-  ImageSaveData,
+  ImageJobData,
   ImageWorkerDependencies,
 } from "../../workers/image/types";
 import {
@@ -10,20 +9,18 @@ import {
   registerActions,
 } from "../../workers/shared/action-registry";
 
+import { CleanupLocalFilesAction } from "./actions/cleanup-local-files/action";
 import { ImageCompletedStatusAction } from "./actions/image-completed-status/action";
 import { ProcessImageAction } from "./actions/process-image/action";
 import { SaveImageAction } from "./actions/save-image/action";
 import { UploadOriginalAction } from "./actions/upload-original/action";
+import { UploadProcessedAction } from "./actions/upload-processed/action";
 
 /**
  * Register all image actions in the given ActionFactory with type safety
  */
 export function registerImageActions(
-  factory: ActionFactory<
-    ImageProcessingData | ImageSaveData,
-    ImageWorkerDependencies,
-    ImageSaveData
-  >
+  factory: ActionFactory<ImageJobData, ImageWorkerDependencies, ImageJobData>
 ): void {
   console.log("[IMAGE_SERVICE_REGISTER] Starting image action registration");
   console.log("[IMAGE_SERVICE_REGISTER] Factory available:", !!factory);
@@ -37,24 +34,34 @@ export function registerImageActions(
 
   registerActions(factory, [
     createActionRegistration<
-      ImageProcessingData,
+      ImageJobData,
       ImageWorkerDependencies,
-      ImageSaveData
+      ImageJobData
     >(ActionName.UPLOAD_ORIGINAL, UploadOriginalAction),
     createActionRegistration<
-      ImageProcessingData,
+      ImageJobData,
       ImageWorkerDependencies,
-      ImageSaveData
+      ImageJobData
     >(ActionName.PROCESS_IMAGE, ProcessImageAction),
     createActionRegistration<
-      ImageSaveData,
+      ImageJobData,
       ImageWorkerDependencies,
-      ImageSaveData
+      ImageJobData
+    >(ActionName.UPLOAD_PROCESSED, UploadProcessedAction),
+    createActionRegistration<
+      ImageJobData,
+      ImageWorkerDependencies,
+      ImageJobData
     >(ActionName.SAVE_IMAGE, SaveImageAction),
     createActionRegistration<
-      ImageSaveData,
+      ImageJobData,
       ImageWorkerDependencies,
-      ImageSaveData
+      ImageJobData
+    >(ActionName.CLEANUP_LOCAL_FILES, CleanupLocalFilesAction),
+    createActionRegistration<
+      ImageJobData,
+      ImageWorkerDependencies,
+      ImageJobData
     >(ActionName.IMAGE_COMPLETED_STATUS, ImageCompletedStatusAction),
   ]);
 

@@ -110,13 +110,31 @@ describe("Images Router", () => {
         2
       );
       expect(mockServiceContainer.queues.imageQueue.add).toHaveBeenCalledWith(
-        ActionName.PROCESS_IMAGE,
+        ActionName.UPLOAD_ORIGINAL,
         expect.objectContaining({
-          noteId: expect.stringContaining("note-import-"),
-          importId: expect.stringContaining("import-"),
-          imagePath: expect.stringContaining("/uploads/images/"),
-          outputDir: expect.stringContaining("/uploads/processed"),
           filename: expect.stringContaining("images-"),
+          imagePath: expect.stringContaining("/uploads/images/"),
+          importId: expect.stringContaining("import-"),
+          noteId: expect.stringContaining("note-import-"),
+          outputDir: expect.stringContaining("/uploads/processed"),
+          // New fields in ImageJobData
+          originalPath: "",
+          thumbnailPath: "",
+          crop3x2Path: "",
+          crop4x3Path: "",
+          crop16x9Path: "",
+          originalSize: 0,
+          thumbnailSize: 0,
+          crop3x2Size: 0,
+          crop4x3Size: 0,
+          crop16x9Size: 0,
+          metadata: {
+            width: 0,
+            height: 0,
+            format: "unknown",
+          },
+          r2Key: undefined,
+          r2Url: undefined,
         })
       );
     });
