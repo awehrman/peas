@@ -1,5 +1,3 @@
-import { WebkitFile } from "./types";
-
 import { randomUUID } from "crypto";
 import { Router } from "express";
 import type { Express } from "express-serve-static-core";
@@ -329,23 +327,8 @@ async function processUploadedFiles(
           continue;
         }
 
-        // Handle directory uploads - extract image files as individual files
-        let targetPath: string;
-        const webkitRelativePath = (imageFile as WebkitFile).webkitRelativePath;
-
-        if (webkitRelativePath && webkitRelativePath.includes("/")) {
-          // This file came from a directory upload, extract just the filename
-          const fileName = path.basename(webkitRelativePath);
-          targetPath = path.join(imageDir, fileName);
-
-          console.log(
-            `[UPLOAD_ROUTE] Directory upload detected: ${webkitRelativePath} -> extracted as ${fileName}`
-          );
-        } else {
-          // Regular file upload, use original filename
-          targetPath = path.join(imageDir, imageFile.originalname);
-        }
-
+        // Move image file to image directory
+        const targetPath = path.join(imageDir, imageFile.originalname);
         console.log(`[UPLOAD_ROUTE] Target path: ${targetPath}`);
 
         try {

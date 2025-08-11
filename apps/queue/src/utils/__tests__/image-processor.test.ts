@@ -1,281 +1,339 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { promises as fs } from 'fs';
-import { Stats } from 'fs';
-import path from 'path';
-import sharp from 'sharp';
-import { ImageProcessor } from '../image-processor';
+import type { Metadata, Sharp } from "sharp";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import type { StructuredLogger } from "../../types";
+import { ImageProcessor } from "../image-processor";
+
+// Define proper types for our mocks
+interface MockSharpInstance {
+  metadata: ReturnType<typeof vi.fn>;
+  resize: ReturnType<typeof vi.fn>;
+  extract: ReturnType<typeof vi.fn>;
+  toFile: ReturnType<typeof vi.fn>;
+  ensureAlpha: ReturnType<typeof vi.fn>;
+  removeAlpha: ReturnType<typeof vi.fn>;
+  flatten: ReturnType<typeof vi.fn>;
+}
 
 // Mock sharp to avoid actual image processing in tests
-vi.mock('sharp', () => {
-  const mockSharp = vi.fn();
-  mockSharp.mockReturnValue({
-    metadata: vi.fn(),
+vi.mock("sharp", () => {
+  const mockSharp = vi.fn(() => ({
+    metadata: vi
+      .fn()
+      .mockResolvedValue({ width: 100, height: 100, format: "jpeg" }),
     resize: vi.fn().mockReturnThis(),
     extract: vi.fn().mockReturnThis(),
     toFile: vi.fn().mockResolvedValue(undefined),
-  });
+    ensureAlpha: vi.fn().mockReturnThis(),
+    removeAlpha: vi.fn().mockReturnThis(),
+    flatten: vi.fn().mockReturnThis(),
+  }));
   return { default: mockSharp };
 });
 
-describe('ImageProcessor', () => {
+describe("ImageProcessor", () => {
   let processor: ImageProcessor;
-  let mockSharp: ReturnType<typeof vi.fn>;
-  let testOutputDir: string;
+  let mockLogger: StructuredLogger;
 
   beforeEach(() => {
-    processor = new ImageProcessor();
-    mockSharp = sharp as unknown as ReturnType<typeof vi.fn>;
-    testOutputDir = path.join(process.cwd(), 'test-output');
-
-    // Mock fs.mkdir and fs.stat
-    vi.spyOn(fs, 'mkdir').mockResolvedValue(undefined);
-    vi.spyOn(fs, 'stat').mockResolvedValue({ size: 1024 } as Stats);
+    mockLogger = {
+      log: vi.fn(),
+    };
+    processor = new ImageProcessor({}, mockLogger);
   });
 
-  afterEach(() => {
-    vi.clearAllMocks();
+  it("should be instantiated with default options", () => {
+    expect(processor).toBeInstanceOf(ImageProcessor);
   });
 
-  describe('processCrop - Edge Cases', () => {
-    it('should handle very small images gracefully', async () => {
-      // Mock metadata for a very small image
-      const mockMetadata: sharp.Metadata = { 
-        width: 5, 
-        height: 5,
-        format: 'jpeg',
-        space: 'srgb',
+  it("should use custom options when provided", () => {
+    const customProcessor = new ImageProcessor(
+      {
+        originalWidth: 800,
+        originalHeight: 600,
+        quality: 90,
+      },
+      mockLogger
+    );
+
+    expect(customProcessor).toBeInstanceOf(ImageProcessor);
+  });
+
+  describe("calculateOptimalCropDimensions", () => {
+    it("should calculate correct dimensions for 1272x852 image with 16:9 aspect ratio", () => {
+      const result = processor["calculateOptimalCropDimensions"](
+        1272,
+        852,
+        16 / 9,
+        1280,
+        720
+      );
+
+      expect(result).toEqual({
+        cropWidth: 1272,
+        cropHeight: 716,
+        left: 0,
+        top: 68,
+      });
+    });
+
+    it("should calculate correct dimensions for 1272x852 image with 1:1 aspect ratio", () => {
+      const result = processor["calculateOptimalCropDimensions"](
+        1272,
+        852,
+        1,
+        300,
+        300
+      );
+
+      expect(result).toEqual({
+        cropWidth: 852,
+        cropHeight: 852,
+        left: 210,
+        top: 0,
+      });
+    });
+
+    it("should calculate correct dimensions for 1272x852 image with 3:2 aspect ratio", () => {
+      const result = processor["calculateOptimalCropDimensions"](
+        1272,
+        852,
+        3 / 2,
+        1200,
+        800
+      );
+
+      expect(result).toEqual({
+        cropWidth: 1272,
+        cropHeight: 848,
+        left: 0,
+        top: 2,
+      });
+    });
+
+    it("should calculate correct dimensions for 1272x852 image with 4:3 aspect ratio", () => {
+      const result = processor["calculateOptimalCropDimensions"](
+        1272,
+        852,
+        4 / 3,
+        1200,
+        900
+      );
+
+      expect(result).toEqual({
+        cropWidth: 1136,
+        cropHeight: 852,
+        left: 68,
+        top: 0,
+      });
+    });
+
+    it("should handle very small images", () => {
+      const result = processor["calculateOptimalCropDimensions"](
+        10,
+        10,
+        16 / 9,
+        1280,
+        720
+      );
+
+      expect(result).toEqual({
+        cropWidth: 10,
+        cropHeight: 6,
+        left: 0,
+        top: 2,
+      });
+    });
+
+    it("should handle very wide images", () => {
+      const result = processor["calculateOptimalCropDimensions"](
+        2000,
+        100,
+        16 / 9,
+        1280,
+        720
+      );
+
+      expect(result).toEqual({
+        cropWidth: 178,
+        cropHeight: 100,
+        left: 911,
+        top: 0,
+      });
+    });
+
+    it("should handle very tall images", () => {
+      const result = processor["calculateOptimalCropDimensions"](
+        100,
+        2000,
+        16 / 9,
+        1280,
+        720
+      );
+
+      expect(result).toEqual({
+        cropWidth: 100,
+        cropHeight: 56,
+        left: 0,
+        top: 972,
+      });
+    });
+
+    it("should return null for invalid dimensions", () => {
+      const result = processor["calculateOptimalCropDimensions"](
+        0,
+        100,
+        16 / 9,
+        1280,
+        720
+      );
+      expect(result).toBeNull();
+    });
+
+    it("should handle edge case where crop would exceed bounds", () => {
+      // This should trigger the iterative reduction
+      const result = processor["calculateOptimalCropDimensions"](
+        100,
+        100,
+        2,
+        1280,
+        720
+      );
+
+      // Should find valid dimensions after reduction
+      expect(result).not.toBeNull();
+      expect(result!.cropWidth).toBeLessThanOrEqual(100);
+      expect(result!.cropHeight).toBeLessThanOrEqual(100);
+      expect(result!.left + result!.cropWidth).toBeLessThanOrEqual(100);
+      expect(result!.top + result!.cropHeight).toBeLessThanOrEqual(100);
+    });
+  });
+
+  describe("processCrop", () => {
+    it("should handle crop operation successfully", async () => {
+      const mockImage: MockSharpInstance = {
+        extract: vi.fn().mockReturnThis(),
+        resize: vi.fn().mockReturnThis(),
+        metadata: vi.fn(),
+        toFile: vi.fn(),
+        ensureAlpha: vi.fn(),
+        removeAlpha: vi.fn(),
+        flatten: vi.fn(),
+      };
+
+      const mockMetadata: Metadata = {
+        width: 1272,
+        height: 852,
+        format: "jpeg",
+        space: "srgb",
         channels: 3,
-        depth: 'uchar',
+        depth: "uchar",
+        density: 72,
+        hasProfile: false,
+        hasAlpha: false,
+        autoOrient: { width: 1272, height: 852 },
+        isProgressive: false,
+        isPalette: false,
+      };
+
+      await processor["processCrop"](
+        mockImage as unknown as Sharp,
+        mockMetadata,
+        16 / 9,
+        1280,
+        720
+      );
+
+      expect(mockImage.extract).toHaveBeenCalledWith({
+        left: 0,
+        top: 68,
+        width: 1272,
+        height: 716,
+      });
+    });
+
+    it("should fall back to resize when crop dimensions are too small", async () => {
+      const mockImage: MockSharpInstance = {
+        extract: vi.fn().mockReturnThis(),
+        resize: vi.fn().mockReturnThis(),
+        metadata: vi.fn(),
+        toFile: vi.fn(),
+        ensureAlpha: vi.fn(),
+        removeAlpha: vi.fn(),
+        flatten: vi.fn(),
+      };
+
+      const mockMetadata: Metadata = {
+        width: 5,
+        height: 5,
+        format: "jpeg",
+        space: "srgb",
+        channels: 3,
+        depth: "uchar",
         density: 72,
         hasProfile: false,
         hasAlpha: false,
         autoOrient: { width: 5, height: 5 },
         isProgressive: false,
-        isPalette: false
+        isPalette: false,
       };
-      mockSharp.mockReturnValue({
-        metadata: vi.fn().mockResolvedValue(mockMetadata),
-        resize: vi.fn().mockReturnThis(),
-        extract: vi.fn().mockReturnThis(),
-        toFile: vi.fn().mockResolvedValue(undefined),
+
+      await processor["processCrop"](
+        mockImage as unknown as Sharp,
+        mockMetadata,
+        16 / 9,
+        1280,
+        720
+      );
+
+      expect(mockImage.resize).toHaveBeenCalledWith(1280, 720, {
+        fit: "inside",
+        withoutEnlargement: true,
       });
-
-      const image = sharp('test.jpg');
-      await processor['processCrop'](image, mockMetadata, 16/9, 1280, 720);
-
-      // STUBBED: Since image processing is disabled, we just return the original image
-      // The test would normally expect resize to be called, but now it's stubbed
-      expect(mockSharp().resize).not.toHaveBeenCalled();
     });
 
-    it('should handle 1x1 pixel images', async () => {
-      const mockMetadata: sharp.Metadata = { 
-        width: 1, 
-        height: 1,
-        format: 'jpeg',
-        space: 'srgb',
-        channels: 3,
-        depth: 'uchar',
-        density: 72,
-        hasProfile: false,
-        hasAlpha: false,
-        autoOrient: { width: 1, height: 1 },
-        isProgressive: false,
-        isPalette: false
-      };
-      mockSharp.mockReturnValue({
-        metadata: vi.fn().mockResolvedValue(mockMetadata),
-        resize: vi.fn().mockReturnThis(),
-        extract: vi.fn().mockReturnThis(),
-        toFile: vi.fn().mockResolvedValue(undefined),
-      });
-
-      const image = sharp('test.jpg');
-      await processor['processCrop'](image, mockMetadata, 3/2, 1200, 800);
-
-      // STUBBED: Since image processing is disabled, we just return the original image
-      expect(mockSharp().resize).not.toHaveBeenCalled();
-    });
-
-    it('should handle extremely wide images', async () => {
-      const mockMetadata: sharp.Metadata = { 
-        width: 10000, 
-        height: 10,
-        format: 'jpeg',
-        space: 'srgb',
-        channels: 3,
-        depth: 'uchar',
-        density: 72,
-        hasProfile: false,
-        hasAlpha: false,
-        autoOrient: { width: 10000, height: 10 },
-        isProgressive: false,
-        isPalette: false
-      };
-      mockSharp.mockReturnValue({
-        metadata: vi.fn().mockResolvedValue(mockMetadata),
-        resize: vi.fn().mockReturnThis(),
-        extract: vi.fn().mockReturnThis(),
-        toFile: vi.fn().mockResolvedValue(undefined),
-      });
-
-      const image = sharp('test.jpg');
-      await processor['processCrop'](image, mockMetadata, 16/9, 1280, 720);
-
-      // STUBBED: Since image processing is disabled, we just return the original image
-      expect(mockSharp().extract).not.toHaveBeenCalled();
-    });
-
-    it('should handle extremely tall images', async () => {
-      const mockMetadata: sharp.Metadata = { 
-        width: 10, 
-        height: 10000,
-        format: 'jpeg',
-        space: 'srgb',
-        channels: 3,
-        depth: 'uchar',
-        density: 72,
-        hasProfile: false,
-        hasAlpha: false,
-        autoOrient: { width: 10, height: 10000 },
-        isProgressive: false,
-        isPalette: false
-      };
-      mockSharp.mockReturnValue({
-        metadata: vi.fn().mockResolvedValue(mockMetadata),
-        resize: vi.fn().mockReturnThis(),
-        extract: vi.fn().mockReturnThis(),
-        toFile: vi.fn().mockResolvedValue(undefined),
-      });
-
-      const image = sharp('test.jpg');
-      await processor['processCrop'](image, mockMetadata, 4/3, 1200, 900);
-
-      // STUBBED: Since image processing is disabled, we just return the original image
-      expect(mockSharp().extract).not.toHaveBeenCalled();
-    });
-
-    it('should handle extract errors gracefully', async () => {
-      const mockMetadata: sharp.Metadata = { 
-        width: 100, 
-        height: 100,
-        format: 'jpeg',
-        space: 'srgb',
-        channels: 3,
-        depth: 'uchar',
-        density: 72,
-        hasProfile: false,
-        hasAlpha: false,
-        autoOrient: { width: 100, height: 100 },
-        isProgressive: false,
-        isPalette: false
-      };
-      mockSharp.mockReturnValue({
-        metadata: vi.fn().mockResolvedValue(mockMetadata),
-        resize: vi.fn().mockReturnThis(),
+    it("should fall back to resize when extract fails", async () => {
+      const mockImage: MockSharpInstance = {
         extract: vi.fn().mockImplementation(() => {
-          throw new Error('extract_area: bad extract area');
+          throw new Error("extract_area: bad extract area");
         }),
-        toFile: vi.fn().mockResolvedValue(undefined),
-      });
+        resize: vi.fn().mockReturnThis(),
+        metadata: vi.fn(),
+        toFile: vi.fn(),
+        ensureAlpha: vi.fn(),
+        removeAlpha: vi.fn(),
+        flatten: vi.fn(),
+      };
 
-      const image = sharp('test.jpg');
-      await processor['processCrop'](image, mockMetadata, 16/9, 1280, 720);
-
-      // STUBBED: Since image processing is disabled, we just return the original image
-      expect(mockSharp().resize).not.toHaveBeenCalled();
-    });
-
-    it('should validate crop dimensions properly', async () => {
-      const mockMetadata: sharp.Metadata = { 
-        width: 50, 
-        height: 50,
-        format: 'jpeg',
-        space: 'srgb',
+      const mockMetadata: Metadata = {
+        width: 1272,
+        height: 852,
+        format: "jpeg",
+        space: "srgb",
         channels: 3,
-        depth: 'uchar',
+        depth: "uchar",
         density: 72,
         hasProfile: false,
         hasAlpha: false,
-        autoOrient: { width: 50, height: 50 },
+        autoOrient: { width: 1272, height: 852 },
         isProgressive: false,
-        isPalette: false
+        isPalette: false,
       };
-      mockSharp.mockReturnValue({
-        metadata: vi.fn().mockResolvedValue(mockMetadata),
-        resize: vi.fn().mockReturnThis(),
-        extract: vi.fn().mockReturnThis(),
-        toFile: vi.fn().mockResolvedValue(undefined),
+
+      await processor["processCrop"](
+        mockImage as unknown as Sharp,
+        mockMetadata,
+        16 / 9,
+        1280,
+        720
+      );
+
+      // Should first try cover fit as fallback
+      expect(mockImage.resize).toHaveBeenCalledWith(1280, 720, {
+        fit: "cover",
+        position: "center",
+        withoutEnlargement: false,
       });
-
-      const image = sharp('test.jpg');
-      await processor['processCrop'](image, mockMetadata, 16/9, 1280, 720);
-
-      // STUBBED: Since image processing is disabled, we just return the original image
-      expect(mockSharp().extract).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('processImage - Input Validation', () => {
-    it('should reject images with invalid dimensions', async () => {
-      mockSharp.mockReturnValue({
-        metadata: vi.fn().mockResolvedValue({ width: 0, height: 100 }),
-        resize: vi.fn().mockReturnThis(),
-        extract: vi.fn().mockReturnThis(),
-        toFile: vi.fn().mockResolvedValue(undefined),
-      });
-
-      await expect(
-        processor.processImage('test.jpg', testOutputDir, 'test.jpg')
-      ).rejects.toThrow('Image too small: 0x100. Minimum dimensions: 1x1');
-    });
-
-    it('should handle missing width or height', async () => {
-      mockSharp.mockReturnValue({
-        metadata: vi.fn().mockResolvedValue({ width: 100 }), // Missing height
-        resize: vi.fn().mockReturnThis(),
-        extract: vi.fn().mockReturnThis(),
-        toFile: vi.fn().mockResolvedValue(undefined),
-      });
-
-      await expect(
-        processor.processImage('test.jpg', testOutputDir, 'test.jpg')
-      ).rejects.toThrow('Invalid image: unable to determine dimensions');
-    });
-
-    it('should reject images that are too small', async () => {
-      mockSharp.mockReturnValue({
-        metadata: vi.fn().mockResolvedValue({ width: 0, height: 0 }),
-        resize: vi.fn().mockReturnThis(),
-        extract: vi.fn().mockReturnThis(),
-        toFile: vi.fn().mockResolvedValue(undefined),
-      });
-
-      await expect(
-        processor.processImage('test.jpg', testOutputDir, 'test.jpg')
-      ).rejects.toThrow('Image too small: 0x0. Minimum dimensions: 1x1');
-    });
-  });
-
-  describe('isSupportedImage', () => {
-    it('should recognize supported image formats', () => {
-      expect(ImageProcessor.isSupportedImage('test.jpg')).toBe(true);
-      expect(ImageProcessor.isSupportedImage('test.jpeg')).toBe(true);
-      expect(ImageProcessor.isSupportedImage('test.png')).toBe(true);
-      expect(ImageProcessor.isSupportedImage('test.webp')).toBe(true);
-      expect(ImageProcessor.isSupportedImage('test.gif')).toBe(true);
-      expect(ImageProcessor.isSupportedImage('test.bmp')).toBe(true);
-    });
-
-    it('should reject unsupported formats', () => {
-      expect(ImageProcessor.isSupportedImage('test.txt')).toBe(false);
-      expect(ImageProcessor.isSupportedImage('test.pdf')).toBe(false);
-      expect(ImageProcessor.isSupportedImage('test.doc')).toBe(false);
-    });
-
-    it('should handle case insensitive extensions', () => {
-      expect(ImageProcessor.isSupportedImage('test.JPG')).toBe(true);
-      expect(ImageProcessor.isSupportedImage('test.PNG')).toBe(true);
     });
   });
 });

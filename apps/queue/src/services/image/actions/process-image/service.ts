@@ -28,7 +28,7 @@ export async function processImage(
     }
 
     // Initialize image processor
-    const processor = new ImageProcessor();
+    const processor = new ImageProcessor({}, logger);
 
     // Process the image
     const result = await processor.processImage(

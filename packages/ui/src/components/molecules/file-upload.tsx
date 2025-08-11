@@ -2,9 +2,9 @@
 
 import { Placeholder } from "./placeholder";
 
-import React, { useState } from "react";
+import React from "react";
 
-import { FolderOpen, Upload } from "lucide-react";
+import { Upload } from "lucide-react";
 
 import { Button } from "../ui/button";
 
@@ -31,8 +31,6 @@ export function FileUpload({
   disabled = false,
   multiple = true,
 }: FileUploadProps) {
-  const [isDirectoryMode, setIsDirectoryMode] = useState(false);
-
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
     if (files.length > 0) {
@@ -69,28 +67,6 @@ export function FileUpload({
     <div className={className}>
       <h3 className="text-xl font-semibold text-gray-900 mb-4">{title}</h3>
 
-      {/* Mode Toggle */}
-      <div className="mb-4 flex gap-2">
-        <Button
-          variant={!isDirectoryMode ? "default" : "outline"}
-          size="sm"
-          onClick={() => setIsDirectoryMode(false)}
-          disabled={disabled}
-        >
-          <Upload className="w-4 h-4 mr-2" />
-          Individual Files
-        </Button>
-        <Button
-          variant={isDirectoryMode ? "default" : "outline"}
-          size="sm"
-          onClick={() => setIsDirectoryMode(true)}
-          disabled={disabled}
-        >
-          <FolderOpen className="w-4 h-4 mr-2" />
-          Directory
-        </Button>
-      </div>
-
       <div
         className={`border-2 border-dashed border-gray-300 rounded-lg p-8 transition-colors ${
           disabled ? "opacity-50 cursor-not-allowed" : "hover:border-gray-400"
@@ -100,7 +76,7 @@ export function FileUpload({
       >
         <Placeholder
           label={`${description} ${acceptedFileTypes} up to ${maxFileSize}`}
-          icon={isDirectoryMode ? <FolderOpen /> : <Upload />}
+          icon={<Upload />}
           buttonSize="sm"
           button={
             <Button
@@ -109,16 +85,13 @@ export function FileUpload({
               onClick={openFileDialog}
               disabled={disabled}
             >
-              {isDirectoryMode ? "Choose directory" : "Choose files"}
+              Choose files
             </Button>
           }
         />
         <div className="mt-4 text-sm text-gray-600">
           <p>
-            <strong>Note:</strong>{" "}
-            {isDirectoryMode
-              ? "Select a directory containing image files. All images within the directory will be processed."
-              : "You can upload individual HTML and image files."}
+            <strong>Note:</strong> You can upload individual HTML and image files.
           </p>
           <p>
             Supported formats: HTML files (.html, .htm) and image files (.jpg,
@@ -134,11 +107,6 @@ export function FileUpload({
           disabled={disabled}
           multiple={multiple}
           accept=".html,.htm,image/*"
-          {...((isDirectoryMode
-            ? {
-                webkitdirectory: "true",
-              }
-            : {}) as React.InputHTMLAttributes<HTMLInputElement>)}
         />
       </div>
     </div>

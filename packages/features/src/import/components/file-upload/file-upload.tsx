@@ -1,7 +1,5 @@
 "use client";
 
-import { isFromDirectory, isWebkitFile } from "./types";
-
 import { useState } from "react";
 
 import { FileUpload } from "@peas/ui";
@@ -17,7 +15,7 @@ const QUEUE_API_BASE =
 
 export function ImportFileUpload({
   maxFileSize = "10MB",
-  acceptedFileTypes = "HTML files and image folders",
+  acceptedFileTypes = "HTML files and individual image files",
   className,
 }: Props) {
   const [uploading, setUploading] = useState(false);
@@ -31,35 +29,7 @@ export function ImportFileUpload({
       console.log("[FRONTEND] Starting file upload process");
       console.log("[FRONTEND] Total files received:", files.length);
 
-      // Log the first few characters of each file's webkitRelativePath to see what we're getting
-      files.forEach((f, index) => {
-        if (isWebkitFile(f) && f.webkitRelativePath) {
-          console.log(
-            `[FRONTEND] File ${index} webkitRelativePath: "${f.webkitRelativePath}" (length: ${f.webkitRelativePath.length})`
-          );
-        } else {
-          console.log(
-            `[FRONTEND] File ${index} has no webkitRelativePath or is not a webkit file`
-          );
-        }
-      });
-
-      // Test if any files have webkitRelativePath (indicating directory upload)
-      const hasDirectoryUpload = files.some(isFromDirectory);
-      console.log("[FRONTEND] Directory upload detected:", hasDirectoryUpload);
-
-      if (hasDirectoryUpload) {
-        console.log("[FRONTEND] Directory upload files:");
-        files.forEach((f, index) => {
-          if (isWebkitFile(f) && f.webkitRelativePath) {
-            console.log(
-              `[FRONTEND] File ${index}: ${f.name} -> ${f.webkitRelativePath}`
-            );
-          }
-        });
-      }
-
-      // Separate HTML files from other files (directories and images)
+      // Separate HTML files from image files
       const htmlFiles = files.filter(
         (file) =>
           file.type === "text/html" ||
@@ -67,28 +37,21 @@ export function ImportFileUpload({
           file.name.endsWith(".htm")
       );
 
-      // Get all non-HTML files (these could be directories or images)
-      const nonHtmlFiles = files.filter(
+      const imageFiles = files.filter(
         (file) =>
-          file.type !== "text/html" &&
-          !file.name.endsWith(".html") &&
-          !file.name.endsWith(".htm")
+          file.type.startsWith("image/") ||
+          /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(file.name)
       );
 
       console.log("[FRONTEND] HTML files found:", htmlFiles.length);
-      console.log("[FRONTEND] Non-HTML files found:", nonHtmlFiles.length);
+      console.log("[FRONTEND] Image files found:", imageFiles.length);
       console.log(
         "[FRONTEND] HTML files:",
         htmlFiles.map((f) => f.name)
       );
       console.log(
-        "[FRONTEND] Non-HTML files:",
-        nonHtmlFiles.map((f) => ({
-          name: f.name,
-          webkitRelativePath: isWebkitFile(f)
-            ? f.webkitRelativePath
-            : undefined,
-        }))
+        "[FRONTEND] Image files:",
+        imageFiles.map((f) => f.name)
       );
 
       if (htmlFiles.length === 0) {
@@ -100,103 +63,43 @@ export function ImportFileUpload({
       // Create FormData for unified upload (HTML + images together)
       const formData = new FormData();
 
-      // Add all HTML files
-      for (const htmlFile of htmlFiles) {
-        console.log(
-          `[FRONTEND] Adding HTML file to FormData: ${htmlFile.name}`
-        );
-        formData.append("files", htmlFile);
-      }
+      // Add HTML files
+      htmlFiles.forEach((file) => {
+        formData.append("html", file);
+      });
 
-      // Process image files - handle both individual files and directory uploads
-      const imageFiles: File[] = [];
-
-      for (const file of nonHtmlFiles) {
-        console.log(
-          `[FRONTEND] Processing non-HTML file: ${file.name} (type: ${file.type}, size: ${file.size})`
-        );
-
-        // Check if this is a file from a directory upload
-        const webkitRelativePath = isWebkitFile(file)
-          ? file.webkitRelativePath
-          : undefined;
-        if (webkitRelativePath) {
-          console.log(
-            `[FRONTEND] File has webkitRelativePath: ${webkitRelativePath}`
-          );
-        }
-
-        const isImage =
-          file.type.startsWith("image/") ||
-          /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(file.name);
-
-        console.log(
-          `[FRONTEND] Image detection - isImage: ${isImage}, type: ${file.type}, name: ${file.name}`
-        );
-
-        if (isImage) {
-          imageFiles.push(file);
-          console.log(`[FRONTEND] Adding image file to FormData: ${file.name}`);
-        } else if (file.type === "" && file.size < 1000) {
-          // This is likely a directory object (not a file from directory upload)
-          console.log(`[FRONTEND] Found directory object: ${file.name}`);
-        } else {
-          console.log(
-            `[FRONTEND] Skipping non-image file: ${file.name} (type: ${file.type})`
-          );
-        }
-      }
-
-      // Add all image files to FormData
-      for (const imageFile of imageFiles) {
-        formData.append("files", imageFile);
-      }
-
-      console.log(
-        `[FRONTEND] Final FormData entries:`,
-        Array.from(formData.entries()).map(([key, value]) => [
-          key,
-          value instanceof File
-            ? `${value.name} (${value.type}, ${value.size} bytes)`
-            : value,
-        ])
-      );
+      // Add image files
+      imageFiles.forEach((file) => {
+        formData.append("images", file);
+      });
 
       console.log(
         `[FRONTEND] Sending ${htmlFiles.length} HTML files and ${imageFiles.length} image files to /upload`
       );
-      console.log(
-        `[FRONTEND] FormData entries:`,
-        Array.from(formData.entries()).map(([key, value]) => [
-          key,
-          value instanceof File ? value.name : value,
-        ])
-      );
 
-      // Send unified upload request
-      const res = await globalThis.fetch(`${QUEUE_API_BASE}/upload`, {
+      const response = await fetch(`${QUEUE_API_BASE}/upload`, {
         method: "POST",
         body: formData,
       });
 
-      console.log(`[FRONTEND] /upload response status: ${res.status}`);
-
-      if (!res.ok) {
-        const errorText = await res.text();
-        console.error("[FRONTEND] /upload error response:", errorText);
-        throw new Error(`Queue API responded ${res.status}: ${errorText}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+          `Upload failed: ${response.status} ${response.statusText} - ${errorText}`
+        );
       }
 
-      const result = await res.json();
-      console.log("[FRONTEND] /upload response:", result);
+      const result = await response.json();
+      console.log("[FRONTEND] Upload successful:", result);
 
       setMessage(
-        `Files uploaded successfully! Import ID: ${result.data.importId}. Processed ${result.data.htmlFiles} HTML files and ${result.data.imageFiles} images.`
+        `Successfully uploaded ${htmlFiles.length} HTML file(s) and ${imageFiles.length} image file(s). Processing started.`
       );
-    } catch (err) {
-      console.error("[FRONTEND] Upload error:", err);
-      const msg = err instanceof Error ? err.message : "Unknown error";
-      setMessage(`Upload failed: ${msg}`);
+    } catch (error) {
+      console.error("[FRONTEND] Upload error:", error);
+      setMessage(
+        error instanceof Error ? error.message : "Upload failed. Please try again."
+      );
     } finally {
       setUploading(false);
     }

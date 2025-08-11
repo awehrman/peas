@@ -1,4 +1,8 @@
-import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import {
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { promises as fs } from "fs";
 import path from "path";
@@ -24,7 +28,7 @@ export class R2Service {
 
   constructor(config: R2Config) {
     this.config = config;
-    
+
     this.client = new S3Client({
       region: "auto",
       endpoint: `https://${config.accountId}.r2.cloudflarestorage.com`,
@@ -57,7 +61,8 @@ export class R2Service {
 
       const result = await this.client.send(command);
 
-      const url = this.getPublicUrl(key);
+      // Generate a presigned URL for accessing the file
+      const url = await this.generatePresignedDownloadUrl(key);
 
       return {
         key,
@@ -66,7 +71,9 @@ export class R2Service {
         etag: result.ETag?.replace(/"/g, ""), // Remove quotes from ETag
       };
     } catch (error) {
-      throw new Error(`Failed to upload file to R2: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `Failed to upload file to R2: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
@@ -89,7 +96,8 @@ export class R2Service {
 
       const result = await this.client.send(command);
 
-      const url = this.getPublicUrl(key);
+      // Generate a presigned URL for accessing the file
+      const url = await this.generatePresignedDownloadUrl(key);
 
       return {
         key,
@@ -119,7 +127,9 @@ export class R2Service {
 
       return await getSignedUrl(this.client, command, { expiresIn });
     } catch (error) {
-      throw new Error(`Failed to generate presigned URL: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `Failed to generate presigned URL: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
@@ -138,7 +148,9 @@ export class R2Service {
 
       return await getSignedUrl(this.client, command, { expiresIn });
     } catch (error) {
-      throw new Error(`Failed to generate presigned download URL: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `Failed to generate presigned download URL: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
@@ -149,7 +161,7 @@ export class R2Service {
     if (this.config.publicUrl) {
       return `${this.config.publicUrl}/${key}`;
     }
-    
+
     // Fallback to R2 public URL format
     return `https://${this.config.accountId}.r2.cloudflarestorage.com/${this.config.bucketName}/${key}`;
   }
@@ -159,7 +171,7 @@ export class R2Service {
    */
   private getContentType(filePath: string): string {
     const ext = path.extname(filePath).toLowerCase();
-    
+
     const contentTypes: Record<string, string> = {
       ".jpg": "image/jpeg",
       ".jpeg": "image/jpeg",
