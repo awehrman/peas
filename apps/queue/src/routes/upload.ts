@@ -9,6 +9,7 @@ import { LOG_MESSAGES, SECURITY_CONSTANTS } from "../config/constants";
 import { SecurityMiddleware } from "../middleware/security";
 import { ServiceContainer } from "../services";
 import { ActionName, HttpStatus } from "../types";
+import { convertBinaryImageToStandardFormat } from "../utils/image-converter";
 import { isImageFile, isImageFileEnhanced } from "../utils/image-utils";
 import {
   ErrorHandler,
@@ -85,7 +86,7 @@ const upload = multer({
       // Accept HTML files and images
       const isHtml =
         file.mimetype === "text/html" || file.originalname.endsWith(".html");
-      
+
       // For images, we'll do a quick check here and a full content check later
       const isImage =
         file.mimetype.startsWith("image/") || isImageFile(file.originalname);
@@ -95,7 +96,9 @@ const upload = multer({
       } else {
         // For files without extensions or unknown types, we'll check content later
         // Accept them for now and let the enhanced detection handle it
-        console.log(`[UPLOAD_ROUTE] Accepting file for content check: ${file.originalname}`);
+        console.log(
+          `[UPLOAD_ROUTE] Accepting file for content check: ${file.originalname}`
+        );
         cb(null, true);
       }
     } catch (error) {
@@ -213,7 +216,7 @@ async function processUploadedFiles(
 
     const isHtml =
       file.mimetype === "text/html" || file.originalname.endsWith(".html");
-    
+
     // Use enhanced image detection that supports binary files without extensions
     const isImage = await isImageFileEnhanced(file.originalname, file.path);
 
@@ -337,15 +340,65 @@ async function processUploadedFiles(
           continue;
         }
 
+        // Check if this is a binary image (no extension) and convert it
+        const hasExtension = path.extname(imageFile.originalname).length > 0;
+        let finalPath = imageFile.path;
+        let finalFilename = imageFile.originalname;
+
+        if (!hasExtension) {
+          console.log(
+            `[UPLOAD_ROUTE] Binary image detected: ${imageFile.originalname}, attempting conversion`
+          );
+
+          // Create a simple logger for the conversion process
+          const logger = {
+            log: (message: string) => console.log(message),
+            error: (message: string) => console.error(message),
+            warn: (message: string) => console.warn(message),
+            debug: (message: string) => console.log(message),
+          };
+
+          const conversionResult = await convertBinaryImageToStandardFormat(
+            imageFile.path,
+            logger
+          );
+
+          if (
+            conversionResult.success &&
+            conversionResult.outputPath &&
+            conversionResult.newFilename
+          ) {
+            console.log(
+              `[UPLOAD_ROUTE] Conversion successful: ${imageFile.originalname} -> ${conversionResult.newFilename}`
+            );
+            finalPath = conversionResult.outputPath;
+            finalFilename = conversionResult.newFilename;
+
+            // Clean up the original binary file
+            try {
+              await fs.unlink(imageFile.path);
+              console.log(
+                `[UPLOAD_ROUTE] Cleaned up original binary file: ${imageFile.path}`
+              );
+            } catch (cleanupError) {
+              console.warn(
+                `[UPLOAD_ROUTE] Could not clean up original file: ${cleanupError}`
+              );
+            }
+          } else {
+            console.log(
+              `[UPLOAD_ROUTE] Conversion failed, using original file: ${imageFile.originalname}`
+            );
+          }
+        }
+
         // Move image file to image directory
-        const targetPath = path.join(imageDir, imageFile.originalname);
+        const targetPath = path.join(imageDir, finalFilename);
         console.log(`[UPLOAD_ROUTE] Target path: ${targetPath}`);
 
         try {
-          await fs.rename(imageFile.path, targetPath);
-          console.log(
-            `[UPLOAD_ROUTE] Successfully moved: ${imageFile.originalname}`
-          );
+          await fs.rename(finalPath, targetPath);
+          console.log(`[UPLOAD_ROUTE] Successfully moved: ${finalFilename}`);
 
           // Verify the move was successful
           const targetStats = await fs.stat(targetPath);
@@ -354,10 +407,10 @@ async function processUploadedFiles(
           );
         } catch (moveError) {
           console.error(
-            `[UPLOAD_ROUTE] Failed to move image ${imageFile.originalname}:`,
+            `[UPLOAD_ROUTE] Failed to move image ${finalFilename}:`,
             moveError
           );
-          errors.push(`Failed to move ${imageFile.originalname}: ${moveError}`);
+          errors.push(`Failed to move ${finalFilename}: ${moveError}`);
         }
       }
 
