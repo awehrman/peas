@@ -284,6 +284,86 @@ export async function createNoteWithEvernoteMetadata(
     const tags = file.evernoteMetadata?.tags || [];
     const originalCreatedAt = file.evernoteMetadata?.originalCreatedAt;
 
+    // If we have an importId, check if a note with this importId already exists
+    if (importId) {
+      const existingNote = await prisma.note.findFirst({
+        where: { importId },
+        include: {
+          parsedIngredientLines: true,
+          parsedInstructionLines: true,
+          evernoteMetadata: true,
+        },
+      });
+
+      if (existingNote) {
+        console.log(
+          `Note with importId ${importId} already exists, updating instead of creating`
+        );
+
+        // Update the existing note
+        const response = await prisma.note.update({
+          where: { id: existingNote.id },
+          data: {
+            title: file.title,
+            html: file.contents,
+            // Counters
+            totalIngredientLines: file.ingredients.length,
+            totalInstructionLines: file.instructions.length,
+            parsingErrorCount: 0,
+            // Update EvernoteMetadata if we have metadata
+            ...(source || tags.length > 0 || originalCreatedAt
+              ? {
+                  evernoteMetadata: {
+                    upsert: {
+                      create: {
+                        source: source || null,
+                        notebook: null,
+                        tags,
+                        originalCreatedAt: originalCreatedAt || null,
+                      },
+                      update: {
+                        source: source || null,
+                        notebook: null,
+                        tags,
+                        originalCreatedAt: originalCreatedAt || null,
+                      },
+                    },
+                  },
+                }
+              : {}),
+          },
+          select: {
+            id: true,
+            title: true,
+            evernoteMetadataId: true,
+            parsedIngredientLines: {
+              select: {
+                id: true,
+                reference: true,
+                blockIndex: true,
+                lineIndex: true,
+              },
+            },
+            parsedInstructionLines: {
+              select: {
+                id: true,
+                originalText: true,
+                lineIndex: true,
+              },
+            },
+            createdAt: true,
+            updatedAt: true,
+          },
+        });
+
+        console.log(
+          `Successfully updated note ${response.id} with EvernoteMetadata`
+        );
+        return response;
+      }
+    }
+
+    // If no existing note found, create a new one
     const response = await prisma.note.create({
       data: {
         title: file.title,

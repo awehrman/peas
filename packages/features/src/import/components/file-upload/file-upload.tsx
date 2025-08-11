@@ -29,7 +29,7 @@ export function ImportFileUpload({
       console.log("[FRONTEND] Starting file upload process");
       console.log("[FRONTEND] Total files received:", files.length);
 
-      // Separate HTML files from image files
+      // Separate HTML files from other files
       const htmlFiles = files.filter(
         (file) =>
           file.type === "text/html" ||
@@ -37,10 +37,11 @@ export function ImportFileUpload({
           file.name.endsWith(".htm")
       );
 
+      // All non-HTML files are potential images (including binary files without extensions)
+      // The backend will use enhanced detection to determine which are actually images
       const imageFiles = files.filter(
         (file) =>
-          file.type.startsWith("image/") ||
-          /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(file.name)
+          !htmlFiles.includes(file) // Exclude HTML files
       );
 
       console.log("[FRONTEND] HTML files found:", htmlFiles.length);

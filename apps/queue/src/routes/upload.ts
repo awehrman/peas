@@ -9,7 +9,7 @@ import { LOG_MESSAGES, SECURITY_CONSTANTS } from "../config/constants";
 import { SecurityMiddleware } from "../middleware/security";
 import { ServiceContainer } from "../services";
 import { ActionName, HttpStatus } from "../types";
-import { isImageFile } from "../utils/image-utils";
+import { isImageFile, isImageFileEnhanced } from "../utils/image-utils";
 import {
   ErrorHandler,
   formatLogMessage,
@@ -18,28 +18,27 @@ import {
 
 export const uploadRouter = Router();
 
-// Ensure upload directories exist at startup
+// Initialize upload directories
 const initializeUploadDirectories = async () => {
-  const tempDir = path.join(process.cwd(), "uploads", "temp");
-  const imageDir = path.join(process.cwd(), "uploads", "images");
+  const directories = [
+    path.join(process.cwd(), "uploads"),
+    path.join(process.cwd(), "uploads", "temp"),
+    path.join(process.cwd(), "uploads", "images"),
+    path.join(process.cwd(), "uploads", "processed"),
+  ];
 
-  try {
-    await fs.mkdir(tempDir, { recursive: true });
-    await fs.mkdir(imageDir, { recursive: true });
-    console.log("[UPLOAD_ROUTE] Upload directories initialized:", {
-      tempDir,
-      imageDir,
-    });
-  } catch (error) {
-    console.error(
-      "[UPLOAD_ROUTE] Failed to initialize upload directories:",
-      error
-    );
+  for (const dir of directories) {
+    try {
+      await fs.mkdir(dir, { recursive: true });
+      console.log(`[UPLOAD_ROUTE] Created directory: ${dir}`);
+    } catch (error) {
+      console.warn(`[UPLOAD_ROUTE] Could not create directory ${dir}:`, error);
+    }
   }
 };
 
-// Initialize directories immediately
-initializeUploadDirectories();
+// Initialize directories on startup
+initializeUploadDirectories().catch(console.error);
 
 // Apply security middleware for upload routes
 uploadRouter.use(
@@ -81,16 +80,26 @@ const upload = multer({
     fileSize: 50 * 1024 * 1024, // 50MB limit per file
     files: 100, // Maximum 100 files per upload
   },
-  fileFilter: (req, file, cb) => {
-    // Accept HTML files and images
-    const isHtml =
-      file.mimetype === "text/html" || file.originalname.endsWith(".html");
-    const isImage =
-      file.mimetype.startsWith("image/") || isImageFile(file.originalname);
+  fileFilter: async (req, file, cb) => {
+    try {
+      // Accept HTML files and images
+      const isHtml =
+        file.mimetype === "text/html" || file.originalname.endsWith(".html");
+      
+      // For images, we'll do a quick check here and a full content check later
+      const isImage =
+        file.mimetype.startsWith("image/") || isImageFile(file.originalname);
 
-    if (isHtml || isImage) {
-      cb(null, true);
-    } else {
+      if (isHtml || isImage) {
+        cb(null, true);
+      } else {
+        // For files without extensions or unknown types, we'll check content later
+        // Accept them for now and let the enhanced detection handle it
+        console.log(`[UPLOAD_ROUTE] Accepting file for content check: ${file.originalname}`);
+        cb(null, true);
+      }
+    } catch (error) {
+      console.error("[UPLOAD_ROUTE] File filter error:", error);
       cb(null, false);
     }
   },
@@ -204,8 +213,9 @@ async function processUploadedFiles(
 
     const isHtml =
       file.mimetype === "text/html" || file.originalname.endsWith(".html");
-    const isImage =
-      file.mimetype.startsWith("image/") || isImageFile(file.originalname);
+    
+    // Use enhanced image detection that supports binary files without extensions
+    const isImage = await isImageFileEnhanced(file.originalname, file.path);
 
     console.log(
       `[UPLOAD_ROUTE] File classification - isHtml: ${isHtml}, isImage: ${isImage}`

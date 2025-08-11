@@ -7,6 +7,7 @@ import type { NotePipelineData } from "../../../../types/notes";
 import {
   findImageDirectoryForHtmlFile,
   getImageFilesWithMetadata,
+  findImagesForImport,
 } from "../../../../utils/image-utils";
 import type { BaseWorkerDependencies } from "../../../../workers/types";
 import { setTotalImageJobs } from "../track-completion/service";
@@ -52,8 +53,23 @@ export async function processImages(
       }
     }
 
-    // Method 2: Check common directory patterns if we have an importId
-    if (!imageDirectory && data.importId) {
+    // Method 2: Use enhanced image detection for importId
+    if (imageFiles.length === 0 && data.importId) {
+      logger.log(
+        `[SCHEDULE_IMAGES] No images found via HTML file association, trying enhanced detection for importId: ${data.importId}`
+      );
+      
+      imageFiles = await findImagesForImport(data.importId);
+      
+      if (imageFiles.length > 0) {
+        logger.log(
+          `[SCHEDULE_IMAGES] Found ${imageFiles.length} images via enhanced detection`
+        );
+      }
+    }
+
+    // Method 3: Check common directory patterns if we still don't have images
+    if (imageFiles.length === 0 && data.importId) {
       const commonPaths = [
         // First priority: coordinated upload directory
         path.join(process.cwd(), "uploads", "images", data.importId),
