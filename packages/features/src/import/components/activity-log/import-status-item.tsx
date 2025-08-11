@@ -92,7 +92,7 @@ export function ImportStatusItem({
         <div className="ml-4 space-y-1">
           <div className="flex items-center">
             <div className="mr-3 text-center" style={{ minWidth: "20px" }}>
-              📝
+              {getStepIcon(importStatus.steps.noteProcessing.status)}
             </div>
             <div>Processing note</div>
           </div>

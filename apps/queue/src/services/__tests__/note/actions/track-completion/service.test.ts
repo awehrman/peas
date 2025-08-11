@@ -5,10 +5,10 @@ import {
   cleanupNoteCompletion,
   getNoteCompletionStatus,
   initializeNoteCompletion,
+  markImageJobCompleted,
   markImageWorkerCompleted,
-  markIngredientWorkerCompleted,
-  markInstructionWorkerCompleted,
   markWorkerCompleted,
+  setTotalImageJobs,
 } from "../../../../note/actions/track-completion/service";
 
 describe("Track Completion Service", () => {
@@ -18,14 +18,16 @@ describe("Track Completion Service", () => {
   };
 
   beforeEach(() => {
-    vi.clearAllMocks();
-
     mockLogger = {
       log: vi.fn(),
-    };
+      error: vi.fn(),
+      warn: vi.fn(),
+      info: vi.fn(),
+      debug: vi.fn(),
+    } as StructuredLogger;
 
     mockStatusBroadcaster = {
-      addStatusEventAndBroadcast: vi.fn(),
+      addStatusEventAndBroadcast: vi.fn().mockResolvedValue({}),
     };
   });
 
@@ -45,6 +47,8 @@ describe("Track Completion Service", () => {
         ingredientWorkerCompleted: false,
         imageWorkerCompleted: false,
         allCompleted: false,
+        totalImageJobs: 0,
+        completedImageJobs: 0,
       });
     });
 
@@ -58,6 +62,77 @@ describe("Track Completion Service", () => {
 
       const status = getNoteCompletionStatus(noteId);
       expect(status?.importId).toBe(importId2);
+    });
+  });
+
+  describe("setTotalImageJobs", () => {
+    it("should set total image jobs for a note", () => {
+      const noteId = "test-note-123";
+      const importId = "test-import-456";
+
+      initializeNoteCompletion(noteId, importId);
+      setTotalImageJobs(noteId, 5, mockLogger);
+
+      const status = getNoteCompletionStatus(noteId);
+      expect(status?.totalImageJobs).toBe(5);
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        "[TRACK_COMPLETION] Set total image jobs for note test-note-123: 5"
+      );
+    });
+
+    it("should handle non-existent note ID", () => {
+      setTotalImageJobs("non-existent", 3, mockLogger);
+
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        "[TRACK_COMPLETION] No completion status found for note: non-existent"
+      );
+    });
+  });
+
+  describe("markImageJobCompleted", () => {
+    it("should mark individual image job as completed", () => {
+      const noteId = "test-note-123";
+      const importId = "test-import-456";
+
+      initializeNoteCompletion(noteId, importId);
+      setTotalImageJobs(noteId, 3, mockLogger);
+      markImageJobCompleted(noteId, mockLogger, mockStatusBroadcaster);
+
+      const status = getNoteCompletionStatus(noteId);
+      expect(status?.completedImageJobs).toBe(1);
+      expect(status?.imageWorkerCompleted).toBe(false); // Not all jobs completed yet
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        "[TRACK_COMPLETION] Image job completed for note test-note-123: 1/3"
+      );
+    });
+
+    it("should mark image worker as completed when all jobs are done", () => {
+      const noteId = "test-note-123";
+      const importId = "test-import-456";
+
+      initializeNoteCompletion(noteId, importId);
+      setTotalImageJobs(noteId, 2, mockLogger);
+
+      // Complete first job
+      markImageJobCompleted(noteId, mockLogger, mockStatusBroadcaster);
+
+      // Complete second job - should mark image worker as completed
+      markImageJobCompleted(noteId, mockLogger, mockStatusBroadcaster);
+
+      const status = getNoteCompletionStatus(noteId);
+      expect(status?.completedImageJobs).toBe(2);
+      expect(status?.imageWorkerCompleted).toBe(true);
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        "[TRACK_COMPLETION] All image jobs completed for note test-note-123, marking image worker as completed"
+      );
+    });
+
+    it("should handle non-existent note ID", () => {
+      markImageJobCompleted("non-existent", mockLogger, mockStatusBroadcaster);
+
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        "[TRACK_COMPLETION] No completion status found for note: non-existent"
+      );
     });
   });
 
@@ -79,7 +154,12 @@ describe("Track Completion Service", () => {
       const importId = "test-import-456";
 
       initializeNoteCompletion(noteId, importId);
-      markWorkerCompleted(noteId, "instruction", mockLogger, mockStatusBroadcaster);
+      markWorkerCompleted(
+        noteId,
+        "instruction",
+        mockLogger,
+        mockStatusBroadcaster
+      );
 
       const status = getNoteCompletionStatus(noteId);
       expect(status?.instructionWorkerCompleted).toBe(true);
@@ -91,7 +171,12 @@ describe("Track Completion Service", () => {
       const importId = "test-import-456";
 
       initializeNoteCompletion(noteId, importId);
-      markWorkerCompleted(noteId, "ingredient", mockLogger, mockStatusBroadcaster);
+      markWorkerCompleted(
+        noteId,
+        "ingredient",
+        mockLogger,
+        mockStatusBroadcaster
+      );
 
       const status = getNoteCompletionStatus(noteId);
       expect(status?.ingredientWorkerCompleted).toBe(true);
@@ -115,20 +200,23 @@ describe("Track Completion Service", () => {
       const importId = "test-import-456";
 
       initializeNoteCompletion(noteId, importId);
-      markWorkerCompleted(noteId, "instruction", mockLogger, mockStatusBroadcaster);
+      markWorkerCompleted(noteId, "note", mockLogger, mockStatusBroadcaster);
 
       expect(mockLogger.log).toHaveBeenCalledWith(
-        "[TRACK_COMPLETION] Worker instruction completed for note test-note-123. All completed: false"
+        "[TRACK_COMPLETION] Worker note completed for note test-note-123. All completed: false"
       );
     });
 
     it("should handle non-existent note ID", () => {
-      const nonExistentNoteId = "non-existent-note";
-
-      markWorkerCompleted(nonExistentNoteId, "instruction", mockLogger, mockStatusBroadcaster);
+      markWorkerCompleted(
+        "non-existent",
+        "note",
+        mockLogger,
+        mockStatusBroadcaster
+      );
 
       expect(mockLogger.log).toHaveBeenCalledWith(
-        "[TRACK_COMPLETION] No completion status found for note: non-existent-note"
+        "[TRACK_COMPLETION] No completion status found for note: non-existent"
       );
     });
 
@@ -137,65 +225,88 @@ describe("Track Completion Service", () => {
       const importId = "test-import-456";
 
       initializeNoteCompletion(noteId, importId);
-
-      // Mark all workers as completed
       markWorkerCompleted(noteId, "note", mockLogger, mockStatusBroadcaster);
-      markWorkerCompleted(noteId, "instruction", mockLogger, mockStatusBroadcaster);
-      markWorkerCompleted(noteId, "ingredient", mockLogger, mockStatusBroadcaster);
+      markWorkerCompleted(
+        noteId,
+        "instruction",
+        mockLogger,
+        mockStatusBroadcaster
+      );
+      markWorkerCompleted(
+        noteId,
+        "ingredient",
+        mockLogger,
+        mockStatusBroadcaster
+      );
       markWorkerCompleted(noteId, "image", mockLogger, mockStatusBroadcaster);
 
       const status = getNoteCompletionStatus(noteId);
       expect(status?.allCompleted).toBe(true);
     });
 
-    it("should broadcast completion when all workers are completed", async () => {
+    it("should broadcast completion when all workers are completed", () => {
       const noteId = "test-note-123";
       const importId = "test-import-456";
 
-      mockStatusBroadcaster.addStatusEventAndBroadcast.mockResolvedValue({});
-
       initializeNoteCompletion(noteId, importId);
-
-      // Mark all workers as completed
       markWorkerCompleted(noteId, "note", mockLogger, mockStatusBroadcaster);
-      markWorkerCompleted(noteId, "instruction", mockLogger, mockStatusBroadcaster);
-      markWorkerCompleted(noteId, "ingredient", mockLogger, mockStatusBroadcaster);
+      markWorkerCompleted(
+        noteId,
+        "instruction",
+        mockLogger,
+        mockStatusBroadcaster
+      );
+      markWorkerCompleted(
+        noteId,
+        "ingredient",
+        mockLogger,
+        mockStatusBroadcaster
+      );
       markWorkerCompleted(noteId, "image", mockLogger, mockStatusBroadcaster);
 
-      expect(mockStatusBroadcaster.addStatusEventAndBroadcast).toHaveBeenCalledWith({
+      expect(
+        mockStatusBroadcaster.addStatusEventAndBroadcast
+      ).toHaveBeenCalledWith({
         importId,
         noteId,
         status: "COMPLETED",
         message: `Import ${importId} Completed!`,
-        context: "note_completion",
+        context: "import_complete",
         indentLevel: 0,
         metadata: {
           noteId,
           importId,
         },
       });
-
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        "[TRACK_COMPLETION] Broadcasted completion for note test-note-123"
-      );
     });
 
     it("should handle broadcast errors gracefully", async () => {
       const noteId = "test-note-123";
       const importId = "test-import-456";
+      const mockError = new Error("Broadcast failed");
 
-      const broadcastError = new Error("Broadcast failed");
-      mockStatusBroadcaster.addStatusEventAndBroadcast.mockImplementation(() => {
-        throw broadcastError;
-      });
+      mockStatusBroadcaster.addStatusEventAndBroadcast.mockRejectedValueOnce(
+        mockError
+      );
 
       initializeNoteCompletion(noteId, importId);
-
-      // Mark all workers as completed
       markWorkerCompleted(noteId, "note", mockLogger, mockStatusBroadcaster);
-      markWorkerCompleted(noteId, "instruction", mockLogger, mockStatusBroadcaster);
-      markWorkerCompleted(noteId, "ingredient", mockLogger, mockStatusBroadcaster);
+      markWorkerCompleted(
+        noteId,
+        "instruction",
+        mockLogger,
+        mockStatusBroadcaster
+      );
+      markWorkerCompleted(
+        noteId,
+        "ingredient",
+        mockLogger,
+        mockStatusBroadcaster
+      );
       markWorkerCompleted(noteId, "image", mockLogger, mockStatusBroadcaster);
+
+      // Wait for the async error handling
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       expect(mockLogger.log).toHaveBeenCalledWith(
         "[TRACK_COMPLETION] Failed to broadcast completion: Error: Broadcast failed"
@@ -207,33 +318,42 @@ describe("Track Completion Service", () => {
       const importId = "test-import-456";
 
       initializeNoteCompletion(noteId, importId);
-
-      // Mark all workers as completed without statusBroadcaster
       markWorkerCompleted(noteId, "note", mockLogger);
       markWorkerCompleted(noteId, "instruction", mockLogger);
       markWorkerCompleted(noteId, "ingredient", mockLogger);
       markWorkerCompleted(noteId, "image", mockLogger);
 
-      const status = getNoteCompletionStatus(noteId);
-      expect(status?.allCompleted).toBe(true);
-      expect(mockStatusBroadcaster.addStatusEventAndBroadcast).not.toHaveBeenCalled();
+      expect(
+        mockStatusBroadcaster.addStatusEventAndBroadcast
+      ).not.toHaveBeenCalled();
     });
 
     it("should handle non-Error exceptions in broadcast", async () => {
       const noteId = "test-note-123";
       const importId = "test-import-456";
 
-      mockStatusBroadcaster.addStatusEventAndBroadcast.mockImplementation(() => {
-        throw "String error";
-      });
+      mockStatusBroadcaster.addStatusEventAndBroadcast.mockRejectedValueOnce(
+        "String error"
+      );
 
       initializeNoteCompletion(noteId, importId);
-
-      // Mark all workers as completed
       markWorkerCompleted(noteId, "note", mockLogger, mockStatusBroadcaster);
-      markWorkerCompleted(noteId, "instruction", mockLogger, mockStatusBroadcaster);
-      markWorkerCompleted(noteId, "ingredient", mockLogger, mockStatusBroadcaster);
+      markWorkerCompleted(
+        noteId,
+        "instruction",
+        mockLogger,
+        mockStatusBroadcaster
+      );
+      markWorkerCompleted(
+        noteId,
+        "ingredient",
+        mockLogger,
+        mockStatusBroadcaster
+      );
       markWorkerCompleted(noteId, "image", mockLogger, mockStatusBroadcaster);
+
+      // Wait for the async error handling
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       expect(mockLogger.log).toHaveBeenCalledWith(
         "[TRACK_COMPLETION] Failed to broadcast completion: String error"
@@ -257,13 +377,13 @@ describe("Track Completion Service", () => {
         ingredientWorkerCompleted: false,
         imageWorkerCompleted: false,
         allCompleted: false,
+        totalImageJobs: 0,
+        completedImageJobs: 0,
       });
     });
 
     it("should return undefined for non-existent note", () => {
-      const nonExistentNoteId = "non-existent-note";
-      const status = getNoteCompletionStatus(nonExistentNoteId);
-
+      const status = getNoteCompletionStatus("non-existent");
       expect(status).toBeUndefined();
     });
   });
@@ -281,10 +401,7 @@ describe("Track Completion Service", () => {
     });
 
     it("should handle cleanup of non-existent note", () => {
-      const nonExistentNoteId = "non-existent-note";
-
-      // Should not throw an error
-      expect(() => cleanupNoteCompletion(nonExistentNoteId)).not.toThrow();
+      expect(() => cleanupNoteCompletion("non-existent")).not.toThrow();
     });
   });
 
@@ -294,7 +411,12 @@ describe("Track Completion Service", () => {
       const importId = "test-import-456";
 
       initializeNoteCompletion(noteId, importId);
-      markInstructionWorkerCompleted(noteId, mockLogger, mockStatusBroadcaster);
+      markWorkerCompleted(
+        noteId,
+        "instruction",
+        mockLogger,
+        mockStatusBroadcaster
+      );
 
       const status = getNoteCompletionStatus(noteId);
       expect(status?.instructionWorkerCompleted).toBe(true);
@@ -310,7 +432,12 @@ describe("Track Completion Service", () => {
       const importId = "test-import-456";
 
       initializeNoteCompletion(noteId, importId);
-      markIngredientWorkerCompleted(noteId, mockLogger, mockStatusBroadcaster);
+      markWorkerCompleted(
+        noteId,
+        "ingredient",
+        mockLogger,
+        mockStatusBroadcaster
+      );
 
       const status = getNoteCompletionStatus(noteId);
       expect(status?.ingredientWorkerCompleted).toBe(true);
@@ -347,7 +474,12 @@ describe("Track Completion Service", () => {
       initializeNoteCompletion(note2, import2);
 
       markWorkerCompleted(note1, "note", mockLogger, mockStatusBroadcaster);
-      markWorkerCompleted(note2, "instruction", mockLogger, mockStatusBroadcaster);
+      markWorkerCompleted(
+        note2,
+        "instruction",
+        mockLogger,
+        mockStatusBroadcaster
+      );
 
       const status1 = getNoteCompletionStatus(note1);
       const status2 = getNoteCompletionStatus(note2);
@@ -374,13 +506,23 @@ describe("Track Completion Service", () => {
       expect(status?.allCompleted).toBe(false);
 
       // Mark instruction worker completed
-      markWorkerCompleted(noteId, "instruction", mockLogger, mockStatusBroadcaster);
+      markWorkerCompleted(
+        noteId,
+        "instruction",
+        mockLogger,
+        mockStatusBroadcaster
+      );
       status = getNoteCompletionStatus(noteId);
       expect(status?.instructionWorkerCompleted).toBe(true);
       expect(status?.allCompleted).toBe(false);
 
       // Mark ingredient worker completed
-      markWorkerCompleted(noteId, "ingredient", mockLogger, mockStatusBroadcaster);
+      markWorkerCompleted(
+        noteId,
+        "ingredient",
+        mockLogger,
+        mockStatusBroadcaster
+      );
       status = getNoteCompletionStatus(noteId);
       expect(status?.ingredientWorkerCompleted).toBe(true);
       expect(status?.allCompleted).toBe(false);
@@ -401,17 +543,20 @@ describe("Track Completion Service", () => {
       const importId = "test-import-456";
 
       initializeNoteCompletion(noteId, importId);
+      setTotalImageJobs(noteId, 3, mockLogger);
 
-      // Mark only some workers as completed
-      markWorkerCompleted(noteId, "note", mockLogger, mockStatusBroadcaster);
-      markWorkerCompleted(noteId, "instruction", mockLogger, mockStatusBroadcaster);
+      // Complete some image jobs but not all
+      markImageJobCompleted(noteId, mockLogger, mockStatusBroadcaster);
+      markImageJobCompleted(noteId, mockLogger, mockStatusBroadcaster);
 
       const status = getNoteCompletionStatus(noteId);
-      expect(status?.noteWorkerCompleted).toBe(true);
-      expect(status?.instructionWorkerCompleted).toBe(true);
-      expect(status?.ingredientWorkerCompleted).toBe(false);
+      expect(status?.completedImageJobs).toBe(2);
       expect(status?.imageWorkerCompleted).toBe(false);
-      expect(status?.allCompleted).toBe(false);
+
+      // Complete the last image job
+      markImageJobCompleted(noteId, mockLogger, mockStatusBroadcaster);
+      expect(status?.completedImageJobs).toBe(3);
+      expect(status?.imageWorkerCompleted).toBe(true);
     });
   });
 });

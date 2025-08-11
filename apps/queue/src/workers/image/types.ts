@@ -1,9 +1,8 @@
 import type { IServiceContainer } from "../../services/container";
-import type { StructuredLogger } from "../../types";
+import type { BaseWorkerDependencies } from "../types";
 
-export interface ImageWorkerDependencies {
+export interface ImageWorkerDependencies extends BaseWorkerDependencies {
   serviceContainer: IServiceContainer;
-  logger: StructuredLogger;
 }
 
 export interface ImagePipelineData {

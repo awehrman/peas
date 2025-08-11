@@ -2,8 +2,7 @@ import {
   createIngredientReference,
   findOrCreateIngredient,
   getIngredientCompletionStatus,
-  replaceParsedSegments,
-  upsertParsedIngredientLine,
+  saveParsedIngredientLine,
 } from "@peas/database";
 
 import type { StructuredLogger } from "../../../../types";
@@ -32,17 +31,6 @@ export async function saveIngredientLine(
       `[SAVE_INGREDIENT_LINE] Starting to save ingredient: noteId=${data.noteId}, lineIndex=${data.lineIndex}, jobId=${data.jobId}`
     );
 
-    // Update the ingredient line in the database
-    const result = await upsertParsedIngredientLine(
-      data.noteId,
-      data.lineIndex,
-      data.ingredientReference,
-      data.parseStatus,
-      undefined, // rule
-      0, // blockIndex
-      data.isActive
-    );
-
     // Handle parsed segments if they exist
     const parsedSegments = data.metadata?.parsedSegments as
       | Array<{
@@ -53,6 +41,18 @@ export async function saveIngredientLine(
           processingTime?: number;
         }>
       | undefined;
+
+    // Update the ingredient line in the database with segments
+    const result = await saveParsedIngredientLine(
+      data.noteId,
+      data.lineIndex,
+      data.ingredientReference,
+      data.parseStatus,
+      undefined, // rule
+      0, // blockIndex
+      data.isActive,
+      parsedSegments || []
+    );
 
     if (parsedSegments && parsedSegments.length > 0) {
       // Create parsing rules and get rule IDs for segments
@@ -91,9 +91,6 @@ export async function saveIngredientLine(
           ruleNumber: i + 1,
         });
       }
-
-      // Replace parsed segments with rule IDs
-      await replaceParsedSegments(result.id, segmentsWithRuleIds);
 
       // Process ingredient segments
       for (const segment of segmentsWithRuleIds) {

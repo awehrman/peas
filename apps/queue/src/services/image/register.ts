@@ -9,6 +9,7 @@ import {
   registerActions,
 } from "../../workers/shared/action-registry";
 
+import { CheckImageCompletionAction } from "./actions/check-completion/action";
 import { CleanupLocalFilesAction } from "./actions/cleanup-local-files/action";
 import { ImageCompletedStatusAction } from "./actions/image-completed-status/action";
 import { ProcessImageAction } from "./actions/process-image/action";
@@ -63,6 +64,11 @@ export function registerImageActions(
       ImageWorkerDependencies,
       ImageJobData
     >(ActionName.IMAGE_COMPLETED_STATUS, ImageCompletedStatusAction),
+    createActionRegistration<
+      ImageJobData,
+      ImageWorkerDependencies,
+      ImageJobData
+    >(ActionName.CHECK_IMAGE_COMPLETION, CheckImageCompletionAction),
   ]);
 
   console.log("[IMAGE_SERVICE_REGISTER] Image actions registered successfully");

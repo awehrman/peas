@@ -28,18 +28,9 @@ export async function getIngredientCompletionStatus(noteId: string): Promise<{
         totalIngredientLines: true,
         parsedIngredientLines: {
           where: {
-            OR: [
-              {
-                parseStatus: {
-                  in: ["COMPLETED_SUCCESSFULLY", "COMPLETED_WITH_ERROR"],
-                },
-              },
-              {
-                reference: {
-                  not: "",
-                },
-              },
-            ],
+            parseStatus: {
+              in: ["COMPLETED_SUCCESSFULLY", "COMPLETED_WITH_ERROR"],
+            },
           },
           select: {
             id: true,
@@ -80,37 +71,32 @@ export async function saveParsedIngredientLine(
   isActive: boolean,
   parsedSegments: ParsedSegment[]
 ): Promise<{ id: string }> {
-  // Find existing line or create new one
-  const existingLine = await prisma.parsedIngredientLine.findFirst({
+  // Use upsert to create or update the ingredient line
+  const lineRecord = await prisma.parsedIngredientLine.upsert({
     where: {
+      noteId_lineIndex: {
+        noteId,
+        lineIndex,
+      },
+    },
+    update: {
+      reference,
+      parseStatus,
+      rule,
+      parsedAt: new Date(),
+      isActive,
+    },
+    create: {
       noteId,
+      blockIndex,
       lineIndex,
+      reference,
+      rule,
+      parseStatus,
+      parsedAt: new Date(),
+      isActive,
     },
   });
-
-  const lineRecord = existingLine
-    ? await prisma.parsedIngredientLine.update({
-        where: { id: existingLine.id },
-        data: {
-          reference,
-          parseStatus,
-          rule,
-          parsedAt: new Date(),
-          isActive,
-        },
-      })
-    : await prisma.parsedIngredientLine.create({
-        data: {
-          noteId,
-          blockIndex,
-          lineIndex,
-          reference,
-          rule,
-          parseStatus,
-          parsedAt: new Date(),
-          isActive,
-        },
-      });
 
   // Replace segments (delete old, insert new)
   await prisma.parsedSegment.deleteMany({
@@ -126,6 +112,7 @@ export async function saveParsedIngredientLine(
         type: seg.type,
         value: seg.value,
         processingTime: seg.processingTime,
+        ruleId: seg.ruleId,
       })),
     });
   }
@@ -153,52 +140,6 @@ export async function updateParsedIngredientLineById(
       isActive,
     },
   });
-
-  return { id: lineRecord.id };
-}
-
-/**
- * Upsert a parsed ingredient line (create or update)
- */
-export async function upsertParsedIngredientLine(
-  noteId: string,
-  lineIndex: number,
-  reference: string,
-  parseStatus: ParseStatus,
-  rule: string | undefined,
-  blockIndex: number,
-  isActive: boolean
-): Promise<{ id: string }> {
-  const existingLine = await prisma.parsedIngredientLine.findFirst({
-    where: {
-      noteId,
-      lineIndex,
-      reference, // Include reference in the lookup to prevent duplicates
-    },
-  });
-
-  const lineRecord = existingLine
-    ? await prisma.parsedIngredientLine.update({
-        where: { id: existingLine.id },
-        data: {
-          parseStatus,
-          rule,
-          parsedAt: new Date(),
-          isActive,
-        },
-      })
-    : await prisma.parsedIngredientLine.create({
-        data: {
-          noteId,
-          blockIndex,
-          lineIndex,
-          reference,
-          rule,
-          parseStatus,
-          parsedAt: new Date(),
-          isActive,
-        },
-      });
 
   return { id: lineRecord.id };
 }

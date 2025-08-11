@@ -26,6 +26,7 @@ export interface ImportStatus {
   steps: {
     cleaning: StepStatus;
     structure: StepStatus;
+    noteProcessing: StepStatus;
     ingredients: CountableStepStatus;
     instructions: CountableStepStatus;
     source: StepStatus;

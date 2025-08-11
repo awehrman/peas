@@ -1,4 +1,5 @@
 import fs from "fs/promises";
+import path from "path";
 
 import type { IServiceContainer } from "../../../../services/container";
 import type { StructuredLogger } from "../../../../types";
@@ -47,6 +48,34 @@ export async function cleanupLocalFiles(
         }
       })
     );
+
+    // Clean up the output directory if it exists and is empty
+    try {
+      if (data.outputDir) {
+        const outputDirPath = path.resolve(data.outputDir);
+        logger.log(`[CLEANUP_LOCAL_FILES] Checking output directory: ${outputDirPath}`);
+        
+        // Check if directory exists
+        const dirStats = await fs.stat(outputDirPath);
+        if (dirStats.isDirectory()) {
+          // List contents to see if directory is empty
+          const contents = await fs.readdir(outputDirPath);
+          if (contents.length === 0) {
+            // Directory is empty, remove it
+            await fs.rmdir(outputDirPath);
+            logger.log(`[CLEANUP_LOCAL_FILES] Successfully removed empty output directory: ${outputDirPath}`);
+          } else {
+            logger.log(`[CLEANUP_LOCAL_FILES] Output directory not empty (${contents.length} items), leaving: ${outputDirPath}`);
+          }
+        }
+      }
+    } catch (dirError) {
+      if ((dirError as { code?: string }).code === "ENOENT") {
+        logger.log(`[CLEANUP_LOCAL_FILES] Output directory already deleted: ${data.outputDir}`);
+      } else {
+        logger.log(`[CLEANUP_LOCAL_FILES] Failed to cleanup output directory: ${dirError}`);
+      }
+    }
 
     const successful = cleanupResults.filter(
       (result) => result.status === "fulfilled" && result.value.success

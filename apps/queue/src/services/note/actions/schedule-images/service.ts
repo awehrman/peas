@@ -9,6 +9,7 @@ import {
   getImageFilesWithMetadata,
 } from "../../../../utils/image-utils";
 import type { BaseWorkerDependencies } from "../../../../workers/types";
+import { setTotalImageJobs } from "../track-completion/service";
 
 export async function processImages(
   data: NotePipelineData,
@@ -111,12 +112,17 @@ export async function processImages(
       logger.log(
         `[SCHEDULE_IMAGES] No image files found for note: ${data.noteId}`
       );
+      // Set total image jobs to 0 since there are no images
+      setTotalImageJobs(data.noteId, 0, logger);
       return data;
     }
 
     logger.log(
       `[SCHEDULE_IMAGES] Found ${imageFiles.length} image files to process`
     );
+
+    // Set the total number of image jobs for completion tracking
+    setTotalImageJobs(data.noteId, imageFiles.length, logger);
 
     // Use the existing image queue from the dependencies
     const imageQueue = queues?.imageQueue;

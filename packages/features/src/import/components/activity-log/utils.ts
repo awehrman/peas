@@ -7,7 +7,7 @@ export const getStepIcon = (
     case "pending":
       return "⏳";
     case "processing":
-      return "🔄";
+      return "⏳";
     case "completed":
       return "✅";
     case "failed":

@@ -9,8 +9,7 @@ vi.mock("@peas/database", () => ({
   createIngredientReference: vi.fn(),
   findOrCreateIngredient: vi.fn(),
   getIngredientCompletionStatus: vi.fn(),
-  replaceParsedSegments: vi.fn(),
-  upsertParsedIngredientLine: vi.fn(),
+  saveParsedIngredientLine: vi.fn(),
   findOrCreateParsingRule: vi.fn(),
 }));
 
@@ -28,8 +27,7 @@ describe("Save Ingredient Line Service", () => {
     createIngredientReference: ReturnType<typeof vi.fn>;
     findOrCreateIngredient: ReturnType<typeof vi.fn>;
     getIngredientCompletionStatus: ReturnType<typeof vi.fn>;
-    replaceParsedSegments: ReturnType<typeof vi.fn>;
-    upsertParsedIngredientLine: ReturnType<typeof vi.fn>;
+    saveParsedIngredientLine: ReturnType<typeof vi.fn>;
     findOrCreateParsingRule: ReturnType<typeof vi.fn>;
   };
   let mockCreateQueue: ReturnType<typeof vi.fn>;
@@ -55,9 +53,8 @@ describe("Save Ingredient Line Service", () => {
       getIngredientCompletionStatus: vi.mocked(
         databaseModule.getIngredientCompletionStatus
       ),
-      replaceParsedSegments: vi.mocked(databaseModule.replaceParsedSegments),
-      upsertParsedIngredientLine: vi.mocked(
-        databaseModule.upsertParsedIngredientLine
+      saveParsedIngredientLine: vi.mocked(
+        databaseModule.saveParsedIngredientLine
       ),
       findOrCreateParsingRule: vi.mocked(
         databaseModule.findOrCreateParsingRule
@@ -68,7 +65,7 @@ describe("Save Ingredient Line Service", () => {
     mockCreateQueue = vi.mocked(queueModule.createQueue);
 
     // Setup default mock implementations
-    mockDatabase.upsertParsedIngredientLine.mockResolvedValue({
+    mockDatabase.saveParsedIngredientLine.mockResolvedValue({
       id: "ingredient-line-123",
     });
     mockDatabase.findOrCreateParsingRule.mockResolvedValue({ id: "rule-123" });
@@ -129,24 +126,40 @@ describe("Save Ingredient Line Service", () => {
         mockStatusBroadcaster
       );
 
-      expect(mockDatabase.upsertParsedIngredientLine).toHaveBeenCalledWith(
+      expect(mockDatabase.saveParsedIngredientLine).toHaveBeenCalledWith(
         "test-note-123",
         0,
         "1 cup flour",
         "COMPLETED_SUCCESSFULLY",
         undefined,
         0,
-        true
+        true,
+        [
+          {
+            index: 0,
+            rule: "quantity",
+            type: "quantity",
+            value: "1",
+            processingTime: 10,
+          },
+          {
+            index: 1,
+            rule: "unit",
+            type: "unit",
+            value: "cup",
+            processingTime: 5,
+          },
+          {
+            index: 2,
+            rule: "ingredient",
+            type: "ingredient",
+            value: "flour",
+            processingTime: 15,
+          },
+        ]
       );
 
       expect(mockDatabase.findOrCreateParsingRule).toHaveBeenCalledTimes(3);
-      expect(mockDatabase.replaceParsedSegments).toHaveBeenCalledWith(
-        "ingredient-line-123",
-        expect.arrayContaining([
-          expect.objectContaining({ ruleId: "rule-123" }),
-        ])
-      );
-
       expect(mockDatabase.findOrCreateIngredient).toHaveBeenCalledWith("flour");
       expect(mockDatabase.createIngredientReference).toHaveBeenCalledWith(
         "ingredient-123",
@@ -176,9 +189,18 @@ describe("Save Ingredient Line Service", () => {
         mockStatusBroadcaster
       );
 
-      expect(mockDatabase.upsertParsedIngredientLine).toHaveBeenCalled();
+      expect(mockDatabase.saveParsedIngredientLine).toHaveBeenCalledWith(
+        "test-note-123",
+        0,
+        "1 cup flour",
+        "COMPLETED_SUCCESSFULLY",
+        undefined,
+        0,
+        true,
+        []
+      );
+
       expect(mockDatabase.findOrCreateParsingRule).not.toHaveBeenCalled();
-      expect(mockDatabase.replaceParsedSegments).not.toHaveBeenCalled();
       expect(mockDatabase.findOrCreateIngredient).not.toHaveBeenCalled();
 
       expect(result).toEqual(mockData);
@@ -253,7 +275,7 @@ describe("Save Ingredient Line Service", () => {
         id: "rule-ingredient-123",
       });
 
-      // Since the dynamic import is not being mocked properly, 
+      // Since the dynamic import is not being mocked properly,
       // we'll just verify that the service completes successfully
       // and that pattern tracking was attempted (by checking the success log)
       const result = await saveIngredientLine(
@@ -390,7 +412,7 @@ describe("Save Ingredient Line Service", () => {
         importId: "test-import-123",
       };
 
-      mockDatabase.upsertParsedIngredientLine.mockRejectedValue(
+      mockDatabase.saveParsedIngredientLine.mockRejectedValue(
         new Error("Database connection failed")
       );
 
@@ -430,7 +452,6 @@ describe("Save Ingredient Line Service", () => {
       );
 
       expect(mockDatabase.findOrCreateParsingRule).not.toHaveBeenCalled();
-      expect(mockDatabase.replaceParsedSegments).not.toHaveBeenCalled();
       expect(result).toEqual(mockData);
     });
 
@@ -455,7 +476,6 @@ describe("Save Ingredient Line Service", () => {
       );
 
       expect(mockDatabase.findOrCreateParsingRule).not.toHaveBeenCalled();
-      expect(mockDatabase.replaceParsedSegments).not.toHaveBeenCalled();
       expect(result).toEqual(mockData);
     });
 

@@ -1,17 +1,16 @@
 import type { ImageWorkerDependencies } from "./types";
 
 import type { IServiceContainer } from "../../services/container";
+import { buildBaseDependencies } from "../core/worker-dependencies/build-base-dependencies";
 
 export function buildImageWorkerDependencies(
   container: IServiceContainer
 ): ImageWorkerDependencies {
-  console.log("[IMAGE_WORKER_DEPS] Building image worker dependencies");
-  console.log("[IMAGE_WORKER_DEPS] Container available:", !!container);
-  console.log("[IMAGE_WORKER_DEPS] Logger available:", !!container.logger);
+  const baseDependencies = buildBaseDependencies(container);
 
-  const dependencies = {
+  const dependencies: ImageWorkerDependencies = {
+    ...baseDependencies,
     serviceContainer: container,
-    logger: container.logger,
   };
 
   console.log("[IMAGE_WORKER_DEPS] Dependencies built successfully");

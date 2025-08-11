@@ -294,6 +294,7 @@ model ParsedIngredientLine {
   @@index([noteId])
   @@index([isActive])
   @@index([uniqueLinePatternId])
+  @@unique([noteId, lineIndex])
 }
 
 model ParsedInstructionLine {

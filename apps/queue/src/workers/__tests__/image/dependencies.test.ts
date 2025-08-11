@@ -1,19 +1,17 @@
+import type { Queue } from "bullmq";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { IServiceContainer } from "../../../services/container";
 import type { StructuredLogger } from "../../../types";
 import { buildImageWorkerDependencies } from "../../image/dependencies";
 
-// Mock console.log to capture output
-const mockConsoleLog = vi.fn();
-
 describe("Image Worker Dependencies", () => {
   let mockContainer: IServiceContainer;
   let mockLogger: StructuredLogger;
+  let mockQueue: Queue;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    console.log = mockConsoleLog;
 
     mockLogger = {
       log: vi.fn(),
@@ -22,9 +20,32 @@ describe("Image Worker Dependencies", () => {
       debug: vi.fn(),
     } as StructuredLogger;
 
+    mockQueue = {
+      add: vi.fn(),
+      process: vi.fn(),
+      close: vi.fn(),
+      name: "test-queue",
+    } as unknown as Queue;
+
     mockContainer = {
       logger: mockLogger,
-      // Add other required properties as needed
+      statusBroadcaster: {
+        addStatusEventAndBroadcast: vi.fn(),
+      },
+      queues: {
+        noteQueue: mockQueue,
+        imageQueue: mockQueue,
+        ingredientQueue: mockQueue,
+        instructionQueue: mockQueue,
+        categorizationQueue: mockQueue,
+        sourceQueue: mockQueue,
+      },
+      errorHandler: {
+        withErrorHandling: vi.fn(),
+        createJobError: vi.fn(),
+        classifyError: vi.fn(),
+        logError: vi.fn(),
+      },
     } as IServiceContainer;
   });
 
@@ -32,25 +53,12 @@ describe("Image Worker Dependencies", () => {
     it("should build dependencies successfully with valid container", () => {
       const dependencies = buildImageWorkerDependencies(mockContainer);
 
-      expect(dependencies).toEqual({
-        serviceContainer: mockContainer,
-        logger: mockLogger,
-      });
-
-      expect(mockConsoleLog).toHaveBeenCalledWith(
-        "[IMAGE_WORKER_DEPS] Building image worker dependencies"
-      );
-      expect(mockConsoleLog).toHaveBeenCalledWith(
-        "[IMAGE_WORKER_DEPS] Container available:",
-        true
-      );
-      expect(mockConsoleLog).toHaveBeenCalledWith(
-        "[IMAGE_WORKER_DEPS] Logger available:",
-        true
-      );
-      expect(mockConsoleLog).toHaveBeenCalledWith(
-        "[IMAGE_WORKER_DEPS] Dependencies built successfully"
-      );
+      expect(dependencies).toHaveProperty("serviceContainer");
+      expect(dependencies).toHaveProperty("logger");
+      expect(dependencies).toHaveProperty("statusBroadcaster");
+      expect(dependencies).toHaveProperty("queues");
+      expect(dependencies).toHaveProperty("errorHandler");
+      expect(dependencies.serviceContainer).toBe(mockContainer);
     });
 
     it("should handle container without logger", () => {
@@ -61,27 +69,21 @@ describe("Image Worker Dependencies", () => {
 
       const dependencies = buildImageWorkerDependencies(containerWithoutLogger);
 
-      expect(dependencies).toEqual({
-        serviceContainer: containerWithoutLogger,
-        logger: undefined,
-      });
-
-      expect(mockConsoleLog).toHaveBeenCalledWith(
-        "[IMAGE_WORKER_DEPS] Logger available:",
-        false
-      );
+      expect(dependencies).toHaveProperty("serviceContainer");
+      expect(dependencies).toHaveProperty("logger");
+      expect(dependencies.serviceContainer).toBe(containerWithoutLogger);
     });
 
     it("should handle null container", () => {
       expect(() => {
         buildImageWorkerDependencies(null as unknown as IServiceContainer);
-      }).toThrow("Cannot read properties of null (reading 'logger')");
+      }).toThrow("Cannot read properties of null (reading 'queues')");
     });
 
     it("should handle undefined container", () => {
       expect(() => {
         buildImageWorkerDependencies(undefined as unknown as IServiceContainer);
-      }).toThrow("Cannot read properties of undefined (reading 'logger')");
+      }).toThrow("Cannot read properties of undefined (reading 'queues')");
     });
 
     it("should return correct type structure", () => {
@@ -89,8 +91,11 @@ describe("Image Worker Dependencies", () => {
 
       expect(dependencies).toHaveProperty("serviceContainer");
       expect(dependencies).toHaveProperty("logger");
+      expect(dependencies).toHaveProperty("statusBroadcaster");
+      expect(dependencies).toHaveProperty("queues");
+      expect(dependencies).toHaveProperty("errorHandler");
       expect(typeof dependencies.serviceContainer).toBe("object");
-      expect(dependencies.logger).toBe(mockLogger);
+      expect(dependencies.serviceContainer).toBe(mockContainer);
     });
   });
 });

@@ -18,6 +18,7 @@ export function processStatusEvents(
         steps: {
           cleaning: { status: "pending" },
           structure: { status: "pending" },
+          noteProcessing: { status: "pending" },
           ingredients: { status: "pending", current: 0, total: 0, errors: 0 },
           instructions: {
             status: "pending",
@@ -75,7 +76,14 @@ export function processStatusEvents(
         break;
 
       case "note_processing":
-        // This is just a container message, no status change needed
+        if (hasError) {
+          status.steps.noteProcessing = {
+            status: "failed",
+            error: event.errorMessage,
+          };
+        } else {
+          status.steps.noteProcessing = { status: "processing" };
+        }
         break;
 
       case "ingredient_processing":
@@ -95,6 +103,14 @@ export function processStatusEvents(
           status.steps.ingredients.total > 0
         ) {
           status.steps.ingredients.status = "completed";
+        }
+
+        // Mark noteProcessing as completed when both ingredients and instructions are done
+        if (
+          status.steps.ingredients.status === "completed" &&
+          status.steps.instructions.status === "completed"
+        ) {
+          status.steps.noteProcessing.status = "completed";
         }
         break;
 
@@ -116,6 +132,14 @@ export function processStatusEvents(
           status.steps.instructions.total > 0
         ) {
           status.steps.instructions.status = "completed";
+        }
+
+        // Mark noteProcessing as completed when both ingredients and instructions are done
+        if (
+          status.steps.ingredients.status === "completed" &&
+          status.steps.instructions.status === "completed"
+        ) {
+          status.steps.noteProcessing.status = "completed";
         }
         break;
 
@@ -165,6 +189,7 @@ export function processStatusEvents(
     const allStepsCompleted =
       status.steps.cleaning.status === "completed" &&
       status.steps.structure.status === "completed" &&
+      status.steps.noteProcessing.status === "completed" &&
       status.steps.ingredients.status === "completed" &&
       status.steps.instructions.status === "completed" &&
       status.steps.source.status === "completed" &&
@@ -180,6 +205,7 @@ export function processStatusEvents(
     const anyStepFailed =
       status.steps.cleaning.status === "failed" ||
       status.steps.structure.status === "failed" ||
+      status.steps.noteProcessing.status === "failed" ||
       status.steps.ingredients.status === "failed" ||
       status.steps.instructions.status === "failed" ||
       status.steps.source.status === "failed" ||

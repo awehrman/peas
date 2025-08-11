@@ -43,6 +43,10 @@ export class ImageWorker extends BaseWorker<
         ActionName.IMAGE_COMPLETED_STATUS,
         this.dependencies
       ),
+      this.actionFactory.create(
+        ActionName.CHECK_IMAGE_COMPLETION,
+        this.dependencies
+      ),
     ];
     console.log(
       `[IMAGE_WORKER] Created pipeline with ${pipeline.length} actions`

@@ -24,7 +24,12 @@ export class ImageCompletedStatusAction extends BaseAction<
       data,
       deps,
       context,
-      serviceCall: () => updateImageCompletedStatus(data, deps.serviceContainer, deps.logger),
+      serviceCall: () => updateImageCompletedStatus(
+        data, 
+        deps.serviceContainer, 
+        deps.logger,
+        deps.statusBroadcaster
+      ),
       contextName: "image_completed_status",
       startMessage: "Image completed status update started",
       completionMessage: "Image completed status update completed",

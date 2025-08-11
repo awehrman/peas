@@ -82,6 +82,7 @@ export enum ActionName {
   SAVE_IMAGE = "save_image",
   CLEANUP_LOCAL_FILES = "cleanup_local_files",
   IMAGE_COMPLETED_STATUS = "image_completed_status",
+  CHECK_IMAGE_COMPLETION = "check_image_completion",
 
   // Categorization actions
   PROCESS_CATEGORIZATION = "process_categorization",
@@ -320,6 +321,7 @@ export const ACTION_CATEGORIES: Record<ActionName, ActionCategory> = {
   [ActionName.SAVE_IMAGE]: ActionCategory.IMAGE,
   [ActionName.CLEANUP_LOCAL_FILES]: ActionCategory.IMAGE,
   [ActionName.IMAGE_COMPLETED_STATUS]: ActionCategory.IMAGE,
+  [ActionName.CHECK_IMAGE_COMPLETION]: ActionCategory.IMAGE,
 
   // Categorization actions
   [ActionName.PROCESS_CATEGORIZATION]: ActionCategory.CATEGORIZATION,
