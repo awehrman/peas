@@ -176,9 +176,13 @@ export function processStatusEvents(
             error: event.errorMessage,
           };
         } else if (
-          event.message?.includes(CompletionMessages.VERIFY_DUPLICATES)
+          event.message?.includes(CompletionMessages.VERIFY_DUPLICATES) ||
+          event.message?.includes(CompletionMessages.DUPLICATE_IDENTIFIED)
         ) {
-          status.steps.duplicates = { status: "completed" };
+          status.steps.duplicates = { 
+            status: "completed",
+            message: event.message,
+          };
         } else {
           status.steps.duplicates = { status: "processing" };
         }

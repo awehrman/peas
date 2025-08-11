@@ -183,7 +183,7 @@ describe("ProcessSourceAction", () => {
         serviceCall: expect.any(Function),
         contextName: "PROCESS_SOURCE",
         startMessage: "Processing source...",
-        completionMessage: "Added source...",
+        completionMessage: "Added source!",
       });
     });
 

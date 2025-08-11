@@ -29,7 +29,7 @@ interface DuplicateCheckResult {
 export async function checkForDuplicates(
   data: NotePipelineData,
   logger: StructuredLogger
-): Promise<NotePipelineData> {
+): Promise<{ data: NotePipelineData; hasDuplicates: boolean }> {
   logger.log(
     `[CHECK_DUPLICATES] Starting duplicate check for note: ${data.noteId}`
   );
@@ -49,7 +49,7 @@ export async function checkForDuplicates(
       logger.log(
         `[CHECK_DUPLICATES] Note ${data.noteId} has no title, skipping duplicate check`
       );
-      return data;
+      return { data, hasDuplicates: false };
     }
 
     // Generate and save SimHash for the current note's title
@@ -89,6 +89,8 @@ export async function checkForDuplicates(
       logger.log(
         `[CHECK_DUPLICATES] Note ${data.noteId} marked as DUPLICATE with ${duplicateResult.highestConfidence * 100}% confidence`
       );
+      
+      return { data, hasDuplicates: true };
     } else if (duplicateResult.matches.length > 0) {
       logger.log(
         `[CHECK_DUPLICATES] Potential duplicates found but confidence too low (${duplicateResult.highestConfidence * 100}% < 90%). Keeping note as non-duplicate.`
@@ -99,7 +101,7 @@ export async function checkForDuplicates(
       );
     }
 
-    return data;
+    return { data, hasDuplicates: false };
   } catch (error) {
     logger.log(`[CHECK_DUPLICATES] Failed to check for duplicates: ${error}`);
     throw error;

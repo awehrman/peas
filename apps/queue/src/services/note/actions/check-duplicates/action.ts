@@ -23,7 +23,7 @@ export class CheckDuplicatesAction extends BaseAction<
   async execute(
     data: NotePipelineData,
     deps: NoteWorkerDependencies,
-    context: ActionContext
+    _context: ActionContext
   ): Promise<NotePipelineData> {
     // Validate input before processing
     const validationError = this.validateInput(data);
@@ -31,14 +31,33 @@ export class CheckDuplicatesAction extends BaseAction<
       throw validationError;
     }
 
-    return this.executeServiceAction({
-      data,
-      deps,
-      context,
-      serviceCall: () => checkForDuplicates(data, deps.logger),
-      contextName: "CHECK_DUPLICATES",
-      startMessage: "Checking for duplicate notes...",
-      completionMessage: "Verified no duplicates!",
-    });
+    // Call the service directly to get both data and duplicate status
+    const serviceResult = await checkForDuplicates(data, deps.logger);
+
+    // Send start message
+    if (deps.statusBroadcaster) {
+      await deps.statusBroadcaster.addStatusEventAndBroadcast({
+        importId: data.importId,
+        status: "PROCESSING",
+        message: "Checking for duplicate notes...",
+        context: "CHECK_DUPLICATES",
+        noteId: data.noteId,
+      });
+
+      // Send appropriate completion message based on duplicate status
+      const completionMessage = serviceResult.hasDuplicates
+        ? "Duplicate note identified!"
+        : "Verified no duplicates!";
+
+      await deps.statusBroadcaster.addStatusEventAndBroadcast({
+        importId: data.importId,
+        status: "COMPLETED",
+        message: completionMessage,
+        context: "CHECK_DUPLICATES",
+        noteId: data.noteId,
+      });
+    }
+
+    return serviceResult.data;
   }
 }

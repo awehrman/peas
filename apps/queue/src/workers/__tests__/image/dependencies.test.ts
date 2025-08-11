@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { IServiceContainer } from "../../../services/container";
 import type { StructuredLogger } from "../../../types";
 import { buildImageWorkerDependencies } from "../../image/dependencies";
+import { PrismaClient } from "@prisma/client";
 
 describe("Image Worker Dependencies", () => {
   let mockContainer: IServiceContainer;
@@ -39,6 +40,7 @@ describe("Image Worker Dependencies", () => {
         instructionQueue: mockQueue,
         categorizationQueue: mockQueue,
         sourceQueue: mockQueue,
+        patternTrackingQueue: mockQueue,
       },
       errorHandler: {
         withErrorHandling: vi.fn(),
@@ -46,6 +48,21 @@ describe("Image Worker Dependencies", () => {
         classifyError: vi.fn(),
         logError: vi.fn(),
       },
+      database: {
+        prisma: {} as unknown as PrismaClient,
+      },
+      healthMonitor: {
+        healthMonitor: {},
+      },
+      webSocket: {
+        webSocketManager: {},
+      },
+      config: {
+        wsHost: "localhost",
+        port: 3000,
+        wsPort: 3001,
+      },
+      close: vi.fn(),
     } as IServiceContainer;
   });
 

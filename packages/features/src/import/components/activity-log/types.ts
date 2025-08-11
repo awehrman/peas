@@ -2,14 +2,16 @@
 export enum CompletionMessages {
   CLEAN_HTML = "Cleaned .html files!",
   CREATE_STRUCTURE = "Created note structure!",
-  ADD_SOURCE = "Added source...",
-  ADD_IMAGE = "Added image...",
+  ADD_SOURCE = "Added source!",
+  ADD_IMAGE = "Added image!",
   VERIFY_DUPLICATES = "Verified no duplicates!",
+  DUPLICATE_IDENTIFIED = "Duplicate note identified!",
 }
 
 export interface StepStatus {
   status: "pending" | "processing" | "completed" | "failed";
   error?: string;
+  message?: string;
 }
 
 export interface CountableStepStatus extends StepStatus {

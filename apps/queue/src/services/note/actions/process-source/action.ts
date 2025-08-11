@@ -52,7 +52,7 @@ export class ProcessSourceAction extends BaseAction<
       serviceCall: () => processSource(data, deps.logger),
       contextName: "PROCESS_SOURCE",
       startMessage: "Processing source...",
-      completionMessage: "Added source...",
+      completionMessage: "Added source!",
     });
   }
 }

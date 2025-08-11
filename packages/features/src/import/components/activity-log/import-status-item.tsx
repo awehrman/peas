@@ -142,7 +142,7 @@ export function ImportStatusItem({
               }
             >
               {importStatus.steps.source.status === "completed"
-                ? "Added source..."
+                ? "Added source!"
                 : "Processing source..."}
             </div>
             {importStatus.steps.source.error && (
@@ -165,7 +165,7 @@ export function ImportStatusItem({
               }
             >
               {importStatus.steps.image.status === "completed"
-                ? "Added image..."
+                ? "Added image!"
                 : "Processing image..."}
             </div>
             {importStatus.steps.image.error && (
@@ -189,7 +189,9 @@ export function ImportStatusItem({
             }
           >
             {importStatus.steps.duplicates.status === "completed"
-              ? "Verified no duplicates!"
+              ? (importStatus.steps.duplicates.message?.includes("Duplicate note identified") 
+                  ? "Duplicate note identified!"
+                  : "Verified no duplicates!")
               : "Checking for duplicate notes..."}
           </div>
           {importStatus.steps.duplicates.error && (

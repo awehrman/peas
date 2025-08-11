@@ -73,7 +73,10 @@ describe("CheckDuplicatesAction", () => {
     });
 
     it("should return error for null noteId", () => {
-      const invalidData = { ...mockData, noteId: null as unknown as string | undefined };
+      const invalidData = {
+        ...mockData,
+        noteId: null as unknown as string | undefined,
+      };
       const result = action.validateInput(invalidData);
       expect(result).toBeInstanceOf(Error);
       expect(result?.message).toBe(
@@ -88,7 +91,10 @@ describe("CheckDuplicatesAction", () => {
       const { checkForDuplicates } = await import(
         "../../../../note/actions/check-duplicates/service"
       );
-      vi.mocked(checkForDuplicates).mockResolvedValue(mockData);
+      vi.mocked(checkForDuplicates).mockResolvedValue({
+        data: mockData,
+        hasDuplicates: false,
+      });
 
       await action.execute(mockData, mockDeps, mockContext);
 

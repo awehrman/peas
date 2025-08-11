@@ -133,7 +133,10 @@ describe("checkForDuplicates", () => {
 
       const result = await checkForDuplicates(mockNoteData, mockLogger);
 
-      expect(result).toEqual(mockNoteData);
+      expect(result).toEqual({
+        data: mockNoteData,
+        hasDuplicates: true,
+      });
       expect(mockGetNoteWithIngredients).toHaveBeenCalledWith("test-note-id");
       expect(mockGenerateTitleSimHash).toHaveBeenCalledWith(
         "Chocolate Chip Cookies"
@@ -184,7 +187,10 @@ describe("checkForDuplicates", () => {
 
       const result = await checkForDuplicates(mockNoteData, mockLogger);
 
-      expect(result).toEqual(mockNoteData);
+      expect(result).toEqual({
+        data: mockNoteData,
+        hasDuplicates: false,
+      });
       expect(mockUpdateNoteTitleSimHash).not.toHaveBeenCalled();
       expect(mockLogger.log).toHaveBeenCalledWith(
         "[CHECK_DUPLICATES] No duplicates found for note: test-note-id"
@@ -283,7 +289,10 @@ describe("checkForDuplicates", () => {
 
       const result = await checkForDuplicates(mockNoteData, mockLogger);
 
-      expect(result).toEqual(mockNoteData);
+      expect(result).toEqual({
+        data: mockNoteData,
+        hasDuplicates: true,
+      });
       expect(mockMarkNoteAsDuplicate).toHaveBeenCalledWith("test-note-id", {
         existingNotes: [
           { id: "similar-note-1", title: "Chocolate Chip Cookies Recipe" },
@@ -353,7 +362,10 @@ describe("checkForDuplicates", () => {
 
       const result = await checkForDuplicates(mockNoteData, mockLogger);
 
-      expect(result).toEqual(mockNoteData);
+      expect(result).toEqual({
+        data: mockNoteData,
+        hasDuplicates: false,
+      });
       expect(mockMarkNoteAsDuplicate).not.toHaveBeenCalled();
       expect(mockLogger.log).toHaveBeenCalledWith(
         "[CHECK_DUPLICATES] Potential duplicates found but confidence too low (77% < 90%). Keeping note as non-duplicate."
@@ -400,7 +412,10 @@ describe("checkForDuplicates", () => {
 
       const result = await checkForDuplicates(mockNoteData, mockLogger);
 
-      expect(result).toEqual(mockNoteData);
+      expect(result).toEqual({
+        data: mockNoteData,
+        hasDuplicates: false,
+      });
       // With 95% title similarity and 0% ingredient similarity (no ingredients),
       // confidence = 0.95 * 0.7 + 0.0 * 0.3 = 0.665, which is below 90% threshold
       expect(mockMarkNoteAsDuplicate).not.toHaveBeenCalled();
@@ -440,7 +455,10 @@ describe("checkForDuplicates", () => {
 
       const result = await checkForDuplicates(mockNoteData, mockLogger);
 
-      expect(result).toEqual(mockNoteData);
+      expect(result).toEqual({
+        data: mockNoteData,
+        hasDuplicates: false,
+      });
       expect(mockGenerateTitleSimHash).not.toHaveBeenCalled();
       expect(mockFindNotesWithSimilarTitles).not.toHaveBeenCalled();
       expect(mockLogger.log).toHaveBeenCalledWith(
@@ -461,7 +479,10 @@ describe("checkForDuplicates", () => {
 
       const result = await checkForDuplicates(mockNoteData, mockLogger);
 
-      expect(result).toEqual(mockNoteData);
+      expect(result).toEqual({
+        data: mockNoteData,
+        hasDuplicates: false,
+      });
       expect(mockLogger.log).toHaveBeenCalledWith(
         "[CHECK_DUPLICATES] Note test-note-id has no title, skipping duplicate check"
       );
@@ -482,7 +503,10 @@ describe("checkForDuplicates", () => {
 
       const result = await checkForDuplicates(mockNoteData, mockLogger);
 
-      expect(result).toEqual(mockNoteData);
+      expect(result).toEqual({
+        data: mockNoteData,
+        hasDuplicates: false,
+      });
       expect(mockLogger.log).toHaveBeenCalledWith(
         "[CHECK_DUPLICATES] No duplicates found for note: test-note-id"
       );
@@ -523,7 +547,10 @@ describe("checkForDuplicates", () => {
 
       const result = await checkForDuplicates(mockNoteData, mockLogger);
 
-      expect(result).toEqual(mockNoteData);
+      expect(result).toEqual({
+        data: mockNoteData,
+        hasDuplicates: false,
+      });
       expect(mockCalculateSimilarityScore).not.toHaveBeenCalled();
       expect(mockMarkNoteAsDuplicate).not.toHaveBeenCalled();
       expect(mockLogger.log).toHaveBeenCalledWith(
@@ -554,7 +581,10 @@ describe("checkForDuplicates", () => {
 
       const result = await checkForDuplicates(mockNoteData, mockLogger);
 
-      expect(result).toEqual(mockNoteData);
+      expect(result).toEqual({
+        data: mockNoteData,
+        hasDuplicates: false,
+      });
       expect(mockCalculateSimilarityScore).not.toHaveBeenCalled();
       expect(mockMarkNoteAsDuplicate).not.toHaveBeenCalled();
       expect(mockLogger.log).toHaveBeenCalledWith(
@@ -599,7 +629,10 @@ describe("checkForDuplicates", () => {
 
       const result = await checkForDuplicates(mockNoteData, mockLogger);
 
-      expect(result).toEqual(mockNoteData);
+      expect(result).toEqual({
+        data: mockNoteData,
+        hasDuplicates: false,
+      });
       // When similar note is not found, ingredientSimilarity is set to 0.0
       // without calling calculateIngredientSimilarity
       expect(mockCalculateIngredientSimilarity).not.toHaveBeenCalled();
@@ -689,7 +722,10 @@ describe("checkForDuplicates", () => {
 
       const result = await checkForDuplicates(mockNoteData, mockLogger);
 
-      expect(result).toEqual(mockNoteData);
+      expect(result).toEqual({
+        data: mockNoteData,
+        hasDuplicates: true,
+      });
       expect(mockCalculateIngredientSimilarity).toHaveBeenCalledWith(
         ["flour", "sugar"], // Only non-empty ingredients
         ["flour", "sugar"]
@@ -752,7 +788,10 @@ describe("checkForDuplicates", () => {
 
       const result = await checkForDuplicates(mockNoteData, mockLogger);
 
-      expect(result).toEqual(mockNoteData);
+      expect(result).toEqual({
+        data: mockNoteData,
+        hasDuplicates: false,
+      });
       // With 95% title similarity and 0% ingredient similarity,
       // confidence = 0.95 * 0.7 + 0.0 * 0.3 = 0.665, which is below 90% threshold
       expect(mockMarkNoteAsDuplicate).not.toHaveBeenCalled();
@@ -779,7 +818,10 @@ describe("checkForDuplicates", () => {
 
       const result = await checkForDuplicates(mockNoteData, mockLogger);
 
-      expect(result).toEqual(mockNoteData);
+      expect(result).toEqual({
+        data: mockNoteData,
+        hasDuplicates: false,
+      });
       expect(mockMarkNoteAsDuplicate).not.toHaveBeenCalled();
       expect(mockLogger.log).toHaveBeenCalledWith(
         "[CHECK_DUPLICATES] No duplicates found for note: test-note-id"
@@ -811,7 +853,10 @@ describe("checkForDuplicates", () => {
 
       const result = await checkForDuplicates(mockNoteData, mockLogger);
 
-      expect(result).toEqual(mockNoteData);
+      expect(result).toEqual({
+        data: mockNoteData,
+        hasDuplicates: false,
+      });
       expect(mockMarkNoteAsDuplicate).not.toHaveBeenCalled();
       expect(mockLogger.log).toHaveBeenCalledWith(
         "[CHECK_DUPLICATES] No duplicates found for note: test-note-id"
@@ -834,7 +879,10 @@ describe("checkForDuplicates", () => {
 
       const result = await checkForDuplicates(mockNoteData, mockLogger);
 
-      expect(result).toEqual(mockNoteData);
+      expect(result).toEqual({
+        data: mockNoteData,
+        hasDuplicates: false,
+      });
       expect(mockFindNotesWithSimilarTitles).not.toHaveBeenCalled();
       expect(mockMarkNoteAsDuplicate).not.toHaveBeenCalled();
       expect(mockLogger.log).toHaveBeenCalledWith(
@@ -856,7 +904,10 @@ describe("checkForDuplicates", () => {
 
       const result = await checkForDuplicates(mockNoteData, mockLogger);
 
-      expect(result).toEqual(mockNoteData);
+      expect(result).toEqual({
+        data: mockNoteData,
+        hasDuplicates: false,
+      });
       expect(mockFindNotesWithSimilarTitles).not.toHaveBeenCalled();
       expect(mockMarkNoteAsDuplicate).not.toHaveBeenCalled();
       expect(mockLogger.log).toHaveBeenCalledWith(
@@ -879,7 +930,10 @@ describe("checkForDuplicates", () => {
 
       const result = await checkForDuplicates(mockNoteData, mockLogger);
 
-      expect(result).toEqual(mockNoteData);
+      expect(result).toEqual({
+        data: mockNoteData,
+        hasDuplicates: false,
+      });
       expect(mockGenerateTitleSimHash).not.toHaveBeenCalled();
       expect(mockFindNotesWithSimilarTitles).not.toHaveBeenCalled();
       expect(mockMarkNoteAsDuplicate).not.toHaveBeenCalled();
@@ -904,7 +958,10 @@ describe("checkForDuplicates", () => {
 
       const result = await checkForDuplicates(mockNoteData, mockLogger);
 
-      expect(result).toEqual(mockNoteData);
+      expect(result).toEqual({
+        data: mockNoteData,
+        hasDuplicates: false,
+      });
       expect(mockMarkNoteAsDuplicate).not.toHaveBeenCalled();
       expect(mockLogger.log).toHaveBeenCalledWith(
         "[CHECK_DUPLICATES] No duplicates found for note: test-note-id"
@@ -967,7 +1024,10 @@ describe("checkForDuplicates", () => {
 
       const result = await checkForDuplicates(mockNoteData, mockLogger);
 
-      expect(result).toEqual(mockNoteData);
+      expect(result).toEqual({
+        data: mockNoteData,
+        hasDuplicates: true,
+      });
       expect(mockMarkNoteAsDuplicate).toHaveBeenCalledWith("test-note-id", {
         existingNotes: [
           { id: "similar-note-id", title: "Chocolate Chip Cookies Recipe" },

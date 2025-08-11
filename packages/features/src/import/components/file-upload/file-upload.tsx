@@ -1,5 +1,7 @@
 "use client";
 
+import { isFromDirectory, isWebkitFile } from "./types";
+
 import { useState } from "react";
 
 import { FileUpload } from "@peas/ui";
@@ -28,10 +30,34 @@ export function ImportFileUpload({
     try {
       console.log("[FRONTEND] Starting file upload process");
       console.log("[FRONTEND] Total files received:", files.length);
-      console.log(
-        "[FRONTEND] Files:",
-        files.map((f) => ({ name: f.name, type: f.type, size: f.size }))
-      );
+
+      // Log the first few characters of each file's webkitRelativePath to see what we're getting
+      files.forEach((f, index) => {
+        if (isWebkitFile(f) && f.webkitRelativePath) {
+          console.log(
+            `[FRONTEND] File ${index} webkitRelativePath: "${f.webkitRelativePath}" (length: ${f.webkitRelativePath.length})`
+          );
+        } else {
+          console.log(
+            `[FRONTEND] File ${index} has no webkitRelativePath or is not a webkit file`
+          );
+        }
+      });
+
+      // Test if any files have webkitRelativePath (indicating directory upload)
+      const hasDirectoryUpload = files.some(isFromDirectory);
+      console.log("[FRONTEND] Directory upload detected:", hasDirectoryUpload);
+
+      if (hasDirectoryUpload) {
+        console.log("[FRONTEND] Directory upload files:");
+        files.forEach((f, index) => {
+          if (isWebkitFile(f) && f.webkitRelativePath) {
+            console.log(
+              `[FRONTEND] File ${index}: ${f.name} -> ${f.webkitRelativePath}`
+            );
+          }
+        });
+      }
 
       // Separate HTML files from other files (directories and images)
       const htmlFiles = files.filter(
@@ -57,7 +83,12 @@ export function ImportFileUpload({
       );
       console.log(
         "[FRONTEND] Non-HTML files:",
-        nonHtmlFiles.map((f) => f.name)
+        nonHtmlFiles.map((f) => ({
+          name: f.name,
+          webkitRelativePath: isWebkitFile(f)
+            ? f.webkitRelativePath
+            : undefined,
+        }))
       );
 
       if (htmlFiles.length === 0) {
@@ -77,34 +108,59 @@ export function ImportFileUpload({
         formData.append("files", htmlFile);
       }
 
-      // Add all image files (filter out directories)
-      const imageFiles = nonHtmlFiles.filter(
-        (file) =>
-          file.type.startsWith("image/") ||
-          /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(file.name)
-      );
+      // Process image files - handle both individual files and directory uploads
+      const imageFiles: File[] = [];
 
-      for (const imageFile of imageFiles) {
+      for (const file of nonHtmlFiles) {
         console.log(
-          `[FRONTEND] Adding image file to FormData: ${imageFile.name}`
+          `[FRONTEND] Processing non-HTML file: ${file.name} (type: ${file.type}, size: ${file.size})`
         );
+
+        // Check if this is a file from a directory upload
+        const webkitRelativePath = isWebkitFile(file)
+          ? file.webkitRelativePath
+          : undefined;
+        if (webkitRelativePath) {
+          console.log(
+            `[FRONTEND] File has webkitRelativePath: ${webkitRelativePath}`
+          );
+        }
+
+        const isImage =
+          file.type.startsWith("image/") ||
+          /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(file.name);
+
+        console.log(
+          `[FRONTEND] Image detection - isImage: ${isImage}, type: ${file.type}, name: ${file.name}`
+        );
+
+        if (isImage) {
+          imageFiles.push(file);
+          console.log(`[FRONTEND] Adding image file to FormData: ${file.name}`);
+        } else if (file.type === "" && file.size < 1000) {
+          // This is likely a directory object (not a file from directory upload)
+          console.log(`[FRONTEND] Found directory object: ${file.name}`);
+        } else {
+          console.log(
+            `[FRONTEND] Skipping non-image file: ${file.name} (type: ${file.type})`
+          );
+        }
+      }
+
+      // Add all image files to FormData
+      for (const imageFile of imageFiles) {
         formData.append("files", imageFile);
       }
 
-      // Check for directories and warn user
-      const directories = nonHtmlFiles.filter(
-        (file) => file.type === "" && file.size < 1000
+      console.log(
+        `[FRONTEND] Final FormData entries:`,
+        Array.from(formData.entries()).map(([key, value]) => [
+          key,
+          value instanceof File
+            ? `${value.name} (${value.type}, ${value.size} bytes)`
+            : value,
+        ])
       );
-
-      if (directories.length > 0) {
-        console.log(
-          `[FRONTEND] Found ${directories.length} directories:`,
-          directories.map((d) => d.name)
-        );
-        console.log(
-          `[FRONTEND] Note: Directories cannot be processed directly. Only individual image files will be processed.`
-        );
-      }
 
       console.log(
         `[FRONTEND] Sending ${htmlFiles.length} HTML files and ${imageFiles.length} image files to /upload`
@@ -134,15 +190,9 @@ export function ImportFileUpload({
       const result = await res.json();
       console.log("[FRONTEND] /upload response:", result);
 
-      if (directories.length > 0) {
-        setMessage(
-          `Files uploaded successfully! Import ID: ${result.data.importId}. Note: ${directories.length} directories were skipped - please select individual image files from directories.`
-        );
-      } else {
-        setMessage(
-          `Files uploaded successfully! Import ID: ${result.data.importId}. Processed ${result.data.htmlFiles} HTML files and ${result.data.imageFiles} images.`
-        );
-      }
+      setMessage(
+        `Files uploaded successfully! Import ID: ${result.data.importId}. Processed ${result.data.htmlFiles} HTML files and ${result.data.imageFiles} images.`
+      );
     } catch (err) {
       console.error("[FRONTEND] Upload error:", err);
       const msg = err instanceof Error ? err.message : "Unknown error";
