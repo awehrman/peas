@@ -1,3 +1,5 @@
+import type { R2Config, UploadResult } from "./types";
+
 import {
   GetObjectCommand,
   PutObjectCommand,
@@ -6,21 +8,6 @@ import {
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { promises as fs } from "fs";
 import path from "path";
-
-export interface R2Config {
-  accountId: string;
-  accessKeyId: string;
-  secretAccessKey: string;
-  bucketName: string;
-  publicUrl?: string;
-}
-
-export interface UploadResult {
-  key: string;
-  url: string;
-  size: number;
-  etag?: string;
-}
 
 export class R2Service {
   private client: S3Client;
@@ -106,7 +93,9 @@ export class R2Service {
         etag: result.ETag?.replace(/"/g, ""),
       };
     } catch (error) {
-      throw new Error(`Failed to upload buffer to R2: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `Failed to upload buffer to R2: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 

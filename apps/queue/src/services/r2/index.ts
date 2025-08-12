@@ -1,1 +1,2 @@
-export { R2Service, type R2Config, type UploadResult } from "./r2-service";
+export { R2Service } from "./service";
+export type { R2Config, UploadResult } from "./types";
