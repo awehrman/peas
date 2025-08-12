@@ -434,5 +434,31 @@ describe("cleanupLocalFiles", () => {
 
       expect(result).toEqual(mockData);
     });
+
+    it("should handle top-level error and return data without throwing", async () => {
+      // Setup mocks to cause a top-level error that triggers the catch block
+      // Mock Promise.allSettled to throw an error
+      const originalPromiseAllSettled = Promise.allSettled;
+      Promise.allSettled = vi.fn().mockImplementation(() => {
+        throw new Error("Top-level Promise.allSettled error");
+      });
+
+      const result = await cleanupLocalFiles(
+        mockData,
+        mockServiceContainer,
+        mockLogger
+      );
+
+      // Verify the top-level error was logged
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        "[CLEANUP_LOCAL_FILES] Cleanup failed: Error: Top-level Promise.allSettled error"
+      );
+
+      // Verify data is still returned
+      expect(result).toEqual(mockData);
+
+      // Restore original Promise.allSettled
+      Promise.allSettled = originalPromiseAllSettled;
+    });
   });
 });

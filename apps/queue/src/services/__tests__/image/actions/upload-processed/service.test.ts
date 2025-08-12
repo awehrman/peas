@@ -572,5 +572,38 @@ describe("Upload Processed Service", () => {
         });
       });
     });
+
+    it("should handle top-level error and return data without throwing", async () => {
+      // Setup mocks to cause a top-level error that triggers the catch block
+      // Mock Promise.all to throw an error
+      const originalPromiseAll = Promise.all;
+      Promise.all = vi.fn().mockImplementation(() => {
+        throw new Error("Top-level Promise.all error");
+      });
+
+      const result = await uploadProcessed(
+        mockData,
+        mockServiceContainer,
+        mockLogger
+      );
+
+      // Verify the top-level error was logged
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        "[UPLOAD_PROCESSED] Failed to upload processed images: Top-level Promise.all error"
+      );
+
+      // Verify data is still returned with undefined R2 URLs
+      expect(result).toEqual({
+        ...mockData,
+        r2OriginalUrl: undefined,
+        r2ThumbnailUrl: undefined,
+        r2Crop3x2Url: undefined,
+        r2Crop4x3Url: undefined,
+        r2Crop16x9Url: undefined,
+      });
+
+      // Restore original Promise.all
+      Promise.all = originalPromiseAll;
+    });
   });
 });

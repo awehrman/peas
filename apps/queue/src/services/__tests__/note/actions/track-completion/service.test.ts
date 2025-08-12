@@ -558,5 +558,30 @@ describe("Track Completion Service", () => {
       expect(status?.completedImageJobs).toBe(3);
       expect(status?.imageWorkerCompleted).toBe(true);
     });
+
+    it("should handle broadcast completion error", async () => {
+      const noteId = "test-note-123";
+      const importId = "test-import-456";
+
+      // Mock the broadcast to reject
+      mockStatusBroadcaster.addStatusEventAndBroadcast.mockRejectedValue(
+        new Error("Broadcast failed")
+      );
+
+      // Initialize and mark all workers as completed
+      initializeNoteCompletion(noteId, importId);
+      markWorkerCompleted(noteId, "note", mockLogger, mockStatusBroadcaster);
+      markWorkerCompleted(noteId, "instruction", mockLogger, mockStatusBroadcaster);
+      markWorkerCompleted(noteId, "ingredient", mockLogger, mockStatusBroadcaster);
+      markWorkerCompleted(noteId, "image", mockLogger, mockStatusBroadcaster);
+
+      // Wait for the async broadcast to complete
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      // The error should be logged but not thrown
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        "[TRACK_COMPLETION] Failed to broadcast completion: Error: Broadcast failed"
+      );
+    });
   });
 });
