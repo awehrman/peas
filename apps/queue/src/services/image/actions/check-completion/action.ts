@@ -1,3 +1,5 @@
+import { checkImageCompletion } from "./service";
+
 import { ActionName } from "../../../../types";
 import { BaseAction } from "../../../../workers/core/base-action";
 import type { ActionContext } from "../../../../workers/core/types";
@@ -5,7 +7,6 @@ import type {
   ImageJobData,
   ImageWorkerDependencies,
 } from "../../../../workers/image/types";
-import { markImageJobCompleted } from "../../../note/actions/track-completion/service";
 
 export class CheckImageCompletionAction extends BaseAction<
   ImageJobData,
@@ -14,35 +15,38 @@ export class CheckImageCompletionAction extends BaseAction<
 > {
   public readonly name = ActionName.CHECK_IMAGE_COMPLETION;
 
-  public async execute(
+  /**
+   * Validate input data before checking completion
+   * @param data The image job data to validate
+   * @returns Error if validation fails, null if valid
+   */
+  validateInput(_data: ImageJobData): Error | null {
+    // Note: We don't require noteId to be present as the service handles this gracefully
+    return null;
+  }
+
+  /**
+   * Execute the action to check image completion
+   * @param data The image job data
+   * @param deps Dependencies required by the action
+   * @param context Context information about the job
+   * @returns Promise resolving to the updated image job data
+   */
+  async execute(
     data: ImageJobData,
     deps: ImageWorkerDependencies,
-    _context: ActionContext
+    context: ActionContext
   ): Promise<ImageJobData> {
-    if (!data.noteId) {
-      deps.logger.log(
-        `[CHECK_IMAGE_COMPLETION] No note ID available, skipping completion check`
-      );
-      return data;
-    }
-
-    try {
-      // Mark this individual image job as completed
-      // This will check if all image jobs for the note are finished
-      markImageJobCompleted(
-        data.noteId,
-        deps.logger,
-        deps.statusBroadcaster
-      );
-      deps.logger.log(
-        `[CHECK_IMAGE_COMPLETION] Marked image job as completed for note ${data.noteId}`
-      );
-    } catch (error) {
-      deps.logger.log(
-        `[CHECK_IMAGE_COMPLETION] Error marking completion: ${error}`
-      );
-    }
-
-    return data;
+    return this.executeServiceAction({
+      data,
+      deps,
+      context,
+      serviceCall: () => checkImageCompletion(data, deps),
+      contextName: "CHECK_IMAGE_COMPLETION",
+      startMessage: `Checking image completion for note: ${data.noteId || "unknown"}`,
+      completionMessage: "Image completion check completed",
+    });
   }
 }
+
+export { checkImageCompletion };
