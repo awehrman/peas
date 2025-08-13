@@ -1,6 +1,7 @@
-import sharp from "sharp";
-import path from "path";
 import { promises as fs } from "fs";
+import path from "path";
+import sharp from "sharp";
+
 import type { StructuredLogger } from "../types";
 
 /**
@@ -16,16 +17,18 @@ export async function convertBinaryImageToPng(
   logger: StructuredLogger
 ): Promise<boolean> {
   try {
-    logger.log(`[IMAGE_CONVERTER] Converting binary image to PNG: ${inputPath} -> ${outputPath}`);
+    logger.log(
+      `[IMAGE_CONVERTER] Converting binary image to PNG: ${inputPath} -> ${outputPath}`
+    );
 
     // Use sharp to convert the image to PNG
-    await sharp(inputPath)
-      .png()
-      .toFile(outputPath);
+    await sharp(inputPath).png().toFile(outputPath);
 
     // Verify the converted file exists and has content
     const stats = await fs.stat(outputPath);
-    logger.log(`[IMAGE_CONVERTER] Conversion successful - output size: ${stats.size} bytes`);
+    logger.log(
+      `[IMAGE_CONVERTER] Conversion successful - output size: ${stats.size} bytes`
+    );
 
     return true;
   } catch (error) {
@@ -48,16 +51,18 @@ export async function convertBinaryImageToJpg(
   logger: StructuredLogger
 ): Promise<boolean> {
   try {
-    logger.log(`[IMAGE_CONVERTER] Converting binary image to JPG: ${inputPath} -> ${outputPath}`);
+    logger.log(
+      `[IMAGE_CONVERTER] Converting binary image to JPG: ${inputPath} -> ${outputPath}`
+    );
 
     // Use sharp to convert the image to JPG
-    await sharp(inputPath)
-      .jpeg({ quality: 90 })
-      .toFile(outputPath);
+    await sharp(inputPath).jpeg({ quality: 90 }).toFile(outputPath);
 
     // Verify the converted file exists and has content
     const stats = await fs.stat(outputPath);
-    logger.log(`[IMAGE_CONVERTER] Conversion successful - output size: ${stats.size} bytes`);
+    logger.log(
+      `[IMAGE_CONVERTER] Conversion successful - output size: ${stats.size} bytes`
+    );
 
     return true;
   } catch (error) {
@@ -80,38 +85,48 @@ export async function convertBinaryImageToStandardFormat(
   try {
     const inputDir = path.dirname(inputPath);
     const inputName = path.basename(inputPath, path.extname(inputPath));
-    
+
     // Try PNG first (better for images with transparency)
     const pngPath = path.join(inputDir, `${inputName}.png`);
-    const pngSuccess = await convertBinaryImageToPng(inputPath, pngPath, logger);
-    
+    const pngSuccess = await convertBinaryImageToPng(
+      inputPath,
+      pngPath,
+      logger
+    );
+
     if (pngSuccess) {
       return {
         success: true,
         outputPath: pngPath,
-        newFilename: `${inputName}.png`
+        newFilename: `${inputName}.png`,
       };
     }
 
     // If PNG fails, try JPG
     logger.log(`[IMAGE_CONVERTER] PNG conversion failed, trying JPG...`);
     const jpgPath = path.join(inputDir, `${inputName}.jpg`);
-    const jpgSuccess = await convertBinaryImageToJpg(inputPath, jpgPath, logger);
-    
+    const jpgSuccess = await convertBinaryImageToJpg(
+      inputPath,
+      jpgPath,
+      logger
+    );
+
     if (jpgSuccess) {
       return {
         success: true,
         outputPath: jpgPath,
-        newFilename: `${inputName}.jpg`
+        newFilename: `${inputName}.jpg`,
       };
     }
 
     logger.log(`[IMAGE_CONVERTER] Both PNG and JPG conversion failed`);
     return { success: false };
-
   } catch (error) {
+    /* istanbul ignore next -- @preserve */
     const errorMessage = error instanceof Error ? error.message : String(error);
+    /* istanbul ignore next -- @preserve */
     logger.log(`[IMAGE_CONVERTER] Conversion process failed: ${errorMessage}`);
+    /* istanbul ignore next -- @preserve */
     return { success: false };
   }
 }

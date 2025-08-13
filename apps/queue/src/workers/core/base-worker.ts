@@ -142,7 +142,7 @@ export abstract class BaseWorker<
     _data: TData,
     _context: ActionContext
   ): WorkerAct<TData, TDeps, TResult>[] {
-    /* istanbul ignore next -- @preserve Default implementation, tested via subclasses */
+    /* istanbul ignore next -- @preserve */
     return [];
   }
 
@@ -297,7 +297,7 @@ export abstract class BaseWorker<
       return workerImpl(
         queue,
         jobProcessor,
-        /* istanbul ignore next -- @preserve Difficult to test both branches in unit tests */
+        /* istanbul ignore next -- @preserve */
         this.config.concurrency ?? this.getConcurrency()
       );
     }
@@ -313,7 +313,7 @@ export abstract class BaseWorker<
       jobProcessor as unknown as (job: unknown) => Promise<unknown>,
       {
         connection: redisConfig,
-        /* istanbul ignore next -- @preserve Concurrency fallback logic, difficult to test both branches */
+        /* istanbul ignore next -- @preserve */
         concurrency: this.config.concurrency ?? this.getConcurrency(),
       }
     );

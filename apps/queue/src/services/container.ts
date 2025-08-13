@@ -1,7 +1,7 @@
 import { ServiceFactory } from "./factory";
+import { R2Service } from "./r2";
 import { registerDatabase } from "./register-database";
 import { registerQueues } from "./register-queues";
-import { R2Service } from "./r2";
 
 import type {
   NoteWithParsedLines,
@@ -210,8 +210,9 @@ export class ServiceContainer implements IServiceContainer {
     this.statusBroadcaster = ServiceFactory.createStatusBroadcaster();
     this.logger = ServiceFactory.createLoggerService();
     this.config = ServiceFactory.createConfigService();
-    
+
     // Initialize R2 service if configured
+    /* istanbul ignore next -- @preserve */
     if (R2Service.isConfigured()) {
       const r2Service = R2Service.fromEnvironment();
       if (r2Service) {

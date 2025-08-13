@@ -111,6 +111,86 @@ describe("CheckDuplicatesAction", () => {
         action.execute(invalidData, mockDeps, mockContext)
       ).rejects.toThrow("Note ID is required for duplicate checking");
     });
+
+    it("should broadcast status events when statusBroadcaster is available", async () => {
+      // Mock the service call
+      const { checkForDuplicates } = await import(
+        "../../../../note/actions/check-duplicates/service"
+      );
+      vi.mocked(checkForDuplicates).mockResolvedValue({
+        data: mockData,
+        hasDuplicates: true,
+      });
+
+      // Add statusBroadcaster to mockDeps
+      const mockDepsWithBroadcaster = {
+        ...mockDeps,
+        statusBroadcaster: {
+          addStatusEventAndBroadcast: vi.fn().mockResolvedValue(undefined),
+        },
+      };
+
+      await action.execute(mockData, mockDepsWithBroadcaster, mockContext);
+
+      // Verify status events were broadcast
+      expect(
+        mockDepsWithBroadcaster.statusBroadcaster.addStatusEventAndBroadcast
+      ).toHaveBeenCalledTimes(2);
+
+      // Check start event
+      expect(
+        mockDepsWithBroadcaster.statusBroadcaster.addStatusEventAndBroadcast
+      ).toHaveBeenNthCalledWith(1, {
+        importId: mockData.importId,
+        status: "PROCESSING",
+        message: "Checking for duplicate notes...",
+        context: "CHECK_DUPLICATES",
+        noteId: mockData.noteId,
+      });
+
+      // Check completion event with duplicate message
+      expect(
+        mockDepsWithBroadcaster.statusBroadcaster.addStatusEventAndBroadcast
+      ).toHaveBeenNthCalledWith(2, {
+        importId: mockData.importId,
+        status: "COMPLETED",
+        message: "Duplicate note identified!",
+        context: "CHECK_DUPLICATES",
+        noteId: mockData.noteId,
+      });
+    });
+
+    it("should broadcast no duplicates message when no duplicates found", async () => {
+      // Mock the service call
+      const { checkForDuplicates } = await import(
+        "../../../../note/actions/check-duplicates/service"
+      );
+      vi.mocked(checkForDuplicates).mockResolvedValue({
+        data: mockData,
+        hasDuplicates: false,
+      });
+
+      // Add statusBroadcaster to mockDeps
+      const mockDepsWithBroadcaster = {
+        ...mockDeps,
+        statusBroadcaster: {
+          addStatusEventAndBroadcast: vi.fn().mockResolvedValue(undefined),
+        },
+      };
+
+      await action.execute(mockData, mockDepsWithBroadcaster, mockContext);
+
+      // Check completion event with no duplicates message
+      expect(
+        mockDepsWithBroadcaster.statusBroadcaster.addStatusEventAndBroadcast
+      ).toHaveBeenNthCalledWith(2, {
+        importId: mockData.importId,
+        status: "COMPLETED",
+        message: "Verified no duplicates!",
+        context: "CHECK_DUPLICATES",
+        noteId: mockData.noteId,
+      });
+    });
   });
 
   describe("name", () => {

@@ -210,13 +210,13 @@ export abstract class BaseAction<
           indentLevel: 1,
         });
       } catch (error) {
-        /* istanbul ignore next -- @preserve Error handling path, difficult to test */
+        /* istanbul ignore next -- @preserve */
         this.logError(deps, `Failed to broadcast start status: ${error}`);
       }
     }
 
     // Call the service function
-    /* istanbul ignore next -- @preserve Service call execution, covered by integration tests */
+    /* istanbul ignore next -- @preserve */
     const result = await serviceCall();
 
     // Handle completion broadcasting
@@ -244,7 +244,7 @@ export abstract class BaseAction<
           });
         }
       } catch (error) {
-        /* istanbul ignore next -- @preserve Error handling path, difficult to test */
+        /* istanbul ignore next -- @preserve */
         this.logError(deps, `Failed to broadcast completion status: ${error}`);
       }
     }

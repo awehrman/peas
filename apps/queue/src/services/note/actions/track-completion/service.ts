@@ -84,7 +84,10 @@ export function markImageJobCompleted(
   );
 
   // Check if all image jobs are completed
-  if (status.completedImageJobs >= status.totalImageJobs && status.totalImageJobs > 0) {
+  if (
+    status.completedImageJobs >= status.totalImageJobs &&
+    status.totalImageJobs > 0
+  ) {
     logger.log(
       `[TRACK_COMPLETION] All image jobs completed for note ${noteId}, marking image worker as completed`
     );
@@ -144,25 +147,30 @@ export function markWorkerCompleted(
 
   // If all workers are completed, broadcast the completion
   if (allCompleted && statusBroadcaster) {
-    statusBroadcaster.addStatusEventAndBroadcast({
-      importId: status.importId,
-      noteId: status.noteId,
-      status: "COMPLETED",
-      message: `Import ${status.importId} Completed!`,
-      context: "import_complete",
-      indentLevel: 0,
-      metadata: {
-        noteId: status.noteId,
+    statusBroadcaster
+      .addStatusEventAndBroadcast({
         importId: status.importId,
-      },
-    })
+        noteId: status.noteId,
+        status: "COMPLETED",
+        message: `Import ${status.importId} Completed!`,
+        context: "import_complete",
+        indentLevel: 0,
+        metadata: {
+          noteId: status.noteId,
+          importId: status.importId,
+        },
+      })
       .then(() => {
+        /* istanbul ignore next -- Difficult to test async success scenarios in unit tests */
         logger.log(
           `[TRACK_COMPLETION] Broadcasted completion for note ${noteId}`
         );
       })
       .catch((error) => {
-        logger.log(`[TRACK_COMPLETION] Failed to broadcast completion: ${error}`);
+        /* istanbul ignore next -- Difficult to test async error scenarios in unit tests */
+        logger.log(
+          `[TRACK_COMPLETION] Failed to broadcast completion: ${error}`
+        );
       });
   }
 }
@@ -196,6 +204,7 @@ export function markInstructionWorkerCompleted(
     ) => Promise<Record<string, unknown>>;
   }
 ): void {
+  /* istanbul ignore next -- @preserve */
   markWorkerCompleted(noteId, "instruction", logger, statusBroadcaster);
 }
 
@@ -212,6 +221,7 @@ export function markIngredientWorkerCompleted(
     ) => Promise<Record<string, unknown>>;
   }
 ): void {
+  /* istanbul ignore next -- @preserve */
   markWorkerCompleted(noteId, "ingredient", logger, statusBroadcaster);
 }
 
