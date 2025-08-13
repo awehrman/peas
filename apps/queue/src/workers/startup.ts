@@ -2,6 +2,7 @@ import { createIngredientWorker } from "./ingredient";
 import { createInstructionWorker } from "./instruction";
 import { createNoteWorker } from "./note";
 import { createPatternTrackingWorker } from "./pattern-tracking";
+import { createCategorizationWorker } from "./categorization";
 
 import { Queue } from "bullmq";
 
@@ -29,6 +30,7 @@ export function startWorkers(
     ingredientQueue: Queue;
     imageQueue: Queue;
     patternTrackingQueue: Queue;
+    categorizationQueue: Queue;
     // TODO more queues here
   },
   serviceContainer: IServiceContainer
@@ -64,6 +66,11 @@ export function startWorkers(
       createPatternTrackingWorker,
       queues.patternTrackingQueue
     ),
+    createWorkerConfig(
+      WORKER_CONSTANTS.NAMES.CATEGORIZATION,
+      createCategorizationWorker,
+      queues.categorizationQueue
+    ),
     // TODO more workers here
   ];
 
@@ -79,6 +86,7 @@ export function startWorkers(
   queueMonitor.startMonitoring(queues.ingredientQueue);
   queueMonitor.startMonitoring(queues.imageQueue);
   queueMonitor.startMonitoring(queues.patternTrackingQueue);
+  queueMonitor.startMonitoring(queues.categorizationQueue);
   // TODO: Add monitoring for additional queues as they're implemented
 
   console.log("[WORKER_STARTUP] Started queue monitoring");
@@ -90,6 +98,7 @@ export function startWorkers(
     ingredientWorker: workers[WORKER_CONSTANTS.NAMES.INGREDIENT],
     imageWorker: workers[WORKER_CONSTANTS.NAMES.IMAGE],
     patternTrackingWorker: workers[WORKER_CONSTANTS.NAMES.PATTERN_TRACKING],
+    categorizationWorker: workers[WORKER_CONSTANTS.NAMES.CATEGORIZATION],
     // TODO more workers here
   } as WorkerRegistry<FlexibleWorker>;
 

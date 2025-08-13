@@ -12,6 +12,8 @@ import {
 } from "../../../workers/shared/action-registry";
 import { ParseIngredientLineAction } from "../../ingredient/actions/parse-ingredient-line/action";
 import { SaveIngredientLineAction } from "../../ingredient/actions/save-ingredient-line/action";
+import { CheckIngredientCompletionAction } from "../../ingredient/actions/check-completion/action";
+import { ScheduleCategorizationAction } from "../../ingredient/actions/schedule-categorization/action";
 import { registerIngredientActions } from "../../ingredient/register";
 
 // Mock the action registry
@@ -64,7 +66,7 @@ describe("Ingredient Service Register", () => {
     it("should register parse, save, and completion ingredient actions", () => {
       registerIngredientActions(mockFactory);
 
-      expect(mockCreateActionRegistration).toHaveBeenCalledTimes(3);
+      expect(mockCreateActionRegistration).toHaveBeenCalledTimes(4);
       expect(mockRegisterActions).toHaveBeenCalledTimes(1);
       expect(mockRegisterActions).toHaveBeenCalledWith(
         mockFactory,
@@ -90,15 +92,35 @@ describe("Ingredient Service Register", () => {
       );
     });
 
+    it("should register CHECK_INGREDIENT_COMPLETION action", () => {
+      registerIngredientActions(mockFactory);
+
+      expect(mockCreateActionRegistration).toHaveBeenCalledWith(
+        ActionName.CHECK_INGREDIENT_COMPLETION,
+        CheckIngredientCompletionAction
+      );
+    });
+
+    it("should register SCHEDULE_CATEGORIZATION action", () => {
+      registerIngredientActions(mockFactory);
+
+      expect(mockCreateActionRegistration).toHaveBeenCalledWith(
+        ActionName.SCHEDULE_CATEGORIZATION_AFTER_COMPLETION,
+        ScheduleCategorizationAction
+      );
+    });
+
     it("should pass correct array of registrations to registerActions", () => {
       const mockRegistration1 = { name: "parse-action", actionClass: vi.fn() };
       const mockRegistration2 = { name: "save-action", actionClass: vi.fn() };
       const mockRegistration3 = { name: "completion-action", actionClass: vi.fn() };
+      const mockRegistration4 = { name: "categorization-action", actionClass: vi.fn() };
 
       mockCreateActionRegistration
         .mockReturnValueOnce(mockRegistration1)
         .mockReturnValueOnce(mockRegistration2)
-        .mockReturnValueOnce(mockRegistration3);
+        .mockReturnValueOnce(mockRegistration3)
+        .mockReturnValueOnce(mockRegistration4);
 
       registerIngredientActions(mockFactory);
 
@@ -106,6 +128,7 @@ describe("Ingredient Service Register", () => {
         mockRegistration1,
         mockRegistration2,
         mockRegistration3,
+        mockRegistration4,
       ]);
     });
 

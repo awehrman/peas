@@ -24,6 +24,10 @@ vi.mock("../pattern-tracking", () => ({
   createPatternTrackingWorker: vi.fn(),
 }));
 
+vi.mock("../categorization", () => ({
+  createCategorizationWorker: vi.fn(),
+}));
+
 vi.mock("../image/factory", () => ({
   createImageWorker: vi.fn(),
 }));
@@ -47,6 +51,7 @@ vi.mock("../../config/constants", () => ({
       INGREDIENT: "ingredient_processing",
       IMAGE: "image_processing",
       PATTERN_TRACKING: "pattern_tracking",
+      CATEGORIZATION: "categorization_processing",
     },
   },
 }));
@@ -63,6 +68,7 @@ describe("Worker Startup", () => {
   let mockCreateInstructionWorker: ReturnType<typeof vi.fn>;
   let mockCreateIngredientWorker: ReturnType<typeof vi.fn>;
   let mockCreatePatternTrackingWorker: ReturnType<typeof vi.fn>;
+  let mockCreateCategorizationWorker: ReturnType<typeof vi.fn>;
   let mockCreateImageWorker: ReturnType<typeof vi.fn>;
   let mockQueueMonitor: { startMonitoring: ReturnType<typeof vi.fn> };
   let mockCreateWorkerConfig: ReturnType<typeof vi.fn>;
@@ -102,6 +108,9 @@ describe("Worker Startup", () => {
     mockCreateIngredientWorker = ingredientModule.createIngredientWorker;
     mockCreatePatternTrackingWorker =
       patternTrackingModule.createPatternTrackingWorker;
+    mockCreateCategorizationWorker = vi.mocked(
+      await import("../categorization")
+    ).createCategorizationWorker;
     mockCreateImageWorker = imageModule.createImageWorker;
     mockQueueMonitor = queueMonitorModule.queueMonitor as unknown as {
       startMonitoring: ReturnType<typeof vi.fn>;
@@ -114,6 +123,7 @@ describe("Worker Startup", () => {
     mockCreateInstructionWorker.mockReturnValue({});
     mockCreateIngredientWorker.mockReturnValue({});
     mockCreatePatternTrackingWorker.mockReturnValue({});
+    mockCreateCategorizationWorker.mockReturnValue({});
     mockCreateImageWorker.mockReturnValue({});
     mockCreateWorkerConfig.mockReturnValue({ name: "test-config" });
     mockCreateWorkers.mockReturnValue({});
@@ -137,6 +147,8 @@ describe("Worker Startup", () => {
           .NAMES.IMAGE]: mockWorker,
         [vi.mocked(await import("../../config/constants")).WORKER_CONSTANTS
           .NAMES.PATTERN_TRACKING]: mockWorker,
+        [vi.mocked(await import("../../config/constants")).WORKER_CONSTANTS
+          .NAMES.CATEGORIZATION]: mockWorker,
       };
 
       mockCreateWorkerConfig.mockReturnValue({ name: "test-config" });
@@ -163,6 +175,7 @@ describe("Worker Startup", () => {
           { name: "test-config" },
           { name: "test-config" },
           { name: "test-config" },
+          { name: "test-config" },
         ],
         mockServiceContainer
       );
@@ -175,6 +188,7 @@ describe("Worker Startup", () => {
         ingredientWorker: mockWorker,
         imageWorker: mockWorker,
         patternTrackingWorker: mockWorker,
+        categorizationWorker: mockWorker,
       });
       expect(mockServiceContainer.logger.log).toHaveBeenCalledWith(
         vi.mocked(await import("../../config/constants")).LOG_MESSAGES.INFO
@@ -196,6 +210,8 @@ describe("Worker Startup", () => {
           .NAMES.IMAGE]: mockWorker,
         [vi.mocked(await import("../../config/constants")).WORKER_CONSTANTS
           .NAMES.PATTERN_TRACKING]: mockWorker,
+        [vi.mocked(await import("../../config/constants")).WORKER_CONSTANTS
+          .NAMES.CATEGORIZATION]: mockWorker,
       };
 
       mockCreateWorkerConfig.mockReturnValue({ name: "test-config" });
@@ -205,11 +221,12 @@ describe("Worker Startup", () => {
       mockCreateIngredientWorker.mockReturnValue(mockWorker);
       mockCreateImageWorker.mockReturnValue(mockWorker);
       mockCreatePatternTrackingWorker.mockReturnValue(mockWorker);
+      mockCreateCategorizationWorker.mockReturnValue(mockWorker);
 
       const { startWorkers } = await import("../startup");
       const result = startWorkers(mockQueues, mockServiceContainer);
 
-      expect(mockCreateWorkerConfig).toHaveBeenCalledTimes(5);
+      expect(mockCreateWorkerConfig).toHaveBeenCalledTimes(6);
       expect(mockCreateWorkers).toHaveBeenCalledTimes(1);
       expect(result).toEqual(mockWorkers);
     });

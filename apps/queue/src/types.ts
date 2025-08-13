@@ -88,6 +88,10 @@ export enum ActionName {
   PROCESS_CATEGORIZATION = "process_categorization",
   SAVE_CATEGORIZATION = "save_categorization",
   CATEGORIZATION_COMPLETED_STATUS = "categorization_completed_status",
+  DETERMINE_CATEGORY = "determine_category",
+  SAVE_CATEGORY = "save_category",
+  DETERMINE_TAGS = "determine_tags",
+  SAVE_TAGS = "save_tags",
   TRACK_PATTERN = "track_pattern",
   COMPLETION_STATUS = "completion_status",
 
@@ -275,6 +279,10 @@ export const QUEUE_ACTIONS: Record<QueueName, ActionName[]> = {
   [QueueName.CATEGORIZATION]: [
     ActionName.PROCESS_CATEGORIZATION,
     ActionName.SAVE_CATEGORIZATION,
+    ActionName.DETERMINE_CATEGORY,
+    ActionName.SAVE_CATEGORY,
+    ActionName.DETERMINE_TAGS,
+    ActionName.SAVE_TAGS,
   ],
   [QueueName.SOURCE]: [
     ActionName.PROCESS_SOURCE,
@@ -327,6 +335,10 @@ export const ACTION_CATEGORIES: Record<ActionName, ActionCategory> = {
   [ActionName.PROCESS_CATEGORIZATION]: ActionCategory.CATEGORIZATION,
   [ActionName.SAVE_CATEGORIZATION]: ActionCategory.CATEGORIZATION,
   [ActionName.CATEGORIZATION_COMPLETED_STATUS]: ActionCategory.CATEGORIZATION,
+  [ActionName.DETERMINE_CATEGORY]: ActionCategory.CATEGORIZATION,
+  [ActionName.SAVE_CATEGORY]: ActionCategory.CATEGORIZATION,
+  [ActionName.DETERMINE_TAGS]: ActionCategory.CATEGORIZATION,
+  [ActionName.SAVE_TAGS]: ActionCategory.CATEGORIZATION,
   [ActionName.TRACK_PATTERN]: ActionCategory.CATEGORIZATION,
   [ActionName.COMPLETION_STATUS]: ActionCategory.CATEGORIZATION,
 

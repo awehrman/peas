@@ -76,8 +76,8 @@ describe("Ingredient Pipeline", () => {
         mockContext
       );
 
-      expect(actions).toHaveLength(3);
-      expect(mockActionFactory.create).toHaveBeenCalledTimes(3);
+      expect(actions).toHaveLength(4);
+      expect(mockActionFactory.create).toHaveBeenCalledTimes(4);
     });
 
     it("should create parse ingredient action first", () => {
@@ -125,6 +125,21 @@ describe("Ingredient Pipeline", () => {
       );
     });
 
+    it("should create schedule categorization action fourth", () => {
+      createIngredientPipeline(
+        mockActionFactory,
+        mockDependencies,
+        mockData,
+        mockContext
+      );
+
+      expect(mockActionFactory.create).toHaveBeenNthCalledWith(
+        4,
+        ActionName.SCHEDULE_CATEGORIZATION_AFTER_COMPLETION,
+        mockDependencies
+      );
+    });
+
     it("should return actions in correct order", () => {
       const mockParseAction = {
         name: "parse",
@@ -141,6 +156,11 @@ describe("Ingredient Pipeline", () => {
         execute: vi.fn(),
         executeWithTiming: vi.fn(),
       };
+      const mockScheduleCategorizationAction = {
+        name: "schedule-categorization",
+        execute: vi.fn(),
+        executeWithTiming: vi.fn(),
+      };
 
       vi.mocked(mockActionFactory.create)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -148,7 +168,9 @@ describe("Ingredient Pipeline", () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .mockReturnValueOnce(mockSaveAction as any)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .mockReturnValueOnce(mockCompletionAction as any);
+        .mockReturnValueOnce(mockCompletionAction as any)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .mockReturnValueOnce(mockScheduleCategorizationAction as any);
 
       const actions = createIngredientPipeline(
         mockActionFactory,
@@ -161,6 +183,7 @@ describe("Ingredient Pipeline", () => {
         mockParseAction,
         mockSaveAction,
         mockCompletionAction,
+        mockScheduleCategorizationAction,
       ]);
     });
 
@@ -183,7 +206,7 @@ describe("Ingredient Pipeline", () => {
         mockContext
       );
 
-      expect(mockActionFactory.create).toHaveBeenCalledTimes(3);
+      expect(mockActionFactory.create).toHaveBeenCalledTimes(4);
     });
 
     it("should work with different context", () => {
@@ -204,7 +227,7 @@ describe("Ingredient Pipeline", () => {
         differentContext
       );
 
-      expect(mockActionFactory.create).toHaveBeenCalledTimes(3);
+      expect(mockActionFactory.create).toHaveBeenCalledTimes(4);
     });
 
     it("should work without statusBroadcaster", () => {
@@ -220,7 +243,7 @@ describe("Ingredient Pipeline", () => {
         mockContext
       );
 
-      expect(mockActionFactory.create).toHaveBeenCalledTimes(3);
+      expect(mockActionFactory.create).toHaveBeenCalledTimes(4);
     });
 
     it("should always create the same pipeline regardless of data", () => {
@@ -255,7 +278,7 @@ describe("Ingredient Pipeline", () => {
       );
 
       expect(actions1).toHaveLength(actions2.length);
-      expect(mockActionFactory.create).toHaveBeenCalledTimes(6);
+      expect(mockActionFactory.create).toHaveBeenCalledTimes(8);
     });
 
     it("should handle action factory errors gracefully", () => {

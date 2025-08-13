@@ -12,6 +12,7 @@ import {
 import { CheckIngredientCompletionAction } from "./actions/check-completion/action";
 import { ParseIngredientLineAction } from "./actions/parse-ingredient-line/action";
 import { SaveIngredientLineAction } from "./actions/save-ingredient-line/action";
+import { ScheduleCategorizationAction } from "./actions/schedule-categorization/action";
 
 /**
  * Register all ingredient actions in the given ActionFactory with type safety
@@ -42,5 +43,10 @@ export function registerIngredientActions(
       IngredientWorkerDependencies,
       IngredientJobData
     >(ActionName.CHECK_INGREDIENT_COMPLETION, CheckIngredientCompletionAction),
+    createActionRegistration<
+      IngredientJobData,
+      IngredientWorkerDependencies,
+      IngredientJobData
+    >(ActionName.SCHEDULE_CATEGORIZATION_AFTER_COMPLETION, ScheduleCategorizationAction),
   ]);
 }

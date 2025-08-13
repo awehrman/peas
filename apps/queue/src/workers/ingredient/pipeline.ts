@@ -50,5 +50,10 @@ export function createIngredientPipeline(
     actionFactory.create(ActionName.CHECK_INGREDIENT_COMPLETION, dependencies)
   );
 
+  // Schedule categorization after completion
+  actions.push(
+    actionFactory.create(ActionName.SCHEDULE_CATEGORIZATION_AFTER_COMPLETION, dependencies)
+  );
+
   return actions;
 }
