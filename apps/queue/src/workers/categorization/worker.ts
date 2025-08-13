@@ -7,6 +7,11 @@ import { createCategorizationPipeline } from "./pipeline";
 
 import type { Queue } from "bullmq";
 
+// Import categorization actions synchronously
+import { DetermineCategoryAction } from "../../services/categorization/actions/determine-category/action";
+import { DetermineTagsAction } from "../../services/categorization/actions/determine-tags/action";
+import { SaveCategoryAction } from "../../services/categorization/actions/save-category/action";
+import { SaveTagsAction } from "../../services/categorization/actions/save-tags/action";
 import type { IServiceContainer } from "../../services/container";
 import { ActionName } from "../../types";
 import { ActionFactory } from "../core/action-factory";
@@ -54,48 +59,40 @@ export class CategorizationWorker extends BaseWorker<
    * Register categorization-specific actions
    */
   private registerCategorizationActions(): void {
-    // Import actions dynamically to avoid circular dependencies
-    import(
-      "../../services/categorization/actions/determine-category/action"
-    ).then(({ DetermineCategoryAction }) => {
-      this.actionFactory.register(
-        ActionName.DETERMINE_CATEGORY,
-        () => new DetermineCategoryAction()
-      );
-    });
-
-    import("../../services/categorization/actions/save-category/action").then(
-      ({ SaveCategoryAction }) => {
-        this.actionFactory.register(
-          ActionName.SAVE_CATEGORY,
-          () => new SaveCategoryAction()
-        );
-      }
+    console.log("[CATEGORIZATION_WORKER] Registering categorization actions...");
+    
+    // Import actions synchronously to ensure they're registered before pipeline creation
+    this.actionFactory.register(
+      ActionName.DETERMINE_CATEGORY,
+      () => new DetermineCategoryAction()
     );
+    console.log("[CATEGORIZATION_WORKER] Registered DETERMINE_CATEGORY action");
 
-    import("../../services/categorization/actions/determine-tags/action").then(
-      ({ DetermineTagsAction }) => {
-        this.actionFactory.register(
-          ActionName.DETERMINE_TAGS,
-          () => new DetermineTagsAction()
-        );
-      }
+    this.actionFactory.register(
+      ActionName.SAVE_CATEGORY,
+      () => new SaveCategoryAction()
     );
+    console.log("[CATEGORIZATION_WORKER] Registered SAVE_CATEGORY action");
 
-    import("../../services/categorization/actions/save-tags/action").then(
-      ({ SaveTagsAction }) => {
-        this.actionFactory.register(
-          ActionName.SAVE_TAGS,
-          () => new SaveTagsAction()
-        );
-      }
+    this.actionFactory.register(
+      ActionName.DETERMINE_TAGS,
+      () => new DetermineTagsAction()
     );
+    console.log("[CATEGORIZATION_WORKER] Registered DETERMINE_TAGS action");
+
+    this.actionFactory.register(
+      ActionName.SAVE_TAGS,
+      () => new SaveTagsAction()
+    );
+    console.log("[CATEGORIZATION_WORKER] Registered SAVE_TAGS action");
+    
+    console.log("[CATEGORIZATION_WORKER] All categorization actions registered");
   }
 
   /**
    * Create the categorization pipeline
    */
-  protected createPipeline(
+  protected createActionPipeline(
     data: CategorizationJobData,
     context: ActionContext
   ): WorkerAction<
@@ -103,11 +100,17 @@ export class CategorizationWorker extends BaseWorker<
     CategorizationWorkerDependencies,
     CategorizationJobData
   >[] {
-    return createCategorizationPipeline(
+    console.log("[CATEGORIZATION_WORKER] Creating action pipeline...");
+    console.log("[CATEGORIZATION_WORKER] Available actions:", this.actionFactory.getRegisteredActions());
+    
+    const pipeline = createCategorizationPipeline(
       this.actionFactory,
       this.dependencies,
       data,
       context
     );
+    
+    console.log("[CATEGORIZATION_WORKER] Created pipeline with", pipeline.length, "actions");
+    return pipeline;
   }
 }

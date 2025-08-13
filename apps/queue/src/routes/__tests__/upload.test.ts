@@ -121,7 +121,7 @@ describe("Upload Router", () => {
     );
 
     if (postRoute?.route?.stack) {
-      // Execute the route handler directly (index 1, skip middleware)
+      // Execute the main route handler (index 1, skip multer middleware at index 0)
       const handler = postRoute.route.stack[1];
 
       if (handler && handler.handle) {
@@ -167,6 +167,7 @@ describe("Upload Router", () => {
     mockRequest = {
       files: [],
       body: {},
+      headers: {},
     };
 
     // Mock response
@@ -811,7 +812,7 @@ describe("Upload Router", () => {
       // Test the multer storage destination error handling
       const mockStorage = multer.diskStorage as any;
       const mockDestination = vi.fn();
-      
+
       // Mock the storage destination to simulate an error
       mockStorage.mockImplementation(() => ({
         destination: mockDestination,
@@ -820,14 +821,17 @@ describe("Upload Router", () => {
       // Test the destination function with error
       const mockCallback = vi.fn();
       const mockError = new Error("Directory creation failed");
-      
+
       // Simulate the destination function behavior
       mockDestination.mockImplementation(async (req, file, cb) => {
         try {
           // Simulate directory creation failure
           throw mockError;
         } catch (error) {
-          cb(error instanceof Error ? error : new Error(String(error)), "/test/dir");
+          cb(
+            error instanceof Error ? error : new Error(String(error)),
+            "/test/dir"
+          );
         }
       });
 
@@ -840,7 +844,7 @@ describe("Upload Router", () => {
     it("should test multer file filter error handling", async () => {
       // Test the multer file filter error handling
       const mockFileFilter = vi.fn();
-      
+
       // Mock the file filter to simulate an error
       mockFileFilter.mockImplementation(async (req, file, cb) => {
         try {
@@ -852,7 +856,11 @@ describe("Upload Router", () => {
       });
 
       const mockCallback = vi.fn();
-      await mockFileFilter({}, { originalname: "test.txt", mimetype: "text/plain" }, mockCallback);
+      await mockFileFilter(
+        {},
+        { originalname: "test.txt", mimetype: "text/plain" },
+        mockCallback
+      );
 
       expect(mockCallback).toHaveBeenCalledWith(null, false);
     });
@@ -1065,7 +1073,9 @@ describe("Upload Router", () => {
       ];
 
       // Mock directory listing error
-      vi.mocked(fs.readdir).mockRejectedValue(new Error("Directory listing error"));
+      vi.mocked(fs.readdir).mockRejectedValue(
+        new Error("Directory listing error")
+      );
 
       await executeUploadRoute(mockFiles);
 

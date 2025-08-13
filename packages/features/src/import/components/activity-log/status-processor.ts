@@ -7,9 +7,23 @@ export function processStatusEvents(
 ): Map<string, ImportStatus> {
   const statusMap = new Map<string, ImportStatus>();
 
-  for (const event of events) {
+  // Sort events by timestamp to ensure chronological processing
+  const sortedEvents = [...events].sort((a, b) => {
+    const dateA = new Date(a.createdAt);
+    const dateB = new Date(b.createdAt);
+    return dateA.getTime() - dateB.getTime();
+  });
+
+  for (const event of sortedEvents) {
+    console.log(
+      `[STATUS_PROCESSOR] Processing event: ${event.context} for import ${event.importId}, status: ${event.status}`
+    );
+
     // Create new import status if it doesn't exist
     if (!statusMap.has(event.importId)) {
+      console.log(
+        `[STATUS_PROCESSOR] Creating new status for import ${event.importId}`
+      );
       statusMap.set(event.importId, {
         importId: event.importId,
         noteTitle: event.metadata?.noteTitle as string,
@@ -29,6 +43,8 @@ export function processStatusEvents(
           source: { status: "pending" },
           image: { status: "pending" },
           duplicates: { status: "pending" },
+          categorization: { status: "pending" },
+          tags: { status: "pending" },
         },
         createdAt: new Date(event.createdAt),
       });
@@ -37,12 +53,17 @@ export function processStatusEvents(
     const status = statusMap.get(event.importId)!;
     const hasError = !!event.errorMessage && event.errorMessage.trim() !== "";
 
-    // Update note title and ID
-    if (event.metadata?.noteTitle) {
+    // Update note title and ID (only if not already set)
+    if (event.metadata?.noteTitle && !status.noteTitle) {
       status.noteTitle = event.metadata.noteTitle as string;
     }
-    if (event.noteId) {
+    if (event.noteId && !status.noteId) {
       status.noteId = event.noteId;
+    }
+
+    // Update createdAt to the earliest event
+    if (new Date(event.createdAt) < status.createdAt) {
+      status.createdAt = new Date(event.createdAt);
     }
 
     // Process different contexts
@@ -55,7 +76,7 @@ export function processStatusEvents(
           };
         } else if (event.message?.includes(CompletionMessages.CLEAN_HTML)) {
           status.steps.cleaning = { status: "completed" };
-        } else {
+        } else if (status.steps.cleaning.status !== "completed") {
           status.steps.cleaning = { status: "processing" };
         }
         break;
@@ -70,7 +91,7 @@ export function processStatusEvents(
           event.message?.includes(CompletionMessages.CREATE_STRUCTURE)
         ) {
           status.steps.structure = { status: "completed" };
-        } else {
+        } else if (status.steps.structure.status !== "completed") {
           status.steps.structure = { status: "processing" };
         }
         break;
@@ -81,7 +102,7 @@ export function processStatusEvents(
             status: "failed",
             error: event.errorMessage,
           };
-        } else {
+        } else if (status.steps.noteProcessing.status !== "completed") {
           status.steps.noteProcessing = { status: "processing" };
         }
         break;
@@ -151,7 +172,7 @@ export function processStatusEvents(
           };
         } else if (event.message?.includes(CompletionMessages.ADD_SOURCE)) {
           status.steps.source = { status: "completed" };
-        } else {
+        } else if (status.steps.source.status !== "completed") {
           status.steps.source = { status: "processing" };
         }
         break;
@@ -164,7 +185,7 @@ export function processStatusEvents(
           };
         } else if (event.message?.includes(CompletionMessages.ADD_IMAGE)) {
           status.steps.image = { status: "completed" };
-        } else {
+        } else if (status.steps.image.status !== "completed") {
           status.steps.image = { status: "processing" };
         }
         break;
@@ -179,13 +200,74 @@ export function processStatusEvents(
           event.message?.includes(CompletionMessages.VERIFY_DUPLICATES) ||
           event.message?.includes(CompletionMessages.DUPLICATE_IDENTIFIED)
         ) {
-          status.steps.duplicates = { 
+          status.steps.duplicates = {
             status: "completed",
             message: event.message,
           };
-        } else {
+        } else if (status.steps.duplicates.status !== "completed") {
           status.steps.duplicates = { status: "processing" };
         }
+        break;
+
+      case "categorization_scheduling":
+        // Only set to processing if not already completed
+        if (status.steps.categorization.status !== "completed") {
+          status.steps.categorization = { status: "processing" };
+        }
+        break;
+
+      case "categorization_start":
+        // Only set to processing if not already completed
+        if (status.steps.categorization.status !== "completed") {
+          status.steps.categorization = { status: "processing" };
+        }
+        break;
+
+      case "categorization_complete":
+        console.log(
+          `[STATUS_PROCESSOR] Categorization complete for import ${event.importId}, hasError: ${hasError}, message: ${event.message}`
+        );
+        if (hasError) {
+          status.steps.categorization = {
+            status: "failed",
+            error: event.errorMessage,
+          };
+        } else {
+          status.steps.categorization = {
+            status: "completed",
+            message: event.message,
+          };
+        }
+        console.log(
+          `[STATUS_PROCESSOR] Categorization status set to: ${status.steps.categorization.status}`
+        );
+        break;
+
+      case "tag_determination_start":
+        // Only set to processing if not already completed
+        if (status.steps.tags.status !== "completed") {
+          status.steps.tags = { status: "processing" };
+        }
+        break;
+
+      case "tag_determination_complete":
+        console.log(
+          `[STATUS_PROCESSOR] Tag determination complete for import ${event.importId}, hasError: ${hasError}, message: ${event.message}`
+        );
+        if (hasError) {
+          status.steps.tags = {
+            status: "failed",
+            error: event.errorMessage,
+          };
+        } else {
+          status.steps.tags = {
+            status: "completed",
+            message: event.message,
+          };
+        }
+        console.log(
+          `[STATUS_PROCESSOR] Tags status set to: ${status.steps.tags.status}`
+        );
         break;
     }
 
@@ -198,7 +280,9 @@ export function processStatusEvents(
       status.steps.instructions.status === "completed" &&
       status.steps.source.status === "completed" &&
       status.steps.image.status === "completed" &&
-      status.steps.duplicates.status === "completed";
+      status.steps.duplicates.status === "completed" &&
+      status.steps.categorization.status === "completed" &&
+      status.steps.tags.status === "completed";
 
     if (allStepsCompleted && status.status === "importing") {
       status.status = "completed";
@@ -214,7 +298,9 @@ export function processStatusEvents(
       status.steps.instructions.status === "failed" ||
       status.steps.source.status === "failed" ||
       status.steps.image.status === "failed" ||
-      status.steps.duplicates.status === "failed";
+      status.steps.duplicates.status === "failed" ||
+      status.steps.categorization.status === "failed" ||
+      status.steps.tags.status === "failed";
 
     if (anyStepFailed && status.status === "importing") {
       status.status = "failed";

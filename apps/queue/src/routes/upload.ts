@@ -1,5 +1,6 @@
 import { randomUUID } from "crypto";
 import { Router } from "express";
+import type { Request } from "express";
 import type { Express } from "express-serve-static-core";
 import fs from "fs/promises";
 import multer from "multer";
@@ -18,6 +19,14 @@ import {
 } from "../utils/utils";
 
 export const uploadRouter = Router();
+
+interface UploadResult {
+  totalFiles: number;
+  htmlFiles: number;
+  imageFiles: number;
+  errors: string[];
+  importId: string;
+}
 
 // Initialize upload directories
 const initializeUploadDirectories = async () => {
@@ -116,14 +125,6 @@ const upload = multer({
   },
 });
 
-interface UploadResult {
-  importId: string;
-  htmlFiles: number;
-  imageFiles: number;
-  totalFiles: number;
-  errors: string[];
-}
-
 /**
  * Unified upload endpoint that handles HTML files and their associated image directories
  */
@@ -171,7 +172,7 @@ uploadRouter.post(
 
     try {
       const { result, duration } = await measureExecutionTime(
-        () => processUploadedFiles(files),
+        () => processUploadedFiles(files, req),
         "Unified upload process"
       );
 
@@ -201,14 +202,21 @@ uploadRouter.post(
  * Process uploaded files and create coordinated note and image jobs
  */
 async function processUploadedFiles(
-  files: Express.Multer.File[]
+  files: Express.Multer.File[],
+  req: Request
 ): Promise<UploadResult> {
   const serviceContainer = await ServiceContainer.getInstance();
   const noteQueue = serviceContainer.queues.noteQueue;
 
-  // Generate a single importId for the entire upload batch
-  const importId = randomUUID();
-  console.log(`[UPLOAD_ROUTE] Generated importId: ${importId}`);
+  // Accept importId from frontend or generate one
+  const headerImportId = req.headers["x-import-id"];
+  const importId =
+    (typeof headerImportId === "string" ? headerImportId : undefined) ||
+    (req.body as { importId?: string }).importId ||
+    randomUUID();
+  console.log(
+    `[UPLOAD_ROUTE] Using importId: ${importId} (${typeof headerImportId === "string" ? "from frontend" : "generated"})`
+  );
 
   // Separate HTML and image files
   const htmlFiles: Express.Multer.File[] = [];

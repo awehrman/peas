@@ -200,6 +200,52 @@ export function ImportStatusItem({
             </div>
           )}
         </div>
+
+        {/* Categorization */}
+        <div className="flex items-center">
+          <div className="mr-3 text-center" style={{ minWidth: "20px" }}>
+            {getStepIcon(importStatus.steps.categorization.status)}
+          </div>
+          <div
+            className={
+              importStatus.steps.categorization.status === "failed"
+                ? "text-red-600"
+                : ""
+            }
+          >
+            {importStatus.steps.categorization.status === "completed"
+              ? (importStatus.steps.categorization.message || "Category determined!")
+              : "Determining recipe category..."}
+          </div>
+          {importStatus.steps.categorization.error && (
+            <div className="text-red-500 text-xs">
+              ({importStatus.steps.categorization.error})
+            </div>
+          )}
+        </div>
+
+        {/* Tags */}
+        <div className="flex items-center">
+          <div className="mr-3 text-center" style={{ minWidth: "20px" }}>
+            {getStepIcon(importStatus.steps.tags.status)}
+          </div>
+          <div
+            className={
+              importStatus.steps.tags.status === "failed"
+                ? "text-red-600"
+                : ""
+            }
+          >
+            {importStatus.steps.tags.status === "completed"
+              ? (importStatus.steps.tags.message || "Tags determined!")
+              : "Determining recipe tags..."}
+          </div>
+          {importStatus.steps.tags.error && (
+            <div className="text-red-500 text-xs">
+              ({importStatus.steps.tags.error})
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

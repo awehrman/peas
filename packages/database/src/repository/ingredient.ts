@@ -74,8 +74,9 @@ export async function saveParsedIngredientLine(
   // Use upsert to create or update the ingredient line
   const lineRecord = await prisma.parsedIngredientLine.upsert({
     where: {
-      noteId_lineIndex: {
+      noteId_blockIndex_lineIndex: {
         noteId,
+        blockIndex,
         lineIndex,
       },
     },

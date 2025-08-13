@@ -1,34 +1,25 @@
 import express, { NextFunction, Request, Response } from "express";
-import fs from "fs";
+import type { Express } from "express-serve-static-core";
 import multer from "multer";
 import path from "path";
 
 import type { IServiceContainer } from "../services/container";
-import { HttpStatus } from "../types";
-import { ActionName } from "../types";
-
-// Configure multer for file uploads
-/* istanbul ignore next -- @preserve */
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = path.join(process.cwd(), "uploads", "images");
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(
-      null,
-      file.fieldname + "-" + uniqueSuffix + path.extname(file.originalname)
-    );
-  },
-});
-
-const upload = multer({ storage });
+import { ActionName, HttpStatus } from "../types";
 
 export const imagesRouter = express.Router();
+
+interface ImageRequestBody {
+  importId?: string;
+  directories?: string[];
+}
+
+// Configure multer for file uploads
+const upload = multer({
+  dest: path.join(process.cwd(), "uploads", "temp"),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
+});
 
 // POST /images - Upload and process images
 imagesRouter.post(
@@ -49,7 +40,7 @@ imagesRouter.post(
     console.log("[IMAGES_ROUTE] Processing image upload request");
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const files = (req as any).files as any[];
+      const files = (req as any).files as Express.Multer.File[];
       console.log(`[IMAGES_ROUTE] Received ${files?.length || 0} files`);
 
       // Also check for directories and other files
@@ -60,15 +51,15 @@ imagesRouter.post(
         console.log("[IMAGES_ROUTE] No files uploaded");
 
         // Check if directories were sent
-        if (formData.directories) {
+        if ((formData as ImageRequestBody).directories) {
           console.log(
             "[IMAGES_ROUTE] Directories detected:",
-            formData.directories
+            (formData as ImageRequestBody).directories
           );
           return res.status(HttpStatus.BAD_REQUEST).json({
             error:
               "Directories cannot be processed directly. Please select individual image files from the directory.",
-            directories: formData.directories,
+            directories: (formData as ImageRequestBody).directories,
           });
         }
 
@@ -97,6 +88,18 @@ imagesRouter.post(
       console.log("[IMAGES_ROUTE] Image queue found, processing files");
       const results = [];
 
+      // Accept importId from frontend or generate one for the batch
+      const headerImportId = req.headers["x-import-id"];
+      const batchImportId =
+        (typeof headerImportId === "string" ? headerImportId : undefined) ||
+        (req.body as ImageRequestBody).importId ||
+        `import-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      console.log(
+        "[IMAGES_ROUTE] Using batch importId:",
+        batchImportId,
+        typeof headerImportId === "string" ? "(from frontend)" : "(generated)"
+      );
+
       for (const file of files) {
         console.log(
           `[IMAGES_ROUTE] Processing file: ${file.originalname} -> ${file.filename}`
@@ -120,7 +123,8 @@ imagesRouter.post(
           continue;
         }
 
-        const importId = `import-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        // Use the batch importId for all images in this request
+        const importId = batchImportId;
 
         const jobData = {
           noteId: `note-${importId}`, // This will be updated when the note is created

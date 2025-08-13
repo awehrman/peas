@@ -110,6 +110,7 @@ describe("Images Router", () => {
       body: {}, // Initialize body to prevent undefined access
       files: [],
       params: {},
+      headers: {},
     };
 
     // Mock response
@@ -149,7 +150,7 @@ describe("Images Router", () => {
       );
 
       if (postRoute?.route?.stack) {
-        // Find the actual handler (the second one, which is the route handler)
+        // Find the actual handler (the second one, which is the route handler after multer middleware)
         const handler = postRoute.route.stack[1]; // The second handler is the actual route
 
         if (handler && handler.handle) {

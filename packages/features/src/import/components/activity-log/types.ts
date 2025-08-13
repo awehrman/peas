@@ -34,6 +34,8 @@ export interface ImportStatus {
     source: StepStatus;
     image: StepStatus;
     duplicates: StepStatus;
+    categorization: StepStatus;
+    tags: StepStatus;
   };
   createdAt: Date;
   completedAt?: Date;

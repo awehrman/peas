@@ -8,6 +8,7 @@ export const notesRouter = Router();
 
 interface NoteRequestBody {
   content: string;
+  importId?: string;
   imageFiles?: Array<{
     name: string;
     type: string;
@@ -33,9 +34,13 @@ notesRouter.post("/", async (req: Request, res: Response) => {
     return;
   }
 
-  // Generate a temporary importId for frontend grouping
-  const importId = `${randomUUID()}`;
-  console.log("[NOTES_ROUTE] Generated importId:", importId);
+  // Accept importId from frontend or generate one
+  const headerImportId = req.headers["x-import-id"];
+  const importId =
+    (typeof headerImportId === "string" ? headerImportId : undefined) ||
+    (req.body as NoteRequestBody).importId ||
+    randomUUID();
+  console.log("[NOTES_ROUTE] Using importId:", importId, typeof headerImportId === "string" ? "(from frontend)" : "(generated)");
 
   const serviceContainer = await ServiceContainer.getInstance();
   const noteQueue = serviceContainer.queues.noteQueue;
