@@ -2,6 +2,7 @@
 import { promises as fs } from "fs";
 import path from "path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { Stats } from "fs";
 
 import {
   findImageDirectoryForHtmlFile,
@@ -247,6 +248,31 @@ describe("Image Utils", () => {
       const result = await isImageFileByContent("/test/image.webp");
 
       expect(result).toBe(true);
+
+      global.Buffer = originalBuffer;
+    });
+
+    it("should detect WebP images by magic bytes with console log", async () => {
+      const webpBytes = [
+        0x52, 0x49, 0x46, 0x46, 0x00, 0x00, 0x00, 0x00, 0x57, 0x65, 0x62, 0x50,
+      ];
+      mockFileHandle.read.mockResolvedValue({ bytesRead: 12 });
+
+      const mockBuffer = {
+        subarray: vi.fn().mockReturnValue(webpBytes),
+      };
+      const originalBuffer = global.Buffer;
+      global.Buffer = {
+        ...originalBuffer,
+        alloc: vi.fn().mockReturnValue(mockBuffer),
+      } as any;
+
+      mockPath.basename.mockReturnValue("image.webp");
+
+      const result = await isImageFileByContent("/test/image.webp");
+
+      expect(result).toBe(true);
+      expect(mockPath.basename).toHaveBeenCalledWith("/test/image.webp");
 
       global.Buffer = originalBuffer;
     });
@@ -751,6 +777,25 @@ describe("Image Utils", () => {
       const result = await findImagesForImport("test-import-123");
 
       expect(result).toHaveLength(2);
+    });
+
+    it("should handle errors in getImageFilesWithMetadata and continue checking other paths", async () => {
+      // Mock first path to succeed but getImageFilesWithMetadata to throw an error
+      mockFs.access.mockResolvedValueOnce(undefined);
+      mockFs.readdir.mockRejectedValueOnce(new Error("Read error"));
+      
+      // Mock second path to succeed
+      mockFs.access.mockResolvedValueOnce(undefined);
+      mockFs.readdir.mockResolvedValueOnce(["image1.jpg", "image2.png"]);
+      mockPath.extname
+        .mockReturnValueOnce(".jpg")
+        .mockReturnValueOnce(".png");
+      mockFs.stat.mockResolvedValue({ size: 1024 } as Stats);
+
+      const result = await findImagesForImport("test-import-123");
+
+      expect(result).toHaveLength(2);
+      expect(result[0]?.filePath).toContain("public/files/test-import-123_files");
     });
   });
 });

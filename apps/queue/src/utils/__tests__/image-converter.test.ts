@@ -525,5 +525,41 @@ describe("Image Converter", () => {
         "[IMAGE_CONVERTER] Both PNG and JPG conversion failed"
       );
     });
+
+    it("should successfully convert to JPG when PNG fails but JPG succeeds", async () => {
+      const inputPath = "/path/to/input.bmp";
+
+      // Mock PNG conversion to fail (by making fs.stat fail), but JPG to succeed
+      vi.mocked(fs.stat)
+        .mockRejectedValueOnce(new Error("PNG conversion failed"))
+        .mockResolvedValueOnce({ size: 2048 } as Stats);
+
+      const result = await convertBinaryImageToStandardFormat(
+        inputPath,
+        mockLogger
+      );
+
+      expect(result).toEqual({
+        success: true,
+        outputPath: "/path/to/input.jpg",
+        newFilename: "input.jpg",
+      });
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        "[IMAGE_CONVERTER] Converting binary image to PNG: /path/to/input.bmp -> /path/to/input.png"
+      );
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        "[IMAGE_CONVERTER] PNG conversion failed, trying JPG..."
+      );
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        "[IMAGE_CONVERTER] Converting binary image to JPG: /path/to/input.bmp -> /path/to/input.jpg"
+      );
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        "[IMAGE_CONVERTER] Conversion successful - output size: 2048 bytes"
+      );
+    });
+
+
+
+    
   });
 });

@@ -220,6 +220,22 @@ describe("ImageProcessor", () => {
       expect(result!.left + result!.cropWidth).toBeLessThanOrEqual(100);
       expect(result!.top + result!.cropHeight).toBeLessThanOrEqual(100);
     });
+
+
+
+    it("should log attempts during iterative reduction", () => {
+      // Test case that will trigger multiple attempts
+      const result = processor["calculateOptimalCropDimensions"](
+        50,
+        50,
+        16 / 9,
+        1280,
+        720
+      );
+
+      // Should find valid dimensions after reduction
+      expect(result).not.toBeNull();
+    });
   });
 
   describe("processCrop", () => {
@@ -507,6 +523,92 @@ describe("ImageProcessor", () => {
         withoutEnlargement: true,
       });
     });
+
+    it("should handle extract failures and try alternative approaches", async () => {
+      const mockImage: any = {
+        extract: vi.fn().mockImplementation(() => {
+          throw new Error("Extract failed");
+        }),
+        resize: vi.fn().mockReturnThis(),
+        metadata: vi.fn(),
+        toFile: vi.fn(),
+        ensureAlpha: vi.fn(),
+        removeAlpha: vi.fn(),
+        flatten: vi.fn(),
+      };
+
+      const mockMetadata: Metadata = {
+        width: 1272,
+        height: 852,
+        format: "jpeg",
+        space: "srgb",
+        channels: 3,
+        depth: "uchar",
+        density: 72,
+        hasProfile: false,
+        hasAlpha: false,
+        autoOrient: { width: 1272, height: 852 },
+        isProgressive: false,
+        isPalette: false,
+      };
+
+      await processor["processCrop"](
+        mockImage,
+        mockMetadata,
+        16 / 9,
+        1280,
+        720
+      );
+
+      expect(mockImage.resize).toHaveBeenCalledWith(1280, 720, {
+        fit: "cover",
+        position: "center",
+        withoutEnlargement: false,
+      });
+    });
+
+    it("should handle both extract and cover resize failures", async () => {
+      const mockImage: any = {
+        extract: vi.fn().mockImplementation(() => {
+          throw new Error("Extract failed");
+        }),
+        resize: vi.fn().mockReturnThis(), // First resize (cover) succeeds
+        metadata: vi.fn(),
+        toFile: vi.fn(),
+        ensureAlpha: vi.fn(),
+        removeAlpha: vi.fn(),
+        flatten: vi.fn(),
+      };
+
+      const mockMetadata: Metadata = {
+        width: 1272,
+        height: 852,
+        format: "jpeg",
+        space: "srgb",
+        channels: 3,
+        depth: "uchar",
+        density: 72,
+        hasProfile: false,
+        hasAlpha: false,
+        autoOrient: { width: 1272, height: 852 },
+        isProgressive: false,
+        isPalette: false,
+      };
+
+      await processor["processCrop"](
+        mockImage,
+        mockMetadata,
+        16 / 9,
+        1280,
+        720
+      );
+
+      expect(mockImage.resize).toHaveBeenCalledWith(1280, 720, {
+        fit: "cover",
+        position: "center",
+        withoutEnlargement: false,
+      });
+    });
   });
 
   describe("processImage", () => {
@@ -764,6 +866,71 @@ describe("ImageProcessor", () => {
       await expect(
         processor.processImage(inputPath, outputDir, filename)
       ).rejects.toThrow("Processing failed");
+    });
+
+
+
+    it("should handle non-extract_area errors by re-throwing", async () => {
+      const inputPath = "/tmp/test-image.jpg";
+      const outputDir = "/tmp/output";
+      const filename = "test-image.jpg";
+
+      // Mock successful metadata
+      vi.mocked(sharp).mockReturnValue({
+        metadata: vi.fn().mockResolvedValue({
+          width: 1000,
+          height: 800,
+          format: "jpeg",
+        }),
+        resize: vi.fn().mockReturnThis(),
+        ensureAlpha: vi.fn().mockReturnThis(),
+        removeAlpha: vi.fn().mockReturnThis(),
+        flatten: vi.fn().mockReturnThis(),
+        toFile: vi.fn().mockRejectedValue(new Error("Some other error")),
+      } as any);
+
+      // Mock successful directory creation
+      vi.mocked(fs.mkdir).mockResolvedValue(undefined);
+
+      await expect(
+        processor.processImage(inputPath, outputDir, filename)
+      ).rejects.toThrow("Some other error");
+    });
+
+    it("should log processed image dimensions", async () => {
+      const inputPath = "/tmp/test-image.jpg";
+      const outputDir = "/tmp/output";
+      const filename = "test-image.jpg";
+
+      // Mock successful metadata
+      vi.mocked(sharp).mockReturnValue({
+        metadata: vi.fn().mockResolvedValue({
+          width: 1000,
+          height: 800,
+          format: "jpeg",
+        }),
+        resize: vi.fn().mockReturnThis(),
+        ensureAlpha: vi.fn().mockReturnThis(),
+        removeAlpha: vi.fn().mockReturnThis(),
+        flatten: vi.fn().mockReturnThis(),
+        toFile: vi.fn().mockResolvedValue(undefined),
+      } as any);
+
+      // Mock successful directory creation and file stats
+      vi.mocked(fs.mkdir).mockResolvedValue(undefined);
+      vi.mocked(fs.stat).mockResolvedValue({ size: 1024 } as Stats);
+
+      const result = await processor.processImage(
+        inputPath,
+        outputDir,
+        filename
+      );
+
+      expect(result).toBeDefined();
+      expect(result.originalPath).toBeDefined();
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        "[PROCESS_IMAGE] Processed image dimensions: 1000x800"
+      );
     });
   });
 

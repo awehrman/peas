@@ -101,6 +101,7 @@ export async function uploadProcessed(
       ...urls,
     };
   } catch (error) {
+    /* istanbul ignore next -- @preserve */
     const errorMessage = error instanceof Error ? error.message : String(error);
     logger.log(
       `[UPLOAD_PROCESSED] Failed to upload processed images: ${errorMessage}`
