@@ -79,3 +79,6 @@ export class MarkWorkerCompletedAction extends BaseAction<
     return data;
   }
 }
+
+// Re-export the action for backward compatibility
+export const MarkNoteWorkerCompletedAction = new MarkWorkerCompletedAction("note");

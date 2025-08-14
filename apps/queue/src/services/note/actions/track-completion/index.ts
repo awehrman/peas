@@ -22,7 +22,7 @@ export type { NoteCompletionStatus } from "./service";
 // Export actions
 export { TrackCompletionAction } from "./action";
 export { InitializeCompletionTrackingAction } from "./initialize-completion";
-export { MarkWorkerCompletedAction } from "./mark-worker-completed";
+export { MarkWorkerCompletedAction, MarkNoteWorkerCompletedAction } from "./mark-worker-completed";
 export { MarkNoteAsFailedAction } from "./mark-note-failed";
 
 // Import the action class for convenience functions
