@@ -23,7 +23,7 @@ export class SaveTagsAction extends BaseAction<
   async execute(
     data: CategorizationJobData,
     deps: CategorizationWorkerDependencies,
-    _context: ActionContext
+    context: ActionContext
   ): Promise<CategorizationJobData> {
     // Validate input before processing
     const validationError = this.validateInput(data);
@@ -31,9 +31,32 @@ export class SaveTagsAction extends BaseAction<
       throw validationError;
     }
 
-    // Call the service to save tags
-    const result = await saveTags(data, deps.logger, deps.statusBroadcaster);
-
-    return result;
+    // Call the service to save tags using executeServiceAction for status broadcasting
+    return this.executeServiceAction({
+      data,
+      deps,
+      context,
+      serviceCall: () => saveTags(data, deps.logger, deps.statusBroadcaster),
+      contextName: "tag_save",
+      startMessage: "Saving recipe tags...",
+      completionMessage: "Tags saved: chocolate, dessert, sweet",
+      additionalBroadcasting: async (result) => {
+        if (deps.statusBroadcaster) {
+          const tags = result.metadata?.determinedTags as string[] | undefined;
+          const message = tags && tags.length > 0 ? `Tags saved: ${tags.join(", ")}` : "No tags to save";
+          await deps.statusBroadcaster.addStatusEventAndBroadcast({
+            importId: data.importId,
+            status: "COMPLETED",
+            message,
+            context: "tag_save_complete",
+            noteId: data.noteId,
+            indentLevel: 1,
+            metadata: {
+              savedTags: tags,
+            },
+          });
+        }
+      },
+    });
   }
 }

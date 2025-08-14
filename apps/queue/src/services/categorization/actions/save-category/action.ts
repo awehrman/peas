@@ -23,7 +23,7 @@ export class SaveCategoryAction extends BaseAction<
   async execute(
     data: CategorizationJobData,
     deps: CategorizationWorkerDependencies,
-    _context: ActionContext
+    context: ActionContext
   ): Promise<CategorizationJobData> {
     // Validate input before processing
     const validationError = this.validateInput(data);
@@ -31,9 +31,34 @@ export class SaveCategoryAction extends BaseAction<
       throw validationError;
     }
 
-    // Call the service to save category
-    const result = await saveCategory(data, deps.logger, deps.statusBroadcaster);
-
-    return result;
+    // Call the service to save category using executeServiceAction for status broadcasting
+    return this.executeServiceAction({
+      data,
+      deps,
+      context,
+      serviceCall: () => saveCategory(data, deps.logger, deps.statusBroadcaster),
+      contextName: "categorization_save",
+      startMessage: "Saving recipe category...",
+      completionMessage: "Category saved: dessert",
+      additionalBroadcasting: async (result) => {
+        if (deps.statusBroadcaster) {
+          const determinedCategory = result.metadata?.determinedCategory as string | undefined;
+          const determinedCategories = result.metadata?.determinedCategories as string[] | undefined;
+          const category = determinedCategory || (determinedCategories && determinedCategories.length > 0 ? determinedCategories[0] : undefined);
+          const message = category ? `Category saved: ${category}` : "No category to save";
+          await deps.statusBroadcaster.addStatusEventAndBroadcast({
+            importId: data.importId,
+            status: "COMPLETED",
+            message,
+            context: "categorization_save_complete",
+            noteId: data.noteId,
+            indentLevel: 1,
+            metadata: {
+              savedCategory: category,
+            },
+          });
+        }
+      },
+    });
   }
 }
