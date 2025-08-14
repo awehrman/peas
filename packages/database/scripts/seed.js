@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /* eslint-env node */
-
+/* global console, process */
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
@@ -75,6 +75,39 @@ async function main() {
   }
   console.log(`✅ Created ${categories.length} ingredient categories`);
 
+  // Create base recipe categories
+  const recipeCategories = [
+    { name: "Appetizers" },
+    { name: "Sides" },
+    { name: "Arancini" },
+    { name: "Main" },
+    { name: "Arepas" },
+    { name: "Condiments" },
+    { name: "Sauces" },
+    { name: "Baked Cheese" },
+    { name: "Pasta" },
+    { name: "Fish" },
+    { name: "Beef" },
+    { name: "Stir-Fry" },
+    { name: "Tacos" },
+    { name: "Rice" },
+  ];
+
+  console.log("🍽️ Creating recipe categories...");
+  for (const category of recipeCategories) {
+    // Check if category already exists
+    const existingCategory = await prisma.category.findFirst({
+      where: { name: category.name },
+    });
+
+    if (!existingCategory) {
+      await prisma.category.create({
+        data: category,
+      });
+    }
+  }
+  console.log(`✅ Created ${recipeCategories.length} recipe categories`);
+
   // Create base ingredient tags
   const tags = [
     // General
@@ -86,8 +119,8 @@ async function main() {
     { name: "imported" },
 
     // Dietary
-    { name: "vegan-friendly" },
-    { name: "vegetarian-friendly" },
+    { name: "vegan" },
+    { name: "vegetarian" },
     { name: "gluten-free" },
     { name: "dairy-free" },
     { name: "nut-free" },
@@ -112,33 +145,53 @@ async function main() {
     { name: "pressure-cook" },
     { name: "dehydrating" },
 
-    // Cuisines
-    { name: "african" },
-    { name: "american" },
+    // Regional/Cultural Tags (from categorization mapping)
     { name: "asian" },
+    { name: "japanese" },
+    { name: "colombian" },
+    { name: "latam" },
+    { name: "mexican" },
     { name: "brazilian" },
-    { name: "cajun" },
-    { name: "caribbean" },
-    { name: "chinese" },
-    { name: "ethiopian" },
+    { name: "italian" },
     { name: "european" },
     { name: "french" },
     { name: "german" },
-    { name: "greek" },
     { name: "indian" },
-    { name: "italian" },
-    { name: "japanese" },
-    { name: "korean" },
-    { name: "latin-american" },
-    { name: "mediterranean" },
-    { name: "mexican" },
-    { name: "middle-eastern" },
-    { name: "nordic" },
-    { name: "north-american" },
-    { name: "spanish" },
     { name: "thai" },
-    { name: "turkish" },
     { name: "vietnamese" },
+    { name: "korean" },
+    { name: "chinese" },
+    { name: "mediterranean" },
+    { name: "middle-eastern" },
+    { name: "african" },
+    { name: "caribbean" },
+    { name: "american" },
+    { name: "cajun" },
+    { name: "southern" },
+    { name: "nordic" },
+    { name: "spanish" },
+    { name: "greek" },
+    { name: "turkish" },
+    { name: "ethiopian" },
+
+    // Recipe Categories (from categorization mapping)
+    { name: "Appetizers" },
+    { name: "Sides" },
+    { name: "Arancini" },
+    { name: "Main" },
+    { name: "Arepas" },
+    { name: "Condiments" },
+    { name: "Sauces" },
+    { name: "Baked Cheese" },
+    { name: "Pasta" },
+    { name: "Fish" },
+    { name: "Beef" },
+    { name: "Stir-Fry" },
+    { name: "Tacos" },
+    { name: "Rice" },
+
+    { name: "latin-american" },
+    { name: "north-american" },
   ];
 
   console.log("🏷️ Creating ingredient tags...");

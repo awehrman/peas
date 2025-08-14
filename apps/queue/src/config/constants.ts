@@ -314,6 +314,63 @@ export const LOG_MESSAGES = {
 } as const;
 
 // ============================================================================
+// CATEGORIZATION CONSTANTS
+// ============================================================================
+
+// TODO this is an incomplete list from evernote
+export const CATEGORIZATION_CONSTANTS = {
+  /** Notebook to category mapping for Evernote metadata */
+  NOTEBOOK_CATEGORY_MAPPING: {
+    Appetizers: ["Appetizers", "Sides"],
+    Arancini: ["Appetizers", "Sides", "Arancini"],
+    Arepas: ["Main", "Arepas"],
+    "BBQ Sauce": ["Condiments", "Sauces"],
+    "Baked Cheeses": ["Appetizers", "Sides", "Baked Cheese"],
+    "Baked Pasta": ["Main", "Pasta"],
+    "Banh Xeo": ["Main"],
+    Bass: ["Main", "Fish"],
+    Beans: ["Sides"],
+    Beef: ["Main", "Beef"],
+    "Beef Curry": ["Main", "Beef"],
+    "Beef Roast": ["Main", "Beef"],
+    "Beef Stir-Fry": ["Main", "Stir-Fry"],
+    "Beef Tacos": ["Main", "Tacos"],
+    Bibimbap: ["Main", "Rice"],
+    Biryani: ["Main", "Rice"],
+  } as const,
+
+  // TODO this is an incomplete list that needs review
+  /** Notebook to tag mapping for Evernote metadata */
+  NOTEBOOK_TAG_MAPPING: {
+    asian: ["asian"],
+    japanese: ["asian", "japanese"],
+    colombian: ["colombian", "latam"],
+    mexican: ["mexican", "latam"],
+    brazilian: ["brazilian", "latam"],
+    italian: ["italian", "european"],
+    french: ["french", "european"],
+    german: ["german", "european"],
+    indian: ["indian", "asian"],
+    thai: ["thai", "asian"],
+    vietnamese: ["vietnamese", "asian"],
+    korean: ["korean", "asian"],
+    chinese: ["chinese", "asian"],
+    mediterranean: ["mediterranean", "european"],
+    "middle-eastern": ["middle-eastern"],
+    african: ["african"],
+    caribbean: ["caribbean", "latam"],
+    american: ["american"],
+    cajun: ["cajun", "american"],
+    southern: ["southern", "american"],
+    nordic: ["nordic", "european"],
+    spanish: ["spanish", "european"],
+    greek: ["greek", "european"],
+    turkish: ["turkish", "middle-eastern"],
+    ethiopian: ["ethiopian", "african"],
+  } as const,
+} as const;
+
+// ============================================================================
 // VALIDATION CONSTANTS
 // ============================================================================
 

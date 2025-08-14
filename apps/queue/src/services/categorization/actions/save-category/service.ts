@@ -4,7 +4,7 @@ import type { StructuredLogger } from "../../../../types";
 import type { CategorizationJobData } from "../../../../workers/categorization/dependencies";
 
 /**
- * Save the determined category to the database
+ * Save the determined categories to the database
  */
 export async function saveCategory(
   data: CategorizationJobData,
@@ -20,23 +20,40 @@ export async function saveCategory(
       `[SAVE_CATEGORY] Starting category save for note: ${data.noteId}`
     );
 
+    // Check for both old single category and new multiple categories
     const determinedCategory = data.metadata?.determinedCategory as string;
+    const determinedCategories = data.metadata?.determinedCategories as string[];
 
-    if (!determinedCategory) {
+    if (!determinedCategory && !determinedCategories) {
       logger.log(
-        `[SAVE_CATEGORY] No category to save for note: ${data.noteId}`
+        `[SAVE_CATEGORY] No categories to save for note: ${data.noteId}`
       );
       return data;
     }
 
-    // Save the category to the database using the repository function
-    const savedCategory = await saveCategoryToNote(
-      data.noteId,
-      determinedCategory
-    );
+    // Use the new multiple categories if available, otherwise fall back to single category
+    const categoriesToSave = determinedCategories || (determinedCategory ? [determinedCategory] : []);
+
+    if (categoriesToSave.length === 0) {
+      logger.log(
+        `[SAVE_CATEGORY] No categories to save for note: ${data.noteId}`
+      );
+      return data;
+    }
+
+    const savedCategories = [];
+
+    // Save each category to the database
+    for (const categoryName of categoriesToSave) {
+      const savedCategory = await saveCategoryToNote(
+        data.noteId,
+        categoryName
+      );
+      savedCategories.push(savedCategory);
+    }
 
     logger.log(
-      `[SAVE_CATEGORY] Successfully saved category "${savedCategory.name}" (ID: ${savedCategory.id}) for note: ${data.noteId}`
+      `[SAVE_CATEGORY] Successfully saved ${savedCategories.length} categories for note: ${data.noteId}`
     );
 
     return {
@@ -45,13 +62,14 @@ export async function saveCategory(
         ...data.metadata,
         categorySaved: true,
         categorySavedAt: new Date().toISOString(),
-        savedCategoryId: savedCategory.id,
-        savedCategoryName: savedCategory.name,
+        savedCategoryIds: savedCategories.map(cat => cat.id),
+        savedCategoryNames: savedCategories.map(cat => cat.name),
+        categoriesCount: savedCategories.length,
       },
     };
   } catch (error) {
     logger.log(
-      `[SAVE_CATEGORY] Failed to save category for note ${data.noteId}: ${error}`
+      `[SAVE_CATEGORY] Failed to save categories for note ${data.noteId}: ${error}`
     );
 
     return {

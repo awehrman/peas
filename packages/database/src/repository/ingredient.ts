@@ -396,3 +396,66 @@ export async function cleanupAllData(): Promise<{
     throw error;
   }
 }
+
+/**
+ * Get ingredients with their categories for a note
+ */
+export async function getIngredientsWithCategories(noteId: string) {
+  try {
+    const note = await prisma.note.findUnique({
+      where: { id: noteId },
+      include: {
+        parsedIngredientLines: {
+          include: {
+            ingredientReferences: {
+              include: {
+                ingredient: {
+                  include: {
+                    category: {
+                      select: {
+                        id: true,
+                        name: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!note) {
+      return null;
+    }
+
+    // Extract unique ingredients with their categories
+    const ingredientsWithCategories = new Map<
+      string,
+      {
+        id: string;
+        name: string;
+        category: { id: string; name: string } | null;
+      }
+    >();
+
+    for (const line of note.parsedIngredientLines) {
+      for (const reference of line.ingredientReferences) {
+        const ingredient = reference.ingredient;
+        if (!ingredientsWithCategories.has(ingredient.id)) {
+          ingredientsWithCategories.set(ingredient.id, {
+            id: ingredient.id,
+            name: ingredient.name,
+            category: ingredient.category,
+          });
+        }
+      }
+    }
+
+    return Array.from(ingredientsWithCategories.values());
+  } catch (error) {
+    console.error("Failed to get ingredients with categories:", error);
+    throw error;
+  }
+}
