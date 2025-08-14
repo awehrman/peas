@@ -260,13 +260,16 @@ export const QUEUE_ACTIONS: Record<QueueName, ActionName[]> = {
     ActionName.SCHEDULE_INSTRUCTION_LINES,
   ],
   [QueueName.INGREDIENT]: [
+    ActionName.PARSE_INGREDIENT_LINE,
     ActionName.SAVE_INGREDIENT_LINE,
+    ActionName.CHECK_INGREDIENT_COMPLETION,
     ActionName.SCHEDULE_INGREDIENT_LINES,
     ActionName.SCHEDULE_CATEGORIZATION_AFTER_COMPLETION,
   ],
   [QueueName.INSTRUCTION]: [
     ActionName.FORMAT_INSTRUCTION_LINE,
     ActionName.SAVE_INSTRUCTION_LINE,
+    ActionName.CHECK_INSTRUCTION_COMPLETION,
   ],
   [QueueName.IMAGE]: [
     ActionName.UPLOAD_ORIGINAL,

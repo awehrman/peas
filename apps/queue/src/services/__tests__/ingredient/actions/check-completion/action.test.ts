@@ -14,12 +14,18 @@ vi.mock("../../../../note/actions/track-completion/service", () => ({
   markWorkerCompleted: vi.fn(),
 }));
 
+// Mock the database function
+vi.mock("@peas/database", () => ({
+  getIngredientCompletionStatus: vi.fn(),
+}));
+
 describe("CheckIngredientCompletionAction", () => {
   let action: CheckIngredientCompletionAction;
   let mockDependencies: IngredientWorkerDependencies;
   let mockContext: ActionContext;
   let mockData: IngredientJobData;
   let mockMarkWorkerCompleted: ReturnType<typeof vi.fn>;
+  let mockGetIngredientCompletionStatus: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -57,11 +63,16 @@ describe("CheckIngredientCompletionAction", () => {
       isActive: true,
     };
 
-    // Get the mocked markWorkerCompleted function
+    // Get the mocked functions
     const { markWorkerCompleted } = await import(
       "../../../../note/actions/track-completion/service"
     );
+    const { getIngredientCompletionStatus } = await import("@peas/database");
+
     mockMarkWorkerCompleted = vi.mocked(markWorkerCompleted);
+    mockGetIngredientCompletionStatus = vi.mocked(
+      getIngredientCompletionStatus
+    );
   });
 
   describe("name", () => {
@@ -71,13 +82,24 @@ describe("CheckIngredientCompletionAction", () => {
   });
 
   describe("execute", () => {
-    it("should mark worker as completed when noteId is provided", async () => {
+    it("should mark worker as completed when all ingredients are completed", async () => {
+      // Mock that all ingredients are completed
+      mockGetIngredientCompletionStatus.mockResolvedValue({
+        completedIngredients: 5,
+        totalIngredients: 5,
+        progress: "5/5",
+        isComplete: true,
+      });
+
       const result = await action.execute(
         mockData,
         mockDependencies,
         mockContext
       );
 
+      expect(mockGetIngredientCompletionStatus).toHaveBeenCalledWith(
+        "test-note-id"
+      );
       expect(mockMarkWorkerCompleted).toHaveBeenCalledWith(
         "test-note-id",
         "ingredient",
@@ -86,52 +108,88 @@ describe("CheckIngredientCompletionAction", () => {
       );
 
       expect(mockDependencies.logger.log).toHaveBeenCalledWith(
-        "[CHECK_INGREDIENT_COMPLETION] Marked ingredient worker as completed for note test-note-id"
+        "[CHECK_INGREDIENT_COMPLETION] Completion status for note test-note-id: 5/5"
+      );
+      expect(mockDependencies.logger.log).toHaveBeenCalledWith(
+        "[CHECK_INGREDIENT_COMPLETION] All ingredients completed for note test-note-id, marked ingredient worker as completed"
+      );
+
+      expect(result).toBe(mockData);
+    });
+
+    it("should not mark worker as completed when not all ingredients are completed", async () => {
+      // Mock that not all ingredients are completed
+      mockGetIngredientCompletionStatus.mockResolvedValue({
+        completedIngredients: 3,
+        totalIngredients: 5,
+        progress: "3/5",
+        isComplete: false,
+      });
+
+      const result = await action.execute(
+        mockData,
+        mockDependencies,
+        mockContext
+      );
+
+      expect(mockGetIngredientCompletionStatus).toHaveBeenCalledWith(
+        "test-note-id"
+      );
+      expect(mockMarkWorkerCompleted).not.toHaveBeenCalled();
+
+      expect(mockDependencies.logger.log).toHaveBeenCalledWith(
+        "[CHECK_INGREDIENT_COMPLETION] Completion status for note test-note-id: 3/5"
+      );
+      expect(mockDependencies.logger.log).toHaveBeenCalledWith(
+        "[CHECK_INGREDIENT_COMPLETION] Not all ingredients completed yet for note test-note-id, skipping worker completion"
       );
 
       expect(result).toBe(mockData);
     });
 
     it("should skip completion check when noteId is missing", async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const dataWithoutNoteId = { ...mockData, noteId: undefined as any };
+      const testData = {
+        ...mockData,
+        noteId: undefined as unknown as string, // Use unknown as intermediate type to avoid any
+      };
 
       const result = await action.execute(
-        dataWithoutNoteId,
+        testData,
         mockDependencies,
         mockContext
       );
 
+      expect(result).toEqual(testData);
+      expect(mockGetIngredientCompletionStatus).not.toHaveBeenCalled();
       expect(mockMarkWorkerCompleted).not.toHaveBeenCalled();
       expect(mockDependencies.logger.log).toHaveBeenCalledWith(
-        "[CHECK_INGREDIENT_COMPLETION] No note ID available, skipping completion check"
+        "[CHECK_INGREDIENT_COMPLETION] No note ID available for completion check"
       );
-
-      expect(result).toBe(dataWithoutNoteId);
     });
 
     it("should skip completion check when noteId is empty string", async () => {
-      const dataWithEmptyNoteId = { ...mockData, noteId: "" };
+      const testData = {
+        ...mockData,
+        noteId: "",
+      };
 
       const result = await action.execute(
-        dataWithEmptyNoteId,
+        testData,
         mockDependencies,
         mockContext
       );
 
+      expect(result).toEqual(testData);
+      expect(mockGetIngredientCompletionStatus).not.toHaveBeenCalled();
       expect(mockMarkWorkerCompleted).not.toHaveBeenCalled();
       expect(mockDependencies.logger.log).toHaveBeenCalledWith(
-        "[CHECK_INGREDIENT_COMPLETION] No note ID available, skipping completion check"
+        "[CHECK_INGREDIENT_COMPLETION] No note ID available for completion check"
       );
-
-      expect(result).toBe(dataWithEmptyNoteId);
     });
 
-    it("should handle errors from markWorkerCompleted gracefully", async () => {
+    it("should handle errors from getIngredientCompletionStatus gracefully", async () => {
       const error = new Error("Database connection failed");
-      mockMarkWorkerCompleted.mockImplementation(() => {
-        throw error;
-      });
+      mockGetIngredientCompletionStatus.mockRejectedValue(error);
 
       const result = await action.execute(
         mockData,
@@ -140,16 +198,14 @@ describe("CheckIngredientCompletionAction", () => {
       );
 
       expect(mockDependencies.logger.log).toHaveBeenCalledWith(
-        "[CHECK_INGREDIENT_COMPLETION] Error marking completion: Error: Database connection failed"
+        "[CHECK_INGREDIENT_COMPLETION] Error checking completion: Error: Database connection failed"
       );
 
       expect(result).toBe(mockData);
     });
 
-    it("should handle non-Error exceptions from markWorkerCompleted", async () => {
-      mockMarkWorkerCompleted.mockImplementation(() => {
-        throw "String error";
-      });
+    it("should handle non-Error exceptions from getIngredientCompletionStatus", async () => {
+      mockGetIngredientCompletionStatus.mockRejectedValue("String error");
 
       const result = await action.execute(
         mockData,
@@ -158,7 +214,7 @@ describe("CheckIngredientCompletionAction", () => {
       );
 
       expect(mockDependencies.logger.log).toHaveBeenCalledWith(
-        "[CHECK_INGREDIENT_COMPLETION] Error marking completion: String error"
+        "[CHECK_INGREDIENT_COMPLETION] Error checking completion: String error"
       );
 
       expect(result).toBe(mockData);

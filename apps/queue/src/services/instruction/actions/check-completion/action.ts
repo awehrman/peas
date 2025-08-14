@@ -5,6 +5,7 @@ import type {
   InstructionJobData,
   InstructionWorkerDependencies,
 } from "../../../../workers/instruction/dependencies";
+import { getInstructionCompletionStatus } from "@peas/database";
 import { markWorkerCompleted } from "../../../note/actions/track-completion/service";
 
 export class CheckInstructionCompletionAction extends BaseAction<
@@ -27,20 +28,32 @@ export class CheckInstructionCompletionAction extends BaseAction<
     }
 
     try {
-      // Mark the instruction worker as completed for this note
-      // This action should be called when all instruction jobs for a note are finished
-      markWorkerCompleted(
-        data.noteId,
-        "instruction",
-        deps.logger,
-        deps.statusBroadcaster
-      );
+      // Check actual completion status from database
+      const completionStatus = await getInstructionCompletionStatus(data.noteId);
+      
       deps.logger.log(
-        `[CHECK_INSTRUCTION_COMPLETION] Marked instruction worker as completed for note ${data.noteId}`
+        `[CHECK_INSTRUCTION_COMPLETION] Completion status for note ${data.noteId}: ${completionStatus.completedInstructions}/${completionStatus.totalInstructions}`
       );
+
+      // Only mark worker as completed if all instructions are actually completed
+      if (completionStatus.isComplete) {
+        markWorkerCompleted(
+          data.noteId,
+          "instruction",
+          deps.logger,
+          deps.statusBroadcaster
+        );
+        deps.logger.log(
+          `[CHECK_INSTRUCTION_COMPLETION] All instructions completed for note ${data.noteId}, marked instruction worker as completed`
+        );
+      } else {
+        deps.logger.log(
+          `[CHECK_INSTRUCTION_COMPLETION] Not all instructions completed yet for note ${data.noteId}, skipping worker completion`
+        );
+      }
     } catch (error) {
       deps.logger.log(
-        `[CHECK_INSTRUCTION_COMPLETION] Error marking completion: ${error}`
+        `[CHECK_INSTRUCTION_COMPLETION] Error checking completion: ${error}`
       );
     }
 

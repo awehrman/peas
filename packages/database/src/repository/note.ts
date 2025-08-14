@@ -641,32 +641,35 @@ export async function saveCategoryToNote(
   categoryName: string
 ): Promise<{ id: string; name: string }> {
   try {
-    // First, try to find the category
-    let category = await prisma.category.findFirst({
-      where: { name: categoryName },
-    });
-
-    // If not found, create it
-    if (!category) {
-      category = await prisma.category.create({
-        data: { name: categoryName },
+    // Use a transaction to ensure data consistency
+    return await prisma.$transaction(async (tx) => {
+      // First, try to find the category
+      let category = await tx.category.findFirst({
+        where: { name: categoryName },
       });
-    }
 
-    // Then connect the category to the note
-    await prisma.note.update({
-      where: { id: noteId },
-      data: {
-        categories: {
-          connect: { id: category.id },
+      // If not found, create it
+      if (!category) {
+        category = await tx.category.create({
+          data: { name: categoryName },
+        });
+      }
+
+      // Then connect the category to the note
+      await tx.note.update({
+        where: { id: noteId },
+        data: {
+          categories: {
+            connect: { id: category.id },
+          },
         },
-      },
-    });
+      });
 
-    console.log(
-      `Successfully saved category "${categoryName}" to note ${noteId}`
-    );
-    return category;
+      console.log(
+        `Successfully saved category "${categoryName}" to note ${noteId}`
+      );
+      return category;
+    });
   } catch (error) {
     console.error(
       `Error saving category "${categoryName}" to note ${noteId}:`,
@@ -692,40 +695,43 @@ export async function saveTagsToNote(
       return [];
     }
 
-    const savedTags: Array<{ id: string; name: string }> = [];
+    // Use a transaction to ensure data consistency
+    return await prisma.$transaction(async (tx) => {
+      const savedTags: Array<{ id: string; name: string }> = [];
 
-    // Process each tag
-    for (const tagName of tagNames) {
-      // Try to find the tag
-      let tag = await prisma.tag.findFirst({
-        where: { name: tagName },
-      });
-
-      // If not found, create it
-      if (!tag) {
-        tag = await prisma.tag.create({
-          data: { name: tagName },
+      // Process each tag
+      for (const tagName of tagNames) {
+        // Try to find the tag
+        let tag = await tx.tag.findFirst({
+          where: { name: tagName },
         });
+
+        // If not found, create it
+        if (!tag) {
+          tag = await tx.tag.create({
+            data: { name: tagName },
+          });
+        }
+
+        savedTags.push(tag);
       }
 
-      // Connect the tag to the note
-      await prisma.note.update({
+      // Connect all tags to the note in a single operation
+      await tx.note.update({
         where: { id: noteId },
         data: {
           tags: {
-            connect: { id: tag.id },
+            connect: savedTags.map((tag) => ({ id: tag.id })),
           },
         },
       });
 
-      savedTags.push(tag);
-    }
-
-    console.log(
-      `Successfully saved ${savedTags.length} tags to note ${noteId}:`,
-      tagNames
-    );
-    return savedTags;
+      console.log(
+        `Successfully saved ${savedTags.length} tags to note ${noteId}:`,
+        tagNames
+      );
+      return savedTags;
+    });
   } catch (error) {
     console.error(`Error saving tags to note ${noteId}:`, error);
     throw error;

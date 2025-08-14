@@ -50,39 +50,46 @@ describe("processInstructions", () => {
         mockQueues
       );
 
-      expect(mockInstructionQueue.add).toHaveBeenCalledTimes(3);
+      expect(result).toBe(mockData);
+      expect(mockInstructionQueue.add).toHaveBeenCalledTimes(4); // 3 instruction jobs + 1 completion check job
       expect(mockInstructionQueue.add).toHaveBeenCalledWith(
         ActionName.FORMAT_INSTRUCTION_LINE,
-        {
+        expect.objectContaining({
           noteId: "test-note-id",
           importId: "test-import-id",
           instructionReference: "ref1",
           lineIndex: 0,
           jobId: "test-note-id-instruction-0",
-        }
+        })
       );
       expect(mockInstructionQueue.add).toHaveBeenCalledWith(
         ActionName.FORMAT_INSTRUCTION_LINE,
-        {
+        expect.objectContaining({
           noteId: "test-note-id",
           importId: "test-import-id",
           instructionReference: "ref2",
           lineIndex: 1,
           jobId: "test-note-id-instruction-1",
-        }
+        })
       );
       expect(mockInstructionQueue.add).toHaveBeenCalledWith(
         ActionName.FORMAT_INSTRUCTION_LINE,
-        {
+        expect.objectContaining({
           noteId: "test-note-id",
           importId: "test-import-id",
           instructionReference: "ref3",
           lineIndex: 2,
           jobId: "test-note-id-instruction-2",
-        }
+        })
       );
-
-      expect(result).toBe(mockData);
+      expect(mockInstructionQueue.add).toHaveBeenCalledWith(
+        ActionName.CHECK_INSTRUCTION_COMPLETION,
+        expect.objectContaining({
+          noteId: "test-note-id",
+          importId: "test-import-id",
+          jobId: "test-note-id-instruction-completion-check",
+        })
+      );
     });
 
     it("should handle data without importId", async () => {
@@ -185,7 +192,9 @@ describe("processInstructions", () => {
 
     it("should handle queue.add errors and re-throw them", async () => {
       const queueError = new Error("Queue error");
-      (mockInstructionQueue.add as ReturnType<typeof vi.fn>).mockRejectedValue(queueError);
+      (mockInstructionQueue.add as ReturnType<typeof vi.fn>).mockRejectedValue(
+        queueError
+      );
 
       await expect(
         processInstructions(mockData, mockLogger, mockQueues)
@@ -198,7 +207,9 @@ describe("processInstructions", () => {
 
     it("should log error message when queue operation fails", async () => {
       const queueError = new Error("Queue operation failed");
-      (mockInstructionQueue.add as ReturnType<typeof vi.fn>).mockRejectedValue(queueError);
+      (mockInstructionQueue.add as ReturnType<typeof vi.fn>).mockRejectedValue(
+        queueError
+      );
 
       try {
         await processInstructions(mockData, mockLogger, mockQueues);
@@ -218,7 +229,13 @@ describe("processInstructions", () => {
         ...mockData,
         file: {
           ...mockData.file!,
-          instructions: [{ reference: "ref1", lineIndex: 0 }],
+          instructions: [
+            {
+              reference: "Mix ingredients",
+              lineIndex: 0,
+              blockIndex: 0,
+            },
+          ],
         },
       };
 
@@ -228,19 +245,26 @@ describe("processInstructions", () => {
         mockQueues
       );
 
-      expect(mockInstructionQueue.add).toHaveBeenCalledTimes(1);
+      expect(result).toBe(singleInstructionData);
+      expect(mockInstructionQueue.add).toHaveBeenCalledTimes(2); // 1 instruction job + 1 completion check job
       expect(mockInstructionQueue.add).toHaveBeenCalledWith(
         ActionName.FORMAT_INSTRUCTION_LINE,
-        {
+        expect.objectContaining({
           noteId: "test-note-id",
           importId: "test-import-id",
-          instructionReference: "ref1",
+          instructionReference: "Mix ingredients",
           lineIndex: 0,
           jobId: "test-note-id-instruction-0",
-        }
+        })
       );
-
-      expect(result).toBe(singleInstructionData);
+      expect(mockInstructionQueue.add).toHaveBeenCalledWith(
+        ActionName.CHECK_INSTRUCTION_COMPLETION,
+        expect.objectContaining({
+          noteId: "test-note-id",
+          importId: "test-import-id",
+          jobId: "test-note-id-instruction-completion-check",
+        })
+      );
     });
 
     it("should handle instructions with different line indices", async () => {

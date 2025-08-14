@@ -35,25 +35,33 @@ export function createCategorizationPipeline(
     CategorizationJobData
   >[] = [];
 
-  // Determine category based on ingredients
-  actions.push(
-    actionFactory.create(ActionName.DETERMINE_CATEGORY, dependencies)
-  );
+  try {
+    // Determine category based on ingredients
+    actions.push(
+      actionFactory.create(ActionName.DETERMINE_CATEGORY, dependencies)
+    );
 
-  // Save the determined category
-  actions.push(
-    actionFactory.create(ActionName.SAVE_CATEGORY, dependencies)
-  );
+    // Save the determined category
+    actions.push(
+      actionFactory.create(ActionName.SAVE_CATEGORY, dependencies)
+    );
 
-  // Determine tags based on ingredients
-  actions.push(
-    actionFactory.create(ActionName.DETERMINE_TAGS, dependencies)
-  );
+    // Determine tags based on ingredients
+    actions.push(
+      actionFactory.create(ActionName.DETERMINE_TAGS, dependencies)
+    );
 
-  // Save the determined tags
-  actions.push(
-    actionFactory.create(ActionName.SAVE_TAGS, dependencies)
-  );
+    // Save the determined tags
+    actions.push(
+      actionFactory.create(ActionName.SAVE_TAGS, dependencies)
+    );
+  } catch (error) {
+    // Handle action creation errors
+    dependencies.logger.log(
+      `[CATEGORIZATION_PIPELINE] Error creating pipeline: ${error}`
+    );
+    throw error;
+  }
 
   return actions;
 }

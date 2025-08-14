@@ -22,7 +22,7 @@ export function createInstructionPipeline(
     InstructionJobData
   >,
   dependencies: InstructionWorkerDependencies,
-  _data: InstructionJobData,
+  data: InstructionJobData,
   _context: ActionContext
 ): WorkerAction<
   InstructionJobData,
@@ -35,20 +35,23 @@ export function createInstructionPipeline(
     InstructionJobData
   >[] = [];
 
-  // Always start with format instruction
-  actions.push(
-    actionFactory.create(ActionName.FORMAT_INSTRUCTION_LINE, dependencies)
-  );
+  // Check if this is a completion check job (no instructionReference)
+  const isCompletionCheckJob = !data.instructionReference;
 
-  // Always save the formatted instruction
-  actions.push(
-    actionFactory.create(ActionName.SAVE_INSTRUCTION_LINE, dependencies)
-  );
-
-  // Check completion after saving
-  actions.push(
-    actionFactory.create(ActionName.CHECK_INSTRUCTION_COMPLETION, dependencies)
-  );
+  if (isCompletionCheckJob) {
+    // For completion check jobs, only run the completion check action
+    actions.push(
+      actionFactory.create(ActionName.CHECK_INSTRUCTION_COMPLETION, dependencies)
+    );
+  } else {
+    // For regular instruction jobs, run format and save
+    actions.push(
+      actionFactory.create(ActionName.FORMAT_INSTRUCTION_LINE, dependencies)
+    );
+    actions.push(
+      actionFactory.create(ActionName.SAVE_INSTRUCTION_LINE, dependencies)
+    );
+  }
 
   return actions;
 }

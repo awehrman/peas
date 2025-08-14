@@ -61,8 +61,25 @@ export async function processInstructions(
       );
     }
 
+    // Schedule a completion check job after all instruction jobs
+    const completionCheckJobData = {
+      noteId: data.noteId,
+      importId: data.importId,
+      jobId: `${data.noteId}-instruction-completion-check`,
+      metadata: {},
+    };
+
     logger.log(
-      `[SCHEDULE_INSTRUCTIONS] Successfully scheduled ${data.file.instructions.length} instruction jobs`
+      `[SCHEDULE_INSTRUCTIONS] Scheduling completion check job for note: ${data.noteId}`
+    );
+
+    await instructionQueue.add(
+      ActionName.CHECK_INSTRUCTION_COMPLETION,
+      completionCheckJobData
+    );
+
+    logger.log(
+      `[SCHEDULE_INSTRUCTIONS] Successfully scheduled ${data.file.instructions.length} instruction jobs and 1 completion check job`
     );
 
     return data;

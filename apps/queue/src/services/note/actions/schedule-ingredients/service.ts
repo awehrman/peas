@@ -80,8 +80,25 @@ export async function processIngredients(
       );
     }
 
+    // Schedule a completion check job after all ingredient jobs
+    const completionCheckJobData = {
+      noteId: data.noteId,
+      importId: data.importId,
+      jobId: `${data.noteId}-ingredient-completion-check`,
+      metadata: {},
+    };
+
     logger.log(
-      `[SCHEDULE_INGREDIENTS] Successfully scheduled ${data.file.ingredients.length} ingredient jobs`
+      `[SCHEDULE_INGREDIENTS] Scheduling completion check job for note: ${data.noteId}`
+    );
+
+    await ingredientQueue.add(
+      ActionName.CHECK_INGREDIENT_COMPLETION,
+      completionCheckJobData
+    );
+
+    logger.log(
+      `[SCHEDULE_INGREDIENTS] Successfully scheduled ${data.file.ingredients.length} ingredient jobs and 1 completion check job`
     );
 
     return data;

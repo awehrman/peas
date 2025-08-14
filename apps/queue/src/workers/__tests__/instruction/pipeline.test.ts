@@ -1,177 +1,85 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ActionName } from "../../../types";
-import type { ActionFactory } from "../../core/action-factory";
 import type { ActionContext } from "../../core/types";
 import type {
   InstructionJobData,
   InstructionWorkerDependencies,
 } from "../../instruction/dependencies";
 import { createInstructionPipeline } from "../../instruction/pipeline";
-import type { WorkerAction } from "../../types";
+
+// Helper function to create test data with optional fields for testing
+function createTestData(
+  overrides: Partial<InstructionJobData> = {}
+): InstructionJobData {
+  return {
+    noteId: "test-note-id",
+    instructionReference: "Mix ingredients",
+    lineIndex: 0,
+    parseStatus: "COMPLETED_SUCCESSFULLY" as const,
+    isActive: true,
+    ...overrides,
+  } as InstructionJobData;
+}
 
 describe("Instruction Pipeline", () => {
-  let mockActionFactory: ActionFactory<
-    InstructionJobData,
-    InstructionWorkerDependencies,
-    InstructionJobData
-  >;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Mock factory for testing
+  let mockActionFactory: any;
   let mockDependencies: InstructionWorkerDependencies;
-  let mockData: InstructionJobData;
   let mockContext: ActionContext;
-  let mockFormatAction: WorkerAction<
-    InstructionJobData,
-    InstructionWorkerDependencies,
-    InstructionJobData
-  >;
-  let mockSaveAction: WorkerAction<
-    InstructionJobData,
-    InstructionWorkerDependencies,
-    InstructionJobData
-  >;
+  let mockData: InstructionJobData;
 
   beforeEach(() => {
-    mockFormatAction = {
-      name: ActionName.FORMAT_INSTRUCTION_LINE,
-      execute: vi.fn().mockResolvedValue({} as InstructionJobData),
-      executeWithTiming: vi.fn().mockResolvedValue({
-        success: true,
-        data: {} as InstructionJobData,
-      }),
-    };
-
-    mockSaveAction = {
-      name: ActionName.SAVE_INSTRUCTION_LINE,
-      execute: vi.fn().mockResolvedValue({} as InstructionJobData),
-      executeWithTiming: vi.fn().mockResolvedValue({
-        success: true,
-        data: {} as InstructionJobData,
-      }),
-    };
-
     mockActionFactory = {
       create: vi.fn(),
-    } as unknown as ActionFactory<
-      InstructionJobData,
-      InstructionWorkerDependencies,
-      InstructionJobData
-    >;
+    };
 
     mockDependencies = {
       logger: {
         log: vi.fn(),
       },
-      services: {
-        formatInstruction: vi.fn().mockResolvedValue({} as InstructionJobData),
-        saveInstruction: vi.fn().mockResolvedValue({} as InstructionJobData),
-      },
       statusBroadcaster: {
-        addStatusEventAndBroadcast: vi.fn().mockResolvedValue({}),
+        addStatusEventAndBroadcast: vi.fn(),
       },
-    } as InstructionWorkerDependencies;
-
-    mockData = {
-      noteId: "test-note-id",
-      instructionReference: "Test instruction",
-      lineIndex: 0,
-      parseStatus: "AWAITING_PARSING",
-      isActive: true,
+      services: {
+        formatInstruction: vi.fn() as ReturnType<typeof vi.fn>,
+        saveInstruction: vi.fn() as ReturnType<typeof vi.fn>,
+      },
     };
 
     mockContext = {
       jobId: "test-job-id",
-      operation: "test-operation",
-      startTime: Date.now(),
       retryCount: 0,
       queueName: "test-queue",
+      operation: "test-operation",
+      startTime: Date.now(),
       workerName: "test-worker",
       attemptNumber: 1,
     };
 
-    vi.clearAllMocks();
+    mockData = {
+      noteId: "test-note-id",
+      instructionReference: "Mix ingredients",
+      lineIndex: 0,
+      parseStatus: "COMPLETED_SUCCESSFULLY" as const,
+      isActive: true,
+    };
   });
 
   describe("createInstructionPipeline", () => {
-    it("should create a pipeline with format, save, and completion actions", () => {
-      const mockCompletionAction = {
-        name: ActionName.CHECK_INSTRUCTION_COMPLETION,
-        execute: vi.fn(),
-        executeWithTiming: vi.fn(),
-      };
-
-      vi.mocked(mockActionFactory.create)
-        .mockReturnValueOnce(mockFormatAction)
-        .mockReturnValueOnce(mockSaveAction)
-        .mockReturnValueOnce(mockCompletionAction);
-
-      const pipeline = createInstructionPipeline(
+    it("should create a pipeline with format and save actions for regular instruction jobs", () => {
+      const actions = createInstructionPipeline(
         mockActionFactory,
         mockDependencies,
         mockData,
         mockContext
       );
 
-      expect(pipeline).toHaveLength(3);
-      expect(pipeline[0]).toBe(mockFormatAction);
-      expect(pipeline[1]).toBe(mockSaveAction);
-      expect(pipeline[2]).toBe(mockCompletionAction);
+      expect(actions).toHaveLength(2);
+      expect(mockActionFactory.create).toHaveBeenCalledTimes(2);
     });
 
-    it("should call actionFactory.create for format instruction action", () => {
-      vi.mocked(mockActionFactory.create)
-        .mockReturnValueOnce(mockFormatAction)
-        .mockReturnValueOnce(mockSaveAction);
-
-      createInstructionPipeline(
-        mockActionFactory,
-        mockDependencies,
-        mockData,
-        mockContext
-      );
-
-      expect(mockActionFactory.create).toHaveBeenCalledWith(
-        ActionName.FORMAT_INSTRUCTION_LINE,
-        mockDependencies
-      );
-    });
-
-    it("should call actionFactory.create for save instruction action", () => {
-      const mockCompletionAction = {
-        name: ActionName.CHECK_INSTRUCTION_COMPLETION,
-        execute: vi.fn(),
-        executeWithTiming: vi.fn(),
-      };
-
-      vi.mocked(mockActionFactory.create)
-        .mockReturnValueOnce(mockFormatAction)
-        .mockReturnValueOnce(mockSaveAction)
-        .mockReturnValueOnce(mockCompletionAction);
-
-      createInstructionPipeline(
-        mockActionFactory,
-        mockDependencies,
-        mockData,
-        mockContext
-      );
-
-      expect(mockActionFactory.create).toHaveBeenCalledWith(
-        ActionName.SAVE_INSTRUCTION_LINE,
-        mockDependencies
-      );
-    });
-
-    it("should call actionFactory.create in correct order", () => {
-      const mockCompletionAction = { 
-        name: ActionName.CHECK_INSTRUCTION_COMPLETION, 
-        execute: vi.fn(),
-        executeWithTiming: vi.fn(),
-      };
-      
-      vi.mocked(mockActionFactory.create)
-        .mockReturnValueOnce(mockFormatAction)
-        .mockReturnValueOnce(mockSaveAction)
-        .mockReturnValueOnce(mockCompletionAction);
-
+    it("should create format instruction action first for regular instruction jobs", () => {
       createInstructionPipeline(
         mockActionFactory,
         mockDependencies,
@@ -184,194 +92,206 @@ describe("Instruction Pipeline", () => {
         ActionName.FORMAT_INSTRUCTION_LINE,
         mockDependencies
       );
-      expect(mockActionFactory.create).toHaveBeenNthCalledWith(
-        2,
-        ActionName.SAVE_INSTRUCTION_LINE,
-        mockDependencies
-      );
-      expect(mockActionFactory.create).toHaveBeenNthCalledWith(
-        3,
-        ActionName.CHECK_INSTRUCTION_COMPLETION,
-        mockDependencies
-      );
     });
 
-    it("should return actions in correct order", () => {
-      const mockCompletionAction = { 
-        name: ActionName.CHECK_INSTRUCTION_COMPLETION, 
-        execute: vi.fn(),
-        executeWithTiming: vi.fn(),
-      };
-      
-      vi.mocked(mockActionFactory.create)
-        .mockReturnValueOnce(mockFormatAction)
-        .mockReturnValueOnce(mockSaveAction)
-        .mockReturnValueOnce(mockCompletionAction);
-
-      const pipeline = createInstructionPipeline(
+    it("should create save instruction action second for regular instruction jobs", () => {
+      createInstructionPipeline(
         mockActionFactory,
         mockDependencies,
         mockData,
         mockContext
       );
 
-      expect(pipeline[0]?.name).toBe(ActionName.FORMAT_INSTRUCTION_LINE);
-      expect(pipeline[1]?.name).toBe(ActionName.SAVE_INSTRUCTION_LINE);
-      expect(pipeline[2]?.name).toBe(ActionName.CHECK_INSTRUCTION_COMPLETION);
+      expect(mockActionFactory.create).toHaveBeenNthCalledWith(
+        2,
+        ActionName.SAVE_INSTRUCTION_LINE,
+        mockDependencies
+      );
     });
 
-    it("should work with different job data", () => {
-      const differentData: InstructionJobData = {
-        noteId: "different-note-id",
-        instructionReference: "Different instruction",
-        lineIndex: 5,
-        parseStatus: "COMPLETED_SUCCESSFULLY",
-        isActive: false,
-      };
+    it("should create only completion check action for completion check jobs", () => {
+      const completionCheckData = createTestData({
+        instructionReference: undefined as unknown as string,
+      });
 
-      const mockCompletionAction = { 
-        name: ActionName.CHECK_INSTRUCTION_COMPLETION, 
+      const actions = createInstructionPipeline(
+        mockActionFactory,
+        mockDependencies,
+        completionCheckData,
+        mockContext
+      );
+
+      expect(actions).toHaveLength(1);
+      expect(mockActionFactory.create).toHaveBeenCalledTimes(1);
+      expect(mockActionFactory.create).toHaveBeenCalledWith(
+        ActionName.CHECK_INSTRUCTION_COMPLETION,
+        mockDependencies
+      );
+    });
+
+    it("should create completion check pipeline when instructionReference is missing", () => {
+      const completionCheckData = createTestData({
+        instructionReference: undefined as unknown as string,
+      });
+
+      const actions = createInstructionPipeline(
+        mockActionFactory,
+        mockDependencies,
+        completionCheckData,
+        mockContext
+      );
+
+      expect(actions).toHaveLength(1);
+      expect(mockActionFactory.create).toHaveBeenCalledTimes(1);
+      expect(mockActionFactory.create).toHaveBeenCalledWith(
+        ActionName.CHECK_INSTRUCTION_COMPLETION,
+        mockDependencies
+      );
+    });
+
+    it("should create completion check pipeline when instructionReference is empty string", () => {
+      const completionCheckData = createTestData({
+        instructionReference: "",
+      });
+
+      const actions = createInstructionPipeline(
+        mockActionFactory,
+        mockDependencies,
+        completionCheckData,
+        mockContext
+      );
+
+      expect(actions).toHaveLength(1);
+      expect(mockActionFactory.create).toHaveBeenCalledTimes(1);
+      expect(mockActionFactory.create).toHaveBeenCalledWith(
+        ActionName.CHECK_INSTRUCTION_COMPLETION,
+        mockDependencies
+      );
+    });
+
+    it("should return actions in correct order for regular instruction jobs", () => {
+      const mockFormatAction = {
+        name: "format",
         execute: vi.fn(),
         executeWithTiming: vi.fn(),
       };
-      
+      const mockSaveAction = {
+        name: "save",
+        execute: vi.fn(),
+        executeWithTiming: vi.fn(),
+      };
+
       vi.mocked(mockActionFactory.create)
         .mockReturnValueOnce(mockFormatAction)
-        .mockReturnValueOnce(mockSaveAction)
-        .mockReturnValueOnce(mockCompletionAction);
+        .mockReturnValueOnce(mockSaveAction);
 
-      const pipeline = createInstructionPipeline(
+      const actions = createInstructionPipeline(
+        mockActionFactory,
+        mockDependencies,
+        mockData,
+        mockContext
+      );
+
+      expect(actions).toEqual([mockFormatAction, mockSaveAction]);
+    });
+
+    it("should return completion check action for completion check jobs", () => {
+      const mockCompletionAction = {
+        name: "completion_check",
+        execute: vi.fn(),
+        executeWithTiming: vi.fn(),
+      };
+
+      vi.mocked(mockActionFactory.create).mockReturnValueOnce(
+        mockCompletionAction
+      );
+
+      const completionCheckData = createTestData({
+        instructionReference: undefined as unknown as string,
+      });
+
+      const actions = createInstructionPipeline(
+        mockActionFactory,
+        mockDependencies,
+        completionCheckData,
+        mockContext
+      );
+
+      expect(actions).toEqual([mockCompletionAction]);
+    });
+
+    it("should work with different job data for regular instruction jobs", () => {
+      const differentData: InstructionJobData = {
+        noteId: "different-note-id",
+        instructionReference: "Bake at 350F",
+        lineIndex: 1,
+        importId: "test-import",
+        jobId: "test-job",
+        metadata: { test: "data" },
+        parseStatus: "COMPLETED_SUCCESSFULLY" as const,
+        isActive: false,
+      };
+
+      createInstructionPipeline(
         mockActionFactory,
         mockDependencies,
         differentData,
         mockContext
       );
 
-      expect(pipeline).toHaveLength(3);
-      expect(pipeline[0]).toBe(mockFormatAction);
-      expect(pipeline[1]).toBe(mockSaveAction);
-      expect(pipeline[2]).toBe(mockCompletionAction);
+      expect(mockActionFactory.create).toHaveBeenCalledTimes(2);
     });
 
     it("should work with different context", () => {
       const differentContext: ActionContext = {
         jobId: "different-job-id",
-        operation: "different-operation",
-        startTime: Date.now() - 1000,
-        retryCount: 2,
+        attemptNumber: 2,
+        retryCount: 1,
         queueName: "different-queue",
+        operation: "different-operation",
+        startTime: Date.now(),
         workerName: "different-worker",
-        attemptNumber: 3,
       };
 
-      const mockCompletionAction = { 
-        name: ActionName.CHECK_INSTRUCTION_COMPLETION, 
-        execute: vi.fn(),
-        executeWithTiming: vi.fn(),
-      };
-      
-      vi.mocked(mockActionFactory.create)
-        .mockReturnValueOnce(mockFormatAction)
-        .mockReturnValueOnce(mockSaveAction)
-        .mockReturnValueOnce(mockCompletionAction);
-
-      const pipeline = createInstructionPipeline(
+      createInstructionPipeline(
         mockActionFactory,
         mockDependencies,
         mockData,
         differentContext
       );
 
-      expect(pipeline).toHaveLength(3);
-      expect(pipeline[0]).toBe(mockFormatAction);
-      expect(pipeline[1]).toBe(mockSaveAction);
-      expect(pipeline[2]).toBe(mockCompletionAction);
+      expect(mockActionFactory.create).toHaveBeenCalledTimes(2);
     });
 
-    it("should work with different dependencies", () => {
-      const differentDeps: InstructionWorkerDependencies = {
-        logger: {
-          log: vi.fn(),
-        },
-        services: {
-          formatInstruction: vi
-            .fn()
-            .mockResolvedValue({} as InstructionJobData),
-          saveInstruction: vi.fn().mockResolvedValue({} as InstructionJobData),
-        },
-        statusBroadcaster: {
-          addStatusEventAndBroadcast: vi.fn().mockResolvedValue({}),
-        },
+    it("should work without statusBroadcaster", () => {
+      const dependenciesWithoutBroadcaster: InstructionWorkerDependencies = {
+        ...mockDependencies,
+        statusBroadcaster: undefined,
       };
 
-      const mockCompletionAction = { 
-        name: ActionName.CHECK_INSTRUCTION_COMPLETION, 
-        execute: vi.fn(),
-        executeWithTiming: vi.fn(),
-      };
-      
-      vi.mocked(mockActionFactory.create)
-        .mockReturnValueOnce(mockFormatAction)
-        .mockReturnValueOnce(mockSaveAction)
-        .mockReturnValueOnce(mockCompletionAction);
-
-      const pipeline = createInstructionPipeline(
+      createInstructionPipeline(
         mockActionFactory,
-        differentDeps,
+        dependenciesWithoutBroadcaster,
         mockData,
         mockContext
       );
 
-      expect(pipeline).toHaveLength(3);
-      expect(mockActionFactory.create).toHaveBeenCalledWith(
-        ActionName.FORMAT_INSTRUCTION_LINE,
-        differentDeps
-      );
-      expect(mockActionFactory.create).toHaveBeenCalledWith(
-        ActionName.SAVE_INSTRUCTION_LINE,
-        differentDeps
-      );
+      expect(mockActionFactory.create).toHaveBeenCalledTimes(2);
     });
 
-    it("should always return the same pipeline structure regardless of input", () => {
-      const mockCompletionAction1 = { 
-        name: ActionName.CHECK_INSTRUCTION_COMPLETION, 
-        execute: vi.fn(),
-        executeWithTiming: vi.fn(),
-      };
-      const mockCompletionAction2 = { 
-        name: ActionName.CHECK_INSTRUCTION_COMPLETION, 
-        execute: vi.fn(),
-        executeWithTiming: vi.fn(),
-      };
-      
-      vi.mocked(mockActionFactory.create)
-        .mockReturnValueOnce(mockFormatAction)
-        .mockReturnValueOnce(mockSaveAction)
-        .mockReturnValueOnce(mockCompletionAction1)
-        .mockReturnValueOnce(mockFormatAction)
-        .mockReturnValueOnce(mockSaveAction)
-        .mockReturnValueOnce(mockCompletionAction2);
+    it("should handle action factory errors gracefully", () => {
+      vi.mocked(mockActionFactory.create).mockImplementation(() => {
+        throw new Error("Action factory error");
+      });
 
-      const pipeline1 = createInstructionPipeline(
-        mockActionFactory,
-        mockDependencies,
-        mockData,
-        mockContext
-      );
-
-      const pipeline2 = createInstructionPipeline(
-        mockActionFactory,
-        mockDependencies,
-        { ...mockData, noteId: "different" },
-        { ...mockContext, jobId: "different" }
-      );
-
-      expect(pipeline1).toHaveLength(3);
-      expect(pipeline2).toHaveLength(3);
-      expect(pipeline1[0]?.name).toBe(pipeline2[0]?.name);
-      expect(pipeline1[1]?.name).toBe(pipeline2[1]?.name);
-      expect(pipeline1[2]?.name).toBe(pipeline2[2]?.name);
+      expect(() =>
+        createInstructionPipeline(
+          mockActionFactory,
+          mockDependencies,
+          mockData,
+          mockContext
+        )
+      ).toThrow("Action factory error");
     });
   });
 });

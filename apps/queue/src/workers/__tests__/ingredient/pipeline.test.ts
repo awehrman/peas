@@ -1,12 +1,6 @@
-import { ParseStatus } from "@peas/database";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import {
-  createMockLogger,
-  createMockStatusBroadcaster,
-} from "../../../test-utils/helpers";
 import { ActionName } from "../../../types";
-import type { ActionFactory } from "../../core/action-factory";
 import type { ActionContext } from "../../core/types";
 import type {
   IngredientJobData,
@@ -14,61 +8,64 @@ import type {
 } from "../../ingredient/dependencies";
 import { createIngredientPipeline } from "../../ingredient/pipeline";
 
+// Helper function to create test data with optional fields for testing
+function createTestData(overrides: Partial<IngredientJobData> = {}): IngredientJobData {
+  return {
+    noteId: "test-note-id",
+    ingredientReference: "2 tbsp flour",
+    lineIndex: 0,
+    parseStatus: "COMPLETED_SUCCESSFULLY" as const,
+    isActive: true,
+    ...overrides,
+  } as IngredientJobData;
+}
+
 describe("Ingredient Pipeline", () => {
-  let mockActionFactory: ActionFactory<
-    IngredientJobData,
-    IngredientWorkerDependencies,
-    IngredientJobData
-  >;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Mock factory for testing
+  let mockActionFactory: any;
   let mockDependencies: IngredientWorkerDependencies;
-  let mockData: IngredientJobData;
   let mockContext: ActionContext;
+  let mockData: IngredientJobData;
 
   beforeEach(() => {
-    vi.clearAllMocks();
-
-    // Create mock action factory
     mockActionFactory = {
       create: vi.fn(),
-    } as unknown as ActionFactory<
-      IngredientJobData,
-      IngredientWorkerDependencies,
-      IngredientJobData
-    >;
+    };
 
-    // Create mock dependencies
     mockDependencies = {
-      logger: createMockLogger(),
-      statusBroadcaster: createMockStatusBroadcaster(),
+      logger: {
+        log: vi.fn(),
+      },
+      statusBroadcaster: {
+        addStatusEventAndBroadcast: vi.fn(),
+      },
       services: {
         parseIngredient: vi.fn(),
         saveIngredient: vi.fn(),
       },
     };
 
-    // Create mock job data
+    mockContext = {
+      jobId: "test-job-id",
+      retryCount: 0,
+      queueName: "test-queue",
+      operation: "test-operation",
+      startTime: Date.now(),
+      workerName: "test-worker",
+      attemptNumber: 1,
+    };
+
     mockData = {
       noteId: "test-note-id",
       ingredientReference: "1 cup flour",
       lineIndex: 0,
-      parseStatus: ParseStatus.AWAITING_PARSING,
+      parseStatus: "COMPLETED_SUCCESSFULLY" as const,
       isActive: true,
-    };
-
-    // Create mock context
-    mockContext = {
-      jobId: "test-job-id",
-      attemptNumber: 1,
-      retryCount: 0,
-      queueName: "ingredient-queue",
-      operation: "ingredient-processing",
-      startTime: Date.now(),
-      workerName: "ingredient-worker",
     };
   });
 
   describe("createIngredientPipeline", () => {
-    it("should create a pipeline with parse, save, and completion actions", () => {
+    it("should create a pipeline with parse and save actions for regular ingredient jobs", () => {
       const actions = createIngredientPipeline(
         mockActionFactory,
         mockDependencies,
@@ -76,11 +73,11 @@ describe("Ingredient Pipeline", () => {
         mockContext
       );
 
-      expect(actions).toHaveLength(4);
-      expect(mockActionFactory.create).toHaveBeenCalledTimes(4);
+      expect(actions).toHaveLength(2);
+      expect(mockActionFactory.create).toHaveBeenCalledTimes(2);
     });
 
-    it("should create parse ingredient action first", () => {
+    it("should create parse ingredient action first for regular ingredient jobs", () => {
       createIngredientPipeline(
         mockActionFactory,
         mockDependencies,
@@ -95,7 +92,7 @@ describe("Ingredient Pipeline", () => {
       );
     });
 
-    it("should create save ingredient action second", () => {
+    it("should create save ingredient action second for regular ingredient jobs", () => {
       createIngredientPipeline(
         mockActionFactory,
         mockDependencies,
@@ -110,37 +107,67 @@ describe("Ingredient Pipeline", () => {
       );
     });
 
-    it("should create completion action third", () => {
-      createIngredientPipeline(
+    it("should create only completion check action for completion check jobs", () => {
+      const completionCheckData = createTestData({
+        ingredientReference: undefined as unknown as string,
+      });
+
+      const actions = createIngredientPipeline(
         mockActionFactory,
         mockDependencies,
-        mockData,
+        completionCheckData,
         mockContext
       );
 
-      expect(mockActionFactory.create).toHaveBeenNthCalledWith(
-        3,
+      expect(actions).toHaveLength(1);
+      expect(mockActionFactory.create).toHaveBeenCalledTimes(1);
+      expect(mockActionFactory.create).toHaveBeenCalledWith(
         ActionName.CHECK_INGREDIENT_COMPLETION,
         mockDependencies
       );
     });
 
-    it("should create schedule categorization action fourth", () => {
-      createIngredientPipeline(
+    it("should create completion check pipeline when ingredientReference is missing", () => {
+      const completionCheckData = createTestData({
+        ingredientReference: undefined as unknown as string,
+      });
+
+      const actions = createIngredientPipeline(
         mockActionFactory,
         mockDependencies,
-        mockData,
+        completionCheckData,
         mockContext
       );
 
-      expect(mockActionFactory.create).toHaveBeenNthCalledWith(
-        4,
-        ActionName.SCHEDULE_CATEGORIZATION_AFTER_COMPLETION,
+      expect(actions).toHaveLength(1);
+      expect(mockActionFactory.create).toHaveBeenCalledTimes(1);
+      expect(mockActionFactory.create).toHaveBeenCalledWith(
+        ActionName.CHECK_INGREDIENT_COMPLETION,
         mockDependencies
       );
     });
 
-    it("should return actions in correct order", () => {
+    it("should create completion check pipeline when ingredientReference is empty string", () => {
+      const completionCheckData = createTestData({
+        ingredientReference: "",
+      });
+
+      const actions = createIngredientPipeline(
+        mockActionFactory,
+        mockDependencies,
+        completionCheckData,
+        mockContext
+      );
+
+      expect(actions).toHaveLength(1);
+      expect(mockActionFactory.create).toHaveBeenCalledTimes(1);
+      expect(mockActionFactory.create).toHaveBeenCalledWith(
+        ActionName.CHECK_INGREDIENT_COMPLETION,
+        mockDependencies
+      );
+    });
+
+    it("should return actions in correct order for regular ingredient jobs", () => {
       const mockParseAction = {
         name: "parse",
         execute: vi.fn(),
@@ -151,26 +178,10 @@ describe("Ingredient Pipeline", () => {
         execute: vi.fn(),
         executeWithTiming: vi.fn(),
       };
-      const mockCompletionAction = {
-        name: "completion",
-        execute: vi.fn(),
-        executeWithTiming: vi.fn(),
-      };
-      const mockScheduleCategorizationAction = {
-        name: "schedule-categorization",
-        execute: vi.fn(),
-        executeWithTiming: vi.fn(),
-      };
 
       vi.mocked(mockActionFactory.create)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .mockReturnValueOnce(mockParseAction as any)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .mockReturnValueOnce(mockSaveAction as any)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .mockReturnValueOnce(mockCompletionAction as any)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .mockReturnValueOnce(mockScheduleCategorizationAction as any);
+        .mockReturnValueOnce(mockParseAction)
+        .mockReturnValueOnce(mockSaveAction);
 
       const actions = createIngredientPipeline(
         mockActionFactory,
@@ -179,15 +190,35 @@ describe("Ingredient Pipeline", () => {
         mockContext
       );
 
-      expect(actions).toEqual([
-        mockParseAction,
-        mockSaveAction,
-        mockCompletionAction,
-        mockScheduleCategorizationAction,
-      ]);
+      expect(actions).toEqual([mockParseAction, mockSaveAction]);
     });
 
-    it("should work with different job data", () => {
+    it("should return completion check action for completion check jobs", () => {
+      const mockCompletionAction = {
+        name: "completion_check",
+        execute: vi.fn(),
+        executeWithTiming: vi.fn(),
+      };
+
+      vi.mocked(mockActionFactory.create).mockReturnValueOnce(
+        mockCompletionAction
+      );
+
+      const completionCheckData = createTestData({
+        ingredientReference: undefined as unknown as string,
+      });
+
+      const actions = createIngredientPipeline(
+        mockActionFactory,
+        mockDependencies,
+        completionCheckData,
+        mockContext
+      );
+
+      expect(actions).toEqual([mockCompletionAction]);
+    });
+
+    it("should work with different job data for regular ingredient jobs", () => {
       const differentData: IngredientJobData = {
         noteId: "different-note-id",
         ingredientReference: "2 tbsp butter",
@@ -195,7 +226,7 @@ describe("Ingredient Pipeline", () => {
         importId: "test-import",
         jobId: "test-job",
         metadata: { test: "data" },
-        parseStatus: ParseStatus.COMPLETED_SUCCESSFULLY,
+        parseStatus: "COMPLETED_SUCCESSFULLY" as const,
         isActive: false,
       };
 
@@ -206,7 +237,7 @@ describe("Ingredient Pipeline", () => {
         mockContext
       );
 
-      expect(mockActionFactory.create).toHaveBeenCalledTimes(4);
+      expect(mockActionFactory.create).toHaveBeenCalledTimes(2);
     });
 
     it("should work with different context", () => {
@@ -227,7 +258,7 @@ describe("Ingredient Pipeline", () => {
         differentContext
       );
 
-      expect(mockActionFactory.create).toHaveBeenCalledTimes(4);
+      expect(mockActionFactory.create).toHaveBeenCalledTimes(2);
     });
 
     it("should work without statusBroadcaster", () => {
@@ -243,42 +274,7 @@ describe("Ingredient Pipeline", () => {
         mockContext
       );
 
-      expect(mockActionFactory.create).toHaveBeenCalledTimes(4);
-    });
-
-    it("should always create the same pipeline regardless of data", () => {
-      const data1: IngredientJobData = {
-        noteId: "note-1",
-        ingredientReference: "1 cup flour",
-        lineIndex: 0,
-        parseStatus: ParseStatus.AWAITING_PARSING,
-        isActive: true,
-      };
-
-      const data2: IngredientJobData = {
-        noteId: "note-2",
-        ingredientReference: "2 tbsp butter",
-        lineIndex: 1,
-        parseStatus: ParseStatus.COMPLETED_WITH_ERROR,
-        isActive: false,
-      };
-
-      const actions1 = createIngredientPipeline(
-        mockActionFactory,
-        mockDependencies,
-        data1,
-        mockContext
-      );
-
-      const actions2 = createIngredientPipeline(
-        mockActionFactory,
-        mockDependencies,
-        data2,
-        mockContext
-      );
-
-      expect(actions1).toHaveLength(actions2.length);
-      expect(mockActionFactory.create).toHaveBeenCalledTimes(8);
+      expect(mockActionFactory.create).toHaveBeenCalledTimes(2);
     });
 
     it("should handle action factory errors gracefully", () => {

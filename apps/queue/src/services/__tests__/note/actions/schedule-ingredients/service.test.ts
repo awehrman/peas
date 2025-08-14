@@ -63,7 +63,7 @@ describe("Schedule Ingredients Service", () => {
       const result = await processIngredients(mockData, mockLogger, mockQueues);
 
       expect(result).toBe(mockData);
-      expect(mockQueues?.ingredientQueue?.add).toHaveBeenCalledTimes(2);
+      expect(mockQueues?.ingredientQueue?.add).toHaveBeenCalledTimes(3); // 2 ingredient jobs + 1 completion check job
 
       // Check first ingredient job
       expect(mockQueues?.ingredientQueue?.add).toHaveBeenNthCalledWith(
@@ -94,6 +94,18 @@ describe("Schedule Ingredients Service", () => {
           metadata: {
             clearCache: false,
           },
+        }
+      );
+
+      // Check completion check job
+      expect(mockQueues?.ingredientQueue?.add).toHaveBeenNthCalledWith(
+        3,
+        ActionName.CHECK_INGREDIENT_COMPLETION,
+        {
+          noteId: "test-note-id",
+          importId: "test-import-id",
+          jobId: "test-note-id-ingredient-completion-check",
+          metadata: {},
         }
       );
     });
@@ -244,7 +256,7 @@ describe("Schedule Ingredients Service", () => {
       );
 
       expect(result).toBe(dataWithMultipleIngredients);
-      expect(mockQueues?.ingredientQueue?.add).toHaveBeenCalledTimes(3);
+      expect(mockQueues?.ingredientQueue?.add).toHaveBeenCalledTimes(4); // 3 ingredient jobs + 1 completion check job
 
       // Check job IDs are generated correctly
       expect(mockQueues?.ingredientQueue?.add).toHaveBeenNthCalledWith(
@@ -266,6 +278,13 @@ describe("Schedule Ingredients Service", () => {
         ActionName.PARSE_INGREDIENT_LINE,
         expect.objectContaining({
           jobId: "test-note-id-ingredient-15",
+        })
+      );
+      expect(mockQueues?.ingredientQueue?.add).toHaveBeenNthCalledWith(
+        4,
+        ActionName.CHECK_INGREDIENT_COMPLETION,
+        expect.objectContaining({
+          jobId: "test-note-id-ingredient-completion-check",
         })
       );
     });
