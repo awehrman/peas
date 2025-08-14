@@ -1,12 +1,16 @@
 import {
   createIngredientReference,
   findOrCreateIngredient,
-  getIngredientCompletionStatus,
   saveParsedIngredientLine,
 } from "@peas/database";
 
+import { ActionName } from "../../../../types";
 import type { StructuredLogger } from "../../../../types";
 import type { IngredientJobData } from "../../../../workers/ingredient/dependencies";
+import {
+  getIngredientCompletionStatus,
+  markIngredientLineCompleted,
+} from "../../../note/actions/track-completion/service";
 
 export async function saveIngredientLine(
   data: IngredientJobData,
@@ -154,6 +158,14 @@ export async function saveIngredientLine(
       }
     }
 
+    // Mark this ingredient line as completed in in-memory tracking
+    markIngredientLineCompleted(
+      data.noteId,
+      data.blockIndex ?? 0,
+      data.lineIndex,
+      logger
+    );
+
     // Broadcast completion message if statusBroadcaster is available
     if (statusBroadcaster) {
       logger.log(
@@ -161,9 +173,11 @@ export async function saveIngredientLine(
       );
 
       try {
-        // Get completion status for broadcasting
-        const completionStatus = await getIngredientCompletionStatus(
-          data.noteId
+        // Get completion status for broadcasting (now from in-memory)
+        const completionStatus = getIngredientCompletionStatus(data.noteId);
+
+        logger.log(
+          `[SAVE_INGREDIENT_LINE] Completion status for note ${data.noteId}: ${completionStatus.completedIngredients}/${completionStatus.totalIngredients} (isComplete: ${completionStatus.isComplete})`
         );
 
         await statusBroadcaster.addStatusEventAndBroadcast({
@@ -185,6 +199,53 @@ export async function saveIngredientLine(
         logger.log(
           `[SAVE_INGREDIENT_LINE] Successfully broadcasted ingredient completion for line ${data.lineIndex} with ID ${result.id}`
         );
+
+        // Check if all ingredients are completed and trigger completion check
+        logger.log(
+          `[SAVE_INGREDIENT_LINE] Checking if completion check should be triggered: isComplete=${completionStatus.isComplete}, completed=${completionStatus.completedIngredients}, total=${completionStatus.totalIngredients}`
+        );
+
+        if (completionStatus.isComplete) {
+          logger.log(
+            `[SAVE_INGREDIENT_LINE] All ingredients completed for note ${data.noteId}, triggering completion check`
+          );
+
+          try {
+            // Import queue dynamically to avoid circular dependencies
+            const { createQueue } = await import(
+              "../../../../queues/create-queue"
+            );
+            const ingredientQueue = createQueue("ingredient");
+
+            await ingredientQueue.add(
+              ActionName.CHECK_INGREDIENT_COMPLETION,
+              {
+                noteId: data.noteId,
+                importId: data.importId,
+                jobId: `${data.noteId}-ingredient-completion-check`,
+                metadata: {},
+              },
+              {
+                removeOnComplete: 100,
+                removeOnFail: 50,
+                attempts: 3,
+                backoff: {
+                  type: "exponential",
+                  delay: 1000,
+                },
+              }
+            );
+
+            logger.log(
+              `[SAVE_INGREDIENT_LINE] Successfully queued completion check for note ${data.noteId}`
+            );
+          } catch (queueError) {
+            logger.log(
+              `[SAVE_INGREDIENT_LINE] Failed to queue completion check: ${queueError}`
+            );
+            // Don't fail the main save operation if completion check fails
+          }
+        }
       } catch (broadcastError) {
         logger.log(
           `[SAVE_INGREDIENT_LINE] Failed to broadcast ingredient completion: ${broadcastError}`

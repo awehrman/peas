@@ -36,7 +36,7 @@ export async function saveNote(
     // Initialize completion tracking for this note
     /* istanbul ignore next -- @preserve */
     if (data.importId) {
-      initializeNoteCompletion(dbNote.id, data.importId);
+      await initializeNoteCompletion(dbNote.id, data.importId, logger);
       logger.log(
         `[SAVE_NOTE] Initialized completion tracking for note ${dbNote.id} with import ${data.importId}`
       );

@@ -14,9 +14,11 @@ vi.mock("../../../../note/actions/track-completion/service", () => ({
   markWorkerCompleted: vi.fn(),
 }));
 
-// Mock the database function
-vi.mock("@peas/database", () => ({
+// Mock the track completion service
+vi.mock("../../../../note/actions/track-completion/service", () => ({
+  markWorkerCompleted: vi.fn(),
   getIngredientCompletionStatus: vi.fn(),
+  markNoteAsFailed: vi.fn(),
 }));
 
 describe("CheckIngredientCompletionAction", () => {
@@ -64,15 +66,15 @@ describe("CheckIngredientCompletionAction", () => {
     };
 
     // Get the mocked functions
-    const { markWorkerCompleted } = await import(
+    const { 
+      markWorkerCompleted, 
+      getIngredientCompletionStatus
+    } = await import(
       "../../../../note/actions/track-completion/service"
     );
-    const { getIngredientCompletionStatus } = await import("@peas/database");
 
     mockMarkWorkerCompleted = vi.mocked(markWorkerCompleted);
-    mockGetIngredientCompletionStatus = vi.mocked(
-      getIngredientCompletionStatus
-    );
+    mockGetIngredientCompletionStatus = vi.mocked(getIngredientCompletionStatus);
   });
 
   describe("name", () => {
@@ -84,7 +86,7 @@ describe("CheckIngredientCompletionAction", () => {
   describe("execute", () => {
     it("should mark worker as completed when all ingredients are completed", async () => {
       // Mock that all ingredients are completed
-      mockGetIngredientCompletionStatus.mockResolvedValue({
+      mockGetIngredientCompletionStatus.mockReturnValue({
         completedIngredients: 5,
         totalIngredients: 5,
         progress: "5/5",
@@ -108,7 +110,7 @@ describe("CheckIngredientCompletionAction", () => {
       );
 
       expect(mockDependencies.logger.log).toHaveBeenCalledWith(
-        "[CHECK_INGREDIENT_COMPLETION] Completion status for note test-note-id: 5/5"
+        "[CHECK_INGREDIENT_COMPLETION] Attempt 1/3 - Completion status for note test-note-id: 5/5 (isComplete: true)"
       );
       expect(mockDependencies.logger.log).toHaveBeenCalledWith(
         "[CHECK_INGREDIENT_COMPLETION] All ingredients completed for note test-note-id, marked ingredient worker as completed"
@@ -119,7 +121,7 @@ describe("CheckIngredientCompletionAction", () => {
 
     it("should not mark worker as completed when not all ingredients are completed", async () => {
       // Mock that not all ingredients are completed
-      mockGetIngredientCompletionStatus.mockResolvedValue({
+      mockGetIngredientCompletionStatus.mockReturnValue({
         completedIngredients: 3,
         totalIngredients: 5,
         progress: "3/5",
@@ -138,10 +140,10 @@ describe("CheckIngredientCompletionAction", () => {
       expect(mockMarkWorkerCompleted).not.toHaveBeenCalled();
 
       expect(mockDependencies.logger.log).toHaveBeenCalledWith(
-        "[CHECK_INGREDIENT_COMPLETION] Completion status for note test-note-id: 3/5"
+        "[CHECK_INGREDIENT_COMPLETION] All retries exhausted for note test-note-id. Marking as failed."
       );
       expect(mockDependencies.logger.log).toHaveBeenCalledWith(
-        "[CHECK_INGREDIENT_COMPLETION] Not all ingredients completed yet for note test-note-id, skipping worker completion"
+        "[CHECK_INGREDIENT_COMPLETION] All retries exhausted for note test-note-id. Marking as failed."
       );
 
       expect(result).toBe(mockData);
@@ -189,7 +191,9 @@ describe("CheckIngredientCompletionAction", () => {
 
     it("should handle errors from getIngredientCompletionStatus gracefully", async () => {
       const error = new Error("Database connection failed");
-      mockGetIngredientCompletionStatus.mockRejectedValue(error);
+      mockGetIngredientCompletionStatus.mockImplementation(() => {
+        throw error;
+      });
 
       const result = await action.execute(
         mockData,
@@ -198,14 +202,16 @@ describe("CheckIngredientCompletionAction", () => {
       );
 
       expect(mockDependencies.logger.log).toHaveBeenCalledWith(
-        "[CHECK_INGREDIENT_COMPLETION] Error checking completion: Error: Database connection failed"
+        "[CHECK_INGREDIENT_COMPLETION] All retries exhausted for note test-note-id. Marking as failed."
       );
 
       expect(result).toBe(mockData);
     });
 
     it("should handle non-Error exceptions from getIngredientCompletionStatus", async () => {
-      mockGetIngredientCompletionStatus.mockRejectedValue("String error");
+      mockGetIngredientCompletionStatus.mockImplementation(() => {
+        throw "String error";
+      });
 
       const result = await action.execute(
         mockData,
@@ -214,7 +220,7 @@ describe("CheckIngredientCompletionAction", () => {
       );
 
       expect(mockDependencies.logger.log).toHaveBeenCalledWith(
-        "[CHECK_INGREDIENT_COMPLETION] Error checking completion: String error"
+        "[CHECK_INGREDIENT_COMPLETION] All retries exhausted for note test-note-id. Marking as failed."
       );
 
       expect(result).toBe(mockData);

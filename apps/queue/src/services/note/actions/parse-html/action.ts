@@ -89,7 +89,7 @@ export class ParseHtmlAction extends BaseAction<
 
     // Mark note worker as completed
     if (data && data.noteId) {
-      markWorkerCompleted(
+      await markWorkerCompleted(
         data.noteId,
         "note",
         deps.logger,

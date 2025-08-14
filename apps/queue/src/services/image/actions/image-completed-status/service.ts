@@ -1,6 +1,7 @@
 import type { IServiceContainer } from "../../../../services/container";
 import type { StructuredLogger } from "../../../../types";
 import type { ImageJobData } from "../../../../workers/image/types";
+import { markImageJobCompleted } from "../../../note/actions/track-completion/service";
 
 export async function updateImageCompletedStatus(
   data: ImageJobData,
@@ -66,6 +67,19 @@ export async function updateImageCompletedStatus(
       }
     } else {
       logger.log(`[IMAGE_COMPLETED_STATUS] StatusBroadcaster is not available`);
+    }
+
+    // Mark this image job as completed in the completion tracking system
+    try {
+      await markImageJobCompleted(data.noteId, logger, statusBroadcaster);
+      logger.log(
+        `[IMAGE_COMPLETED_STATUS] Marked image job as completed for note ${data.noteId}`
+      );
+    } catch (completionError) {
+      logger.log(
+        `[IMAGE_COMPLETED_STATUS] Failed to mark image job as completed: ${completionError}`
+      );
+      // Don't fail the main operation if completion tracking fails
     }
 
     return data;

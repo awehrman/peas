@@ -74,6 +74,22 @@ export class PatternTrackingWorker extends BaseWorker<
       context
     );
   }
+
+  /**
+   * Override to prevent status actions from being injected for pattern tracking
+   * Pattern tracking is a background task that shouldn't affect main note processing status
+   */
+  protected injectStandardStatusActions(
+    _actions: WorkerAction<
+      PatternTrackingJobData,
+      PatternTrackingWorkerDependencies,
+      PatternTrackingJobData
+    >[],
+    _data: PatternTrackingJobData
+  ): void {
+    // Do nothing - pattern tracking worker doesn't need status actions
+    // This prevents interference with the main note processing status
+  }
 }
 
 /**
@@ -90,5 +106,10 @@ export function createPatternTrackingWorker(
     PatternTrackingJobData
   >();
 
-  return new PatternTrackingWorker(queue, dependencies, actionFactory, container);
+  return new PatternTrackingWorker(
+    queue,
+    dependencies,
+    actionFactory,
+    container
+  );
 }

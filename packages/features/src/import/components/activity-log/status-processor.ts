@@ -2,6 +2,16 @@ import { CompletionMessages, ImportStatus } from "./types";
 
 import { StatusEvent } from "../../hooks/use-status-websocket";
 
+/**
+ * Helper function to determine if a step should be updated to processing
+ * Prevents completed steps from reverting to processing unless there's an error
+ */
+function shouldUpdateToProcessing(currentStatus: string): boolean {
+  // Only allow updates if the step is still pending
+  // Once completed, it stays completed unless there's an explicit error
+  return currentStatus === "pending";
+}
+
 export function processStatusEvents(
   events: StatusEvent[]
 ): Map<string, ImportStatus> {
@@ -75,8 +85,11 @@ export function processStatusEvents(
             error: event.errorMessage,
           };
         } else if (event.message?.includes(CompletionMessages.CLEAN_HTML)) {
-          status.steps.cleaning = { status: "completed" };
-        } else if (status.steps.cleaning.status !== "completed") {
+          status.steps.cleaning = {
+            status: "completed",
+            completedAt: new Date(event.createdAt),
+          };
+        } else if (shouldUpdateToProcessing(status.steps.cleaning.status)) {
           status.steps.cleaning = { status: "processing" };
         }
         break;
@@ -90,8 +103,11 @@ export function processStatusEvents(
         } else if (
           event.message?.includes(CompletionMessages.CREATE_STRUCTURE)
         ) {
-          status.steps.structure = { status: "completed" };
-        } else if (status.steps.structure.status !== "completed") {
+          status.steps.structure = {
+            status: "completed",
+            completedAt: new Date(event.createdAt),
+          };
+        } else if (shouldUpdateToProcessing(status.steps.structure.status)) {
           status.steps.structure = { status: "processing" };
         }
         break;
@@ -172,7 +188,7 @@ export function processStatusEvents(
           };
         } else if (event.message?.includes(CompletionMessages.ADD_SOURCE)) {
           status.steps.source = { status: "completed" };
-        } else if (status.steps.source.status !== "completed") {
+        } else if (shouldUpdateToProcessing(status.steps.source.status)) {
           status.steps.source = { status: "processing" };
         }
         break;
@@ -185,7 +201,7 @@ export function processStatusEvents(
           };
         } else if (event.message?.includes(CompletionMessages.ADD_IMAGE)) {
           status.steps.image = { status: "completed" };
-        } else if (status.steps.image.status !== "completed") {
+        } else if (shouldUpdateToProcessing(status.steps.image.status)) {
           status.steps.image = { status: "processing" };
         }
         break;
@@ -204,7 +220,7 @@ export function processStatusEvents(
             status: "completed",
             message: event.message,
           };
-        } else if (status.steps.duplicates.status !== "completed") {
+        } else if (shouldUpdateToProcessing(status.steps.duplicates.status)) {
           status.steps.duplicates = { status: "processing" };
         }
         break;
@@ -269,25 +285,24 @@ export function processStatusEvents(
           `[STATUS_PROCESSOR] Tags status set to: ${status.steps.tags.status}`
         );
         break;
+
+      case "import_complete":
+        console.log(
+          `[STATUS_PROCESSOR] Import complete for import ${event.importId}, message: ${event.message}`
+        );
+        // Mark the overall import as completed
+        status.status = "completed";
+        status.completedAt = new Date();
+        
+        // Update note title if provided in metadata
+        if (event.metadata?.noteTitle) {
+          status.noteTitle = event.metadata.noteTitle as string;
+        }
+        break;
     }
 
-    // Check if all steps are completed to mark import as completed
-    const allStepsCompleted =
-      status.steps.cleaning.status === "completed" &&
-      status.steps.structure.status === "completed" &&
-      status.steps.noteProcessing.status === "completed" &&
-      status.steps.ingredients.status === "completed" &&
-      status.steps.instructions.status === "completed" &&
-      status.steps.source.status === "completed" &&
-      status.steps.image.status === "completed" &&
-      status.steps.duplicates.status === "completed" &&
-      status.steps.categorization.status === "completed" &&
-      status.steps.tags.status === "completed";
-
-    if (allStepsCompleted && status.status === "importing") {
-      status.status = "completed";
-      status.completedAt = new Date();
-    }
+    // Note: Import completion is now handled by the "import_complete" event
+    // This ensures proper sequencing and prevents race conditions
 
     // Check if any step failed to mark import as failed
     const anyStepFailed =

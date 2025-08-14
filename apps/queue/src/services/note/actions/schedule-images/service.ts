@@ -6,11 +6,14 @@ import { ActionName } from "../../../../types";
 import type { NotePipelineData } from "../../../../types/notes";
 import {
   findImageDirectoryForHtmlFile,
-  getImageFilesWithMetadata,
   findImagesForImport,
+  getImageFilesWithMetadata,
 } from "../../../../utils/image-utils";
 import type { BaseWorkerDependencies } from "../../../../workers/types";
-import { setTotalImageJobs } from "../track-completion/service";
+import {
+  markNoteAsFailed,
+  setTotalImageJobs,
+} from "../track-completion/service";
 
 export async function processImages(
   data: NotePipelineData,
@@ -58,9 +61,9 @@ export async function processImages(
       logger.log(
         `[SCHEDULE_IMAGES] No images found via HTML file association, trying enhanced detection for importId: ${data.importId}`
       );
-      
+
       imageFiles = await findImagesForImport(data.importId);
-      
+
       if (imageFiles.length > 0) {
         logger.log(
           `[SCHEDULE_IMAGES] Found ${imageFiles.length} images via enhanced detection`
@@ -130,6 +133,24 @@ export async function processImages(
       );
       // Set total image jobs to 0 since there are no images
       setTotalImageJobs(data.noteId, 0, logger);
+
+      // Mark note as failed since no images were found
+      try {
+        await markNoteAsFailed(
+          data.noteId,
+          "No image files found for note processing",
+          "IMAGE_UPLOAD_FAILED",
+          { importId: data.importId, noteId: data.noteId },
+          logger
+        );
+        logger.log(
+          `[SCHEDULE_IMAGES] Marked note ${data.noteId} as FAILED (no images found)`
+        );
+      } catch (error) {
+        logger.log(`[SCHEDULE_IMAGES] Failed to mark note as failed: ${error}`);
+        // Don't fail the main operation if status update fails
+      }
+
       return data;
     }
 

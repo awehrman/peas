@@ -50,5 +50,15 @@ export function createNotePipeline(
     );
   }
 
+  // Wait for categorization to complete before marking note worker as completed
+  actions.push(
+    actionFactory.create(ActionName.WAIT_FOR_CATEGORIZATION, dependencies)
+  );
+
+  // Mark note worker as completed after categorization is done
+  actions.push(
+    actionFactory.create(ActionName.MARK_NOTE_WORKER_COMPLETED, dependencies)
+  );
+
   return actions;
 }

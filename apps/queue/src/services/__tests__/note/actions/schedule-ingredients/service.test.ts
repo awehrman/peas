@@ -63,7 +63,7 @@ describe("Schedule Ingredients Service", () => {
       const result = await processIngredients(mockData, mockLogger, mockQueues);
 
       expect(result).toBe(mockData);
-      expect(mockQueues?.ingredientQueue?.add).toHaveBeenCalledTimes(3); // 2 ingredient jobs + 1 completion check job
+      expect(mockQueues?.ingredientQueue?.add).toHaveBeenCalledTimes(2); // 2 ingredient jobs (completion check triggered by last job)
 
       // Check first ingredient job
       expect(mockQueues?.ingredientQueue?.add).toHaveBeenNthCalledWith(
@@ -74,7 +74,8 @@ describe("Schedule Ingredients Service", () => {
           importId: "test-import-id",
           ingredientReference: "1 cup flour",
           lineIndex: 0,
-          jobId: "test-note-id-ingredient-0",
+          jobId: "test-note-id-ingredient-0-0",
+          blockIndex: 0,
           metadata: {
             clearCache: false,
           },
@@ -90,24 +91,15 @@ describe("Schedule Ingredients Service", () => {
           importId: "test-import-id",
           ingredientReference: "2 eggs",
           lineIndex: 1,
-          jobId: "test-note-id-ingredient-1",
+          jobId: "test-note-id-ingredient-0-1",
+          blockIndex: 0,
           metadata: {
             clearCache: false,
           },
         }
       );
 
-      // Check completion check job
-      expect(mockQueues?.ingredientQueue?.add).toHaveBeenNthCalledWith(
-        3,
-        ActionName.CHECK_INGREDIENT_COMPLETION,
-        {
-          noteId: "test-note-id",
-          importId: "test-import-id",
-          jobId: "test-note-id-ingredient-completion-check",
-          metadata: {},
-        }
-      );
+      // Completion check is now triggered by the last job, not scheduled separately
     });
 
     it("should throw error when noteId is missing", async () => {
@@ -256,37 +248,34 @@ describe("Schedule Ingredients Service", () => {
       );
 
       expect(result).toBe(dataWithMultipleIngredients);
-      expect(mockQueues?.ingredientQueue?.add).toHaveBeenCalledTimes(4); // 3 ingredient jobs + 1 completion check job
+      expect(mockQueues?.ingredientQueue?.add).toHaveBeenCalledTimes(3); // 3 ingredient jobs (completion check triggered by last job)
 
       // Check job IDs are generated correctly
       expect(mockQueues?.ingredientQueue?.add).toHaveBeenNthCalledWith(
         1,
         ActionName.PARSE_INGREDIENT_LINE,
         expect.objectContaining({
-          jobId: "test-note-id-ingredient-5",
+          jobId: "test-note-id-ingredient-0-5",
+          blockIndex: 0,
         })
       );
       expect(mockQueues?.ingredientQueue?.add).toHaveBeenNthCalledWith(
         2,
         ActionName.PARSE_INGREDIENT_LINE,
         expect.objectContaining({
-          jobId: "test-note-id-ingredient-10",
+          jobId: "test-note-id-ingredient-0-10",
+          blockIndex: 0,
         })
       );
       expect(mockQueues?.ingredientQueue?.add).toHaveBeenNthCalledWith(
         3,
         ActionName.PARSE_INGREDIENT_LINE,
         expect.objectContaining({
-          jobId: "test-note-id-ingredient-15",
+          jobId: "test-note-id-ingredient-0-15",
+          blockIndex: 0,
         })
       );
-      expect(mockQueues?.ingredientQueue?.add).toHaveBeenNthCalledWith(
-        4,
-        ActionName.CHECK_INGREDIENT_COMPLETION,
-        expect.objectContaining({
-          jobId: "test-note-id-ingredient-completion-check",
-        })
-      );
+      // Completion check is now triggered by the last job, not scheduled separately
     });
 
     it("should handle ingredients without importId", async () => {
@@ -309,7 +298,11 @@ describe("Schedule Ingredients Service", () => {
           importId: undefined,
           ingredientReference: "1 cup flour",
           lineIndex: 0,
-          jobId: "test-note-id-ingredient-0",
+          jobId: "test-note-id-ingredient-0-0",
+          blockIndex: 0,
+          metadata: {
+            clearCache: false,
+          },
         })
       );
     });

@@ -15,6 +15,9 @@ export async function determineCategory(
     logger.log(
       `[DETERMINE_CATEGORY] Starting category determination for note: ${data.noteId}`
     );
+    logger.log(
+      `[DETERMINE_CATEGORY] Job data: ${JSON.stringify(data, null, 2)}`
+    );
 
     // Get the note with Evernote metadata
     const note = await getNoteWithEvernoteMetadata(data.noteId);

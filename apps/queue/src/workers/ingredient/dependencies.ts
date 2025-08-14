@@ -32,6 +32,7 @@ export interface IngredientWorkerDependencies extends BaseWorkerDependencies {
 export interface IngredientJobData {
   noteId: string;
   ingredientReference: string;
+  blockIndex?: number; // Make optional for backward compatibility
   lineIndex: number;
   importId?: string;
   jobId?: string;

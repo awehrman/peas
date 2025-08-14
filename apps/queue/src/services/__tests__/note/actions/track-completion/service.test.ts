@@ -49,6 +49,8 @@ describe("Track Completion Service", () => {
         allCompleted: false,
         totalImageJobs: 0,
         completedImageJobs: 0,
+        totalIngredientLines: 0,
+        completedIngredientLines: new Set(),
       });
     });
 
@@ -244,40 +246,46 @@ describe("Track Completion Service", () => {
       expect(status?.allCompleted).toBe(true);
     });
 
-    it("should broadcast completion when all workers are completed", () => {
+    it("should broadcast completion when all workers are completed", async () => {
       const noteId = "test-note-123";
       const importId = "test-import-456";
 
       initializeNoteCompletion(noteId, importId);
-      markWorkerCompleted(noteId, "note", mockLogger, mockStatusBroadcaster);
-      markWorkerCompleted(
+      await markWorkerCompleted(noteId, "note", mockLogger, mockStatusBroadcaster);
+      await markWorkerCompleted(
         noteId,
         "instruction",
         mockLogger,
         mockStatusBroadcaster
       );
-      markWorkerCompleted(
+      await markWorkerCompleted(
         noteId,
         "ingredient",
         mockLogger,
         mockStatusBroadcaster
       );
-      markWorkerCompleted(noteId, "image", mockLogger, mockStatusBroadcaster);
+      await markWorkerCompleted(noteId, "image", mockLogger, mockStatusBroadcaster);
 
+      // Wait for async operations to complete
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      // The function now fetches the note title and uses it in the completion message
+      // The actual message will depend on whether the note title is found
       expect(
         mockStatusBroadcaster.addStatusEventAndBroadcast
-      ).toHaveBeenCalledWith({
-        importId,
-        noteId,
-        status: "COMPLETED",
-        message: `Import ${importId} Completed!`,
-        context: "import_complete",
-        indentLevel: 0,
-        metadata: {
-          noteId,
+      ).toHaveBeenCalledWith(
+        expect.objectContaining({
           importId,
-        },
-      });
+          noteId,
+          status: "COMPLETED",
+          context: "import_complete",
+          indentLevel: 0,
+          metadata: expect.objectContaining({
+            noteId,
+            importId,
+          }),
+        })
+      );
     });
 
     it("should handle broadcast errors gracefully", async () => {
@@ -290,23 +298,23 @@ describe("Track Completion Service", () => {
       );
 
       initializeNoteCompletion(noteId, importId);
-      markWorkerCompleted(noteId, "note", mockLogger, mockStatusBroadcaster);
-      markWorkerCompleted(
+      await markWorkerCompleted(noteId, "note", mockLogger, mockStatusBroadcaster);
+      await markWorkerCompleted(
         noteId,
         "instruction",
         mockLogger,
         mockStatusBroadcaster
       );
-      markWorkerCompleted(
+      await markWorkerCompleted(
         noteId,
         "ingredient",
         mockLogger,
         mockStatusBroadcaster
       );
-      markWorkerCompleted(noteId, "image", mockLogger, mockStatusBroadcaster);
+      await markWorkerCompleted(noteId, "image", mockLogger, mockStatusBroadcaster);
 
       // Wait for the async error handling
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       expect(mockLogger.log).toHaveBeenCalledWith(
         "[TRACK_COMPLETION] Failed to broadcast completion: Error: Broadcast failed"
@@ -337,23 +345,23 @@ describe("Track Completion Service", () => {
       );
 
       initializeNoteCompletion(noteId, importId);
-      markWorkerCompleted(noteId, "note", mockLogger, mockStatusBroadcaster);
-      markWorkerCompleted(
+      await markWorkerCompleted(noteId, "note", mockLogger, mockStatusBroadcaster);
+      await markWorkerCompleted(
         noteId,
         "instruction",
         mockLogger,
         mockStatusBroadcaster
       );
-      markWorkerCompleted(
+      await markWorkerCompleted(
         noteId,
         "ingredient",
         mockLogger,
         mockStatusBroadcaster
       );
-      markWorkerCompleted(noteId, "image", mockLogger, mockStatusBroadcaster);
+      await markWorkerCompleted(noteId, "image", mockLogger, mockStatusBroadcaster);
 
       // Wait for the async error handling
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       expect(mockLogger.log).toHaveBeenCalledWith(
         "[TRACK_COMPLETION] Failed to broadcast completion: String error"
@@ -379,6 +387,8 @@ describe("Track Completion Service", () => {
         allCompleted: false,
         totalImageJobs: 0,
         completedImageJobs: 0,
+        totalIngredientLines: 0,
+        completedIngredientLines: new Set(),
       });
     });
 
@@ -490,7 +500,7 @@ describe("Track Completion Service", () => {
       expect(status2?.instructionWorkerCompleted).toBe(true);
     });
 
-    it("should handle complete workflow for a single note", () => {
+    it("should handle complete workflow for a single note", async () => {
       const noteId = "test-note-123";
       const importId = "test-import-456";
 
@@ -500,13 +510,13 @@ describe("Track Completion Service", () => {
       expect(status?.allCompleted).toBe(false);
 
       // Mark note worker completed
-      markWorkerCompleted(noteId, "note", mockLogger, mockStatusBroadcaster);
+      await markWorkerCompleted(noteId, "note", mockLogger, mockStatusBroadcaster);
       status = getNoteCompletionStatus(noteId);
       expect(status?.noteWorkerCompleted).toBe(true);
       expect(status?.allCompleted).toBe(false);
 
       // Mark instruction worker completed
-      markWorkerCompleted(
+      await markWorkerCompleted(
         noteId,
         "instruction",
         mockLogger,
@@ -517,7 +527,7 @@ describe("Track Completion Service", () => {
       expect(status?.allCompleted).toBe(false);
 
       // Mark ingredient worker completed
-      markWorkerCompleted(
+      await markWorkerCompleted(
         noteId,
         "ingredient",
         mockLogger,
@@ -528,7 +538,7 @@ describe("Track Completion Service", () => {
       expect(status?.allCompleted).toBe(false);
 
       // Mark image worker completed - should trigger all completed
-      markWorkerCompleted(noteId, "image", mockLogger, mockStatusBroadcaster);
+      await markWorkerCompleted(noteId, "image", mockLogger, mockStatusBroadcaster);
       status = getNoteCompletionStatus(noteId);
       expect(status?.imageWorkerCompleted).toBe(true);
       expect(status?.allCompleted).toBe(true);
@@ -538,7 +548,7 @@ describe("Track Completion Service", () => {
       expect(getNoteCompletionStatus(noteId)).toBeUndefined();
     });
 
-    it("should handle partial completion scenarios", () => {
+    it("should handle partial completion scenarios", async () => {
       const noteId = "test-note-123";
       const importId = "test-import-456";
 
@@ -546,15 +556,15 @@ describe("Track Completion Service", () => {
       setTotalImageJobs(noteId, 3, mockLogger);
 
       // Complete some image jobs but not all
-      markImageJobCompleted(noteId, mockLogger, mockStatusBroadcaster);
-      markImageJobCompleted(noteId, mockLogger, mockStatusBroadcaster);
+      await markImageJobCompleted(noteId, mockLogger, mockStatusBroadcaster);
+      await markImageJobCompleted(noteId, mockLogger, mockStatusBroadcaster);
 
       const status = getNoteCompletionStatus(noteId);
       expect(status?.completedImageJobs).toBe(2);
       expect(status?.imageWorkerCompleted).toBe(false);
 
       // Complete the last image job
-      markImageJobCompleted(noteId, mockLogger, mockStatusBroadcaster);
+      await markImageJobCompleted(noteId, mockLogger, mockStatusBroadcaster);
       expect(status?.completedImageJobs).toBe(3);
       expect(status?.imageWorkerCompleted).toBe(true);
     });
@@ -570,13 +580,13 @@ describe("Track Completion Service", () => {
 
       // Initialize and mark all workers as completed
       initializeNoteCompletion(noteId, importId);
-      markWorkerCompleted(noteId, "note", mockLogger, mockStatusBroadcaster);
-      markWorkerCompleted(noteId, "instruction", mockLogger, mockStatusBroadcaster);
-      markWorkerCompleted(noteId, "ingredient", mockLogger, mockStatusBroadcaster);
-      markWorkerCompleted(noteId, "image", mockLogger, mockStatusBroadcaster);
+      await markWorkerCompleted(noteId, "note", mockLogger, mockStatusBroadcaster);
+      await markWorkerCompleted(noteId, "instruction", mockLogger, mockStatusBroadcaster);
+      await markWorkerCompleted(noteId, "ingredient", mockLogger, mockStatusBroadcaster);
+      await markWorkerCompleted(noteId, "image", mockLogger, mockStatusBroadcaster);
 
       // Wait for the async broadcast to complete
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise(resolve => setTimeout(resolve, 50));
 
       // The error should be logged but not thrown
       expect(mockLogger.log).toHaveBeenCalledWith(

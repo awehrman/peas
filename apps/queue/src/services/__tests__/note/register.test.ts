@@ -122,11 +122,11 @@ describe("registerNoteActions", () => {
     );
   });
 
-  it("should register exactly 8 actions", () => {
+  it("should register exactly 10 actions", () => {
     registerNoteActions(mockFactory);
 
     const registeredActions = mockRegisterActions.mock.calls[0]?.[1];
-    expect(registeredActions).toHaveLength(8);
+    expect(registeredActions).toHaveLength(10);
   });
 
   it("should register PARSE_HTML action", () => {
@@ -174,10 +174,10 @@ describe("registerNoteActions", () => {
     );
   });
 
-  it("should call createActionRegistration exactly 8 times", () => {
+  it("should call createActionRegistration exactly 10 times", () => {
     registerNoteActions(mockFactory);
 
-    expect(mockCreateActionRegistration).toHaveBeenCalledTimes(8);
+    expect(mockCreateActionRegistration).toHaveBeenCalledTimes(10);
   });
 
   it("should register actions in the correct order", () => {
@@ -192,6 +192,8 @@ describe("registerNoteActions", () => {
     expect(calls[5]?.[0]).toBe(ActionName.SCHEDULE_INSTRUCTION_LINES);
     expect(calls[6]?.[0]).toBe(ActionName.SCHEDULE_IMAGES);
     expect(calls[7]?.[0]).toBe(ActionName.CHECK_DUPLICATES);
+    expect(calls[8]?.[0]).toBe(ActionName.WAIT_FOR_CATEGORIZATION);
+    expect(calls[9]?.[0]).toBe(ActionName.MARK_NOTE_WORKER_COMPLETED);
   });
 
   it("should pass the correct action classes to createActionRegistration", async () => {
@@ -220,6 +222,12 @@ describe("registerNoteActions", () => {
     const { ScheduleImagesAction } = await import(
       "../../note/actions/schedule-images/action"
     );
+    const { WaitForCategorizationAction } = await import(
+      "../../note/actions/wait-for-categorization/action"
+    );
+    const { MarkNoteWorkerCompletedAction } = await import(
+      "../../note/actions/mark-note-worker-completed/action"
+    );
 
     registerNoteActions(mockFactory);
 
@@ -232,6 +240,8 @@ describe("registerNoteActions", () => {
     expect(calls[5]?.[1]).toBe(ScheduleInstructionsAction);
     expect(calls[6]?.[1]).toBe(ScheduleImagesAction);
     expect(calls[7]?.[1]).toBe(CheckDuplicatesAction);
+    expect(calls[8]?.[1]).toBe(WaitForCategorizationAction);
+    expect(calls[9]?.[1]).toBe(MarkNoteWorkerCompletedAction);
   });
 
   it("should return void", () => {
@@ -260,6 +270,8 @@ describe("registerNoteActions", () => {
       { name: ActionName.SCHEDULE_INSTRUCTION_LINES, factory: vi.fn() },
       { name: ActionName.SCHEDULE_IMAGES, factory: vi.fn() },
       { name: ActionName.CHECK_DUPLICATES, factory: vi.fn() },
+      { name: ActionName.WAIT_FOR_CATEGORIZATION, factory: vi.fn() },
+      { name: ActionName.MARK_NOTE_WORKER_COMPLETED, factory: vi.fn() },
     ];
 
     mockCreateActionRegistration
@@ -270,7 +282,9 @@ describe("registerNoteActions", () => {
       .mockReturnValueOnce(mockRegistrations[4])
       .mockReturnValueOnce(mockRegistrations[5])
       .mockReturnValueOnce(mockRegistrations[6])
-      .mockReturnValueOnce(mockRegistrations[7]);
+      .mockReturnValueOnce(mockRegistrations[7])
+      .mockReturnValueOnce(mockRegistrations[8])
+      .mockReturnValueOnce(mockRegistrations[9]);
 
     registerNoteActions(mockFactory);
 

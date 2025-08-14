@@ -15,6 +15,7 @@ export async function determineTags(
     logger.log(
       `[DETERMINE_TAGS] Starting tag determination for note: ${data.noteId}`
     );
+    logger.log(`[DETERMINE_TAGS] Job data: ${JSON.stringify(data, null, 2)}`);
 
     // Get the note with Evernote metadata
     const note = await getNoteWithEvernoteMetadata(data.noteId);

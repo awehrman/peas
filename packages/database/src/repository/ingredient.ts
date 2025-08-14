@@ -34,6 +34,8 @@ export async function getIngredientCompletionStatus(noteId: string): Promise<{
           },
           select: {
             id: true,
+            lineIndex: true,
+            parseStatus: true,
           },
         },
       },
@@ -45,6 +47,19 @@ export async function getIngredientCompletionStatus(noteId: string): Promise<{
 
     const completedIngredients = note.parsedIngredientLines.length;
     const totalIngredients = note.totalIngredientLines;
+
+    // Debug logging
+    console.log(`[GET_INGREDIENT_COMPLETION_STATUS] Note ${noteId}:`);
+    console.log(`  - Total ingredients: ${totalIngredients}`);
+    console.log(`  - Completed ingredients: ${completedIngredients}`);
+    console.log(
+      `  - Parsed ingredient lines:`,
+      note.parsedIngredientLines.map((line) => ({
+        id: line.id,
+        lineIndex: line.lineIndex,
+        parseStatus: line.parseStatus,
+      }))
+    );
 
     return {
       completedIngredients,
@@ -72,6 +87,10 @@ export async function saveParsedIngredientLine(
   parsedSegments: ParsedSegment[]
 ): Promise<{ id: string }> {
   // Use upsert to create or update the ingredient line
+  console.log(
+    `[SAVE_PARSED_INGREDIENT_LINE] Saving ingredient line: noteId=${noteId}, lineIndex=${lineIndex}, parseStatus=${parseStatus}`
+  );
+
   const lineRecord = await prisma.parsedIngredientLine.upsert({
     where: {
       noteId_blockIndex_lineIndex: {
@@ -98,6 +117,10 @@ export async function saveParsedIngredientLine(
       isActive,
     },
   });
+
+  console.log(
+    `[SAVE_PARSED_INGREDIENT_LINE] Saved ingredient line with ID: ${lineRecord.id}`
+  );
 
   // Replace segments (delete old, insert new)
   await prisma.parsedSegment.deleteMany({

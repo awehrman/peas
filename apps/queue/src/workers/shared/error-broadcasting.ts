@@ -1,8 +1,29 @@
+import { markNoteAsFailed } from "../../services/note/actions/track-completion/service";
 import type { NoteStatus } from "@peas/database";
 
 import { LogLevel } from "../../types";
 import type { BaseWorkerDependencies } from "../core/types";
 import type { StructuredLogger } from "../../types";
+
+/**
+ * Map error types to database error codes
+ */
+function getErrorCodeFromType(
+  errorType: "PARSING_ERROR" | "PROCESSING_ERROR" | "DATABASE_ERROR" | "VALIDATION_ERROR"
+): "HTML_PARSE_ERROR" | "INGREDIENT_PARSE_ERROR" | "INSTRUCTION_PARSE_ERROR" | "QUEUE_JOB_FAILED" | "IMAGE_UPLOAD_FAILED" | "UNKNOWN_ERROR" {
+  switch (errorType) {
+    case "PARSING_ERROR":
+      return "HTML_PARSE_ERROR";
+    case "PROCESSING_ERROR":
+      return "QUEUE_JOB_FAILED";
+    case "DATABASE_ERROR":
+      return "UNKNOWN_ERROR";
+    case "VALIDATION_ERROR":
+      return "UNKNOWN_ERROR";
+    default:
+      return "UNKNOWN_ERROR";
+  }
+}
 
 /**
  * Data required to broadcast an error event.
@@ -76,6 +97,33 @@ export async function broadcastError(
       console.error(`[ERROR_BROADCAST] Logger failed: ${loggerError}`);
     }
     return;
+  }
+
+  // Update note status to FAILED if we have a noteId
+  if (noteId) {
+    try {
+      const errorCode = getErrorCodeFromType(errorType);
+      await markNoteAsFailed(
+        noteId,
+        errorMessage,
+        errorCode,
+        { errorType, context, ...metadata },
+        deps.logger
+      );
+    } catch (statusError) {
+      // If updating note status fails, log it but don't throw
+      try {
+        deps.logger?.log(
+          `[ERROR_BROADCAST] Failed to update note status: ${statusError}`,
+          LogLevel.ERROR,
+          { errorType, errorMessage, context, noteId, importId, metadata }
+        );
+      } catch (loggerError) {
+        console.error(
+          `[ERROR_BROADCAST] Failed to update note status and logger failed: ${statusError}, ${loggerError}`
+        );
+      }
+    }
   }
 
   // Broadcast error status

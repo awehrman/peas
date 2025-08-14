@@ -16,7 +16,7 @@ export async function checkImageCompletion(
   try {
     // Mark this individual image job as completed
     // This will check if all image jobs for the note are finished
-    markImageJobCompleted(data.noteId, deps.logger, deps.statusBroadcaster);
+    await markImageJobCompleted(data.noteId, deps.logger, deps.statusBroadcaster);
     deps.logger.log(
       `[CHECK_IMAGE_COMPLETION] Marked image job as completed for note ${data.noteId}`
     );

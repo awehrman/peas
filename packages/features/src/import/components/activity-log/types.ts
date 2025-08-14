@@ -12,6 +12,7 @@ export interface StepStatus {
   status: "pending" | "processing" | "completed" | "failed";
   error?: string;
   message?: string;
+  completedAt?: Date;
 }
 
 export interface CountableStepStatus extends StepStatus {

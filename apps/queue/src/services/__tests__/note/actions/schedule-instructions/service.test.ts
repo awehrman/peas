@@ -51,7 +51,7 @@ describe("processInstructions", () => {
       );
 
       expect(result).toBe(mockData);
-      expect(mockInstructionQueue.add).toHaveBeenCalledTimes(4); // 3 instruction jobs + 1 completion check job
+      expect(mockInstructionQueue.add).toHaveBeenCalledTimes(3); // 3 instruction jobs (completion check triggered by last job)
       expect(mockInstructionQueue.add).toHaveBeenCalledWith(
         ActionName.FORMAT_INSTRUCTION_LINE,
         expect.objectContaining({
@@ -82,14 +82,7 @@ describe("processInstructions", () => {
           jobId: "test-note-id-instruction-2",
         })
       );
-      expect(mockInstructionQueue.add).toHaveBeenCalledWith(
-        ActionName.CHECK_INSTRUCTION_COMPLETION,
-        expect.objectContaining({
-          noteId: "test-note-id",
-          importId: "test-import-id",
-          jobId: "test-note-id-instruction-completion-check",
-        })
-      );
+      // Completion check is now triggered by the last job, not scheduled separately
     });
 
     it("should handle data without importId", async () => {
@@ -246,7 +239,7 @@ describe("processInstructions", () => {
       );
 
       expect(result).toBe(singleInstructionData);
-      expect(mockInstructionQueue.add).toHaveBeenCalledTimes(2); // 1 instruction job + 1 completion check job
+      expect(mockInstructionQueue.add).toHaveBeenCalledTimes(1); // 1 instruction job (completion check triggered by last job)
       expect(mockInstructionQueue.add).toHaveBeenCalledWith(
         ActionName.FORMAT_INSTRUCTION_LINE,
         expect.objectContaining({
@@ -257,14 +250,7 @@ describe("processInstructions", () => {
           jobId: "test-note-id-instruction-0",
         })
       );
-      expect(mockInstructionQueue.add).toHaveBeenCalledWith(
-        ActionName.CHECK_INSTRUCTION_COMPLETION,
-        expect.objectContaining({
-          noteId: "test-note-id",
-          importId: "test-import-id",
-          jobId: "test-note-id-instruction-completion-check",
-        })
-      );
+      // Completion check is now triggered by the last job, not scheduled separately
     });
 
     it("should handle instructions with different line indices", async () => {

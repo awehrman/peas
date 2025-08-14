@@ -61,6 +61,8 @@ export enum ActionName {
   SCHEDULE_INSTRUCTION_LINES = "schedule_instruction_lines",
   SCHEDULE_INGREDIENT_LINES = "schedule_ingredient_lines",
   CHECK_DUPLICATES = "check_duplicates",
+  MARK_NOTE_WORKER_COMPLETED = "mark_note_worker_completed",
+  WAIT_FOR_CATEGORIZATION = "wait_for_categorization",
 
   // Ingredient actions
   PARSE_INGREDIENT_LINE = "parse_ingredient_line",
@@ -308,6 +310,8 @@ export const ACTION_CATEGORIES: Record<ActionName, ActionCategory> = {
   [ActionName.SCHEDULE_ALL_FOLLOWUP_TASKS]: ActionCategory.NOTE,
   [ActionName.SCHEDULE_IMAGES]: ActionCategory.NOTE,
   [ActionName.CHECK_DUPLICATES]: ActionCategory.NOTE,
+  [ActionName.MARK_NOTE_WORKER_COMPLETED]: ActionCategory.NOTE,
+  [ActionName.WAIT_FOR_CATEGORIZATION]: ActionCategory.NOTE,
 
   // Ingredient actions
   [ActionName.PARSE_INGREDIENT_LINE]: ActionCategory.INGREDIENT,

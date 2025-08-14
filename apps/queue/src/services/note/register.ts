@@ -9,12 +9,14 @@ import {
 
 import { CheckDuplicatesAction } from "./actions/check-duplicates/action";
 import { CleanHtmlAction } from "./actions/clean-html/action";
+import { MarkNoteWorkerCompletedAction } from "./actions/mark-note-worker-completed/action";
 import { ParseHtmlAction } from "./actions/parse-html/action";
 import { ProcessSourceAction } from "./actions/process-source/action";
 import { SaveNoteAction } from "./actions/save-note/action";
 import { ScheduleImagesAction } from "./actions/schedule-images/action";
 import { ScheduleInstructionsAction } from "./actions/schedule-instructions/action";
 import { ScheduleAllFollowupTasksAction } from "./actions/schedule-tasks/action";
+import { WaitForCategorizationAction } from "./actions/wait-for-categorization/action";
 
 /**
  * Register all note actions in the given ActionFactory with type safety
@@ -70,5 +72,15 @@ export function registerNoteActions(
       NoteWorkerDependencies,
       NotePipelineData
     >(ActionName.CHECK_DUPLICATES, CheckDuplicatesAction),
+    createActionRegistration<
+      NotePipelineData,
+      NoteWorkerDependencies,
+      NotePipelineData
+    >(ActionName.WAIT_FOR_CATEGORIZATION, WaitForCategorizationAction),
+    createActionRegistration<
+      NotePipelineData,
+      NoteWorkerDependencies,
+      NotePipelineData
+    >(ActionName.MARK_NOTE_WORKER_COMPLETED, MarkNoteWorkerCompletedAction),
   ]);
 }

@@ -85,13 +85,15 @@ describe("Note Services Index", () => {
         }),
         expect.objectContaining({ name: ActionName.SCHEDULE_IMAGES }),
         expect.objectContaining({ name: ActionName.CHECK_DUPLICATES }),
+        expect.objectContaining({ name: ActionName.WAIT_FOR_CATEGORIZATION }),
+        expect.objectContaining({ name: ActionName.MARK_NOTE_WORKER_COMPLETED }),
       ]);
     });
 
     it("should create action registrations with correct parameters", () => {
       registerNoteActions(mockFactory);
 
-      expect(mockCreateActionRegistration).toHaveBeenCalledTimes(8);
+      expect(mockCreateActionRegistration).toHaveBeenCalledTimes(10);
 
       // Check each action registration
       expect(mockCreateActionRegistration).toHaveBeenCalledWith(
@@ -126,6 +128,14 @@ describe("Note Services Index", () => {
         ActionName.CHECK_DUPLICATES,
         expect.any(Function) // CheckDuplicatesAction
       );
+      expect(mockCreateActionRegistration).toHaveBeenCalledWith(
+        ActionName.WAIT_FOR_CATEGORIZATION,
+        expect.any(Function) // WaitForCategorizationAction
+      );
+      expect(mockCreateActionRegistration).toHaveBeenCalledWith(
+        ActionName.MARK_NOTE_WORKER_COMPLETED,
+        expect.any(Function) // MarkNoteWorkerCompletedAction
+      );
     });
 
     it("should register actions in the correct order", () => {
@@ -140,6 +150,8 @@ describe("Note Services Index", () => {
       expect(calls[5]?.[0]).toBe(ActionName.SCHEDULE_INSTRUCTION_LINES);
       expect(calls[6]?.[0]).toBe(ActionName.SCHEDULE_IMAGES);
       expect(calls[7]?.[0]).toBe(ActionName.CHECK_DUPLICATES);
+      expect(calls[8]?.[0]).toBe(ActionName.WAIT_FOR_CATEGORIZATION);
+      expect(calls[9]?.[0]).toBe(ActionName.MARK_NOTE_WORKER_COMPLETED);
     });
 
     it("should handle factory with different configurations", () => {
@@ -171,7 +183,7 @@ describe("Note Services Index", () => {
       registerNoteActions(mockFactory);
 
       const registrations = mockRegisterActions.mock.calls[0]?.[1];
-      expect(registrations).toHaveLength(8);
+      expect(registrations).toHaveLength(10);
 
       // Each registration should have the correct structure
       registrations.forEach((registration: any) => {
@@ -192,7 +204,7 @@ describe("Note Services Index", () => {
       registerNoteActions(mockFactory);
 
       expect(mockRegisterActions).toHaveBeenCalledTimes(1);
-      expect(mockCreateActionRegistration).toHaveBeenCalledTimes(8);
+      expect(mockCreateActionRegistration).toHaveBeenCalledTimes(10);
     });
   });
 
@@ -262,22 +274,22 @@ describe("Note Services Index", () => {
     it("should register actions with correct action names from enum", () => {
       registerNoteActions(mockFactory);
 
-      const expectedActionNames = [
-        ActionName.PARSE_HTML,
-        ActionName.CLEAN_HTML,
-        ActionName.SAVE_NOTE,
-        ActionName.SCHEDULE_ALL_FOLLOWUP_TASKS,
-        ActionName.PROCESS_SOURCE,
-        ActionName.SCHEDULE_INSTRUCTION_LINES,
-        ActionName.SCHEDULE_IMAGES,
-        ActionName.CHECK_DUPLICATES,
-      ];
-
       const actualActionNames = mockCreateActionRegistration.mock.calls.map(
         (call) => call[0]
       );
 
-      expect(actualActionNames).toEqual(expectedActionNames);
+      expect(actualActionNames).toEqual([
+        "parse_html",
+        "clean_html",
+        "save_note",
+        "schedule_all_followup_tasks",
+        "process_source",
+        "schedule_instruction_lines",
+        "schedule_images",
+        "check_duplicates",
+        "wait_for_categorization",
+        "mark_note_worker_completed",
+      ]);
     });
   });
 });

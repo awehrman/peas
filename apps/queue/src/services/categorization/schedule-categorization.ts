@@ -1,6 +1,7 @@
+import { createCategorizationJobData } from "./types";
+
 import type { StructuredLogger } from "../../types";
 import { ActionName } from "../../types";
-import { createCategorizationJobData } from "./types";
 
 /**
  * Shared service for scheduling categorization jobs
@@ -20,6 +21,9 @@ export async function scheduleCategorizationJob(
   try {
     logger.log(
       `[SCHEDULE_CATEGORIZATION] Starting categorization scheduling for note: ${noteId}`
+    );
+    logger.log(
+      `[SCHEDULE_CATEGORIZATION] Parameters: noteId=${noteId}, importId=${importId}, originalJobId=${originalJobId}`
     );
 
     // Import queue dynamically to avoid circular dependencies

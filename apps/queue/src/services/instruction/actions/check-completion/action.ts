@@ -37,7 +37,7 @@ export class CheckInstructionCompletionAction extends BaseAction<
 
       // Only mark worker as completed if all instructions are actually completed
       if (completionStatus.isComplete) {
-        markWorkerCompleted(
+        await markWorkerCompleted(
           data.noteId,
           "instruction",
           deps.logger,

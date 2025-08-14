@@ -1,5 +1,9 @@
-import { updateInstructionLine, getInstructionCompletionStatus } from "@peas/database";
+import {
+  getInstructionCompletionStatus,
+  updateInstructionLine,
+} from "@peas/database";
 
+import { ActionName } from "../../../../types";
 import type { StructuredLogger } from "../../../../types";
 import type { InstructionJobData } from "../../../../workers/instruction/dependencies";
 
@@ -43,8 +47,10 @@ export async function saveInstruction(
 
       try {
         // Get completion status for broadcasting
-        const completionStatus = await getInstructionCompletionStatus(data.noteId);
-        
+        const completionStatus = await getInstructionCompletionStatus(
+          data.noteId
+        );
+
         await statusBroadcaster.addStatusEventAndBroadcast({
           importId: data.importId,
           noteId: data.noteId,
@@ -64,6 +70,49 @@ export async function saveInstruction(
         logger.log(
           `[SAVE_INSTRUCTION_LINE] Successfully broadcasted instruction completion for line ${data.lineIndex} with ID ${result.id}`
         );
+
+        // Check if all instructions are completed and trigger completion check
+        if (completionStatus.isComplete) {
+          logger.log(
+            `[SAVE_INSTRUCTION_LINE] All instructions completed for note ${data.noteId}, triggering completion check`
+          );
+
+          try {
+            // Import queue dynamically to avoid circular dependencies
+            const { createQueue } = await import(
+              "../../../../queues/create-queue"
+            );
+            const instructionQueue = createQueue("instruction");
+
+            await instructionQueue.add(
+              ActionName.CHECK_INSTRUCTION_COMPLETION,
+              {
+                noteId: data.noteId,
+                importId: data.importId,
+                jobId: `${data.noteId}-instruction-completion-check`,
+                metadata: {},
+              },
+              {
+                removeOnComplete: 100,
+                removeOnFail: 50,
+                attempts: 3,
+                backoff: {
+                  type: "exponential",
+                  delay: 1000,
+                },
+              }
+            );
+
+            logger.log(
+              `[SAVE_INSTRUCTION_LINE] Successfully queued completion check for note ${data.noteId}`
+            );
+          } catch (queueError) {
+            logger.log(
+              `[SAVE_INSTRUCTION_LINE] Failed to queue completion check: ${queueError}`
+            );
+            // Don't fail the main save operation if completion check fails
+          }
+        }
       } catch (broadcastError) {
         logger.log(
           `[SAVE_INSTRUCTION_LINE] Failed to broadcast instruction completion: ${broadcastError}`

@@ -2,6 +2,7 @@ import type { StructuredLogger } from "../../../../types";
 import { ActionName } from "../../../../types";
 import type { NotePipelineData } from "../../../../types/notes";
 import type { BaseWorkerDependencies } from "../../../../workers/types";
+import { setTotalIngredientLines } from "../track-completion/service";
 
 export async function processIngredients(
   data: NotePipelineData,
@@ -46,6 +47,9 @@ export async function processIngredients(
       `[SCHEDULE_INGREDIENTS] Found ${data.file.ingredients.length} ingredients to process`
     );
 
+    // Set total ingredient lines in in-memory tracking
+    setTotalIngredientLines(data.noteId, data.file.ingredients.length, logger);
+
     // Use the existing ingredient queue from the dependencies
     const ingredientQueue = queues?.ingredientQueue;
 
@@ -62,15 +66,16 @@ export async function processIngredients(
         noteId: data.noteId,
         importId: data.importId,
         ingredientReference: ingredient.reference,
+        blockIndex: ingredient.blockIndex,
         lineIndex: ingredient.lineIndex,
-        jobId: `${data.noteId}-ingredient-${ingredient.lineIndex}`,
+        jobId: `${data.noteId}-ingredient-${ingredient.blockIndex}-${ingredient.lineIndex}`,
         metadata: {
           clearCache: shouldClearCache, // Pass cache clearing flag to individual jobs
         },
       };
 
       logger.log(
-        `[SCHEDULE_INGREDIENTS] Adding job to queue for ingredient ${ingredient.lineIndex}: ${ingredient.reference}`
+        `[SCHEDULE_INGREDIENTS] Adding job to queue for ingredient ${ingredient.blockIndex}:${ingredient.lineIndex}: ${ingredient.reference}`
       );
 
       // Schedule a single job - the worker pipeline will handle parse + save
@@ -80,25 +85,8 @@ export async function processIngredients(
       );
     }
 
-    // Schedule a completion check job after all ingredient jobs
-    const completionCheckJobData = {
-      noteId: data.noteId,
-      importId: data.importId,
-      jobId: `${data.noteId}-ingredient-completion-check`,
-      metadata: {},
-    };
-
     logger.log(
-      `[SCHEDULE_INGREDIENTS] Scheduling completion check job for note: ${data.noteId}`
-    );
-
-    await ingredientQueue.add(
-      ActionName.CHECK_INGREDIENT_COMPLETION,
-      completionCheckJobData
-    );
-
-    logger.log(
-      `[SCHEDULE_INGREDIENTS] Successfully scheduled ${data.file.ingredients.length} ingredient jobs and 1 completion check job`
+      `[SCHEDULE_INGREDIENTS] Successfully scheduled ${data.file.ingredients.length} ingredient jobs (completion check will be triggered when last job finishes)`
     );
 
     return data;
