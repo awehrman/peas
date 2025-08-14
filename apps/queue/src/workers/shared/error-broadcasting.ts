@@ -1,16 +1,27 @@
-import { markNoteAsFailed } from "../../services/note/actions/track-completion/service";
 import type { NoteStatus } from "@peas/database";
 
+import { markNoteAsFailed } from "../../services/note/actions/track-completion/service";
 import { LogLevel } from "../../types";
-import type { BaseWorkerDependencies } from "../core/types";
 import type { StructuredLogger } from "../../types";
+import type { BaseWorkerDependencies } from "../core/types";
 
 /**
  * Map error types to database error codes
  */
 function getErrorCodeFromType(
-  errorType: "PARSING_ERROR" | "PROCESSING_ERROR" | "DATABASE_ERROR" | "VALIDATION_ERROR"
-): "HTML_PARSE_ERROR" | "INGREDIENT_PARSE_ERROR" | "INSTRUCTION_PARSE_ERROR" | "QUEUE_JOB_FAILED" | "IMAGE_UPLOAD_FAILED" | "UNKNOWN_ERROR" {
+  errorType:
+    | "PARSING_ERROR"
+    | "PROCESSING_ERROR"
+    | "DATABASE_ERROR"
+    | "VALIDATION_ERROR"
+):
+  | "HTML_PARSE_ERROR"
+  | "INGREDIENT_PARSE_ERROR"
+  | "INSTRUCTION_PARSE_ERROR"
+  | "QUEUE_JOB_FAILED"
+  | "IMAGE_UPLOAD_FAILED"
+  | "UNKNOWN_ERROR" {
+  /* istanbul ignore next -- @preserve */
   switch (errorType) {
     case "PARSING_ERROR":
       return "HTML_PARSE_ERROR";

@@ -177,7 +177,7 @@ describe("registerNoteActions", () => {
   it("should call createActionRegistration exactly 10 times", () => {
     registerNoteActions(mockFactory);
 
-    expect(mockCreateActionRegistration).toHaveBeenCalledTimes(10);
+    expect(mockCreateActionRegistration).toHaveBeenCalledTimes(9);
   });
 
   it("should register actions in the correct order", () => {
@@ -193,7 +193,11 @@ describe("registerNoteActions", () => {
     expect(calls[6]?.[0]).toBe(ActionName.SCHEDULE_IMAGES);
     expect(calls[7]?.[0]).toBe(ActionName.CHECK_DUPLICATES);
     expect(calls[8]?.[0]).toBe(ActionName.WAIT_FOR_CATEGORIZATION);
-    expect(calls[9]?.[0]).toBe(ActionName.MARK_NOTE_WORKER_COMPLETED);
+
+    // Check that the 10th action is registered via custom registration
+    const registrations = mockRegisterActions.mock.calls[0]?.[1];
+    expect(registrations).toHaveLength(10);
+    expect(registrations[9]?.name).toBe(ActionName.MARK_NOTE_WORKER_COMPLETED);
   });
 
   it("should pass the correct action classes to createActionRegistration", async () => {
@@ -225,9 +229,7 @@ describe("registerNoteActions", () => {
     const { WaitForCategorizationAction } = await import(
       "../../note/actions/wait-for-categorization/action"
     );
-    const { MarkNoteWorkerCompletedAction } = await import(
-      "../../note/actions/mark-note-worker-completed/action"
-    );
+    // Note: MarkNoteWorkerCompletedAction is not used in this test since it's registered via custom registration
 
     registerNoteActions(mockFactory);
 
@@ -241,7 +243,11 @@ describe("registerNoteActions", () => {
     expect(calls[6]?.[1]).toBe(ScheduleImagesAction);
     expect(calls[7]?.[1]).toBe(CheckDuplicatesAction);
     expect(calls[8]?.[1]).toBe(WaitForCategorizationAction);
-    expect(calls[9]?.[1]).toBe(MarkNoteWorkerCompletedAction);
+
+    // Check that the 10th action is registered via custom registration
+    const registrations = mockRegisterActions.mock.calls[0]?.[1];
+    expect(registrations).toHaveLength(10);
+    expect(registrations[9]?.name).toBe(ActionName.MARK_NOTE_WORKER_COMPLETED);
   });
 
   it("should return void", () => {
@@ -283,13 +289,22 @@ describe("registerNoteActions", () => {
       .mockReturnValueOnce(mockRegistrations[5])
       .mockReturnValueOnce(mockRegistrations[6])
       .mockReturnValueOnce(mockRegistrations[7])
-      .mockReturnValueOnce(mockRegistrations[8])
-      .mockReturnValueOnce(mockRegistrations[9]);
+      .mockReturnValueOnce(mockRegistrations[8]);
 
     registerNoteActions(mockFactory);
 
     const registeredActions = mockRegisterActions.mock.calls[0]?.[1];
-    expect(registeredActions).toEqual(mockRegistrations);
+    expect(registeredActions).toHaveLength(10);
+    
+    // Check that the first 9 registrations match the mock
+    for (let i = 0; i < 9; i++) {
+      expect(registeredActions[i]).toEqual(mockRegistrations[i]);
+    }
+    
+    // Check that the 10th registration has the correct structure
+    expect(registeredActions[9]).toHaveProperty("name", ActionName.MARK_NOTE_WORKER_COMPLETED);
+    expect(registeredActions[9]).toHaveProperty("factory");
+    expect(typeof registeredActions[9].factory).toBe("function");
   });
 
   it("should work with different factory instances", () => {

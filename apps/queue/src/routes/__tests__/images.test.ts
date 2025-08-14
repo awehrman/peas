@@ -588,6 +588,47 @@ describe("Images Router", () => {
         }
       }
     });
+
+    it("should handle non-string headerImportId and generate importId", async () => {
+      const mockFiles = [
+        {
+          originalname: "test.jpg",
+          filename: "test-123.jpg",
+          path: "/test/path/test-123.jpg",
+          mimetype: "image/jpeg",
+        },
+      ];
+
+      const req = {
+        ...mockRequest,
+        files: mockFiles,
+        body: {},
+        headers: {
+          "x-import-id": ["multiple", "values"], // Non-string header value
+        },
+      };
+
+      const postRoute = imagesRouter.stack.find(
+        (layer: any) => layer.route && layer.route.methods.post
+      );
+
+      if (postRoute?.route?.stack) {
+        const handler = postRoute.route.stack[1]; // The second handler is the actual route
+
+        if (handler && handler.handle) {
+          await handler.handle(req, mockResponse, mockNext);
+
+          expect(mockImageQueue.add).toHaveBeenCalledTimes(1);
+          expect(mockImageQueue.add).toHaveBeenCalledWith(
+            ActionName.UPLOAD_ORIGINAL,
+            expect.objectContaining({
+              importId: expect.stringMatching(/^import-\d+-\w+$/), // Generated importId format
+            })
+          );
+          expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.OK);
+        }
+      }
+    });
   });
 
   describe("GET /images/:importId/status", () => {

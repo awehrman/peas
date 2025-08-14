@@ -1,4 +1,4 @@
-import { waitForCategorization } from "./service";
+import { markWorkerCompleted } from "./service";
 
 import { ActionName } from "../../../../types";
 import type {
@@ -8,17 +8,25 @@ import type {
 import { BaseAction } from "../../../../workers/core/base-action";
 import type { ActionContext } from "../../../../workers/core/types";
 
-export class WaitForCategorizationAction extends BaseAction<
+export class MarkWorkerCompletedAction extends BaseAction<
   NotePipelineData,
   NoteWorkerDependencies,
   NotePipelineData
 > {
-  get name(): ActionName {
-    return ActionName.WAIT_FOR_CATEGORIZATION;
+  constructor(
+    private workerType: "note" | "instruction" | "ingredient" | "image"
+  ) {
+    super();
   }
 
-  validateInput(_data: NotePipelineData): Error | null {
-    // Note: noteId is optional for this action, so we don't validate it
+  get name(): ActionName {
+    return ActionName.COMPLETION_STATUS;
+  }
+
+  validateInput(data: NotePipelineData): Error | null {
+    if (!data.noteId) {
+      return new Error("Note ID is required for marking worker completion");
+    }
     return null;
   }
 
@@ -38,42 +46,32 @@ export class WaitForCategorizationAction extends BaseAction<
       await deps.statusBroadcaster.addStatusEventAndBroadcast({
         importId: data.importId,
         status: "PROCESSING",
-        message: "Waiting for categorization to complete...",
-        context: "wait_for_categorization",
+        message: `Marking ${this.workerType} worker as completed...`,
+        context: "mark_worker_completed",
         noteId: data.noteId,
         indentLevel: 1,
       });
     }
 
-    // Call the service to wait for categorization
-    const result = await waitForCategorization(
-      data.noteId || "",
-      data.importId || "",
+    // Mark worker as completed
+    await markWorkerCompleted(
+      data.noteId!,
+      this.workerType,
       deps.logger,
       deps.statusBroadcaster
     );
 
     // Send completion message
     if (deps.statusBroadcaster) {
-      const message = result.success
-        ? `Categorization completed (${result.categoriesCount} categories, ${result.tagsCount} tags)`
-        : "Categorization timeout - continuing anyway";
-
       await deps.statusBroadcaster.addStatusEventAndBroadcast({
         importId: data.importId,
-        status: result.success ? "COMPLETED" : "WARNING",
-        message,
-        context: "wait_for_categorization_complete",
+        status: "COMPLETED",
+        message: `${this.workerType} worker marked as completed`,
+        context: "mark_worker_completed_complete",
         noteId: data.noteId,
         indentLevel: 1,
         metadata: {
-          success: result.success,
-          categorizationScheduled: result.categorizationScheduled,
-          retryCount: result.retryCount,
-          hasCategorization: result.hasCategorization,
-          hasTags: result.hasTags,
-          categoriesCount: result.categoriesCount,
-          tagsCount: result.tagsCount,
+          workerType: this.workerType,
         },
       });
     }

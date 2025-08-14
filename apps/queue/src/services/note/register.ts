@@ -9,7 +9,7 @@ import {
 
 import { CheckDuplicatesAction } from "./actions/check-duplicates/action";
 import { CleanHtmlAction } from "./actions/clean-html/action";
-import { MarkNoteWorkerCompletedAction } from "./actions/mark-note-worker-completed/action";
+import { createMarkNoteWorkerCompletedAction } from "./actions/track-completion";
 import { ParseHtmlAction } from "./actions/parse-html/action";
 import { ProcessSourceAction } from "./actions/process-source/action";
 import { SaveNoteAction } from "./actions/save-note/action";
@@ -77,10 +77,9 @@ export function registerNoteActions(
       NoteWorkerDependencies,
       NotePipelineData
     >(ActionName.WAIT_FOR_CATEGORIZATION, WaitForCategorizationAction),
-    createActionRegistration<
-      NotePipelineData,
-      NoteWorkerDependencies,
-      NotePipelineData
-    >(ActionName.MARK_NOTE_WORKER_COMPLETED, MarkNoteWorkerCompletedAction),
+    {
+      name: ActionName.MARK_NOTE_WORKER_COMPLETED,
+      factory: () => createMarkNoteWorkerCompletedAction(),
+    },
   ]);
 }

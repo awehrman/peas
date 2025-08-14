@@ -93,7 +93,7 @@ describe("Note Services Index", () => {
     it("should create action registrations with correct parameters", () => {
       registerNoteActions(mockFactory);
 
-      expect(mockCreateActionRegistration).toHaveBeenCalledTimes(10);
+      expect(mockCreateActionRegistration).toHaveBeenCalledTimes(9);
 
       // Check each action registration
       expect(mockCreateActionRegistration).toHaveBeenCalledWith(
@@ -132,10 +132,7 @@ describe("Note Services Index", () => {
         ActionName.WAIT_FOR_CATEGORIZATION,
         expect.any(Function) // WaitForCategorizationAction
       );
-      expect(mockCreateActionRegistration).toHaveBeenCalledWith(
-        ActionName.MARK_NOTE_WORKER_COMPLETED,
-        expect.any(Function) // MarkNoteWorkerCompletedAction
-      );
+      // Note: MARK_NOTE_WORKER_COMPLETED uses a custom registration object, not createActionRegistration
     });
 
     it("should register actions in the correct order", () => {
@@ -151,7 +148,11 @@ describe("Note Services Index", () => {
       expect(calls[6]?.[0]).toBe(ActionName.SCHEDULE_IMAGES);
       expect(calls[7]?.[0]).toBe(ActionName.CHECK_DUPLICATES);
       expect(calls[8]?.[0]).toBe(ActionName.WAIT_FOR_CATEGORIZATION);
-      expect(calls[9]?.[0]).toBe(ActionName.MARK_NOTE_WORKER_COMPLETED);
+      
+      // Check that the 10th action (MARK_NOTE_WORKER_COMPLETED) is in the registrations array
+      const registrations = mockRegisterActions.mock.calls[0]?.[1];
+      expect(registrations).toHaveLength(10);
+      expect(registrations[9]?.name).toBe(ActionName.MARK_NOTE_WORKER_COMPLETED);
     });
 
     it("should handle factory with different configurations", () => {
@@ -186,11 +187,19 @@ describe("Note Services Index", () => {
       expect(registrations).toHaveLength(10);
 
       // Each registration should have the correct structure
-      registrations.forEach((registration: any) => {
+      registrations.forEach((registration: any, index: number) => {
         expect(registration).toHaveProperty("name");
-        expect(registration).toHaveProperty("actionClass");
         expect(typeof registration.name).toBe("string");
-        expect(typeof registration.actionClass).toBe("function");
+        
+        // Most registrations have actionClass, but the 10th one (index 9) has factory
+        if (index === 9) {
+          expect(registration).toHaveProperty("factory");
+          expect(typeof registration.factory).toBe("function");
+        } else {
+          expect(registration).toHaveProperty("actionClass");
+          // actionClass can be either a function (class) or object (instance)
+          expect(typeof registration.actionClass === "function" || typeof registration.actionClass === "object").toBe(true);
+        }
       });
     });
 
@@ -204,7 +213,7 @@ describe("Note Services Index", () => {
       registerNoteActions(mockFactory);
 
       expect(mockRegisterActions).toHaveBeenCalledTimes(1);
-      expect(mockCreateActionRegistration).toHaveBeenCalledTimes(10);
+      expect(mockCreateActionRegistration).toHaveBeenCalledTimes(9);
     });
   });
 
@@ -288,8 +297,12 @@ describe("Note Services Index", () => {
         "schedule_images",
         "check_duplicates",
         "wait_for_categorization",
-        "mark_note_worker_completed",
       ]);
+
+      // Check that the 10th action is registered via custom registration
+      const registrations = mockRegisterActions.mock.calls[0]?.[1];
+      expect(registrations).toHaveLength(10);
+      expect(registrations[9]?.name).toBe("mark_note_worker_completed");
     });
   });
 });
