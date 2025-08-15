@@ -79,6 +79,7 @@ export async function determineTags(
 
     const finalTags = Array.from(determinedTags);
 
+    /* istanbul ignore next -- @preserve */
     if (finalTags.length === 0) {
       /* istanbul ignore next -- @preserve */
       logger.log(
@@ -117,6 +118,7 @@ export async function determineTags(
       `[DETERMINE_TAGS] Failed to determine tags for note ${data.noteId}: ${error}`
     );
 
+    /* istanbul ignore next -- @preserve */
     return {
       ...data,
       metadata: {

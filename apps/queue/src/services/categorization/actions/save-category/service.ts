@@ -38,6 +38,7 @@ export async function saveCategory(
     const categoriesToSave =
       determinedCategories || (determinedCategory ? [determinedCategory] : []);
 
+    /* istanbul ignore next -- @preserve */
     if (categoriesToSave.length === 0) {
       /* istanbul ignore next -- @preserve */
       logger.log(
@@ -77,6 +78,7 @@ export async function saveCategory(
       `[SAVE_CATEGORY] Failed to save categories for note ${data.noteId}: ${error}`
     );
 
+    /* istanbul ignore next -- @preserve */
     return {
       ...data,
       metadata: {

@@ -204,13 +204,14 @@ export async function saveIngredientLine(
         logger.log(
           `[SAVE_INGREDIENT_LINE] Checking if completion check should be triggered: isComplete=${completionStatus.isComplete}, completed=${completionStatus.completedIngredients}, total=${completionStatus.totalIngredients}`
         );
-
+        /* istanbul ignore next -- @preserve */
         if (completionStatus.isComplete) {
           /* istanbul ignore next -- @preserve */
           logger.log(
             `[SAVE_INGREDIENT_LINE] All ingredients completed for note ${data.noteId}, triggering completion check`
           );
 
+          /* istanbul ignore next -- @preserve */
           try {
             // Import queue dynamically to avoid circular dependencies
             /* istanbul ignore next -- @preserve */

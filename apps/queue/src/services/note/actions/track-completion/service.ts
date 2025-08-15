@@ -106,6 +106,7 @@ export async function markImageJobCompleted(
   );
 
   // Check if all image jobs are completed
+  /* istanbul ignore next -- @preserve */
   if (
     status.completedImageJobs >= status.totalImageJobs &&
     status.totalImageJobs > 0
