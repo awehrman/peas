@@ -17,10 +17,13 @@ export function createCategorizationJobData(
   importId: string,
   originalJobId?: string
 ): CategorizationJobData {
+  // Add a small increment to ensure unique timestamps when called in quick succession
+  const timestamp = Date.now() + Math.floor(Math.random() * 1000);
+  
   return {
     noteId,
     importId,
-    jobId: `categorization-${noteId}-${Date.now()}`,
+    jobId: `categorization-${noteId}-${timestamp}`,
     metadata: {
       originalJobId,
       triggeredBy: "ingredient_completion",

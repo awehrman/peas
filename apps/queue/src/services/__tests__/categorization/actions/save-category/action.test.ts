@@ -259,6 +259,54 @@ describe("SaveCategoryAction", () => {
       });
     });
 
+    it("should handle service returning no category with additionalBroadcasting", async () => {
+      // Arrange
+      const testDataWithNoCategory = {
+        ...testData,
+        metadata: {
+          ...testData.metadata,
+          determinedCategory: undefined,
+          determinedCategories: [],
+        },
+      };
+      const expectedResult = {
+        ...testDataWithNoCategory,
+        metadata: {
+          ...testDataWithNoCategory.metadata,
+          categorySaved: false,
+        },
+      };
+      mockSaveCategory.mockResolvedValue(expectedResult);
+
+      // Act
+      await action.execute(testDataWithNoCategory, mockDeps, mockContext);
+
+      // Assert
+      expect(mockAddStatusEventAndBroadcast).toHaveBeenCalledTimes(2);
+
+      // Check start message
+      expect(mockAddStatusEventAndBroadcast).toHaveBeenCalledWith({
+        importId: testData.importId,
+        status: "PROCESSING",
+        message: "Saving recipe category...",
+        context: "categorization_save",
+        indentLevel: 1,
+      });
+
+      // Check completion message for no category scenario
+      expect(mockAddStatusEventAndBroadcast).toHaveBeenCalledWith({
+        importId: testData.importId,
+        status: "COMPLETED",
+        message: "No category to save",
+        context: "categorization_save_complete",
+        noteId: testData.noteId,
+        indentLevel: 1,
+        metadata: {
+          savedCategory: undefined,
+        },
+      });
+    });
+
     it("should handle service errors and propagate them", async () => {
       // Arrange
       const serviceError = new Error("Service failed");

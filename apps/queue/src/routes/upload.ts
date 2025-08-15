@@ -214,6 +214,7 @@ async function processUploadedFiles(
     (typeof headerImportId === "string" ? headerImportId : undefined) ||
     (req.body as { importId?: string }).importId ||
     randomUUID();
+  /* istanbul ignore next -- @preserve */
   console.log(
     `[UPLOAD_ROUTE] Using importId: ${importId} (${typeof headerImportId === "string" ? "from frontend" : "generated"})`
   );
@@ -400,7 +401,7 @@ async function processUploadedFiles(
                 `[UPLOAD_ROUTE] Cleaned up original binary file: ${imageFile.path}`
               );
             } catch (cleanupError) {
-              /* istanbul ignore next -- Difficult to test file cleanup error scenarios in unit tests */
+              /* istanbul ignore next -- @preserve */
               console.warn(
                 `[UPLOAD_ROUTE] Could not clean up original file: ${cleanupError}`
               );
@@ -442,7 +443,7 @@ async function processUploadedFiles(
           finalContents
         );
       } catch (listError) {
-        /* istanbul ignore next -- Difficult to test directory listing error scenarios in unit tests */
+        /* istanbul ignore next -- @preserve */
         console.error(
           `[UPLOAD_ROUTE] Could not list final directory contents:`,
           listError

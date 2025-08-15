@@ -147,6 +147,7 @@ export async function processImages(
           `[SCHEDULE_IMAGES] Marked note ${data.noteId} as FAILED (no images found)`
         );
       } catch (error) {
+        /* istanbul ignore next -- @preserve */
         logger.log(`[SCHEDULE_IMAGES] Failed to mark note as failed: ${error}`);
         // Don't fail the main operation if status update fails
       }

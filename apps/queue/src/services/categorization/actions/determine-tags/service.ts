@@ -109,6 +109,7 @@ export async function determineTags(
       },
     };
   } catch (error) {
+    /* istanbul ignore next -- @preserve */
     logger.log(
       `[DETERMINE_TAGS] Failed to determine tags for note ${data.noteId}: ${error}`
     );

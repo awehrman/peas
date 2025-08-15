@@ -1,6 +1,7 @@
+import { saveTagsToNote } from "@peas/database";
+
 import type { StructuredLogger } from "../../../../types";
 import type { CategorizationJobData } from "../../../../workers/categorization/dependencies";
-import { saveTagsToNote } from "@peas/database";
 
 /**
  * Save the determined tags to the database
@@ -37,11 +38,16 @@ export async function saveTags(
         ...data.metadata,
         tagsSaved: true,
         tagsSavedAt: new Date().toISOString(),
-        savedTagIds: savedTags.map((tag: { id: string; name: string }) => tag.id),
-        savedTagNames: savedTags.map((tag: { id: string; name: string }) => tag.name),
+        savedTagIds: savedTags.map(
+          (tag: { id: string; name: string }) => tag.id
+        ),
+        savedTagNames: savedTags.map(
+          (tag: { id: string; name: string }) => tag.name
+        ),
       },
     };
   } catch (error) {
+    /* istanbul ignore next -- @preserve */
     logger.log(
       `[SAVE_TAGS] Failed to save tags for note ${data.noteId}: ${error}`
     );

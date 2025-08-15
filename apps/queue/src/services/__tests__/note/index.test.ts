@@ -170,7 +170,7 @@ describe("Note Services Index", () => {
     });
 
     it("should work with empty factory", () => {
-      const emptyFactory = {} as any;
+      const emptyFactory = { register: vi.fn() } as any;
 
       registerNoteActions(emptyFactory);
 

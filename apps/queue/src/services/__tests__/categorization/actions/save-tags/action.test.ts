@@ -251,7 +251,7 @@ describe("SaveTagsAction", () => {
         ...testData,
         metadata: {
           ...testData.metadata,
-          determinedTags: null,
+          determinedTags: null as unknown as string[],
         },
       };
       const expectedResult = {
@@ -267,6 +267,18 @@ describe("SaveTagsAction", () => {
       await action.execute(testDataWithNullTags, mockDeps, mockContext);
 
       // Assert
+      expect(mockAddStatusEventAndBroadcast).toHaveBeenCalledTimes(2);
+
+      // Check start message
+      expect(mockAddStatusEventAndBroadcast).toHaveBeenCalledWith({
+        importId: testData.importId,
+        status: "PROCESSING",
+        message: "Saving recipe tags...",
+        context: "tag_save",
+        indentLevel: 1,
+      });
+
+      // Check completion message for null tags scenario
       expect(mockAddStatusEventAndBroadcast).toHaveBeenCalledWith({
         importId: testData.importId,
         status: "COMPLETED",
@@ -276,6 +288,53 @@ describe("SaveTagsAction", () => {
         indentLevel: 1,
         metadata: {
           savedTags: null,
+        },
+      });
+    });
+
+    it("should handle service returning empty tags array with additionalBroadcasting", async () => {
+      // Arrange
+      const testDataWithEmptyTags = {
+        ...testData,
+        metadata: {
+          ...testData.metadata,
+          determinedTags: [],
+        },
+      };
+      const expectedResult = {
+        ...testDataWithEmptyTags,
+        metadata: {
+          ...testDataWithEmptyTags.metadata,
+          tagsSaved: false,
+        },
+      };
+      mockSaveTags.mockResolvedValue(expectedResult);
+
+      // Act
+      await action.execute(testDataWithEmptyTags, mockDeps, mockContext);
+
+      // Assert
+      expect(mockAddStatusEventAndBroadcast).toHaveBeenCalledTimes(2);
+
+      // Check start message
+      expect(mockAddStatusEventAndBroadcast).toHaveBeenCalledWith({
+        importId: testData.importId,
+        status: "PROCESSING",
+        message: "Saving recipe tags...",
+        context: "tag_save",
+        indentLevel: 1,
+      });
+
+      // Check completion message for empty tags scenario
+      expect(mockAddStatusEventAndBroadcast).toHaveBeenCalledWith({
+        importId: testData.importId,
+        status: "COMPLETED",
+        message: "No tags to save",
+        context: "tag_save_complete",
+        noteId: testData.noteId,
+        indentLevel: 1,
+        metadata: {
+          savedTags: [],
         },
       });
     });

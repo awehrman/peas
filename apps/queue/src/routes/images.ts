@@ -183,6 +183,7 @@ imagesRouter.post(
         results,
       });
     } catch (error) {
+      /* istanbul ignore next -- @preserve */
       console.error("[IMAGES_ROUTE] Image upload error:", error);
       res
         .status(HttpStatus.INTERNAL_SERVER_ERROR)

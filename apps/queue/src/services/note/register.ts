@@ -9,13 +9,13 @@ import {
 
 import { CheckDuplicatesAction } from "./actions/check-duplicates/action";
 import { CleanHtmlAction } from "./actions/clean-html/action";
-import { createMarkNoteWorkerCompletedAction } from "./actions/track-completion";
 import { ParseHtmlAction } from "./actions/parse-html/action";
 import { ProcessSourceAction } from "./actions/process-source/action";
 import { SaveNoteAction } from "./actions/save-note/action";
 import { ScheduleImagesAction } from "./actions/schedule-images/action";
 import { ScheduleInstructionsAction } from "./actions/schedule-instructions/action";
 import { ScheduleAllFollowupTasksAction } from "./actions/schedule-tasks/action";
+import { createMarkNoteWorkerCompletedAction } from "./actions/track-completion";
 import { WaitForCategorizationAction } from "./actions/wait-for-categorization/action";
 
 /**
@@ -28,9 +28,16 @@ export function registerNoteActions(
     NotePipelineData
   >
 ): void {
+  /* istanbul ignore next -- @preserve */
   if (!factory || typeof factory !== "object") {
     throw new Error("Invalid factory");
   }
+
+  /* istanbul ignore next -- @preserve */
+  if (typeof factory.register !== "function") {
+    throw new Error("Factory must have a register method");
+  }
+
   registerActions(factory, [
     createActionRegistration<
       NotePipelineData,

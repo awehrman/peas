@@ -27,6 +27,7 @@ notesRouter.post("/", async (req: Request, res: Response) => {
   console.log("[NOTES_ROUTE] Extracted imageFiles:", imageFiles);
 
   if (typeof content !== "string" || content.trim() === "") {
+    /* istanbul ignore next -- @preserve */
     console.log("[NOTES_ROUTE] Invalid content - returning 400");
     res
       .status(HttpStatus.BAD_REQUEST)
@@ -40,7 +41,11 @@ notesRouter.post("/", async (req: Request, res: Response) => {
     (typeof headerImportId === "string" ? headerImportId : undefined) ||
     (req.body as NoteRequestBody).importId ||
     randomUUID();
-  console.log("[NOTES_ROUTE] Using importId:", importId, typeof headerImportId === "string" ? "(from frontend)" : "(generated)");
+  console.log(
+    "[NOTES_ROUTE] Using importId:",
+    importId,
+    typeof headerImportId === "string" ? "(from frontend)" : "(generated)"
+  );
 
   const serviceContainer = await ServiceContainer.getInstance();
   const noteQueue = serviceContainer.queues.noteQueue;

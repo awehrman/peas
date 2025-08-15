@@ -333,4 +333,24 @@ describe("registerNoteActions", () => {
 
     expect(() => registerNoteActions(typedFactory)).not.toThrow();
   });
+
+  it("should throw error for invalid factory", () => {
+    // Act & Assert
+    expect(() => registerNoteActions(null as unknown as ActionFactory<NotePipelineData, NoteWorkerDependencies, NotePipelineData>)).toThrow("Invalid factory");
+    expect(() => registerNoteActions(undefined as unknown as ActionFactory<NotePipelineData, NoteWorkerDependencies, NotePipelineData>)).toThrow("Invalid factory");
+    expect(() => registerNoteActions("not an object" as unknown as ActionFactory<NotePipelineData, NoteWorkerDependencies, NotePipelineData>)).toThrow("Invalid factory");
+    expect(() => registerNoteActions(123 as unknown as ActionFactory<NotePipelineData, NoteWorkerDependencies, NotePipelineData>)).toThrow("Invalid factory");
+    expect(() => registerNoteActions(true as unknown as ActionFactory<NotePipelineData, NoteWorkerDependencies, NotePipelineData>)).toThrow("Invalid factory");
+  });
+
+  it("should throw error for factory without required methods", () => {
+    // Arrange
+    const invalidFactory = {
+      create: vi.fn(),
+      // Missing register method
+    } as unknown as ActionFactory<NotePipelineData, NoteWorkerDependencies, NotePipelineData>;
+
+    // Act & Assert
+    expect(() => registerNoteActions(invalidFactory)).toThrow();
+  });
 });

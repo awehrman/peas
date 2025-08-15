@@ -594,4 +594,44 @@ describe("Track Completion Service", () => {
       );
     });
   });
+
+  it("should mark image worker as completed", async () => {
+    // Arrange
+    const noteId = "test-note-123";
+    const importId = "test-import-456";
+    const mockLogger = {
+      log: vi.fn(),
+      error: vi.fn(),
+      warn: vi.fn(),
+      info: vi.fn(),
+      debug: vi.fn(),
+    } as StructuredLogger;
+    const mockStatusBroadcaster = {
+      addStatusEventAndBroadcast: vi.fn().mockResolvedValue({}),
+    };
+
+    // Initialize completion status to simulate all other workers being completed
+    initializeNoteCompletion(noteId, importId);
+    await markWorkerCompleted(noteId, "note", mockLogger, mockStatusBroadcaster);
+    await markWorkerCompleted(noteId, "instruction", mockLogger, mockStatusBroadcaster);
+    await markWorkerCompleted(noteId, "ingredient", mockLogger, mockStatusBroadcaster);
+
+    // Act
+    await markImageWorkerCompleted(noteId, mockLogger, mockStatusBroadcaster);
+
+    // Assert - should broadcast the completion message since all workers are now completed
+    expect(mockStatusBroadcaster.addStatusEventAndBroadcast).toHaveBeenCalledWith({
+      importId: importId,
+      noteId,
+      status: "COMPLETED",
+      message: `Import ${importId} Completed!`,
+      context: "import_complete",
+      indentLevel: 0,
+      metadata: {
+        noteId: noteId,
+        importId: importId,
+        noteTitle: "",
+      },
+    });
+  });
 });

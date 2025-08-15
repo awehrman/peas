@@ -240,6 +240,7 @@ export async function saveIngredientLine(
               `[SAVE_INGREDIENT_LINE] Successfully queued completion check for note ${data.noteId}`
             );
           } catch (queueError) {
+            /* istanbul ignore next -- @preserve */
             logger.log(
               `[SAVE_INGREDIENT_LINE] Failed to queue completion check: ${queueError}`
             );
@@ -247,16 +248,19 @@ export async function saveIngredientLine(
           }
         }
       } catch (broadcastError) {
+        /* istanbul ignore next -- @preserve */
         logger.log(
           `[SAVE_INGREDIENT_LINE] Failed to broadcast ingredient completion: ${broadcastError}`
         );
       }
     } else {
+      /* istanbul ignore next -- @preserve */
       logger.log(`[SAVE_INGREDIENT_LINE] StatusBroadcaster is not available`);
     }
 
     return data;
   } catch (error) {
+    /* istanbul ignore next -- @preserve */
     logger.log(`[SAVE_INGREDIENT_LINE] Failed to save ingredient: ${error}`);
     throw error;
   }

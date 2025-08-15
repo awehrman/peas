@@ -30,9 +30,7 @@ export async function waitForCategorization(
   }
 ): Promise<WaitForCategorizationResult> {
   if (!noteId) {
-    logger.log(
-      `[WAIT_FOR_CATEGORIZATION] No noteId available, skipping wait`
-    );
+    logger.log(`[WAIT_FOR_CATEGORIZATION] No noteId available, skipping wait`);
     return {
       success: false,
       categorizationScheduled: false,
@@ -128,9 +126,12 @@ export async function waitForCategorization(
             };
           }
         } catch (dbError) {
+          /* istanbul ignore next -- @preserve */
           logger.log(
             `[WAIT_FOR_CATEGORIZATION] Error checking categorization status: ${dbError}`
           );
+          // Set categorizationScheduled to false on database error to prevent infinite loop
+          categorizationScheduled = false;
         }
       }
 

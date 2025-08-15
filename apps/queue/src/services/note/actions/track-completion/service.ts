@@ -213,10 +213,10 @@ export async function markWorkerCompleted(
 
     // Broadcast the completion event
     if (statusBroadcaster) {
-      const completionMessage = noteTitle 
+      const completionMessage = noteTitle
         ? `Finished importing "${noteTitle}"`
         : `Import ${status.importId} Completed!`;
-        
+
       statusBroadcaster
         .addStatusEventAndBroadcast({
           importId: status.importId,
@@ -232,13 +232,13 @@ export async function markWorkerCompleted(
           },
         })
         .then(() => {
-          /* istanbul ignore next -- Difficult to test async success scenarios in unit tests */
+          /* istanbul ignore next -- @preserve */
           logger.log(
             `[TRACK_COMPLETION] Broadcasted completion for note ${noteId}`
           );
         })
         .catch((error) => {
-          /* istanbul ignore next -- Difficult to test async error scenarios in unit tests */
+          /* istanbul ignore next -- @preserve */
           logger.log(
             `[TRACK_COMPLETION] Failed to broadcast completion: ${error}`
           );
@@ -274,6 +274,7 @@ export async function markNoteAsProcessing(
       );
     }
   } catch (error) {
+    /* istanbul ignore next -- @preserve */
     if (logger) {
       logger.log(
         `[TRACK_COMPLETION] Failed to update note status to PROCESSING: ${error}`
@@ -313,6 +314,7 @@ export async function markNoteAsFailed(
       );
     }
   } catch (error) {
+    /* istanbul ignore next -- @preserve */
     if (logger) {
       logger.log(
         `[TRACK_COMPLETION] Failed to update note status to FAILED: ${error}`

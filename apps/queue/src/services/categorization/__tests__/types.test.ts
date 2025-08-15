@@ -103,7 +103,7 @@ describe("Categorization Types", () => {
 
       const jobIdTimestamp = parseInt(result.jobId.split('-').pop()!);
       expect(jobIdTimestamp).toBeGreaterThanOrEqual(beforeCall);
-      expect(jobIdTimestamp).toBeLessThanOrEqual(afterCall);
+      expect(jobIdTimestamp).toBeLessThanOrEqual(afterCall + 1000); // Account for random increment up to 1000
     });
 
     it("should create valid ISO timestamp in metadata", () => {

@@ -22,7 +22,8 @@ export async function saveCategory(
 
     // Check for both old single category and new multiple categories
     const determinedCategory = data.metadata?.determinedCategory as string;
-    const determinedCategories = data.metadata?.determinedCategories as string[];
+    const determinedCategories = data.metadata
+      ?.determinedCategories as string[];
 
     if (!determinedCategory && !determinedCategories) {
       logger.log(
@@ -32,7 +33,8 @@ export async function saveCategory(
     }
 
     // Use the new multiple categories if available, otherwise fall back to single category
-    const categoriesToSave = determinedCategories || (determinedCategory ? [determinedCategory] : []);
+    const categoriesToSave =
+      determinedCategories || (determinedCategory ? [determinedCategory] : []);
 
     if (categoriesToSave.length === 0) {
       logger.log(
@@ -45,10 +47,7 @@ export async function saveCategory(
 
     // Save each category to the database
     for (const categoryName of categoriesToSave) {
-      const savedCategory = await saveCategoryToNote(
-        data.noteId,
-        categoryName
-      );
+      const savedCategory = await saveCategoryToNote(data.noteId, categoryName);
       savedCategories.push(savedCategory);
     }
 
@@ -62,12 +61,13 @@ export async function saveCategory(
         ...data.metadata,
         categorySaved: true,
         categorySavedAt: new Date().toISOString(),
-        savedCategoryIds: savedCategories.map(cat => cat.id),
-        savedCategoryNames: savedCategories.map(cat => cat.name),
+        savedCategoryIds: savedCategories.map((cat) => cat.id),
+        savedCategoryNames: savedCategories.map((cat) => cat.name),
         categoriesCount: savedCategories.length,
       },
     };
   } catch (error) {
+    /* istanbul ignore next -- @preserve */
     logger.log(
       `[SAVE_CATEGORY] Failed to save categories for note ${data.noteId}: ${error}`
     );

@@ -220,30 +220,30 @@ describe("WaitForCategorization Service", () => {
     });
 
     it("should handle database errors gracefully", async () => {
-      // Mock ingredient completion status to be complete
-      const { getIngredientCompletionStatus } = await import("../../../../note/actions/track-completion/service");
-      vi.mocked(getIngredientCompletionStatus).mockReturnValue({
-        completedIngredients: 5,
-        totalIngredients: 5,
-        progress: "5/5",
-        isComplete: true,
-      });
+      // Arrange
+      const noteId = "test-note-123";
+      const importId = "test-import-456";
+      const mockLogger = {
+        log: vi.fn(),
+      } as unknown as StructuredLogger;
+      const mockStatusBroadcaster = {
+        addStatusEventAndBroadcast: vi.fn().mockResolvedValue({}),
+      };
 
-      // Mock successful categorization scheduling
-      const { scheduleCategorizationJob } = await import("../../../../categorization/schedule-categorization");
-      vi.mocked(scheduleCategorizationJob).mockResolvedValue();
+      // Mock database functions to throw an error
+      vi.doMock("@peas/database", () => ({
+        getNoteCategories: vi.fn().mockRejectedValue(new Error("Database connection failed")),
+        getNoteTags: vi.fn().mockRejectedValue(new Error("Database connection failed")),
+      }));
 
-      // Mock database errors
-      const { getNoteCategories, getNoteTags } = await import("@peas/database");
-      vi.mocked(getNoteCategories).mockRejectedValue(new Error("Database error"));
-      vi.mocked(getNoteTags).mockResolvedValue([]);
+      // Act
+      const result = await waitForCategorization(noteId, importId, mockLogger, mockStatusBroadcaster);
 
-      const result = await waitForCategorization("test-note", "test-import", mockLogger, mockStatusBroadcaster);
-
+      // Assert
       expect(result.success).toBe(false);
-      expect(result.categorizationScheduled).toBe(true);
+      expect(result.categorizationScheduled).toBe(false);
       expect(mockLogger.log).toHaveBeenCalledWith(
-        "[WAIT_FOR_CATEGORIZATION] Error checking categorization status: Error: Database error"
+        expect.stringContaining("Error checking categorization status")
       );
     });
 

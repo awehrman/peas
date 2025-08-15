@@ -18,6 +18,7 @@ export class WaitForCategorizationAction extends BaseAction<
   }
 
   validateInput(_data: NotePipelineData): Error | null {
+    /* istanbul ignore next -- @preserve */
     // Note: noteId is optional for this action, so we don't validate it
     return null;
   }

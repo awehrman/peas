@@ -61,17 +61,33 @@ describe("WaitForCategorizationAction", () => {
     });
   });
 
-  describe("validateInput", () => {
-    it("should return null for valid data", () => {
-      const result = action.validateInput(mockData);
-      expect(result).toBeNull();
-    });
+  it("should validate input correctly", () => {
+    // Arrange
+    const action = new WaitForCategorizationAction();
+    const validData = {
+      noteId: "test-note-123",
+      importId: "test-import-456",
+    } as NotePipelineData;
 
-    it("should return null when noteId is missing (optional for this action)", () => {
-      const dataWithoutNoteId = { ...mockData, noteId: undefined };
-      const result = action.validateInput(dataWithoutNoteId);
-      expect(result).toBeNull();
-    });
+    // Act
+    const result = action.validateInput(validData);
+
+    // Assert
+    expect(result).toBeNull();
+  });
+
+  it("should handle validation with missing noteId", () => {
+    // Arrange
+    const action = new WaitForCategorizationAction();
+    const dataWithoutNoteId = {
+      importId: "test-import-456",
+    } as NotePipelineData;
+
+    // Act
+    const result = action.validateInput(dataWithoutNoteId);
+
+    // Assert
+    expect(result).toBeNull(); // noteId is optional for this action
   });
 
   describe("execute", () => {

@@ -48,10 +48,9 @@ export class ScheduleIngredientsAction extends BaseAction<
       startMessage: `Starting to process ingredients for note: ${data.noteId}`,
       // Completion handled via per-ingredient progress events; no final broadcast
       additionalBroadcasting: async () => {
-        // Add initial status broadcast showing 0/X ingredients
         /* istanbul ignore next -- @preserve */
+        // Add initial status broadcast showing 0/X ingredients
         if (deps.statusBroadcaster && data.file?.ingredients) {
-          /* istanbul ignore next -- @preserve */
           await deps.statusBroadcaster.addStatusEventAndBroadcast({
             importId: data.importId || "",
             noteId: data.noteId,

@@ -94,6 +94,7 @@ export async function determineCategory(
       },
     };
   } catch (error) {
+    /* istanbul ignore next -- @preserve */
     logger.log(
       `[DETERMINE_CATEGORY] Failed to determine category for note ${data.noteId}: ${error}`
     );

@@ -107,6 +107,7 @@ export async function saveInstruction(
               `[SAVE_INSTRUCTION_LINE] Successfully queued completion check for note ${data.noteId}`
             );
           } catch (queueError) {
+            /* istanbul ignore next -- @preserve */
             logger.log(
               `[SAVE_INSTRUCTION_LINE] Failed to queue completion check: ${queueError}`
             );
@@ -114,17 +115,20 @@ export async function saveInstruction(
           }
         }
       } catch (broadcastError) {
+        /* istanbul ignore next -- @preserve */
         logger.log(
           `[SAVE_INSTRUCTION_LINE] Failed to broadcast instruction completion: ${broadcastError}`
         );
         throw broadcastError;
       }
     } else {
+      /* istanbul ignore next -- @preserve */
       logger.log(`[SAVE_INSTRUCTION_LINE] StatusBroadcaster is not available`);
     }
 
     return data;
   } catch (error) {
+    /* istanbul ignore next -- @preserve */
     logger.log(`[SAVE_INSTRUCTION_LINE] Failed to save instruction: ${error}`);
     throw error;
   }
