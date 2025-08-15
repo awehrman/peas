@@ -48,7 +48,7 @@ describe("Schedule Categorization Service", () => {
     };
 
     mockQueue = {
-      add: vi.fn().mockResolvedValue(undefined),
+      add: vi.fn().mockResolvedValue({ id: "test-job-id-123" }),
     };
 
     // Import the mocked functions

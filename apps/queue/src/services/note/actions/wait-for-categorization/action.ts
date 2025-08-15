@@ -64,7 +64,7 @@ export class WaitForCategorizationAction extends BaseAction<
 
       await deps.statusBroadcaster.addStatusEventAndBroadcast({
         importId: data.importId,
-        status: result.success ? "COMPLETED" : "WARNING",
+        status: result.success ? "COMPLETED" : "FAILED",
         message,
         context: "wait_for_categorization_complete",
         noteId: data.noteId,

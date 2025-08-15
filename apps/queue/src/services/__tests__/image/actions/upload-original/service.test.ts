@@ -117,7 +117,7 @@ describe("Upload Original Service", () => {
           "[UPLOAD_ORIGINAL] Generated R2 key: originals/test-import-456/image.jpg"
         );
         expect(mockLogger.log).toHaveBeenCalledWith(
-          "[UPLOAD_ORIGINAL] Successfully uploaded to R2"
+          "[UPLOAD_ORIGINAL] ✅ Successfully uploaded to R2"
         );
         expect(mockLogger.log).toHaveBeenCalledWith(
           "[UPLOAD_ORIGINAL] R2 URL: https://r2.example.com/originals/test-import-456/image.jpg"
@@ -249,7 +249,7 @@ describe("Upload Original Service", () => {
         );
 
         expect(mockLogger.log).toHaveBeenCalledWith(
-          "[UPLOAD_ORIGINAL] Failed to upload to R2: Input file not found or not accessible: /path/to/image.jpg"
+          "[UPLOAD_ORIGINAL] ❌ Failed to upload to R2: Input file not found or not accessible: /path/to/image.jpg"
         );
         expect(mockLogger.log).toHaveBeenCalledWith(
           "[UPLOAD_ORIGINAL] Continuing with local processing"
@@ -273,7 +273,7 @@ describe("Upload Original Service", () => {
         );
 
         expect(mockLogger.log).toHaveBeenCalledWith(
-          "[UPLOAD_ORIGINAL] Failed to upload to R2: Input file not found or not accessible: /path/to/image.jpg"
+          "[UPLOAD_ORIGINAL] ❌ Failed to upload to R2: Input file not found or not accessible: /path/to/image.jpg"
         );
         expect(mockLogger.log).toHaveBeenCalledWith(
           "[UPLOAD_ORIGINAL] Continuing with local processing"
@@ -298,7 +298,7 @@ describe("Upload Original Service", () => {
         );
 
         expect(mockLogger.log).toHaveBeenCalledWith(
-          "[UPLOAD_ORIGINAL] Failed to upload to R2: R2 upload failed"
+          "[UPLOAD_ORIGINAL] ❌ Failed to upload to R2: R2 upload failed"
         );
         expect(mockLogger.log).toHaveBeenCalledWith(
           "[UPLOAD_ORIGINAL] Continuing with local processing"
@@ -321,7 +321,7 @@ describe("Upload Original Service", () => {
         );
 
         expect(mockLogger.log).toHaveBeenCalledWith(
-          "[UPLOAD_ORIGINAL] Failed to upload to R2: String error"
+          "[UPLOAD_ORIGINAL] ❌ Failed to upload to R2: String error"
         );
         expect(mockLogger.log).toHaveBeenCalledWith(
           "[UPLOAD_ORIGINAL] Continuing with local processing"

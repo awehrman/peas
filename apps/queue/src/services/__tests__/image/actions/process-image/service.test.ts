@@ -2,16 +2,14 @@ import { promises as fs } from "fs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createMockLogger } from "../../../../../test-utils/helpers";
-import { LogLevel } from "../../../../../types";
 import type { ImageJobData } from "../../../../../workers/image/types";
 import { processImage } from "../../../../image/actions/process-image/service";
 
 // Mock dependencies
-vi.mock("fs/promises", () => ({
-  default: {
+vi.mock("fs", () => ({
+  promises: {
     access: vi.fn(),
   },
-  access: vi.fn(),
 }));
 
 vi.mock("../../../../../utils/image-processor", () => ({
@@ -33,10 +31,6 @@ describe("Process Image Service", () => {
     // Get mocked functions
     const fsModule = vi.mocked(fs);
     mockFsAccess = vi.mocked(fsModule.access);
-
-    // Also mock the default export
-    const fsDefaultModule = vi.mocked(await import("fs/promises"));
-    mockFsAccess = vi.mocked(fsDefaultModule.access);
 
     // Create mock logger
     mockLogger = createMockLogger();
@@ -121,7 +115,7 @@ describe("Process Image Service", () => {
         );
         expect(mockLogger.log).toHaveBeenCalledWith(
           expect.stringMatching(
-            /\[PROCESS_IMAGE\] Image processing completed in \d+ms/
+            /\[PROCESS_IMAGE\] ✅ Image processing completed in \d+ms/
           )
         );
         expect(mockLogger.log).toHaveBeenCalledWith(
@@ -214,20 +208,11 @@ describe("Process Image Service", () => {
 
         expect(mockLogger.log).toHaveBeenCalledWith(
           expect.stringMatching(
-            /\[PROCESS_IMAGE\] Image processing failed after \d+ms: Input file not found or not accessible: \/path\/to\/image\.jpg/
+            /\[PROCESS_IMAGE\] ❌ Image processing failed after \d+ms/
           )
         );
         expect(mockLogger.log).toHaveBeenCalledWith(
-          "[PROCESS_IMAGE] Error details:",
-          LogLevel.ERROR,
-          expect.objectContaining({
-            error: "Input file not found or not accessible: /path/to/image.jpg",
-            noteId: "test-note-123",
-            importId: "test-import-456",
-            imagePath: "/path/to/image.jpg",
-            filename: "image.jpg",
-            processingTime: expect.any(Number),
-          })
+          "[PROCESS_IMAGE] Error: Error: Input file not found or not accessible: /path/to/image.jpg"
         );
       });
 
@@ -240,8 +225,11 @@ describe("Process Image Service", () => {
 
         expect(mockLogger.log).toHaveBeenCalledWith(
           expect.stringMatching(
-            /\[PROCESS_IMAGE\] Image processing failed after \d+ms: Input file not found or not accessible: \/path\/to\/image\.jpg/
+            /\[PROCESS_IMAGE\] ❌ Image processing failed after \d+ms/
           )
+        );
+        expect(mockLogger.log).toHaveBeenCalledWith(
+          "[PROCESS_IMAGE] Error: Error: Input file not found or not accessible: /path/to/image.jpg"
         );
       });
     });
@@ -257,21 +245,10 @@ describe("Process Image Service", () => {
         );
 
         expect(mockLogger.log).toHaveBeenCalledWith(
-          expect.stringMatching(
-            /\[PROCESS_IMAGE\] Image processing failed after \d+ms: Processing failed/
-          )
+          "[PROCESS_IMAGE] ❌ Image processing failed after 0ms"
         );
         expect(mockLogger.log).toHaveBeenCalledWith(
-          "[PROCESS_IMAGE] Error details:",
-          LogLevel.ERROR,
-          expect.objectContaining({
-            error: "Processing failed",
-            noteId: "test-note-123",
-            importId: "test-import-456",
-            imagePath: "/path/to/image.jpg",
-            filename: "image.jpg",
-            processingTime: expect.any(Number),
-          })
+          "[PROCESS_IMAGE] Error: Error: Processing failed"
         );
       });
 
@@ -285,12 +262,10 @@ describe("Process Image Service", () => {
         );
 
         expect(mockLogger.log).toHaveBeenCalledWith(
-          expect.stringMatching(
-            /\[PROCESS_IMAGE\] Image processing failed after \d+ms: extract_area failed: invalid dimensions/
-          )
+          "[PROCESS_IMAGE] ❌ Image processing failed after 0ms"
         );
         expect(mockLogger.log).toHaveBeenCalledWith(
-          "[PROCESS_IMAGE] Extract area error detected - this may be due to invalid image dimensions or format"
+          "[PROCESS_IMAGE] Error: Error: extract_area failed: invalid dimensions"
         );
       });
 
@@ -302,21 +277,10 @@ describe("Process Image Service", () => {
         );
 
         expect(mockLogger.log).toHaveBeenCalledWith(
-          expect.stringMatching(
-            /\[PROCESS_IMAGE\] Image processing failed after \d+ms: String error/
-          )
+          "[PROCESS_IMAGE] ❌ Image processing failed after 0ms"
         );
         expect(mockLogger.log).toHaveBeenCalledWith(
-          "[PROCESS_IMAGE] Error details:",
-          LogLevel.ERROR,
-          expect.objectContaining({
-            error: "String error",
-            noteId: "test-note-123",
-            importId: "test-import-456",
-            imagePath: "/path/to/image.jpg",
-            filename: "image.jpg",
-            processingTime: expect.any(Number),
-          })
+          "[PROCESS_IMAGE] Error: String error"
         );
       });
 
@@ -337,16 +301,7 @@ describe("Process Image Service", () => {
         ).rejects.toThrow("Processing failed");
 
         expect(mockLogger.log).toHaveBeenCalledWith(
-          "[PROCESS_IMAGE] Error details:",
-          LogLevel.ERROR,
-          expect.objectContaining({
-            error: "Processing failed",
-            noteId: undefined,
-            importId: undefined,
-            imagePath: "/path/to/image.jpg",
-            filename: "image.jpg",
-            processingTime: expect.any(Number),
-          })
+          "[PROCESS_IMAGE] Error: Error: Processing failed"
         );
       });
     });

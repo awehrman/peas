@@ -26,10 +26,21 @@ export class ImageWorker extends BaseWorker<
   }
 
   protected createActionPipeline(
-    _data: ImageJobData,
-    _context: ActionContext
+    data: ImageJobData,
+    context: ActionContext
   ): WorkerAction<ImageJobData, ImageWorkerDependencies, ImageJobData>[] {
     console.log("[IMAGE_WORKER] Creating action pipeline");
+    console.log(`[IMAGE_WORKER] Job data:`, {
+      noteId: data.noteId,
+      importId: data.importId,
+      imagePath: data.imagePath,
+      filename: data.filename,
+    });
+    console.log(`[IMAGE_WORKER] Context:`, context ? {
+      jobId: context.jobId,
+      retryCount: context.retryCount,
+    } : 'null');
+
     const pipeline = [
       this.actionFactory.create(ActionName.UPLOAD_ORIGINAL, this.dependencies),
       this.actionFactory.create(ActionName.PROCESS_IMAGE, this.dependencies),

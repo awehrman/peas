@@ -8,15 +8,28 @@ import {
 import type { ImageJobData } from "../../../../../workers/image/types";
 import { updateImageCompletedStatus } from "../../../../image/actions/image-completed-status/service";
 
+// Mock the track-completion module
+vi.mock("../../../../note/actions/track-completion/service", () => ({
+  markImageJobCompleted: vi.fn(),
+}));
+
 describe("updateImageCompletedStatus", () => {
   let mockLogger: ReturnType<typeof createMockLogger>;
   let mockServiceContainer: IServiceContainer;
   let mockData: ImageJobData;
   let mockPrisma: { image: { update: ReturnType<typeof vi.fn> } };
-  let mockStatusBroadcaster: { addStatusEventAndBroadcast: ReturnType<typeof vi.fn> };
+  let mockStatusBroadcaster: {
+    addStatusEventAndBroadcast: ReturnType<typeof vi.fn>;
+  };
+  let mockMarkImageJobCompleted: ReturnType<typeof vi.fn>;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
+
+    // Import and set up the mock
+    const { markImageJobCompleted } = await import("../../../../note/actions/track-completion/service");
+    mockMarkImageJobCompleted = vi.mocked(markImageJobCompleted);
+    mockMarkImageJobCompleted.mockResolvedValue(undefined);
 
     // Create mock logger
     mockLogger = createMockLogger();
@@ -40,7 +53,7 @@ describe("updateImageCompletedStatus", () => {
       database: {
         prisma: mockPrisma,
       },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any;
 
     // Create mock data
@@ -100,7 +113,7 @@ describe("updateImageCompletedStatus", () => {
         "[IMAGE_COMPLETED_STATUS] Updating completion status for note: test-note-123"
       );
       expect(mockLogger.log).toHaveBeenCalledWith(
-        "[IMAGE_COMPLETED_STATUS] Image status updated: test-image-789"
+        "[IMAGE_COMPLETED_STATUS] ✅ Image status updated: test-image-789"
       );
       expect(mockLogger.log).toHaveBeenCalledWith(
         "[IMAGE_COMPLETED_STATUS] Processing status: COMPLETED"
@@ -110,7 +123,7 @@ describe("updateImageCompletedStatus", () => {
       expect(result).toEqual(mockData);
     });
 
-    it("should broadcast completion when statusBroadcaster is available", async () => {
+    it("should not broadcast completion when statusBroadcaster is available (uses progress tracking instead)", async () => {
       const result = await updateImageCompletedStatus(
         mockData,
         mockServiceContainer,
@@ -118,38 +131,14 @@ describe("updateImageCompletedStatus", () => {
         mockStatusBroadcaster
       );
 
-      // Verify status broadcaster was called
+      // Verify status broadcaster was not called (service now uses progress tracking)
       expect(
         mockStatusBroadcaster.addStatusEventAndBroadcast
-      ).toHaveBeenCalledTimes(1);
-      expect(
-        mockStatusBroadcaster.addStatusEventAndBroadcast
-      ).toHaveBeenCalledWith({
-        importId: "test-import-456",
-        noteId: "test-note-123",
-        status: "COMPLETED",
-        message: "Added image!",
-        context: "image_processing",
-        indentLevel: 1,
-        metadata: {
-          imageId: "test-image-789",
-          processingStatus: "COMPLETED",
-          originalSize: 1024,
-          thumbnailSize: 512,
-          metadata: {
-            width: 1920,
-            height: 1080,
-            format: "jpeg",
-          },
-        },
-      });
+      ).not.toHaveBeenCalled();
 
-      // Verify logging for broadcasting
+      // Verify logging for progress tracking
       expect(mockLogger.log).toHaveBeenCalledWith(
-        "[IMAGE_COMPLETED_STATUS] StatusBroadcaster is available, broadcasting completion"
-      );
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        "[IMAGE_COMPLETED_STATUS] Successfully broadcasted image completion for image test-image-789"
+        "[IMAGE_COMPLETED_STATUS] Skipping individual image broadcast, using progress tracking instead"
       );
 
       expect(result).toEqual(mockData);
@@ -168,9 +157,9 @@ describe("updateImageCompletedStatus", () => {
         mockStatusBroadcaster.addStatusEventAndBroadcast
       ).not.toHaveBeenCalled();
 
-      // Verify logging for missing broadcaster
+      // Verify logging for progress tracking (service now uses progress tracking regardless)
       expect(mockLogger.log).toHaveBeenCalledWith(
-        "[IMAGE_COMPLETED_STATUS] StatusBroadcaster is not available"
+        "[IMAGE_COMPLETED_STATUS] Skipping individual image broadcast, using progress tracking instead"
       );
 
       expect(result).toEqual(mockData);
@@ -259,15 +248,13 @@ describe("updateImageCompletedStatus", () => {
 
       // Verify error logging
       expect(mockLogger.log).toHaveBeenCalledWith(
-        "[IMAGE_COMPLETED_STATUS] Failed to update completion status: Error: Database connection failed"
+        "[IMAGE_COMPLETED_STATUS] ❌ Failed to update completion status: Error: Database connection failed"
       );
     });
 
     it("should handle status broadcaster errors gracefully", async () => {
       const broadcastError = new Error("Broadcast failed");
-      mockStatusBroadcaster.addStatusEventAndBroadcast.mockRejectedValue(
-        broadcastError
-      );
+      mockMarkImageJobCompleted.mockRejectedValue(broadcastError);
 
       const result = await updateImageCompletedStatus(
         mockData,
@@ -276,14 +263,16 @@ describe("updateImageCompletedStatus", () => {
         mockStatusBroadcaster
       );
 
-      // Verify status broadcaster was called but error was handled
-      expect(
-        mockStatusBroadcaster.addStatusEventAndBroadcast
-      ).toHaveBeenCalledTimes(1);
+      // Verify markImageJobCompleted was called
+      expect(mockMarkImageJobCompleted).toHaveBeenCalledWith(
+        mockData.noteId,
+        mockLogger,
+        mockStatusBroadcaster
+      );
 
       // Verify error logging for broadcast failure
       expect(mockLogger.log).toHaveBeenCalledWith(
-        "[IMAGE_COMPLETED_STATUS] Failed to broadcast image completion: Error: Broadcast failed"
+        "[IMAGE_COMPLETED_STATUS] ❌ Failed to mark image job as completed: Error: Broadcast failed"
       );
 
       // Verify data is still returned despite broadcast error
@@ -375,19 +364,10 @@ describe("updateImageCompletedStatus", () => {
         mockStatusBroadcaster
       );
 
-      const broadcastCall =
-        mockStatusBroadcaster.addStatusEventAndBroadcast.mock.calls[0]?.[0];
-      expect(broadcastCall.metadata).toEqual({
-        imageId: "test-image-789",
-        processingStatus: "COMPLETED",
-        originalSize: 2048,
-        thumbnailSize: 1024,
-        metadata: {
-          width: 3840,
-          height: 2160,
-          format: "webp",
-        },
-      });
+      // Service no longer calls status broadcaster directly (uses progress tracking instead)
+      expect(
+        mockStatusBroadcaster.addStatusEventAndBroadcast
+      ).not.toHaveBeenCalled();
     });
 
     it("should handle status broadcaster with different return types", async () => {
@@ -405,9 +385,10 @@ describe("updateImageCompletedStatus", () => {
         customBroadcaster
       );
 
+      // Service no longer calls status broadcaster directly (uses progress tracking instead)
       expect(
         customBroadcaster.addStatusEventAndBroadcast
-      ).toHaveBeenCalledTimes(1);
+      ).not.toHaveBeenCalled();
       expect(result).toEqual(mockData);
     });
   });
@@ -433,7 +414,7 @@ describe("updateImageCompletedStatus", () => {
       );
 
       expect(mockLogger.log).toHaveBeenCalledWith(
-        "[IMAGE_COMPLETED_STATUS] Image status updated: test-image-789"
+        "[IMAGE_COMPLETED_STATUS] ✅ Image status updated: test-image-789"
       );
       expect(mockLogger.log).toHaveBeenCalledWith(
         "[IMAGE_COMPLETED_STATUS] Processing status: COMPLETED"

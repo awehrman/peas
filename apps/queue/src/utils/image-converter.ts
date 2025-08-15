@@ -76,18 +76,24 @@ export async function convertBinaryImageToJpg(
  * Converts a binary image file to a standard format (PNG by default)
  * @param inputPath - Path to the input image file
  * @param logger - Logger instance for debugging
+ * @param desiredFilename - Optional desired filename for the output file
  * @returns Promise<{ success: boolean; outputPath?: string; newFilename?: string }>
  */
 export async function convertBinaryImageToStandardFormat(
   inputPath: string,
-  logger: StructuredLogger
+  logger: StructuredLogger,
+  desiredFilename?: string
 ): Promise<{ success: boolean; outputPath?: string; newFilename?: string }> {
   try {
     const inputDir = path.dirname(inputPath);
-    const inputName = path.basename(inputPath, path.extname(inputPath));
+    
+    // Use desired filename if provided, otherwise use input name
+    const baseName = desiredFilename 
+      ? path.basename(desiredFilename, path.extname(desiredFilename))
+      : path.basename(inputPath, path.extname(inputPath));
 
     // Try PNG first (better for images with transparency)
-    const pngPath = path.join(inputDir, `${inputName}.png`);
+    const pngPath = path.join(inputDir, `${baseName}.png`);
     const pngSuccess = await convertBinaryImageToPng(
       inputPath,
       pngPath,
@@ -98,13 +104,13 @@ export async function convertBinaryImageToStandardFormat(
       return {
         success: true,
         outputPath: pngPath,
-        newFilename: `${inputName}.png`,
+        newFilename: `${baseName}.png`,
       };
     }
 
     // If PNG fails, try JPG
     logger.log(`[IMAGE_CONVERTER] PNG conversion failed, trying JPG...`);
-    const jpgPath = path.join(inputDir, `${inputName}.jpg`);
+    const jpgPath = path.join(inputDir, `${baseName}.jpg`);
     const jpgSuccess = await convertBinaryImageToJpg(
       inputPath,
       jpgPath,
@@ -115,7 +121,7 @@ export async function convertBinaryImageToStandardFormat(
       return {
         success: true,
         outputPath: jpgPath,
-        newFilename: `${inputName}.jpg`,
+        newFilename: `${baseName}.jpg`,
       };
     }
 

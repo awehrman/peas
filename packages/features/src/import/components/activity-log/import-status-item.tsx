@@ -17,17 +17,14 @@ export function ImportStatusItem({
         <div className="flex items-center space-x-2">
           <div className="text-lg font-medium">
             {importStatus.status === "completed"
-              ? `Added Note ${
-                  importStatus.noteTitle
-                    ? `"${
-                        importStatus.noteTitle.length > 30
-                          ? importStatus.noteTitle.substring(0, 30) + "..."
-                          : importStatus.noteTitle
-                      }"`
-                    : importStatus.importId.slice(0, 8)
-                }`
-              : `Importing Note ${importStatus.importId.slice(0, 8)}`}
+              ? `Added Note (Import: ${importStatus.importId.slice(0, 8)})`
+              : `Importing Note (Import: ${importStatus.importId.slice(0, 8)})`}
           </div>
+          {importStatus.noteId && (
+            <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+              Import: {importStatus.importId.slice(0, 8)}
+            </div>
+          )}
           {importStatus.status === "completed" && (
             <div className="text-green-600">✅</div>
           )}
@@ -189,9 +186,11 @@ export function ImportStatusItem({
             }
           >
             {importStatus.steps.duplicates.status === "completed"
-              ? (importStatus.steps.duplicates.message?.includes("Duplicate note identified") 
-                  ? "Duplicate note identified!"
-                  : "Verified no duplicates!")
+              ? importStatus.steps.duplicates.message?.includes(
+                  "Duplicate note identified"
+                )
+                ? "Duplicate note identified!"
+                : "Verified no duplicates!"
               : "Checking for duplicate notes..."}
           </div>
           {importStatus.steps.duplicates.error && (
@@ -214,7 +213,8 @@ export function ImportStatusItem({
             }
           >
             {importStatus.steps.categorization.status === "completed"
-              ? (importStatus.steps.categorization.message || "Category determined!")
+              ? importStatus.steps.categorization.message ||
+                "Category determined!"
               : "Determining recipe category..."}
           </div>
           {importStatus.steps.categorization.error && (
@@ -231,13 +231,11 @@ export function ImportStatusItem({
           </div>
           <div
             className={
-              importStatus.steps.tags.status === "failed"
-                ? "text-red-600"
-                : ""
+              importStatus.steps.tags.status === "failed" ? "text-red-600" : ""
             }
           >
             {importStatus.steps.tags.status === "completed"
-              ? (importStatus.steps.tags.message || "Tags determined!")
+              ? importStatus.steps.tags.message || "Tags determined!"
               : "Determining recipe tags..."}
           </div>
           {importStatus.steps.tags.error && (

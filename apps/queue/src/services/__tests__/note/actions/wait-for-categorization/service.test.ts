@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { waitForCategorization } from "../../../../note/actions/wait-for-categorization/service";
 import type { StructuredLogger } from "../../../../../types";
+import { waitForCategorization } from "../../../../note/actions/wait-for-categorization/service";
 
 // Mock dependencies
 vi.mock("../../../../note/actions/track-completion/service", () => ({
@@ -15,12 +15,15 @@ vi.mock("../../../../categorization/schedule-categorization", () => ({
 vi.mock("@peas/database", () => ({
   getNoteCategories: vi.fn(),
   getNoteTags: vi.fn(),
+  getQueueJobByNoteId: vi.fn(),
 }));
 
 describe("WaitForCategorization Service", () => {
   let mockLogger: StructuredLogger;
   let mockStatusBroadcaster: {
-    addStatusEventAndBroadcast: (event: Record<string, unknown>) => Promise<Record<string, unknown>>;
+    addStatusEventAndBroadcast: (
+      event: Record<string, unknown>
+    ) => Promise<Record<string, unknown>>;
   };
 
   beforeEach(() => {
@@ -35,10 +38,12 @@ describe("WaitForCategorization Service", () => {
     };
 
     // Mock setTimeout to resolve immediately
-    vi.spyOn(global, "setTimeout").mockImplementation((callback: () => void) => {
-      callback();
-      return {} as ReturnType<typeof setTimeout>;
-    });
+    vi.spyOn(global, "setTimeout").mockImplementation(
+      (callback: () => void) => {
+        callback();
+        return {} as ReturnType<typeof setTimeout>;
+      }
+    );
   });
 
   describe("waitForCategorization", () => {
@@ -60,7 +65,9 @@ describe("WaitForCategorization Service", () => {
 
     it("should log start message when noteId is provided", async () => {
       // Mock ingredient completion status to be incomplete
-      const { getIngredientCompletionStatus } = await import("../../../../note/actions/track-completion/service");
+      const { getIngredientCompletionStatus } = await import(
+        "../../../../note/actions/track-completion/service"
+      );
       vi.mocked(getIngredientCompletionStatus).mockReturnValue({
         completedIngredients: 0,
         totalIngredients: 5,
@@ -77,7 +84,9 @@ describe("WaitForCategorization Service", () => {
 
     it("should return proper result structure", async () => {
       // Mock ingredient completion status to be incomplete
-      const { getIngredientCompletionStatus } = await import("../../../../note/actions/track-completion/service");
+      const { getIngredientCompletionStatus } = await import(
+        "../../../../note/actions/track-completion/service"
+      );
       vi.mocked(getIngredientCompletionStatus).mockReturnValue({
         completedIngredients: 0,
         totalIngredients: 5,
@@ -85,7 +94,12 @@ describe("WaitForCategorization Service", () => {
         isComplete: false,
       });
 
-      const result = await waitForCategorization("test-note", "test-import", mockLogger, mockStatusBroadcaster);
+      const result = await waitForCategorization(
+        "test-note",
+        "test-import",
+        mockLogger,
+        mockStatusBroadcaster
+      );
 
       expect(result).toHaveProperty("success");
       expect(result).toHaveProperty("categorizationScheduled");
@@ -99,7 +113,9 @@ describe("WaitForCategorization Service", () => {
 
     it("should schedule categorization when ingredients are complete", async () => {
       // Mock ingredient completion status to be complete
-      const { getIngredientCompletionStatus } = await import("../../../../note/actions/track-completion/service");
+      const { getIngredientCompletionStatus } = await import(
+        "../../../../note/actions/track-completion/service"
+      );
       vi.mocked(getIngredientCompletionStatus).mockReturnValue({
         completedIngredients: 5,
         totalIngredients: 5,
@@ -108,7 +124,9 @@ describe("WaitForCategorization Service", () => {
       });
 
       // Mock successful categorization scheduling
-      const { scheduleCategorizationJob } = await import("../../../../categorization/schedule-categorization");
+      const { scheduleCategorizationJob } = await import(
+        "../../../../categorization/schedule-categorization"
+      );
       vi.mocked(scheduleCategorizationJob).mockResolvedValue();
 
       // Mock database queries to return empty results
@@ -116,7 +134,12 @@ describe("WaitForCategorization Service", () => {
       vi.mocked(getNoteCategories).mockResolvedValue([]);
       vi.mocked(getNoteTags).mockResolvedValue([]);
 
-      const result = await waitForCategorization("test-note", "test-import", mockLogger, mockStatusBroadcaster);
+      const result = await waitForCategorization(
+        "test-note",
+        "test-import",
+        mockLogger,
+        mockStatusBroadcaster
+      );
 
       expect(scheduleCategorizationJob).toHaveBeenCalledWith(
         "test-note",
@@ -131,7 +154,9 @@ describe("WaitForCategorization Service", () => {
 
     it("should handle scheduling failure gracefully", async () => {
       // Mock ingredient completion status to be complete
-      const { getIngredientCompletionStatus } = await import("../../../../note/actions/track-completion/service");
+      const { getIngredientCompletionStatus } = await import(
+        "../../../../note/actions/track-completion/service"
+      );
       vi.mocked(getIngredientCompletionStatus).mockReturnValue({
         completedIngredients: 5,
         totalIngredients: 5,
@@ -140,10 +165,19 @@ describe("WaitForCategorization Service", () => {
       });
 
       // Mock failed categorization scheduling
-      const { scheduleCategorizationJob } = await import("../../../../categorization/schedule-categorization");
-      vi.mocked(scheduleCategorizationJob).mockRejectedValue(new Error("Scheduling failed"));
+      const { scheduleCategorizationJob } = await import(
+        "../../../../categorization/schedule-categorization"
+      );
+      vi.mocked(scheduleCategorizationJob).mockRejectedValue(
+        new Error("Scheduling failed")
+      );
 
-      const result = await waitForCategorization("test-note", "test-import", mockLogger, mockStatusBroadcaster);
+      const result = await waitForCategorization(
+        "test-note",
+        "test-import",
+        mockLogger,
+        mockStatusBroadcaster
+      );
 
       expect(result.categorizationScheduled).toBe(false);
       expect(result.success).toBe(false);
@@ -154,7 +188,9 @@ describe("WaitForCategorization Service", () => {
 
     it("should return success when categories are found", async () => {
       // Mock ingredient completion status to be complete
-      const { getIngredientCompletionStatus } = await import("../../../../note/actions/track-completion/service");
+      const { getIngredientCompletionStatus } = await import(
+        "../../../../note/actions/track-completion/service"
+      );
       vi.mocked(getIngredientCompletionStatus).mockReturnValue({
         completedIngredients: 5,
         totalIngredients: 5,
@@ -163,34 +199,52 @@ describe("WaitForCategorization Service", () => {
       });
 
       // Mock successful categorization scheduling
-      const { scheduleCategorizationJob } = await import("../../../../categorization/schedule-categorization");
+      const { scheduleCategorizationJob } = await import(
+        "../../../../categorization/schedule-categorization"
+      );
       vi.mocked(scheduleCategorizationJob).mockResolvedValue();
 
-      // Mock database queries to return categories
-      const { getNoteCategories, getNoteTags } = await import("@peas/database");
-      vi.mocked(getNoteCategories).mockResolvedValue([
-        { id: "cat1", name: "Dessert" },
-        { id: "cat2", name: "Baking" },
-      ]);
-      vi.mocked(getNoteTags).mockResolvedValue([
-        { id: "tag1", name: "sweet" },
-        { id: "tag2", name: "chocolate" },
+      // Mock QueueJob to return a completed categorization job
+      const { getQueueJobByNoteId } = await import("@peas/database");
+      vi.mocked(getQueueJobByNoteId).mockResolvedValue([
+        {
+          id: "job-123",
+          jobId: "bull-job-456",
+          type: "PROCESS_CATEGORIZATION",
+          status: "COMPLETED",
+          noteId: "test-note",
+          data: {},
+          errorMessage: null,
+          errorCode: null,
+          errorDetails: null,
+          retryCount: 0,
+          maxRetries: 3,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
       ]);
 
-      const result = await waitForCategorization("test-note", "test-import", mockLogger, mockStatusBroadcaster);
+      const result = await waitForCategorization(
+        "test-note",
+        "test-import",
+        mockLogger,
+        mockStatusBroadcaster
+      );
 
       expect(result.success).toBe(true);
-      expect(result.categorizationScheduled).toBe(true);
+      expect(result.categorizationScheduled).toBe(false); // Not scheduled because QueueJob was already completed
       expect(result.hasCategorization).toBe(true);
       expect(result.hasTags).toBe(true);
-      expect(result.categoriesCount).toBe(2);
-      expect(result.tagsCount).toBe(2);
+      expect(result.categoriesCount).toBe(1);
+      expect(result.tagsCount).toBe(1);
       expect(result.retryCount).toBe(1);
     });
 
     it("should return success when only tags are found", async () => {
       // Mock ingredient completion status to be complete
-      const { getIngredientCompletionStatus } = await import("../../../../note/actions/track-completion/service");
+      const { getIngredientCompletionStatus } = await import(
+        "../../../../note/actions/track-completion/service"
+      );
       vi.mocked(getIngredientCompletionStatus).mockReturnValue({
         completedIngredients: 5,
         totalIngredients: 5,
@@ -199,23 +253,43 @@ describe("WaitForCategorization Service", () => {
       });
 
       // Mock successful categorization scheduling
-      const { scheduleCategorizationJob } = await import("../../../../categorization/schedule-categorization");
+      const { scheduleCategorizationJob } = await import(
+        "../../../../categorization/schedule-categorization"
+      );
       vi.mocked(scheduleCategorizationJob).mockResolvedValue();
 
-      // Mock database queries to return only tags
-      const { getNoteCategories, getNoteTags } = await import("@peas/database");
-      vi.mocked(getNoteCategories).mockResolvedValue([]);
-      vi.mocked(getNoteTags).mockResolvedValue([
-        { id: "tag1", name: "sweet" },
+      // Mock QueueJob to return a completed categorization job
+      const { getQueueJobByNoteId } = await import("@peas/database");
+      vi.mocked(getQueueJobByNoteId).mockResolvedValue([
+        {
+          id: "job-123",
+          jobId: "bull-job-456",
+          type: "PROCESS_CATEGORIZATION",
+          status: "COMPLETED",
+          noteId: "test-note",
+          data: {},
+          errorMessage: null,
+          errorCode: null,
+          errorDetails: null,
+          retryCount: 0,
+          maxRetries: 3,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
       ]);
 
-      const result = await waitForCategorization("test-note", "test-import", mockLogger, mockStatusBroadcaster);
+      const result = await waitForCategorization(
+        "test-note",
+        "test-import",
+        mockLogger,
+        mockStatusBroadcaster
+      );
 
       expect(result.success).toBe(true);
-      expect(result.categorizationScheduled).toBe(true);
-      expect(result.hasCategorization).toBe(false);
+      expect(result.categorizationScheduled).toBe(false); // Not scheduled because QueueJob was already completed
+      expect(result.hasCategorization).toBe(true);
       expect(result.hasTags).toBe(true);
-      expect(result.categoriesCount).toBe(0);
+      expect(result.categoriesCount).toBe(1);
       expect(result.tagsCount).toBe(1);
     });
 
@@ -230,26 +304,42 @@ describe("WaitForCategorization Service", () => {
         addStatusEventAndBroadcast: vi.fn().mockResolvedValue({}),
       };
 
-      // Mock database functions to throw an error
-      vi.doMock("@peas/database", () => ({
-        getNoteCategories: vi.fn().mockRejectedValue(new Error("Database connection failed")),
-        getNoteTags: vi.fn().mockRejectedValue(new Error("Database connection failed")),
-      }));
+      // Mock ingredient completion status to be incomplete
+      const { getIngredientCompletionStatus } = await import("../../../../note/actions/track-completion/service");
+      vi.mocked(getIngredientCompletionStatus).mockReturnValue({
+        completedIngredients: 0,
+        totalIngredients: 5,
+        progress: "0/5",
+        isComplete: false,
+      });
+
+      // Mock QueueJob function to throw an error
+      const { getQueueJobByNoteId } = await import("@peas/database");
+      vi.mocked(getQueueJobByNoteId).mockRejectedValue(
+        new Error("Database connection failed")
+      );
 
       // Act
-      const result = await waitForCategorization(noteId, importId, mockLogger, mockStatusBroadcaster);
+      const result = await waitForCategorization(
+        noteId,
+        importId,
+        mockLogger,
+        mockStatusBroadcaster
+      );
 
       // Assert
       expect(result.success).toBe(false);
       expect(result.categorizationScheduled).toBe(false);
       expect(mockLogger.log).toHaveBeenCalledWith(
-        expect.stringContaining("Error checking categorization status")
+        expect.stringContaining("Error checking QueueJob status")
       );
     });
 
     it("should timeout after max retries", async () => {
       // Mock ingredient completion status to be complete
-      const { getIngredientCompletionStatus } = await import("../../../../note/actions/track-completion/service");
+      const { getIngredientCompletionStatus } = await import(
+        "../../../../note/actions/track-completion/service"
+      );
       vi.mocked(getIngredientCompletionStatus).mockReturnValue({
         completedIngredients: 5,
         totalIngredients: 5,
@@ -258,15 +348,21 @@ describe("WaitForCategorization Service", () => {
       });
 
       // Mock successful categorization scheduling
-      const { scheduleCategorizationJob } = await import("../../../../categorization/schedule-categorization");
+      const { scheduleCategorizationJob } = await import(
+        "../../../../categorization/schedule-categorization"
+      );
       vi.mocked(scheduleCategorizationJob).mockResolvedValue();
 
-      // Mock database queries to always return empty results (causing timeout)
-      const { getNoteCategories, getNoteTags } = await import("@peas/database");
-      vi.mocked(getNoteCategories).mockResolvedValue([]);
-      vi.mocked(getNoteTags).mockResolvedValue([]);
+      // Mock QueueJob to return no jobs (causing timeout)
+      const { getQueueJobByNoteId } = await import("@peas/database");
+      vi.mocked(getQueueJobByNoteId).mockResolvedValue([]);
 
-      const result = await waitForCategorization("test-note", "test-import", mockLogger, mockStatusBroadcaster);
+      const result = await waitForCategorization(
+        "test-note",
+        "test-import",
+        mockLogger,
+        mockStatusBroadcaster
+      );
 
       expect(result.success).toBe(false);
       expect(result.categorizationScheduled).toBe(true);

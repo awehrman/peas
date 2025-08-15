@@ -183,7 +183,7 @@ describe("WaitForCategorizationAction", () => {
         mockDeps.statusBroadcaster?.addStatusEventAndBroadcast
       ).toHaveBeenNthCalledWith(2, {
         importId: "test-import-id",
-        status: "WARNING",
+        status: "FAILED",
         message: "Categorization timeout - continuing anyway",
         context: "wait_for_categorization_complete",
         noteId: "test-note-id",

@@ -18,6 +18,7 @@ export interface FileUploadProps {
   className?: string;
   disabled?: boolean;
   multiple?: boolean;
+  allowDirectories?: boolean;
 }
 
 export function FileUpload({
@@ -30,6 +31,7 @@ export function FileUpload({
   className = "",
   disabled = false,
   multiple = true,
+  allowDirectories = false,
 }: FileUploadProps) {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
@@ -63,6 +65,10 @@ export function FileUpload({
     document.getElementById("file-upload")?.click();
   };
 
+  const openDirectoryDialog = () => {
+    document.getElementById("directory-upload")?.click();
+  };
+
   return (
     <div className={className}>
       <h3 className="text-xl font-semibold text-gray-900 mb-4">{title}</h3>
@@ -79,20 +85,37 @@ export function FileUpload({
           icon={<Upload />}
           buttonSize="sm"
           button={
-            <Button
-              variant="default"
-              size="sm"
-              onClick={openFileDialog}
-              disabled={disabled}
-            >
-              Choose files
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="default"
+                size="sm"
+                onClick={openFileDialog}
+                disabled={disabled}
+              >
+                Choose files
+              </Button>
+              {allowDirectories && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={openDirectoryDialog}
+                  disabled={disabled}
+                >
+                  Choose directory
+                </Button>
+              )}
+            </div>
           }
         />
         <div className="mt-4 text-sm text-gray-600">
           <p>
             <strong>Note:</strong> You can upload individual HTML and image files.
           </p>
+          {allowDirectories && (
+            <p>
+              <strong>Directory upload:</strong> You can also upload entire directories containing HTML files and their associated image folders.
+            </p>
+          )}
           <p>
             Supported formats: HTML files (.html, .htm) and image files (.jpg,
             .jpeg, .png, .gif, .webp, .bmp)
@@ -108,6 +131,20 @@ export function FileUpload({
           multiple={multiple}
           accept=".html,.htm,image/*"
         />
+        {allowDirectories && (
+          <input
+            id="directory-upload"
+            name="directory-upload"
+            type="file"
+            className="sr-only"
+            onChange={handleFileChange}
+            disabled={disabled}
+            multiple={true}
+            // @ts-expect-error - webkitdirectory is a non-standard attribute for directory uploads
+            webkitdirectory=""
+            accept=".html,.htm,image/*"
+          />
+        )}
       </div>
     </div>
   );

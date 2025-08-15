@@ -26,15 +26,20 @@ export function processStatusEvents(
 
   for (const event of sortedEvents) {
     console.log(
-      `[STATUS_PROCESSOR] Processing event: ${event.context} for import ${event.importId}, status: ${event.status}`
+      `[STATUS_PROCESSOR] Processing event: ${event.context} for import ${event.importId}, noteId: ${event.noteId}, status: ${event.status}`
     );
 
+    // Create a unique key for each note within an import
+    // Always use importId as the primary key to group events from the same import
+    // If we have a noteId, we'll update the existing status entry
+    const statusKey = event.importId;
+
     // Create new import status if it doesn't exist
-    if (!statusMap.has(event.importId)) {
+    if (!statusMap.has(statusKey)) {
       console.log(
-        `[STATUS_PROCESSOR] Creating new status for import ${event.importId}`
+        `[STATUS_PROCESSOR] Creating new status for import ${event.importId}${event.noteId ? `, note ${event.noteId}` : ""}`
       );
-      statusMap.set(event.importId, {
+      statusMap.set(statusKey, {
         importId: event.importId,
         noteTitle: event.metadata?.noteTitle as string,
         noteId: event.noteId,
@@ -51,7 +56,7 @@ export function processStatusEvents(
             errors: 0,
           },
           source: { status: "pending" },
-          image: { status: "pending" },
+          image: { status: "pending", current: 0, total: 0, errors: 0 },
           duplicates: { status: "pending" },
           categorization: { status: "pending" },
           tags: { status: "pending" },
@@ -60,7 +65,7 @@ export function processStatusEvents(
       });
     }
 
-    const status = statusMap.get(event.importId)!;
+    const status = statusMap.get(statusKey)!;
     const hasError = !!event.errorMessage && event.errorMessage.trim() !== "";
 
     // Update note title and ID (only if not already set)
@@ -198,11 +203,45 @@ export function processStatusEvents(
           status.steps.image = {
             status: "failed",
             error: event.errorMessage,
+            current: status.steps.image.current,
+            total: status.steps.image.total,
+            errors: status.steps.image.errors + 1,
           };
         } else if (event.message?.includes(CompletionMessages.ADD_IMAGE)) {
-          status.steps.image = { status: "completed" };
+          status.steps.image = {
+            status: "completed",
+            current: status.steps.image.current,
+            total: status.steps.image.total,
+            errors: status.steps.image.errors,
+          };
+        } else if (
+          event.currentCount !== undefined &&
+          event.totalCount !== undefined
+        ) {
+          // Handle progress updates for image processing
+          status.steps.image = {
+            status: "processing",
+            current: event.currentCount,
+            total: event.totalCount,
+            errors: status.steps.image.errors,
+          };
+
+          // Mark as completed if all images are processed
+          if (event.currentCount >= event.totalCount && event.totalCount > 0) {
+            status.steps.image = {
+              status: "completed",
+              current: event.currentCount,
+              total: event.totalCount,
+              errors: status.steps.image.errors,
+            };
+          }
         } else if (shouldUpdateToProcessing(status.steps.image.status)) {
-          status.steps.image = { status: "processing" };
+          status.steps.image = {
+            status: "processing",
+            current: status.steps.image.current,
+            total: status.steps.image.total,
+            errors: status.steps.image.errors,
+          };
         }
         break;
 
@@ -293,7 +332,7 @@ export function processStatusEvents(
         // Mark the overall import as completed
         status.status = "completed";
         status.completedAt = new Date();
-        
+
         // Update note title if provided in metadata
         if (event.metadata?.noteTitle) {
           status.noteTitle = event.metadata.noteTitle as string;

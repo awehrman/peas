@@ -1,19 +1,12 @@
-import { promises as fs } from "fs";
 import path from "path";
 
 import type { StructuredLogger } from "../../../../types";
 import { ActionName } from "../../../../types";
 import type { NotePipelineData } from "../../../../types/notes";
-import {
-  findImageDirectoryForHtmlFile,
-  findImagesForImport,
-  getImageFilesWithMetadata,
-} from "../../../../utils/image-utils";
+import { findImagesForImport } from "../../../../utils/image-utils";
 import type { BaseWorkerDependencies } from "../../../../workers/types";
-import {
-  markNoteAsFailed,
-  setTotalImageJobs,
-} from "../track-completion/service";
+import { markNoteAsFailed } from "../track-completion/service";
+import { setTotalImageJobs } from "../track-completion/service";
 
 export async function processImages(
   data: NotePipelineData,
@@ -29,9 +22,12 @@ export async function processImages(
     logger.log(
       `[SCHEDULE_IMAGES] Starting image processing for note: ${data.noteId}`
     );
+    logger.log(`[SCHEDULE_IMAGES] ImportId: ${data.importId}`);
+    logger.log(
+      `[SCHEDULE_IMAGES] Original file path: ${data.originalFilePath || "not provided"}`
+    );
 
-    // Try to find image directory associated with this note
-    let imageDirectory: string | null = null;
+    // Method 1: Check for pre-assigned images from coordinated upload
     let imageFiles: Array<{
       fileName: string;
       filePath: string;
@@ -39,27 +35,47 @@ export async function processImages(
       extension: string;
     }> = [];
 
-    // Method 1: Check if there's an original file path we can use to find associated images
-    if (data.metadata?.originalFilePath) {
-      const originalFilePath = data.metadata.originalFilePath as string;
+    if (data.imageFiles && data.imageFiles.length > 0) {
       logger.log(
-        `[SCHEDULE_IMAGES] Looking for images associated with HTML file: ${originalFilePath}`
+        `[SCHEDULE_IMAGES] Found ${data.imageFiles.length} pre-assigned images from coordinated upload`
+      );
+      logger.log(
+        `[SCHEDULE_IMAGES] Pre-assigned images: ${JSON.stringify(
+          data.imageFiles.map((img) => ({
+            fileName: img.fileName,
+            filePath: img.filePath,
+            size: img.size,
+            extension: img.extension,
+          }))
+        )}`
       );
 
-      imageDirectory = await findImageDirectoryForHtmlFile(originalFilePath);
-
-      if (imageDirectory) {
-        logger.log(
-          `[SCHEDULE_IMAGES] Found image directory: ${imageDirectory}`
-        );
-        imageFiles = await getImageFilesWithMetadata(imageDirectory);
+      // Verify each pre-assigned image file exists
+      for (const imageFile of data.imageFiles) {
+        try {
+          const fs = await import("fs/promises");
+          await fs.access(imageFile.filePath);
+          logger.log(
+            `[SCHEDULE_IMAGES] ✅ Pre-assigned image exists: ${imageFile.fileName} at ${imageFile.filePath}`
+          );
+          imageFiles.push(imageFile);
+        } catch (accessError) {
+          logger.log(
+            `[SCHEDULE_IMAGES] ❌ Pre-assigned image missing: ${imageFile.fileName} at ${imageFile.filePath}`
+          );
+          logger.log(`[SCHEDULE_IMAGES] Access error: ${accessError}`);
+        }
       }
+
+      logger.log(
+        `[SCHEDULE_IMAGES] Verified ${imageFiles.length} pre-assigned images exist`
+      );
     }
 
-    // Method 2: Use enhanced image detection for importId
+    // Method 2: Use enhanced image detection for importId (fallback for legacy uploads)
     if (imageFiles.length === 0 && data.importId) {
       logger.log(
-        `[SCHEDULE_IMAGES] No images found via HTML file association, trying enhanced detection for importId: ${data.importId}`
+        `[SCHEDULE_IMAGES] No pre-assigned images found, trying enhanced detection for importId: ${data.importId}`
       );
 
       imageFiles = await findImagesForImport(data.importId);
@@ -68,61 +84,20 @@ export async function processImages(
         logger.log(
           `[SCHEDULE_IMAGES] Found ${imageFiles.length} images via enhanced detection`
         );
-      }
-    }
-
-    // Method 3: Check common directory patterns if we still don't have images
-    if (imageFiles.length === 0 && data.importId) {
-      const commonPaths = [
-        // First priority: coordinated upload directory
-        path.join(process.cwd(), "uploads", "images", data.importId),
-        // Legacy patterns from file processing
-        path.join(process.cwd(), "/public/files", data.importId + "_files"),
-        path.join(process.cwd(), "/public/files", data.importId + ".files"),
-        path.join(process.cwd(), "/public/files", data.importId + "_images"),
-        path.join(process.cwd(), "/public/files", data.importId, "images"),
-        path.join(process.cwd(), "/public/files", "images"),
-      ];
-
-      logger.log(
-        `[SCHEDULE_IMAGES] Checking ${commonPaths.length} potential image directories:`
-      );
-
-      for (const potentialPath of commonPaths) {
-        logger.log(`[SCHEDULE_IMAGES] Checking path: ${potentialPath}`);
-        try {
-          await fs.access(potentialPath);
-          logger.log(`[SCHEDULE_IMAGES] Path exists: ${potentialPath}`);
-
-          // List all contents first to see what's actually there
-          try {
-            const allContents = await fs.readdir(potentialPath);
-            logger.log(
-              `[SCHEDULE_IMAGES] Directory contents (${allContents.length} items): ${JSON.stringify(allContents)}`
-            );
-          } catch (listError) {
-            logger.log(
-              `[SCHEDULE_IMAGES] Could not list directory contents: ${listError}`
-            );
-          }
-
-          const files = await getImageFilesWithMetadata(potentialPath);
-          logger.log(
-            `[SCHEDULE_IMAGES] Found ${files.length} image files in: ${potentialPath}`
-          );
-          if (files.length > 0) {
-            imageDirectory = potentialPath;
-            imageFiles = files;
-            logger.log(
-              `[SCHEDULE_IMAGES] Found images in directory: ${potentialPath}`
-            );
-            break;
-          }
-        } catch {
-          logger.log(
-            `[SCHEDULE_IMAGES] Path does not exist or can't be accessed: ${potentialPath}`
-          );
-        }
+        logger.log(
+          `[SCHEDULE_IMAGES] Enhanced detection images: ${JSON.stringify(
+            imageFiles.map((img) => ({
+              fileName: img.fileName,
+              filePath: img.filePath,
+              size: img.size,
+              extension: img.extension,
+            }))
+          )}`
+        );
+      } else {
+        logger.log(
+          `[SCHEDULE_IMAGES] No images found via enhanced detection for importId: ${data.importId}`
+        );
       }
     }
 
@@ -131,26 +106,44 @@ export async function processImages(
       logger.log(
         `[SCHEDULE_IMAGES] No image files found for note: ${data.noteId}`
       );
+      logger.log(`[SCHEDULE_IMAGES] ImportId used: ${data.importId}`);
+      logger.log(
+        `[SCHEDULE_IMAGES] Original file path: ${data.originalFilePath || "not provided"}`
+      );
+
       // Set total image jobs to 0 since there are no images
       setTotalImageJobs(data.noteId, 0, logger);
 
-      // Mark note as failed since no images were found
-      try {
-        await markNoteAsFailed(
-          data.noteId,
-          "No image files found for note processing",
-          "IMAGE_UPLOAD_FAILED",
-          { importId: data.importId, noteId: data.noteId },
-          logger
-        );
-        /* istanbul ignore next -- @preserve */
+      // Check if this was a coordinated upload that should have had images
+      const wasCoordinatedUpload =
+        data.imageFiles && data.imageFiles.length > 0;
+
+      if (wasCoordinatedUpload) {
+        // This was a coordinated upload but no images were found - mark as failed
         logger.log(
-          `[SCHEDULE_IMAGES] Marked note ${data.noteId} as FAILED (no images found)`
+          `[SCHEDULE_IMAGES] Coordinated upload with no images found - marking as failed`
         );
-      } catch (error) {
-        /* istanbul ignore next -- @preserve */
-        logger.log(`[SCHEDULE_IMAGES] Failed to mark note as failed: ${error}`);
-        // Don't fail the main operation if status update fails
+        try {
+          await markNoteAsFailed(
+            data.noteId,
+            "No image files found for note processing",
+            "IMAGE_UPLOAD_FAILED",
+            { importId: data.importId, noteId: data.noteId },
+            logger
+          );
+          logger.log(
+            `[SCHEDULE_IMAGES] Marked note ${data.noteId} as FAILED (no images found in coordinated upload)`
+          );
+        } catch (error) {
+          logger.log(
+            `[SCHEDULE_IMAGES] Failed to mark note as failed: ${error}`
+          );
+        }
+      } else {
+        // This was a single HTML file upload - no images expected, continue normally
+        logger.log(
+          `[SCHEDULE_IMAGES] Single HTML file upload - no images expected, continuing normally`
+        );
       }
 
       return data;
@@ -173,6 +166,11 @@ export async function processImages(
     for (const [index, imageFile] of imageFiles.entries()) {
       logger.log(
         `[SCHEDULE_IMAGES] Processing image ${index + 1}/${imageFiles.length}: ${imageFile.fileName}`
+      );
+      logger.log(`[SCHEDULE_IMAGES] Image file path: ${imageFile.filePath}`);
+      logger.log(`[SCHEDULE_IMAGES] Image file size: ${imageFile.size}`);
+      logger.log(
+        `[SCHEDULE_IMAGES] Image file extension: ${imageFile.extension}`
       );
 
       const imageJobData = {
@@ -205,11 +203,23 @@ export async function processImages(
       };
 
       logger.log(
-        `[SCHEDULE_IMAGES] Adding job to queue for image ${index}: ${imageFile.fileName}`
+        `[SCHEDULE_IMAGES] Adding job to queue for image ${index + 1}: ${imageFile.fileName}`
+      );
+      logger.log(
+        `[SCHEDULE_IMAGES] Job data: ${JSON.stringify({
+          noteId: imageJobData.noteId,
+          importId: imageJobData.importId,
+          imagePath: imageJobData.imagePath,
+          filename: imageJobData.filename,
+        })}`
       );
 
       // Schedule a single job - the worker pipeline will handle upload + process + save
       await imageQueue.add(ActionName.UPLOAD_ORIGINAL, imageJobData);
+
+      logger.log(
+        `[SCHEDULE_IMAGES] ✅ Successfully queued image job for: ${imageFile.fileName}`
+      );
     }
 
     logger.log(

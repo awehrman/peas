@@ -17,8 +17,12 @@ import {
 import uploadRouter from "../upload";
 
 // Mock dependencies
+let uuidCounter = 0;
 vi.mock("crypto", () => ({
-  randomUUID: vi.fn(() => "test-uuid-123"),
+  randomUUID: vi.fn(() => {
+    uuidCounter++;
+    return `test-uuid-${uuidCounter}`;
+  }),
 }));
 
 vi.mock("multer", () => {
@@ -132,6 +136,7 @@ describe("Upload Router", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    uuidCounter = 0; // Reset UUID counter for each test
 
     // Mock service container
     mockNoteQueue = {
@@ -271,7 +276,7 @@ describe("Upload Router", () => {
         ActionName.PARSE_HTML,
         expect.objectContaining({
           content: "<html>test</html>",
-          importId: "test-uuid-123",
+          importId: expect.any(String),
           originalFilePath: "/test/path/test-123.html",
           imageFiles: [],
           options: {
@@ -284,7 +289,7 @@ describe("Upload Router", () => {
         expect.objectContaining({
           success: true,
           data: {
-            importId: "test-uuid-123",
+            importId: expect.any(String),
             htmlFiles: 1,
             imageFiles: 1,
             totalFiles: 2,
@@ -320,7 +325,7 @@ describe("Upload Router", () => {
         expect.objectContaining({
           success: true,
           data: {
-            importId: "test-uuid-123",
+            importId: expect.any(String),
             htmlFiles: 2,
             imageFiles: 0,
             totalFiles: 2,
@@ -356,7 +361,7 @@ describe("Upload Router", () => {
         expect.objectContaining({
           success: true,
           data: {
-            importId: "test-uuid-123",
+            importId: expect.any(String),
             htmlFiles: 0,
             imageFiles: 2,
             totalFiles: 2,
@@ -399,7 +404,7 @@ describe("Upload Router", () => {
         expect.objectContaining({
           success: true,
           data: {
-            importId: "test-uuid-123",
+            importId: expect.any(String),
             htmlFiles: 0,
             imageFiles: 0,
             totalFiles: 1,
@@ -430,13 +435,11 @@ describe("Upload Router", () => {
         expect.objectContaining({
           success: true,
           data: {
-            importId: "test-uuid-123",
+            importId: expect.any(String),
             htmlFiles: 1,
             imageFiles: 0,
             totalFiles: 1,
-            errors: [
-              "Failed to process test.html: Error: File not found: test.html",
-            ],
+            errors: ["HTML file not found: test.html"],
           },
           message: "Upload completed successfully",
         })
@@ -463,7 +466,7 @@ describe("Upload Router", () => {
         expect.objectContaining({
           success: true,
           data: {
-            importId: "test-uuid-123",
+            importId: expect.any(String),
             htmlFiles: 1,
             imageFiles: 0,
             totalFiles: 1,
@@ -497,14 +500,15 @@ describe("Upload Router", () => {
           error: expect.any(Function),
           warn: expect.any(Function),
           debug: expect.any(Function),
-        })
+        }),
+        "test-uuid-1-image-0.png"
       );
 
       expect(mockResponse.json).toHaveBeenCalledWith(
         expect.objectContaining({
           success: true,
           data: {
-            importId: "test-uuid-123",
+            importId: expect.any(String),
             htmlFiles: 0,
             imageFiles: 1,
             totalFiles: 1,
@@ -538,7 +542,7 @@ describe("Upload Router", () => {
         expect.objectContaining({
           success: true,
           data: {
-            importId: "test-uuid-123",
+            importId: expect.any(String),
             htmlFiles: 0,
             imageFiles: 1,
             totalFiles: 1,
@@ -568,7 +572,7 @@ describe("Upload Router", () => {
         expect.objectContaining({
           success: true,
           data: {
-            importId: "test-uuid-123",
+            importId: expect.any(String),
             htmlFiles: 0,
             imageFiles: 1,
             totalFiles: 1,
@@ -598,7 +602,7 @@ describe("Upload Router", () => {
         expect.objectContaining({
           success: true,
           data: {
-            importId: "test-uuid-123",
+            importId: expect.any(String),
             htmlFiles: 0,
             imageFiles: 1,
             totalFiles: 1,
@@ -628,7 +632,7 @@ describe("Upload Router", () => {
         expect.objectContaining({
           success: true,
           data: {
-            importId: "test-uuid-123",
+            importId: expect.any(String),
             htmlFiles: 0,
             imageFiles: 1,
             totalFiles: 1,
@@ -918,7 +922,7 @@ describe("Upload Router", () => {
         expect.objectContaining({
           success: true,
           data: {
-            importId: "test-uuid-123",
+            importId: expect.any(String),
             htmlFiles: 0,
             imageFiles: 0,
             totalFiles: 1,
@@ -948,7 +952,7 @@ describe("Upload Router", () => {
         expect.objectContaining({
           success: true,
           data: {
-            importId: "test-uuid-123",
+            importId: expect.any(String),
             htmlFiles: 1,
             imageFiles: 0,
             totalFiles: 1,
@@ -979,7 +983,7 @@ describe("Upload Router", () => {
         expect.objectContaining({
           success: true,
           data: {
-            importId: "test-uuid-123",
+            importId: expect.any(String),
             htmlFiles: 1,
             imageFiles: 0,
             totalFiles: 1,
@@ -1011,7 +1015,7 @@ describe("Upload Router", () => {
         expect.objectContaining({
           success: true,
           data: {
-            importId: "test-uuid-123",
+            importId: expect.any(String),
             htmlFiles: 0,
             imageFiles: 1,
             totalFiles: 1,
@@ -1050,7 +1054,7 @@ describe("Upload Router", () => {
         expect.objectContaining({
           success: true,
           data: {
-            importId: "test-uuid-123",
+            importId: expect.any(String),
             htmlFiles: 0,
             imageFiles: 1,
             totalFiles: 1,
@@ -1087,10 +1091,198 @@ describe("Upload Router", () => {
         expect.objectContaining({
           success: true,
           data: {
-            importId: "test-uuid-123",
+            importId: expect.any(String),
             htmlFiles: 0,
             imageFiles: 1,
             totalFiles: 1,
+            errors: [],
+          },
+          message: "Upload completed successfully",
+        })
+      );
+    });
+
+    it("should ignore Evernote_index.html files", async () => {
+      const mockFiles = [
+        {
+          originalname: "Evernote_index.html",
+          filename: "Evernote_index-123.html",
+          path: "/test/path/Evernote_index-123.html",
+          mimetype: "text/html",
+          size: 1024,
+        },
+        {
+          originalname: "recipe.html",
+          filename: "recipe-456.html",
+          path: "/test/path/recipe-456.html",
+          mimetype: "text/html",
+          size: 1024,
+        },
+      ];
+
+      // Mock file reading
+      vi.mocked(fs.readFile).mockResolvedValue("<html>test content</html>");
+      vi.mocked(fs.access).mockResolvedValue();
+      vi.mocked(fs.stat).mockResolvedValue({ size: 1024 } as any);
+      vi.mocked(fs.rename).mockResolvedValue();
+      vi.mocked(fs.readdir).mockResolvedValue([]);
+      vi.mocked(isImageFileEnhanced).mockResolvedValue(false);
+
+      await executeUploadRoute(mockFiles);
+
+      // Should only process the non-Evernote HTML file
+      expect(mockNoteQueue.add).toHaveBeenCalledTimes(1);
+      expect(mockNoteQueue.add).toHaveBeenCalledWith(
+        ActionName.PARSE_HTML,
+        expect.objectContaining({
+          content: "<html>test content</html>",
+          importId: expect.any(String),
+          originalFilePath: "/test/path/recipe-456.html",
+          imageFiles: [],
+          options: {
+            skipFollowupTasks: false,
+          },
+        })
+      );
+
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: true,
+          data: {
+            importId: expect.any(String),
+            htmlFiles: 1, // Only the non-Evernote file
+            imageFiles: 0,
+            totalFiles: 2,
+            errors: [],
+          },
+          message: "Upload completed successfully",
+        })
+      );
+    });
+
+    it("should handle directory upload with HTML and associated images", async () => {
+      const mockFiles = [
+        {
+          originalname: "title-a.html",
+          filename: "title-a-123.html",
+          path: "/test/path/title-a-123.html",
+          mimetype: "text/html",
+          size: 1024,
+        },
+        {
+          originalname: "some-image.png",
+          filename: "some-image-456.png",
+          path: "/test/path/some-image-456.png",
+          mimetype: "image/png",
+          size: 2048,
+        },
+        {
+          originalname: "title-b.html",
+          filename: "title-b-789.html",
+          path: "/test/path/title-b-789.html",
+          mimetype: "text/html",
+          size: 1024,
+        },
+        {
+          originalname: "image-2.png",
+          filename: "image-2-101.png",
+          path: "/test/path/image-2-101.png",
+          mimetype: "image/png",
+          size: 2048,
+        },
+      ];
+
+      // Mock file reading
+      vi.mocked(fs.readFile).mockResolvedValue("<html>test content</html>");
+      vi.mocked(fs.access).mockResolvedValue();
+      vi.mocked(fs.stat).mockResolvedValue({ size: 1024 } as any);
+      vi.mocked(fs.rename).mockResolvedValue();
+      vi.mocked(fs.readdir).mockResolvedValue([
+        { name: "some-image-456.png" } as any,
+        { name: "image-2-101.png" } as any,
+      ]);
+      vi.mocked(isImageFileEnhanced).mockResolvedValue(true);
+
+      // Create a mock request with directory upload data
+      const req = {
+        ...mockRequest,
+        files: mockFiles,
+        method: "POST",
+        url: "/upload/",
+        body: {
+          isDirectoryUpload: "true",
+          htmlPaths: ["title-a/title-a.html", "title-b/title-b.html"],
+          imagePaths: ["title-a/some-image.png", "title-b/image-2.png"],
+        },
+      };
+
+      // Find and execute the POST route handler directly (skip middleware)
+      const postRoute = uploadRouter.stack.find(
+        (layer: any) => layer.route && layer.route.methods.post
+      );
+
+      if (postRoute?.route?.stack) {
+        // Execute the main route handler (index 1, skip multer middleware at index 0)
+        const handler = postRoute.route.stack[1];
+
+        if (handler && handler.handle) {
+          await handler.handle(req, mockResponse, mockNext);
+        }
+      }
+
+      // Verify that both HTML files were processed
+      expect(mockNoteQueue.add).toHaveBeenCalledTimes(2);
+
+      // Check first HTML file
+      expect(mockNoteQueue.add).toHaveBeenCalledWith(
+        ActionName.PARSE_HTML,
+        expect.objectContaining({
+          content: "<html>test content</html>",
+          importId: expect.any(String), // Each file gets its own importId
+          originalFilePath: "/test/path/title-a-123.html",
+          imageFiles: [
+            expect.objectContaining({
+              fileName: "converted.jpg",
+              filePath: expect.stringContaining("converted.jpg"),
+              size: 2048,
+              extension: "binary",
+            }),
+          ],
+          options: {
+            skipFollowupTasks: false,
+          },
+        })
+      );
+
+      // Check second HTML file
+      expect(mockNoteQueue.add).toHaveBeenCalledWith(
+        ActionName.PARSE_HTML,
+        expect.objectContaining({
+          content: "<html>test content</html>",
+          importId: expect.any(String), // Each file gets its own importId
+          originalFilePath: "/test/path/title-b-789.html",
+          imageFiles: [
+            expect.objectContaining({
+              fileName: "converted.jpg",
+              filePath: expect.stringContaining("converted.jpg"),
+              size: 2048,
+              extension: "binary",
+            }),
+          ],
+          options: {
+            skipFollowupTasks: false,
+          },
+        })
+      );
+
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: true,
+          data: {
+            importId: expect.any(String), // For directory uploads, this will be the first importId
+            htmlFiles: 2,
+            imageFiles: 2,
+            totalFiles: 4,
             errors: [],
           },
           message: "Upload completed successfully",

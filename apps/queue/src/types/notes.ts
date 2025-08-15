@@ -25,6 +25,14 @@ export interface NotePipelineData extends BaseJobData {
   // File path information (for coordinated uploads)
   originalFilePath?: string;
 
+  // Pre-assigned images from coordinated uploads
+  imageFiles?: Array<{
+    fileName: string;
+    filePath: string;
+    size: number;
+    extension: string;
+  }>;
+
   // Pipeline stage data (added by actions)
   file?: ParsedHTMLFile;
   note?: NoteWithParsedLines;

@@ -84,7 +84,7 @@ describe("Check Image Completion Service", () => {
           mockStatusBroadcaster
         );
         expect(mockLogger.log).toHaveBeenCalledWith(
-          "[CHECK_IMAGE_COMPLETION] Marked image job as completed for note test-note-123"
+          "[CHECK_IMAGE_COMPLETION] ✅ Marked image job as completed for note test-note-123"
         );
 
         expect(result).toEqual(mockData);
@@ -101,7 +101,7 @@ describe("Check Image Completion Service", () => {
           mockStatusBroadcaster
         );
         expect(mockLogger.log).toHaveBeenCalledWith(
-          "[CHECK_IMAGE_COMPLETION] Marked image job as completed for note different-note-789"
+          "[CHECK_IMAGE_COMPLETION] ✅ Marked image job as completed for note different-note-789"
         );
 
         expect(result).toEqual(mockData);
@@ -145,7 +145,7 @@ describe("Check Image Completion Service", () => {
         const result = await checkImageCompletion(mockData, mockDependencies);
 
         expect(mockLogger.log).toHaveBeenCalledWith(
-          "[CHECK_IMAGE_COMPLETION] No note ID available, skipping completion check"
+          "[CHECK_IMAGE_COMPLETION] ❌ No note ID available, skipping completion check"
         );
         expect(mockMarkImageJobCompleted).not.toHaveBeenCalled();
 
@@ -159,7 +159,7 @@ describe("Check Image Completion Service", () => {
         const result = await checkImageCompletion(mockData, mockDependencies);
 
         expect(mockLogger.log).toHaveBeenCalledWith(
-          "[CHECK_IMAGE_COMPLETION] No note ID available, skipping completion check"
+          "[CHECK_IMAGE_COMPLETION] ❌ No note ID available, skipping completion check"
         );
         expect(mockMarkImageJobCompleted).not.toHaveBeenCalled();
 
@@ -173,7 +173,7 @@ describe("Check Image Completion Service", () => {
         const result = await checkImageCompletion(mockData, mockDependencies);
 
         expect(mockLogger.log).toHaveBeenCalledWith(
-          "[CHECK_IMAGE_COMPLETION] No note ID available, skipping completion check"
+          "[CHECK_IMAGE_COMPLETION] ❌ No note ID available, skipping completion check"
         );
         expect(mockMarkImageJobCompleted).not.toHaveBeenCalled();
 
@@ -190,7 +190,7 @@ describe("Check Image Completion Service", () => {
         const result = await checkImageCompletion(mockData, mockDependencies);
 
         expect(mockLogger.log).toHaveBeenCalledWith(
-          "[CHECK_IMAGE_COMPLETION] Error marking completion: Error: Database connection failed"
+          "[CHECK_IMAGE_COMPLETION] ❌ Error marking completion: Error: Database connection failed"
         );
 
         expect(result).toEqual(mockData);
@@ -204,7 +204,7 @@ describe("Check Image Completion Service", () => {
         const result = await checkImageCompletion(mockData, mockDependencies);
 
         expect(mockLogger.log).toHaveBeenCalledWith(
-          "[CHECK_IMAGE_COMPLETION] Error marking completion: String error"
+          "[CHECK_IMAGE_COMPLETION] ❌ Error marking completion: String error"
         );
 
         expect(result).toEqual(mockData);
@@ -218,7 +218,7 @@ describe("Check Image Completion Service", () => {
         const result = await checkImageCompletion(mockData, mockDependencies);
 
         expect(mockLogger.log).toHaveBeenCalledWith(
-          "[CHECK_IMAGE_COMPLETION] Error marking completion: 500"
+          "[CHECK_IMAGE_COMPLETION] ❌ Error marking completion: 500"
         );
 
         expect(result).toEqual(mockData);
@@ -233,7 +233,7 @@ describe("Check Image Completion Service", () => {
         const result = await checkImageCompletion(mockData, mockDependencies);
 
         expect(mockLogger.log).toHaveBeenCalledWith(
-          "[CHECK_IMAGE_COMPLETION] Error marking completion: [object Object]"
+          "[CHECK_IMAGE_COMPLETION] ❌ Error marking completion: [object Object]"
         );
 
         expect(result).toEqual(mockData);
@@ -247,7 +247,7 @@ describe("Check Image Completion Service", () => {
         const result = await checkImageCompletion(mockData, mockDependencies);
 
         expect(mockLogger.log).toHaveBeenCalledWith(
-          "[CHECK_IMAGE_COMPLETION] No note ID available, skipping completion check"
+          "[CHECK_IMAGE_COMPLETION] ❌ No note ID available, skipping completion check"
         );
         expect(mockMarkImageJobCompleted).not.toHaveBeenCalled();
 
@@ -260,7 +260,7 @@ describe("Check Image Completion Service", () => {
         const result = await checkImageCompletion(mockData, mockDependencies);
 
         expect(mockLogger.log).toHaveBeenCalledWith(
-          "[CHECK_IMAGE_COMPLETION] Marked image job as completed for note    "
+          "[CHECK_IMAGE_COMPLETION] ✅ Marked image job as completed for note    "
         );
         expect(mockMarkImageJobCompleted).toHaveBeenCalledWith(
           "   ",
@@ -278,7 +278,7 @@ describe("Check Image Completion Service", () => {
         const result = await checkImageCompletion(mockData, mockDependencies);
 
         expect(mockLogger.log).toHaveBeenCalledWith(
-          `[CHECK_IMAGE_COMPLETION] Marked image job as completed for note ${longNoteId}`
+          `[CHECK_IMAGE_COMPLETION] ✅ Marked image job as completed for note ${longNoteId}`
         );
         expect(mockMarkImageJobCompleted).toHaveBeenCalledWith(
           longNoteId,
@@ -295,7 +295,7 @@ describe("Check Image Completion Service", () => {
         const result = await checkImageCompletion(mockData, mockDependencies);
 
         expect(mockLogger.log).toHaveBeenCalledWith(
-          "[CHECK_IMAGE_COMPLETION] Marked image job as completed for note note-123!@#$%^&*()_+-=[]{}|;':\",./<>?"
+          "[CHECK_IMAGE_COMPLETION] ✅ Marked image job as completed for note note-123!@#$%^&*()_+-=[]{}|;':\",./<>?"
         );
         expect(mockMarkImageJobCompleted).toHaveBeenCalledWith(
           "note-123!@#$%^&*()_+-=[]{}|;':\",./<>?",

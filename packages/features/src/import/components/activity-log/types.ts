@@ -33,7 +33,7 @@ export interface ImportStatus {
     ingredients: CountableStepStatus;
     instructions: CountableStepStatus;
     source: StepStatus;
-    image: StepStatus;
+    image: CountableStepStatus;
     duplicates: StepStatus;
     categorization: StepStatus;
     tags: StepStatus;

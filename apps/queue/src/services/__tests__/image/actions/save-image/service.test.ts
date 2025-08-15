@@ -152,7 +152,7 @@ describe("saveImage", () => {
         "[SAVE_IMAGE] Upserting image record for importId: test-import-456"
       );
       expect(mockLogger.log).toHaveBeenCalledWith(
-        "[SAVE_IMAGE] Image record upserted with ID: saved-image-123"
+        "[SAVE_IMAGE] ✅ Image record upserted with ID: saved-image-123"
       );
       expect(mockLogger.log).toHaveBeenCalledWith(
         "[SAVE_IMAGE] Original: /images/original.jpg (local)"
@@ -510,7 +510,7 @@ describe("saveImage", () => {
 
       // Verify error logging
       expect(mockLogger.log).toHaveBeenCalledWith(
-        "[SAVE_IMAGE] Failed to save image URLs: Error: Database connection failed"
+        "[SAVE_IMAGE] ❌ Failed to save image URLs: Error: Database connection failed"
       );
     });
 
@@ -578,7 +578,7 @@ describe("saveImage", () => {
 
       // Verify error logging
       expect(mockLogger.log).toHaveBeenCalledWith(
-        expect.stringMatching(/\[SAVE_IMAGE\] Failed to save image URLs: /)
+        expect.stringMatching(/\[SAVE_IMAGE\] ❌ Failed to save image URLs: /)
       );
     });
 
@@ -592,7 +592,7 @@ describe("saveImage", () => {
       ).rejects.toThrow("Path basename failed");
 
       expect(mockLogger.log).toHaveBeenCalledWith(
-        "[SAVE_IMAGE] Failed to save image URLs: Error: Path basename failed"
+        "[SAVE_IMAGE] ❌ Failed to save image URLs: Error: Path basename failed"
       );
     });
   });

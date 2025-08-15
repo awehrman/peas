@@ -181,11 +181,10 @@ export async function getImageFiles(
 }
 
 /**
- * Get image files with their full paths and metadata (enhanced)
+ * Get image files with metadata from a directory
  */
 export async function getImageFilesWithMetadata(
-  directoryPath: string,
-  excludeFiles: string[] = []
+  directoryPath: string
 ): Promise<
   Array<{
     fileName: string;
@@ -194,41 +193,45 @@ export async function getImageFilesWithMetadata(
     extension: string;
   }>
 > {
-  console.log(
-    `[IMAGE_UTILS] Getting image files with metadata from: ${directoryPath}`
-  );
+  console.log(`[IMAGE_UTILS] Getting image files with metadata from: ${directoryPath}`);
 
-  const imageFiles = await getImageFiles(directoryPath, excludeFiles);
-  const results = [];
+  try {
+    const files = await fs.readdir(directoryPath);
+    console.log(`[IMAGE_UTILS] Found ${files.length} files in directory: ${directoryPath}`);
+    console.log(`[IMAGE_UTILS] Files:`, files);
 
-  for (const fileName of imageFiles) {
-    const filePath = path.join(directoryPath, fileName);
-    try {
-      const stats = await fs.stat(filePath);
-      /* istanbul ignore next -- @preserve */
-      const result = {
-        fileName,
-        filePath,
-        size: stats.size,
-        extension: path.extname(fileName).toLowerCase() || "binary", // Use 'binary' for files without extensions
-      };
-      results.push(result);
-      console.log(
-        `[IMAGE_UTILS] Image file: ${fileName} (${stats.size} bytes, ${result.extension})`
-      );
-    } catch (error) {
-      // Skip files that can't be accessed
-      console.warn(
-        `[IMAGE_UTILS] Could not access image file: ${filePath}`,
-        error
-      );
+    const results: Array<{
+      fileName: string;
+      filePath: string;
+      size: number;
+      extension: string;
+    }> = [];
+
+    for (const fileName of files) {
+      const filePath = path.join(directoryPath, fileName);
+      
+      try {
+        const stats = await fs.stat(filePath);
+        const result = {
+          fileName,
+          filePath,
+          size: stats.size,
+          extension: path.extname(fileName) || "binary",
+        };
+        
+        console.log(`[IMAGE_UTILS] Image file: ${fileName} (${stats.size} bytes, ${result.extension})`);
+        results.push(result);
+      } catch (accessError) {
+        console.log(`[IMAGE_UTILS] Could not access image file: ${filePath}`, accessError);
+      }
     }
-  }
 
-  console.log(
-    `[IMAGE_UTILS] Returning ${results.length} image files with metadata`
-  );
-  return results;
+    console.log(`[IMAGE_UTILS] Returning ${results.length} image files with metadata`);
+    return results;
+  } catch (error) {
+    console.log(`[IMAGE_UTILS] Error reading directory: ${directoryPath}`, error);
+    return [];
+  }
 }
 
 /**
@@ -312,28 +315,47 @@ export async function findImagesForImport(importId: string): Promise<
     path.join(process.cwd(), "public", "files", importId + "_files"),
     path.join(process.cwd(), "public", "files", importId + ".files"),
     path.join(process.cwd(), "public", "files", importId + "_images"),
-    path.join(process.cwd(), "public", "files", importId, "images"),
-    path.join(process.cwd(), "public", "files", "images"),
-    // Test directory
-    path.join(process.cwd(), "uploads", "test-images"),
+    path.join(process.cwd(), "public", "files", importId + ".images"),
+    // Additional patterns for different naming conventions
+    path.join(process.cwd(), "uploads", "images", importId + "_files"),
+    path.join(process.cwd(), "uploads", "images", importId + ".files"),
   ];
 
-  for (const possiblePath of possiblePaths) {
-    console.log(`[IMAGE_UTILS] Checking for images in: ${possiblePath}`);
+  console.log(`[IMAGE_UTILS] Will check ${possiblePaths.length} possible paths for images`);
+  console.log(`[IMAGE_UTILS] Possible paths:`, possiblePaths);
+
+  for (const [index, possiblePath] of possiblePaths.entries()) {
+    console.log(`[IMAGE_UTILS] Checking path ${index + 1}/${possiblePaths.length}: ${possiblePath}`);
 
     try {
+      const stats = await fs.stat(possiblePath);
+      
+      if (!stats.isDirectory()) {
+        console.log(`[IMAGE_UTILS] Path exists but is not a directory: ${possiblePath}`);
+        continue;
+      }
+
+      console.log(`[IMAGE_UTILS] Directory exists, checking for images: ${possiblePath}`);
       const images = await getImageFilesWithMetadata(possiblePath);
+      
       if (images.length > 0) {
-        console.log(
-          `[IMAGE_UTILS] Found ${images.length} images in: ${possiblePath}`
-        );
+        console.log(`[IMAGE_UTILS] Found ${images.length} images in: ${possiblePath}`);
+        console.log(`[IMAGE_UTILS] ✅ SUCCESS: Found ${images.length} images in: ${possiblePath}`);
+        console.log(`[IMAGE_UTILS] Images found:`, images.map(img => ({
+          fileName: img.fileName,
+          size: img.size,
+          extension: img.extension
+        })));
         return images;
+      } else {
+        console.log(`[IMAGE_UTILS] Directory exists but contains no images: ${possiblePath}`);
       }
     } catch (error) {
       console.log(`[IMAGE_UTILS] Could not check path: ${possiblePath}`, error);
     }
   }
 
-  console.log(`[IMAGE_UTILS] No images found for import: ${importId}`);
+  console.log(`[IMAGE_UTILS] ❌ NO IMAGES FOUND: No images found for import: ${importId}`);
+  console.log(`[IMAGE_UTILS] Checked paths:`, possiblePaths);
   return [];
 }
