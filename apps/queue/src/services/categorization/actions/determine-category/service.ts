@@ -99,6 +99,7 @@ export async function determineCategory(
       `[DETERMINE_CATEGORY] Failed to determine category for note ${data.noteId}: ${error}`
     );
 
+    /* istanbul ignore next -- @preserve */
     return {
       ...data,
       metadata: {

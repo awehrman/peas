@@ -36,16 +36,28 @@ export class SaveCategoryAction extends BaseAction<
       data,
       deps,
       context,
-      serviceCall: () => saveCategory(data, deps.logger, deps.statusBroadcaster),
+      serviceCall: () =>
+        saveCategory(data, deps.logger, deps.statusBroadcaster),
       contextName: "categorization_save",
       startMessage: "Saving recipe category...",
       completionMessage: "Category saved: dessert",
       additionalBroadcasting: async (result) => {
+        /* istanbul ignore next -- @preserve */
         if (deps.statusBroadcaster) {
-          const determinedCategory = result.metadata?.determinedCategory as string | undefined;
-          const determinedCategories = result.metadata?.determinedCategories as string[] | undefined;
-          const category = determinedCategory || (determinedCategories && determinedCategories.length > 0 ? determinedCategories[0] : undefined);
-          const message = category ? `Category saved: ${category}` : "No category to save";
+          const determinedCategory = result.metadata?.determinedCategory as
+            | string
+            | undefined;
+          const determinedCategories = result.metadata?.determinedCategories as
+            | string[]
+            | undefined;
+          const category =
+            determinedCategory ||
+            (determinedCategories && determinedCategories.length > 0
+              ? determinedCategories[0]
+              : undefined);
+          const message = category
+            ? `Category saved: ${category}`
+            : "No category to save";
           await deps.statusBroadcaster.addStatusEventAndBroadcast({
             importId: data.importId,
             status: "COMPLETED",

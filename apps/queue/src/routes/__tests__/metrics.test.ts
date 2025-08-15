@@ -13,14 +13,14 @@ import {
 // Import the router after mocking
 import { metricsRouter } from "../metrics";
 
-// Mock the metrics utilities
+// Mock the metrics utilities before importing the router
 vi.mock("../../utils/metrics", () => ({
   getMetricsSnapshot: vi.fn(),
   getPerformanceMetrics: vi.fn(),
   getPrometheusMetrics: vi.fn(),
 }));
 
-// Mock the error handler
+// Mock the error handler before importing the router
 vi.mock("../../utils/error-handler", () => ({
   ErrorHandler: {
     handleRouteError: vi.fn(),

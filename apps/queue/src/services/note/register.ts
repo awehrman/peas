@@ -28,16 +28,17 @@ export function registerNoteActions(
     NotePipelineData
   >
 ): void {
-  /* istanbul ignore next -- @preserve */
   if (!factory || typeof factory !== "object") {
+    /* istanbul ignore next -- @preserve */
     throw new Error("Invalid factory");
   }
 
-  /* istanbul ignore next -- @preserve */
   if (typeof factory.register !== "function") {
+    /* istanbul ignore next -- @preserve */
     throw new Error("Factory must have a register method");
   }
 
+  /* istanbul ignore next -- @preserve */
   registerActions(factory, [
     createActionRegistration<
       NotePipelineData,

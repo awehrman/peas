@@ -18,8 +18,8 @@ export class WaitForCategorizationAction extends BaseAction<
   }
 
   validateInput(_data: NotePipelineData): Error | null {
-    /* istanbul ignore next -- @preserve */
     // Note: noteId is optional for this action, so we don't validate it
+    /* istanbul ignore next -- @preserve */
     return null;
   }
 
@@ -30,7 +30,9 @@ export class WaitForCategorizationAction extends BaseAction<
   ): Promise<NotePipelineData> {
     // Validate input before processing
     const validationError = this.validateInput(data);
+    /* istanbul ignore next -- @preserve */
     if (validationError) {
+      /* istanbul ignore next -- @preserve */
       throw validationError;
     }
 

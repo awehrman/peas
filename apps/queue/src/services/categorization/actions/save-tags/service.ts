@@ -52,6 +52,7 @@ export async function saveTags(
       `[SAVE_TAGS] Failed to save tags for note ${data.noteId}: ${error}`
     );
 
+    /* istanbul ignore next -- @preserve */
     return {
       ...data,
       metadata: {

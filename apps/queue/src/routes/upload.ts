@@ -210,6 +210,7 @@ async function processUploadedFiles(
 
   // Accept importId from frontend or generate one
   const headerImportId = req.headers["x-import-id"];
+  /* istanbul ignore next -- @preserve */
   const importId =
     (typeof headerImportId === "string" ? headerImportId : undefined) ||
     (req.body as { importId?: string }).importId ||

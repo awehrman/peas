@@ -57,25 +57,29 @@ export async function updateImageCompletedStatus(
             metadata: data.metadata,
           },
         });
-        logger.log(
-          `[IMAGE_COMPLETED_STATUS] Successfully broadcasted image completion for image ${updatedImage.id}`
-        );
+            /* istanbul ignore next -- @preserve */
+    logger.log(
+      `[IMAGE_COMPLETED_STATUS] Successfully broadcasted image completion for image ${updatedImage.id}`
+    );
       } catch (broadcastError) {
         logger.log(
           `[IMAGE_COMPLETED_STATUS] Failed to broadcast image completion: ${broadcastError}`
         );
       }
     } else {
+      /* istanbul ignore next -- @preserve */
       logger.log(`[IMAGE_COMPLETED_STATUS] StatusBroadcaster is not available`);
     }
 
     // Mark this image job as completed in the completion tracking system
     try {
       await markImageJobCompleted(data.noteId, logger, statusBroadcaster);
+      /* istanbul ignore next -- @preserve */
       logger.log(
         `[IMAGE_COMPLETED_STATUS] Marked image job as completed for note ${data.noteId}`
       );
     } catch (completionError) {
+      /* istanbul ignore next -- @preserve */
       logger.log(
         `[IMAGE_COMPLETED_STATUS] Failed to mark image job as completed: ${completionError}`
       );

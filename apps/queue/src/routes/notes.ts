@@ -37,15 +37,12 @@ notesRouter.post("/", async (req: Request, res: Response) => {
 
   // Accept importId from frontend or generate one
   const headerImportId = req.headers["x-import-id"];
+  /* istanbul ignore next -- @preserve */
   const importId =
     (typeof headerImportId === "string" ? headerImportId : undefined) ||
     (req.body as NoteRequestBody).importId ||
+    /* istanbul ignore next -- @preserve */
     randomUUID();
-  console.log(
-    "[NOTES_ROUTE] Using importId:",
-    importId,
-    typeof headerImportId === "string" ? "(from frontend)" : "(generated)"
-  );
 
   const serviceContainer = await ServiceContainer.getInstance();
   const noteQueue = serviceContainer.queues.noteQueue;

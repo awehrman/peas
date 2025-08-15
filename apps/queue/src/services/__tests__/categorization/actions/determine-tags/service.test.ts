@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { StructuredLogger } from "../../../../../types";
 import type { CategorizationJobData } from "../../../../categorization/types";
@@ -31,9 +31,13 @@ describe("Determine Tags Service", () => {
     data: CategorizationJobData,
     logger: StructuredLogger
   ) => Promise<CategorizationJobData>;
+  let originalToISOString: () => string;
 
   beforeEach(async () => {
     vi.clearAllMocks();
+
+    // Store the original toISOString method
+    originalToISOString = Date.prototype.toISOString;
 
     mockLogger = {
       log: vi.fn(),
@@ -57,6 +61,11 @@ describe("Determine Tags Service", () => {
       "../../../../categorization/actions/determine-tags/service"
     );
     determineTags = importedFunction;
+  });
+
+  afterEach(() => {
+    // Always restore the original toISOString method
+    Date.prototype.toISOString = originalToISOString;
   });
 
   describe("determineTags", () => {
@@ -186,6 +195,38 @@ describe("Determine Tags Service", () => {
       // Assert
       expect(result.metadata?.error).toBe("Database connection failed");
       expect(result.metadata?.errorTimestamp).toBeDefined();
+    });
+
+    it("should handle errors within the try block", async () => {
+      // Arrange - Mock a note with tags that will cause an error when processing
+      const mockNote = {
+        id: "test-note-123",
+        evernoteMetadata: {
+          tags: ["dessert", "chocolate"],
+        },
+      };
+      mockGetNoteWithEvernoteMetadata.mockResolvedValue(mockNote);
+
+      // Mock the logger.log to throw an error during the try block
+      const originalLog = mockLogger.log;
+      mockLogger.log = vi.fn().mockImplementation((message: string) => {
+        if (message.includes("Found Evernote tags")) {
+          throw new Error("Logger error during processing");
+        }
+        return originalLog(message);
+      });
+
+      // Act
+      const result = await determineTags(testData, mockLogger);
+
+      // Assert - The error should be caught and handled by the service
+      expect(result.metadata?.error).toBe("Logger error during processing");
+      expect(result.metadata?.errorTimestamp).toBeDefined();
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        expect.stringContaining(
+          "Failed to determine tags for note test-note-123: Error: Logger error during processing"
+        )
+      );
     });
 
     it("should handle note not found", async () => {

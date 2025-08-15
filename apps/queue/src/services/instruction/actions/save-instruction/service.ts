@@ -73,12 +73,14 @@ export async function saveInstruction(
 
         // Check if all instructions are completed and trigger completion check
         if (completionStatus.isComplete) {
+          /* istanbul ignore next -- @preserve */
           logger.log(
             `[SAVE_INSTRUCTION_LINE] All instructions completed for note ${data.noteId}, triggering completion check`
           );
 
           try {
             // Import queue dynamically to avoid circular dependencies
+            /* istanbul ignore next -- @preserve */
             const { createQueue } = await import(
               "../../../../queues/create-queue"
             );

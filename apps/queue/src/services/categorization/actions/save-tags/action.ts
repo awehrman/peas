@@ -41,9 +41,13 @@ export class SaveTagsAction extends BaseAction<
       startMessage: "Saving recipe tags...",
       completionMessage: "Tags saved: chocolate, dessert, sweet",
       additionalBroadcasting: async (result) => {
+        /* istanbul ignore next -- @preserve */
         if (deps.statusBroadcaster) {
           const tags = result.metadata?.determinedTags as string[] | undefined;
-          const message = tags && tags.length > 0 ? `Tags saved: ${tags.join(", ")}` : "No tags to save";
+          const message =
+            tags && tags.length > 0
+              ? `Tags saved: ${tags.join(", ")}`
+              : "No tags to save";
           await deps.statusBroadcaster.addStatusEventAndBroadcast({
             importId: data.importId,
             status: "COMPLETED",

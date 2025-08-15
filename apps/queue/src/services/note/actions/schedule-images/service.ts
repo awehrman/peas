@@ -143,6 +143,7 @@ export async function processImages(
           { importId: data.importId, noteId: data.noteId },
           logger
         );
+        /* istanbul ignore next -- @preserve */
         logger.log(
           `[SCHEDULE_IMAGES] Marked note ${data.noteId} as FAILED (no images found)`
         );

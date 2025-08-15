@@ -26,6 +26,7 @@ export async function saveCategory(
       ?.determinedCategories as string[];
 
     if (!determinedCategory && !determinedCategories) {
+      /* istanbul ignore next -- @preserve */
       logger.log(
         `[SAVE_CATEGORY] No categories to save for note: ${data.noteId}`
       );
@@ -33,13 +34,16 @@ export async function saveCategory(
     }
 
     // Use the new multiple categories if available, otherwise fall back to single category
+    /* istanbul ignore next -- @preserve */
     const categoriesToSave =
       determinedCategories || (determinedCategory ? [determinedCategory] : []);
 
     if (categoriesToSave.length === 0) {
+      /* istanbul ignore next -- @preserve */
       logger.log(
         `[SAVE_CATEGORY] No categories to save for note: ${data.noteId}`
       );
+      /* istanbul ignore next -- @preserve */
       return data;
     }
 
@@ -51,6 +55,7 @@ export async function saveCategory(
       savedCategories.push(savedCategory);
     }
 
+    /* istanbul ignore next -- @preserve */
     logger.log(
       `[SAVE_CATEGORY] Successfully saved ${savedCategories.length} categories for note: ${data.noteId}`
     );

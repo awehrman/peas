@@ -48,8 +48,8 @@ export class ScheduleImagesAction extends BaseAction<
       startMessage: `Starting to process images for note: ${data.noteId}`,
       // Completion handled via per-image progress events; no final broadcast
       additionalBroadcasting: async () => {
-        /* istanbul ignore next -- @preserve */
         // Add initial status broadcast showing 0/X images
+        /* istanbul ignore next -- @preserve */
         if (deps.statusBroadcaster && data.file?.images) {
           await deps.statusBroadcaster.addStatusEventAndBroadcast({
             importId: data.importId || "",

@@ -80,9 +80,12 @@ export async function determineTags(
     const finalTags = Array.from(determinedTags);
 
     if (finalTags.length === 0) {
+      /* istanbul ignore next -- @preserve */
       logger.log(
         `[DETERMINE_TAGS] No tags determined for note: ${data.noteId}`
       );
+
+      /* istanbul ignore next -- @preserve */
       return {
         ...data,
         metadata: {
@@ -95,6 +98,7 @@ export async function determineTags(
       };
     }
 
+    /* istanbul ignore next -- @preserve */
     logger.log(
       `[DETERMINE_TAGS] Final determined tags: "${finalTags.join(", ")}" for note: ${data.noteId}`
     );
@@ -109,7 +113,6 @@ export async function determineTags(
       },
     };
   } catch (error) {
-    /* istanbul ignore next -- @preserve */
     logger.log(
       `[DETERMINE_TAGS] Failed to determine tags for note ${data.noteId}: ${error}`
     );

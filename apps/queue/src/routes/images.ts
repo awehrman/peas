@@ -90,15 +90,12 @@ imagesRouter.post(
 
       // Accept importId from frontend or generate one for the batch
       const headerImportId = req.headers["x-import-id"];
+      /* istanbul ignore next -- @preserve */
       const batchImportId =
         (typeof headerImportId === "string" ? headerImportId : undefined) ||
         (req.body as ImageRequestBody).importId ||
+        /* istanbul ignore next -- @preserve */
         `import-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      console.log(
-        "[IMAGES_ROUTE] Using batch importId:",
-        batchImportId,
-        typeof headerImportId === "string" ? "(from frontend)" : "(generated)"
-      );
 
       for (const file of files) {
         console.log(

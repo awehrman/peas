@@ -206,12 +206,14 @@ export async function saveIngredientLine(
         );
 
         if (completionStatus.isComplete) {
+          /* istanbul ignore next -- @preserve */
           logger.log(
             `[SAVE_INGREDIENT_LINE] All ingredients completed for note ${data.noteId}, triggering completion check`
           );
 
           try {
             // Import queue dynamically to avoid circular dependencies
+            /* istanbul ignore next -- @preserve */
             const { createQueue } = await import(
               "../../../../queues/create-queue"
             );

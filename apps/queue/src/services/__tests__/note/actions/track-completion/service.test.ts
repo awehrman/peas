@@ -3,12 +3,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { StructuredLogger } from "../../../../../types";
 import {
   cleanupNoteCompletion,
+  getIngredientCompletionStatus,
   getNoteCompletionStatus,
   initializeNoteCompletion,
   markImageJobCompleted,
   markImageWorkerCompleted,
+  markIngredientLineCompleted,
   markWorkerCompleted,
   setTotalImageJobs,
+  setTotalIngredientLines,
 } from "../../../../note/actions/track-completion/service";
 
 describe("Track Completion Service", () => {
@@ -632,6 +635,100 @@ describe("Track Completion Service", () => {
         importId: importId,
         noteTitle: "",
       },
+    });
+  });
+
+  describe("ingredient tracking functions", () => {
+    it("should set total ingredient lines for a note", () => {
+      const noteId = "test-note-123";
+      const importId = "test-import-456";
+
+      initializeNoteCompletion(noteId, importId);
+      setTotalIngredientLines(noteId, 5, mockLogger);
+
+      const status = getNoteCompletionStatus(noteId);
+      expect(status?.totalIngredientLines).toBe(5);
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        "[TRACK_COMPLETION] Set total ingredient lines for note test-note-123: 5"
+      );
+    });
+
+    it("should handle setting total ingredient lines for non-existent note", () => {
+      setTotalIngredientLines("non-existent", 3, mockLogger);
+
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        "[TRACK_COMPLETION] No completion status found for note: non-existent"
+      );
+    });
+
+    it("should mark ingredient line as completed", () => {
+      const noteId = "test-note-123";
+      const importId = "test-import-456";
+
+      initializeNoteCompletion(noteId, importId);
+      setTotalIngredientLines(noteId, 3, mockLogger);
+
+      markIngredientLineCompleted(noteId, 1, 2, mockLogger);
+
+      const status = getNoteCompletionStatus(noteId);
+      expect(status?.completedIngredientLines.has("1:2")).toBe(true);
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        "[TRACK_COMPLETION] Marked ingredient line 1:2 as completed for note test-note-123. Progress: 1/3"
+      );
+    });
+
+    it("should handle marking ingredient line for non-existent note", () => {
+      markIngredientLineCompleted("non-existent", 1, 2, mockLogger);
+
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        "[TRACK_COMPLETION] No completion status found for note: non-existent"
+      );
+    });
+
+    it("should get ingredient completion status for existing note", () => {
+      const noteId = "test-note-123";
+      const importId = "test-import-456";
+
+      initializeNoteCompletion(noteId, importId);
+      setTotalIngredientLines(noteId, 4, mockLogger);
+      markIngredientLineCompleted(noteId, 1, 1, mockLogger);
+      markIngredientLineCompleted(noteId, 1, 2, mockLogger);
+
+      const status = getIngredientCompletionStatus(noteId);
+      expect(status).toEqual({
+        completedIngredients: 2,
+        totalIngredients: 4,
+        progress: "2/4",
+        isComplete: false,
+      });
+    });
+
+    it("should get ingredient completion status for non-existent note", () => {
+      const status = getIngredientCompletionStatus("non-existent");
+      expect(status).toEqual({
+        completedIngredients: 0,
+        totalIngredients: 0,
+        progress: "0/0",
+        isComplete: false,
+      });
+    });
+
+    it("should indicate completion when all ingredient lines are done", () => {
+      const noteId = "test-note-123";
+      const importId = "test-import-456";
+
+      initializeNoteCompletion(noteId, importId);
+      setTotalIngredientLines(noteId, 2, mockLogger);
+      markIngredientLineCompleted(noteId, 1, 1, mockLogger);
+      markIngredientLineCompleted(noteId, 1, 2, mockLogger);
+
+      const status = getIngredientCompletionStatus(noteId);
+      expect(status).toEqual({
+        completedIngredients: 2,
+        totalIngredients: 2,
+        progress: "2/2",
+        isComplete: true,
+      });
     });
   });
 });
