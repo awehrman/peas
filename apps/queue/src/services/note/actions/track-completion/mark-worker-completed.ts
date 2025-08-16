@@ -1,21 +1,15 @@
-import { markWorkerCompleted } from "./service";
-
-import { ActionName } from "../../../../types";
-import type {
-  NotePipelineData,
-  NoteWorkerDependencies,
-} from "../../../../types/notes";
 import { BaseAction } from "../../../../workers/core/base-action";
 import type { ActionContext } from "../../../../workers/core/types";
+import type { NotePipelineData, NoteWorkerDependencies } from "../../../../types/notes";
+import { ActionName } from "../../../../types";
+import { markWorkerCompleted } from "./service";
 
 export class MarkWorkerCompletedAction extends BaseAction<
   NotePipelineData,
   NoteWorkerDependencies,
   NotePipelineData
 > {
-  constructor(
-    private workerType: "note" | "instruction" | "ingredient" | "image"
-  ) {
+  constructor(private workerType: "note" | "instruction" | "ingredient" | "image") {
     super();
   }
 
@@ -41,7 +35,7 @@ export class MarkWorkerCompletedAction extends BaseAction<
       throw validationError;
     }
 
-    // Send start message
+    // Send start message (but only if not already processing)
     if (deps.statusBroadcaster) {
       await deps.statusBroadcaster.addStatusEventAndBroadcast({
         importId: data.importId,
@@ -61,7 +55,7 @@ export class MarkWorkerCompletedAction extends BaseAction<
       deps.statusBroadcaster
     );
 
-    // Send completion message
+    // Send completion message (but only for individual worker completion, not final completion)
     if (deps.statusBroadcaster) {
       await deps.statusBroadcaster.addStatusEventAndBroadcast({
         importId: data.importId,
@@ -82,3 +76,6 @@ export class MarkWorkerCompletedAction extends BaseAction<
 
 // Re-export the action for backward compatibility
 export const MarkNoteWorkerCompletedAction = new MarkWorkerCompletedAction("note");
+export const MarkInstructionWorkerCompletedAction = new MarkWorkerCompletedAction("instruction");
+export const MarkIngredientWorkerCompletedAction = new MarkWorkerCompletedAction("ingredient");
+export const MarkImageWorkerCompletedAction = new MarkWorkerCompletedAction("image");

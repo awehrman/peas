@@ -51,25 +51,34 @@ export async function saveInstruction(
           data.noteId
         );
 
-        await statusBroadcaster.addStatusEventAndBroadcast({
-          importId: data.importId,
-          noteId: data.noteId,
-          status: "PROCESSING",
-          message: `Processing ${completionStatus.completedInstructions}/${completionStatus.totalInstructions} instructions`,
-          context: "instruction_processing",
-          currentCount: completionStatus.completedInstructions,
-          totalCount: completionStatus.totalInstructions,
-          indentLevel: 1,
-          metadata: {
-            totalInstructions: completionStatus.totalInstructions,
-            completedInstructions: completionStatus.completedInstructions,
-            savedInstructionId: result.id,
-            lineIndex: data.lineIndex,
-          },
-        });
-        logger.log(
-          `[SAVE_INSTRUCTION_LINE] Successfully broadcasted instruction completion for line ${data.lineIndex} with ID ${result.id}`
-        );
+        // Only broadcast at meaningful milestones to prevent UI resets
+        const shouldBroadcast = 
+          completionStatus.isComplete || // All done
+          completionStatus.completedInstructions % Math.max(1, Math.floor(completionStatus.totalInstructions / 4)) === 0; // Every 25% milestone
+
+        if (shouldBroadcast) {
+          await statusBroadcaster.addStatusEventAndBroadcast({
+            importId: data.importId,
+            noteId: data.noteId,
+            status: completionStatus.isComplete ? "COMPLETED" : "PROCESSING",
+            message: completionStatus.isComplete 
+              ? `All ${completionStatus.totalInstructions} instructions processed`
+              : `Processing ${completionStatus.completedInstructions}/${completionStatus.totalInstructions} instructions`,
+            context: "instruction_processing",
+            currentCount: completionStatus.completedInstructions,
+            totalCount: completionStatus.totalInstructions,
+            indentLevel: 1,
+            metadata: {
+              totalInstructions: completionStatus.totalInstructions,
+              completedInstructions: completionStatus.completedInstructions,
+              savedInstructionId: result.id,
+              lineIndex: data.lineIndex,
+            },
+          });
+          logger.log(
+            `[SAVE_INSTRUCTION_LINE] Successfully broadcasted instruction completion for line ${data.lineIndex} with ID ${result.id}`
+          );
+        }
 
         // Check if all instructions are completed and trigger completion check
         /* istanbul ignore next -- @preserve */

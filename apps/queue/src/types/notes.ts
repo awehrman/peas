@@ -31,6 +31,7 @@ export interface NotePipelineData extends BaseJobData {
     filePath: string;
     size: number;
     extension: string;
+    importId?: string; // ImportId for this specific image (for directory uploads)
   }>;
 
   // Pipeline stage data (added by actions)

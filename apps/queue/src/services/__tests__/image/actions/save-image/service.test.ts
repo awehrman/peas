@@ -50,7 +50,7 @@ describe("saveImage", () => {
     mockData = {
       noteId: "test-note-123",
       importId: "test-import-456",
-      imageId: "test-image-789",
+      imageId: "test-import-456",
       imagePath: "/path/to/image.jpg",
       outputDir: "/path/to/output",
       filename: "image.jpg",
@@ -460,7 +460,7 @@ describe("saveImage", () => {
 
       expect(mockPrisma.image.upsert).toHaveBeenCalledWith({
         where: {
-          importId: "minimal-import",
+          importId: "minimal-import-minimal.jpg",
         },
         update: {
           originalImageUrl: "/images/original.jpg",
@@ -488,7 +488,7 @@ describe("saveImage", () => {
           originalFormat: "png",
           processingStatus: "COMPLETED",
           noteId: "minimal-note",
-          importId: "minimal-import",
+          importId: "minimal-import-minimal.jpg",
         },
       });
 
@@ -524,10 +524,10 @@ describe("saveImage", () => {
         mockLogger
       );
 
-      // Verify database was called with undefined importId
+      // Verify database was called with fallback importId
       expect(mockPrisma.image.upsert).toHaveBeenCalledWith({
         where: {
-          importId: undefined,
+          importId: "test-import-456",
         },
         update: expect.any(Object),
         create: expect.any(Object),

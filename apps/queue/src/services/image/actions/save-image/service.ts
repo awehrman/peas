@@ -45,16 +45,21 @@ export async function saveImage(
       `[SAVE_IMAGE] Upserting image record for importId: ${data.importId}`
     );
     logger.log(`[SAVE_IMAGE] NoteId: ${data.noteId}`);
-    logger.log(`[SAVE_IMAGE] Metadata: ${JSON.stringify({
-      width: data.metadata.width,
-      height: data.metadata.height,
-      format: data.metadata.format,
-      originalSize: data.originalSize,
-    })}`);
+    logger.log(
+      `[SAVE_IMAGE] Metadata: ${JSON.stringify({
+        width: data.metadata.width,
+        height: data.metadata.height,
+        format: data.metadata.format,
+        originalSize: data.originalSize,
+      })}`
+    );
+
+    // Use the provided imageId or create a unique identifier
+    const uniqueImageId = data.imageId || `${data.importId}-${data.filename}`;
 
     const image = await prisma.image.upsert({
       where: {
-        importId: data.importId, // Use importId as the unique identifier for upsert
+        importId: uniqueImageId, // Use unique imageId as the identifier for upsert
       },
       update: {
         originalImageUrl: originalUrl,
@@ -82,7 +87,7 @@ export async function saveImage(
         originalFormat: data.metadata.format,
         processingStatus: "COMPLETED",
         noteId: data.noteId,
-        importId: data.importId,
+        importId: uniqueImageId,
       },
     });
 

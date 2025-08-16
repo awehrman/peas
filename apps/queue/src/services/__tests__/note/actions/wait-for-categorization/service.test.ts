@@ -219,6 +219,10 @@ describe("WaitForCategorization Service", () => {
           errorDetails: null,
           retryCount: 0,
           maxRetries: 3,
+          startedAt: new Date(),
+          completedAt: new Date(),
+          ingredientLineId: null,
+          instructionLineId: null,
           createdAt: new Date(),
           updatedAt: new Date(),
         },
@@ -273,6 +277,10 @@ describe("WaitForCategorization Service", () => {
           errorDetails: null,
           retryCount: 0,
           maxRetries: 3,
+          startedAt: new Date(),
+          completedAt: new Date(),
+          ingredientLineId: null,
+          instructionLineId: null,
           createdAt: new Date(),
           updatedAt: new Date(),
         },
@@ -305,7 +313,9 @@ describe("WaitForCategorization Service", () => {
       };
 
       // Mock ingredient completion status to be incomplete
-      const { getIngredientCompletionStatus } = await import("../../../../note/actions/track-completion/service");
+      const { getIngredientCompletionStatus } = await import(
+        "../../../../note/actions/track-completion/service"
+      );
       vi.mocked(getIngredientCompletionStatus).mockReturnValue({
         completedIngredients: 0,
         totalIngredients: 5,

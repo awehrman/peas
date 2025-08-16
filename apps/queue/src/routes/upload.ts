@@ -147,20 +147,28 @@ uploadRouter.post(
     });
   },
   async (req, res) => {
-    console.log("[UPLOAD_ROUTE] Processing unified HTML + image upload");
+    const uploadId = randomUUID();
+    console.log(
+      `[UPLOAD_ROUTE:${uploadId}] 🚀 Starting unified HTML + image upload`
+    );
+    console.log(`[UPLOAD_ROUTE:${uploadId}] 📋 Request headers:`, {
+      "content-type": req.headers["content-type"],
+      "x-import-id": req.headers["x-import-id"],
+      "user-agent": req.headers["user-agent"],
+    });
 
     const files = req.files as Express.Multer.File[];
 
     if (!files || files.length === 0) {
-      console.log("[UPLOAD_ROUTE] No files received in request");
+      console.log(`[UPLOAD_ROUTE:${uploadId}] ❌ No files received in request`);
       return res.status(HttpStatus.BAD_REQUEST).json({
         error: "No files uploaded",
       });
     }
 
-    console.log(`[UPLOAD_ROUTE] Received ${files.length} files`);
+    console.log(`[UPLOAD_ROUTE:${uploadId}] 📁 Received ${files.length} files`);
     console.log(
-      "[UPLOAD_ROUTE] Files received:",
+      `[UPLOAD_ROUTE:${uploadId}] 📄 Files received:`,
       files.map((f) => ({
         originalname: f.originalname,
         filename: f.filename,
@@ -171,11 +179,15 @@ uploadRouter.post(
     );
 
     try {
+      console.log(`[UPLOAD_ROUTE:${uploadId}] 🔄 Starting file processing...`);
       const { result, duration } = await measureExecutionTime(
-        () => processUploadedFiles(files, req),
+        () => processUploadedFiles(files, req, uploadId),
         "Unified upload process"
       );
 
+      console.log(
+        `[UPLOAD_ROUTE:${uploadId}] ✅ Upload processing completed in ${duration}ms`
+      );
       console.log(
         formatLogMessage(LOG_MESSAGES.SUCCESS.IMPORT_COMPLETED, { duration })
       );
@@ -188,7 +200,10 @@ uploadRouter.post(
         )
       );
     } catch (error) {
-      console.error("[UPLOAD_ROUTE] Upload processing failed:", error);
+      console.error(
+        `[UPLOAD_ROUTE:${uploadId}] ❌ Upload processing failed:`,
+        error
+      );
       const errorResponse = ErrorHandler.handleRouteError(
         error,
         "unified_upload"
@@ -203,7 +218,8 @@ uploadRouter.post(
  */
 async function processUploadedFiles(
   files: Express.Multer.File[],
-  req: Request
+  req: Request,
+  uploadId: string
 ): Promise<UploadResult> {
   const serviceContainer = await ServiceContainer.getInstance();
   const noteQueue = serviceContainer.queues.noteQueue;
@@ -217,24 +233,19 @@ async function processUploadedFiles(
     randomUUID();
   /* istanbul ignore next -- @preserve */
   console.log(
-    `[UPLOAD_ROUTE] Using importId: ${importId} (${typeof headerImportId === "string" ? "from frontend" : "generated"})`
+    `[UPLOAD_ROUTE:${uploadId}] 🔑 Using importId: ${importId} (${typeof headerImportId === "string" ? "from frontend" : "generated"})`
   );
 
-  // Check if this is a directory upload
-  const isDirectoryUpload = req.body.isDirectoryUpload === "true";
-  console.log(`[UPLOAD_ROUTE] Directory upload detected: ${isDirectoryUpload}`);
+  // Extract metadata from the request
+  const uploadIndex = req.body.uploadIndex;
+  const totalUploads = req.body.totalUploads;
+  const htmlFileName = req.body.htmlFileName;
+  const associatedImageCount = req.body.associatedImageCount;
 
-  // Extract file paths if this is a directory upload
-  const htmlPaths: string[] = Array.isArray(req.body.htmlPaths)
-    ? req.body.htmlPaths
-    : [];
-  const imagePaths: string[] = Array.isArray(req.body.imagePaths)
-    ? req.body.imagePaths
-    : [];
-
-  if (isDirectoryUpload) {
-    console.log("[UPLOAD_ROUTE] HTML paths:", htmlPaths);
-    console.log("[UPLOAD_ROUTE] Image paths:", imagePaths);
+  if (uploadIndex !== undefined) {
+    console.log(
+      `[UPLOAD_ROUTE:${uploadId}] 📊 Upload ${parseInt(uploadIndex) + 1}/${totalUploads} - HTML: ${htmlFileName} with ${associatedImageCount} images`
+    );
   }
 
   // Separate HTML and image files
@@ -243,18 +254,18 @@ async function processUploadedFiles(
   const errors: string[] = [];
 
   console.log(
-    `[UPLOAD_ROUTE] Starting file classification for ${files.length} files`
+    `[UPLOAD_ROUTE:${uploadId}] 🔍 Starting file classification for ${files.length} files`
   );
 
   for (const file of files) {
     console.log(
-      `[UPLOAD_ROUTE] Analyzing file: ${file.originalname} (type: ${file.mimetype}, size: ${file.size})`
+      `[UPLOAD_ROUTE:${uploadId}] 📋 Analyzing file: ${file.originalname} (type: ${file.mimetype}, size: ${file.size})`
     );
 
     // Filter out Evernote_index files (both HTML and image variants)
     if (file.originalname.includes("Evernote_index")) {
       console.log(
-        `[UPLOAD_ROUTE] Ignoring Evernote index file: ${file.originalname}`
+        `[UPLOAD_ROUTE:${uploadId}] ⏭️ Ignoring Evernote index file: ${file.originalname}`
       );
       continue;
     }
@@ -266,305 +277,137 @@ async function processUploadedFiles(
     const isImage = await isImageFileEnhanced(file.originalname, file.path);
 
     console.log(
-      `[UPLOAD_ROUTE] File classification - isHtml: ${isHtml}, isImage: ${isImage}`
+      `[UPLOAD_ROUTE:${uploadId}] 🏷️ File classification - isHtml: ${isHtml}, isImage: ${isImage}`
     );
 
     if (isHtml) {
       htmlFiles.push(file);
-      console.log(`[UPLOAD_ROUTE] Added to htmlFiles: ${file.originalname}`);
+      console.log(
+        `[UPLOAD_ROUTE:${uploadId}] ✅ Added to htmlFiles: ${file.originalname}`
+      );
     } else if (isImage) {
       imageFiles.push(file);
       console.log(
-        `[UPLOAD_ROUTE] Added to imageFiles: ${file.originalname} (path: ${file.path})`
+        `[UPLOAD_ROUTE:${uploadId}] ✅ Added to imageFiles: ${file.originalname} (path: ${file.path})`
       );
     } else {
       console.log(
-        `[UPLOAD_ROUTE] Unsupported file type: ${file.originalname} (type: ${file.mimetype})`
+        `[UPLOAD_ROUTE:${uploadId}] ❌ Unsupported file type: ${file.originalname} (type: ${file.mimetype})`
       );
       errors.push(`Unsupported file type: ${file.originalname}`);
     }
   }
 
   console.log(
-    `[UPLOAD_ROUTE] Found ${htmlFiles.length} HTML files and ${imageFiles.length} image files`
+    `[UPLOAD_ROUTE:${uploadId}] 📊 Found ${htmlFiles.length} HTML files and ${imageFiles.length} image files`
   );
 
   // Note: Evernote_index files are now filtered out during classification above
   const filteredHtmlFiles = htmlFiles; // No additional filtering needed
 
-  // Filter htmlPaths to match filteredHtmlFiles (remove paths for Evernote files)
-  const filteredHtmlPaths: string[] = [];
-  if (isDirectoryUpload && htmlPaths.length > 0) {
-    console.log(
-      `[UPLOAD_ROUTE] Filtering HTML paths - original count: ${htmlPaths.length}`
-    );
-    console.log(`[UPLOAD_ROUTE] Original HTML paths:`, htmlPaths);
-    console.log(
-      `[UPLOAD_ROUTE] HTML files before filtering:`,
-      htmlFiles.map((f) => f.originalname)
-    );
-    console.log(
-      `[UPLOAD_ROUTE] HTML files after filtering:`,
-      filteredHtmlFiles.map((f) => f.originalname)
-    );
-
-    for (let i = 0; i < htmlFiles.length; i++) {
-      const htmlFile = htmlFiles[i];
-      const htmlPath = htmlPaths[i];
-      console.log(
-        `[UPLOAD_ROUTE] Checking path index ${i}: file=${htmlFile?.originalname}, path=${htmlPath}`
-      );
-
-      if (
-        htmlFile &&
-        htmlPath &&
-        htmlFile.originalname !== "Evernote_index.html"
-      ) {
-        filteredHtmlPaths.push(htmlPath);
-        console.log(
-          `[UPLOAD_ROUTE] Added filtered path: ${htmlPath} for file: ${htmlFile.originalname}`
-        );
-      } else {
-        console.log(
-          `[UPLOAD_ROUTE] Skipped path index ${i}: file=${htmlFile?.originalname}, path=${htmlPath}, isEvernoteIndex=${htmlFile?.originalname === "Evernote_index.html"}`
-        );
-      }
-    }
-    console.log(
-      `[UPLOAD_ROUTE] Filtered HTML paths: ${filteredHtmlPaths.length} (was ${htmlPaths.length})`
-    );
-    console.log(`[UPLOAD_ROUTE] Final filtered HTML paths:`, filteredHtmlPaths);
-  }
-
-  // Create a map to associate HTML files with their images based on directory structure
+  // SIMPLIFIED LOGIC: Since frontend handles grouping, all images are associated with the HTML file
   const htmlToImagesMap = new Map<string, Express.Multer.File[]>();
 
-  if (isDirectoryUpload && htmlPaths.length > 0 && imagePaths.length > 0) {
-    console.log("[UPLOAD_ROUTE] Organizing files by directory structure");
-    console.log(
-      "[UPLOAD_ROUTE] HTML files:",
-      htmlFiles.map((f) => f.originalname)
-    );
-    console.log(
-      "[UPLOAD_ROUTE] Image files:",
-      imageFiles.map((f) => f.originalname)
-    );
-    console.log("[UPLOAD_ROUTE] HTML paths:", htmlPaths);
-    console.log("[UPLOAD_ROUTE] Image paths:", imagePaths);
-
-    // Create a map of HTML file paths to their base directory names
-    const htmlBaseDirs = new Map<string, string>();
-    const pathsToUse = isDirectoryUpload ? filteredHtmlPaths : htmlPaths;
-    console.log(
-      `[UPLOAD_ROUTE] Using paths: ${pathsToUse.length} (filtered: ${isDirectoryUpload})`
-    );
-    console.log(`[UPLOAD_ROUTE] Paths to use:`, pathsToUse);
-
-    pathsToUse.forEach((path, index) => {
-      console.log(`[UPLOAD_ROUTE] Processing path index ${index}: ${path}`);
-      if (index < filteredHtmlFiles.length && path) {
-        const htmlFile = filteredHtmlFiles[index]!;
-        const baseDir = path!.split("/")[0]; // Get the first directory name
-        console.log(
-          `[UPLOAD_ROUTE] HTML file ${htmlFile.originalname} at index ${index}, path: ${path}, baseDir: ${baseDir}`
-        );
-
-        if (baseDir) {
-          htmlBaseDirs.set(htmlFile.originalname, baseDir);
-          console.log(
-            `[UPLOAD_ROUTE] HTML file ${htmlFile.originalname} belongs to directory: ${baseDir}`
-          );
-        } else {
-          console.log(
-            `[UPLOAD_ROUTE] No base directory found for path: ${path}`
-          );
-        }
-      } else {
-        console.log(
-          `[UPLOAD_ROUTE] Skipping path index ${index}: index >= filteredHtmlFiles.length (${index >= filteredHtmlFiles.length}) or no path (${!path})`
-        );
-      }
-    });
+  // Associate all images with the HTML file (frontend has already done the grouping)
+  if (filteredHtmlFiles.length > 0 && imageFiles.length > 0) {
+    const htmlFile = filteredHtmlFiles[0]!; // Should only be one HTML file per upload
+    htmlToImagesMap.set(htmlFile.originalname, imageFiles);
 
     console.log(
-      "[UPLOAD_ROUTE] HTML base directories:",
-      Array.from(htmlBaseDirs.entries())
-    );
-
-    // Group images by their HTML file's directory
-    console.log(
-      `[UPLOAD_ROUTE] Processing ${imageFiles.length} images for directory mapping`
-    );
-    imageFiles.forEach((imageFile, imageIndex) => {
-      console.log(
-        `[UPLOAD_ROUTE] Processing image ${imageIndex}: ${imageFile.originalname}`
-      );
-
-      if (imageIndex < imagePaths.length) {
-        const imagePath = imagePaths[imageIndex];
-        console.log(`[UPLOAD_ROUTE] Image ${imageIndex} path: ${imagePath}`);
-
-        if (imagePath) {
-          const imageDir = imagePath.split("/")[0]; // Get the first directory name
-          console.log(
-            `[UPLOAD_ROUTE] Image ${imageFile.originalname} belongs to directory: ${imageDir}`
-          );
-
-          // Find which HTML file this image belongs to
-          let matchedHtmlFile = null;
-          for (const [htmlFileName, htmlBaseDir] of htmlBaseDirs) {
-            console.log(
-              `[UPLOAD_ROUTE] Checking if image dir '${imageDir}' matches HTML dir '${htmlBaseDir}' for file '${htmlFileName}'`
-            );
-            if (htmlBaseDir === imageDir) {
-              matchedHtmlFile = htmlFileName;
-              console.log(
-                `[UPLOAD_ROUTE] ✅ MATCH: Image ${imageFile.originalname} matches HTML file ${htmlFileName}`
-              );
-              break;
-            }
-          }
-
-          if (matchedHtmlFile) {
-            if (!htmlToImagesMap.has(matchedHtmlFile)) {
-              htmlToImagesMap.set(matchedHtmlFile, []);
-              console.log(
-                `[UPLOAD_ROUTE] Created new image array for HTML file: ${matchedHtmlFile}`
-              );
-            }
-            htmlToImagesMap.get(matchedHtmlFile)!.push(imageFile);
-            console.log(
-              `[UPLOAD_ROUTE] Associated image ${imageFile.originalname} with HTML file ${matchedHtmlFile}`
-            );
-          } else {
-            console.log(
-              `[UPLOAD_ROUTE] ❌ NO MATCH: Image ${imageFile.originalname} (dir: ${imageDir}) could not be matched to any HTML file`
-            );
-            console.log(
-              `[UPLOAD_ROUTE] Available HTML directories:`,
-              Array.from(htmlBaseDirs.values())
-            );
-          }
-        } else {
-          console.log(
-            `[UPLOAD_ROUTE] No path available for image ${imageIndex}: ${imageFile.originalname}`
-          );
-        }
-      } else {
-        console.log(
-          `[UPLOAD_ROUTE] Image index ${imageIndex} out of range for imagePaths (${imagePaths.length})`
-        );
-      }
-    });
-
-    console.log(
-      "[UPLOAD_ROUTE] Final HTML to images map:",
-      Array.from(htmlToImagesMap.entries()).map(([html, images]) => [
-        html,
-        images.map((img) => img.originalname),
-      ])
+      `[UPLOAD_ROUTE:${uploadId}] 🔗 Associated ${imageFiles.length} images with HTML file ${htmlFile.originalname}`
     );
   }
+
+  // Log summary of associations
+  console.log(`[UPLOAD_ROUTE:${uploadId}] === FILE ASSOCIATION SUMMARY ===`);
+  for (const [htmlFileName, images] of htmlToImagesMap.entries()) {
+    console.log(
+      `[UPLOAD_ROUTE:${uploadId}] 📄 ${htmlFileName}: ${images.length} images`
+    );
+    images.forEach((img, index) => {
+      console.log(
+        `[UPLOAD_ROUTE:${uploadId}]   ${index + 1}. ${img.originalname}`
+      );
+    });
+  }
+  console.log(`[UPLOAD_ROUTE:${uploadId}] ================================`);
+
+  // Log summary of all images and their processing status
+  console.log(`[UPLOAD_ROUTE:${uploadId}] === IMAGE PROCESSING SUMMARY ===`);
+  console.log(
+    `[UPLOAD_ROUTE:${uploadId}] 📊 Total images: ${imageFiles.length}`
+  );
+  let associatedCount = 0;
+  for (const [, images] of htmlToImagesMap.entries()) {
+    associatedCount += images.length;
+  }
+  console.log(
+    `[UPLOAD_ROUTE:${uploadId}] 🔗 Associated with HTML files: ${associatedCount}`
+  );
+  console.log(
+    `[UPLOAD_ROUTE:${uploadId}] 🔄 Will be processed separately: ${imageFiles.length - associatedCount}`
+  );
+  console.log(`[UPLOAD_ROUTE:${uploadId}] ==================================`);
 
   // Create a map to track file renames during processing
   const fileRenameMap = new Map<string, string>();
 
-  // Function to update image files with correct filenames after conversion
-  function updateImageFilesWithRenames(
-    imageFiles: Array<{
-      fileName: string;
-      filePath: string;
-      size: number;
-      extension: string;
-    }>,
-    importId: string
-  ) {
-    return imageFiles.map((img) => {
-      const newFileName = fileRenameMap.get(img.fileName) || img.fileName;
-      const newExtension = path.extname(newFileName) || "binary";
-
-      console.log(
-        `[UPLOAD_ROUTE] Updating image file: ${img.fileName} -> ${newFileName} (extension: ${newExtension})`
-      );
-
-      return {
-        fileName: newFileName,
-        filePath: path.join(
-          process.cwd(),
-          "uploads",
-          "images",
-          importId,
-          newFileName
-        ),
-        size: img.size,
-        extension: newExtension,
-      };
-    });
-  }
-
-  // First, set up importIds and create directories
+  // Generate unique import ID for this upload
   const processedImportIds: string[] = [];
+  const htmlFileToImportIdMap = new Map<string, string>();
 
-  // Process HTML files to generate importIds and create directories
   for (const htmlFile of filteredHtmlFiles) {
     // Generate unique importId for this file
-    const fileImportId = isDirectoryUpload ? randomUUID() : importId;
+    const fileImportId = importId; // Use the single importId for this upload
     console.log(
-      `[UPLOAD_ROUTE] Using importId for ${htmlFile.originalname}: ${fileImportId}`
+      `[UPLOAD_ROUTE:${uploadId}] 🔑 Generated importId for ${htmlFile.originalname}: ${fileImportId}`
     );
 
     // Track the importId for directory creation
-    if (isDirectoryUpload) {
-      processedImportIds.push(fileImportId);
-    }
+    processedImportIds.push(fileImportId);
+    htmlFileToImportIdMap.set(htmlFile.originalname, fileImportId);
+    console.log(
+      `[UPLOAD_ROUTE:${uploadId}] 💾 Stored importId ${fileImportId} for ${htmlFile.originalname} in map`
+    );
   }
 
-  // Create image directories for each importId
-  try {
-    if (isDirectoryUpload) {
-      // For directory uploads, create separate directories for each HTML file's importId
-      for (const fileImportId of processedImportIds) {
-        const imageDir = path.join(
-          process.cwd(),
-          "uploads",
-          "images",
-          fileImportId
-        );
-        await fs.mkdir(imageDir, { recursive: true });
-        console.log(
-          `[UPLOAD_ROUTE] Created image directory for importId ${fileImportId}: ${imageDir}`
-        );
-      }
-    } else {
-      // For single file uploads, create a directory for the single importId
-      const imageDir = path.join(process.cwd(), "uploads", "images", importId);
-      await fs.mkdir(imageDir, { recursive: true });
-      console.log(
-        `[UPLOAD_ROUTE] Created coordinated image directory: ${imageDir}`
-      );
-    }
+  console.log(
+    `[UPLOAD_ROUTE:${uploadId}] 📋 Generated ${processedImportIds.length} import IDs:`,
+    processedImportIds
+  );
 
-    // Move image files to their respective directories
+  // Create image directory for this importId
+  try {
+    // Create a directory for this upload's importId
+    const imageDir = path.join(process.cwd(), "uploads", "images", importId);
+    await fs.mkdir(imageDir, { recursive: true });
+    console.log(
+      `[UPLOAD_ROUTE:${uploadId}] 📁 Created image directory: ${imageDir}`
+    );
+
+    // Move image files to their directory
     if (imageFiles.length > 0) {
       console.log(
-        `[UPLOAD_ROUTE] Moving ${imageFiles.length} image files to their respective directories`
+        `[UPLOAD_ROUTE:${uploadId}] 🚚 Moving ${imageFiles.length} image files to directory`
       );
 
       for (const [index, imageFile] of imageFiles.entries()) {
         console.log(
-          `[UPLOAD_ROUTE] Processing image ${index + 1}/${imageFiles.length}: ${imageFile.originalname}`
+          `[UPLOAD_ROUTE:${uploadId}] 🖼️ Processing image ${index + 1}/${imageFiles.length}: ${imageFile.originalname}`
         );
-        console.log(`[UPLOAD_ROUTE] Source path: ${imageFile.path}`);
+        console.log(
+          `[UPLOAD_ROUTE:${uploadId}] 📍 Source path: ${imageFile.path}`
+        );
 
         // Check if source file exists
         try {
           const sourceStats = await fs.stat(imageFile.path);
           console.log(
-            `[UPLOAD_ROUTE] Source file verified - exists: ${true}, size: ${sourceStats.size}`
+            `[UPLOAD_ROUTE:${uploadId}] ✅ Source file verified - exists: ${true}, size: ${sourceStats.size}`
           );
         } catch (sourceError) {
           console.error(
-            `[UPLOAD_ROUTE] Source file missing: ${imageFile.path}`,
+            `[UPLOAD_ROUTE:${uploadId}] ❌ Source file missing: ${imageFile.path}`,
             sourceError
           );
           errors.push(`Source file missing for ${imageFile.originalname}`);
@@ -575,47 +418,14 @@ async function processUploadedFiles(
         const hasExtension = path.extname(imageFile.originalname).length > 0;
         let finalPath = imageFile.path;
 
-        // Determine which importId to use for this image
-        let imageImportId = importId;
-        if (isDirectoryUpload) {
-          // For directory uploads, find which HTML file this image belongs to
-          const imagePath = imagePaths[index];
-          if (imagePath) {
-            const imageDir = imagePath.split("/")[0]; // Get the first directory name
-            console.log(
-              `[UPLOAD_ROUTE] Image ${imageFile.originalname} belongs to directory: ${imageDir}`
-            );
+        // Use the importId for this image (same as the HTML file)
 
-            // Find the corresponding importId for this image
-            const pathsToUse = isDirectoryUpload
-              ? filteredHtmlPaths
-              : htmlPaths;
-            for (let i = 0; i < pathsToUse.length; i++) {
-              const htmlPath = pathsToUse[i];
-              if (htmlPath && htmlPath.split("/")[0] === imageDir) {
-                if (i < processedImportIds.length) {
-                  imageImportId = processedImportIds[i]!;
-                  console.log(
-                    `[UPLOAD_ROUTE] Using importId ${imageImportId} for image ${imageFile.originalname}`
-                  );
-                }
-                break;
-              }
-            }
-          }
-        }
-
-        // Generate a clean filename using the correct importId and index
-        const imageIndex = imageFiles.indexOf(imageFile);
-        const cleanFilename = hasExtension
-          ? `${imageImportId}-image-${imageIndex}${path.extname(imageFile.originalname)}`
-          : `${imageImportId}-image-${imageIndex}.png`; // Default to PNG for binary files
-
-        let finalFilename = cleanFilename;
+        // Use original filename for files with extensions, only rename binary files
+        let finalFilename = imageFile.originalname;
 
         if (!hasExtension) {
           console.log(
-            `[UPLOAD_ROUTE] Binary image detected: ${imageFile.originalname}, attempting conversion with clean filename: ${cleanFilename}`
+            `[UPLOAD_ROUTE:${uploadId}] 🔄 Binary image detected: ${imageFile.originalname}, attempting conversion`
           );
 
           // Create a simple logger for the conversion process
@@ -627,11 +437,11 @@ async function processUploadedFiles(
             debug: (message: string) => console.log(message),
           };
 
-          // Convert with clean filename
+          // Convert binary file to standard format
           const conversionResult = await convertBinaryImageToStandardFormat(
             imageFile.path,
             logger,
-            cleanFilename // Pass the desired clean filename
+            imageFile.originalname // Use original name as base
           );
 
           if (
@@ -640,7 +450,7 @@ async function processUploadedFiles(
             conversionResult.newFilename
           ) {
             console.log(
-              `[UPLOAD_ROUTE] Conversion successful: ${imageFile.originalname} -> ${conversionResult.newFilename}`
+              `[UPLOAD_ROUTE:${uploadId}] ✅ Conversion successful: ${imageFile.originalname} -> ${conversionResult.newFilename}`
             );
             finalPath = conversionResult.outputPath;
             finalFilename = conversionResult.newFilename;
@@ -648,179 +458,148 @@ async function processUploadedFiles(
             // Track the file rename for updating pre-assigned images
             fileRenameMap.set(imageFile.originalname, finalFilename);
             console.log(
-              `[UPLOAD_ROUTE] Tracked file rename: ${imageFile.originalname} -> ${finalFilename}`
+              `[UPLOAD_ROUTE:${uploadId}] 📝 Tracked file rename: ${imageFile.originalname} -> ${finalFilename}`
             );
 
             // Clean up the original binary file
             try {
               await fs.unlink(imageFile.path);
               console.log(
-                `[UPLOAD_ROUTE] Cleaned up original binary file: ${imageFile.path}`
+                `[UPLOAD_ROUTE:${uploadId}] 🗑️ Cleaned up original binary file: ${imageFile.path}`
               );
             } catch (cleanupError) {
               /* istanbul ignore next -- @preserve */
               console.warn(
-                `[UPLOAD_ROUTE] Could not clean up original file: ${cleanupError}`
+                `[UPLOAD_ROUTE:${uploadId}] ⚠️ Could not clean up original file: ${cleanupError}`
               );
             }
           } else {
             console.log(
-              `[UPLOAD_ROUTE] Conversion failed, using original file: ${imageFile.originalname}`
+              `[UPLOAD_ROUTE:${uploadId}] ❌ Conversion failed, using original file: ${imageFile.originalname}`
             );
-            // Even if conversion fails, use the clean filename
-            finalFilename = cleanFilename;
           }
         } else {
-          // For files with extensions, just use the clean filename
+          // For files with extensions, keep original filename
           console.log(
-            `[UPLOAD_ROUTE] Using clean filename for ${imageFile.originalname}: ${cleanFilename}`
-          );
-          finalFilename = cleanFilename;
-
-          // Track the file rename for updating pre-assigned images
-          fileRenameMap.set(imageFile.originalname, finalFilename);
-          console.log(
-            `[UPLOAD_ROUTE] Tracked file rename: ${imageFile.originalname} -> ${finalFilename}`
+            `[UPLOAD_ROUTE:${uploadId}] 📄 Using original filename: ${imageFile.originalname}`
           );
         }
 
-        // Determine which directory to move the image to
-        const targetImageDir = path.join(
-          process.cwd(),
-          "uploads",
-          "images",
-          imageImportId
-        );
-        console.log(
-          `[UPLOAD_ROUTE] Moving image ${imageFile.originalname} to directory for importId: ${imageImportId}`
-        );
-
-        // Move image file to the appropriate directory
-        const targetPath = path.join(targetImageDir, finalFilename);
-        console.log(`[UPLOAD_ROUTE] Target path: ${targetPath}`);
+        // Move image file to the directory
+        const targetPath = path.join(imageDir, finalFilename);
+        console.log(`[UPLOAD_ROUTE:${uploadId}] 🎯 Target path: ${targetPath}`);
 
         try {
           await fs.rename(finalPath, targetPath);
-          console.log(`[UPLOAD_ROUTE] Successfully moved: ${finalFilename}`);
+          console.log(
+            `[UPLOAD_ROUTE:${uploadId}] ✅ Successfully moved: ${finalFilename}`
+          );
 
           // Verify the move was successful
           const targetStats = await fs.stat(targetPath);
           console.log(
-            `[UPLOAD_ROUTE] Target file verified - size: ${targetStats.size}`
+            `[UPLOAD_ROUTE:${uploadId}] ✅ Target file verified - size: ${targetStats.size}`
           );
         } catch (moveError) {
           console.error(
-            `[UPLOAD_ROUTE] Failed to move image ${finalFilename}:`,
+            `[UPLOAD_ROUTE:${uploadId}] ❌ Failed to move image ${finalFilename}:`,
             moveError
           );
           errors.push(`Failed to move ${finalFilename}: ${moveError}`);
         }
       }
 
-      // List final directory contents for each importId
-      if (isDirectoryUpload) {
-        for (const fileImportId of processedImportIds) {
-          try {
-            const imageDir = path.join(
-              process.cwd(),
-              "uploads",
-              "images",
-              fileImportId
-            );
-            const finalContents = await fs.readdir(imageDir);
-            console.log(
-              `[UPLOAD_ROUTE] Final directory contents for ${fileImportId} (${finalContents.length} items):`,
-              finalContents
-            );
-          } catch (listError) {
-            /* istanbul ignore next -- @preserve */
-            console.error(
-              `[UPLOAD_ROUTE] Could not list final directory contents for ${fileImportId}:`,
-              listError
-            );
-          }
-        }
-      } else {
-        try {
-          const imageDir = path.join(
-            process.cwd(),
-            "uploads",
-            "images",
-            importId
-          );
-          const finalContents = await fs.readdir(imageDir);
-          console.log(
-            `[UPLOAD_ROUTE] Final directory contents (${finalContents.length} items):`,
-            finalContents
-          );
-        } catch (listError) {
-          /* istanbul ignore next -- @preserve */
-          console.error(
-            `[UPLOAD_ROUTE] Could not list final directory contents:`,
-            listError
-          );
-        }
+      // List final directory contents
+      try {
+        const finalContents = await fs.readdir(imageDir);
+        console.log(
+          `[UPLOAD_ROUTE:${uploadId}] 📋 Final directory contents (${finalContents.length} items):`,
+          finalContents
+        );
+      } catch (listError) {
+        /* istanbul ignore next -- @preserve */
+        console.error(
+          `[UPLOAD_ROUTE:${uploadId}] ❌ Could not list final directory contents:`,
+          listError
+        );
       }
 
       console.log(
-        `[UPLOAD_ROUTE] Successfully organized ${imageFiles.length} images across ${isDirectoryUpload ? processedImportIds.length : 1} directories`
+        `[UPLOAD_ROUTE:${uploadId}] ✅ Successfully organized ${imageFiles.length} images in directory`
       );
 
       // Log the file rename map for debugging
       if (fileRenameMap.size > 0) {
         console.log(
-          `[UPLOAD_ROUTE] File rename map (${fileRenameMap.size} entries):`
+          `[UPLOAD_ROUTE:${uploadId}] 📝 File rename map (${fileRenameMap.size} entries):`
         );
         for (const [originalName, newName] of fileRenameMap.entries()) {
-          console.log(`[UPLOAD_ROUTE]   ${originalName} -> ${newName}`);
+          console.log(
+            `[UPLOAD_ROUTE:${uploadId}]   ${originalName} -> ${newName}`
+          );
         }
       } else {
         console.log(
-          `[UPLOAD_ROUTE] No file renames occurred during processing`
+          `[UPLOAD_ROUTE:${uploadId}] 📝 No file renames occurred during processing`
         );
       }
     } else {
-      const message = isDirectoryUpload
-        ? `No image files to move, but directories created for future use: ${processedImportIds.join(", ")}`
-        : `No image files to move, but directory created for future use: ${importId}`;
-      console.log(`[UPLOAD_ROUTE] ${message}`);
+      console.log(
+        `[UPLOAD_ROUTE:${uploadId}] 📝 No image files to move, but directory created for future use: ${importId}`
+      );
     }
   } catch (error) {
     console.error(
-      "[UPLOAD_ROUTE] Failed to create/organize image directory:",
+      `[UPLOAD_ROUTE:${uploadId}] ❌ Failed to create/organize image directory:`,
       error
     );
     errors.push(`Failed to create image directory: ${error}`);
   }
 
-  // Process HTML files first to set up the image associations
+  // Process HTML files
   for (const htmlFile of filteredHtmlFiles) {
     try {
       console.log(
-        `[UPLOAD_ROUTE] Processing HTML file: ${htmlFile.originalname}`
+        `[UPLOAD_ROUTE:${uploadId}] 📄 Processing HTML file: ${htmlFile.originalname}`
       );
 
-      // Get the importId that was already generated for this file
-      const fileImportId = isDirectoryUpload
-        ? processedImportIds[filteredHtmlFiles.indexOf(htmlFile)] || importId
-        : importId;
+      // Get the importId for this file
+      const fileImportId =
+        htmlFileToImportIdMap.get(htmlFile.originalname) || importId;
       console.log(
-        `[UPLOAD_ROUTE] Using importId for ${htmlFile.originalname}: ${fileImportId}`
+        `[UPLOAD_ROUTE:${uploadId}] 🔑 Retrieved importId for ${htmlFile.originalname}: ${fileImportId}`
       );
 
       // Find associated images for this HTML file
       const associatedImages = htmlToImagesMap.get(htmlFile.originalname) || [];
+      console.log(
+        `[UPLOAD_ROUTE:${uploadId}] 🖼️ Found ${associatedImages.length} associated images for ${htmlFile.originalname}:`,
+        associatedImages.map((img) => img.originalname)
+      );
+
+      // Debug: Show the actual image objects
+      console.log(
+        `[UPLOAD_ROUTE:${uploadId}] 🔍 Associated image objects for ${htmlFile.originalname}:`,
+        associatedImages.map((img) => ({
+          originalname: img.originalname,
+          filename: img.filename,
+          path: img.path,
+          size: img.size,
+        }))
+      );
 
       // Check if file exists before reading
-      console.log(`[UPLOAD_ROUTE] Checking file exists: ${htmlFile.path}`);
+      console.log(
+        `[UPLOAD_ROUTE:${uploadId}] 🔍 Checking file exists: ${htmlFile.path}`
+      );
       try {
         await fs.access(htmlFile.path);
         console.log(
-          `[UPLOAD_ROUTE] File exists, reading content: ${htmlFile.path}`
+          `[UPLOAD_ROUTE:${uploadId}] ✅ File exists, reading content: ${htmlFile.path}`
         );
       } catch (accessError) {
         console.error(
-          `[UPLOAD_ROUTE] File does not exist: ${htmlFile.path}`,
+          `[UPLOAD_ROUTE:${uploadId}] ❌ File does not exist: ${htmlFile.path}`,
           accessError
         );
         errors.push(`HTML file not found: ${htmlFile.originalname}`);
@@ -830,19 +609,17 @@ async function processUploadedFiles(
       // Read HTML content
       const htmlContent = await fs.readFile(htmlFile.path, "utf-8");
       console.log(
-        `[UPLOAD_ROUTE] Successfully read HTML content: ${htmlContent.length} characters`
-      );
-
-      console.log(
-        `[UPLOAD_ROUTE] Found ${associatedImages.length} associated images for ${htmlFile.originalname}`
+        `[UPLOAD_ROUTE:${uploadId}] ✅ Successfully read HTML content: ${htmlContent.length} characters`
       );
 
       // Log the file rename map before updating image files
       console.log(
-        `[UPLOAD_ROUTE] File rename map before updating image files (${fileRenameMap.size} entries):`
+        `[UPLOAD_ROUTE:${uploadId}] 📝 File rename map before updating image files (${fileRenameMap.size} entries):`
       );
       for (const [originalName, newName] of fileRenameMap.entries()) {
-        console.log(`[UPLOAD_ROUTE]   ${originalName} -> ${newName}`);
+        console.log(
+          `[UPLOAD_ROUTE:${uploadId}]   ${originalName} -> ${newName}`
+        );
       }
 
       // Create job data with unique importId for each file
@@ -850,21 +627,26 @@ async function processUploadedFiles(
         content: htmlContent,
         importId: fileImportId,
         originalFilePath: htmlFile.path, // Store for image directory discovery
-        imageFiles: updateImageFilesWithRenames(
-          associatedImages.map((img) => ({
-            fileName: img.originalname,
+        imageFiles: associatedImages.map((img) => {
+          // Use the renamed filename if it was converted, otherwise use original
+          const finalFileName =
+            fileRenameMap.get(img.originalname) || img.originalname;
+          const extension = path.extname(finalFileName) || "binary";
+
+          return {
+            fileName: finalFileName,
             filePath: path.join(
               process.cwd(),
               "uploads",
               "images",
               fileImportId,
-              img.originalname
+              finalFileName
             ),
             size: img.size,
-            extension: path.extname(img.originalname) || "binary",
-          })),
-          fileImportId
-        ), // Pass associated images to the note job
+            extension: extension,
+            importId: fileImportId, // Include the importId for this specific image
+          };
+        }),
         options: {
           skipFollowupTasks: false, // Enable image scheduling
         },
@@ -872,40 +654,61 @@ async function processUploadedFiles(
 
       // Log the final image files in job data
       console.log(
-        `[UPLOAD_ROUTE] Final image files in job data for ${htmlFile.originalname}:`
+        `[UPLOAD_ROUTE:${uploadId}] 🎯 Final image files in job data for ${htmlFile.originalname}:`
       );
       jobData.imageFiles.forEach((img, index) => {
         console.log(
-          `[UPLOAD_ROUTE]   Image ${index}: ${img.fileName} -> ${img.filePath}`
+          `[UPLOAD_ROUTE:${uploadId}]   Image ${index}: ${img.fileName} -> ${img.filePath} (importId: ${img.importId})`
         );
       });
 
       console.log(
-        `[UPLOAD_ROUTE] Adding HTML job to noteQueue for: ${htmlFile.originalname}`
+        `[UPLOAD_ROUTE:${uploadId}] 📤 Adding HTML job to noteQueue for: ${htmlFile.originalname}`
       );
       await noteQueue.add(ActionName.PARSE_HTML, jobData);
 
       // Clean up the temporary HTML file after processing
       await fs.unlink(htmlFile.path).catch((err) => {
         console.warn(
-          `[UPLOAD_ROUTE] Could not delete temp HTML file: ${err.message}`
+          `[UPLOAD_ROUTE:${uploadId}] ⚠️ Could not delete temp HTML file: ${err.message}`
         );
       });
     } catch (error) {
       console.error(
-        `[UPLOAD_ROUTE] Failed to process HTML file ${htmlFile.originalname}:`,
+        `[UPLOAD_ROUTE:${uploadId}] ❌ Failed to process HTML file ${htmlFile.originalname}:`,
         error
       );
       errors.push(`Failed to process ${htmlFile.originalname}: ${error}`);
     }
   }
 
-  // For directory uploads, return the first importId as the primary one
-  // For single file uploads, return the single importId
-  const returnImportId =
-    isDirectoryUpload && processedImportIds.length > 0
-      ? processedImportIds[0]!
-      : importId;
+  // Return the importId for this upload
+  const returnImportId = importId;
+
+  // Final summary for debugging
+  console.log(`[UPLOAD_ROUTE:${uploadId}] === FINAL UPLOAD SUMMARY ===`);
+  console.log(
+    `[UPLOAD_ROUTE:${uploadId}] 📊 Total files processed: ${files.length}`
+  );
+  console.log(
+    `[UPLOAD_ROUTE:${uploadId}] 📄 HTML files: ${filteredHtmlFiles.length}`
+  );
+  console.log(
+    `[UPLOAD_ROUTE:${uploadId}] 🖼️ Image files: ${imageFiles.length}`
+  );
+  console.log(
+    `[UPLOAD_ROUTE:${uploadId}] 🔑 Import IDs generated: ${processedImportIds.length}`
+  );
+  console.log(
+    `[UPLOAD_ROUTE:${uploadId}] 🎯 Return import ID: ${returnImportId}`
+  );
+  console.log(`[UPLOAD_ROUTE:${uploadId}] ❌ Errors: ${errors.length}`);
+  if (errors.length > 0) {
+    errors.forEach((error, index) => {
+      console.log(`[UPLOAD_ROUTE:${uploadId}]   Error ${index + 1}: ${error}`);
+    });
+  }
+  console.log(`[UPLOAD_ROUTE:${uploadId}] ==============================`);
 
   return {
     importId: returnImportId,

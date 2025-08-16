@@ -33,6 +33,7 @@ export async function processImages(
       filePath: string;
       size: number;
       extension: string;
+      importId?: string;
     }> = [];
 
     if (data.imageFiles && data.imageFiles.length > 0) {
@@ -46,6 +47,7 @@ export async function processImages(
             filePath: img.filePath,
             size: img.size,
             extension: img.extension,
+            importId: img.importId,
           }))
         )}`
       );
@@ -173,9 +175,20 @@ export async function processImages(
         `[SCHEDULE_IMAGES] Image file extension: ${imageFile.extension}`
       );
 
+      // Use the image's importId if available, otherwise fall back to the note's importId
+      const imageImportId = imageFile.importId || data.importId;
+
+      logger.log(
+        `[SCHEDULE_IMAGES] Image ${imageFile.fileName} - imageFile.importId: ${imageFile.importId}, data.importId: ${data.importId}, using: ${imageImportId}`
+      );
+
+      // Generate a unique imageId for this specific image
+      const uniqueImageId = `${imageImportId}-${imageFile.fileName}`;
+
       const imageJobData = {
         noteId: data.noteId,
-        importId: data.importId,
+        importId: imageImportId, // Use the image's importId
+        imageId: uniqueImageId,
         imagePath: imageFile.filePath,
         filename: imageFile.fileName,
         outputDir: path.join(process.cwd(), "uploads", "processed"),

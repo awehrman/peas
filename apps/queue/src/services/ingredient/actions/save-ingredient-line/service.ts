@@ -180,25 +180,34 @@ export async function saveIngredientLine(
           `[SAVE_INGREDIENT_LINE] Completion status for note ${data.noteId}: ${completionStatus.completedIngredients}/${completionStatus.totalIngredients} (isComplete: ${completionStatus.isComplete})`
         );
 
-        await statusBroadcaster.addStatusEventAndBroadcast({
-          importId: data.importId,
-          noteId: data.noteId,
-          status: "PROCESSING",
-          message: `Processing ${completionStatus.completedIngredients}/${completionStatus.totalIngredients} ingredients`,
-          context: "ingredient_processing",
-          currentCount: completionStatus.completedIngredients,
-          totalCount: completionStatus.totalIngredients,
-          indentLevel: 1,
-          metadata: {
-            totalIngredients: completionStatus.totalIngredients,
-            completedIngredients: completionStatus.completedIngredients,
-            savedIngredientId: result.id,
-            lineIndex: data.lineIndex,
-          },
-        });
-        logger.log(
-          `[SAVE_INGREDIENT_LINE] Successfully broadcasted ingredient completion for line ${data.lineIndex} with ID ${result.id}`
-        );
+        // Only broadcast at meaningful milestones to prevent UI resets
+        const shouldBroadcast = 
+          completionStatus.isComplete || // All done
+          completionStatus.completedIngredients % Math.max(1, Math.floor(completionStatus.totalIngredients / 4)) === 0; // Every 25% milestone
+
+        if (shouldBroadcast) {
+          await statusBroadcaster.addStatusEventAndBroadcast({
+            importId: data.importId,
+            noteId: data.noteId,
+            status: completionStatus.isComplete ? "COMPLETED" : "PROCESSING",
+            message: completionStatus.isComplete 
+              ? `All ${completionStatus.totalIngredients} ingredients processed`
+              : `Processing ${completionStatus.completedIngredients}/${completionStatus.totalIngredients} ingredients`,
+            context: "ingredient_processing",
+            currentCount: completionStatus.completedIngredients,
+            totalCount: completionStatus.totalIngredients,
+            indentLevel: 1,
+            metadata: {
+              totalIngredients: completionStatus.totalIngredients,
+              completedIngredients: completionStatus.completedIngredients,
+              savedIngredientId: result.id,
+              lineIndex: data.lineIndex,
+            },
+          });
+          logger.log(
+            `[SAVE_INGREDIENT_LINE] Successfully broadcasted ingredient completion for line ${data.lineIndex} with ID ${result.id}`
+          );
+        }
 
         // Check if all ingredients are completed and trigger completion check
         logger.log(

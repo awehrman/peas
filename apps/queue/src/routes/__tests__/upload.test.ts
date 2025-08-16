@@ -278,7 +278,15 @@ describe("Upload Router", () => {
           content: "<html>test</html>",
           importId: expect.any(String),
           originalFilePath: "/test/path/test-123.html",
-          imageFiles: [],
+          imageFiles: expect.arrayContaining([
+            expect.objectContaining({
+              extension: ".jpg",
+              fileName: "image.jpg",
+              filePath: expect.stringContaining("image.jpg"),
+              importId: expect.any(String),
+              size: 2048,
+            }),
+          ]),
           options: {
             skipFollowupTasks: false,
           },
@@ -501,7 +509,7 @@ describe("Upload Router", () => {
           warn: expect.any(Function),
           debug: expect.any(Function),
         }),
-        "test-uuid-1-image-0.png"
+        "binary-image"
       );
 
       expect(mockResponse.json).toHaveBeenCalledWith(
@@ -1240,14 +1248,15 @@ describe("Upload Router", () => {
           content: "<html>test content</html>",
           importId: expect.any(String), // Each file gets its own importId
           originalFilePath: "/test/path/title-a-123.html",
-          imageFiles: [
+          imageFiles: expect.arrayContaining([
             expect.objectContaining({
               fileName: "converted.jpg",
               filePath: expect.stringContaining("converted.jpg"),
               size: 2048,
               extension: "binary",
+              importId: expect.any(String),
             }),
-          ],
+          ]),
           options: {
             skipFollowupTasks: false,
           },
@@ -1261,14 +1270,7 @@ describe("Upload Router", () => {
           content: "<html>test content</html>",
           importId: expect.any(String), // Each file gets its own importId
           originalFilePath: "/test/path/title-b-789.html",
-          imageFiles: [
-            expect.objectContaining({
-              fileName: "converted.jpg",
-              filePath: expect.stringContaining("converted.jpg"),
-              size: 2048,
-              extension: "binary",
-            }),
-          ],
+          imageFiles: [],
           options: {
             skipFollowupTasks: false,
           },
@@ -1290,8 +1292,152 @@ describe("Upload Router", () => {
       );
     });
 
+    it("should handle directory upload with multiple HTML files and associated images correctly", async () => {
+      // Mock files for a directory upload with 2 HTML files and their associated images
+      const mockFiles = [
+        {
+          originalname: "recipe1.html",
+          filename: "recipe1-123.html",
+          path: "/test/path/recipe1-123.html",
+          size: 1024,
+          mimetype: "text/html",
+        },
+        {
+          originalname: "image1.jpg",
+          filename: "image1-456.jpg",
+          path: "/test/path/image1-456.jpg",
+          size: 2048,
+          mimetype: "image/jpeg",
+        },
+        {
+          originalname: "recipe2.html",
+          filename: "recipe2-789.html",
+          path: "/test/path/recipe2-789.html",
+          size: 1024,
+          mimetype: "text/html",
+        },
+        {
+          originalname: "image2.png",
+          filename: "image2-101.png",
+          path: "/test/path/image2-101.png",
+          size: 2048,
+          mimetype: "image/png",
+        },
+      ];
+
+      // Mock fs operations
+      vi.mocked(fs.access).mockResolvedValue(undefined);
+      vi.mocked(fs.readFile).mockResolvedValue("<html>Test content</html>");
+      vi.mocked(fs.stat).mockResolvedValue({ size: 1024 } as any);
+      vi.mocked(fs.mkdir).mockResolvedValue(undefined);
+      vi.mocked(fs.rename).mockResolvedValue(undefined);
+      vi.mocked(fs.readdir).mockResolvedValue([
+        { name: "image1-456.jpg" } as any,
+        { name: "image2-101.png" } as any,
+      ]);
+      vi.mocked(fs.unlink).mockResolvedValue(undefined);
+      vi.mocked(isImageFileEnhanced).mockResolvedValue(true);
+
+      // Mock path.extname to return correct extensions
+      vi.mocked(path.extname).mockImplementation((filename: string) => {
+        const ext = filename.split(".").pop();
+        return ext ? `.${ext}` : "";
+      });
+
+      // Mock image conversion
+      vi.mocked(convertBinaryImageToStandardFormat).mockResolvedValue({
+        success: true,
+        outputPath: "/test/converted.jpg",
+        newFilename: "converted.jpg",
+      });
+
+      // Mock queue operations
+      vi.mocked(mockNoteQueue.add).mockResolvedValue({
+        id: "test-job-id",
+      } as any);
+
+      // Create a mock request with directory upload data
+      const req = {
+        ...mockRequest,
+        files: mockFiles,
+        method: "POST",
+        url: "/upload/",
+        body: {
+          isDirectoryUpload: "true",
+          htmlPaths: ["recipe1/recipe1.html", "recipe2/recipe2.html"],
+          imagePaths: ["recipe1/image1.jpg", "recipe2/image2.png"],
+        },
+      };
+
+      // Find and execute the POST route handler directly (skip middleware)
+      const postRoute = uploadRouter.stack.find(
+        (layer: any) => layer.route && layer.route.methods.post
+      );
+
+      if (postRoute?.route?.stack) {
+        // Execute the main route handler (index 1, skip multer middleware at index 0)
+        const handler = postRoute.route.stack[1];
+
+        if (handler && handler.handle) {
+          await handler.handle(req, mockResponse, mockNext);
+        }
+      }
+
+      // Verify that two separate jobs were created (one for each HTML file)
+      expect(mockNoteQueue.add).toHaveBeenCalledTimes(2);
+
+      // Verify the first job (recipe1.html)
+      const firstCall = vi.mocked(mockNoteQueue.add).mock.calls[0];
+      expect(firstCall[0]).toBe("parse_html");
+      expect(firstCall[1]).toMatchObject({
+        importId: "test-uuid-2",
+        content: "<html>Test content</html>",
+        imageFiles: expect.arrayContaining([
+          {
+            fileName: "image1.jpg",
+            filePath: expect.stringContaining("test-uuid-2"),
+            size: 2048,
+            extension: ".jpg",
+            importId: "test-uuid-2",
+          },
+        ]),
+      });
+
+      // Verify the second job (recipe2.html)
+      const secondCall = vi.mocked(mockNoteQueue.add).mock.calls[1];
+      expect(secondCall[0]).toBe("parse_html");
+      expect(secondCall[1]).toMatchObject({
+        importId: "test-uuid-2",
+        content: "<html>Test content</html>",
+        imageFiles: [],
+      });
+
+      // Verify that both HTML files use the same import ID (since they're in the same upload)
+      const firstImportId = firstCall[1].importId;
+      const secondImportId = secondCall[1].importId;
+      expect(firstImportId).toBe(secondImportId);
+
+      // Verify response
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        success: true,
+        data: {
+          importId: firstImportId, // Should return the first import ID as primary
+          htmlFiles: 2,
+          imageFiles: 2,
+          totalFiles: 4,
+          errors: [],
+        },
+        message: "Upload completed successfully",
+        context: undefined,
+        timestamp: expect.any(String),
+      });
+    });
+
     // Note: The non-string headerImportId test is removed as it's not working properly
     // The coverage for lines 214-218 in upload.ts is likely already achieved by existing tests
     // that generate importIds when no header is provided
   });
+
+  // Note: Directory upload testing would require more complex mocking of the Express router
+  // and file system operations. The logic has been tested through the individual functions.
 });

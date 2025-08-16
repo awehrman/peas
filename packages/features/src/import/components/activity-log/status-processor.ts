@@ -7,9 +7,11 @@ import { StatusEvent } from "../../hooks/use-status-websocket";
  * Prevents completed steps from reverting to processing unless there's an error
  */
 function shouldUpdateToProcessing(currentStatus: string): boolean {
-  // Only allow updates if the step is still pending
-  // Once completed, it stays completed unless there's an explicit error
   return currentStatus === "pending";
+}
+
+function shouldUpdateToCompleted(currentStatus: string): boolean {
+  return currentStatus === "pending" || currentStatus === "processing";
 }
 
 export function processStatusEvents(
@@ -66,298 +68,169 @@ export function processStatusEvents(
     }
 
     const status = statusMap.get(statusKey)!;
-    const hasError = !!event.errorMessage && event.errorMessage.trim() !== "";
 
-    // Update note title and ID (only if not already set)
-    if (event.metadata?.noteTitle && !status.noteTitle) {
-      status.noteTitle = event.metadata.noteTitle as string;
-    }
+    // Update noteId if we get one
     if (event.noteId && !status.noteId) {
       status.noteId = event.noteId;
     }
 
-    // Update createdAt to the earliest event
-    if (new Date(event.createdAt) < status.createdAt) {
-      status.createdAt = new Date(event.createdAt);
+    // Update note title if available
+    if (event.metadata?.noteTitle && !status.noteTitle) {
+      status.noteTitle = event.metadata.noteTitle as string;
     }
 
-    // Process different contexts
-    switch (event.context) {
-      case "clean_html":
-        if (hasError) {
-          status.steps.cleaning = {
-            status: "failed",
-            error: event.errorMessage,
-          };
-        } else if (event.message?.includes(CompletionMessages.CLEAN_HTML)) {
-          status.steps.cleaning = {
-            status: "completed",
-            completedAt: new Date(event.createdAt),
-          };
-        } else if (shouldUpdateToProcessing(status.steps.cleaning.status)) {
-          status.steps.cleaning = { status: "processing" };
-        }
-        break;
+    // Process the event based on context and status
+    const context = event.context?.toLowerCase() || "";
+    const eventStatus = event.status?.toLowerCase() || "processing";
 
-      case "save_note":
-        if (hasError) {
-          status.steps.structure = {
-            status: "failed",
-            error: event.errorMessage,
-          };
-        } else if (
-          event.message?.includes(CompletionMessages.CREATE_STRUCTURE)
-        ) {
-          status.steps.structure = {
-            status: "completed",
-            completedAt: new Date(event.createdAt),
-          };
-        } else if (shouldUpdateToProcessing(status.steps.structure.status)) {
-          status.steps.structure = { status: "processing" };
-        }
-        break;
-
-      case "note_processing":
-        if (hasError) {
-          status.steps.noteProcessing = {
-            status: "failed",
-            error: event.errorMessage,
-          };
-        } else if (status.steps.noteProcessing.status !== "completed") {
-          status.steps.noteProcessing = { status: "processing" };
-        }
-        break;
-
-      case "ingredient_processing":
-        status.steps.ingredients.status = "processing";
-        if (
-          event.currentCount !== undefined &&
-          event.totalCount !== undefined
-        ) {
-          status.steps.ingredients.current = event.currentCount;
-          status.steps.ingredients.total = event.totalCount;
-        }
-        if (hasError) {
-          status.steps.ingredients.errors++;
-        }
-        if (
-          status.steps.ingredients.current === status.steps.ingredients.total &&
-          status.steps.ingredients.total > 0
-        ) {
+    // Handle different contexts
+    if (context.includes("cleaning") || context.includes("clean")) {
+      if (eventStatus === "completed") {
+        status.steps.cleaning.status = "completed";
+        status.steps.cleaning.completedAt = new Date(event.createdAt);
+      } else if (shouldUpdateToProcessing(status.steps.cleaning.status)) {
+        status.steps.cleaning.status = "processing";
+      }
+    } else if (context.includes("structure") || context.includes("create")) {
+      if (eventStatus === "completed") {
+        status.steps.structure.status = "completed";
+        status.steps.structure.completedAt = new Date(event.createdAt);
+      } else if (shouldUpdateToProcessing(status.steps.structure.status)) {
+        status.steps.structure.status = "processing";
+      }
+    } else if (context.includes("note") && !context.includes("ingredient") && !context.includes("instruction")) {
+      if (eventStatus === "completed") {
+        status.steps.noteProcessing.status = "completed";
+        status.steps.noteProcessing.completedAt = new Date(event.createdAt);
+      } else if (shouldUpdateToProcessing(status.steps.noteProcessing.status)) {
+        status.steps.noteProcessing.status = "processing";
+      }
+    } else if (context.includes("ingredient")) {
+      // Handle ingredient processing with progress
+      if (event.currentCount !== undefined && event.totalCount !== undefined) {
+        status.steps.ingredients.current = event.currentCount;
+        status.steps.ingredients.total = event.totalCount;
+        
+        if (eventStatus === "completed" || event.currentCount >= event.totalCount) {
           status.steps.ingredients.status = "completed";
+          status.steps.ingredients.completedAt = new Date(event.createdAt);
+        } else if (shouldUpdateToProcessing(status.steps.ingredients.status)) {
+          status.steps.ingredients.status = "processing";
         }
-
-        // Mark noteProcessing as completed when both ingredients and instructions are done
-        if (
-          status.steps.ingredients.status === "completed" &&
-          status.steps.instructions.status === "completed"
-        ) {
-          status.steps.noteProcessing.status = "completed";
-        }
-        break;
-
-      case "instruction_processing":
-        status.steps.instructions.status = "processing";
-        if (
-          event.currentCount !== undefined &&
-          event.totalCount !== undefined
-        ) {
-          status.steps.instructions.current = event.currentCount;
-          status.steps.instructions.total = event.totalCount;
-        }
-        if (hasError) {
-          status.steps.instructions.errors++;
-        }
-        if (
-          status.steps.instructions.current ===
-            status.steps.instructions.total &&
-          status.steps.instructions.total > 0
-        ) {
+      } else if (eventStatus === "completed") {
+        status.steps.ingredients.status = "completed";
+        status.steps.ingredients.completedAt = new Date(event.createdAt);
+      }
+    } else if (context.includes("instruction")) {
+      // Handle instruction processing with progress
+      if (event.currentCount !== undefined && event.totalCount !== undefined) {
+        status.steps.instructions.current = event.currentCount;
+        status.steps.instructions.total = event.totalCount;
+        
+        if (eventStatus === "completed" || event.currentCount >= event.totalCount) {
           status.steps.instructions.status = "completed";
+          status.steps.instructions.completedAt = new Date(event.createdAt);
+        } else if (shouldUpdateToProcessing(status.steps.instructions.status)) {
+          status.steps.instructions.status = "processing";
         }
-
-        // Mark noteProcessing as completed when both ingredients and instructions are done
-        if (
-          status.steps.ingredients.status === "completed" &&
-          status.steps.instructions.status === "completed"
-        ) {
-          status.steps.noteProcessing.status = "completed";
-        }
-        break;
-
-      case "PROCESS_SOURCE":
-        if (hasError) {
-          status.steps.source = {
-            status: "failed",
-            error: event.errorMessage,
-          };
-        } else if (event.message?.includes(CompletionMessages.ADD_SOURCE)) {
-          status.steps.source = { status: "completed" };
-        } else if (shouldUpdateToProcessing(status.steps.source.status)) {
-          status.steps.source = { status: "processing" };
-        }
-        break;
-
-      case "image_processing":
-        if (hasError) {
-          status.steps.image = {
-            status: "failed",
-            error: event.errorMessage,
-            current: status.steps.image.current,
-            total: status.steps.image.total,
-            errors: status.steps.image.errors + 1,
-          };
-        } else if (event.message?.includes(CompletionMessages.ADD_IMAGE)) {
-          status.steps.image = {
-            status: "completed",
-            current: status.steps.image.current,
-            total: status.steps.image.total,
-            errors: status.steps.image.errors,
-          };
-        } else if (
-          event.currentCount !== undefined &&
-          event.totalCount !== undefined
-        ) {
-          // Handle progress updates for image processing
-          status.steps.image = {
-            status: "processing",
-            current: event.currentCount,
-            total: event.totalCount,
-            errors: status.steps.image.errors,
-          };
-
-          // Mark as completed if all images are processed
-          if (event.currentCount >= event.totalCount && event.totalCount > 0) {
-            status.steps.image = {
-              status: "completed",
-              current: event.currentCount,
-              total: event.totalCount,
-              errors: status.steps.image.errors,
-            };
-          }
+      } else if (eventStatus === "completed") {
+        status.steps.instructions.status = "completed";
+        status.steps.instructions.completedAt = new Date(event.createdAt);
+      }
+    } else if (context.includes("source")) {
+      if (eventStatus === "completed") {
+        status.steps.source.status = "completed";
+        status.steps.source.completedAt = new Date(event.createdAt);
+      } else if (shouldUpdateToProcessing(status.steps.source.status)) {
+        status.steps.source.status = "processing";
+      }
+    } else if (context.includes("image")) {
+      // Handle image processing with progress
+      if (event.currentCount !== undefined && event.totalCount !== undefined) {
+        status.steps.image.current = event.currentCount;
+        status.steps.image.total = event.totalCount;
+        
+        if (eventStatus === "completed" || event.currentCount >= event.totalCount) {
+          status.steps.image.status = "completed";
+          status.steps.image.completedAt = new Date(event.createdAt);
         } else if (shouldUpdateToProcessing(status.steps.image.status)) {
-          status.steps.image = {
-            status: "processing",
-            current: status.steps.image.current,
-            total: status.steps.image.total,
-            errors: status.steps.image.errors,
-          };
+          status.steps.image.status = "processing";
         }
-        break;
-
-      case "CHECK_DUPLICATES":
-        if (hasError) {
-          status.steps.duplicates = {
-            status: "failed",
-            error: event.errorMessage,
-          };
-        } else if (
-          event.message?.includes(CompletionMessages.VERIFY_DUPLICATES) ||
-          event.message?.includes(CompletionMessages.DUPLICATE_IDENTIFIED)
-        ) {
-          status.steps.duplicates = {
-            status: "completed",
-            message: event.message,
-          };
-        } else if (shouldUpdateToProcessing(status.steps.duplicates.status)) {
-          status.steps.duplicates = { status: "processing" };
-        }
-        break;
-
-      case "categorization_scheduling":
-        // Only set to processing if not already completed
-        if (status.steps.categorization.status !== "completed") {
-          status.steps.categorization = { status: "processing" };
-        }
-        break;
-
-      case "categorization_start":
-        // Only set to processing if not already completed
-        if (status.steps.categorization.status !== "completed") {
-          status.steps.categorization = { status: "processing" };
-        }
-        break;
-
-      case "categorization_complete":
-        console.log(
-          `[STATUS_PROCESSOR] Categorization complete for import ${event.importId}, hasError: ${hasError}, message: ${event.message}`
-        );
-        if (hasError) {
-          status.steps.categorization = {
-            status: "failed",
-            error: event.errorMessage,
-          };
-        } else {
-          status.steps.categorization = {
-            status: "completed",
-            message: event.message,
-          };
-        }
-        console.log(
-          `[STATUS_PROCESSOR] Categorization status set to: ${status.steps.categorization.status}`
-        );
-        break;
-
-      case "tag_determination_start":
-        // Only set to processing if not already completed
-        if (status.steps.tags.status !== "completed") {
-          status.steps.tags = { status: "processing" };
-        }
-        break;
-
-      case "tag_determination_complete":
-        console.log(
-          `[STATUS_PROCESSOR] Tag determination complete for import ${event.importId}, hasError: ${hasError}, message: ${event.message}`
-        );
-        if (hasError) {
-          status.steps.tags = {
-            status: "failed",
-            error: event.errorMessage,
-          };
-        } else {
-          status.steps.tags = {
-            status: "completed",
-            message: event.message,
-          };
-        }
-        console.log(
-          `[STATUS_PROCESSOR] Tags status set to: ${status.steps.tags.status}`
-        );
-        break;
-
-      case "import_complete":
-        console.log(
-          `[STATUS_PROCESSOR] Import complete for import ${event.importId}, message: ${event.message}`
-        );
-        // Mark the overall import as completed
-        status.status = "completed";
-        status.completedAt = new Date();
-
-        // Update note title if provided in metadata
-        if (event.metadata?.noteTitle) {
-          status.noteTitle = event.metadata.noteTitle as string;
-        }
-        break;
+      } else if (eventStatus === "completed") {
+        status.steps.image.status = "completed";
+        status.steps.image.completedAt = new Date(event.createdAt);
+      }
+    } else if (context.includes("duplicate") || context.includes("check")) {
+      if (eventStatus === "completed") {
+        status.steps.duplicates.status = "completed";
+        status.steps.duplicates.completedAt = new Date(event.createdAt);
+      } else if (shouldUpdateToProcessing(status.steps.duplicates.status)) {
+        status.steps.duplicates.status = "processing";
+      }
+    } else if (context.includes("categorization") || context.includes("category")) {
+      if (eventStatus === "completed") {
+        status.steps.categorization.status = "completed";
+        status.steps.categorization.completedAt = new Date(event.createdAt);
+      } else if (shouldUpdateToProcessing(status.steps.categorization.status)) {
+        status.steps.categorization.status = "processing";
+      }
+    } else if (context.includes("tag")) {
+      if (eventStatus === "completed") {
+        status.steps.tags.status = "completed";
+        status.steps.tags.completedAt = new Date(event.createdAt);
+      } else if (shouldUpdateToProcessing(status.steps.tags.status)) {
+        status.steps.tags.status = "processing";
+      }
     }
 
-    // Note: Import completion is now handled by the "import_complete" event
-    // This ensures proper sequencing and prevents race conditions
+    // Handle completion status
+    if (eventStatus === "completed" && context.includes("completion")) {
+      // Check if all steps are completed
+      const allStepsCompleted = 
+        status.steps.cleaning.status === "completed" &&
+        status.steps.structure.status === "completed" &&
+        status.steps.noteProcessing.status === "completed" &&
+        status.steps.ingredients.status === "completed" &&
+        status.steps.instructions.status === "completed" &&
+        status.steps.source.status === "completed" &&
+        status.steps.image.status === "completed" &&
+        status.steps.duplicates.status === "completed" &&
+        status.steps.categorization.status === "completed" &&
+        status.steps.tags.status === "completed";
 
-    // Check if any step failed to mark import as failed
-    const anyStepFailed =
-      status.steps.cleaning.status === "failed" ||
-      status.steps.structure.status === "failed" ||
-      status.steps.noteProcessing.status === "failed" ||
-      status.steps.ingredients.status === "failed" ||
-      status.steps.instructions.status === "failed" ||
-      status.steps.source.status === "failed" ||
-      status.steps.image.status === "failed" ||
-      status.steps.duplicates.status === "failed" ||
-      status.steps.categorization.status === "failed" ||
-      status.steps.tags.status === "failed";
+      if (allStepsCompleted) {
+        status.status = "completed";
+        status.completedAt = new Date(event.createdAt);
+        console.log(`[STATUS_PROCESSOR] Import ${event.importId} marked as completed`);
+      }
+    }
 
-    if (anyStepFailed && status.status === "importing") {
+    // Handle error status
+    if (eventStatus === "failed" || event.errorMessage) {
       status.status = "failed";
+      // Set the specific step that failed
+      if (context.includes("ingredient")) {
+        status.steps.ingredients.status = "failed";
+        status.steps.ingredients.error = event.errorMessage || "Failed to process ingredients";
+      } else if (context.includes("instruction")) {
+        status.steps.instructions.status = "failed";
+        status.steps.instructions.error = event.errorMessage || "Failed to process instructions";
+      } else if (context.includes("image")) {
+        status.steps.image.status = "failed";
+        status.steps.image.error = event.errorMessage || "Failed to process images";
+      } else if (context.includes("source")) {
+        status.steps.source.status = "failed";
+        status.steps.source.error = event.errorMessage || "Failed to process source";
+      } else if (context.includes("duplicate")) {
+        status.steps.duplicates.status = "failed";
+        status.steps.duplicates.error = event.errorMessage || "Failed to check duplicates";
+      } else if (context.includes("categorization")) {
+        status.steps.categorization.status = "failed";
+        status.steps.categorization.error = event.errorMessage || "Failed to categorize";
+      } else if (context.includes("tag")) {
+        status.steps.tags.status = "failed";
+        status.steps.tags.error = event.errorMessage || "Failed to process tags";
+      }
     }
   }
 

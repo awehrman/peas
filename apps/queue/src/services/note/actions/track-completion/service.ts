@@ -120,17 +120,27 @@ export async function markImageJobCompleted(
   );
   logger.log(`[TRACK_COMPLETION] ImportId: ${status.importId}`);
 
-  // Broadcast progress update for image processing
-  if (statusBroadcaster && status.totalImageJobs > 0) {
+  // Only broadcast progress updates for significant milestones or when all images are done
+  // This reduces noise and prevents UI resets
+  const shouldBroadcast = 
+    statusBroadcaster && 
+    status.totalImageJobs > 0 && 
+    (status.completedImageJobs === status.totalImageJobs || // All done
+     status.completedImageJobs % Math.max(1, Math.floor(status.totalImageJobs / 4)) === 0); // Every 25% milestone
+
+  if (shouldBroadcast) {
     try {
+      const isComplete = status.completedImageJobs >= status.totalImageJobs;
       logger.log(
-        `[TRACK_COMPLETION] Broadcasting image progress update: ${status.completedImageJobs}/${status.totalImageJobs}`
+        `[TRACK_COMPLETION] Broadcasting image progress update: ${status.completedImageJobs}/${status.totalImageJobs}${isComplete ? ' (COMPLETE)' : ''}`
       );
       await statusBroadcaster.addStatusEventAndBroadcast({
         importId: status.importId,
         noteId: status.noteId,
-        status: "PROCESSING",
-        message: `Processing ${status.completedImageJobs}/${status.totalImageJobs} images`,
+        status: isComplete ? "COMPLETED" : "PROCESSING",
+        message: isComplete 
+          ? `All ${status.totalImageJobs} images processed`
+          : `Processing ${status.completedImageJobs}/${status.totalImageJobs} images`,
         context: "image_processing",
         currentCount: status.completedImageJobs,
         totalCount: status.totalImageJobs,
@@ -236,7 +246,8 @@ export async function markWorkerCompleted(
     `[TRACK_COMPLETION] Worker status for note ${noteId}: note=${status.noteWorkerCompleted}, instruction=${status.instructionWorkerCompleted}, ingredient=${status.ingredientWorkerCompleted}, image=${status.imageWorkerCompleted}`
   );
 
-  // If all workers are completed, update note status and broadcast completion
+  // Only broadcast completion when ALL workers are completed
+  // This prevents intermediate status updates that cause UI resets
   if (allCompleted) {
     logger.log(
       `[TRACK_COMPLETION] 🎉 All workers completed for note ${noteId}, updating note status`
@@ -252,10 +263,10 @@ export async function markWorkerCompleted(
         `[TRACK_COMPLETION] ✅ Note status updated to COMPLETED: ${noteId}`
       );
 
-      // Broadcast completion event
+      // Broadcast final completion event only
       if (statusBroadcaster && status.importId) {
         logger.log(
-          `[TRACK_COMPLETION] Broadcasting completion event for importId: ${status.importId}`
+          `[TRACK_COMPLETION] Broadcasting final completion event for importId: ${status.importId}`
         );
         await statusBroadcaster.addStatusEventAndBroadcast({
           importId: status.importId,
@@ -271,7 +282,7 @@ export async function markWorkerCompleted(
             completedIngredientLines: status.completedIngredientLines.size,
           },
         });
-        logger.log(`[TRACK_COMPLETION] ✅ Completion event broadcasted`);
+        logger.log(`[TRACK_COMPLETION] ✅ Final completion event broadcasted`);
       }
 
       // Clean up the completion status from memory
@@ -286,6 +297,8 @@ export async function markWorkerCompleted(
       logger.log(`[TRACK_COMPLETION] Error details: ${error}`);
     }
   }
+  // Note: We intentionally don't broadcast intermediate worker completions
+  // to prevent UI status resets and confusion
 }
 
 /**

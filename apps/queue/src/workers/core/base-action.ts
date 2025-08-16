@@ -231,7 +231,7 @@ export abstract class BaseAction<
           const finalContextName = contextName || this.name;
           /* istanbul ignore next -- @preserve */
           const finalCompletionMessage =
-            completionMessage || `${this.name} completed`;
+            completionMessage || `${this.name} completed successfully`;
 
           await (
             deps.statusBroadcaster as StatusBroadcaster
