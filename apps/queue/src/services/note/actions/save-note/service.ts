@@ -27,7 +27,10 @@ export async function saveNote(
     );
 
     // Create the note in the database with Evernote metadata
-    const dbNote = await db.createNoteWithEvernoteMetadata(data.file, data.importId);
+    const dbNote = await db.createNoteWithEvernoteMetadata(
+      data.file,
+      data.importId
+    );
 
     logger.log(
       `[SAVE_NOTE] Successfully created note with ID: ${dbNote.id}, title: "${dbNote.title}", evernoteMetadataId: ${dbNote.evernoteMetadataId || "none"}`
@@ -36,7 +39,12 @@ export async function saveNote(
     // Initialize completion tracking for this note
     /* istanbul ignore next -- @preserve */
     if (data.importId) {
-      await initializeNoteCompletion(dbNote.id, data.importId, logger);
+      await initializeNoteCompletion(
+        dbNote.id,
+        data.importId,
+        data.htmlFileName,
+        logger
+      );
       logger.log(
         `[SAVE_NOTE] Initialized completion tracking for note ${dbNote.id} with import ${data.importId}`
       );

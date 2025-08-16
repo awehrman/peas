@@ -1,3 +1,5 @@
+import { initializeNoteCompletion } from "./service";
+
 import { ActionName } from "../../../../types";
 import type {
   NotePipelineData,
@@ -5,7 +7,6 @@ import type {
 } from "../../../../types/notes";
 import { BaseAction } from "../../../../workers/core/base-action";
 import type { ActionContext } from "../../../../workers/core/types";
-import { initializeNoteCompletion } from "./service";
 
 export class InitializeCompletionTrackingAction extends BaseAction<
   NotePipelineData,
@@ -18,10 +19,14 @@ export class InitializeCompletionTrackingAction extends BaseAction<
 
   validateInput(data: NotePipelineData): Error | null {
     if (!data.noteId) {
-      return new Error("Note ID is required for completion tracking initialization");
+      return new Error(
+        "Note ID is required for completion tracking initialization"
+      );
     }
     if (!data.importId) {
-      return new Error("Import ID is required for completion tracking initialization");
+      return new Error(
+        "Import ID is required for completion tracking initialization"
+      );
     }
     return null;
   }
@@ -37,20 +42,13 @@ export class InitializeCompletionTrackingAction extends BaseAction<
       throw validationError;
     }
 
-    // Send start message
-    if (deps.statusBroadcaster) {
-      await deps.statusBroadcaster.addStatusEventAndBroadcast({
-        importId: data.importId,
-        status: "PROCESSING",
-        message: "Initializing completion tracking...",
-        context: "initialize_completion_tracking",
-        noteId: data.noteId,
-        indentLevel: 1,
-      });
-    }
-
     // Initialize completion tracking
-    await initializeNoteCompletion(data.noteId!, data.importId!, deps.logger);
+    await initializeNoteCompletion(
+      data.noteId!,
+      data.importId!,
+      data.htmlFileName,
+      deps.logger
+    );
 
     // Send completion message
     if (deps.statusBroadcaster) {

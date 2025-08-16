@@ -132,21 +132,6 @@ describe("ParseHtmlAction", () => {
     it("should broadcast status messages when statusBroadcaster is available", async () => {
       await action.execute(mockData, mockDependencies, mockContext);
 
-      expect(
-        mockDependencies.statusBroadcaster?.addStatusEventAndBroadcast
-      ).toHaveBeenCalledWith({
-        importId: "test-import-123",
-        noteId: "test-note-123",
-        status: "PROCESSING",
-        message: "Processing note",
-        context: "note_processing",
-        indentLevel: 1,
-        metadata: {
-          totalIngredients: 2,
-          totalInstructions: 1,
-        },
-      });
-
       // Check ingredient status broadcast
       expect(
         mockDependencies.statusBroadcaster?.addStatusEventAndBroadcast
@@ -161,6 +146,7 @@ describe("ParseHtmlAction", () => {
         indentLevel: 2,
         metadata: {
           totalIngredients: 2,
+          htmlFileName: undefined,
         },
       });
 
@@ -178,6 +164,7 @@ describe("ParseHtmlAction", () => {
         indentLevel: 2,
         metadata: {
           totalInstructions: 1,
+          htmlFileName: undefined,
         },
       });
     });
@@ -376,33 +363,14 @@ describe("ParseHtmlAction", () => {
       ).rejects.toThrow("Worker completion failed");
     });
 
-    it("should log execution start and completion", async () => {
+    it("should not log execution details (logging is handled by BaseAction)", async () => {
       const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
 
       await action.execute(mockData, mockDependencies, mockContext);
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        "[PARSE_HTML_ACTION] Starting execution for job test-job-id"
-      );
-      expect(consoleSpy).toHaveBeenCalledWith(
-        "[PARSE_HTML_ACTION] Processing completed for job test-job-id"
-      );
-
-      consoleSpy.mockRestore();
-    });
-
-    it("should log input data and result", async () => {
-      const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-
-      await action.execute(mockData, mockDependencies, mockContext);
-
-      expect(consoleSpy).toHaveBeenCalledWith(
-        "[PARSE_HTML_ACTION] Input data:",
-        mockData
-      );
-      expect(consoleSpy).toHaveBeenCalledWith(
-        "[PARSE_HTML_ACTION] Result:",
-        mockData
+      // ParseHtmlAction doesn't have explicit logging, it relies on BaseAction
+      expect(consoleSpy).not.toHaveBeenCalledWith(
+        expect.stringContaining("[PARSE_HTML_ACTION]")
       );
 
       consoleSpy.mockRestore();

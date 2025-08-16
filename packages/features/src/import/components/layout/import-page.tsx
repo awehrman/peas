@@ -2,7 +2,11 @@
 
 import { ReactNode } from "react";
 
-import { UploadProvider, useUploadContext } from "../../context/upload-context";
+import {
+  UploadProvider,
+  useUploadContext,
+} from "../../contexts/upload-context";
+import { StatusWebSocketProvider } from "../../contexts/websocket-context";
 import { useImportStatsRefetch } from "../../hooks/use-import-stats-refetch";
 import { ActivityLog } from "../activity-log";
 import { StatsSummary } from "../dashboard/stats-summary";
@@ -63,8 +67,10 @@ function ImportPageContentInner({
 
 export function ImportPageContent(props: ImportPageContentProps): ReactNode {
   return (
-    <UploadProvider>
-      <ImportPageContentInner {...props} />
-    </UploadProvider>
+    <StatusWebSocketProvider>
+      <UploadProvider>
+        <ImportPageContentInner {...props} />
+      </UploadProvider>
+    </StatusWebSocketProvider>
   );
 }

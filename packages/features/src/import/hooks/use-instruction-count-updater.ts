@@ -5,18 +5,16 @@ import { useStatusWebSocket } from "./use-status-websocket";
 import { useEffect, useState } from "react";
 
 interface UseInstructionCountUpdaterProps {
-  wsUrl: string;
+  wsUrl?: string; // Optional now since context handles it
   initialCount?: number;
 }
 
 export function useInstructionCountUpdater({
-  wsUrl,
   initialCount = 0,
-}: UseInstructionCountUpdaterProps) {
+}: Omit<UseInstructionCountUpdaterProps, "wsUrl">) {
   const [instructionCount, setInstructionCount] = useState(initialCount);
   const [totalInstructions, setTotalInstructions] = useState(0);
   const { events } = useStatusWebSocket({
-    wsUrl,
     autoReconnect: true,
     reconnectInterval: 3000,
     maxReconnectAttempts: 5,

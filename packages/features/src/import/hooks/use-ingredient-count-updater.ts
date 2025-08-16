@@ -10,12 +10,10 @@ interface UseIngredientCountUpdaterProps {
 }
 
 export function useIngredientCountUpdater({
-  wsUrl,
   initialCount = 0,
-}: UseIngredientCountUpdaterProps) {
+}: Omit<UseIngredientCountUpdaterProps, "wsUrl">) {
   const [ingredientCount, setIngredientCount] = useState(initialCount);
   const { events } = useStatusWebSocket({
-    wsUrl,
     autoReconnect: true,
     reconnectInterval: 3000,
     maxReconnectAttempts: 5,

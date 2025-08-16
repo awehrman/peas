@@ -6,6 +6,7 @@ import type { StructuredLogger } from "../../../../types";
 export interface NoteCompletionStatus {
   noteId: string;
   importId: string;
+  htmlFileName?: string; // Store the original HTML filename
   noteWorkerCompleted: boolean;
   instructionWorkerCompleted: boolean;
   ingredientWorkerCompleted: boolean;
@@ -28,11 +29,13 @@ const noteCompletionStatus = new Map<string, NoteCompletionStatus>();
 export async function initializeNoteCompletion(
   noteId: string,
   importId: string,
+  htmlFileName?: string,
   logger?: StructuredLogger
 ): Promise<void> {
   noteCompletionStatus.set(noteId, {
     noteId,
     importId,
+    htmlFileName,
     noteWorkerCompleted: false,
     instructionWorkerCompleted: false,
     ingredientWorkerCompleted: false,
@@ -122,23 +125,25 @@ export async function markImageJobCompleted(
 
   // Only broadcast progress updates for significant milestones or when all images are done
   // This reduces noise and prevents UI resets
-  const shouldBroadcast = 
-    statusBroadcaster && 
-    status.totalImageJobs > 0 && 
+  const shouldBroadcast =
+    statusBroadcaster &&
+    status.totalImageJobs > 0 &&
     (status.completedImageJobs === status.totalImageJobs || // All done
-     status.completedImageJobs % Math.max(1, Math.floor(status.totalImageJobs / 4)) === 0); // Every 25% milestone
+      status.completedImageJobs %
+        Math.max(1, Math.floor(status.totalImageJobs / 4)) ===
+        0); // Every 25% milestone
 
   if (shouldBroadcast) {
     try {
       const isComplete = status.completedImageJobs >= status.totalImageJobs;
       logger.log(
-        `[TRACK_COMPLETION] Broadcasting image progress update: ${status.completedImageJobs}/${status.totalImageJobs}${isComplete ? ' (COMPLETE)' : ''}`
+        `[TRACK_COMPLETION] Broadcasting image progress update: ${status.completedImageJobs}/${status.totalImageJobs}${isComplete ? " (COMPLETE)" : ""}`
       );
       await statusBroadcaster.addStatusEventAndBroadcast({
         importId: status.importId,
         noteId: status.noteId,
         status: isComplete ? "COMPLETED" : "PROCESSING",
-        message: isComplete 
+        message: isComplete
           ? `All ${status.totalImageJobs} images processed`
           : `Processing ${status.completedImageJobs}/${status.totalImageJobs} images`,
         context: "image_processing",
@@ -209,11 +214,6 @@ export async function markWorkerCompleted(
   }
 
   // Mark the specific worker as completed
-  logger.log(
-    `[TRACK_COMPLETION] Marking ${workerType} worker as completed for note ${noteId}`
-  );
-  logger.log(`[TRACK_COMPLETION] ImportId: ${status.importId}`);
-
   switch (workerType) {
     case "note":
       status.noteWorkerCompleted = true;
@@ -238,21 +238,9 @@ export async function markWorkerCompleted(
 
   status.allCompleted = allCompleted;
 
-  logger.log(
-    `[TRACK_COMPLETION] ✅ Worker ${workerType} completed for note ${noteId}. All completed: ${allCompleted}`
-  );
-
-  logger.log(
-    `[TRACK_COMPLETION] Worker status for note ${noteId}: note=${status.noteWorkerCompleted}, instruction=${status.instructionWorkerCompleted}, ingredient=${status.ingredientWorkerCompleted}, image=${status.imageWorkerCompleted}`
-  );
-
   // Only broadcast completion when ALL workers are completed
   // This prevents intermediate status updates that cause UI resets
   if (allCompleted) {
-    logger.log(
-      `[TRACK_COMPLETION] 🎉 All workers completed for note ${noteId}, updating note status`
-    );
-
     try {
       // Update the note status in the database
       await updateNote(noteId, {
@@ -272,15 +260,8 @@ export async function markWorkerCompleted(
         // Don't fail the main completion if parsing error count update fails
       }
 
-      logger.log(
-        `[TRACK_COMPLETION] ✅ Note status updated to COMPLETED: ${noteId}`
-      );
-
       // Broadcast final completion event only
       if (statusBroadcaster && status.importId) {
-        logger.log(
-          `[TRACK_COMPLETION] Broadcasting final completion event for importId: ${status.importId}`
-        );
         await statusBroadcaster.addStatusEventAndBroadcast({
           importId: status.importId,
           noteId: status.noteId,
@@ -289,20 +270,17 @@ export async function markWorkerCompleted(
           context: "note_completion",
           metadata: {
             noteId: status.noteId,
+            htmlFileName: status.htmlFileName,
             totalImageJobs: status.totalImageJobs,
             completedImageJobs: status.completedImageJobs,
             totalIngredientLines: status.totalIngredientLines,
             completedIngredientLines: status.completedIngredientLines.size,
           },
         });
-        logger.log(`[TRACK_COMPLETION] ✅ Final completion event broadcasted`);
       }
 
       // Clean up the completion status from memory
       noteCompletionStatus.delete(noteId);
-      logger.log(
-        `[TRACK_COMPLETION] Cleaned up completion status for note: ${noteId}`
-      );
     } catch (error) {
       logger.log(
         `[TRACK_COMPLETION] ❌ Failed to update note status or broadcast completion: ${error}`
@@ -334,14 +312,6 @@ export async function markNoteAsProcessing(
     await updateNote(noteId, {
       status: "PROCESSING",
     });
-
-    /* istanbul ignore next -- @preserve */
-    if (logger) {
-      /* istanbul ignore next -- @preserve */
-      logger.log(
-        `[TRACK_COMPLETION] Updated note ${noteId} status to PROCESSING`
-      );
-    }
   } catch (error) {
     /* istanbul ignore next -- @preserve */
     if (logger) {
@@ -377,13 +347,6 @@ export async function markNoteAsFailed(
       errorCode,
       errorDetails,
     });
-
-    /* istanbul ignore next -- @preserve */
-    if (logger) {
-      logger.log(
-        `[TRACK_COMPLETION] Updated note ${noteId} status to FAILED: ${errorMessage}`
-      );
-    }
   } catch (error) {
     /* istanbul ignore next -- @preserve */
     if (logger) {

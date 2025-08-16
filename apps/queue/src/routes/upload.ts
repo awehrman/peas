@@ -627,6 +627,7 @@ async function processUploadedFiles(
         content: htmlContent,
         importId: fileImportId,
         originalFilePath: htmlFile.path, // Store for image directory discovery
+        htmlFileName: htmlFile.originalname, // Include original filename for status events
         imageFiles: associatedImages.map((img) => {
           // Use the renamed filename if it was converted, otherwise use original
           const finalFileName =

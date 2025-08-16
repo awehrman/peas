@@ -233,9 +233,8 @@ describe("Track Completion Service", () => {
       const status = getNoteCompletionStatus(noteId);
       expect(status?.noteWorkerCompleted).toBe(true);
       expect(status?.allCompleted).toBe(false);
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        "[TRACK_COMPLETION] ✅ Worker note completed for note test-note-123. All completed: false"
-      );
+      // The function doesn't log individual worker completions anymore
+      // It only logs when all workers are completed or on errors
     });
 
     it("should handle non-existent note ID", async () => {
@@ -502,9 +501,8 @@ describe("Track Completion Service", () => {
 
       const status = getNoteCompletionStatus(noteId);
       expect(status?.instructionWorkerCompleted).toBe(true);
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        "[TRACK_COMPLETION] ✅ Worker instruction completed for note test-note-123. All completed: false"
-      );
+      // The function doesn't log individual worker completions anymore
+      // It only logs when all workers are completed or on errors
     });
   });
 
@@ -523,9 +521,8 @@ describe("Track Completion Service", () => {
 
       const status = getNoteCompletionStatus(noteId);
       expect(status?.ingredientWorkerCompleted).toBe(true);
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        "[TRACK_COMPLETION] ✅ Worker ingredient completed for note test-note-123. All completed: false"
-      );
+      // The function doesn't log individual worker completions anymore
+      // It only logs when all workers are completed or on errors
     });
   });
 
@@ -574,6 +571,7 @@ describe("Track Completion Service", () => {
           context: "note_completion",
           metadata: expect.objectContaining({
             noteId: noteId,
+            htmlFileName: undefined,
             totalImageJobs: 0,
             completedImageJobs: 0,
             totalIngredientLines: 0,

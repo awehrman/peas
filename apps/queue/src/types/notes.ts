@@ -24,6 +24,7 @@ export interface NotePipelineData extends BaseJobData {
 
   // File path information (for coordinated uploads)
   originalFilePath?: string;
+  htmlFileName?: string; // Original HTML filename for status events
 
   // Pre-assigned images from coordinated uploads
   imageFiles?: Array<{

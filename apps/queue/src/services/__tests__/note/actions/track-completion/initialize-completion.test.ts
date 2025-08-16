@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { StructuredLogger } from "../../../../../types";
 import type {
   NotePipelineData,
   NoteWorkerDependencies,
 } from "../../../../../types/notes";
 import type { ActionContext } from "../../../../../workers/core/types";
-import type { StructuredLogger } from "../../../../../types";
 import { InitializeCompletionTrackingAction } from "../../../../note/actions/track-completion/initialize-completion";
 
 // Mock dependencies
@@ -36,7 +36,11 @@ describe("InitializeCompletionTrackingAction", () => {
       } as unknown as StructuredLogger,
       statusBroadcaster: {
         addStatusEventAndBroadcast: vi.fn().mockResolvedValue({}),
-      } as unknown as { addStatusEventAndBroadcast: (event: Record<string, unknown>) => Promise<Record<string, unknown>> },
+      } as unknown as {
+        addStatusEventAndBroadcast: (
+          event: Record<string, unknown>
+        ) => Promise<Record<string, unknown>>;
+      },
       services: {
         parseHtml: vi.fn(),
         cleanHtml: vi.fn(),
@@ -99,28 +103,17 @@ describe("InitializeCompletionTrackingAction", () => {
       expect(initializeNoteCompletion).toHaveBeenCalledWith(
         "test-note-id",
         "test-import-id",
+        undefined, // htmlFileName
         mockDeps.logger
       );
       expect(
         mockDeps.statusBroadcaster?.addStatusEventAndBroadcast
-      ).toHaveBeenCalledTimes(2);
+      ).toHaveBeenCalledTimes(1);
 
-      // Check start message
+      // Check completion message (this action only sends completion, not start)
       expect(
         mockDeps.statusBroadcaster?.addStatusEventAndBroadcast
-      ).toHaveBeenNthCalledWith(1, {
-        importId: "test-import-id",
-        status: "PROCESSING",
-        message: "Initializing completion tracking...",
-        context: "initialize_completion_tracking",
-        noteId: "test-note-id",
-        indentLevel: 1,
-      });
-
-      // Check completion message
-      expect(
-        mockDeps.statusBroadcaster?.addStatusEventAndBroadcast
-      ).toHaveBeenNthCalledWith(2, {
+      ).toHaveBeenCalledWith({
         importId: "test-import-id",
         status: "COMPLETED",
         message: "Completion tracking initialized",
@@ -150,6 +143,7 @@ describe("InitializeCompletionTrackingAction", () => {
       expect(initializeNoteCompletion).toHaveBeenCalledWith(
         "test-note-id",
         "test-import-id",
+        undefined, // htmlFileName
         mockDeps.logger
       );
     });

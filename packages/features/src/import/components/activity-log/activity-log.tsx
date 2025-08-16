@@ -2,6 +2,7 @@
 
 import { ReactNode, useMemo } from "react";
 
+import { useUploadContext } from "../../contexts/upload-context";
 import { useStatusWebSocket } from "../../hooks/use-status-websocket";
 
 interface ImportItem {
@@ -26,6 +27,7 @@ export function ActivityLog({
     reconnectInterval: 3000,
     maxReconnectAttempts: 5,
   });
+  const { fileTitles } = useUploadContext();
 
   // Process events into import items
   const importItems = useMemo(() => {
@@ -54,13 +56,18 @@ export function ActivityLog({
 
       const item = items.get(importId)!;
 
+      // Try to get filename from event metadata
+      if (event.metadata?.htmlFileName && !item.htmlFileName) {
+        item.htmlFileName = event.metadata.htmlFileName as string;
+      }
+
       // Update note title if available
       if (event.metadata?.noteTitle) {
         item.noteTitle = event.metadata.noteTitle as string;
       }
 
       // Check for completion events
-      if (event.status === "COMPLETED" && event.context === "save_note") {
+      if (event.status === "COMPLETED" && event.context === "note_completion") {
         item.status = "completed";
         item.completedAt = new Date(event.createdAt);
       }
@@ -72,8 +79,9 @@ export function ActivityLog({
       }
     }
 
-    return Array.from(items.values());
-  }, [events]);
+    const result = Array.from(items.values());
+    return result;
+  }, [events, fileTitles]);
 
   // Handle connection states
   if (connectionStatus === "error" && error) {
@@ -125,15 +133,17 @@ export function ActivityLog({
         );
 
         if (!importItem) {
+          const extractedTitle = fileTitles.get(htmlFile);
+          const displayName =
+            extractedTitle || htmlFile.replace(/\.(html|htm)$/, "");
+
           return (
             <div
               key={`pending-${index}`}
               className="flex items-center space-x-3 p-3 bg-blue-50 border border-blue-200 rounded"
             >
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-              <div className="text-blue-800">
-                Importing {htmlFile.replace(/\.(html|htm)$/, "")}...
-              </div>
+              <div className="text-blue-800">Importing {displayName}...</div>
             </div>
           );
         }
@@ -164,19 +174,38 @@ export function ActivityLog({
           <div className="flex-1">
             {item.status === "completed" && (
               <div className="text-green-800 font-medium">
-                Added {item.noteTitle || item.htmlFileName || "Note"}
+                {(() => {
+                  const displayTitle =
+                    item.noteTitle ||
+                    fileTitles.get(item.htmlFileName) ||
+                    item.htmlFileName ||
+                    "Note";
+                  return `Added ${displayTitle}`;
+                })()}
               </div>
             )}
             {item.status === "failed" && (
               <div className="text-red-800 font-medium">
-                Failed to import {item.noteTitle || item.htmlFileName || "Note"}
+                {(() => {
+                  const displayTitle =
+                    item.noteTitle ||
+                    fileTitles.get(item.htmlFileName) ||
+                    item.htmlFileName ||
+                    "Note";
+                  return `Failed to import ${displayTitle}`;
+                })()}
               </div>
             )}
             {item.status === "importing" && (
               <div className="text-blue-800">
-                {item.noteTitle
-                  ? `Importing ${item.noteTitle}...`
-                  : `Importing ${item.htmlFileName || "Note"}...`}
+                {(() => {
+                  const displayTitle = item.noteTitle
+                    ? item.noteTitle
+                    : fileTitles.get(item.htmlFileName) ||
+                      item.htmlFileName ||
+                      "Note";
+                  return `Importing ${displayTitle}...`;
+                })()}
               </div>
             )}
           </div>

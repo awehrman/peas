@@ -4,9 +4,9 @@ import { useState } from "react";
 
 import { FileUpload } from "@peas/ui";
 
-import { useUploadContext } from "../../context/upload-context";
+import { useUploadContext } from "../../contexts/upload-context";
+import { extractTitlesFromFiles } from "../../utils/extract-title";
 
-// Declare fetch for TypeScript
 declare const fetch: typeof globalThis.fetch;
 
 interface Props {
@@ -25,7 +25,7 @@ export function ImportFileUpload({
 }: Props) {
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const { addUploadingHtmlFiles, removeUploadingHtmlFiles } =
+  const { addUploadingHtmlFiles, removeUploadingHtmlFiles, setFileTitles } =
     useUploadContext();
 
   const handleFilesUpload = async (files: File[]) => {
@@ -33,22 +33,11 @@ export function ImportFileUpload({
     setMessage(null);
 
     try {
-      console.log("[FRONTEND] Starting file upload process");
-      console.log("[FRONTEND] Total files received:", files.length);
-
       // Check if this is a directory upload by looking for file paths
       const hasDirectoryStructure = files.some(
         (file) =>
           file.webkitRelativePath && file.webkitRelativePath.includes("/")
       );
-
-      if (hasDirectoryStructure) {
-        console.log("[FRONTEND] Directory upload detected");
-        console.log(
-          "[FRONTEND] File paths:",
-          files.map((f) => f.webkitRelativePath)
-        );
-      }
 
       // Separate HTML files from other files
       const allHtmlFiles = files.filter(
@@ -59,19 +48,9 @@ export function ImportFileUpload({
       );
 
       // Filter out Evernote_index.html files
-      const htmlFiles = allHtmlFiles.filter((file) => {
-        const shouldIgnore = file.name === "Evernote_index.html";
-        if (shouldIgnore) {
-          console.log(`[FRONTEND] Ignoring Evernote index file: ${file.name}`);
-        }
-        return !shouldIgnore;
-      });
-
-      if (allHtmlFiles.length !== htmlFiles.length) {
-        console.log(
-          `[FRONTEND] Filtered out ${allHtmlFiles.length - htmlFiles.length} Evernote index files`
-        );
-      }
+      const htmlFiles = allHtmlFiles.filter(
+        (file) => file.name !== "Evernote_index.html"
+      );
 
       // All non-HTML files are potential images (including binary files without extensions)
       // The backend will use enhanced detection to determine which are actually images
@@ -79,23 +58,22 @@ export function ImportFileUpload({
         (file) => !htmlFiles.includes(file) // Exclude HTML files
       );
 
-      console.log("[FRONTEND] HTML files found:", htmlFiles.length);
-      console.log("[FRONTEND] Image files found:", imageFiles.length);
-
       if (htmlFiles.length === 0) {
         throw new Error(
           "No HTML files found. Please upload at least one HTML file."
         );
       }
 
+      // Extract titles from HTML files before uploading
+      const fileTitles = await extractTitlesFromFiles(htmlFiles);
+      setFileTitles(fileTitles);
+
       // Add HTML files to upload context for activity log
       const htmlFileNames = htmlFiles.map((file) => file.name);
       addUploadingHtmlFiles(htmlFileNames);
 
-      // NEW APPROACH: Group HTML files with their associated images
+      // Group HTML files with their associated images
       if (hasDirectoryStructure) {
-        console.log("[FRONTEND] Processing directory upload with grouping...");
-
         // Create a map to group images by their HTML file
         const htmlToImagesMap = new Map<string, File[]>();
 
@@ -107,9 +85,6 @@ export function ImportFileUpload({
         // Group images by matching their directory structure to HTML files
         imageFiles.forEach((imageFile) => {
           const imagePath = imageFile.webkitRelativePath || imageFile.name;
-          console.log(
-            `[FRONTEND] Processing image: ${imageFile.name} with path: ${imagePath}`
-          );
 
           // Find which HTML file this image belongs to
           let matchedHtmlFile: string | null = null;
@@ -117,10 +92,6 @@ export function ImportFileUpload({
           for (const htmlFile of htmlFiles) {
             const htmlPath = htmlFile.webkitRelativePath || htmlFile.name;
             const htmlDir = htmlPath.split("/")[0]; // Get the base directory
-
-            console.log(
-              `[FRONTEND] Checking if image ${imageFile.name} belongs to HTML ${htmlFile.name} (dir: ${htmlDir})`
-            );
 
             // Check if the image path contains the HTML file's base directory
             if (imagePath.startsWith(htmlDir + "/")) {
@@ -144,9 +115,6 @@ export function ImportFileUpload({
                       .includes(dirName.toLowerCase()))
                 ) {
                   matchedHtmlFile = htmlFile.name;
-                  console.log(
-                    `[FRONTEND] ✅ MATCH: Image ${imageFile.name} matches HTML ${htmlFile.name} via directory ${dirName}`
-                  );
                   break;
                 }
               }
@@ -159,32 +127,12 @@ export function ImportFileUpload({
             const imageArray = htmlToImagesMap.get(matchedHtmlFile);
             if (imageArray) {
               imageArray.push(imageFile);
-              console.log(
-                `[FRONTEND] 🔗 Associated image ${imageFile.name} with HTML file ${matchedHtmlFile}`
-              );
             }
-          } else {
-            console.log(
-              `[FRONTEND] ❌ NO MATCH: Image ${imageFile.name} could not be matched to any HTML file`
-            );
           }
         });
 
-        console.log(
-          "[FRONTEND] HTML to images mapping:",
-          Array.from(htmlToImagesMap.entries()).map(([htmlFile, images]) => ({
-            htmlFile,
-            count: images.length,
-            images: images.map((f) => f.name),
-          }))
-        );
-
         // Process each HTML file with its associated images
         const uploadPromises = htmlFiles.map(async (htmlFile, index) => {
-          console.log(
-            `[FRONTEND] Processing HTML file ${index + 1}/${htmlFiles.length}: ${htmlFile.name}`
-          );
-
           const associatedImages = htmlToImagesMap.get(htmlFile.name) || [];
 
           // Create FormData for this HTML file and its associated images
@@ -205,10 +153,6 @@ export function ImportFileUpload({
             associatedImages.length.toString()
           );
 
-          console.log(
-            `[FRONTEND] Uploading ${htmlFile.name} with ${associatedImages.length} associated images`
-          );
-
           const response = await fetch(`${QUEUE_API_BASE}/upload`, {
             method: "POST",
             body: formData,
@@ -219,7 +163,6 @@ export function ImportFileUpload({
           }
 
           const result = await response.json();
-          console.log(`[FRONTEND] Upload result for ${htmlFile.name}:`, result);
 
           return {
             htmlFile: htmlFile.name,
@@ -238,18 +181,10 @@ export function ImportFileUpload({
         );
         const successfulUploads = results.filter((r) => r.success).length;
 
-        console.log(
-          `[FRONTEND] All uploads completed: ${successfulUploads}/${htmlFiles.length} successful`
-        );
-        console.log(`[FRONTEND] Total images processed: ${totalImages}`);
-
         setMessage(
           `Successfully uploaded ${successfulUploads} HTML file(s) with ${totalImages} associated image(s) from directory structure. Processing started.`
         );
       } else {
-        // For non-directory uploads, use the old approach
-        console.log("[FRONTEND] Processing single file upload...");
-
         const formData = new FormData();
 
         // Add HTML files
@@ -271,8 +206,7 @@ export function ImportFileUpload({
           throw new Error(`Upload failed: ${response.statusText}`);
         }
 
-        const result = await response.json();
-        console.log("[FRONTEND] Upload result:", result);
+        await response.json();
 
         setMessage(
           `Successfully uploaded ${htmlFiles.length} HTML file(s) and ${imageFiles.length} image file(s). Processing started.`
