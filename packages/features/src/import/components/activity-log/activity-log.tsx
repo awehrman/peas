@@ -1,22 +1,78 @@
 "use client";
 
-import { ImportStatusItem } from "./import-status-item";
-import { processStatusEvents } from "./status-processor";
-import { Props } from "./types";
-
 import { ReactNode, useMemo } from "react";
 
 import { useStatusWebSocket } from "../../hooks/use-status-websocket";
 
-export function ActivityLog({ className }: Props): ReactNode {
+interface ImportItem {
+  importId: string;
+  htmlFileName: string;
+  noteTitle?: string;
+  status: "importing" | "completed" | "failed";
+  createdAt: Date;
+  completedAt?: Date;
+}
+
+interface ActivityLogProps {
+  className?: string;
+  htmlFiles?: string[]; // List of HTML files from upload
+}
+
+export function ActivityLog({
+  className,
+  htmlFiles = [],
+}: ActivityLogProps): ReactNode {
   const { events, connectionStatus, error } = useStatusWebSocket({
     reconnectInterval: 3000,
     maxReconnectAttempts: 5,
   });
 
-  // Process events into organized import statuses
-  const importStatuses = useMemo(() => {
-    return Array.from(processStatusEvents(events).values());
+  // Process events into import items
+  const importItems = useMemo(() => {
+    const items = new Map<string, ImportItem>();
+
+    // Sort events by timestamp
+    const sortedEvents = [...events].sort((a, b) => {
+      const dateA = new Date(a.createdAt);
+      const dateB = new Date(b.createdAt);
+      return dateA.getTime() - dateB.getTime();
+    });
+
+    for (const event of sortedEvents) {
+      const importId = event.importId;
+
+      if (!items.has(importId)) {
+        // Create new import item
+        items.set(importId, {
+          importId,
+          htmlFileName: "", // Will be filled from upload or events
+          noteTitle: event.metadata?.noteTitle as string,
+          status: "importing",
+          createdAt: new Date(event.createdAt),
+        });
+      }
+
+      const item = items.get(importId)!;
+
+      // Update note title if available
+      if (event.metadata?.noteTitle) {
+        item.noteTitle = event.metadata.noteTitle as string;
+      }
+
+      // Check for completion events
+      if (event.status === "COMPLETED" && event.context === "save_note") {
+        item.status = "completed";
+        item.completedAt = new Date(event.createdAt);
+      }
+
+      // Check for failure events
+      if (event.status === "FAILED") {
+        item.status = "failed";
+        item.completedAt = new Date(event.createdAt);
+      }
+    }
+
+    return Array.from(items.values());
   }, [events]);
 
   // Handle connection states
@@ -46,7 +102,7 @@ export function ActivityLog({ className }: Props): ReactNode {
     );
   }
 
-  if (importStatuses.length === 0) {
+  if (importItems.length === 0 && htmlFiles.length === 0) {
     return (
       <div className={`text-gray-500 ${className || ""}`}>
         No import activity yet...
@@ -55,12 +111,83 @@ export function ActivityLog({ className }: Props): ReactNode {
   }
 
   return (
-    <div className={`${className || ""}`}>
-      {importStatuses.map((importStatus) => (
-        <ImportStatusItem
-          key={importStatus.importId}
-          importStatus={importStatus}
-        />
+    <div className={`space-y-3 ${className || ""}`}>
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">
+        Import Activity
+      </h3>
+
+      {/* Show HTML files that are being uploaded but don't have events yet */}
+      {htmlFiles.map((htmlFile, index) => {
+        const importItem = importItems.find(
+          (item) =>
+            item.htmlFileName === htmlFile ||
+            item.noteTitle === htmlFile.replace(/\.(html|htm)$/, "")
+        );
+
+        if (!importItem) {
+          return (
+            <div
+              key={`pending-${index}`}
+              className="flex items-center space-x-3 p-3 bg-blue-50 border border-blue-200 rounded"
+            >
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+              <div className="text-blue-800">
+                Importing {htmlFile.replace(/\.(html|htm)$/, "")}...
+              </div>
+            </div>
+          );
+        }
+
+        return null; // Will be rendered in the importItems loop
+      })}
+
+      {/* Show import items with events */}
+      {importItems.map((item) => (
+        <div
+          key={item.importId}
+          className="flex items-center space-x-3 p-3 border rounded"
+        >
+          {/* Status Icon */}
+          <div className="flex-shrink-0">
+            {item.status === "completed" && (
+              <div className="text-green-600 text-lg">✅</div>
+            )}
+            {item.status === "failed" && (
+              <div className="text-red-600 text-lg">❌</div>
+            )}
+            {item.status === "importing" && (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+            )}
+          </div>
+
+          {/* Status Text */}
+          <div className="flex-1">
+            {item.status === "completed" && (
+              <div className="text-green-800 font-medium">
+                Added {item.noteTitle || item.htmlFileName || "Note"}
+              </div>
+            )}
+            {item.status === "failed" && (
+              <div className="text-red-800 font-medium">
+                Failed to import {item.noteTitle || item.htmlFileName || "Note"}
+              </div>
+            )}
+            {item.status === "importing" && (
+              <div className="text-blue-800">
+                {item.noteTitle
+                  ? `Importing ${item.noteTitle}...`
+                  : `Importing ${item.htmlFileName || "Note"}...`}
+              </div>
+            )}
+          </div>
+
+          {/* Timestamp */}
+          <div className="text-sm text-gray-500">
+            {item.completedAt
+              ? item.completedAt.toLocaleTimeString()
+              : item.createdAt.toLocaleTimeString()}
+          </div>
+        </div>
       ))}
     </div>
   );

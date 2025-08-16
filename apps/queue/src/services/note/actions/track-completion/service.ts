@@ -1,4 +1,4 @@
-import { updateNote } from "@peas/database";
+import { updateNote, updateParsingErrorCount } from "@peas/database";
 import type { Prisma } from "@peas/database";
 
 import type { StructuredLogger } from "../../../../types";
@@ -258,6 +258,19 @@ export async function markWorkerCompleted(
       await updateNote(noteId, {
         status: "COMPLETED",
       });
+
+      // Update the parsing error count based on actual parsing errors
+      try {
+        await updateParsingErrorCount(noteId);
+        logger.log(
+          `[TRACK_COMPLETION] ✅ Updated parsing error count for note: ${noteId}`
+        );
+      } catch (error) {
+        logger.log(
+          `[TRACK_COMPLETION] ⚠️ Failed to update parsing error count for note ${noteId}: ${error}`
+        );
+        // Don't fail the main completion if parsing error count update fails
+      }
 
       logger.log(
         `[TRACK_COMPLETION] ✅ Note status updated to COMPLETED: ${noteId}`

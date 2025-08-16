@@ -181,16 +181,18 @@ export async function saveIngredientLine(
         );
 
         // Only broadcast at meaningful milestones to prevent UI resets
-        const shouldBroadcast = 
+        const shouldBroadcast =
           completionStatus.isComplete || // All done
-          completionStatus.completedIngredients % Math.max(1, Math.floor(completionStatus.totalIngredients / 4)) === 0; // Every 25% milestone
+          completionStatus.completedIngredients %
+            Math.max(1, Math.floor(completionStatus.totalIngredients / 4)) ===
+            0; // Every 25% milestone
 
         if (shouldBroadcast) {
           await statusBroadcaster.addStatusEventAndBroadcast({
             importId: data.importId,
             noteId: data.noteId,
             status: completionStatus.isComplete ? "COMPLETED" : "PROCESSING",
-            message: completionStatus.isComplete 
+            message: completionStatus.isComplete
               ? `All ${completionStatus.totalIngredients} ingredients processed`
               : `Processing ${completionStatus.completedIngredients}/${completionStatus.totalIngredients} ingredients`,
             context: "ingredient_processing",

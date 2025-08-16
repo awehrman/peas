@@ -631,6 +631,35 @@ export async function updateNote(
 }
 
 /**
+ * Count parsing errors and update the parsing error count for a note
+ */
+export async function updateParsingErrorCount(noteId: string): Promise<void> {
+  try {
+    // Count ingredient lines with COMPLETED_WITH_ERROR status
+    const ingredientErrorCount = await prisma.parsedIngredientLine.count({
+      where: {
+        noteId,
+        parseStatus: "COMPLETED_WITH_ERROR",
+      },
+    });
+
+    // Update the note with the total error count
+    await prisma.note.update({
+      where: { id: noteId },
+      data: {
+        parsingErrorCount: ingredientErrorCount,
+      },
+    });
+  } catch (error) {
+    console.error(
+      `Failed to update parsing error count for note ${noteId}:`,
+      error
+    );
+    throw error;
+  }
+}
+
+/**
  * Save a category to a note
  * @param noteId The ID of the note to save the category to
  * @param categoryName The name of the category to save

@@ -4,6 +4,8 @@ import { useState } from "react";
 
 import { FileUpload } from "@peas/ui";
 
+import { useUploadContext } from "../../context/upload-context";
+
 // Declare fetch for TypeScript
 declare const fetch: typeof globalThis.fetch;
 
@@ -23,6 +25,8 @@ export function ImportFileUpload({
 }: Props) {
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const { addUploadingHtmlFiles, removeUploadingHtmlFiles } =
+    useUploadContext();
 
   const handleFilesUpload = async (files: File[]) => {
     setUploading(true);
@@ -83,6 +87,10 @@ export function ImportFileUpload({
           "No HTML files found. Please upload at least one HTML file."
         );
       }
+
+      // Add HTML files to upload context for activity log
+      const htmlFileNames = htmlFiles.map((file) => file.name);
+      addUploadingHtmlFiles(htmlFileNames);
 
       // NEW APPROACH: Group HTML files with their associated images
       if (hasDirectoryStructure) {
@@ -177,17 +185,10 @@ export function ImportFileUpload({
             `[FRONTEND] Processing HTML file ${index + 1}/${htmlFiles.length}: ${htmlFile.name}`
           );
 
-          // Find associated images for this HTML file
           const associatedImages = htmlToImagesMap.get(htmlFile.name) || [];
-          console.log(
-            `[FRONTEND] Found ${associatedImages.length} associated images for ${htmlFile.name}:`,
-            associatedImages.map((img) => img.name)
-          );
 
-          // Create FormData for this HTML file and its images
+          // Create FormData for this HTML file and its associated images
           const formData = new FormData();
-
-          // Add the HTML file
           formData.append("html", htmlFile);
 
           // Add associated images
@@ -205,7 +206,7 @@ export function ImportFileUpload({
           );
 
           console.log(
-            `[FRONTEND] Uploading ${htmlFile.name} with ${associatedImages.length} images...`
+            `[FRONTEND] Uploading ${htmlFile.name} with ${associatedImages.length} associated images`
           );
 
           const response = await fetch(`${QUEUE_API_BASE}/upload`, {
@@ -214,17 +215,11 @@ export function ImportFileUpload({
           });
 
           if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(
-              `Upload failed for ${htmlFile.name}: ${response.status} ${response.statusText} - ${errorText}`
-            );
+            throw new Error(`Upload failed: ${response.statusText}`);
           }
 
           const result = await response.json();
-          console.log(
-            `[FRONTEND] Upload successful for ${htmlFile.name}:`,
-            result
-          );
+          console.log(`[FRONTEND] Upload result for ${htmlFile.name}:`, result);
 
           return {
             htmlFile: htmlFile.name,
@@ -253,9 +248,8 @@ export function ImportFileUpload({
         );
       } else {
         // For non-directory uploads, use the old approach
-        console.log("[FRONTEND] Processing non-directory upload...");
+        console.log("[FRONTEND] Processing single file upload...");
 
-        // Create FormData for unified upload (HTML + images together)
         const formData = new FormData();
 
         // Add HTML files
@@ -268,57 +262,70 @@ export function ImportFileUpload({
           formData.append("images", file);
         });
 
-        console.log(
-          `[FRONTEND] Sending ${htmlFiles.length} HTML files and ${imageFiles.length} image files to /upload`
-        );
-
         const response = await fetch(`${QUEUE_API_BASE}/upload`, {
           method: "POST",
           body: formData,
         });
 
         if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(
-            `Upload failed: ${response.status} ${response.statusText} - ${errorText}`
-          );
+          throw new Error(`Upload failed: ${response.statusText}`);
         }
 
         const result = await response.json();
-        console.log("[FRONTEND] Upload successful:", result);
+        console.log("[FRONTEND] Upload result:", result);
 
         setMessage(
           `Successfully uploaded ${htmlFiles.length} HTML file(s) and ${imageFiles.length} image file(s). Processing started.`
         );
       }
+
+      // Remove HTML files from upload context after successful upload
+      removeUploadingHtmlFiles(htmlFileNames);
     } catch (error) {
       console.error("[FRONTEND] Upload error:", error);
       setMessage(
-        error instanceof Error
-          ? error.message
-          : "Upload failed. Please try again."
+        `Upload failed: ${error instanceof Error ? error.message : "Unknown error"}`
       );
+
+      // Remove HTML files from upload context on error
+      const htmlFileNames = files
+        .filter(
+          (file) =>
+            file.type === "text/html" ||
+            file.name.endsWith(".html") ||
+            file.name.endsWith(".htm")
+        )
+        .filter((file) => file.name !== "Evernote_index.html")
+        .map((file) => file.name);
+      removeUploadingHtmlFiles(htmlFileNames);
     } finally {
       setUploading(false);
     }
-  };
-
-  const handleFileUpload = (file: File) => {
-    handleFilesUpload([file]);
   };
 
   return (
     <div className={className}>
       <FileUpload
         onFilesUpload={handleFilesUpload}
-        onFileUpload={handleFileUpload}
         maxFileSize={maxFileSize}
         acceptedFileTypes={acceptedFileTypes}
         disabled={uploading}
         multiple={true}
         allowDirectories={true}
       />
-      {message && <p className="mt-2 text-sm text-gray-600">{message}</p>}
+      {message && (
+        <div className="mt-4 p-3 rounded text-sm">
+          {message.includes("failed") ? (
+            <div className="text-red-700 bg-red-50 border border-red-200">
+              {message}
+            </div>
+          ) : (
+            <div className="text-green-700 bg-green-50 border border-green-200">
+              {message}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

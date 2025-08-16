@@ -2,8 +2,9 @@
 
 import { ReactNode } from "react";
 
+import { UploadProvider, useUploadContext } from "../../context/upload-context";
 import { useImportStatsRefetch } from "../../hooks/use-import-stats-refetch";
-import { ActivityLog } from "../activity-log/activity-log";
+import { ActivityLog } from "../activity-log";
 import { StatsSummary } from "../dashboard/stats-summary";
 import { ImportFileUpload } from "../file-upload/file-upload";
 
@@ -19,7 +20,7 @@ interface ImportPageContentProps {
   initialParsingErrorCount: number;
 }
 
-export function ImportPageContent({
+function ImportPageContentInner({
   initialNoteCount,
   initialIngredientCount,
   initialParsingErrorCount,
@@ -33,7 +34,7 @@ export function ImportPageContent({
     },
   });
 
-
+  const { uploadingHtmlFiles } = useUploadContext();
 
   return (
     <>
@@ -47,7 +48,7 @@ export function ImportPageContent({
             className="mb-8"
           />
           <div className="flex-1">
-            <ActivityLog className="mb-8" />
+            <ActivityLog className="mb-8" htmlFiles={uploadingHtmlFiles} />
           </div>
         </div>
 
@@ -57,5 +58,13 @@ export function ImportPageContent({
         </div>
       </div>
     </>
+  );
+}
+
+export function ImportPageContent(props: ImportPageContentProps): ReactNode {
+  return (
+    <UploadProvider>
+      <ImportPageContentInner {...props} />
+    </UploadProvider>
   );
 }
