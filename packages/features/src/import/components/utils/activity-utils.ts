@@ -41,8 +41,16 @@ export function getStatusIndicator(status: string): string {
   }
 }
 
+// Interface for events that might have cleaning messages
+interface EventWithMessage {
+  errorMessage?: string;
+  message?: string;
+  context?: string;
+  status?: string;
+}
+
 // Helper function to filter out cleaning messages
-export function filterCleaningMessages(event: any): boolean {
+export function filterCleaningMessages(event: EventWithMessage): boolean {
   const message =
     event.errorMessage ||
     event.message ||

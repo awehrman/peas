@@ -80,6 +80,7 @@ function SidebarNavigation({
         <form
           action={signOut}
           className="flex items-center gap-3 w-full p-3 rounded-md transition-colors text-muted-foreground hover:text-foreground hover:bg-muted"
+          onSubmit={() => setIsExpanded(false)}
         >
           <LogOut className="mr-2 h-4 w-4" />
           <button type="submit">Sign Out</button>

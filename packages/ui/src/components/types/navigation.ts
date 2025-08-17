@@ -11,6 +11,7 @@ export interface NavigationProps {
     href: string;
     className?: string;
     children: React.ReactNode;
+    onClick?: () => void;
   }>;
   pathname?: string;
   signOut: () => Promise<void>;

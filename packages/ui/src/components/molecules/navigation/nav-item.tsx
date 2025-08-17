@@ -1,5 +1,6 @@
 import { LucideIcon } from "lucide-react";
 import { NavIcon } from "../../atoms/navigation/nav-icon";
+import { useNavigation } from "../../contexts/NavigationContext";
 
 interface NavItemProps {
   name: string;
@@ -11,6 +12,7 @@ interface NavItemProps {
     href: string;
     className?: string;
     children: React.ReactNode;
+    onClick?: () => void;
   }>;
 }
 
@@ -22,6 +24,17 @@ export function NavItem({
   className,
   LinkComponent,
 }: NavItemProps) {
+  const { setIsExpanded } = useNavigation();
+
+  const handleClick = () => {
+    // Collapse the sidebar when a navigation item is clicked
+    setIsExpanded(false);
+    // Call the original onClick if provided
+    if (onClick) {
+      onClick();
+    }
+  };
+
   const content = (
     <>
       <NavIcon icon={icon} />
@@ -36,6 +49,7 @@ export function NavItem({
       <LinkComponent
         href={href}
         className={`${baseClassName} ${className || ""}`}
+        onClick={handleClick}
       >
         {content}
       </LinkComponent>
@@ -46,7 +60,7 @@ export function NavItem({
     <a
       href={href}
       className={`${baseClassName} ${className || ""}`}
-      onClick={onClick}
+      onClick={handleClick}
     >
       {content}
     </a>

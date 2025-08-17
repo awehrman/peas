@@ -72,7 +72,7 @@ export async function getNoteWithIngredients(noteId: string) {
     });
     return note;
   } catch (error) {
-    console.log({ error });
+    console.error({ error });
     throw error;
   }
 }
@@ -266,10 +266,9 @@ export async function createNote(
         updatedAt: true,
       },
     });
-    console.log(`Successfully created note ${response.id}`);
     return response;
   } catch (error) {
-    console.log({ error });
+    console.error({ error });
     throw error;
   }
 }
@@ -278,33 +277,14 @@ export async function createNoteWithEvernoteMetadata(
   file: ParsedHTMLFile,
   importId?: string
 ): Promise<NoteWithParsedLines & { evernoteMetadataId: string | null }> {
-  console.log(
-    `[CREATE_NOTE_DEBUG] Function called with importId: "${importId}"`
-  );
-  console.log(`[CREATE_NOTE_DEBUG] File title: "${file.title}"`);
-  console.log(
-    `[CREATE_NOTE_DEBUG] Number of ingredients: ${file.ingredients.length}`
-  );
-  console.log(
-    `[CREATE_NOTE_DEBUG] Number of instructions: ${file.instructions.length}`
-  );
-
   try {
     // Extract Evernote metadata from the file
     const source = file.evernoteMetadata?.source;
     const tags = file.evernoteMetadata?.tags || [];
     const originalCreatedAt = file.evernoteMetadata?.originalCreatedAt;
 
-    console.log(
-      `[CREATE_NOTE] Starting with importId: ${importId || "undefined"}`
-    );
-
     // If we have an importId, check if a note with this importId already exists
     if (importId) {
-      console.log(
-        `[CREATE_NOTE] Checking for existing note with importId: ${importId}`
-      );
-
       const existingNote = await prisma.note.findFirst({
         where: { importId },
         include: {
@@ -314,15 +294,7 @@ export async function createNoteWithEvernoteMetadata(
         },
       });
 
-      console.log(
-        `[CREATE_NOTE] Existing note found: ${existingNote ? "YES" : "NO"}`
-      );
-
       if (existingNote) {
-        console.log(
-          `Note with importId ${importId} already exists, updating instead of creating`
-        );
-
         // Update the existing note
         const response = await prisma.note.update({
           where: { id: existingNote.id },
@@ -401,37 +373,19 @@ export async function createNoteWithEvernoteMetadata(
           },
         });
 
-        console.log(
-          `Successfully updated note ${response.id} with EvernoteMetadata`
-        );
         return response;
       }
     }
 
-    console.log(
-      `[CREATE_NOTE] No existing note found, creating new note with importId: ${importId || "null"}`
-    );
-
     // Use a transaction to handle potential race conditions
     return await prisma.$transaction(async (tx) => {
-      console.log(
-        `[CREATE_NOTE_DEBUG] Inside transaction, checking for existing note again`
-      );
-
       // Double-check for existing note within the transaction
       if (importId) {
         const existingNoteInTx = await tx.note.findFirst({
           where: { importId },
         });
 
-        console.log(
-          `[CREATE_NOTE_DEBUG] Existing note in transaction: ${existingNoteInTx ? "YES" : "NO"}`
-        );
-
         if (existingNoteInTx) {
-          console.log(
-            `[CREATE_NOTE] Found existing note in transaction, updating instead`
-          );
           // Update the existing note
           return await tx.note.update({
             where: { id: existingNoteInTx.id },
@@ -512,10 +466,6 @@ export async function createNoteWithEvernoteMetadata(
         }
       }
 
-      console.log(
-        `[CREATE_NOTE_DEBUG] About to create new note in transaction`
-      );
-
       // If no existing note found, create a new one
       const response = await tx.note.create({
         data: {
@@ -583,13 +533,10 @@ export async function createNoteWithEvernoteMetadata(
           updatedAt: true,
         },
       });
-      console.log(
-        `Successfully created note ${response.id} with EvernoteMetadata`
-      );
       return response;
     });
   } catch (error) {
-    console.log(`[CREATE_NOTE_DEBUG] Error occurred:`, error);
+    console.error(`[CREATE_NOTE_DEBUG] Error occurred:`, error);
     throw error;
   }
 }
@@ -694,9 +641,6 @@ export async function saveCategoryToNote(
         },
       });
 
-      console.log(
-        `Successfully saved category "${categoryName}" to note ${noteId}`
-      );
       return category;
     });
   } catch (error) {
@@ -720,7 +664,6 @@ export async function saveTagsToNote(
 ): Promise<Array<{ id: string; name: string }>> {
   try {
     if (!tagNames || tagNames.length === 0) {
-      console.log(`No tags to save for note ${noteId}`);
       return [];
     }
 
@@ -755,10 +698,6 @@ export async function saveTagsToNote(
         },
       });
 
-      console.log(
-        `Successfully saved ${savedTags.length} tags to note ${noteId}:`,
-        tagNames
-      );
       return savedTags;
     });
   } catch (error) {
