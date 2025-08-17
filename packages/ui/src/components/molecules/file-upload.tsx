@@ -71,7 +71,7 @@ export function FileUpload({
 
   return (
     <div className={className}>
-      <h3 className="text-xl font-semibold text-gray-900 mb-4">{title}</h3>
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">{title}</h3>
 
       <div
         className={`border-2 border-dashed border-gray-300 rounded-lg p-8 transition-colors ${
@@ -81,7 +81,6 @@ export function FileUpload({
         onDrop={handleDrop}
       >
         <Placeholder
-          label={`${description} ${acceptedFileTypes} up to ${maxFileSize}`}
           icon={<Upload />}
           buttonSize="sm"
           button={
@@ -107,20 +106,7 @@ export function FileUpload({
             </div>
           }
         />
-        <div className="mt-4 text-sm text-gray-600">
-          <p>
-            <strong>Note:</strong> You can upload individual HTML and image files.
-          </p>
-          {allowDirectories && (
-            <p>
-              <strong>Directory upload:</strong> You can also upload entire directories containing HTML files and their associated image folders.
-            </p>
-          )}
-          <p>
-            Supported formats: HTML files (.html, .htm) and image files (.jpg,
-            .jpeg, .png, .gif, .webp, .bmp)
-          </p>
-        </div>
+
         <input
           id="file-upload"
           name="file-upload"

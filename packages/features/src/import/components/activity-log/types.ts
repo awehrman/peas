@@ -12,16 +12,23 @@ export interface UploadItem {
   importId: string;
   htmlFileName: string;
   imageCount: number;
-  status: "uploading" | "uploaded" | "failed";
+  status: "uploading" | "uploaded" | "failed" | "cancelled";
   createdAt: Date;
   type?: "upload"; // Indicates this came from upload context
+  batchProgress?: {
+    currentBatch: number;
+    totalBatches: number;
+    currentFile: number;
+    totalFiles: number;
+  };
+  abortController?: AbortController;
 }
 
 // Interface for upload progress information preserved when merging items
 export interface UploadProgress {
   htmlFileName: string;
   imageCount: number;
-  uploadStatus: "uploading" | "uploaded" | "failed";
+  uploadStatus: "uploading" | "uploaded" | "failed" | "cancelled";
 }
 
 // Extended ImportItem that includes upload progress information

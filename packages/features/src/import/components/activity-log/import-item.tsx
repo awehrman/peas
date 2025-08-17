@@ -5,7 +5,6 @@ import { ImportItem, ImportItemWithUploadProgress, UploadItem } from "./types";
 import { ReactNode, memo } from "react";
 
 import {
-  formatTimestamp,
   getDisplayTitle,
   getStatusIcon,
   getStatusText,
@@ -20,19 +19,9 @@ export const ImportItemComponent = memo(function ImportItemComponent({
   item,
   fileTitles,
 }: ImportItemProps): ReactNode {
-  console.log("📊 [IMPORT_ITEM_COMPONENT] Rendering item:", {
-    importId: item.importId,
-    htmlFileName: item.htmlFileName,
-    noteTitle: "noteTitle" in item ? item.noteTitle : undefined,
-    status: item.status,
-    type: item.type,
-    fileTitlesSize: fileTitles.size,
-  });
-
   // Handle upload items separately
   if ("imageCount" in item && item.type === "upload") {
     const uploadItem = item;
-    const timestamp = formatTimestamp(uploadItem.createdAt);
 
     const getUploadStatusText = () => {
       switch (uploadItem.status) {
@@ -60,15 +49,31 @@ export const ImportItemComponent = memo(function ImportItemComponent({
       }
     };
 
+    const getUploadBackgroundColor = () => {
+      switch (uploadItem.status) {
+        case "uploading":
+          return "bg-gray-50"; // Grey for batched items waiting to be processed
+        case "uploaded":
+          return "bg-green-50"; // Light green for success
+        case "failed":
+          return "bg-red-50"; // Light red for errors
+        default:
+          return "bg-gray-50";
+      }
+    };
+
     const statusIcon = getUploadStatusIcon();
     const statusText = getUploadStatusText();
+    const backgroundColor = getUploadBackgroundColor();
 
     return (
-      <div className="flex items-center space-x-3 p-3 border rounded">
+      <div
+        className={`flex items-center space-x-3 p-3 rounded ${backgroundColor}`}
+      >
         {/* Status Icon */}
         <div className="flex-shrink-0">
           {statusIcon === "spinner" ? (
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+            <div className="animate-spin rounded-full h-4 w-4"></div>
           ) : (
             <div
               className={`text-lg ${
@@ -76,7 +81,7 @@ export const ImportItemComponent = memo(function ImportItemComponent({
                   ? "text-green-600"
                   : uploadItem.status === "failed"
                     ? "text-red-600"
-                    : "text-blue-600"
+                    : "text-gray-600"
               }`}
             >
               {statusIcon}
@@ -92,18 +97,12 @@ export const ImportItemComponent = memo(function ImportItemComponent({
                 ? "text-green-800"
                 : uploadItem.status === "failed"
                   ? "text-red-800"
-                  : "text-blue-800"
+                  : "text-gray-800"
             }`}
           >
             {statusText}
           </div>
-          {uploadItem.status === "uploaded" && (
-            <div className="text-sm text-gray-600">Processing started...</div>
-          )}
         </div>
-
-        {/* Timestamp */}
-        <div className="text-sm text-gray-500">{timestamp}</div>
       </div>
     );
   }
@@ -126,22 +125,30 @@ export const ImportItemComponent = memo(function ImportItemComponent({
   const displayTitle = getDisplayTitle(importItem, fileTitles);
   const statusIcon = getStatusIcon(importItem.status);
   const statusText = getStatusText(importItem.status, displayTitle);
-  const timestamp = formatTimestamp(
-    importItem.completedAt || importItem.createdAt
-  );
 
-  // Check if this import item has upload progress information
-  const hasUploadProgress =
-    "uploadProgress" in importItem &&
-    importItem.uploadProgress &&
-    importItem.type === "import";
+  const getImportBackgroundColor = () => {
+    switch (importItem.status) {
+      case "importing":
+        return "bg-blue-50"; // Light primary color for processing
+      case "completed":
+        return "bg-green-50"; // Light green for success
+      case "failed":
+        return "bg-red-50"; // Light red for errors
+      default:
+        return "bg-blue-50";
+    }
+  };
+
+  const backgroundColor = getImportBackgroundColor();
 
   return (
-    <div className="flex items-center space-x-3 p-3 border rounded">
+    <div
+      className={`flex items-center space-x-3 p-3 rounded ${backgroundColor}`}
+    >
       {/* Status Icon */}
       <div className="flex-shrink-0">
         {statusIcon === "spinner" ? (
-          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+          <div className="animate-spin rounded-full h-4 w-4"></div>
         ) : (
           <div
             className={`text-lg ${
@@ -170,16 +177,7 @@ export const ImportItemComponent = memo(function ImportItemComponent({
         >
           {statusText}
         </div>
-        {hasUploadProgress && importItem.uploadProgress && (
-          <div className="text-sm text-gray-600">
-            Uploaded {importItem.uploadProgress.htmlFileName} (
-            {importItem.uploadProgress.imageCount} images)
-          </div>
-        )}
       </div>
-
-      {/* Timestamp */}
-      <div className="text-sm text-gray-500">{timestamp}</div>
     </div>
   );
 });

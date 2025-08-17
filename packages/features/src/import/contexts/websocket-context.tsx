@@ -136,6 +136,15 @@ export function StatusWebSocketProvider({
                 ...statusEvent,
                 createdAt: new Date(statusEvent.createdAt),
               };
+
+              console.log("📡 [WEBSOCKET_DEBUG] Received status event:", {
+                importId: parsedEvent.importId,
+                status: parsedEvent.status,
+                context: parsedEvent.context,
+                metadata: parsedEvent.metadata,
+                message: parsedEvent.message,
+              });
+
               setEvents((prev) => [...prev, parsedEvent].slice(-50)); // Keep last 50 events
               break;
             }

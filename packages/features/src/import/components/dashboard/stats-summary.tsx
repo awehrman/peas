@@ -17,17 +17,17 @@ export function StatsSummary({
 }: StatsSummaryProps): ReactNode {
   return (
     <div className={className}>
-      <h2 className="text-2xl font-semibold text-gray-900 mb-4">
-        Import Summary
+      <h2 className="text-lg font-semibold text-gray-900 mb-4">
+        Import summary
       </h2>
-      <div className="space-y-3">
-        <div className="p-1">
+      <div>
+        <div>
           <p className="text-sm text-gray-600">{noteCount} Notes</p>
         </div>
-        <div className="p-1">
+        <div>
           <p className="text-sm text-gray-600">{ingredientCount} Ingredients</p>
         </div>
-        <div className="p-1">
+        <div>
           <p className="text-sm text-gray-600">
             {parsingErrorCount} Parsing errors
           </p>

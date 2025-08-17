@@ -2,6 +2,7 @@ import { updateNote, updateParsingErrorCount } from "@peas/database";
 import type { Prisma } from "@peas/database";
 
 import type { StructuredLogger } from "../../../../types";
+import { CleanupService } from "../../../cleanup/cleanup-service";
 
 export interface NoteCompletionStatus {
   noteId: string;
@@ -281,6 +282,19 @@ export async function markWorkerCompleted(
 
       // Clean up the completion status from memory
       noteCompletionStatus.delete(noteId);
+
+      // Clean up the import directory
+      if (status.importId) {
+        try {
+          const cleanupService = new CleanupService(logger);
+          await cleanupService.cleanupImportDirectory(status.importId);
+        } catch (cleanupError) {
+          logger.log(
+            `[TRACK_COMPLETION] ⚠️ Failed to cleanup import directory for ${status.importId}: ${cleanupError}`
+          );
+          // Don't fail the main completion if cleanup fails
+        }
+      }
     } catch (error) {
       logger.log(
         `[TRACK_COMPLETION] ❌ Failed to update note status or broadcast completion: ${error}`
@@ -347,6 +361,25 @@ export async function markNoteAsFailed(
       errorCode,
       errorDetails,
     });
+
+    // Clean up the completion status from memory
+    const status = noteCompletionStatus.get(noteId);
+    if (status) {
+      noteCompletionStatus.delete(noteId);
+
+      // Clean up the import directory even for failed notes
+      if (status.importId && logger) {
+        try {
+          const cleanupService = new CleanupService(logger);
+          await cleanupService.cleanupImportDirectory(status.importId);
+        } catch (cleanupError) {
+          logger.log(
+            `[TRACK_COMPLETION] ⚠️ Failed to cleanup import directory for failed note ${status.importId}: ${cleanupError}`
+          );
+          // Don't fail the main error handling if cleanup fails
+        }
+      }
+    }
   } catch (error) {
     /* istanbul ignore next -- @preserve */
     if (logger) {

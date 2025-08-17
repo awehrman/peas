@@ -104,6 +104,24 @@ export function useImportItems({ events }: UseImportItemsOptions) {
         }
       }
 
+      // Mark stuck import items as failed (stuck in "importing" for more than 10 minutes)
+      const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+      for (const [importId, item] of newItems.entries()) {
+        if (item.status === "importing" && item.createdAt < tenMinutesAgo) {
+          console.warn(
+            "🚨 [USE_IMPORT_ITEMS] Marking stuck import as failed:",
+            {
+              importId,
+              htmlFileName: item.htmlFileName,
+              noteTitle: item.noteTitle,
+              createdAt: item.createdAt,
+            }
+          );
+          item.status = "failed";
+          item.completedAt = new Date();
+        }
+      }
+
       return newItems;
     });
   }, [events, shouldSkipEvent, sortEventsByTimestamp]);

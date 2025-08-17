@@ -1,13 +1,27 @@
 "use client";
 
-import { ReactNode, createContext, useContext, useState, useEffect, useCallback } from "react";
+import {
+  ReactNode,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 
 interface UploadItem {
   importId: string;
   htmlFileName: string;
   imageCount: number;
-  status: "uploading" | "uploaded" | "failed";
+  status: "uploading" | "uploaded" | "failed" | "cancelled";
   createdAt: Date;
+  batchProgress?: {
+    currentBatch: number;
+    totalBatches: number;
+    currentFile: number;
+    totalFiles: number;
+  };
+  abortController?: AbortController;
 }
 
 interface UploadContextType {
@@ -24,6 +38,8 @@ interface UploadContextType {
   removeUploadItem: (importId: string) => void;
   clearUploadItems: () => void;
   generateImportId: () => string;
+  cancelUpload: (importId: string) => void;
+  cancelAllUploads: () => void;
 }
 
 const UploadContext = createContext<UploadContextType | undefined>(undefined);
@@ -35,7 +51,9 @@ interface UploadProviderProps {
 export function UploadProvider({ children }: UploadProviderProps): ReactNode {
   const [uploadingHtmlFiles, setUploadingHtmlFiles] = useState<string[]>([]);
   const [fileTitles, setFileTitles] = useState<Map<string, string>>(new Map());
-  const [uploadItems, setUploadItems] = useState<Map<string, UploadItem>>(new Map());
+  const [uploadItems, setUploadItems] = useState<Map<string, UploadItem>>(
+    new Map()
+  );
 
   const addUploadingHtmlFiles = (files: string[]) => {
     setUploadingHtmlFiles((prev) => [...prev, ...files]);
@@ -55,32 +73,61 @@ export function UploadProvider({ children }: UploadProviderProps): ReactNode {
     setFileTitles(new Map());
   };
 
-  const addUploadItem = (item: UploadItem) => {
+  const addUploadItem = useCallback((item: UploadItem) => {
     setUploadItems((prev) => new Map(prev).set(item.importId, item));
-  };
+  }, []);
 
-  const updateUploadItem = (importId: string, updates: Partial<UploadItem>) => {
-    setUploadItems((prev) => {
-      const newMap = new Map(prev);
-      const existing = newMap.get(importId);
-      if (existing) {
-        newMap.set(importId, { ...existing, ...updates });
-      }
-      return newMap;
-    });
-  };
+  const updateUploadItem = useCallback(
+    (importId: string, updates: Partial<UploadItem>) => {
+      setUploadItems((prev) => {
+        const newMap = new Map(prev);
+        const existing = newMap.get(importId);
+        if (existing) {
+          newMap.set(importId, { ...existing, ...updates });
+        }
+        return newMap;
+      });
+    },
+    []
+  );
 
-  const removeUploadItem = (importId: string) => {
+  const removeUploadItem = useCallback((importId: string) => {
     setUploadItems((prev) => {
       const newMap = new Map(prev);
       newMap.delete(importId);
       return newMap;
     });
-  };
+  }, []);
 
-  const clearUploadItems = () => {
+  const clearUploadItems = useCallback(() => {
     setUploadItems(new Map());
-  };
+  }, []);
+
+  const cancelUpload = useCallback((importId: string) => {
+    setUploadItems((prev) => {
+      const newMap = new Map(prev);
+      const existing = newMap.get(importId);
+      if (existing && existing.status === "uploading") {
+        // Abort the ongoing request if it exists
+        existing.abortController?.abort();
+        newMap.set(importId, { ...existing, status: "cancelled" });
+      }
+      return newMap;
+    });
+  }, []);
+
+  const cancelAllUploads = useCallback(() => {
+    setUploadItems((prev) => {
+      const newMap = new Map(prev);
+      for (const [importId, item] of newMap.entries()) {
+        if (item.status === "uploading") {
+          item.abortController?.abort();
+          newMap.set(importId, { ...item, status: "cancelled" });
+        }
+      }
+      return newMap;
+    });
+  }, []);
 
   const generateImportId = (): string => {
     // Use Date.now() with microsecond precision and random string to reduce collision risk
@@ -90,14 +137,14 @@ export function UploadProvider({ children }: UploadProviderProps): ReactNode {
     return `import_${timestamp}_${random1}_${random2}`;
   };
 
-  // Clean up old upload items (older than 1 hour)
+  // Clean up old upload items (older than 24 hours)
   const cleanupOldUploadItems = useCallback(() => {
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
     setUploadItems((prev) => {
       const newMap = new Map(prev);
       let hasChanges = false;
       for (const [importId, item] of newMap.entries()) {
-        if (item.createdAt < oneHourAgo) {
+        if (item.createdAt < twentyFourHoursAgo) {
           newMap.delete(importId);
           hasChanges = true;
         }
@@ -125,7 +172,11 @@ export function UploadProvider({ children }: UploadProviderProps): ReactNode {
   // Auto-cleanup every 30 minutes
   useEffect(() => {
     const cleanupInterval = setInterval(cleanupOldUploadItems, 30 * 60 * 1000);
-    const timeoutInterval = setInterval(markStuckUploadsAsFailed, 2 * 60 * 1000); // Check every 2 minutes
+    const timeoutInterval = setInterval(
+      markStuckUploadsAsFailed,
+      2 * 60 * 1000
+    ); // Check every 2 minutes
+
     return () => {
       clearInterval(cleanupInterval);
       clearInterval(timeoutInterval);
@@ -148,6 +199,8 @@ export function UploadProvider({ children }: UploadProviderProps): ReactNode {
         removeUploadItem,
         clearUploadItems,
         generateImportId,
+        cancelUpload,
+        cancelAllUploads,
       }}
     >
       {children}
