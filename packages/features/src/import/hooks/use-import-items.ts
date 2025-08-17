@@ -1,14 +1,27 @@
+import { type PaginationState, usePagination } from "./use-pagination";
 import { StatusEvent } from "./use-status-websocket";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { ImportItem } from "../components/activity-log/types";
 
 interface UseImportItemsOptions {
   events: StatusEvent[];
+  enablePagination?: boolean;
+  itemsPerPage?: number;
 }
 
-export function useImportItems({ events }: UseImportItemsOptions) {
+export interface UseImportItemsReturn {
+  allItems: ImportItem[];
+  paginatedItems: ImportItem[];
+  pagination: PaginationState | null;
+}
+
+export function useImportItems({
+  events,
+  enablePagination = false,
+  itemsPerPage = 10,
+}: UseImportItemsOptions): UseImportItemsReturn {
   const [items, setItems] = useState<Map<string, ImportItem>>(new Map());
 
   // Memoized event filtering function
@@ -126,8 +139,25 @@ export function useImportItems({ events }: UseImportItemsOptions) {
     });
   }, [events, shouldSkipEvent, sortEventsByTimestamp]);
 
-  // Return sorted items
-  return Array.from(items.values()).sort((a, b) => {
-    return a.createdAt.getTime() - b.createdAt.getTime();
+  // Get all sorted items
+  const allItems = useMemo(() => {
+    return Array.from(items.values()).sort((a, b) => {
+      return a.createdAt.getTime() - b.createdAt.getTime();
+    });
+  }, [items]);
+
+  // Use pagination if enabled
+  const pagination = usePagination({
+    totalItems: allItems.length,
+    defaultLimit: itemsPerPage,
   });
+
+  // Return both all items and paginated items
+  return {
+    allItems,
+    paginatedItems: enablePagination
+      ? allItems.slice(pagination.startIndex, pagination.endIndex)
+      : allItems,
+    pagination: enablePagination ? pagination : null,
+  };
 }

@@ -1,19 +1,26 @@
 "use client";
 
+import { CollapsibleImportItem } from "./collapsible-import-item";
 import { ConnectionStatus } from "./connection-status";
 import { ImportItemComponent } from "./import-item";
+import { PaginationControls } from "./pagination-controls";
 import { PendingUploadItem } from "./pending-upload-item";
 import { ActivityItem, ActivityLogProps, UploadProgress } from "./types";
 
-import { ReactNode, useMemo } from "react";
+import { ReactNode, useEffect, useMemo } from "react";
 
 import { useUploadContext } from "../../contexts/upload-context";
+import { useCollapsibleState } from "../../hooks/use-collapsible-state";
 import { useImportItems } from "../../hooks/use-import-items";
 import { useStatusWebSocket } from "../../hooks/use-status-websocket";
 
 export function ActivityLog({
   className,
   htmlFiles = [],
+  showPagination = true,
+  itemsPerPage = 10,
+  showCollapsible = true,
+  defaultExpandedFirst = true,
 }: ActivityLogProps): ReactNode {
   const { events, connectionStatus, error } = useStatusWebSocket({
     reconnectInterval: 3000,
@@ -21,8 +28,29 @@ export function ActivityLog({
   });
   const { fileTitles, uploadItems } = useUploadContext();
 
-  // Use custom hook for import items processing
-  const importItems = useImportItems({ events });
+  // Use custom hook for import items processing with pagination
+  const { allItems: allImportItems, paginatedItems: importItems } =
+    useImportItems({
+      events,
+      enablePagination: showPagination,
+      itemsPerPage,
+    });
+
+  // Use collapsible state management
+  const collapsibleState = useCollapsibleState({
+    storageKey: "activity-log-expanded",
+    persistState: true,
+  });
+
+  // Expand first item by default
+  useEffect(() => {
+    if (defaultExpandedFirst && importItems.length > 0) {
+      const firstItem = importItems[0];
+      if (firstItem && !collapsibleState.isExpanded(firstItem.importId)) {
+        collapsibleState.expandItem(firstItem.importId);
+      }
+    }
+  }, [defaultExpandedFirst, importItems, collapsibleState]);
 
   // Memoize the combined items to avoid recalculation on every render
   const combinedItems = useMemo(() => {
@@ -231,13 +259,38 @@ export function ActivityLog({
       })}
 
       {/* Show all items (upload and import) */}
-      {combinedItems.map((item) => (
-        <ImportItemComponent
-          key={item.importId}
-          item={item}
-          fileTitles={fileTitles}
-        />
-      ))}
+      {combinedItems.map((item) => {
+        if (showCollapsible && "noteTitle" in item && item.type === "import") {
+          return (
+            <CollapsibleImportItem
+              key={item.importId}
+              item={item}
+              fileTitles={fileTitles}
+              events={events}
+              isExpanded={collapsibleState.isExpanded(item.importId)}
+              onToggle={() => collapsibleState.toggleItem(item.importId)}
+            />
+          );
+        }
+
+        return (
+          <ImportItemComponent
+            key={item.importId}
+            item={item}
+            fileTitles={fileTitles}
+          />
+        );
+      })}
+
+      {/* Pagination Controls */}
+      {showPagination &&
+        uploadItems.size + allImportItems.length > itemsPerPage && (
+          <div className="mt-6">
+            <PaginationControls
+              totalItems={uploadItems.size + allImportItems.length}
+            />
+          </div>
+        )}
     </div>
   );
 }

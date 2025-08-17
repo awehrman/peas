@@ -42,4 +42,8 @@ export type ActivityItem = ImportItemWithUploadProgress | UploadItem;
 export interface ActivityLogProps {
   className?: string;
   htmlFiles?: string[]; // List of HTML files from upload
+  showPagination?: boolean;
+  itemsPerPage?: number;
+  showCollapsible?: boolean;
+  defaultExpandedFirst?: boolean;
 }
