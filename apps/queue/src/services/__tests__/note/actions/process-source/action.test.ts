@@ -176,15 +176,18 @@ describe("ProcessSourceAction", () => {
 
       await action.execute(mockData, mockDeps, mockContext);
 
-      expect(executeServiceActionSpy).toHaveBeenCalledWith({
-        data: mockData,
-        deps: mockDeps,
-        context: mockContext,
-        serviceCall: expect.any(Function),
-        contextName: "PROCESS_SOURCE",
-        startMessage: "Processing source...",
-        completionMessage: "Added source!",
-      });
+      expect(executeServiceActionSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: mockData,
+          deps: mockDeps,
+          context: mockContext,
+          serviceCall: expect.any(Function),
+          contextName: "source_connection",
+          startMessage: "Processing source...",
+          completionMessage: "Added source!",
+          additionalBroadcasting: expect.any(Function),
+        })
+      );
     });
 
     it("should handle service call correctly", async () => {

@@ -139,11 +139,10 @@ export function useImportItems({
     });
   }, [events, shouldSkipEvent, sortEventsByTimestamp]);
 
-  // Get all sorted items
+  // Get all items in stable insertion order (freeze initial ordering)
   const allItems = useMemo(() => {
-    return Array.from(items.values()).sort((a, b) => {
-      return a.createdAt.getTime() - b.createdAt.getTime();
-    });
+    // Map preserves insertion order; values() reflects the order in which items were first set
+    return Array.from(items.values());
   }, [items]);
 
   // Use pagination if enabled

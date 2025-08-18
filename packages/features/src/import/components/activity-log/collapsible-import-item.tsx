@@ -1,13 +1,16 @@
 "use client";
 
+import { DetailedStatus } from "./detailed-status";
+import { ProgressStatusBar } from "./progress-status-bar";
+import { ImportItem, ImportItemWithUploadProgress, UploadItem } from "./types";
+
 import { ReactNode, useState } from "react";
 
 import { StatusEvent } from "../../hooks/use-status-websocket";
-import { ImportItem, ImportItemWithUploadProgress, UploadItem } from "./types";
-import { createStatusSummary, createProcessingSteps } from "../../utils/status-parser";
-import { DetailedStatus } from "./detailed-status";
-import { ProgressStatusBar } from "./progress-status-bar";
-
+import {
+  createProcessingSteps,
+  createStatusSummary,
+} from "../../utils/status-parser";
 import {
   getDisplayTitle,
   getStatusIcon,
@@ -79,7 +82,9 @@ export function CollapsibleImportItem({
     const backgroundColor = getUploadBackgroundColor();
 
     return (
-      <div className={`flex items-center space-x-3 p-3 rounded ${backgroundColor} ${className}`}>
+      <div
+        className={`flex items-center space-x-3 p-3 rounded ${backgroundColor} ${className}`}
+      >
         <div className="flex-shrink-0">
           {statusIcon === "spinner" ? (
             <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-blue-600"></div>
@@ -133,8 +138,10 @@ export function CollapsibleImportItem({
   const statusText = getStatusText(importItem.status, displayTitle);
 
   // Filter events for this specific import
-  const itemEvents = events.filter(event => event.importId === importItem.importId);
-  
+  const itemEvents = events.filter(
+    (event) => event.importId === importItem.importId
+  );
+
   // Create status summary and processing steps
   const statusSummary = createStatusSummary(itemEvents);
   const processingSteps = createProcessingSteps(itemEvents);
@@ -155,7 +162,9 @@ export function CollapsibleImportItem({
   const backgroundColor = getImportBackgroundColor();
 
   return (
-    <div className={`rounded-lg border border-gray-200 overflow-hidden ${className}`}>
+    <div
+      className={`rounded-lg border border-gray-200 overflow-hidden ${className}`}
+    >
       {/* Header - always visible */}
       <div
         className={`flex items-center space-x-3 p-4 cursor-pointer hover:bg-gray-50 transition-colors ${backgroundColor}`}
@@ -237,27 +246,63 @@ export function CollapsibleImportItem({
             {/* Progress Status Bar */}
             {processingSteps.length > 0 && (
               <div>
-                <h4 className="text-sm font-medium text-gray-900 mb-2">Processing Steps</h4>
                 <ProgressStatusBar steps={processingSteps} compact />
               </div>
             )}
 
             {/* Detailed Status */}
             <div>
-              <h4 className="text-sm font-medium text-gray-900 mb-2">Status Details</h4>
+              <h4 className="text-sm font-medium text-gray-900 mb-2">
+                Status Details
+              </h4>
               <DetailedStatus summary={statusSummary} />
             </div>
 
             {/* Additional Metadata */}
             {itemEvents.length > 0 && (
               <div>
-                <h4 className="text-sm font-medium text-gray-900 mb-2">Event History</h4>
+                <h4 className="text-sm font-medium text-gray-900 mb-2">
+                  Event History
+                </h4>
                 <div className="space-y-1 max-h-32 overflow-y-auto">
-                  {itemEvents.slice(-5).map((event, index) => (
-                    <div key={index} className="text-xs text-gray-600">
-                      <span className="font-medium">{event.context}:</span> {event.message}
-                    </div>
-                  ))}
+                  {(() => {
+                    // Show only the latest event per grouped key (context + optional subtype)
+                    const latestByKey = new Map<
+                      string,
+                      (typeof itemEvents)[number]
+                    >();
+                    const sorted = [...itemEvents].sort(
+                      (a, b) =>
+                        new Date(a.createdAt || 0).getTime() -
+                        new Date(b.createdAt || 0).getTime()
+                    );
+                    for (const ev of sorted) {
+                      const meta = (ev.metadata || {}) as Record<
+                        string,
+                        unknown
+                      >;
+                      const subtype =
+                        (typeof meta.subtype === "string" && meta.subtype) ||
+                        (typeof meta.eventType === "string" &&
+                          meta.eventType) ||
+                        undefined;
+                      const key = `${ev.context || "unknown"}${subtype ? `:${subtype}` : ""}`;
+                      latestByKey.set(key, ev);
+                    }
+                    const latestEvents = Array.from(latestByKey.entries())
+                      .map(([key, ev]) => ({ key, ev }))
+                      .sort(
+                        (a, b) =>
+                          new Date(b.ev.createdAt || 0).getTime() -
+                          new Date(a.ev.createdAt || 0).getTime()
+                      );
+                    return latestEvents.map(({ key, ev }) => (
+                      <div key={key} className="text-xs text-gray-600">
+                        <span className="font-medium">{ev.context}:</span>{" "}
+                        {ev.message}
+                      </div>
+                    ));
+                  })()}
                 </div>
               </div>
             )}

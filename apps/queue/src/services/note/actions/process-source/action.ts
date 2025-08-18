@@ -50,9 +50,24 @@ export class ProcessSourceAction extends BaseAction<
       deps,
       context,
       serviceCall: () => processSource(data, deps.logger),
-      contextName: "PROCESS_SOURCE",
+      contextName: "source_connection",
       startMessage: "Processing source...",
       completionMessage: "Added source!",
+      additionalBroadcasting: async () => {
+        /* istanbul ignore next -- @preserve */
+        if (deps.statusBroadcaster) {
+          const source = data.file?.evernoteMetadata?.source;
+          await deps.statusBroadcaster.addStatusEventAndBroadcast({
+            importId: data.importId,
+            noteId: data.noteId,
+            status: "COMPLETED",
+            message: "Added source!",
+            context: "source_connection",
+            indentLevel: 1,
+            metadata: source ? { source } : undefined,
+          });
+        }
+      },
     });
   }
 }

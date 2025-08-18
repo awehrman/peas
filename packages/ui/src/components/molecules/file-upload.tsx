@@ -4,17 +4,13 @@ import { Placeholder } from "./placeholder";
 
 import React from "react";
 
-import { Upload } from "lucide-react";
-
 import { Button } from "../ui/button";
 
 export interface FileUploadProps {
   onFilesUpload?: (files: File[]) => void;
   onFileUpload?: (file: File) => void; // Keep for backward compatibility
-  acceptedFileTypes?: string;
-  maxFileSize?: string;
   title?: string;
-  description?: string;
+  description?: React.ReactNode;
   className?: string;
   disabled?: boolean;
   multiple?: boolean;
@@ -24,10 +20,8 @@ export interface FileUploadProps {
 export function FileUpload({
   onFilesUpload,
   onFileUpload,
-  acceptedFileTypes = "HTML files and individual image files",
-  maxFileSize = "10MB",
   title = "Upload files",
-  description = "or drag and drop",
+  description = "Drop or choose files",
   className = "",
   disabled = false,
   multiple = true,
@@ -81,7 +75,8 @@ export function FileUpload({
         onDrop={handleDrop}
       >
         <Placeholder
-          icon={<Upload />}
+          icon={null}
+          label={description}
           buttonSize="sm"
           button={
             <div className="flex gap-2">

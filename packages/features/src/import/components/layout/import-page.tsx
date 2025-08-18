@@ -42,24 +42,27 @@ function ImportPageContentInner({
 
   return (
     <>
-      <div className="flex justify-between items-start gap-8">
-        {/* Left Column */}
-        <div className="flex-1 flex flex-col">
+      {/* Top row: Upload + Summary side-by-side on md+; stacked on small */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Left: Upload Files */}
+        <div>
+          <ImportFileUpload maxFileSize="10MB" className="mb-6" />
+        </div>
+
+        {/* Right: Import Summary */}
+        <div>
           <StatsSummary
             noteCount={stats.noteCount}
             ingredientCount={stats.ingredientCount}
             parsingErrorCount={stats.parsingErrorCount}
-            className="mb-8"
+            className="mb-6"
           />
-          <div className="flex-1">
-            <ActivityLog className="mb-8" htmlFiles={uploadingHtmlFiles} />
-          </div>
         </div>
+      </div>
 
-        {/* Right Column */}
-        <div className="flex-1">
-          <ImportFileUpload maxFileSize="10MB" />
-        </div>
+      {/* Full width Activity Log beneath */}
+      <div className="mt-2">
+        <ActivityLog className="mb-8" htmlFiles={uploadingHtmlFiles} />
       </div>
     </>
   );

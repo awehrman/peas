@@ -178,9 +178,8 @@ export function ActivityLog({
       }
     });
 
-    const result = Array.from(allItems.values()).sort((a, b) => {
-      return a.createdAt.getTime() - b.createdAt.getTime();
-    });
+    // Preserve insertion order (no resorting) so items don't move around on updates
+    const result = Array.from(allItems.values());
 
     console.log("📊 [ACTIVITY_LOG] Combined items count:", result.length);
     result.forEach((item, index) => {

@@ -18,11 +18,7 @@ interface Props {
 const QUEUE_API_BASE =
   process.env.NEXT_PUBLIC_QUEUE_API_URL ?? "http://localhost:4200";
 
-export function ImportFileUpload({
-  maxFileSize = "10MB",
-  acceptedFileTypes = "HTML files and individual image files",
-  className,
-}: Props) {
+export function ImportFileUpload({ className }: Props) {
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const {
@@ -34,6 +30,13 @@ export function ImportFileUpload({
     generateImportId,
     uploadItems,
   } = useUploadContext();
+
+  interface UploadResult {
+    htmlFile: string;
+    imageCount: number;
+    importId: string;
+    success: true;
+  }
 
   const handleFilesUpload = async (files: File[]) => {
     setUploading(true);
@@ -147,7 +150,7 @@ export function ImportFileUpload({
           htmlFile: File,
           index: number,
           retryCount = 0
-        ): Promise<any> => {
+        ): Promise<UploadResult> => {
           // Generate import ID for this HTML/image pair
           const importId = generateImportId();
           const currentBatch = Math.floor(index / batchSize) + 1;
@@ -251,8 +254,8 @@ export function ImportFileUpload({
         };
 
         // Process uploads in batches
-        const allResults: any[] = [];
-        const failedResults: any[] = [];
+        const allResults: UploadResult[] = [];
+        const failedResults: Error[] = [];
         const totalBatches = Math.ceil(htmlFiles.length / batchSize);
 
         for (let i = 0; i < htmlFiles.length; i += batchSize) {
@@ -268,15 +271,17 @@ export function ImportFileUpload({
           );
 
           // Process current batch
-          const batchPromises = batch.map((htmlFile, batchIndex) =>
-            uploadFile(htmlFile, batchIndexes[batchIndex] || 0)
+          const batchPromises: Promise<UploadResult>[] = batch.map(
+            (htmlFile, batchIndex) =>
+              uploadFile(htmlFile, batchIndexes[batchIndex] || 0)
           );
 
           console.log(
             `🚀 [UPLOAD_DEBUG] Starting batch ${currentBatch}/${totalBatches} with ${batch.length} files`
           );
 
-          const batchResults = await Promise.allSettled(batchPromises);
+          const batchResults =
+            await Promise.allSettled<UploadResult>(batchPromises);
 
           // Collect results
           batchResults.forEach((result, batchIndex) => {
@@ -286,11 +291,15 @@ export function ImportFileUpload({
                 `✅ [UPLOAD_DEBUG] Successfully uploaded: ${batch[batchIndex]?.name}`
               );
             } else {
-              failedResults.push(result.reason);
+              const reason =
+                result.reason instanceof Error
+                  ? result.reason
+                  : new Error(String(result.reason));
+              failedResults.push(reason);
               const fileName = batch[batchIndex]?.name || "Unknown file";
               console.error(
                 `❌ [UPLOAD_DEBUG] Batch upload failed for ${fileName}:`,
-                result.reason
+                reason
               );
             }
           });
@@ -323,21 +332,28 @@ export function ImportFileUpload({
           successfulUploads,
           failedCount: failedResults.length,
           successfulFiles: successfulResults.map((r) => r.htmlFile),
-          failedMessages: failedResults.map((f) => f.message),
+          failedMessages: failedResults.map(
+            (f) => f?.message ?? "Unknown error"
+          ),
         });
 
         if (failedResults.length > 0) {
           // Some uploads failed
-          const errorMessages = failedResults.map((error) => error.message);
+          const errorMessages = failedResults.map((error) => {
+            const msg = (error as Error).message;
+            return typeof msg === "string" && msg.length > 0
+              ? msg
+              : "Unknown error";
+          });
           const totalErrors = errorMessages.length;
 
           // Truncate error messages if there are too many or they're too long
-          let errorMessage: string;
+          let errorMessage: string = "Unknown error";
           if (totalErrors === 1) {
-            errorMessage = errorMessages[0];
-          } else if (totalErrors <= 3) {
+            errorMessage = errorMessages[0] ?? "Unknown error";
+          } else if (totalErrors > 1 && totalErrors <= 3) {
             errorMessage = errorMessages.join("; ");
-          } else {
+          } else if (totalErrors > 3) {
             errorMessage = `${errorMessages.slice(0, 2).join("; ")} and ${totalErrors - 2} more errors`;
           }
 
@@ -483,21 +499,25 @@ export function ImportFileUpload({
     <div className={className}>
       <FileUpload
         onFilesUpload={handleFilesUpload}
-        maxFileSize={maxFileSize}
-        acceptedFileTypes={acceptedFileTypes}
+        description={
+          message ? (
+            <div
+              className={
+                message.includes("failed")
+                  ? "text-red-700 bg-red-50 px-4 py-2 rounded-md"
+                  : "text-green-700 bg-green-50 px-4 py-2 rounded-md"
+              }
+            >
+              {message}
+            </div>
+          ) : (
+            "Drop files here or choose files"
+          )
+        }
         disabled={uploading}
         multiple={true}
         allowDirectories={true}
       />
-      {message && (
-        <div className="mt-4 p-3 rounded text-sm">
-          {message.includes("failed") ? (
-            <div className="text-red-700 bg-red-50 p-2">{message}</div>
-          ) : (
-            <div className="text-green-700 bg-green-50 p-2">{message}</div>
-          )}
-        </div>
-      )}
     </div>
   );
 }
