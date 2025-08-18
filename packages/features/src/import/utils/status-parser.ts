@@ -1,4 +1,5 @@
 import { StatusEvent } from "../hooks/use-status-websocket";
+import type { StatusMetadata } from "../types";
 
 export interface ProcessingStep {
   id: string;
@@ -10,7 +11,7 @@ export interface ProcessingStep {
     total: number;
     percentage: number;
   };
-  metadata?: Record<string, unknown>;
+  metadata?: Partial<StatusMetadata>;
 }
 
 export interface DetailedStatus {
@@ -90,7 +91,9 @@ function formatBytes(bytes: number): string {
 /**
  * Extract source information from event metadata
  */
-function parseSourceInfo(metadata: Record<string, unknown>): { type: "book" | "site" | "domain"; name: string } | undefined {
+function parseSourceInfo(
+  metadata: Record<string, unknown>
+): { type: "book" | "site" | "domain"; name: string } | undefined {
   const source = metadata.source;
   const sourceType = metadata.sourceType;
   const domain = metadata.domain;
@@ -120,14 +123,16 @@ function parseSourceInfo(metadata: Record<string, unknown>): { type: "book" | "s
 /**
  * Parse image processing information
  */
-function parseImageInfo(metadata: Record<string, unknown>): { count: number; types: string[] } | undefined {
+function parseImageInfo(
+  metadata: Record<string, unknown>
+): { count: number; types: string[] } | undefined {
   const imageCount = metadata.imageCount || metadata.completedImages;
   const imageTypes = metadata.imageTypes;
-  
+
   if (typeof imageCount === "number" && imageCount > 0) {
     const types: string[] = [];
     if (imageTypes && Array.isArray(imageTypes)) {
-      types.push(...imageTypes.map(t => String(t)));
+      types.push(...imageTypes.map((t) => String(t)));
     } else {
       // Default types if not specified
       types.push("thumbnail", "crop");
@@ -146,10 +151,12 @@ function parseCategorizationInfo(metadata: Record<string, unknown>): {
 } {
   const categories = metadata.categories;
   const tags = metadata.tags;
-  
-  const categoryNames = Array.isArray(categories) ? categories.map(c => String(c)) : [];
-  const tagNames = Array.isArray(tags) ? tags.map(t => String(t)) : [];
-  
+
+  const categoryNames = Array.isArray(categories)
+    ? categories.map((c) => String(c))
+    : [];
+  const tagNames = Array.isArray(tags) ? tags.map((t) => String(t)) : [];
+
   return {
     categories: { count: categoryNames.length, names: categoryNames },
     tags: { count: tagNames.length, names: tagNames },
@@ -174,7 +181,9 @@ export function createStatusSummary(events: StatusEvent[]): StatusSummary {
       if (sizeRemoved) {
         summary.fileCleaned = {
           sizeRemoved,
-          originalSize: metadata.originalSize ? String(metadata.originalSize) : "unknown",
+          originalSize: metadata.originalSize
+            ? String(metadata.originalSize)
+            : "unknown",
         };
       }
     }
@@ -188,8 +197,8 @@ export function createStatusSummary(events: StatusEvent[]): StatusSummary {
     if (event.context === "ingredient_processing") {
       const total = metadata.totalIngredientLines as number;
       const current = metadata.completedIngredientLines as number;
-      const errors = metadata.parsingErrors as number || 0;
-      
+      const errors = (metadata.parsingErrors as number) || 0;
+
       if (typeof total === "number" && typeof current === "number") {
         summary.ingredientsProcessed = { current, total, errors };
       }
@@ -199,7 +208,7 @@ export function createStatusSummary(events: StatusEvent[]): StatusSummary {
     if (event.context === "instruction_processing") {
       const total = metadata.totalInstructions as number;
       const current = metadata.completedInstructions as number;
-      
+
       if (typeof total === "number" && typeof current === "number") {
         summary.instructionsProcessed = { current, total };
       }
@@ -278,7 +287,9 @@ export function generateStatusMessages(summary: StatusSummary): string[] {
     if (count === 0) {
       messages.push("No category added");
     } else {
-      messages.push(`${count} categor${count === 1 ? "y" : "ies"} added: ${names.join(", ")}`);
+      messages.push(
+        `${count} categor${count === 1 ? "y" : "ies"} added: ${names.join(", ")}`
+      );
     }
   }
 
@@ -287,7 +298,9 @@ export function generateStatusMessages(summary: StatusSummary): string[] {
     if (count === 0) {
       messages.push("No tags added");
     } else {
-      messages.push(`${count} tag${count === 1 ? "" : "s"} found: ${names.join(", ")}`);
+      messages.push(
+        `${count} tag${count === 1 ? "" : "s"} found: ${names.join(", ")}`
+      );
     }
   }
 
@@ -300,7 +313,9 @@ export function generateStatusMessages(summary: StatusSummary): string[] {
 export function calculateProgress(events: StatusEvent[]): number {
   if (events.length === 0) return 0;
 
-  const completedEvents = events.filter(event => event.status === "COMPLETED");
+  const completedEvents = events.filter(
+    (event) => event.status === "COMPLETED"
+  );
   const totalEvents = events.length;
 
   return Math.round((completedEvents.length / totalEvents) * 100);
@@ -315,7 +330,7 @@ export function createProcessingSteps(events: StatusEvent[]): ProcessingStep[] {
 
   for (const event of events) {
     const stepId = event.context || "unknown";
-    
+
     if (!stepMap.has(stepId)) {
       stepMap.set(stepId, {
         id: stepId,
@@ -327,7 +342,7 @@ export function createProcessingSteps(events: StatusEvent[]): ProcessingStep[] {
     }
 
     const step = stepMap.get(stepId)!;
-    
+
     // Update step status
     if (event.status === "PROCESSING") {
       step.status = "processing";
@@ -375,5 +390,8 @@ function formatStepName(context: string): string {
     note_completion: "Note Completion",
   };
 
-  return nameMap[context] || context.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase());
+  return (
+    nameMap[context] ||
+    context.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())
+  );
 }

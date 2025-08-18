@@ -4,13 +4,21 @@ import { DetailedStatus } from "./detailed-status";
 import { ProgressStatusBar } from "./progress-status-bar";
 import { ImportItem, ImportItemWithUploadProgress, UploadItem } from "./types";
 
-import { ReactNode } from "react";
+import { ReactNode, useMemo } from "react";
 
 import { StatusEvent } from "../../hooks/use-status-websocket";
+import { STATUS_CONTEXT } from "../../utils/status-contexts";
 import {
   createProcessingSteps,
   createStatusSummary,
 } from "../../utils/status-parser";
+import {
+  UPLOAD_BACKGROUND_COLOR,
+  UPLOAD_STATUS_ICON,
+  choosePreviewUrl,
+  getDuplicateCount,
+  getUploadStatusText,
+} from "../utils/activity-log-helpers";
 import { getDisplayTitle, getStatusText } from "../utils/display-utils";
 
 export interface CollapsibleImportItemProps {
@@ -34,48 +42,23 @@ export function CollapsibleImportItem({
   if ("imageCount" in item && item.type === "upload") {
     const uploadItem = item;
 
-    const getUploadStatusText = () => {
-      switch (uploadItem.status) {
-        case "uploading":
-          return `Uploading ${uploadItem.htmlFileName}...`;
-        case "uploaded":
-          return `Uploaded ${uploadItem.htmlFileName} (${uploadItem.imageCount} images)`;
-        case "failed":
-          return `Failed to upload ${uploadItem.htmlFileName}`;
-        default:
-          return `Uploading ${uploadItem.htmlFileName}...`;
-      }
-    };
-
-    const getUploadStatusIcon = () => {
-      switch (uploadItem.status) {
-        case "uploading":
-          return "spinner";
-        case "uploaded":
-          return "✅";
-        case "failed":
-          return "❌";
-        default:
-          return "spinner";
-      }
-    };
-
-    const getUploadBackgroundColor = () => {
-      switch (uploadItem.status) {
-        case "uploading":
-          return "bg-gray-50";
-        case "uploaded":
-          return "bg-green-50";
-        case "failed":
-          return "bg-red-50";
-        default:
-          return "bg-gray-50";
-      }
-    };
-
-    const statusIcon = getUploadStatusIcon();
-    const statusText = getUploadStatusText();
-    const backgroundColor = getUploadBackgroundColor();
+    const statusIcon = useMemo(
+      () => UPLOAD_STATUS_ICON[uploadItem.status] ?? "spinner",
+      [uploadItem.status]
+    );
+    const statusText = useMemo(
+      () =>
+        getUploadStatusText(
+          uploadItem.status,
+          uploadItem.htmlFileName,
+          uploadItem.imageCount
+        ),
+      [uploadItem.status, uploadItem.htmlFileName, uploadItem.imageCount]
+    );
+    const backgroundColor = useMemo(
+      () => UPLOAD_BACKGROUND_COLOR[uploadItem.status] ?? "bg-gray-50",
+      [uploadItem.status]
+    );
 
     return (
       <div
@@ -133,42 +116,42 @@ export function CollapsibleImportItem({
   const statusText = getStatusText(importItem.status, displayTitle);
 
   // Filter events for this specific import
-  const itemEvents = events.filter(
-    (event) => event.importId === importItem.importId
+  const itemEvents = useMemo(
+    () => events.filter((event) => event.importId === importItem.importId),
+    [events, importItem.importId]
   );
 
   // Create status summary and processing steps
-  const statusSummary = createStatusSummary(itemEvents);
-  const processingSteps = createProcessingSteps(itemEvents);
+  const statusSummary = useMemo(
+    () => createStatusSummary(itemEvents),
+    [itemEvents]
+  );
+  const processingSteps = useMemo(
+    () => createProcessingSteps(itemEvents),
+    [itemEvents]
+  );
 
   // Detect high-confidence duplicate from the processing steps (support both lower/upper context ids)
-  const hasDuplicate = processingSteps.some((s) => {
-    const isDupContext =
-      s.id === "check_duplicates" || s.id === "CHECK_DUPLICATES";
-    if (!isDupContext) return false;
-    const msg = (s.message || "").toLowerCase();
-    const dupCount = Number(
-      (s.metadata as Record<string, unknown> | undefined)?.duplicateCount ?? 0
-    );
-    return msg.includes("duplicate") || dupCount > 0;
-  });
+  const hasDuplicate = useMemo(
+    () =>
+      processingSteps.some((s) => {
+        const isDupContext =
+          s.id === STATUS_CONTEXT.CHECK_DUPLICATES ||
+          s.id === STATUS_CONTEXT.CHECK_DUPLICATES_LEGACY;
+        if (!isDupContext) return false;
+        const msg = (s.message || "").toLowerCase();
+        return msg.includes("duplicate") || getDuplicateCount(s.metadata) > 0;
+      }),
+    [processingSteps]
+  );
 
-  function getImagePreviewUrl(): string | null {
+  const previewUrl = useMemo(() => {
     for (const step of processingSteps) {
       if (step.id !== "image_processing" || !step.metadata) continue;
-      const meta = step.metadata as Record<string, unknown>;
-      const crop4x3 = meta["r2Crop4x3Url"];
-      const thumb = meta["r2ThumbnailUrl"];
-      const crop3x2 = meta["r2Crop3x2Url"];
-      const original = meta["r2OriginalUrl"];
-      // Prefer 4:3 crop to match container aspect
-      if (typeof crop4x3 === "string" && crop4x3) return crop4x3;
-      if (typeof thumb === "string" && thumb) return thumb;
-      if (typeof crop3x2 === "string" && crop3x2) return crop3x2;
-      if (typeof original === "string" && original) return original;
+      return choosePreviewUrl(step.metadata as Record<string, unknown>);
     }
     return null;
-  }
+  }, [processingSteps]);
 
   const getImportBackgroundColor = () => {
     if (hasDuplicate) return "bg-amber-50";
@@ -191,19 +174,12 @@ export function CollapsibleImportItem({
       className={`rounded-lg border border-gray-200 overflow-hidden ${className}`}
     >
       {/* Header - always visible */}
-      <div
-        className={`flex items-center space-x-3 p-4 cursor-pointer hover:bg-gray-50 transition-colors ${backgroundColor}`}
+      <button
+        type="button"
+        className={`w-full text-left flex items-center space-x-3 p-4 hover:bg-gray-50 transition-colors ${backgroundColor}`}
         onClick={onToggle}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            onToggle();
-          }
-        }}
         aria-expanded={isExpanded}
-        aria-label={`${isExpanded ? "Collapse" : "Expand"} details for ${displayTitle}`}
+        aria-controls={`import-item-${importItem.importId}`}
       >
         {/* Status Icon - align with step icons */}
         <div className="flex-shrink-0">
@@ -274,11 +250,14 @@ export function CollapsibleImportItem({
             />
           </svg>
         </div>
-      </div>
+      </button>
 
       {/* Collapsible Content */}
       {isExpanded && (
-        <div className="border-t border-gray-200 bg-white">
+        <div
+          id={`import-item-${importItem.importId}`}
+          className="border-t border-gray-200 bg-white"
+        >
           <div className="p-4">
             <div className="md:flex md:items-start md:gap-6">
               {/* Left: 50% width on md+ with progress + status */}
@@ -301,26 +280,26 @@ export function CollapsibleImportItem({
               {/* Right: image placeholder/preview 3x4 aspect */}
               <div className="w-full md:w-1/2 mt-4 md:mt-0">
                 <div className="w-full md:flex md:justify-end">
-                  <div className="border border-gray-200 rounded-md overflow-hidden w-full">
-                    {(() => {
-                      const previewUrl = getImagePreviewUrl();
-                      return previewUrl ? (
-                        <div className="relative w-full">
-                          <div className="aspect-[4/3] w-full">
-                            <img
-                              src={previewUrl}
-                              alt="Imported image preview"
-                              className="block w-full h-full object-cover"
-                            />
-                          </div>
+                  <div
+                    className="border border-gray-200 rounded-md overflow-hidden w-full"
+                    aria-live="polite"
+                  >
+                    {previewUrl ? (
+                      <div className="relative w-full">
+                        <div className="aspect-[4/3] w-full">
+                          <img
+                            src={previewUrl}
+                            alt="Imported image preview"
+                            className="block w-full h-full object-cover"
+                          />
                         </div>
-                      ) : (
-                        <div
-                          className="w-full aspect-[4/3] bg-gray-100 animate-pulse"
-                          aria-label="Image loading placeholder"
-                        />
-                      );
-                    })()}
+                      </div>
+                    ) : (
+                      <div
+                        className="w-full aspect-[4/3] bg-gray-100 animate-pulse"
+                        aria-label="Image loading placeholder"
+                      />
+                    )}
                   </div>
                 </div>
               </div>

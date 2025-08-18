@@ -1,9 +1,24 @@
 "use client";
 
 import { ReactNode } from "react";
+import { useMemo } from "react";
 
-import { STATUS_CONTEXT } from "../../utils/status-contexts";
+// import { STATUS_CONTEXT } from "../../utils/status-contexts";
 import { ProcessingStep } from "../../utils/status-parser";
+import {
+  BASE_STEP_DEFS,
+  STATUS,
+  STATUS_COLOR,
+  STATUS_ICON,
+  STATUS_TEXT,
+  formatBytes,
+  getDefaultStatusMessage,
+  getDuplicateCount,
+  getImageSummary,
+  getSavedCategory,
+  getSavedTags,
+  getSourceName,
+} from "../utils/activity-log-helpers";
 
 export interface ProgressStatusBarProps {
   steps: ProcessingStep[];
@@ -22,72 +37,14 @@ export function ProgressStatusBar({
     return null;
   }
 
-  // Normalize to the 8 base steps we care about
-  const BASE_STEP_DEFS: Array<{
-    id: string;
-    name: string;
-    sourceIds: string[];
-  }> = [
-    // Cleaning can appear as clean_html (action) or file_cleaning (legacy)
-    {
-      id: "cleaning",
-      name: "Cleaning",
-      sourceIds: ["clean_html", "file_cleaning"],
-    },
-    // Saving note can appear as save_note (action) or note_creation (legacy)
-    {
-      id: "saving_note",
-      name: "Saving Note",
-      sourceIds: ["save_note", "note_creation"],
-    },
-    {
-      id: "ingredient_processing",
-      name: "Ingredient Processing",
-      sourceIds: ["ingredient_processing"],
-    },
-    {
-      id: "instruction_processing",
-      name: "Instruction Processing",
-      sourceIds: ["instruction_processing"],
-    },
-    // Connecting source can appear as process_source (action) or source_connection (legacy)
-    {
-      id: "connecting_source",
-      name: "Connecting Source",
-      sourceIds: [
-        STATUS_CONTEXT.PROCESS_SOURCE,
-        STATUS_CONTEXT.SOURCE_CONNECTION,
-      ],
-    },
-    {
-      id: "adding_images",
-      name: "Adding Images",
-      sourceIds: ["image_processing"],
-    },
-    // Categorization is split visually; we consider save completion contexts as well as generic categorization
-    {
-      id: "adding_categories",
-      name: "Adding Categories",
-      sourceIds: ["categorization_save_complete", "categorization_save"],
-    },
-    {
-      id: "adding_tags",
-      name: "Adding Tags",
-      sourceIds: ["tag_save_complete", "tag_save"],
-    },
-    {
-      id: "check_duplicates",
-      name: "Check Duplicates",
-      sourceIds: [
-        STATUS_CONTEXT.CHECK_DUPLICATES,
-        STATUS_CONTEXT.CHECK_DUPLICATES_LEGACY,
-      ],
-    },
-  ];
+  // Use centralized step definitions
 
   // Build derived steps from incoming steps, limited to the base set
-  const byId = new Map<string, (typeof steps)[number]>();
-  for (const s of steps) byId.set(s.id, s);
+  const byId = useMemo(() => {
+    const m = new Map<string, (typeof steps)[number]>();
+    for (const s of steps) m.set(s.id, s);
+    return m;
+  }, [steps]);
 
   function pickCombinedFromContexts(
     contextIds: string[]
@@ -110,28 +67,38 @@ export function ProgressStatusBar({
     return candidates[0];
   }
 
-  const derivedSteps = BASE_STEP_DEFS.map((def) => {
-    const chosen = pickCombinedFromContexts(def.sourceIds);
-    return {
-      id: def.id,
-      name: def.name,
-      status: chosen?.status ?? "pending",
-      message: chosen?.message ?? "",
-      progress: chosen?.progress,
-      metadata: chosen?.metadata,
-    } as ProcessingStep;
-  });
+  const derivedSteps = useMemo(
+    () =>
+      BASE_STEP_DEFS.map((def) => {
+        const chosen = pickCombinedFromContexts(def.sourceIds);
+        return {
+          id: def.id,
+          name: def.name,
+          status: chosen?.status ?? STATUS.PENDING,
+          message: chosen?.message ?? "",
+          progress: chosen?.progress,
+          metadata: chosen?.metadata,
+        } as ProcessingStep;
+      }),
+    [byId]
+  );
 
-  const totalSteps = 9; // fixed base steps
-  const completedSteps = derivedSteps.filter(
-    (step) => step.status === "completed"
-  ).length;
+  const totalSteps = BASE_STEP_DEFS.length;
+  const completedSteps = useMemo(
+    () =>
+      derivedSteps.filter((step) => step.status === STATUS.COMPLETED).length,
+    [derivedSteps]
+  );
   let progressPercentage =
     totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0;
 
   // If note completion has been received, force overall progress to 100%
-  const noteCompleted = steps.some(
-    (s) => s.id === "note_completion" && s.status === "completed"
+  const noteCompleted = useMemo(
+    () =>
+      steps.some(
+        (s) => s.id === "note_completion" && s.status === STATUS.COMPLETED
+      ),
+    [steps]
   );
   if (noteCompleted) {
     progressPercentage = 100;
@@ -143,21 +110,13 @@ export function ProgressStatusBar({
   ) => {
     // Special case: duplicates highlighted with accent
     if (step?.id === "check_duplicates") {
-      if (status === "processing") return "bg-amber-400";
-      if (step.message?.toLowerCase().includes("duplicate"))
-        return "bg-amber-500";
+      if (status === STATUS.PROCESSING) return "bg-amber-400";
+      const isDup =
+        step.message?.toLowerCase().includes("duplicate") ||
+        getDuplicateCount(step.metadata) > 0;
+      if (isDup) return "bg-amber-500";
     }
-    switch (status) {
-      case "completed":
-        return "bg-green-500";
-      case "processing":
-        return "bg-blue-500";
-      case "failed":
-        return "bg-red-500";
-      case "pending":
-      default:
-        return "bg-gray-300";
-    }
+    return STATUS_COLOR[status] ?? STATUS_COLOR[STATUS.PENDING];
   };
 
   const getStatusIcon = (
@@ -169,33 +128,16 @@ export function ProgressStatusBar({
       (step.message?.toLowerCase().includes("duplicate") ||
         getDuplicateCount(step.metadata) > 0)
     ) {
-      return "!";
+      return STATUS_ICON.DUPLICATE;
     }
-    switch (status) {
-      case "completed":
-        return "✓";
-      case "processing":
-        return "⟳";
-      case "failed":
-        return "✗";
-      case "pending":
-      default:
-        return "○";
-    }
+    return (
+      STATUS_ICON[status as keyof typeof STATUS_ICON] ??
+      STATUS_ICON[STATUS.PENDING]
+    );
   };
 
   const getStatusTextColor = (status: ProcessingStep["status"]) => {
-    switch (status) {
-      case "completed":
-        return "text-green-700";
-      case "processing":
-        return "text-blue-700";
-      case "failed":
-        return "text-red-700";
-      case "pending":
-      default:
-        return "text-gray-500";
-    }
+    return STATUS_TEXT[status] ?? STATUS_TEXT[STATUS.PENDING];
   };
 
   return (
@@ -402,14 +344,7 @@ function renderStepMessage(step: ProcessingStep): ReactNode {
   }
 
   // Default language for other steps when no specific message
-  const fallback =
-    step.status === "pending"
-      ? `${step.name} not started`
-      : step.status === "processing"
-        ? `${step.name} is processing`
-        : step.status === "failed"
-          ? `${step.name} failed`
-          : `${step.name} completed`;
+  const fallback = getDefaultStatusMessage(step.name, step.status);
 
   return (
     <p className="text-xs text-gray-600 mt-1 truncate">
@@ -426,68 +361,16 @@ function getSizeRemoved(metadata?: Record<string, unknown>): string | null {
   return null;
 }
 
-function formatBytes(bytes: number): string {
-  if (!Number.isFinite(bytes) || bytes <= 0) return "0 B";
-  const k = 1024;
-  const sizes = ["B", "KB", "MB", "GB", "TB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  const value = bytes / Math.pow(k, i);
-  return `${value >= 100 ? Math.round(value) : value.toFixed(1)} ${sizes[i]}`;
-}
+// formatBytes imported from helpers
 
-function getSourceName(metadata?: Record<string, unknown>): string | null {
-  if (!metadata) return null;
-  const bookName = metadata.bookName;
-  const siteName = metadata.siteName;
-  const domain = metadata.domain;
-  const source = metadata.source;
-  if (typeof bookName === "string" && bookName) return bookName;
-  if (typeof siteName === "string" && siteName) return siteName;
-  if (typeof domain === "string" && domain) return domain;
-  if (typeof source === "string" && source) {
-    try {
-      const url = new URL(source);
-      return url.hostname;
-    } catch {
-      return source;
-    }
-  }
-  return null;
-}
+// getSourceName imported from helpers
 
-function getImageSummary(metadata?: Record<string, unknown>): {
-  count?: number;
-  types: string[];
-} {
-  const result: { count?: number; types: string[] } = { types: [] };
-  if (!metadata) return result;
-  const count =
-    metadata.completedImages ?? metadata.imageCount ?? metadata.totalImages;
-  if (typeof count === "number") result.count = count;
-  const types = metadata.imageTypes;
-  if (Array.isArray(types)) {
-    result.types = types.map((t) => String(t));
-  }
-  return result;
-}
+// getImageSummary imported from helpers
 
-function getSavedCategory(metadata?: Record<string, unknown>): string | null {
-  if (!metadata) return null;
-  const cat = (metadata as Record<string, unknown>).savedCategory;
-  return typeof cat === "string" && cat ? cat : null;
-}
+// getSavedCategory imported from helpers
 
-function getSavedTags(metadata?: Record<string, unknown>): string[] | null {
-  if (!metadata) return null;
-  const tags = (metadata as Record<string, unknown>).savedTags;
-  if (Array.isArray(tags)) return tags.map((t) => String(t));
-  return null;
-}
+// getSavedTags imported from helpers
 
 // Note: preview URL selection is handled in the parent (collapsible item)
 
-function getDuplicateCount(metadata?: Record<string, unknown>): number {
-  if (!metadata) return 0;
-  const count = (metadata as Record<string, unknown>)["duplicateCount"];
-  return typeof count === "number" ? count : 0;
-}
+// getDuplicateCount imported from helpers
