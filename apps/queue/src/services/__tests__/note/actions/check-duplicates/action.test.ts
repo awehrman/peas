@@ -148,7 +148,7 @@ describe("CheckDuplicatesAction", () => {
         noteId: mockData.noteId,
       });
 
-      // Check completion event with duplicate message
+      // Check completion event with duplicate message (now includes duplicateCount metadata)
       expect(
         mockDepsWithBroadcaster.statusBroadcaster.addStatusEventAndBroadcast
       ).toHaveBeenNthCalledWith(2, {
@@ -157,6 +157,7 @@ describe("CheckDuplicatesAction", () => {
         message: "Duplicate note identified!",
         context: "CHECK_DUPLICATES",
         noteId: mockData.noteId,
+        metadata: { duplicateCount: 1 },
       });
     });
 
@@ -180,7 +181,7 @@ describe("CheckDuplicatesAction", () => {
 
       await action.execute(mockData, mockDepsWithBroadcaster, mockContext);
 
-      // Check completion event with no duplicates message
+      // Check completion event with no duplicates message (now includes duplicateCount metadata)
       expect(
         mockDepsWithBroadcaster.statusBroadcaster.addStatusEventAndBroadcast
       ).toHaveBeenNthCalledWith(2, {
@@ -189,6 +190,7 @@ describe("CheckDuplicatesAction", () => {
         message: "Verified no duplicates!",
         context: "CHECK_DUPLICATES",
         noteId: mockData.noteId,
+        metadata: { duplicateCount: 0 },
       });
     });
   });

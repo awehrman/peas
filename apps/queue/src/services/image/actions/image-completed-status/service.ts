@@ -27,9 +27,9 @@ export async function updateImageCompletedStatus(
     const prisma = serviceContainer.database.prisma;
 
     logger.log(
-      `[IMAGE_COMPLETED_STATUS] Updating image record in database: ${data.imageId || 'undefined/null/empty'}`
+      `[IMAGE_COMPLETED_STATUS] Updating image record in database: ${data.imageId || "undefined/null/empty"}`
     );
-    
+
     const updatedImage = await prisma.image.update({
       where: { id: data.imageId },
       data: {
@@ -46,11 +46,40 @@ export async function updateImageCompletedStatus(
     );
     logger.log(`[IMAGE_COMPLETED_STATUS] ImportId: ${updatedImage.importId}`);
 
-    // Don't broadcast individual image completion events
-    // Instead, rely on the progress tracking system to update the note's image processing status
-    logger.log(
-      `[IMAGE_COMPLETED_STATUS] Skipping individual image broadcast, using progress tracking instead`
-    );
+    // Optionally broadcast a lightweight image processed event with preview URLs
+    // This enables the UI to show a thumbnail without spamming every step
+    if (statusBroadcaster) {
+      try {
+        await statusBroadcaster.addStatusEventAndBroadcast({
+          importId: updatedImage.importId,
+          noteId: updatedImage.noteId,
+          status: "PROCESSING",
+          message: "Image processed",
+          context: "image_processing",
+          indentLevel: 1,
+          metadata: {
+            // These fields may or may not be present depending on upload outcomes
+            r2ThumbnailUrl: (
+              updatedImage as unknown as Record<string, unknown>
+            )["r2ThumbnailUrl"],
+            r2Crop3x2Url: (updatedImage as unknown as Record<string, unknown>)[
+              "r2Crop3x2Url"
+            ],
+            r2OriginalUrl: (updatedImage as unknown as Record<string, unknown>)[
+              "r2OriginalUrl"
+            ],
+          },
+        });
+      } catch (broadcastErr) {
+        logger.log(
+          `[IMAGE_COMPLETED_STATUS] Failed to broadcast preview metadata: ${broadcastErr}`
+        );
+      }
+    } else {
+      logger.log(
+        `[IMAGE_COMPLETED_STATUS] Skipping individual image broadcast, using progress tracking instead`
+      );
+    }
 
     // Mark this image job as completed in the completion tracking system
     try {

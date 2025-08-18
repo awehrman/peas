@@ -29,6 +29,28 @@ export class UploadProcessedAction extends BaseAction<
       contextName: "upload_processed",
       startMessage: "Upload processed images started",
       completionMessage: "Upload processed images completed",
+      additionalBroadcasting: async (result) => {
+        /* istanbul ignore next -- @preserve */
+        if (deps.statusBroadcaster) {
+          const r = result as unknown as Record<string, unknown>;
+          await deps.statusBroadcaster.addStatusEventAndBroadcast({
+            importId: data.importId,
+            noteId: data.noteId,
+            status: "COMPLETED",
+            message: "Images processed",
+            // Use image_processing so the UI step can pick it up immediately
+            context: "image_processing",
+            indentLevel: 1,
+            metadata: {
+              r2OriginalUrl: r["r2OriginalUrl"],
+              r2ThumbnailUrl: r["r2ThumbnailUrl"],
+              r2Crop3x2Url: r["r2Crop3x2Url"],
+              r2Crop4x3Url: r["r2Crop4x3Url"],
+              r2Crop16x9Url: r["r2Crop16x9Url"],
+            },
+          });
+        }
+      },
     });
   }
 }

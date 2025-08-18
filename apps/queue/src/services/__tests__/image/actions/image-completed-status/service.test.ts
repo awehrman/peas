@@ -27,7 +27,9 @@ describe("updateImageCompletedStatus", () => {
     vi.clearAllMocks();
 
     // Import and set up the mock
-    const { markImageJobCompleted } = await import("../../../../note/actions/track-completion/service");
+    const { markImageJobCompleted } = await import(
+      "../../../../note/actions/track-completion/service"
+    );
     mockMarkImageJobCompleted = vi.mocked(markImageJobCompleted);
     mockMarkImageJobCompleted.mockResolvedValue(undefined);
 
@@ -123,7 +125,7 @@ describe("updateImageCompletedStatus", () => {
       expect(result).toEqual(mockData);
     });
 
-    it("should not broadcast completion when statusBroadcaster is available (uses progress tracking instead)", async () => {
+    it("should broadcast a lightweight preview event when statusBroadcaster is available", async () => {
       const result = await updateImageCompletedStatus(
         mockData,
         mockServiceContainer,
@@ -131,14 +133,20 @@ describe("updateImageCompletedStatus", () => {
         mockStatusBroadcaster
       );
 
-      // Verify status broadcaster was not called (service now uses progress tracking)
+      // Verify status broadcaster was called once with preview metadata
       expect(
         mockStatusBroadcaster.addStatusEventAndBroadcast
-      ).not.toHaveBeenCalled();
-
-      // Verify logging for progress tracking
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        "[IMAGE_COMPLETED_STATUS] Skipping individual image broadcast, using progress tracking instead"
+      ).toHaveBeenCalledTimes(1);
+      expect(
+        mockStatusBroadcaster.addStatusEventAndBroadcast
+      ).toHaveBeenCalledWith(
+        expect.objectContaining({
+          context: "image_processing",
+          status: "PROCESSING",
+          message: "Image processed",
+          indentLevel: 1,
+          metadata: expect.any(Object),
+        })
       );
 
       expect(result).toEqual(mockData);
@@ -364,10 +372,20 @@ describe("updateImageCompletedStatus", () => {
         mockStatusBroadcaster
       );
 
-      // Service no longer calls status broadcaster directly (uses progress tracking instead)
+      // Service should call status broadcaster with preview metadata
       expect(
         mockStatusBroadcaster.addStatusEventAndBroadcast
-      ).not.toHaveBeenCalled();
+      ).toHaveBeenCalledTimes(1);
+      expect(
+        mockStatusBroadcaster.addStatusEventAndBroadcast
+      ).toHaveBeenCalledWith(
+        expect.objectContaining({
+          context: "image_processing",
+          status: "PROCESSING",
+          message: "Image processed",
+          metadata: expect.any(Object),
+        })
+      );
     });
 
     it("should handle status broadcaster with different return types", async () => {
@@ -385,10 +403,10 @@ describe("updateImageCompletedStatus", () => {
         customBroadcaster
       );
 
-      // Service no longer calls status broadcaster directly (uses progress tracking instead)
+      // Service should call status broadcaster once
       expect(
         customBroadcaster.addStatusEventAndBroadcast
-      ).not.toHaveBeenCalled();
+      ).toHaveBeenCalledTimes(1);
       expect(result).toEqual(mockData);
     });
   });

@@ -2,7 +2,10 @@
 
 import { ReactNode } from "react";
 
-import { StatusSummary, generateStatusMessages } from "../../utils/status-parser";
+import {
+  StatusSummary,
+  generateStatusMessages,
+} from "../../utils/status-parser";
 
 export interface DetailedStatusProps {
   summary: StatusSummary;
@@ -62,6 +65,7 @@ export function DetailedStatus({
 
   return (
     <div className={`space-y-2 ${className}`}>
+      {/* 50/50 layout for status + preview handled by parent. Keep content flexible */}
       {/* Status messages */}
       <div className="space-y-1">
         {statusMessages.map((message, index) => (
@@ -83,7 +87,10 @@ export function DetailedStatus({
           {summary.parsingErrors > 0 && (
             <div className="flex items-center space-x-2 text-sm text-red-600">
               <span>⚠️</span>
-              <span>{summary.parsingErrors} parsing error{summary.parsingErrors !== 1 ? "s" : ""} found</span>
+              <span>
+                {summary.parsingErrors} parsing error
+                {summary.parsingErrors !== 1 ? "s" : ""} found
+              </span>
             </div>
           )}
 
@@ -99,7 +106,8 @@ export function DetailedStatus({
             <div className="text-xs text-gray-500 mt-1">
               {summary.ingredientsProcessed.errors > 0 && (
                 <span className="text-red-600">
-                  {summary.ingredientsProcessed.errors} ingredient parsing error{summary.ingredientsProcessed.errors !== 1 ? "s" : ""}
+                  {summary.ingredientsProcessed.errors} ingredient parsing error
+                  {summary.ingredientsProcessed.errors !== 1 ? "s" : ""}
                 </span>
               )}
             </div>

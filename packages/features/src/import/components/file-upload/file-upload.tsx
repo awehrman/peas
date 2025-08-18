@@ -368,7 +368,7 @@ export function ImportFileUpload({ className }: Props) {
         } else {
           // All uploads succeeded
           setMessage(
-            `Successfully uploaded ${successfulUploads} HTML file(s) with ${totalImages} associated image(s) from directory structure. Processing started.`
+            `Uploaded ${successfulUploads} HTML file${htmlFiles.length > 1 ? "(s)" : ""} with ${totalImages} associated image${totalImages > 1 ? "(s)" : ""} from directory structure.`
           );
         }
 
@@ -464,7 +464,7 @@ export function ImportFileUpload({ className }: Props) {
         await uploadNonDirectory();
 
         setMessage(
-          `Successfully uploaded ${htmlFiles.length} HTML file(s) and ${imageFiles.length} image file(s). Processing started.`
+          `Uploaded ${htmlFiles.length} HTML file${htmlFiles.length > 1 ? "(s)" : ""} and ${imageFiles.length} image file${imageFiles.length > 1 ? "(s)" : ""}.`
         );
       }
 
@@ -504,8 +504,8 @@ export function ImportFileUpload({ className }: Props) {
             <div
               className={
                 message.includes("failed")
-                  ? "text-red-700 bg-red-50 px-4 py-2 rounded-md"
-                  : "text-green-700 bg-green-50 px-4 py-2 rounded-md"
+                  ? "text-red-700 bg-red-50 px-4 py-2 rounded-md mb-4"
+                  : "text-green-700 bg-green-50 px-4 py-2 rounded-md mb-4"
               }
             >
               {message}

@@ -4,18 +4,14 @@ import { DetailedStatus } from "./detailed-status";
 import { ProgressStatusBar } from "./progress-status-bar";
 import { ImportItem, ImportItemWithUploadProgress, UploadItem } from "./types";
 
-import { ReactNode, useState } from "react";
+import { ReactNode } from "react";
 
 import { StatusEvent } from "../../hooks/use-status-websocket";
 import {
   createProcessingSteps,
   createStatusSummary,
 } from "../../utils/status-parser";
-import {
-  getDisplayTitle,
-  getStatusIcon,
-  getStatusText,
-} from "../utils/display-utils";
+import { getDisplayTitle, getStatusText } from "../utils/display-utils";
 
 export interface CollapsibleImportItemProps {
   item: ImportItem | UploadItem | ImportItemWithUploadProgress;
@@ -134,7 +130,6 @@ export function CollapsibleImportItem({
 
   const importItem = item;
   const displayTitle = getDisplayTitle(importItem, fileTitles);
-  const statusIcon = getStatusIcon(importItem.status);
   const statusText = getStatusText(importItem.status, displayTitle);
 
   // Filter events for this specific import
@@ -146,7 +141,37 @@ export function CollapsibleImportItem({
   const statusSummary = createStatusSummary(itemEvents);
   const processingSteps = createProcessingSteps(itemEvents);
 
+  // Detect high-confidence duplicate from the processing steps (support both lower/upper context ids)
+  const hasDuplicate = processingSteps.some((s) => {
+    const isDupContext =
+      s.id === "check_duplicates" || s.id === "CHECK_DUPLICATES";
+    if (!isDupContext) return false;
+    const msg = (s.message || "").toLowerCase();
+    const dupCount = Number(
+      (s.metadata as Record<string, unknown> | undefined)?.duplicateCount ?? 0
+    );
+    return msg.includes("duplicate") || dupCount > 0;
+  });
+
+  function getImagePreviewUrl(): string | null {
+    for (const step of processingSteps) {
+      if (step.id !== "image_processing" || !step.metadata) continue;
+      const meta = step.metadata as Record<string, unknown>;
+      const crop4x3 = meta["r2Crop4x3Url"];
+      const thumb = meta["r2ThumbnailUrl"];
+      const crop3x2 = meta["r2Crop3x2Url"];
+      const original = meta["r2OriginalUrl"];
+      // Prefer 4:3 crop to match container aspect
+      if (typeof crop4x3 === "string" && crop4x3) return crop4x3;
+      if (typeof thumb === "string" && thumb) return thumb;
+      if (typeof crop3x2 === "string" && crop3x2) return crop3x2;
+      if (typeof original === "string" && original) return original;
+    }
+    return null;
+  }
+
   const getImportBackgroundColor = () => {
+    if (hasDuplicate) return "bg-amber-50";
     switch (importItem.status) {
       case "importing":
         return "bg-blue-50";
@@ -180,34 +205,46 @@ export function CollapsibleImportItem({
         aria-expanded={isExpanded}
         aria-label={`${isExpanded ? "Collapse" : "Expand"} details for ${displayTitle}`}
       >
-        {/* Status Icon */}
+        {/* Status Icon - align with step icons */}
         <div className="flex-shrink-0">
-          {statusIcon === "spinner" ? (
-            <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-blue-600"></div>
-          ) : (
-            <div
-              className={`text-lg ${
-                importItem.status === "completed"
-                  ? "text-green-600"
+          <div
+            className={`w-4 h-4 rounded-full flex items-center justify-center text-xs font-bold text-white ${
+              hasDuplicate
+                ? "bg-amber-500"
+                : importItem.status === "completed"
+                  ? "bg-green-500"
                   : importItem.status === "failed"
-                    ? "text-red-600"
-                    : "text-blue-600"
-              }`}
-            >
-              {statusIcon}
-            </div>
-          )}
+                    ? "bg-red-500"
+                    : importItem.status === "importing"
+                      ? "bg-blue-500"
+                      : "bg-gray-300"
+            }`}
+            title={hasDuplicate ? "duplicate" : importItem.status}
+            aria-label={hasDuplicate ? "Duplicate detected" : importItem.status}
+          >
+            {hasDuplicate
+              ? "!"
+              : importItem.status === "completed"
+                ? "✓"
+                : importItem.status === "failed"
+                  ? "✗"
+                  : importItem.status === "importing"
+                    ? "⟳"
+                    : "○"}
+          </div>
         </div>
 
         {/* Status Text */}
         <div className="flex-1">
           <div
             className={`font-medium ${
-              importItem.status === "completed"
-                ? "text-green-800"
-                : importItem.status === "failed"
-                  ? "text-red-800"
-                  : "text-blue-800"
+              hasDuplicate
+                ? "text-amber-800"
+                : importItem.status === "completed"
+                  ? "text-green-800"
+                  : importItem.status === "failed"
+                    ? "text-red-800"
+                    : "text-blue-800"
             }`}
           >
             {statusText}
@@ -242,20 +279,51 @@ export function CollapsibleImportItem({
       {/* Collapsible Content */}
       {isExpanded && (
         <div className="border-t border-gray-200 bg-white">
-          <div className="p-4 space-y-4">
-            {/* Progress Status Bar */}
-            {processingSteps.length > 0 && (
-              <div>
-                <ProgressStatusBar steps={processingSteps} compact />
+          <div className="p-4">
+            <div className="md:flex md:items-start md:gap-6">
+              {/* Left: 50% width on md+ with progress + status */}
+              <div className="w-full md:w-1/2 space-y-4">
+                {/* Progress Status Bar */}
+                {processingSteps.length > 0 && (
+                  <div>
+                    <ProgressStatusBar steps={processingSteps} compact />
+                  </div>
+                )}
+                {/* Detailed Status */}
+                <div>
+                  <h4 className="text-sm font-medium text-gray-900 mb-2">
+                    Status Details
+                  </h4>
+                  <DetailedStatus summary={statusSummary} />
+                </div>
               </div>
-            )}
 
-            {/* Detailed Status */}
-            <div>
-              <h4 className="text-sm font-medium text-gray-900 mb-2">
-                Status Details
-              </h4>
-              <DetailedStatus summary={statusSummary} />
+              {/* Right: image placeholder/preview 3x4 aspect */}
+              <div className="w-full md:w-1/2 mt-4 md:mt-0">
+                <div className="w-full md:flex md:justify-end">
+                  <div className="border border-gray-200 rounded-md overflow-hidden w-full">
+                    {(() => {
+                      const previewUrl = getImagePreviewUrl();
+                      return previewUrl ? (
+                        <div className="relative w-full">
+                          <div className="aspect-[4/3] w-full">
+                            <img
+                              src={previewUrl}
+                              alt="Imported image preview"
+                              className="block w-full h-full object-cover"
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <div
+                          className="w-full aspect-[4/3] bg-gray-100 animate-pulse"
+                          aria-label="Image loading placeholder"
+                        />
+                      );
+                    })()}
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Additional Metadata */}

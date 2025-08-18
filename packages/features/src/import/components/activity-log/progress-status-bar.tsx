@@ -137,7 +137,16 @@ export function ProgressStatusBar({
     progressPercentage = 100;
   }
 
-  const getStatusColor = (status: ProcessingStep["status"]) => {
+  const getStatusColor = (
+    status: ProcessingStep["status"],
+    step?: ProcessingStep
+  ) => {
+    // Special case: duplicates highlighted with accent
+    if (step?.id === "check_duplicates") {
+      if (status === "processing") return "bg-amber-400";
+      if (step.message?.toLowerCase().includes("duplicate"))
+        return "bg-amber-500";
+    }
     switch (status) {
       case "completed":
         return "bg-green-500";
@@ -151,7 +160,17 @@ export function ProgressStatusBar({
     }
   };
 
-  const getStatusIcon = (status: ProcessingStep["status"]) => {
+  const getStatusIcon = (
+    status: ProcessingStep["status"],
+    step?: ProcessingStep
+  ) => {
+    if (
+      step?.id === "check_duplicates" &&
+      (step.message?.toLowerCase().includes("duplicate") ||
+        getDuplicateCount(step.metadata) > 0)
+    ) {
+      return "!";
+    }
     switch (status) {
       case "completed":
         return "✓";
@@ -208,16 +227,17 @@ export function ProgressStatusBar({
       {showDetails && (
         <div className={`space-y-2 ${compact ? "space-y-1" : ""} pl-[20px]`}>
           {derivedSteps.map((step) => (
-            <div key={step.id} className="flex items-center space-x-3 ml-5">
+            <div key={step.id} className="flex items-center space-x-3">
               {/* Status indicator */}
               <div className="flex-shrink-0">
                 <div
                   className={`w-4 h-4 rounded-full flex items-center justify-center text-xs font-bold text-white ${getStatusColor(
-                    step.status
+                    step.status,
+                    step
                   )}`}
                   title={step.status}
                 >
-                  {getStatusIcon(step.status)}
+                  {getStatusIcon(step.status, step)}
                 </div>
               </div>
 
@@ -225,9 +245,13 @@ export function ProgressStatusBar({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
                   <span
-                    className={`text-sm font-medium truncate ${getStatusTextColor(
-                      step.status
-                    )}`}
+                    className={
+                      step.id === "check_duplicates" &&
+                      (step.message?.toLowerCase().includes("duplicate") ||
+                        getDuplicateCount(step.metadata) > 0)
+                        ? `text-sm font-medium truncate text-amber-700`
+                        : `text-sm font-medium truncate ${getStatusTextColor(step.status)}`
+                    }
                   >
                     {renderStepTitle(step)}
                   </span>
@@ -250,7 +274,8 @@ export function ProgressStatusBar({
                   >
                     <div
                       className={`h-1 rounded-full transition-all duration-300 ${getStatusColor(
-                        step.status
+                        step.status,
+                        step
                       )}`}
                       style={{ width: `${step.progress.percentage}%` }}
                     />
@@ -293,6 +318,22 @@ function renderStepTitle(step: ProcessingStep): string | ReactNode {
         </span>
       );
     }
+  }
+  // Highlight Check Duplicates title when duplicates found
+  if (
+    step.id === "check_duplicates" &&
+    step.message?.toLowerCase().includes("duplicate")
+  ) {
+    return (
+      <span className="text-amber-600">
+        {step.name}
+        {getDuplicateCount(step.metadata) > 0 ? (
+          <span className="text-amber-500 ml-1">
+            ({getDuplicateCount(step.metadata)})
+          </span>
+        ) : null}
+      </span>
+    );
   }
   return step.name;
 }
@@ -339,9 +380,42 @@ function renderStepMessage(step: ProcessingStep): ReactNode {
     );
   }
 
-  return step.message ? (
-    <p className="text-xs text-gray-600 mt-1 truncate">{step.message}</p>
-  ) : null;
+  // Check Duplicates: append count when available
+  if (step.id === "check_duplicates") {
+    const dupCount = getDuplicateCount(step.metadata);
+    const base =
+      step.message ||
+      (step.status === "pending"
+        ? `${step.name} not started`
+        : step.status === "processing"
+          ? `${step.name} is processing`
+          : step.status === "failed"
+            ? `${step.name} failed`
+            : `${step.name} completed`);
+    const suffix =
+      dupCount > 0
+        ? ` (found ${dupCount} duplicate${dupCount === 1 ? "" : "s"})`
+        : "";
+    return (
+      <p className="text-xs text-gray-600 mt-1 truncate">{base + suffix}</p>
+    );
+  }
+
+  // Default language for other steps when no specific message
+  const fallback =
+    step.status === "pending"
+      ? `${step.name} not started`
+      : step.status === "processing"
+        ? `${step.name} is processing`
+        : step.status === "failed"
+          ? `${step.name} failed`
+          : `${step.name} completed`;
+
+  return (
+    <p className="text-xs text-gray-600 mt-1 truncate">
+      {step.message || fallback}
+    </p>
+  );
 }
 
 function getSizeRemoved(metadata?: Record<string, unknown>): string | null {
@@ -408,4 +482,12 @@ function getSavedTags(metadata?: Record<string, unknown>): string[] | null {
   const tags = (metadata as Record<string, unknown>).savedTags;
   if (Array.isArray(tags)) return tags.map((t) => String(t));
   return null;
+}
+
+// Note: preview URL selection is handled in the parent (collapsible item)
+
+function getDuplicateCount(metadata?: Record<string, unknown>): number {
+  if (!metadata) return 0;
+  const count = (metadata as Record<string, unknown>)["duplicateCount"];
+  return typeof count === "number" ? count : 0;
 }
