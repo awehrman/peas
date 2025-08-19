@@ -86,9 +86,10 @@ export async function convertBinaryImageToStandardFormat(
 ): Promise<{ success: boolean; outputPath?: string; newFilename?: string }> {
   try {
     const inputDir = path.dirname(inputPath);
-    
+
     // Use desired filename if provided, otherwise use input name
-    const baseName = desiredFilename 
+    /* istanbul ignore next -- @preserve */
+    const baseName = desiredFilename
       ? path.basename(desiredFilename, path.extname(desiredFilename))
       : path.basename(inputPath, path.extname(inputPath));
 

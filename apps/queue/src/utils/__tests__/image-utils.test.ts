@@ -815,5 +815,30 @@ describe("Image Utils", () => {
         "public/files/test-import-123_files"
       );
     });
+
+    it("should continue when path exists but is not a directory (lines 334-335)", async () => {
+      const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+      // First path: exists but is not a directory
+      (mockFs.stat as any).mockResolvedValueOnce({ isDirectory: () => false });
+
+      // Second path: is a directory and contains images
+      (mockFs.stat as any).mockResolvedValueOnce({ isDirectory: () => true });
+      mockFs.readdir.mockResolvedValueOnce(["image1.jpg", "image2.png"]);
+      mockPath.extname.mockReturnValueOnce(".jpg").mockReturnValueOnce(".png");
+      (mockFs.stat as any).mockResolvedValue({ size: 1024 } as Stats);
+
+      const result = await findImagesForImport("test-import-123");
+
+      expect(result).toHaveLength(2);
+      // Assert we logged the non-directory path message
+      expect(
+        consoleSpy.mock.calls.some((args) =>
+          String(args[0]).includes("Path exists but is not a directory:")
+        )
+      ).toBe(true);
+
+      consoleSpy.mockRestore();
+    });
   });
 });

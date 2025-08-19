@@ -8,6 +8,11 @@ import type { CategorizationWorkerDependencies } from "../../categorization/depe
 import { CategorizationWorker } from "../../categorization/worker";
 import type { ActionContext, WorkerAction } from "../../core/types";
 
+// Mock database updates used by categorization worker status tracking
+vi.mock("@peas/database", () => ({
+  updateQueueJob: vi.fn(),
+}));
+
 // Mock the service container
 const mockServiceContainer: Partial<IServiceContainer> = {
   logger: {
@@ -185,6 +190,126 @@ describe("CategorizationWorker", () => {
       );
 
       consoleSpy.mockRestore();
+    });
+  });
+
+  describe("QueueJob status updates", () => {
+    const mockData: CategorizationJobData = {
+      noteId: "test-note-123",
+      importId: "test-import-123",
+      jobId: "test-job-123",
+      metadata: {},
+    };
+
+    const mockContext: ActionContext = {
+      jobId: "test-job-123",
+      retryCount: 0,
+      queueName: "test-queue",
+      operation: "categorization",
+      startTime: Date.now(),
+      workerName: "categorization-worker",
+      attemptNumber: 1,
+    };
+
+    it("should set QueueJob to PROCESSING in onBeforeJob and log", async () => {
+      const { updateQueueJob } = await import("@peas/database");
+      vi.mocked(updateQueueJob).mockResolvedValue(undefined as unknown as void);
+
+      const logger = (
+        worker as unknown as {
+          dependencies: { logger: { log: ReturnType<typeof vi.fn> } };
+        }
+      ).dependencies.logger;
+      const onBeforeJob = worker as unknown as {
+        onBeforeJob(
+          data: CategorizationJobData,
+          context: ActionContext
+        ): Promise<void>;
+      };
+
+      await onBeforeJob.onBeforeJob(mockData, mockContext);
+
+      expect(updateQueueJob).toHaveBeenCalledWith(
+        mockContext.jobId,
+        expect.objectContaining({
+          status: "PROCESSING",
+          errorMessage: undefined,
+          completedAt: undefined,
+        })
+      );
+      expect(logger.log).toHaveBeenCalledWith(
+        `[CATEGORIZATION_WORKER] Updated QueueJob status to PROCESSING: ${mockContext.jobId}`
+      );
+    });
+
+    it("should set QueueJob to COMPLETED in onAfterJob and log", async () => {
+      const { updateQueueJob } = await import("@peas/database");
+      vi.mocked(updateQueueJob).mockResolvedValue(undefined as unknown as void);
+
+      const logger = (
+        worker as unknown as {
+          dependencies: { logger: { log: ReturnType<typeof vi.fn> } };
+        }
+      ).dependencies.logger;
+      const onAfterJob = worker as unknown as {
+        onAfterJob(
+          data: CategorizationJobData,
+          context: ActionContext,
+          result: CategorizationJobData
+        ): Promise<void>;
+      };
+
+      await onAfterJob.onAfterJob(mockData, mockContext, mockData);
+
+      expect(updateQueueJob).toHaveBeenCalledWith(
+        mockContext.jobId,
+        expect.objectContaining({
+          status: "COMPLETED",
+          errorMessage: undefined,
+          completedAt: expect.any(Date),
+        })
+      );
+      expect(logger.log).toHaveBeenCalledWith(
+        `[CATEGORIZATION_WORKER] Updated QueueJob status to COMPLETED: ${mockContext.jobId}`
+      );
+    });
+
+    it("should set QueueJob to FAILED in onJobError and log error path when update fails", async () => {
+      const { updateQueueJob } = await import("@peas/database");
+      // First call (FAILED) should reject to exercise catch path logging
+      vi.mocked(updateQueueJob).mockRejectedValueOnce(new Error("db failure"));
+
+      const logger = (
+        worker as unknown as {
+          dependencies: { logger: { log: ReturnType<typeof vi.fn> } };
+        }
+      ).dependencies.logger;
+      const onJobError = worker as unknown as {
+        onJobError(
+          error: Error,
+          data: CategorizationJobData,
+          context: ActionContext
+        ): Promise<void>;
+      };
+
+      const err = new Error("boom");
+      await onJobError.onJobError(err, mockData, mockContext);
+
+      // updateQueueJob was attempted with FAILED
+      expect(updateQueueJob).toHaveBeenCalledWith(
+        mockContext.jobId,
+        expect.objectContaining({
+          status: "FAILED",
+          errorMessage: "boom",
+          completedAt: expect.any(Date),
+        })
+      );
+      // catch path logs the failure
+      expect(logger.log).toHaveBeenCalledWith(
+        expect.stringContaining(
+          "[CATEGORIZATION_WORKER] Failed to update QueueJob status:"
+        )
+      );
     });
   });
 });
