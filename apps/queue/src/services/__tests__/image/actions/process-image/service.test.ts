@@ -245,7 +245,9 @@ describe("Process Image Service", () => {
         );
 
         expect(mockLogger.log).toHaveBeenCalledWith(
-          "[PROCESS_IMAGE] ❌ Image processing failed after 0ms"
+          expect.stringMatching(
+            /\[PROCESS_IMAGE\] ❌ Image processing failed after \d+ms/
+          )
         );
         expect(mockLogger.log).toHaveBeenCalledWith(
           "[PROCESS_IMAGE] Error: Error: Processing failed"
@@ -262,7 +264,9 @@ describe("Process Image Service", () => {
         );
 
         expect(mockLogger.log).toHaveBeenCalledWith(
-          expect.stringMatching(/\[PROCESS_IMAGE\] ❌ Image processing failed after \d+ms/)
+          expect.stringMatching(
+            /\[PROCESS_IMAGE\] ❌ Image processing failed after \d+ms/
+          )
         );
         expect(mockLogger.log).toHaveBeenCalledWith(
           "[PROCESS_IMAGE] Error: Error: extract_area failed: invalid dimensions"
@@ -277,7 +281,9 @@ describe("Process Image Service", () => {
         );
 
         expect(mockLogger.log).toHaveBeenCalledWith(
-          expect.stringMatching(/\[PROCESS_IMAGE\] ❌ Image processing failed after \d+ms/)
+          expect.stringMatching(
+            /\[PROCESS_IMAGE\] ❌ Image processing failed after \d+ms/
+          )
         );
         expect(mockLogger.log).toHaveBeenCalledWith(
           "[PROCESS_IMAGE] Error: String error"

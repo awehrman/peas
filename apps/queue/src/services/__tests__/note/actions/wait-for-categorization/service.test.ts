@@ -186,6 +186,66 @@ describe("WaitForCategorization Service", () => {
       );
     });
 
+    it("should handle scheduling error and continue waiting", async () => {
+      // Mock ingredient completion status to be complete
+      const { getIngredientCompletionStatus } = await import(
+        "../../../../note/actions/track-completion/service"
+      );
+      vi.mocked(getIngredientCompletionStatus).mockReturnValue({
+        completedIngredients: 5,
+        totalIngredients: 5,
+        progress: "5/5",
+        isComplete: true,
+      });
+
+      // Mock failed categorization scheduling
+      const { scheduleCategorizationJob } = await import(
+        "../../../../categorization/schedule-categorization"
+      );
+      vi.mocked(scheduleCategorizationJob).mockRejectedValue(
+        new Error("Queue connection failed")
+      );
+
+      // Mock QueueJob to return no jobs initially, then a completed job
+      const { getQueueJobByNoteId } = await import("@peas/database");
+      vi.mocked(getQueueJobByNoteId)
+        .mockResolvedValueOnce([]) // First call returns no jobs
+        .mockResolvedValueOnce([
+          {
+            id: "job-123",
+            jobId: "bull-job-456",
+            type: "PROCESS_CATEGORIZATION",
+            status: "COMPLETED",
+            noteId: "test-note",
+            data: {},
+            errorMessage: null,
+            errorCode: null,
+            errorDetails: null,
+            retryCount: 0,
+            maxRetries: 3,
+            startedAt: new Date(),
+            completedAt: new Date(),
+            ingredientLineId: null,
+            instructionLineId: null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        ]); // Second call returns completed job
+
+      const result = await waitForCategorization(
+        "test-note",
+        "test-import",
+        mockLogger,
+        mockStatusBroadcaster
+      );
+
+      expect(result.categorizationScheduled).toBe(false);
+      expect(result.success).toBe(true); // Should succeed because QueueJob was found completed
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        "[WAIT_FOR_CATEGORIZATION] Failed to schedule categorization for note test-note: Error: Queue connection failed"
+      );
+    });
+
     it("should return success when categories are found", async () => {
       // Mock ingredient completion status to be complete
       const { getIngredientCompletionStatus } = await import(

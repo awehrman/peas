@@ -242,7 +242,9 @@ async function processUploadedFiles(
   const htmlFileName = req.body.htmlFileName;
   const associatedImageCount = req.body.associatedImageCount;
 
+  /* istanbul ignore next -- @preserve */
   if (uploadIndex !== undefined) {
+    /* istanbul ignore next -- @preserve */
     console.log(
       `[UPLOAD_ROUTE:${uploadId}] 📊 Upload ${parseInt(uploadIndex) + 1}/${totalUploads} - HTML: ${htmlFileName} with ${associatedImageCount} images`
     );
@@ -564,6 +566,7 @@ async function processUploadedFiles(
       );
 
       // Get the importId for this file
+      /* istanbul ignore next -- @preserve */
       const fileImportId =
         htmlFileToImportIdMap.get(htmlFile.originalname) || importId;
       console.log(

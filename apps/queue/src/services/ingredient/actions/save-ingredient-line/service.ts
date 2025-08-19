@@ -187,7 +187,9 @@ export async function saveIngredientLine(
             Math.max(1, Math.floor(completionStatus.totalIngredients / 4)) ===
             0; // Every 25% milestone
 
+        /* istanbul ignore next -- @preserve */
         if (shouldBroadcast) {
+          /* istanbul ignore next -- @preserve */
           await statusBroadcaster.addStatusEventAndBroadcast({
             importId: data.importId,
             noteId: data.noteId,

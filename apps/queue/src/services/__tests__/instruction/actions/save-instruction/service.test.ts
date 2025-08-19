@@ -267,6 +267,37 @@ describe("saveInstruction", () => {
         "[SAVE_INSTRUCTION_LINE] Failed to save instruction: Error: Broadcaster error"
       );
     });
+
+    it("should handle broadcast error and rethrow it", async () => {
+      const mockUpdateInstructionLine = vi.mocked(updateInstructionLine);
+      const mockGetInstructionCompletionStatus = vi.mocked(getInstructionCompletionStatus);
+
+      mockUpdateInstructionLine.mockResolvedValue({
+        id: "instruction-1",
+        lineIndex: 0,
+        originalText: "Original instruction",
+        normalizedText: "Test instruction",
+        parseStatus: "COMPLETED_SUCCESSFULLY",
+      });
+
+      mockGetInstructionCompletionStatus.mockResolvedValue({
+        totalInstructions: 5,
+        completedInstructions: 3,
+        progress: "3/5",
+        isComplete: false,
+      });
+
+      const broadcastError = new Error("Broadcast failed");
+      (mockStatusBroadcaster.addStatusEventAndBroadcast as ReturnType<typeof vi.fn>).mockRejectedValue(broadcastError);
+
+      await expect(
+        saveInstruction(mockData, mockLogger, mockStatusBroadcaster)
+      ).rejects.toThrow("Broadcast failed");
+
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        "[SAVE_INSTRUCTION_LINE] Failed to broadcast instruction completion: Error: Broadcast failed"
+      );
+    });
   });
 
   describe("edge cases", () => {

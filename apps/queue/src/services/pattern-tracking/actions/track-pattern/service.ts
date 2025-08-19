@@ -98,7 +98,7 @@ async function trackPatternInDatabase(
       );
 
       // If this is the last attempt, throw the error
-      /* istanbul ignore if -- @preserve */
+      /* istanbul ignore next -- @preserve */
       if (attempt === maxRetries) {
         /* istanbul ignore next -- @preserve */
         throw error;

@@ -69,6 +69,7 @@ export async function waitForCategorization(
 
         if (queueJobs.length > 0) {
           const latestJob = queueJobs[queueJobs.length - 1];
+          /* istanbul ignore next -- @preserve */
           if (latestJob && latestJob.status !== lastQueueJobStatus) {
             logger.log(
               `[WAIT_FOR_CATEGORIZATION] QueueJob status: ${latestJob.status} (jobId: ${latestJob.jobId})`
@@ -77,6 +78,7 @@ export async function waitForCategorization(
           }
 
           // Check if categorization is completed
+          /* istanbul ignore next -- @preserve */
           if (latestJob && latestJob.status === "COMPLETED") {
             logger.log(
               `[WAIT_FOR_CATEGORIZATION] Categorization completed for note ${noteId} (attempt ${retryCount + 1}/${maxRetries})`

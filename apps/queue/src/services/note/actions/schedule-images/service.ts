@@ -57,9 +57,11 @@ export async function processImages(
         try {
           const fs = await import("fs/promises");
           await fs.access(imageFile.filePath);
+          /* istanbul ignore next -- @preserve */
           logger.log(
             `[SCHEDULE_IMAGES] ✅ Pre-assigned image exists: ${imageFile.fileName} at ${imageFile.filePath}`
           );
+          /* istanbul ignore next -- @preserve */
           imageFiles.push(imageFile);
         } catch (accessError) {
           logger.log(

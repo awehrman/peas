@@ -291,6 +291,52 @@ describe("Save Ingredient Line Service", () => {
       );
     });
 
+    it("should handle pattern tracking queue error and log failure", async () => {
+      const mockData: IngredientJobData = {
+        jobId: "test-job-123",
+        noteId: "test-note-123",
+        ingredientReference: "1 cup flour",
+        lineIndex: 0,
+        parseStatus: "COMPLETED_SUCCESSFULLY",
+        isActive: true,
+        importId: "test-import-123",
+        metadata: {
+          parsedSegments: [
+            {
+              index: 0,
+              rule: "ingredient",
+              type: "ingredient",
+              value: "flour",
+              processingTime: 15,
+            },
+          ],
+        },
+      };
+
+      // Mock findOrCreateParsingRule to return a rule ID
+      mockDatabase.findOrCreateParsingRule.mockResolvedValue({
+        id: "rule-ingredient-123",
+      });
+
+      // Mock queue to throw an error
+      const mockQueueInstance = {
+        add: vi.fn().mockRejectedValue(new Error("Queue connection failed")),
+      };
+      mockCreateQueue.mockReturnValue(mockQueueInstance);
+
+      const result = await saveIngredientLine(
+        mockData,
+        mockLogger,
+        mockStatusBroadcaster
+      );
+
+      // Verify that the service completed successfully despite queue error
+      expect(result).toEqual(mockData);
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        "[SAVE_INGREDIENT_LINE] Failed to queue pattern tracking: Error: Queue connection failed"
+      );
+    });
+
     it("should broadcast completion status when statusBroadcaster is available", async () => {
       const mockData: IngredientJobData = {
         jobId: "test-job-123",

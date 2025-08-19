@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { Prisma } from "@prisma/client";
 
 import type { StructuredLogger } from "../../../../../types";
 import {
@@ -10,6 +11,7 @@ import {
   markImageWorkerCompleted,
   markIngredientLineCompleted,
   markInstructionWorkerCompleted,
+  markNoteAsFailed,
   markWorkerCompleted,
   setTotalImageJobs,
   setTotalIngredientLines,
@@ -18,6 +20,7 @@ import {
 // Mock the @peas/database module
 vi.mock("@peas/database", () => ({
   updateNote: vi.fn(),
+  updateParsingErrorCount: vi.fn(),
 }));
 
 describe("Track Completion Service", () => {
@@ -104,6 +107,16 @@ describe("Track Completion Service", () => {
   });
 
   describe("markImageJobCompleted", () => {
+    it("should log and return when called without initialized status", async () => {
+      await markImageJobCompleted(
+        "missing-note",
+        mockLogger,
+        mockStatusBroadcaster
+      );
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        "[TRACK_COMPLETION] ❌ No completion status found for note: missing-note"
+      );
+    });
     it("should mark individual image job as completed", async () => {
       const noteId = "test-note-123";
       const importId = "test-import-456";
@@ -160,6 +173,18 @@ describe("Track Completion Service", () => {
   });
 
   describe("markWorkerCompleted", () => {
+    it("should log and return when called without initialized status", async () => {
+      await markWorkerCompleted(
+        "missing-note",
+        "note",
+        mockLogger,
+        mockStatusBroadcaster
+      );
+
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        "[TRACK_COMPLETION] ❌ No completion status found for note: missing-note"
+      );
+    });
     it("should mark note worker as completed", () => {
       const noteId = "test-note-123";
       const importId = "test-import-456";
@@ -436,6 +461,98 @@ describe("Track Completion Service", () => {
         )
       );
     });
+
+    it("should log success after updating parsing error count", async () => {
+      const noteId = "test-note-parse";
+      const importId = "test-import-parse";
+      const { updateNote, updateParsingErrorCount } = await import(
+        "@peas/database"
+      );
+      vi.mocked(updateNote).mockResolvedValue(undefined);
+      vi.mocked(updateParsingErrorCount).mockResolvedValue(undefined);
+
+      initializeNoteCompletion(noteId, importId);
+      await markWorkerCompleted(
+        noteId,
+        "note",
+        mockLogger,
+        mockStatusBroadcaster
+      );
+      await markWorkerCompleted(
+        noteId,
+        "instruction",
+        mockLogger,
+        mockStatusBroadcaster
+      );
+      await markWorkerCompleted(
+        noteId,
+        "ingredient",
+        mockLogger,
+        mockStatusBroadcaster
+      );
+      await markWorkerCompleted(
+        noteId,
+        "image",
+        mockLogger,
+        mockStatusBroadcaster
+      );
+
+      await new Promise((r) => setTimeout(r, 10));
+
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        `[TRACK_COMPLETION] ✅ Updated parsing error count for note: ${noteId}`
+      );
+    });
+
+    it("should log when cleanupImportDirectory fails after completion", async () => {
+      const noteId = "test-note-cleanup";
+      const importId = "test-import-cleanup";
+      const { updateNote } = await import("@peas/database");
+      vi.mocked(updateNote).mockResolvedValue(undefined);
+
+      // Spy on CleanupService.prototype.cleanupImportDirectory to throw
+      const { CleanupService } = await import(
+        "../../../../cleanup/cleanup-service"
+      );
+      vi.spyOn(
+        CleanupService.prototype as unknown as { cleanupImportDirectory: ReturnType<typeof vi.fn> },
+        "cleanupImportDirectory"
+      ).mockRejectedValue(new Error("cleanup failed"));
+
+      initializeNoteCompletion(noteId, importId);
+      await markWorkerCompleted(
+        noteId,
+        "note",
+        mockLogger,
+        mockStatusBroadcaster
+      );
+      await markWorkerCompleted(
+        noteId,
+        "instruction",
+        mockLogger,
+        mockStatusBroadcaster
+      );
+      await markWorkerCompleted(
+        noteId,
+        "ingredient",
+        mockLogger,
+        mockStatusBroadcaster
+      );
+      await markWorkerCompleted(
+        noteId,
+        "image",
+        mockLogger,
+        mockStatusBroadcaster
+      );
+
+      await new Promise((r) => setTimeout(r, 10));
+
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        expect.stringContaining(
+          `[TRACK_COMPLETION] ⚠️ Failed to cleanup import directory for ${importId}:`
+        )
+      );
+    });
   });
 
   describe("getNoteCompletionStatus", () => {
@@ -578,6 +695,38 @@ describe("Track Completion Service", () => {
             completedIngredientLines: 0,
           }),
         })
+      );
+    });
+  });
+
+  describe("markNoteAsFailed cleanup path", () => {
+    it("should log when cleanup of import directory fails for failed note", async () => {
+      const noteId = "failed-note-1";
+      const importId = "failed-import-1";
+      // initialize to set importId in status map
+      initializeNoteCompletion(noteId, importId, undefined, mockLogger);
+
+      // Spy on CleanupService cleanup method to throw
+      const { CleanupService } = await import(
+        "../../../../cleanup/cleanup-service"
+      );
+      vi.spyOn(
+        CleanupService.prototype as unknown as { cleanupImportDirectory: ReturnType<typeof vi.fn> },
+        "cleanupImportDirectory"
+      ).mockRejectedValue(new Error("cleanup error"));
+
+      await markNoteAsFailed(
+        noteId,
+        "Some failure",
+        "UNKNOWN_ERROR",
+        { details: true } as Prisma.InputJsonValue,
+        mockLogger
+      );
+
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        expect.stringContaining(
+          `[TRACK_COMPLETION] ⚠️ Failed to cleanup import directory for failed note ${importId}:`
+        )
       );
     });
   });
@@ -897,5 +1046,54 @@ describe("Track Completion Service", () => {
         isComplete: true,
       });
     });
+  });
+
+  it("should handle cleanup failure in markNoteAsFailed", async () => {
+    const noteId = "test-note-failed";
+    const importId = "test-import-failed";
+    const { updateNote } = await import("@peas/database");
+    vi.mocked(updateNote).mockResolvedValue(undefined);
+
+    // Initialize completion status first
+    initializeNoteCompletion(noteId, importId);
+
+    // Spy on CleanupService cleanup method to throw
+    const { CleanupService } = await import(
+      "../../../../cleanup/cleanup-service"
+    );
+    vi.spyOn(
+      CleanupService.prototype as unknown as { cleanupImportDirectory: ReturnType<typeof vi.fn> },
+      "cleanupImportDirectory"
+    ).mockRejectedValue(new Error("cleanup error"));
+
+    await markNoteAsFailed(
+      noteId,
+      "Test error message",
+      "UNKNOWN_ERROR",
+      { test: "details" },
+      mockLogger
+    );
+
+    expect(mockLogger.log).toHaveBeenCalledWith(
+      "[TRACK_COMPLETION] ⚠️ Failed to cleanup import directory for failed note test-import-failed: Error: cleanup error"
+    );
+  });
+
+  it("should handle broadcast error in markImageJobCompleted", async () => {
+    const noteId = "test-note-broadcast";
+    const importId = "test-import-broadcast";
+    initializeNoteCompletion(noteId, importId);
+    setTotalImageJobs(noteId, 2, mockLogger);
+
+    // Mock statusBroadcaster to throw an error
+    const mockStatusBroadcaster = {
+      addStatusEventAndBroadcast: vi.fn().mockRejectedValue(new Error("Broadcast failed")),
+    };
+
+    await markImageJobCompleted(noteId, mockLogger, mockStatusBroadcaster);
+
+    expect(mockLogger.log).toHaveBeenCalledWith(
+      "[TRACK_COMPLETION] ❌ Failed to broadcast image progress: Error: Broadcast failed"
+    );
   });
 });

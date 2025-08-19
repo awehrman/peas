@@ -84,8 +84,27 @@ describe("check-queue-jobs util", () => {
     vi.mocked(getQueueJobByStatus).mockRejectedValueOnce(new Error("fail"));
     const err = vi.spyOn(console, "error").mockImplementation(() => {});
     const { checkQueueJobs } = await import("../check-queue-jobs");
-    await checkQueueJobs();
+    await expect(checkQueueJobs()).rejects.toThrow("fail");
     expect(err).toHaveBeenCalled();
     err.mockRestore();
+  });
+
+  it("covers CLI wrapper happy and error paths", async () => {
+    const { getQueueJobByStatus } = await import("@peas/database");
+    // Happy path
+    vi.mocked(getQueueJobByStatus)
+      .mockResolvedValueOnce([] as unknown as QueueJob[])
+      .mockResolvedValueOnce([] as unknown as QueueJob[])
+      .mockResolvedValueOnce([] as unknown as QueueJob[])
+      .mockResolvedValueOnce([] as unknown as QueueJob[]);
+    const mod = await import("../check-queue-jobs");
+    await mod.runCli();
+
+    // Error path
+    vi.mocked(getQueueJobByStatus).mockRejectedValueOnce(new Error("boom"));
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    await expect(mod.runCli()).rejects.toThrow("boom");
+    expect(spy).toHaveBeenCalled();
+    spy.mockRestore();
   });
 });

@@ -12,6 +12,11 @@ vi.mock("../../categorization/types", () => ({
   createCategorizationJobData: vi.fn(),
 }));
 
+// Mock the database module
+vi.mock("@peas/database", () => ({
+  createQueueJob: vi.fn(),
+}));
+
 describe("Schedule Categorization Service", () => {
   let mockLogger: StructuredLogger;
   let mockStatusBroadcaster: {
@@ -372,6 +377,82 @@ describe("Schedule Categorization Service", () => {
       // Assert
       expect(mockLogger.log).toHaveBeenCalledWith(
         `[SCHEDULE_CATEGORIZATION] Starting categorization scheduling for note: ${noteId}`
+      );
+    });
+
+    it("should handle undefined job ID from queue", async () => {
+      // Arrange
+      const noteId = "test-note-123";
+      const importId = "test-import-456";
+      const mockJobData = {
+        noteId,
+        importId,
+        jobId: "categorization-test-note-123-1234567890",
+        metadata: {
+          originalJobId: undefined,
+          triggeredBy: "ingredient_completion",
+          scheduledAt: "2023-01-01T00:00:00.000Z",
+        },
+      };
+
+      mockCreateCategorizationJobData.mockReturnValue(mockJobData);
+      mockQueue.add.mockResolvedValue({ id: undefined }); // Job ID is undefined
+
+      // Act
+      await scheduleCategorizationJob(
+        noteId,
+        importId,
+        mockLogger,
+        mockStatusBroadcaster
+      );
+
+      // Assert
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        `[SCHEDULE_CATEGORIZATION] Warning: Job ID is undefined, skipping QueueJob creation`
+      );
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        `[SCHEDULE_CATEGORIZATION] Successfully scheduled categorization for note: ${noteId}`
+      );
+    });
+
+    it("should handle database error when creating QueueJob entry", async () => {
+      // Arrange
+      const noteId = "test-note-123";
+      const importId = "test-import-456";
+      const mockJobData = {
+        noteId,
+        importId,
+        jobId: "categorization-test-note-123-1234567890",
+        metadata: {
+          originalJobId: undefined,
+          triggeredBy: "ingredient_completion",
+          scheduledAt: "2023-01-01T00:00:00.000Z",
+        },
+      };
+
+      mockCreateCategorizationJobData.mockReturnValue(mockJobData);
+      mockQueue.add.mockResolvedValue({ id: "test-job-id-123" });
+
+      // Mock database error
+      const { createQueueJob } = await import("@peas/database");
+      vi.mocked(createQueueJob).mockRejectedValue(
+        new Error("Database connection failed")
+      );
+
+      // Act
+      await scheduleCategorizationJob(
+        noteId,
+        importId,
+        mockLogger,
+        mockStatusBroadcaster
+      );
+
+      // Assert
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        `[SCHEDULE_CATEGORIZATION] Failed to create QueueJob entry: Error: Database connection failed`
+      );
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        `[SCHEDULE_CATEGORIZATION] Successfully scheduled categorization for note: ${noteId}`
       );
     });
   });

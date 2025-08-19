@@ -287,6 +287,26 @@ describe("updateImageCompletedStatus", () => {
       expect(result).toEqual(mockData);
     });
 
+    it("should handle status broadcaster preview metadata errors gracefully", async () => {
+      const previewBroadcastError = new Error("Preview broadcast failed");
+      mockStatusBroadcaster.addStatusEventAndBroadcast.mockRejectedValue(previewBroadcastError);
+
+      const result = await updateImageCompletedStatus(
+        mockData,
+        mockServiceContainer,
+        mockLogger,
+        mockStatusBroadcaster
+      );
+
+      // Verify error logging for preview broadcast failure
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        "[IMAGE_COMPLETED_STATUS] Failed to broadcast preview metadata: Error: Preview broadcast failed"
+      );
+
+      // Verify data is still returned despite broadcast error
+      expect(result).toEqual(mockData);
+    });
+
     it("should handle missing imageId", async () => {
       const dataWithoutImageId = { ...mockData, imageId: undefined };
 

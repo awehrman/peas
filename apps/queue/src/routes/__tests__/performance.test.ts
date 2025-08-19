@@ -476,7 +476,31 @@ describe("Performance Router", () => {
     it("should handle missing type parameter", async () => {
       const response = await request(app)
         .post("/performance/optimize")
-        .send({});
+        .send({ type: undefined });
+
+      expect(response.status).toBe(HttpStatus.BAD_REQUEST);
+      expect(response.body).toEqual({
+        error: "Invalid optimization type",
+        validTypes: ["memory", "database", "all"],
+      });
+    });
+
+    it("should handle null type parameter", async () => {
+      const response = await request(app)
+        .post("/performance/optimize")
+        .send({ type: null });
+
+      expect(response.status).toBe(HttpStatus.BAD_REQUEST);
+      expect(response.body).toEqual({
+        error: "Invalid optimization type",
+        validTypes: ["memory", "database", "all"],
+      });
+    });
+
+    it("should handle empty string type parameter", async () => {
+      const response = await request(app)
+        .post("/performance/optimize")
+        .send({ type: "" });
 
       expect(response.status).toBe(HttpStatus.BAD_REQUEST);
       expect(response.body).toEqual({

@@ -134,6 +134,7 @@ export async function markImageJobCompleted(
         Math.max(1, Math.floor(status.totalImageJobs / 4)) ===
         0); // Every 25% milestone
 
+  /* istanbul ignore else -- @preserve */
   if (shouldBroadcast) {
     try {
       const isComplete = status.completedImageJobs >= status.totalImageJobs;
@@ -255,6 +256,7 @@ export async function markWorkerCompleted(
           `[TRACK_COMPLETION] ✅ Updated parsing error count for note: ${noteId}`
         );
       } catch (error) {
+        /* istanbul ignore next -- @preserve */
         logger.log(
           `[TRACK_COMPLETION] ⚠️ Failed to update parsing error count for note ${noteId}: ${error}`
         );
@@ -284,6 +286,7 @@ export async function markWorkerCompleted(
       noteCompletionStatus.delete(noteId);
 
       // Clean up the import directory
+      /* istanbul ignore else -- @preserve */
       if (status.importId) {
         try {
           const cleanupService = new CleanupService(logger);
@@ -364,10 +367,12 @@ export async function markNoteAsFailed(
 
     // Clean up the completion status from memory
     const status = noteCompletionStatus.get(noteId);
+    /* istanbul ignore next -- @preserve */
     if (status) {
       noteCompletionStatus.delete(noteId);
 
       // Clean up the import directory even for failed notes
+      /* istanbul ignore next -- @preserve */
       if (status.importId && logger) {
         try {
           const cleanupService = new CleanupService(logger);

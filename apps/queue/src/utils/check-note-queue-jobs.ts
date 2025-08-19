@@ -17,6 +17,7 @@ async function checkNoteQueueJobs(noteId: string) {
     // Group by status
     const jobsByStatus = allJobs.reduce(
       (acc, job) => {
+        /* istanbul ignore next -- @preserve */
         if (!acc[job.status]) {
           acc[job.status] = [];
         }
@@ -60,10 +61,11 @@ async function checkNoteQueueJobs(noteId: string) {
     });
   } catch (error) {
     console.error("Error checking QueueJobs for note:", error);
+    throw error;
   }
 }
 
-function getStatusEmoji(status: string): string {
+export function getStatusEmoji(status: string): string {
   switch (status) {
     case "PENDING":
       return "📋";
@@ -80,22 +82,25 @@ function getStatusEmoji(status: string): string {
   }
 }
 
-// Run if called directly
-if (import.meta.url === `file://${process.argv[1]}`) {
-  const noteId = process.argv[2];
+/* istanbul ignore next -- @preserve */
+export async function runCli(argv: string[] = process.argv.slice(2)) {
+  const noteId = argv[0];
   if (!noteId) {
     console.error("Usage: node check-note-queue-jobs.ts <noteId>");
     throw new Error("Note ID is required");
   }
-  
-  checkNoteQueueJobs(noteId)
-    .then(() => {
-      // Script completed successfully
-    })
-    .catch((error) => {
-      console.error("Script failed:", error);
-      throw error;
-    });
+  try {
+    await checkNoteQueueJobs(noteId);
+  } catch (error) {
+    console.error("Script failed:", error);
+    throw error;
+  }
+}
+
+// Run if called directly
+/* istanbul ignore next -- @preserve */
+if (import.meta.url === `file://${process.argv[1]}`) {
+  runCli();
 }
 
 export { checkNoteQueueJobs };

@@ -1,3 +1,4 @@
+import type { QueueJob } from "@prisma/client";
 import { Queue } from "bullmq";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -213,7 +214,8 @@ describe("CategorizationWorker", () => {
 
     it("should set QueueJob to PROCESSING in onBeforeJob and log", async () => {
       const { updateQueueJob } = await import("@peas/database");
-      vi.mocked(updateQueueJob).mockResolvedValue(undefined as unknown as void);
+      // updateQueueJob resolves to the updated QueueJob record; align type by casting a minimal object
+      vi.mocked(updateQueueJob).mockResolvedValue({} as unknown as QueueJob);
 
       const logger = (
         worker as unknown as {
@@ -244,7 +246,7 @@ describe("CategorizationWorker", () => {
 
     it("should set QueueJob to COMPLETED in onAfterJob and log", async () => {
       const { updateQueueJob } = await import("@peas/database");
-      vi.mocked(updateQueueJob).mockResolvedValue(undefined as unknown as void);
+      vi.mocked(updateQueueJob).mockResolvedValue({} as unknown as QueueJob);
 
       const logger = (
         worker as unknown as {
