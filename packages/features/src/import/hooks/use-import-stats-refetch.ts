@@ -53,10 +53,6 @@ export function useImportStatsRefetch({
     });
 
     if (shouldRefetchEvents.length > 0) {
-      console.log(
-        "Stats refetch triggered by note completion event:",
-        shouldRefetchEvents[0]
-      );
       refetch();
     }
   }, [events]);

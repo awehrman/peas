@@ -21,7 +21,6 @@ export function useInstructionCountUpdater({
   });
 
   useEffect(() => {
-    console.log({ events });
     // Listen for instruction count update events
     const instructionCountEvents = events.filter(
       (event) =>

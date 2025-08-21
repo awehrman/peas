@@ -79,7 +79,7 @@ export function PaginationControls({
           disabled={!pagination.hasPreviousPage}
           className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
             pagination.hasPreviousPage
-              ? "text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 hover:text-gray-900"
+              ? "text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 transition-colors"
               : "text-gray-400 bg-gray-100 border border-gray-200 cursor-not-allowed"
           }`}
           aria-label="Go to previous page"
@@ -95,7 +95,7 @@ export function PaginationControls({
               <>
                 <button
                   onClick={() => pagination.goToPage(1)}
-                  className="px-3 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:text-gray-900 transition-colors"
+                  className="px-3 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
                 >
                   1
                 </button>
@@ -113,7 +113,7 @@ export function PaginationControls({
                 className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
                   pageNumber === pagination.page
                     ? "text-white bg-blue-600 border border-blue-600"
-                    : "text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 hover:text-gray-900"
+                    : "text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 transition-colors"
                 }`}
                 aria-label={`Go to page ${pageNumber}`}
                 aria-current={
@@ -132,7 +132,7 @@ export function PaginationControls({
                 )}
                 <button
                   onClick={() => pagination.goToPage(pagination.totalPages)}
-                  className="px-3 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:text-gray-900 transition-colors"
+                  className="px-3 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
                 >
                   {pagination.totalPages}
                 </button>
@@ -147,7 +147,7 @@ export function PaginationControls({
           disabled={!pagination.hasNextPage}
           className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
             pagination.hasNextPage
-              ? "text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 hover:text-gray-900"
+              ? "text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 transition-colors"
               : "text-gray-400 bg-gray-100 border border-gray-200 cursor-not-allowed"
           }`}
           aria-label="Go to next page"

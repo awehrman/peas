@@ -53,13 +53,6 @@ export function useImportItems({
       for (const event of sortedEvents) {
         const importId = event.importId;
 
-        console.log("📊 [USE_IMPORT_ITEMS] Processing event:", {
-          importId,
-          context: event.context,
-          status: event.status,
-          metadata: event.metadata,
-        });
-
         // Skip certain events that shouldn't affect the display
         if (shouldSkipEvent(event)) {
           continue; // Don't mark as failed for categorization timeout
@@ -81,21 +74,11 @@ export function useImportItems({
         // Try to get filename from event metadata (only set once)
         if (event.metadata?.htmlFileName && !item.htmlFileName) {
           item.htmlFileName = event.metadata.htmlFileName as string;
-          console.log("📊 [USE_IMPORT_ITEMS] Set htmlFileName:", {
-            importId,
-            htmlFileName: item.htmlFileName,
-            context: event.context,
-          });
         }
 
         // Update note title if available (preserve existing title, only set if we don't have one)
         if (event.metadata?.noteTitle && !item.noteTitle) {
           item.noteTitle = event.metadata.noteTitle as string;
-          console.log("📊 [USE_IMPORT_ITEMS] Set noteTitle:", {
-            importId,
-            noteTitle: item.noteTitle,
-            context: event.context,
-          });
         }
 
         // Check for completion events

@@ -11,7 +11,7 @@ export const STATUS = {
 
 export const STATUS_ICON = {
   [STATUS.COMPLETED]: "✓",
-  [STATUS.PROCESSING]: "⟳",
+  [STATUS.PROCESSING]: "...",
   [STATUS.FAILED]: "✗",
   [STATUS.PENDING]: "○",
   DUPLICATE: "!",
@@ -109,15 +109,25 @@ export function getDefaultStatusMessage(
 }
 
 export function getDuplicateCount(metadata?: Partial<StatusMetadata>): number {
-  if (!metadata) return 0;
+  if (!metadata) {
+    return 0;
+  }
   const count = metadata["duplicateCount"];
-  return typeof count === "number" ? count : 0;
+  const result = typeof count === "number" ? count : 0;
+  return result;
 }
 
 export function isDuplicateStep(step: ProcessingStep): boolean {
-  if (step.id !== "check_duplicates") return false;
+  if (step.id !== "check_duplicates") {
+    return false;
+  }
+
   const msg = (step.message || "").toLowerCase();
-  return msg.includes("duplicate") || getDuplicateCount(step.metadata) > 0;
+  const messageHasDuplicate = msg.includes("duplicate");
+  const metadataHasDuplicates = getDuplicateCount(step.metadata) > 0;
+  const result = messageHasDuplicate || metadataHasDuplicates;
+
+  return result;
 }
 
 export function choosePreviewUrl(
@@ -147,6 +157,7 @@ export function formatBytes(bytes: number): string {
 export interface ImageSummary {
   count?: number;
   types: string[];
+  cropSizes?: string[];
 }
 
 export function getImageSummary(
@@ -161,6 +172,69 @@ export function getImageSummary(
   if (typeof count === "number") result.count = count;
   const types = metadata["imageTypes"];
   if (Array.isArray(types)) result.types = types.map((t) => String(t));
+
+  // Extract crop sizes from metadata
+  const cropSizes: string[] = [];
+
+  console.log("📸 [IMAGE_SUMMARY] getImageSummary metadata:", {
+    metadata,
+    r2OriginalUrl: metadata["r2OriginalUrl"],
+    r2Crop3x2Url: metadata["r2Crop3x2Url"],
+    r2Crop4x3Url: metadata["r2Crop4x3Url"],
+    r2Crop16x9Url: metadata["r2Crop16x9Url"],
+    r2ThumbnailUrl: metadata["r2ThumbnailUrl"],
+  });
+
+  if (
+    metadata["r2OriginalUrl"] &&
+    typeof metadata["r2OriginalUrl"] === "string" &&
+    metadata["r2OriginalUrl"].trim()
+  ) {
+    cropSizes.push("original");
+    console.log("📸 [IMAGE_SUMMARY] Added original crop");
+  }
+  if (
+    metadata["r2Crop3x2Url"] &&
+    typeof metadata["r2Crop3x2Url"] === "string" &&
+    metadata["r2Crop3x2Url"].trim()
+  ) {
+    cropSizes.push("3:2");
+    console.log("📸 [IMAGE_SUMMARY] Added 3:2 crop");
+  }
+  if (
+    metadata["r2Crop4x3Url"] &&
+    typeof metadata["r2Crop4x3Url"] === "string" &&
+    metadata["r2Crop4x3Url"].trim()
+  ) {
+    cropSizes.push("4:3");
+    console.log("📸 [IMAGE_SUMMARY] Added 4:3 crop");
+  }
+  if (
+    metadata["r2Crop16x9Url"] &&
+    typeof metadata["r2Crop16x9Url"] === "string" &&
+    metadata["r2Crop16x9Url"].trim()
+  ) {
+    cropSizes.push("16:9");
+    console.log("📸 [IMAGE_SUMMARY] Added 16:9 crop");
+  }
+  if (
+    metadata["r2ThumbnailUrl"] &&
+    typeof metadata["r2ThumbnailUrl"] === "string" &&
+    metadata["r2ThumbnailUrl"].trim()
+  ) {
+    cropSizes.push("thumbnail");
+    console.log("📸 [IMAGE_SUMMARY] Added thumbnail crop");
+  }
+
+  if (cropSizes.length > 0) result.cropSizes = cropSizes;
+
+  console.log("📸 [IMAGE_SUMMARY] getImageSummary result:", {
+    count: result.count,
+    types: result.types,
+    cropSizes: result.cropSizes,
+    cropCount: result.cropSizes?.length || 0,
+  });
+
   return result;
 }
 

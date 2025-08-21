@@ -56,16 +56,6 @@ export function ActivityLog({
   const combinedItems = useMemo(() => {
     const allItems = new Map<string, ActivityItem>();
 
-    // Debug: Log all upload items
-    console.log(
-      "📋 [ACTIVITY_LOG] All upload items:",
-      Array.from(uploadItems.entries()).map(([id, item]) => ({
-        importId: id,
-        htmlFileName: item.htmlFileName,
-        status: item.status,
-      }))
-    );
-
     // Add upload items first
     uploadItems.forEach((item) => {
       allItems.set(item.importId, {
@@ -75,17 +65,6 @@ export function ActivityLog({
         status: item.status,
       });
     });
-
-    // Debug: Log all import items
-    console.log(
-      "📋 [ACTIVITY_LOG] All import items:",
-      importItems.map((item) => ({
-        importId: item.importId,
-        htmlFileName: item.htmlFileName,
-        noteTitle: item.noteTitle,
-        status: item.status,
-      }))
-    );
 
     // Add import items, but preserve upload progress information
     importItems.forEach((item) => {
@@ -116,15 +95,7 @@ export function ActivityLog({
         if (uploadItem) {
           // We found a matching upload item, use its htmlFileName
           const [, uploadData] = uploadItem;
-          console.log(
-            "🔍 [ACTIVITY_LOG] Found matching upload item for import:",
-            {
-              importId: item.importId,
-              uploadHtmlFileName: uploadData.htmlFileName,
-              importHtmlFileName: item.htmlFileName,
-              noteTitle: item.noteTitle,
-            }
-          );
+
           allItems.set(item.importId, {
             ...item,
             type: "import",
@@ -132,24 +103,10 @@ export function ActivityLog({
           });
         } else {
           // No matching upload item found
-          console.warn(
-            "🚨 [ACTIVITY_LOG] No matching upload item found for import:",
-            {
-              importId: item.importId,
-              htmlFileName: item.htmlFileName,
-              noteTitle: item.noteTitle,
-              uploadItemsKeys: Array.from(uploadItems.keys()),
-              uploadItemsCount: uploadItems.size,
-              fileTitlesKeys: Array.from(fileTitles.keys()),
-            }
-          );
 
           if (!item.htmlFileName && !item.noteTitle) {
             // Skip items that have no identifying information
-            console.warn(
-              "🚨 [ACTIVITY_LOG] Skipping import item with no identifying info:",
-              item
-            );
+
             return;
           } else {
             // Use a fallback filename if htmlFileName is empty
@@ -157,17 +114,6 @@ export function ActivityLog({
               item.htmlFileName ||
               item.noteTitle ||
               `Import ${item.importId.slice(-8)}`;
-
-            console.log(
-              "🔍 [ACTIVITY_LOG] Using fallback filename for import:",
-              {
-                importId: item.importId,
-                htmlFileName: item.htmlFileName,
-                noteTitle: item.noteTitle,
-                displayFileName,
-              }
-            );
-
             allItems.set(item.importId, {
               ...item,
               type: "import",
@@ -180,17 +126,6 @@ export function ActivityLog({
 
     // Preserve insertion order (no resorting) so items don't move around on updates
     const result = Array.from(allItems.values());
-
-    console.log("📊 [ACTIVITY_LOG] Combined items count:", result.length);
-    result.forEach((item, index) => {
-      console.log(`📋 [ACTIVITY_LOG] Item ${index}:`, {
-        importId: item.importId,
-        htmlFileName: item.htmlFileName,
-        type: item.type,
-        status: item.status,
-        hasNoteTitle: "noteTitle" in item && item.noteTitle,
-      });
-    });
 
     return result;
   }, [uploadItems, importItems]);
@@ -223,11 +158,7 @@ export function ActivityLog({
   }
 
   if (combinedItems.length === 0) {
-    return (
-      <div className={`text-gray-500 ${className || ""}`}>
-        No import activity yet...
-      </div>
-    );
+    return null;
   }
 
   return (

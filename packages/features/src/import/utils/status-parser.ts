@@ -51,6 +51,7 @@ export interface StatusSummary {
   imagesAdded?: {
     count: number;
     types: string[];
+    cropSizes?: string[];
   };
   categoriesAdded?: {
     count: number;
@@ -95,7 +96,6 @@ function parseSourceInfo(
   metadata: Record<string, unknown>
 ): { type: "book" | "site" | "domain"; name: string } | undefined {
   const source = metadata.source;
-  const sourceType = metadata.sourceType;
   const domain = metadata.domain;
   const bookName = metadata.bookName;
   const siteName = metadata.siteName;
@@ -125,19 +125,58 @@ function parseSourceInfo(
  */
 function parseImageInfo(
   metadata: Record<string, unknown>
-): { count: number; types: string[] } | undefined {
+): { count: number; types: string[]; cropSizes?: string[] } | undefined {
   const imageCount = metadata.imageCount || metadata.completedImages;
   const imageTypes = metadata.imageTypes;
 
   if (typeof imageCount === "number" && imageCount > 0) {
     const types: string[] = [];
+    const cropSizes: string[] = [];
+
     if (imageTypes && Array.isArray(imageTypes)) {
       types.push(...imageTypes.map((t) => String(t)));
     } else {
       // Default types if not specified
       types.push("thumbnail", "crop");
     }
-    return { count: imageCount, types };
+
+    // Extract crop sizes from metadata
+    if (
+      metadata.r2OriginalUrl &&
+      typeof metadata.r2OriginalUrl === "string" &&
+      metadata.r2OriginalUrl.trim()
+    )
+      cropSizes.push("original");
+    if (
+      metadata.r2Crop3x2Url &&
+      typeof metadata.r2Crop3x2Url === "string" &&
+      metadata.r2Crop3x2Url.trim()
+    )
+      cropSizes.push("3:2");
+    if (
+      metadata.r2Crop4x3Url &&
+      typeof metadata.r2Crop4x3Url === "string" &&
+      metadata.r2Crop4x3Url.trim()
+    )
+      cropSizes.push("4:3");
+    if (
+      metadata.r2Crop16x9Url &&
+      typeof metadata.r2Crop16x9Url === "string" &&
+      metadata.r2Crop16x9Url.trim()
+    )
+      cropSizes.push("16:9");
+    if (
+      metadata.r2ThumbnailUrl &&
+      typeof metadata.r2ThumbnailUrl === "string" &&
+      metadata.r2ThumbnailUrl.trim()
+    )
+      cropSizes.push("thumbnail");
+
+    return {
+      count: imageCount,
+      types,
+      cropSizes: cropSizes.length > 0 ? cropSizes : undefined,
+    };
   }
   return undefined;
 }
@@ -226,7 +265,11 @@ export function createStatusSummary(events: StatusEvent[]): StatusSummary {
     if (event.context === "image_processing" && event.status === "COMPLETED") {
       const imageInfo = parseImageInfo(metadata);
       if (imageInfo) {
-        summary.imagesAdded = imageInfo;
+        summary.imagesAdded = {
+          count: imageInfo.count,
+          types: imageInfo.types,
+          cropSizes: imageInfo.cropSizes,
+        };
       }
     }
 
@@ -273,13 +316,17 @@ export function generateStatusMessages(summary: StatusSummary): string[] {
 
   if (summary.sourceConnected) {
     const { type, name } = summary.sourceConnected;
-    messages.push(`Connected source ${name} (${type})`);
+    messages.push(`Connected source *${name}* (${type})`);
   }
 
   if (summary.imagesAdded) {
-    const { count, types } = summary.imagesAdded;
+    const { count, types, cropSizes } = summary.imagesAdded;
     const typeText = types.length > 0 ? ` (${types.join(", ")})` : "";
-    messages.push(`Added ${count} image${count !== 1 ? "s" : ""}${typeText}`);
+    const cropText =
+      cropSizes && cropSizes.length > 0 ? ` [${cropSizes.join(", ")}]` : "";
+    messages.push(
+      `Added ${count} image${count !== 1 ? "s" : ""}${typeText}${cropText}`
+    );
   }
 
   if (summary.categoriesAdded) {
@@ -325,7 +372,6 @@ export function calculateProgress(events: StatusEvent[]): number {
  * Create processing steps from events
  */
 export function createProcessingSteps(events: StatusEvent[]): ProcessingStep[] {
-  const steps: ProcessingStep[] = [];
   const stepMap = new Map<string, ProcessingStep>();
 
   for (const event of events) {

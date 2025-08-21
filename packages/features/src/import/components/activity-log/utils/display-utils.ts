@@ -7,23 +7,11 @@ export function getDisplayTitle(
   },
   fileTitles: Map<string, string>
 ): string {
-  const result = (
+  const result =
     item.noteTitle ||
     fileTitles.get(item.htmlFileName) ||
     item.htmlFileName.replace(/\.(html|htm)$/, "") ||
-    "Note"
-  );
-
-  console.log("📊 [GET_DISPLAY_TITLE] Computing title:", {
-    noteTitle: item.noteTitle,
-    htmlFileName: item.htmlFileName,
-    fileTitlesSize: fileTitles.size,
-    fileTitlesKeys: Array.from(fileTitles.keys()),
-    hasFileTitle: fileTitles.has(item.htmlFileName),
-    fileTitle: fileTitles.get(item.htmlFileName),
-    cleanedFileName: item.htmlFileName.replace(/\.(html|htm)$/, ""),
-    result,
-  });
+    "Note";
 
   return result;
 }
@@ -44,15 +32,6 @@ export function useDisplayTitle(
     () => getDisplayTitle(item, fileTitles),
     [item.noteTitle, item.htmlFileName, fileTitlesString]
   );
-
-  console.log("📊 [USE_DISPLAY_TITLE] Computing title:", {
-    noteTitle: item.noteTitle,
-    htmlFileName: item.htmlFileName,
-    fileTitlesSize: fileTitles.size,
-    result,
-    hasFileTitle: fileTitles.has(item.htmlFileName),
-    fileTitle: fileTitles.get(item.htmlFileName),
-  });
 
   return result;
 }

@@ -209,9 +209,6 @@ export function ImportFileUpload({ className }: Props) {
                 if (retryCount < maxRetries) {
                   // Wait before retrying (exponential backoff)
                   const waitTime = Math.pow(2, retryCount) * 1000;
-                  console.log(
-                    `Rate limited, retrying ${htmlFile.name} in ${waitTime}ms (attempt ${retryCount + 1}/${maxRetries})`
-                  );
                   await new Promise((resolve) => setTimeout(resolve, waitTime));
                   return uploadFile(htmlFile, index, retryCount + 1);
                 } else {
@@ -256,7 +253,6 @@ export function ImportFileUpload({ className }: Props) {
         // Process uploads in batches
         const allResults: UploadResult[] = [];
         const failedResults: Error[] = [];
-        const totalBatches = Math.ceil(htmlFiles.length / batchSize);
 
         for (let i = 0; i < htmlFiles.length; i += batchSize) {
           const batch = htmlFiles.slice(i, i + batchSize);
@@ -264,20 +260,11 @@ export function ImportFileUpload({ className }: Props) {
             { length: batch.length },
             (_, j) => i + j
           );
-          const currentBatch = Math.floor(i / batchSize) + 1;
-
-          console.log(
-            `Processing batch ${currentBatch}/${totalBatches} (${batch.length} files)`
-          );
 
           // Process current batch
           const batchPromises: Promise<UploadResult>[] = batch.map(
             (htmlFile, batchIndex) =>
               uploadFile(htmlFile, batchIndexes[batchIndex] || 0)
-          );
-
-          console.log(
-            `🚀 [UPLOAD_DEBUG] Starting batch ${currentBatch}/${totalBatches} with ${batch.length} files`
           );
 
           const batchResults =
@@ -287,9 +274,6 @@ export function ImportFileUpload({ className }: Props) {
           batchResults.forEach((result, batchIndex) => {
             if (result.status === "fulfilled") {
               allResults.push(result.value);
-              console.log(
-                `✅ [UPLOAD_DEBUG] Successfully uploaded: ${batch[batchIndex]?.name}`
-              );
             } else {
               const reason =
                 result.reason instanceof Error
@@ -304,15 +288,8 @@ export function ImportFileUpload({ className }: Props) {
             }
           });
 
-          console.log(
-            `📊 [UPLOAD_DEBUG] Batch ${currentBatch} completed. Success: ${batchResults.filter((r) => r.status === "fulfilled").length}/${batch.length}`
-          );
-
           // Add delay between batches (except for the last batch)
           if (i + batchSize < htmlFiles.length) {
-            console.log(
-              `Waiting ${delayBetweenBatches}ms before next batch...`
-            );
             await new Promise((resolve) =>
               setTimeout(resolve, delayBetweenBatches)
             );
@@ -325,17 +302,6 @@ export function ImportFileUpload({ className }: Props) {
           0
         );
         const successfulUploads = successfulResults.length;
-
-        // Debug: Log all upload results
-        console.log("📊 [UPLOAD_DEBUG] Upload results:", {
-          totalFiles: htmlFiles.length,
-          successfulUploads,
-          failedCount: failedResults.length,
-          successfulFiles: successfulResults.map((r) => r.htmlFile),
-          failedMessages: failedResults.map(
-            (f) => f?.message ?? "Unknown error"
-          ),
-        });
 
         if (failedResults.length > 0) {
           // Some uploads failed
@@ -437,9 +403,6 @@ export function ImportFileUpload({ className }: Props) {
                 if (retryCount < maxRetries) {
                   // Wait before retrying (exponential backoff)
                   const waitTime = Math.pow(2, retryCount) * 1000;
-                  console.log(
-                    `Rate limited, retrying non-directory upload in ${waitTime}ms (attempt ${retryCount + 1}/${maxRetries})`
-                  );
                   await new Promise((resolve) => setTimeout(resolve, waitTime));
                   return uploadNonDirectory(retryCount + 1);
                 } else {

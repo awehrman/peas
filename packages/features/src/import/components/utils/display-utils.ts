@@ -22,11 +22,10 @@ export function useDisplayTitle(
   },
   fileTitles: Map<string, string>
 ): string {
-  return useMemo(() => getDisplayTitle(item, fileTitles), [
-    item.noteTitle,
-    item.htmlFileName,
-    fileTitles,
-  ]);
+  return useMemo(
+    () => getDisplayTitle(item, fileTitles),
+    [item.noteTitle, item.htmlFileName, fileTitles]
+  );
 }
 
 export function formatTimestamp(date: Date): string {
@@ -52,12 +51,12 @@ export function getStatusText(
 ): string {
   switch (status) {
     case "completed":
-      return `Added ${displayTitle}`;
+      return `Added *${displayTitle}*`;
     case "failed":
-      return `Failed to import ${displayTitle}`;
+      return `Failed to import *${displayTitle}*`;
     case "importing":
-      return `Importing ${displayTitle}...`;
+      return `Importing *${displayTitle}*...`;
     default:
-      return `Importing ${displayTitle}...`;
+      return `Importing *${displayTitle}*...`;
   }
 }

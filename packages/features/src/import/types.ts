@@ -14,6 +14,7 @@ export interface StatusMetadata {
   r2ThumbnailUrl?: string;
   r2Crop3x2Url?: string;
   r2Crop4x3Url?: string;
+  r2Crop16x9Url?: string;
   r2OriginalUrl?: string;
 
   // Categorization / tags
