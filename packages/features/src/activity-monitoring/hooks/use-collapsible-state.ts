@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 export interface UseCollapsibleStateOptions {
   storageKey?: string;
   defaultExpanded?: boolean;
   persistState?: boolean;
+  maxStoredItems?: number;
 }
 
 export interface UseCollapsibleStateReturn {
@@ -21,36 +22,40 @@ export function useCollapsibleState({
   storageKey = "collapsible-state",
   defaultExpanded = false,
   persistState = true,
+  maxStoredItems = 50,
 }: UseCollapsibleStateOptions = {}): UseCollapsibleStateReturn {
   const [expandedItems, setExpandedItemsState] = useState<Set<string>>(
     new Set()
   );
 
+  // Debounce localStorage saves to improve performance
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const mounted = useRef(true);
+
   // Load initial state from localStorage
   useEffect(() => {
-    if (!persistState) return;
+    if (!persistState || typeof window === "undefined") return;
 
     try {
       const stored = localStorage.getItem(storageKey);
       if (stored) {
         const parsed = JSON.parse(stored) as string[];
-        setExpandedItemsState(new Set(parsed));
+        // Limit the number of stored items to prevent memory issues
+        const limitedItems = parsed.slice(0, maxStoredItems);
+        setExpandedItemsState(new Set(limitedItems));
       }
     } catch (error) {
       console.warn(
         "Failed to load collapsible state from localStorage:",
         error
       );
-      // Continue without loading state - use empty set
       setExpandedItemsState(new Set());
     }
-  }, [storageKey, persistState]);
+  }, [storageKey, persistState, maxStoredItems]);
 
-  // Debounce localStorage saves to improve performance
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
+  // Save state to localStorage with debouncing
   useEffect(() => {
-    if (!persistState) return;
+    if (!persistState || typeof window === "undefined") return;
 
     // Clear previous timeout
     if (saveTimeoutRef.current) {
@@ -59,14 +64,18 @@ export function useCollapsibleState({
 
     // Debounce the save operation
     saveTimeoutRef.current = setTimeout(() => {
+      if (!mounted.current) return;
+
       try {
-        localStorage.setItem(
-          storageKey,
-          JSON.stringify(Array.from(expandedItems))
-        );
+        const itemsArray = Array.from(expandedItems);
+        // Limit stored items to prevent localStorage bloat
+        const limitedItems = itemsArray.slice(0, maxStoredItems);
+        localStorage.setItem(storageKey, JSON.stringify(limitedItems));
       } catch (error) {
-        console.warn("Failed to save collapsible state to localStorage:", error);
-        // Continue without persistence - state will be lost but app won't crash
+        console.warn(
+          "Failed to save collapsible state to localStorage:",
+          error
+        );
       }
     }, 300); // 300ms debounce
 
@@ -76,12 +85,20 @@ export function useCollapsibleState({
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [expandedItems, storageKey, persistState]);
+  }, [expandedItems, storageKey, persistState, maxStoredItems]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      mounted.current = false;
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const isExpanded = useCallback(
-    (itemId: string): boolean => {
-      return expandedItems.has(itemId);
-    },
+    (itemId: string): boolean => expandedItems.has(itemId),
     [expandedItems]
   );
 
@@ -99,6 +116,7 @@ export function useCollapsibleState({
 
   const expandItem = useCallback((itemId: string) => {
     setExpandedItemsState((prev) => {
+      if (prev.has(itemId)) return prev; // No change needed
       const newSet = new Set(prev);
       newSet.add(itemId);
       return newSet;
@@ -107,6 +125,7 @@ export function useCollapsibleState({
 
   const collapseItem = useCallback((itemId: string) => {
     setExpandedItemsState((prev) => {
+      if (!prev.has(itemId)) return prev; // No change needed
       const newSet = new Set(prev);
       newSet.delete(itemId);
       return newSet;
@@ -116,27 +135,49 @@ export function useCollapsibleState({
   const expandAll = useCallback((itemIds: string[]) => {
     setExpandedItemsState((prev) => {
       const newSet = new Set(prev);
-      itemIds.forEach((id) => newSet.add(id));
-      return newSet;
+      let hasChanges = false;
+
+      itemIds.forEach((id) => {
+        if (!newSet.has(id)) {
+          newSet.add(id);
+          hasChanges = true;
+        }
+      });
+
+      return hasChanges ? newSet : prev;
     });
   }, []);
 
   const collapseAll = useCallback(() => {
-    setExpandedItemsState(new Set());
+    setExpandedItemsState((prev) => {
+      return prev.size > 0 ? new Set() : prev;
+    });
   }, []);
 
   const setExpandedItems = useCallback((itemIds: string[]) => {
     setExpandedItemsState(new Set(itemIds));
   }, []);
 
-  return {
-    expandedItems,
-    isExpanded,
-    toggleItem,
-    expandItem,
-    collapseItem,
-    expandAll,
-    collapseAll,
-    setExpandedItems,
-  };
+  return useMemo(
+    () => ({
+      expandedItems,
+      isExpanded,
+      toggleItem,
+      expandItem,
+      collapseItem,
+      expandAll,
+      collapseAll,
+      setExpandedItems,
+    }),
+    [
+      expandedItems,
+      isExpanded,
+      toggleItem,
+      expandItem,
+      collapseItem,
+      expandAll,
+      collapseAll,
+      setExpandedItems,
+    ]
+  );
 }

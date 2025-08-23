@@ -5,14 +5,16 @@ import { ConnectionStatus } from "./connection-status";
 import { ImportItemComponent } from "./import-item";
 import { PaginationControls } from "./pagination-controls";
 import { PendingUploadItem } from "./pending-upload-item";
-import { ActivityItem, ActivityLogProps, UploadProgress } from "./types";
+import { ActivityLogProps } from "./types";
 
-import { ReactNode, useEffect, useMemo } from "react";
+import { ReactNode, useCallback, useEffect, useMemo, useRef } from "react";
 
 import { useUploadContext } from "../../contexts/upload-context";
 import { useCollapsibleState } from "../../hooks/use-collapsible-state";
 import { useImportItems } from "../../hooks/use-import-items";
 import { useStatusWebSocket } from "../../hooks/use-status-websocket";
+
+import { createFileMatchingMap, mergeActivityItems } from "./utils/item-merger";
 
 export function ActivityLog({
   className,
@@ -42,107 +44,40 @@ export function ActivityLog({
     persistState: true,
   });
 
-  // Expand first item by default
+  // Track if we've already expanded the first item to prevent race conditions
+  const hasExpandedFirstItem = useRef(false);
+
+  // Expand first item by default (only once)
   useEffect(() => {
-    if (defaultExpandedFirst && importItems.length > 0) {
+    if (
+      defaultExpandedFirst &&
+      importItems.length > 0 &&
+      !hasExpandedFirstItem.current
+    ) {
       const firstItem = importItems[0];
       if (firstItem && !collapsibleState.isExpanded(firstItem.importId)) {
         collapsibleState.expandItem(firstItem.importId);
+        hasExpandedFirstItem.current = true;
       }
     }
-  }, [defaultExpandedFirst, importItems, collapsibleState]);
+  }, [
+    defaultExpandedFirst,
+    importItems,
+    collapsibleState.expandItem,
+    collapsibleState.isExpanded,
+  ]);
 
   // Memoize the combined items to avoid recalculation on every render
-  const combinedItems = useMemo(() => {
-    const allItems = new Map<string, ActivityItem>();
-
-    // Add upload items first
-    uploadItems.forEach((item) => {
-      allItems.set(item.importId, {
-        ...item,
-        type: "upload",
-        // Keep the original upload status for upload items
-        status: item.status,
-      });
-    });
-
-    // Add import items, but preserve upload progress information
-    importItems.forEach((item) => {
-      const existingItem = allItems.get(item.importId);
-      if (existingItem && existingItem.type === "upload") {
-        // Merge upload progress with import status
-        const uploadProgress: UploadProgress = {
-          htmlFileName: existingItem.htmlFileName,
-          imageCount: existingItem.imageCount,
-          uploadStatus: existingItem.status,
-        };
-
-        allItems.set(item.importId, {
-          ...item,
-          type: "import",
-          uploadProgress,
-        });
-      } else {
-        // No existing upload item, but we have an import item
-        // This could happen if the WebSocket receives events for an importId
-        // that doesn't have a corresponding upload item
-
-        // Try to find the upload item by importId to get the htmlFileName
-        const uploadItem = Array.from(uploadItems.entries()).find(
-          ([uploadImportId]) => uploadImportId === item.importId
-        );
-
-        if (uploadItem) {
-          // We found a matching upload item, use its htmlFileName
-          const [, uploadData] = uploadItem;
-
-          allItems.set(item.importId, {
-            ...item,
-            type: "import",
-            htmlFileName: uploadData.htmlFileName,
-          });
-        } else {
-          // No matching upload item found
-
-          if (!item.htmlFileName && !item.noteTitle) {
-            // Skip items that have no identifying information
-
-            return;
-          } else {
-            // Use a fallback filename if htmlFileName is empty
-            const displayFileName =
-              item.htmlFileName ||
-              item.noteTitle ||
-              `Import ${item.importId.slice(-8)}`;
-            allItems.set(item.importId, {
-              ...item,
-              type: "import",
-              htmlFileName: displayFileName,
-            });
-          }
-        }
-      }
-    });
-
-    // Preserve insertion order (no resorting) so items don't move around on updates
-    const result = Array.from(allItems.values());
-
-    return result;
-  }, [uploadItems, importItems]);
+  const combinedItems = useMemo(
+    () => mergeActivityItems({ uploadItems, importItems }),
+    [uploadItems, importItems]
+  );
 
   // Memoize the file matching map for better performance
-  const fileMatchingMap = useMemo(() => {
-    const map = new Map<string, ActivityItem>();
-    combinedItems.forEach((item) => {
-      if (item.htmlFileName) {
-        map.set(item.htmlFileName, item);
-      }
-      if ("noteTitle" in item && item.noteTitle) {
-        map.set(item.noteTitle, item);
-      }
-    });
-    return map;
-  }, [combinedItems]);
+  const fileMatchingMap = useMemo(
+    () => createFileMatchingMap(combinedItems),
+    [combinedItems]
+  );
 
   // Handle connection states
   const connectionStatusComponent = (
@@ -191,6 +126,9 @@ export function ActivityLog({
       {/* Show all items (upload and import) */}
       {combinedItems.map((item) => {
         if (showCollapsible && "noteTitle" in item && item.type === "import") {
+          // Create a stable callback for each item to prevent unnecessary re-renders
+          const handleToggle = () => collapsibleState.toggleItem(item.importId);
+
           return (
             <CollapsibleImportItem
               key={item.importId}
@@ -198,7 +136,7 @@ export function ActivityLog({
               fileTitles={fileTitles}
               events={events}
               isExpanded={collapsibleState.isExpanded(item.importId)}
-              onToggle={() => collapsibleState.toggleItem(item.importId)}
+              onToggle={handleToggle}
             />
           );
         }
