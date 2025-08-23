@@ -7,7 +7,7 @@ import {
   UPLOAD_BACKGROUND_COLOR,
   UPLOAD_STATUS_ICON,
   getUploadStatusText,
-} from "../../utils/activity-log-helpers";
+} from "../../../utils/upload";
 
 interface UploadItemComponentProps {
   item: UploadItem;

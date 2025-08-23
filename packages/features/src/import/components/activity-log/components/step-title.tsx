@@ -3,7 +3,7 @@
 import React from "react";
 
 import { ProcessingStep } from "../../../utils/status-parser";
-import { getDuplicateCount } from "../../utils/activity-log-helpers";
+import { getDuplicateCount } from "../../../utils/metadata";
 
 export interface StepTitleProps {
   step: ProcessingStep;

@@ -3,10 +3,9 @@
 import { ReactNode } from "react";
 
 import {
-  UploadProvider,
-  useUploadContext,
-} from "../../contexts/upload-context";
-import { StatusWebSocketProvider } from "../../contexts/websocket-context";
+  ImportStateProvider,
+  useImportState,
+} from "../../contexts/import-state-context";
 import { useImportStatsRefetch } from "../../hooks/use-import-stats-refetch";
 import { ActivityLog } from "../activity-log";
 import { StatsSummary } from "../dashboard/stats-summary";
@@ -38,7 +37,8 @@ function ImportPageContentInner({
     },
   });
 
-  const { uploadingHtmlFiles } = useUploadContext();
+  const { state } = useImportState();
+  const { uploadingHtmlFiles } = state;
 
   return (
     <>
@@ -70,10 +70,8 @@ function ImportPageContentInner({
 
 export function ImportPageContent(props: ImportPageContentProps): ReactNode {
   return (
-    <StatusWebSocketProvider>
-      <UploadProvider>
-        <ImportPageContentInner {...props} />
-      </UploadProvider>
-    </StatusWebSocketProvider>
+    <ImportStateProvider>
+      <ImportPageContentInner {...props} />
+    </ImportStateProvider>
   );
 }

@@ -307,11 +307,27 @@ initializeApp()
     });
 
     // Initialize WebSocket server using factory BEFORE starting workers
-    ManagerFactory.createWebSocketManager(serviceContainer.config.wsPort);
-    serviceContainer.logger.log(
-      `🔌 WebSocket manager initialized on port ${serviceContainer.config.wsPort}`,
-      "info"
-    );
+    try {
+      ManagerFactory.createWebSocketManager(serviceContainer.config.wsPort);
+      serviceContainer.logger.log(
+        `🔌 WebSocket manager initialized on port ${serviceContainer.config.wsPort}`,
+        "info"
+      );
+    } catch (error) {
+      const properError = createError(error);
+      serviceContainer.errorHandler.createJobError(properError, {
+        operation: "websocket_initialization",
+        timestamp: new Date(),
+      });
+      serviceContainer.errorHandler.logError(properError, {
+        operation: "websocket_initialization",
+        timestamp: new Date(),
+      });
+      serviceContainer.logger.log(
+        `❌ Failed to initialize WebSocket server: ${properError.message}`,
+        "error"
+      );
+    }
 
     // Start workers
     startWorkers(serviceContainer.queues, serviceContainer);

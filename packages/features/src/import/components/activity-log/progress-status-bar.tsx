@@ -4,7 +4,7 @@ import { ReactNode } from "react";
 import { useMemo } from "react";
 
 import { ProcessingStep } from "../../utils/status-parser";
-import { BASE_STEP_DEFS, STATUS } from "../utils/activity-log-helpers";
+import { BASE_STEP_DEFS, STATUS } from "../../utils/status";
 
 import { ProcessingStepItem } from "./components/processing-step";
 import { ACTIVITY_LOG_STYLES } from "./styles/activity-log-styles";

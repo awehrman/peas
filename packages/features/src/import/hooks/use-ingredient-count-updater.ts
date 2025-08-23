@@ -1,8 +1,8 @@
 "use client";
 
-import { useStatusWebSocket } from "./use-status-websocket";
-
 import { useEffect, useState } from "react";
+
+import { useImportState } from "../contexts/import-state-context";
 
 interface UseIngredientCountUpdaterProps {
   wsUrl: string;
@@ -13,20 +13,17 @@ export function useIngredientCountUpdater({
   initialCount = 0,
 }: Omit<UseIngredientCountUpdaterProps, "wsUrl">) {
   const [ingredientCount, setIngredientCount] = useState(initialCount);
-  const { events } = useStatusWebSocket({
-    autoReconnect: true,
-    reconnectInterval: 3000,
-    maxReconnectAttempts: 5,
-  });
+  const { state } = useImportState();
+  const { events } = state;
 
   useEffect(() => {
     // Listen for instruction count update events
     const instructionCountEvents = events.filter(
-      (event) =>
+      (event: any) =>
         (event.context === "parse_html_ingredients" ||
           event.context === "process_ingredients") &&
         typeof event.metadata?.processedInstructions === "number"
-    );
+    ) as any[];
 
     if (instructionCountEvents.length > 0) {
       // Get the latest event

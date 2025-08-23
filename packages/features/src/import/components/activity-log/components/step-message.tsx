@@ -8,9 +8,9 @@ import {
   getSavedTags,
   getSourceName,
   getDuplicateCount,
-  getDefaultStatusMessage,
-  formatBytes,
-} from "../../utils/activity-log-helpers";
+} from "../../../utils/metadata";
+import { getDefaultStatusMessage } from "../../../utils/status";
+import { formatBytes } from "../../../utils/formatting";
 
 export interface StepMessageProps {
   step: ProcessingStep;

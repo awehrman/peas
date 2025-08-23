@@ -1,11 +1,10 @@
 "use client";
 
-import { useStatusWebSocket } from "./use-status-websocket";
-
 import { useEffect, useState } from "react";
 
 import { getImportStats } from "../actions/get-import-stats";
 import { ImportStats } from "../components/layout/import-page";
+import { useImportState } from "../contexts/import-state-context";
 
 interface UseImportStatsRefetchProps {
   initialStats: ImportStats;
@@ -23,11 +22,8 @@ export function useImportStatsRefetch({
   const [stats, setStats] = useState<ImportStats>(initialStats);
   const [isRefetching, setIsRefetching] = useState(false);
 
-  const { events } = useStatusWebSocket({
-    autoReconnect: true,
-    reconnectInterval: 3000,
-    maxReconnectAttempts: 5,
-  });
+  const { state } = useImportState();
+  const { events } = state;
 
   const refetch = async () => {
     setIsRefetching(true);
@@ -43,7 +39,7 @@ export function useImportStatsRefetch({
 
   useEffect(() => {
     // Listen for note completion events that should trigger stats refetch
-    const shouldRefetchEvents = events.filter((event) => {
+    const shouldRefetchEvents = events.filter((event: any) => {
       // Check for note completion events
       if (event.status === "COMPLETED" && event.context === "note_completion") {
         return true;

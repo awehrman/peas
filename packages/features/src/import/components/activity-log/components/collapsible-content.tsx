@@ -2,9 +2,9 @@
 
 import { ReactNode } from "react";
 
-import { ImportItem, ImportItemWithUploadProgress } from "../types";
 import { ProcessingStep } from "../../../utils/status-parser";
 import { ProgressStatusBar } from "../progress-status-bar";
+import { ImportItem, ImportItemWithUploadProgress } from "../types";
 
 interface CollapsibleContentProps {
   item: ImportItem | ImportItemWithUploadProgress;
@@ -20,7 +20,7 @@ export function CollapsibleContent({
   return (
     <div
       id={`import-item-${item.importId}`}
-      className="border-t border-gray-200 bg-white"
+      className="border-t border-gray-200 bg-white h-[600px] overflow-y-auto"
     >
       <div className="p-4">
         <div className="md:flex md:items-start md:gap-6">

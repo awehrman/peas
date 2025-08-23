@@ -24,6 +24,10 @@ export function useImportItems({
 }: UseImportItemsOptions): UseImportItemsReturn {
   const [items, setItems] = useState<Map<string, ImportItem>>(new Map());
 
+  // Memory management constants
+  const MAX_ITEMS = 100;
+  const CLEANUP_THRESHOLD = 50;
+
   // Memoized event filtering function
   const shouldSkipEvent = useCallback((event: StatusEvent): boolean => {
     return (
@@ -121,6 +125,20 @@ export function useImportItems({
       return newItems;
     });
   }, [events, shouldSkipEvent, sortEventsByTimestamp]);
+
+  // Memory cleanup effect - remove old items when we exceed the limit
+  useEffect(() => {
+    if (items.size > MAX_ITEMS) {
+      setItems((currentItems) => {
+        // Sort items by creation date (newest first) and keep only the most recent ones
+        const sortedItems = Array.from(currentItems.entries())
+          .sort(([, a], [, b]) => b.createdAt.getTime() - a.createdAt.getTime())
+          .slice(0, CLEANUP_THRESHOLD);
+        
+        return new Map(sortedItems);
+      });
+    }
+  }, [items.size]);
 
   // Get all items in stable insertion order (freeze initial ordering)
   const allItems = useMemo(() => {

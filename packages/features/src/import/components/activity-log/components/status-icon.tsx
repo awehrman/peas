@@ -2,13 +2,9 @@
 
 import React from "react";
 
+import { getDuplicateCount } from "../../../utils/metadata";
+import { STATUS, STATUS_COLOR, STATUS_ICON } from "../../../utils/status";
 import { ProcessingStep } from "../../../utils/status-parser";
-import {
-  STATUS,
-  STATUS_COLOR,
-  STATUS_ICON,
-} from "../../utils/activity-log-helpers";
-import { getDuplicateCount } from "../../utils/activity-log-helpers";
 import {
   ACTIVITY_LOG_STYLES,
   ICON_POSITIONING,

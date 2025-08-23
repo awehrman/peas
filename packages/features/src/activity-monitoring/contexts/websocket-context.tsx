@@ -43,7 +43,7 @@ interface WebSocketProviderProps extends UseStatusWebSocketOptions {
 }
 
 const DEFAULT_WS_URL =
-  process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:4200/ws";
+  process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8080";
 const DEFAULT_OPTIONS: Required<UseStatusWebSocketOptions> = {
   url: DEFAULT_WS_URL,
   reconnectInterval: 3000,

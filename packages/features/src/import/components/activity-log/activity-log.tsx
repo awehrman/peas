@@ -1,19 +1,21 @@
 "use client";
 
-import { CollapsibleImportItem } from "./collapsible-import-item";
 import { ConnectionStatus } from "./connection-status";
-import { ImportItemComponent } from "./import-item";
-import { PaginationControls } from "./pagination-controls";
-import { PendingUploadItem } from "./pending-upload-item";
 import { ActivityLogProps } from "./types";
 
 import { ReactNode, useCallback, useEffect, useMemo, useRef } from "react";
 
-import { useUploadContext } from "../../contexts/upload-context";
-import { useCollapsibleState } from "../../hooks/use-collapsible-state";
+import { useImportState } from "../../contexts/import-state-context";
 import { useImportItems } from "../../hooks/use-import-items";
-import { useStatusWebSocket } from "../../hooks/use-status-websocket";
+import { usePerformanceMonitoring } from "../../hooks/use-performance-monitoring";
+import { StatusEvent } from "../../hooks/use-status-websocket";
+import { useWebSocketIntegration } from "../../hooks/use-websocket-integration";
+import { ImportErrorBoundary } from "../error-boundary";
 
+import { ActivityLogHeader } from "./components/activity-log-header";
+import { ActivityPagination } from "./components/activity-pagination";
+import { AdaptiveActivityItemsList } from "./components/adaptive-activity-items-list";
+import { PendingUploadsList } from "./components/pending-uploads-list";
 import { createFileMatchingMap, mergeActivityItems } from "./utils/item-merger";
 
 export function ActivityLog({
@@ -24,11 +26,31 @@ export function ActivityLog({
   showCollapsible = true,
   defaultExpandedFirst = true,
 }: ActivityLogProps): ReactNode {
-  const { events, connectionStatus, error } = useStatusWebSocket({
+  // Use unified import state context
+  const {
+    state,
+    isExpanded,
+    toggleItem,
+    expandItem,
+    setItemsPerPage,
+    connectWebSocket,
+  } = useImportState();
+
+  // Initialize WebSocket integration
+  useWebSocketIntegration({
     reconnectInterval: 3000,
     maxReconnectAttempts: 5,
   });
-  const { fileTitles, uploadItems } = useUploadContext();
+
+  // Initialize performance monitoring
+  const { generateReport } = usePerformanceMonitoring({
+    enableMemoryMonitoring: true,
+    enableRenderTracking: true,
+    reportingInterval: 30000, // Report every 30 seconds
+    logToConsole: process.env.NODE_ENV === "development",
+  });
+
+  const { events, connection, uploadItems, fileTitles } = state;
 
   // Use custom hook for import items processing with pagination
   const { allItems: allImportItems, paginatedItems: importItems } =
@@ -37,12 +59,6 @@ export function ActivityLog({
       enablePagination: showPagination,
       itemsPerPage,
     });
-
-  // Use collapsible state management
-  const collapsibleState = useCollapsibleState({
-    storageKey: "activity-log-expanded",
-    persistState: true,
-  });
 
   // Track if we've already expanded the first item to prevent race conditions
   const hasExpandedFirstItem = useRef(false);
@@ -55,17 +71,12 @@ export function ActivityLog({
       !hasExpandedFirstItem.current
     ) {
       const firstItem = importItems[0];
-      if (firstItem && !collapsibleState.isExpanded(firstItem.importId)) {
-        collapsibleState.expandItem(firstItem.importId);
+      if (firstItem && !isExpanded(firstItem.importId)) {
+        expandItem(firstItem.importId);
         hasExpandedFirstItem.current = true;
       }
     }
-  }, [
-    defaultExpandedFirst,
-    importItems,
-    collapsibleState.expandItem,
-    collapsibleState.isExpanded,
-  ]);
+  }, [defaultExpandedFirst, importItems, expandItem, isExpanded]);
 
   // Memoize the combined items to avoid recalculation on every render
   const combinedItems = useMemo(
@@ -79,16 +90,29 @@ export function ActivityLog({
     [combinedItems]
   );
 
+  // Pre-filter events by importId to avoid O(n²) complexity in child components
+  const eventsByImportId = useMemo(() => {
+    const map = new Map<string, StatusEvent[]>();
+    events.forEach((event) => {
+      if (!map.has(event.importId)) {
+        map.set(event.importId, []);
+      }
+      map.get(event.importId)!.push(event);
+    });
+    return map;
+  }, [events]);
+
   // Handle connection states
   const connectionStatusComponent = (
     <ConnectionStatus
-      connectionStatus={connectionStatus}
-      error={error ?? undefined}
+      connectionStatus={connection.status}
+      error={connection.error ?? undefined}
       className={className}
+      onRetry={connectWebSocket}
     />
   );
 
-  if (connectionStatus !== "connected") {
+  if (connection.status !== "connected") {
     return connectionStatusComponent;
   }
 
@@ -97,68 +121,33 @@ export function ActivityLog({
   }
 
   return (
-    <div className={`space-y-3 ${className || ""}`}>
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">
-        Import activity
-      </h3>
+    <ImportErrorBoundary>
+      <div className={`space-y-3 ${className || ""}`}>
+        <ActivityLogHeader />
 
-      {/* Show HTML files that are being uploaded but don't have events yet */}
-      {htmlFiles.map((htmlFile, index) => {
-        const importItem =
-          fileMatchingMap.get(htmlFile) ||
-          fileMatchingMap.get(htmlFile.replace(/\.(html|htm)$/, ""));
+        <PendingUploadsList
+          htmlFiles={htmlFiles}
+          fileTitles={fileTitles}
+          fileMatchingMap={fileMatchingMap}
+        />
 
-        if (!importItem) {
-          const extractedTitle = fileTitles.get(htmlFile);
-          return (
-            <PendingUploadItem
-              key={`pending-${index}`}
-              htmlFile={htmlFile}
-              extractedTitle={extractedTitle}
-              index={index}
-            />
-          );
-        }
+        <AdaptiveActivityItemsList
+          items={combinedItems}
+          eventsByImportId={eventsByImportId}
+          fileTitles={fileTitles}
+          showCollapsible={showCollapsible}
+          isExpanded={isExpanded}
+          onToggle={toggleItem}
+          virtualizationThreshold={50}
+          defaultItemHeight={80}
+        />
 
-        return null; // Will be rendered in the combinedItems loop
-      })}
-
-      {/* Show all items (upload and import) */}
-      {combinedItems.map((item) => {
-        if (showCollapsible && "noteTitle" in item && item.type === "import") {
-          // Create a stable callback for each item to prevent unnecessary re-renders
-          const handleToggle = () => collapsibleState.toggleItem(item.importId);
-
-          return (
-            <CollapsibleImportItem
-              key={item.importId}
-              item={item}
-              fileTitles={fileTitles}
-              events={events}
-              isExpanded={collapsibleState.isExpanded(item.importId)}
-              onToggle={handleToggle}
-            />
-          );
-        }
-
-        return (
-          <ImportItemComponent
-            key={item.importId}
-            item={item}
-            fileTitles={fileTitles}
-          />
-        );
-      })}
-
-      {/* Pagination Controls */}
-      {showPagination &&
-        uploadItems.size + allImportItems.length > itemsPerPage && (
-          <div className="mt-6">
-            <PaginationControls
-              totalItems={uploadItems.size + allImportItems.length}
-            />
-          </div>
-        )}
-    </div>
+        <ActivityPagination
+          showPagination={showPagination}
+          totalItems={uploadItems.size + allImportItems.length}
+          itemsPerPage={itemsPerPage}
+        />
+      </div>
+    </ImportErrorBoundary>
   );
 }

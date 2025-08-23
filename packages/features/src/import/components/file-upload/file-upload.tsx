@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { FileUpload } from "@peas/ui";
 
-import { useUploadContext } from "../../contexts/upload-context";
+import { useImportState } from "../../contexts/import-state-context";
 import { extractTitlesFromFiles } from "../../utils/extract-title";
 
 declare const fetch: typeof globalThis.fetch;
@@ -28,8 +28,10 @@ export function ImportFileUpload({ className }: Props) {
     addUploadItem,
     updateUploadItem,
     generateImportId,
-    uploadItems,
-  } = useUploadContext();
+    state,
+  } = useImportState();
+
+  const { uploadItems } = state;
 
   interface UploadResult {
     htmlFile: string;
@@ -281,10 +283,8 @@ export function ImportFileUpload({ className }: Props) {
                   : new Error(String(result.reason));
               failedResults.push(reason);
               const fileName = batch[batchIndex]?.name || "Unknown file";
-              console.error(
-                `❌ [UPLOAD_DEBUG] Batch upload failed for ${fileName}:`,
-                reason
-              );
+              // Log error for debugging (consider removing in production)
+              console.error(`Upload failed for ${fileName}:`, reason);
             }
           });
 

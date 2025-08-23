@@ -5,12 +5,9 @@ import { ImportItem, ImportItemWithUploadProgress, UploadItem } from "./types";
 import { ReactNode, memo, useMemo } from "react";
 
 import { StatusEvent } from "../../hooks/use-status-websocket";
+import { choosePreviewUrl, getDuplicateCount } from "../../utils/metadata";
 import { STATUS_CONTEXT } from "../../utils/status-contexts";
 import { createProcessingSteps } from "../../utils/status-parser";
-import {
-  choosePreviewUrl,
-  getDuplicateCount,
-} from "../utils/activity-log-helpers";
 import { getDisplayTitle, getStatusText } from "../utils/display-utils";
 
 import { CollapsibleContent } from "./components/collapsible-content";
@@ -60,11 +57,8 @@ const CollapsibleImportItemComponent = ({
     [importItem.status, displayTitle]
   );
 
-  // Filter events for this specific import
-  const itemEvents = useMemo(
-    () => events.filter((event) => event.importId === importItem.importId),
-    [events, importItem.importId]
-  );
+  // Events are now pre-filtered by the parent component
+  const itemEvents = events;
 
   // Create status summary and processing steps
   const processingSteps = useMemo(
