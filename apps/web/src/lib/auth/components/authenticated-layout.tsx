@@ -1,11 +1,14 @@
 "use client";
 
-import { usePathname } from "next/navigation";
 import { Suspense } from "react";
-import { Navigation, Header, Spinner, Button, Placeholder } from "@peas/ui";
-import { ErrorBoundary } from "react-error-boundary";
-import { AlertTriangle } from "lucide-react";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+
+import { Button, Header, Navigation, Placeholder, Spinner } from "@peas/ui";
+import { AlertTriangle } from "lucide-react";
+import { ErrorBoundary } from "react-error-boundary";
+
 import { signOut } from "../actions/sign-out";
 
 const NextLink = ({ ...props }: React.ComponentProps<typeof Link>) => {
@@ -59,7 +62,7 @@ export function AuthenticatedLayout({
       />
       <div className="flex-1 flex flex-col h-screen">
         <Header routeName={routeName} />
-        <main className="flex-1 overflow-auto p-8">
+        <main className="flex-1 overflow-auto p-10">
           <ErrorBoundary
             FallbackComponent={ContentErrorFallback}
             onError={(error, errorInfo) => {

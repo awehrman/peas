@@ -1,4 +1,5 @@
 "use client";
+
 import { useEffect, useState } from "react";
 
 // Helper to get CSS variable value
@@ -128,7 +129,7 @@ const shadows = ["sm", "md", "lg", "xl", "2xl", "inner", "none"];
 
 export function DesignSystem() {
   return (
-    <div className="font-sans p-8">
+    <div className="font-sans p-10">
       <h1 className="text-3xl font-bold mb-8">Design System Tokens</h1>
 
       {/* Colors */}

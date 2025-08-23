@@ -175,6 +175,22 @@ export function CollapsibleImportItem({
 
   const backgroundColor = getImportBackgroundColor();
 
+  const getHoverBackgroundColor = () => {
+    if (hasDuplicate) return "hover:bg-amber-100";
+    switch (importItem.status) {
+      case "importing":
+        return "hover:bg-blue-100";
+      case "completed":
+        return "hover:bg-green-100";
+      case "failed":
+        return "hover:bg-red-100";
+      default:
+        return "hover:bg-blue-100";
+    }
+  };
+
+  const hoverBackgroundColor = getHoverBackgroundColor();
+
   return (
     <div
       className={`rounded-lg border border-gray-200 overflow-hidden ${className}`}
@@ -182,7 +198,7 @@ export function CollapsibleImportItem({
       {/* Header - always visible */}
       <button
         type="button"
-        className={`w-full text-left flex items-center space-x-3 p-4 hover:bg-gray-200 transition-colors ${backgroundColor}`}
+        className={`w-full text-left flex items-center space-x-3 p-4 transition-colors ${backgroundColor} ${hoverBackgroundColor}`}
         onClick={onToggle}
         aria-expanded={isExpanded}
         aria-controls={`import-item-${importItem.importId}`}

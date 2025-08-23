@@ -1,6 +1,7 @@
 "use client";
 
 import { ReactNode } from "react";
+
 import { PhysicsBackground } from "@peas/ui";
 
 interface UnauthenticatedLayoutProps {
@@ -32,7 +33,7 @@ export function UnauthenticatedLayout({
               </div>
             )}
 
-            <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg shadow-lg p-8 bg-background">
+            <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg shadow-lg p-10 bg-background">
               {children}
             </div>
           </div>

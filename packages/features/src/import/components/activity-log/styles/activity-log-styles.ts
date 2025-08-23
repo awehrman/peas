@@ -28,7 +28,7 @@ export const ACTIVITY_LOG_STYLES = {
 
   // Individual step styling
   step: {
-    container: "flex items-center space-x-8",
+    container: "flex items-center space-x-10",
     content: "flex-1 min-w-0 mb-4",
     header: "flex items-center justify-between",
     title: "text-sm font-medium truncate leading-none",
@@ -80,7 +80,7 @@ export const ACTIVITY_LOG_STYLES = {
   collapsible: {
     container: "rounded-lg border border-gray-200 overflow-hidden",
     button:
-      "w-full text-left flex items-center space-x-3 p-4 hover:bg-gray-200 transition-colors", // 🎯 ADJUST BUTTON PADDING HERE
+      "w-full text-left flex items-center space-x-3 p-4 transition-colors", // 🎯 ADJUST BUTTON PADDING HERE
     content: "border-t border-gray-200 bg-white",
     statusIcon: "flex-shrink-0", // 🎯 ADJUST STATUS ICON CONTAINER HERE
   },

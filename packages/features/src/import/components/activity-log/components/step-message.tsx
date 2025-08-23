@@ -51,20 +51,26 @@ export function StepMessage({ step, className = "" }: StepMessageProps): React.R
   // Categories/Tags: simplified messages when none present
   if (step.id === "adding_categories") {
     const savedCategory = getSavedCategory(step.metadata);
-    return (
-      <p className={`text-xs text-gray-600 mt-1 truncate ${className}`}>
-        {savedCategory ? "Category added" : "No category added"}
-      </p>
-    );
+    // Only show message when step is completed
+    if (step.status === "completed") {
+      return (
+        <p className={`text-xs text-gray-600 mt-1 truncate ${className}`}>
+          {savedCategory ? "Category added" : "No category added"}
+        </p>
+      );
+    }
   }
 
   if (step.id === "adding_tags") {
     const savedTags = getSavedTags(step.metadata);
-    return (
-      <p className={`text-xs text-gray-600 mt-1 truncate ${className}`}>
-        {savedTags && savedTags.length > 0 ? "Tags added" : "No tags added"}
-      </p>
-    );
+    // Only show message when step is completed
+    if (step.status === "completed") {
+      return (
+        <p className={`text-xs text-gray-600 mt-1 truncate ${className}`}>
+          {savedTags && savedTags.length > 0 ? "Tags added" : "No tags added"}
+        </p>
+      );
+    }
   }
 
   // Connecting Source: show source name as secondary text when completed
