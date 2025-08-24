@@ -62,7 +62,11 @@ function ImportPageContentInner({
 
       {/* Full width Activity Log beneath */}
       <div className="mt-2">
-        <ActivityLog className="mb-8" htmlFiles={uploadingHtmlFiles} />
+        <ActivityLog
+          className="mb-8"
+          htmlFiles={uploadingHtmlFiles}
+          defaultExpandedFirst={true}
+        />
       </div>
     </>
   );

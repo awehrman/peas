@@ -58,27 +58,13 @@ const ListItem = memo(({ index, style, data }: ListItemProps) => {
   if (!item) return null;
 
   const handleToggle = useCallback(() => {
-    console.log("🔄 Toggle called for item:", item.importId);
     onToggle(item.importId);
   }, [onToggle, item.importId]);
 
   return (
     <div style={style}>
-              <div className="px-2 py-1">
-          {/* Debug logging for first few items */}
-          {(() => {
-            if (index < 3) {
-              console.log(`🔍 Item ${index}:`, {
-                importId: item.importId,
-                type: item.type,
-                hasNoteTitle: "noteTitle" in item,
-                showCollapsible,
-                shouldBeCollapsible: showCollapsible && item.type === "import",
-              });
-            }
-            return null;
-          })()}
-          {showCollapsible && item.type === "import" ? (
+      <div className="px-2 py-1">
+        {showCollapsible && item.type === "import" ? (
           <CollapsibleImportItem
             item={item}
             fileTitles={fileTitles}
@@ -117,13 +103,6 @@ const VirtualizedActivityItemsListComponent = ({
       const expanded = showCollapsible && isExpanded(item.importId);
       const height = expanded ? 650 : 80;
 
-      // Debug logging for first few items
-      if (index < 3) {
-        console.log(
-          `📏 Item ${index} (${item.importId}): expanded=${expanded}, height=${height}`
-        );
-      }
-
       // Collapsed items: header height (approximately 80px)
       // Expanded items: 650px with scroll if needed
       return height;
@@ -151,7 +130,6 @@ const VirtualizedActivityItemsListComponent = ({
   useEffect(() => {
     if (listRef.current) {
       listRef.current.resetAfterIndex(0);
-      console.log("🔄 Virtualized list cache reset");
     }
   }, [items, showCollapsible, isExpanded]);
 

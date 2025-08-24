@@ -60,6 +60,12 @@ export function ActivityLog({
       itemsPerPage,
     });
 
+  // Memoize the combined items to avoid recalculation on every render
+  const combinedItems = useMemo(
+    () => mergeActivityItems({ uploadItems, importItems }),
+    [uploadItems, importItems]
+  );
+
   // Track if we've already expanded the first item to prevent race conditions
   const hasExpandedFirstItem = useRef(false);
 
@@ -67,22 +73,16 @@ export function ActivityLog({
   useEffect(() => {
     if (
       defaultExpandedFirst &&
-      importItems.length > 0 &&
+      combinedItems.length > 0 &&
       !hasExpandedFirstItem.current
     ) {
-      const firstItem = importItems[0];
+      const firstItem = combinedItems[0];
       if (firstItem && !isExpanded(firstItem.importId)) {
         expandItem(firstItem.importId);
         hasExpandedFirstItem.current = true;
       }
     }
-  }, [defaultExpandedFirst, importItems, expandItem, isExpanded]);
-
-  // Memoize the combined items to avoid recalculation on every render
-  const combinedItems = useMemo(
-    () => mergeActivityItems({ uploadItems, importItems }),
-    [uploadItems, importItems]
-  );
+  }, [defaultExpandedFirst, combinedItems, expandItem, isExpanded]);
 
   // Memoize the file matching map for better performance
   const fileMatchingMap = useMemo(
@@ -144,7 +144,7 @@ export function ActivityLog({
 
         <ActivityPagination
           showPagination={showPagination}
-          totalItems={uploadItems.size + allImportItems.length}
+          totalItems={combinedItems.length}
           itemsPerPage={itemsPerPage}
         />
       </div>

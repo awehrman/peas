@@ -453,10 +453,21 @@ export function ImportStateProvider({
 
     try {
       console.log(`🔌 WebSocket: Attempting connection to ${DEFAULT_WS_URL}`);
+
+      // Create WebSocket with a connection timeout
       wsRef.current = new WebSocket(DEFAULT_WS_URL);
+
+      // Set a connection timeout
+      const connectionTimeout = setTimeout(() => {
+        if (wsRef.current?.readyState === WebSocket.CONNECTING) {
+          console.log("🔌 WebSocket: Connection timeout, closing and retrying");
+          wsRef.current.close();
+        }
+      }, 10000); // 10 second timeout
 
       wsRef.current.onopen = () => {
         console.log("🔌 WebSocket connected");
+        clearTimeout(connectionTimeout);
         isConnectingRef.current = false;
         reconnectAttemptsRef.current = 0;
         dispatch({
@@ -479,6 +490,7 @@ export function ImportStateProvider({
 
       wsRef.current.onclose = () => {
         console.log("🔌 WebSocket disconnected");
+        clearTimeout(connectionTimeout);
         isConnectingRef.current = false;
         dispatch({
           type: "CONNECTION_STATUS_CHANGED",
@@ -527,7 +539,11 @@ export function ImportStateProvider({
       };
 
       wsRef.current.onerror = (error) => {
-        console.error("🔌 WebSocket error:", error);
+        // Don't log the first connection error as it's expected when server isn't ready
+        if (reconnectAttemptsRef.current > 0) {
+          console.error("🔌 WebSocket error:", error);
+        }
+        clearTimeout(connectionTimeout);
         isConnectingRef.current = false;
         dispatch({
           type: "CONNECTION_STATUS_CHANGED",
@@ -625,10 +641,21 @@ export function ImportStateProvider({
     });
   }, []);
 
-  // Auto-connect WebSocket on mount
+  // Auto-connect WebSocket on mount with initial delay
   useEffect(() => {
-    connectWebSocket();
+    // Set initial status to indicate we're waiting for server
+    dispatch({
+      type: "CONNECTION_STATUS_CHANGED",
+      payload: { status: "connecting", reconnectAttempts: 0 },
+    });
+
+    // Add a 2-second delay to allow the backend server to start up
+    const initialDelay = setTimeout(() => {
+      connectWebSocket();
+    }, 2000);
+
     return () => {
+      clearTimeout(initialDelay);
       disconnectWebSocket();
     };
   }, []); // Empty dependency array to run only once on mount
@@ -729,15 +756,12 @@ export function ImportStateProvider({
   // Collapsible actions
   const isExpanded = useCallback(
     (itemId: string): boolean => {
-      const expanded = state.expandedItems.has(itemId);
-      console.log(`🔍 isExpanded(${itemId}): ${expanded}`);
-      return expanded;
+      return state.expandedItems.has(itemId);
     },
     [state.expandedItems]
   );
 
   const toggleItem = useCallback((itemId: string) => {
-    console.log(`🔄 toggleItem called for: ${itemId}`);
     dispatch({ type: "ITEM_TOGGLED", payload: itemId });
   }, []);
 
