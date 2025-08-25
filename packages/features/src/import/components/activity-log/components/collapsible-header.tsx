@@ -17,6 +17,7 @@ interface CollapsibleHeaderProps {
   styling: StylingConfig;
   hasDuplicate: boolean;
   statusText: string;
+  completionPercentage?: number;
 }
 
 export function CollapsibleHeader({
@@ -26,6 +27,7 @@ export function CollapsibleHeader({
   styling,
   hasDuplicate,
   statusText,
+  completionPercentage,
 }: CollapsibleHeaderProps): ReactNode {
   return (
     <button
@@ -57,6 +59,11 @@ export function CollapsibleHeader({
         <div className={`font-medium ${styling.textColor}`}>
           {formatStatusText(statusText)}
         </div>
+        {completionPercentage !== undefined && (
+          <div className="text-sm text-gray-600">
+            {completionPercentage}% complete
+          </div>
+        )}
       </div>
 
       {/* Expand/Collapse Icon */}

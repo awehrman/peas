@@ -57,6 +57,13 @@ export function useImportItems({
       for (const event of sortedEvents) {
         const importId = event.importId;
 
+        // Debug logging for completion events
+        if (event.status === "COMPLETED" || event.status === "FAILED") {
+          console.log(
+            `📊 [NOTE_STATUS] ${event.status}: ${event.importId} - ${event.context || "no-context"}`
+          );
+        }
+
         // Skip certain events that shouldn't affect the display
         if (shouldSkipEvent(event)) {
           continue; // Don't mark as failed for categorization timeout
@@ -85,11 +92,16 @@ export function useImportItems({
           item.noteTitle = event.metadata.noteTitle as string;
         }
 
-        // Check for completion events
+        // Check for completion events (multiple contexts for robustness)
         if (
           event.status === "COMPLETED" &&
-          event.context === "note_completion"
+          (event.context === "note_completion" ||
+            event.context === "mark_note_worker_completed" ||
+            event.message?.includes("completed successfully"))
         ) {
+          console.log(
+            `✅ [USE_IMPORT_ITEMS] Marking import as completed: ${importId} - ${event.context}`
+          );
           item.status = "completed";
           item.completedAt = new Date(event.createdAt);
         }
@@ -134,7 +146,7 @@ export function useImportItems({
         const sortedItems = Array.from(currentItems.entries())
           .sort(([, a], [, b]) => b.createdAt.getTime() - a.createdAt.getTime())
           .slice(0, CLEANUP_THRESHOLD);
-        
+
         return new Map(sortedItems);
       });
     }

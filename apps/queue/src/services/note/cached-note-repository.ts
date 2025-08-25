@@ -42,8 +42,9 @@ export class CachedNoteRepository {
     // Create the note
     const result = await createNote(file);
 
-    // Invalidate related caches
-    await this.invalidateNoteCaches();
+    // Only invalidate note-specific caches, not ingredient parsing caches
+    // This preserves the ingredient parsing cache for better performance
+    await this.invalidateNoteCache(result.id);
 
     return result;
   }
@@ -116,7 +117,8 @@ export class CachedNoteRepository {
    */
   static async invalidateNoteCache(noteId: string): Promise<void> {
     try {
-      // Delete specific note caches
+      // Delete specific note caches only
+      // Don't clear database query caches to preserve ingredient parsing cache
       await actionCache.delete(CacheKeyGenerator.noteMetadata(noteId));
       await actionCache.delete(CacheKeyGenerator.noteStatus(noteId));
 

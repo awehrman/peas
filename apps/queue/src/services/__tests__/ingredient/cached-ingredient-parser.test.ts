@@ -26,6 +26,11 @@ vi.mock("../../../workers/core/cache/action-cache", () => ({
       memoryTtl: 300000,
       tags: ["action", "result"],
     },
+    INGREDIENT_PARSING: {
+      ttl: 3600,
+      memoryTtl: 300000,
+      tags: ["ingredient", "parsing"],
+    },
   },
 }));
 
@@ -120,7 +125,11 @@ describe("CachedIngredientParser", () => {
       expect(mockActionCache.getOrSet).toHaveBeenCalledWith(
         "test-cache-key",
         expect.any(Function),
-        expect.objectContaining({ ttl: 3600 })
+        {
+          ttl: 3600,
+          memoryTtl: 300000,
+          tags: ["ingredient", "parsing"],
+        }
       );
 
       expect(result).toEqual(mockResult);

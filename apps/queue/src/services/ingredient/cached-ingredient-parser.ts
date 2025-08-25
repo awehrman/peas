@@ -80,7 +80,7 @@ export class CachedIngredientParser {
           // Use v1 parser and save result to cache
           return this.parseWithV1Parser(line, logger);
         },
-        CACHE_OPTIONS.ACTION_RESULT
+        CACHE_OPTIONS.INGREDIENT_PARSING
       )
       .then((result) => {
         // Log cache hit if we have a logger

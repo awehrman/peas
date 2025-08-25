@@ -42,7 +42,7 @@ export const QUEUE_CONSTANTS = {
   /** Default job attempts */
   DEFAULT_JOB_ATTEMPTS: 3,
   /** Default worker concurrency */
-  DEFAULT_WORKER_CONCURRENCY: 5,
+  DEFAULT_WORKER_CONCURRENCY: 3, // Reduced from 5 to 3 for better WebSocket scaling
 } as const;
 
 // ============================================================================
@@ -64,9 +64,17 @@ export const WEBSOCKET_CONSTANTS = {
   /** Maximum number of WebSocket clients */
   MAX_CLIENTS: 100,
   /** Rate limit window in milliseconds */
-  RATE_LIMIT_MS: 1000,
+  RATE_LIMIT_MS: 50, // Further reduced for more responsive updates
   /** Maximum messages per rate limit window */
-  MAX_MESSAGES_PER_WINDOW: 10,
+  MAX_MESSAGES_PER_WINDOW: 100, // Increased for better batching
+  /** Batch interval in milliseconds */
+  BATCH_INTERVAL_MS: 150, // Reduced for faster batching
+  /** Maximum events per batch */
+  MAX_BATCH_SIZE: 100, // Increased for better efficiency
+  /** Heartbeat interval in milliseconds */
+  HEARTBEAT_INTERVAL_MS: 30000, // 30 seconds
+  /** Connection timeout in milliseconds */
+  CONNECTION_TIMEOUT_MS: 10000, // 10 seconds
 } as const;
 
 // ============================================================================

@@ -16,6 +16,7 @@ import { ActivityLogHeader } from "./components/activity-log-header";
 import { ActivityPagination } from "./components/activity-pagination";
 import { AdaptiveActivityItemsList } from "./components/adaptive-activity-items-list";
 import { PendingUploadsList } from "./components/pending-uploads-list";
+
 import { createFileMatchingMap, mergeActivityItems } from "./utils/item-merger";
 
 export function ActivityLog({

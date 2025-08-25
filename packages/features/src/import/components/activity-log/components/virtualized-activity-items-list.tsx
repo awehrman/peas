@@ -63,7 +63,7 @@ const ListItem = memo(({ index, style, data }: ListItemProps) => {
 
   return (
     <div style={style}>
-      <div className="px-2 py-1">
+      <div className="px-2 py-1 pb-4">
         {showCollapsible && item.type === "import" ? (
           <CollapsibleImportItem
             item={item}
@@ -101,10 +101,13 @@ const VirtualizedActivityItemsListComponent = ({
 
       // Check if this item should be expanded
       const expanded = showCollapsible && isExpanded(item.importId);
-      const height = expanded ? 650 : 80;
+      const baseHeight = expanded ? 650 : 80;
+      
+      // Add spacing between items (16px for pb-4)
+      const height = baseHeight + 16;
 
-      // Collapsed items: header height (approximately 80px)
-      // Expanded items: 650px with scroll if needed
+      // Collapsed items: header height (approximately 80px) + spacing
+      // Expanded items: 650px with scroll if needed + spacing
       return height;
     },
     [items, showCollapsible, isExpanded, itemHeight]

@@ -18,6 +18,9 @@ describe("addStatusEventAndBroadcast", () => {
     vi.clearAllMocks();
     vi.spyOn(console, "log").mockImplementation(() => {});
     vi.spyOn(console, "error").mockImplementation(() => {});
+    
+    // Clear the event cache between tests to prevent deduplication
+    // We'll use unique importIds in each test instead
   });
 
   afterEach(() => {
@@ -227,7 +230,7 @@ describe("addStatusEventAndBroadcast", () => {
     mockAddStatusEvent.mockResolvedValue(mockDbEvent);
 
     await addStatusEventAndBroadcast({
-      importId: "import-1",
+      importId: "import-log-test",
       noteId: "note-123",
       status: "PROCESSING" as NoteStatus,
       message: "Test message",
@@ -285,7 +288,7 @@ describe("addStatusEventAndBroadcast", () => {
     mockAddStatusEvent.mockResolvedValue(mockDbEvent);
 
     await addStatusEventAndBroadcast({
-      importId: "import-1",
+      importId: "import-optional-test",
       noteId: "note-123",
       status: "PROCESSING" as NoteStatus,
     });
@@ -300,7 +303,7 @@ describe("addStatusEventAndBroadcast", () => {
     });
 
     expect(mockBroadcastStatusEvent).toHaveBeenCalledWith({
-      importId: "import-1",
+      importId: "import-optional-test",
       noteId: "note-123",
       status: "PROCESSING",
       message: undefined,
@@ -345,7 +348,7 @@ describe("addStatusEventAndBroadcast", () => {
       mockAddStatusEvent.mockResolvedValue(mockDbEvent);
 
       await addStatusEventAndBroadcast({
-        importId: "import-1",
+        importId: `import-status-${status}`,
         noteId: "note-123",
         status,
         message: `Status: ${status}`,
@@ -361,7 +364,7 @@ describe("addStatusEventAndBroadcast", () => {
       });
 
       expect(mockBroadcastStatusEvent).toHaveBeenCalledWith({
-        importId: "import-1",
+        importId: `import-status-${status}`,
         noteId: "note-123",
         status,
         message: `Status: ${status}`,

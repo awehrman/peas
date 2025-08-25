@@ -19,14 +19,8 @@ export class ActionCache {
   private constructor() {
     this.startCleanupInterval();
 
-    // Force reset memory cache on startup if environment variable is set
-    /* istanbul ignore next -- @preserve */
-    if (process.env.FORCE_RESET_MEMORY_CACHE === "true") {
-      this.resetMemoryCache();
-      console.log(
-        "Memory cache reset on startup due to FORCE_RESET_MEMORY_CACHE=true"
-      );
-    }
+    // Cache reset on startup is disabled to preserve cache across restarts
+    // To force reset, use the /cache/reset-memory endpoint or set FORCE_RESET_MEMORY_CACHE=true
   }
 
   public static getInstance(): ActionCache {

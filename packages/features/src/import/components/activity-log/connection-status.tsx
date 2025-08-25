@@ -45,14 +45,14 @@ export const ConnectionStatus = memo(function ConnectionStatus({
     return (
       <div className={`text-red-500 ${className}`}>
         Disconnected from status feed
-        {onRetry && (
-          <button
-            onClick={onRetry}
-            className="ml-2 px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700"
-          >
-            Retry
-          </button>
-        )}
+      </div>
+    );
+  }
+
+  if (connectionStatus === "connected") {
+    return (
+      <div className={`text-green-500 text-sm ${className}`}>
+        ✓ Connected to status feed
       </div>
     );
   }

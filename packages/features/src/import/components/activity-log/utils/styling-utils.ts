@@ -10,7 +10,9 @@ export function getImportItemStyling(
   item: ImportItem | ImportItemWithUploadProgress,
   hasDuplicate: boolean
 ): StylingConfig {
-  if (hasDuplicate) {
+  // Only show amber styling if duplicates are actually found AND the item is completed
+  // This prevents amber styling during the duplicate check process
+  if (hasDuplicate && item.status === "completed") {
     return {
       backgroundColor: "bg-amber-50",
       hoverBackgroundColor: "hover:bg-amber-100",

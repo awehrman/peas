@@ -152,15 +152,10 @@ describe("CachedNoteRepository", () => {
       const result = await CachedNoteRepository.createNote(mockFile);
 
       expect(mockDatabase.createNote).toHaveBeenCalledWith(mockFile);
-      expect(mockActionCache.invalidateByPattern).toHaveBeenCalledWith(
-        "note:metadata:"
+      expect(mockActionCache.delete).toHaveBeenCalledWith(
+        "note:metadata:note-1"
       );
-      expect(mockActionCache.invalidateByPattern).toHaveBeenCalledWith(
-        "note:status:"
-      );
-      expect(mockActionCache.invalidateByPattern).toHaveBeenCalledWith(
-        "db:query:"
-      );
+      expect(mockActionCache.delete).toHaveBeenCalledWith("note:status:note-1");
       expect(result).toEqual(mockNote);
     });
 
@@ -195,7 +190,7 @@ describe("CachedNoteRepository", () => {
       };
 
       mockDatabase.createNote.mockResolvedValue(mockNote);
-      mockActionCache.invalidateByPattern.mockRejectedValue(
+      mockActionCache.delete.mockRejectedValue(
         createTestError("Cache invalidation failed")
       );
 
@@ -208,7 +203,7 @@ describe("CachedNoteRepository", () => {
 
       expect(result).toEqual(mockNote);
       expect(consoleWarnSpy).toHaveBeenCalledWith(
-        "[CACHED_NOTE_REPO] Failed to invalidate note caches:",
+        "[CACHED_NOTE_REPO] Failed to invalidate caches for note note-1:",
         expect.any(Error)
       );
 

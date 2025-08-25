@@ -35,15 +35,31 @@ const AdaptiveActivityItemsListComponent = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerHeight, setContainerHeight] = useState(600); // Default height
 
-  // Measure container height
+  // Calculate dynamic height based on content and expansion state
   useEffect(() => {
     if (containerRef.current) {
       const updateHeight = () => {
         if (containerRef.current) {
-          // Use parent height or viewport height minus some padding
-          const parentHeight = containerRef.current.parentElement?.clientHeight;
-          const viewportHeight = window.innerHeight;
-          const maxHeight = Math.min(parentHeight || viewportHeight * 0.6, 800);
+          // Calculate height based on items and their expansion state
+          const collapsedHeight = 80; // Height of collapsed items
+          const expandedHeight = 650; // Height of expanded items
+          
+          // Count expanded and collapsed items
+          const expandedCount = items.filter(item => 
+            showCollapsible && item.type === "import" && isExpanded(item.importId)
+          ).length;
+          const collapsedCount = items.length - expandedCount;
+          
+          // Calculate total content height
+          const contentHeight = (collapsedCount * collapsedHeight) + (expandedCount * expandedHeight);
+          
+          // Add some padding and ensure minimum height
+          const minHeight = Math.max(400, collapsedHeight * Math.min(items.length, 3));
+          const calculatedHeight = Math.max(minHeight, contentHeight + 100);
+          
+          // Cap at a reasonable maximum to prevent excessive height
+          const maxHeight = Math.min(calculatedHeight, 1200);
+          
           setContainerHeight(maxHeight);
         }
       };
@@ -53,7 +69,7 @@ const AdaptiveActivityItemsListComponent = ({
 
       return () => window.removeEventListener("resize", updateHeight);
     }
-  }, []);
+  }, [items, showCollapsible, isExpanded]);
 
   // Use dynamic virtualization hook
   const { shouldVirtualize, getEstimatedItemHeight, metrics } =
@@ -64,9 +80,11 @@ const AdaptiveActivityItemsListComponent = ({
       enableDynamicHeight: true,
     });
 
-  // Force virtualization if we exceed the threshold
+  // Only use virtualization for large lists or when content height exceeds container
   const forceVirtualization = items.length > virtualizationThreshold;
-  const useVirtualization = shouldVirtualize || forceVirtualization;
+  const contentHeight = items.length * defaultItemHeight;
+  const shouldUseVirtualization = contentHeight > containerHeight * 1.5; // Only virtualize if content is significantly larger
+  const useVirtualization = shouldUseVirtualization || forceVirtualization;
 
   // Performance monitoring in development
   useEffect(() => {
@@ -74,13 +92,14 @@ const AdaptiveActivityItemsListComponent = ({
       console.log("📊 [ActivityList] Performance Metrics:", {
         itemCount: metrics.totalItems,
         shouldVirtualize: useVirtualization,
-        reason: forceVirtualization ? "threshold exceeded" : "estimated height",
+        reason: forceVirtualization ? "threshold exceeded" : shouldUseVirtualization ? "content height" : "standard rendering",
         estimatedHeight: metrics.estimatedTotalHeight,
         containerHeight,
+        contentHeight,
         averageItemHeight: metrics.averageItemHeight,
       });
     }
-  }, [metrics, useVirtualization, forceVirtualization, containerHeight]);
+  }, [metrics, useVirtualization, forceVirtualization, shouldUseVirtualization, containerHeight, contentHeight]);
 
   if (items.length === 0) {
     return (
@@ -95,33 +114,25 @@ const AdaptiveActivityItemsListComponent = ({
   return (
     <div ref={containerRef} className={className}>
       {useVirtualization ? (
-        <div>
-
-
-          <VirtualizedActivityItemsList
-            items={items}
-            eventsByImportId={eventsByImportId}
-            fileTitles={fileTitles}
-            showCollapsible={showCollapsible}
-            isExpanded={isExpanded}
-            onToggle={onToggle}
-            height={containerHeight}
-            itemHeight={defaultItemHeight}
-          />
-        </div>
+        <VirtualizedActivityItemsList
+          items={items}
+          eventsByImportId={eventsByImportId}
+          fileTitles={fileTitles}
+          showCollapsible={showCollapsible}
+          isExpanded={isExpanded}
+          onToggle={onToggle}
+          height={containerHeight}
+          itemHeight={defaultItemHeight}
+        />
       ) : (
-        <div>
-
-
-          <ActivityItemsList
-            items={items}
-            eventsByImportId={eventsByImportId}
-            fileTitles={fileTitles}
-            showCollapsible={showCollapsible}
-            isExpanded={isExpanded}
-            onToggle={onToggle}
-          />
-        </div>
+        <ActivityItemsList
+          items={items}
+          eventsByImportId={eventsByImportId}
+          fileTitles={fileTitles}
+          showCollapsible={showCollapsible}
+          isExpanded={isExpanded}
+          onToggle={onToggle}
+        />
       )}
     </div>
   );

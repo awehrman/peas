@@ -47,6 +47,30 @@ export interface ConnectionState {
   reconnectAttempts: number;
 }
 
+export interface ImportStatusTracker {
+  importId: string;
+  status: "importing" | "completed" | "failed";
+  createdAt: Date;
+  completedAt?: Date;
+  lastEventAt: Date;
+  eventCount: number;
+  completionPercentage: number;
+  metadata: {
+    noteTitle?: string;
+    htmlFileName?: string;
+    noteId?: string;
+  };
+  // Track completion of different processing stages
+  stages: {
+    noteCreated: boolean;
+    ingredientsProcessed: boolean;
+    instructionsProcessed: boolean;
+    imagesAdded: boolean;
+    categoriesAdded: boolean;
+    tagsAdded: boolean;
+  };
+}
+
 export interface ImportState {
   // Upload state
   uploadingHtmlFiles: string[];
@@ -59,6 +83,9 @@ export interface ImportState {
 
   // Import items state
   importItems: Map<string, ImportItem>;
+
+  // NEW: Persistent import status tracking
+  importStatusTracker: Map<string, ImportStatusTracker>;
 
   // UI state
   expandedItems: Set<string>;
@@ -85,6 +112,10 @@ export type ImportAction =
   | { type: "CONNECTION_STATUS_CHANGED"; payload: ConnectionState }
   | { type: "EVENTS_UPDATED"; payload: StatusEvent[] }
   | { type: "IMPORT_ITEMS_UPDATED"; payload: Map<string, ImportItem> }
+  | {
+      type: "IMPORT_STATUS_UPDATED";
+      payload: { importId: string; tracker: ImportStatusTracker };
+    }
   | { type: "ITEM_EXPANDED"; payload: string }
   | { type: "ITEM_COLLAPSED"; payload: string }
   | { type: "ITEM_TOGGLED"; payload: string }
@@ -108,6 +139,7 @@ const initialState: ImportState = {
   expandedItems: new Set(),
   currentPage: 1,
   itemsPerPage: 10,
+  importStatusTracker: new Map(),
 };
 
 // State reducer with optimized updates
@@ -208,12 +240,26 @@ function importStateReducer(
         connection: action.payload,
       };
 
-    // Events management
-    case "EVENTS_UPDATED":
+    // Events management with deduplication
+    case "EVENTS_UPDATED": {
+      const newEvents = action.payload;
+
+      // Deduplicate events based on importId, status, and timestamp
+      const seenEvents = new Set<string>();
+      const deduplicatedEvents = newEvents.filter((event) => {
+        const eventKey = `${event.importId}_${event.status}_${event.createdAt}`;
+        if (seenEvents.has(eventKey)) {
+          return false;
+        }
+        seenEvents.add(eventKey);
+        return true;
+      });
+
       return {
         ...state,
-        events: action.payload,
+        events: deduplicatedEvents,
       };
+    }
 
     // Import items management
     case "IMPORT_ITEMS_UPDATED":
@@ -221,6 +267,17 @@ function importStateReducer(
         ...state,
         importItems: action.payload,
       };
+
+    // Import status tracking management
+    case "IMPORT_STATUS_UPDATED": {
+      const { importId, tracker } = action.payload;
+      const newTracker = new Map(state.importStatusTracker);
+      newTracker.set(importId, tracker);
+      return {
+        ...state,
+        importStatusTracker: newTracker,
+      };
+    }
 
     // Collapsible state management
     case "ITEM_EXPANDED": {
@@ -294,6 +351,7 @@ function importStateReducer(
 // Context interface
 export interface ImportStateContextType {
   state: ImportState;
+  dispatch: React.Dispatch<ImportAction>;
 
   // Upload actions
   addUploadingHtmlFiles: (files: string[]) => void;
@@ -488,8 +546,10 @@ export function ImportStateProvider({
         }, 30000); // Ping every 30 seconds
       };
 
-      wsRef.current.onclose = () => {
-        console.log("🔌 WebSocket disconnected");
+      wsRef.current.onclose = (event) => {
+        console.log(
+          `🔌 WebSocket disconnected (code: ${event.code}, reason: ${event.reason})`
+        );
         clearTimeout(connectionTimeout);
         isConnectingRef.current = false;
         dispatch({
@@ -561,15 +621,148 @@ export function ImportStateProvider({
 
           switch (message.type) {
             case "status_update":
-              const statusEvent = message.data as StatusEvent;
-              const updatedEvents = [
-                statusEvent,
-                ...currentEventsRef.current,
-              ].slice(0, 1000);
-              currentEventsRef.current = updatedEvents;
+              // Handle both optimized and full format events
+              let statusEvent: StatusEvent;
+              if ('i' in message.data) {
+                // Optimized format - convert back to full format
+                const opt = message.data as any;
+                statusEvent = {
+                  importId: opt.i,
+                  status: opt.s,
+                  message: opt.m,
+                  context: opt.c,
+                  currentCount: opt.cc,
+                  totalCount: opt.tc,
+                  createdAt: new Date(opt.t).toISOString(),
+                  metadata: opt.md,
+                };
+              } else {
+                // Full format
+                statusEvent = message.data as StatusEvent;
+              }
+              
+              if (
+                statusEvent.status === "COMPLETED" ||
+                statusEvent.status === "FAILED"
+              ) {
+                console.log(
+                  `📥 [FRONTEND] Received ${statusEvent.status}: ${statusEvent.importId} - ${statusEvent.context || "no-context"}`
+                );
+              }
+              // Check for duplicate completion events
+              const isDuplicateCompletion = currentEventsRef.current.some(
+                existingEvent => 
+                  existingEvent.importId === statusEvent.importId &&
+                  existingEvent.status === statusEvent.status &&
+                  existingEvent.context === statusEvent.context
+              );
+              
+              if (isDuplicateCompletion) {
+                console.log(`🔄 [FRONTEND] Skipping duplicate completion event: ${statusEvent.importId} - ${statusEvent.context}`);
+                return;
+              }
+              
+              const updatedEvents = [statusEvent, ...currentEventsRef.current];
+
+              // Protect completion events from being truncated
+              const completionEvents = updatedEvents.filter(
+                event => event.status === "COMPLETED" || event.status === "FAILED"
+              );
+              
+              // Warn if we're approaching the limit
+              if (updatedEvents.length > 950) {
+                console.warn(
+                  `⚠️ [FRONTEND] Event buffer approaching limit: ${updatedEvents.length}/1000 events`
+                );
+              }
+
+              // Ensure completion events are preserved
+              let trimmedEvents = updatedEvents.slice(0, 1000);
+              if (trimmedEvents.length < updatedEvents.length) {
+                // Add back any completion events that were truncated
+                const truncatedCompletionEvents = completionEvents.filter(
+                  event => !trimmedEvents.some(te => 
+                    te.importId === event.importId && 
+                    te.status === event.status && 
+                    te.context === event.context
+                  )
+                );
+                trimmedEvents = [...truncatedCompletionEvents, ...trimmedEvents].slice(0, 1000);
+              }
+              currentEventsRef.current = trimmedEvents;
               dispatch({
                 type: "EVENTS_UPDATED",
-                payload: updatedEvents,
+                payload: trimmedEvents,
+              });
+              break;
+            case "status_update_batch":
+              const batchData = message.data as {
+                events: any[];
+                batchId: string;
+                timestamp: Date;
+              };
+              
+              // Convert optimized events back to full format
+              const convertedEvents: StatusEvent[] = batchData.events.map(event => {
+                if ('i' in event) {
+                  // Optimized format
+                  return {
+                    importId: event.i,
+                    status: event.s,
+                    message: event.m,
+                    context: event.c,
+                    currentCount: event.cc,
+                    totalCount: event.tc,
+                    createdAt: new Date(event.t).toISOString(),
+                    metadata: event.md,
+                  };
+                } else {
+                  // Full format
+                  return event as StatusEvent;
+                }
+              });
+              
+              // Log completion events from batch
+              convertedEvents.forEach((event) => {
+                if (event.status === "COMPLETED" || event.status === "FAILED") {
+                  console.log(
+                    `📥 [FRONTEND] Received ${event.status} from batch: ${event.importId} - ${event.context || "no-context"}`
+                  );
+                }
+              });
+              // Process batched events in reverse order to maintain chronological order
+              const batchedEvents = [...convertedEvents].reverse();
+
+              // Log batch processing for debugging
+              if (
+                batchData.events.some(
+                  (e) => e.status === "COMPLETED" || e.status === "FAILED"
+                )
+              ) {
+                console.log(
+                  `📦 [FRONTEND] Processing batch ${batchData.batchId} with ${batchData.events.length} events`
+                );
+              }
+              const updatedEventsFromBatch = [
+                ...batchedEvents,
+                ...currentEventsRef.current,
+              ];
+
+              // Warn if we're approaching the limit
+              if (updatedEventsFromBatch.length > 950) {
+                console.warn(
+                  `⚠️ [FRONTEND] Event buffer approaching limit: ${updatedEventsFromBatch.length}/1000 events`
+                );
+              }
+
+              const trimmedEventsFromBatch = updatedEventsFromBatch.slice(
+                0,
+                1000
+              );
+              currentEventsRef.current = trimmedEventsFromBatch;
+              dispatch({
+                type: "EVENTS_UPDATED",
+                payload: trimmedEventsFromBatch,
               });
               break;
             case "connection_established":
@@ -796,6 +989,7 @@ export function ImportStateProvider({
 
   const contextValue: ImportStateContextType = {
     state,
+    dispatch,
 
     // Upload actions
     addUploadingHtmlFiles,

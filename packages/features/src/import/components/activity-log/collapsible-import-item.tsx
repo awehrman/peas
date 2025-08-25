@@ -4,8 +4,10 @@ import { ImportItem, ImportItemWithUploadProgress, UploadItem } from "./types";
 
 import { ReactNode, memo, useMemo } from "react";
 
+import { useImportStatusTracker } from "../../hooks/use-import-status-tracker";
 import { StatusEvent } from "../../hooks/use-status-websocket";
 import { choosePreviewUrl, getDuplicateCount } from "../../utils/metadata";
+import { BASE_STEP_DEFS } from "../../utils/status";
 import { STATUS_CONTEXT } from "../../utils/status-contexts";
 import { createProcessingSteps } from "../../utils/status-parser";
 import { getDisplayTitle, getStatusText } from "../utils/display-utils";
@@ -66,19 +68,81 @@ const CollapsibleImportItemComponent = ({
     [itemEvents]
   );
 
+  // Calculate completion percentage using the same logic as the status bar
+  const completionPercentage = useMemo(() => {
+    if (itemEvents.length === 0) return 0;
+
+    // Use the same logic as ProgressStatusBar
+    const byId = new Map();
+    for (const step of processingSteps) {
+      byId.set(step.id, step);
+    }
+
+    function pickCombinedFromContexts(contextIds: string[]) {
+      const candidates = contextIds.map((cid) => byId.get(cid)).filter(Boolean);
+      if (candidates.length === 0) return undefined;
+      const order = ["failed", "completed", "processing", "pending"];
+      for (const status of order) {
+        const found = candidates.find((c) => c.status === status);
+        if (found) return found;
+      }
+      return candidates[0];
+    }
+
+    const derivedSteps = BASE_STEP_DEFS.map((def) => {
+      const chosen = pickCombinedFromContexts(def.sourceIds);
+      return {
+        id: def.id,
+        name: def.name,
+        status: chosen?.status ?? "pending",
+        message: chosen?.message ?? "",
+        progress: chosen?.progress,
+        metadata: chosen?.metadata,
+      };
+    });
+
+    const totalSteps = BASE_STEP_DEFS.length;
+    const completedSteps = derivedSteps.filter(
+      (step) => step.status === "completed"
+    ).length;
+    let progressPercentage =
+      totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0;
+
+    // If note completion has been received, force overall progress to 100%
+    const noteCompleted = processingSteps.some(
+      (s) => s.id === "note_completion" && s.status === "completed"
+    );
+    if (noteCompleted) {
+      progressPercentage = 100;
+    }
+
+    return progressPercentage;
+  }, [itemEvents, processingSteps]);
+
   // Detect high-confidence duplicate from the processing steps
   const hasDuplicate = useMemo(() => {
-    return processingSteps.some((s) => {
+    const duplicateStep = processingSteps.find((s) => {
       const isDupContext =
         s.id === STATUS_CONTEXT.CHECK_DUPLICATES ||
         s.id === STATUS_CONTEXT.CHECK_DUPLICATES_LEGACY;
 
       if (!isDupContext) return false;
 
+      // Only consider it a duplicate if the step is completed AND duplicates were found
+      if (s.status !== "completed") return false;
+
       const metadataHasDuplicates = getDuplicateCount(s.metadata) > 0;
       return metadataHasDuplicates;
     });
-  }, [processingSteps]);
+
+    if (duplicateStep) {
+      console.log(
+        `🟡 [DUPLICATE] Found duplicate for ${importItem.importId}: ${getDuplicateCount(duplicateStep.metadata)} duplicates`
+      );
+    }
+
+    return !!duplicateStep;
+  }, [processingSteps, importItem.importId]);
 
   const previewUrl = useMemo(() => {
     for (const step of processingSteps) {
@@ -96,7 +160,7 @@ const CollapsibleImportItemComponent = ({
 
   return (
     <div
-      className={`rounded-lg border border-gray-200 overflow-hidden ${className}`}
+      className={`rounded-lg border border-gray-200 overflow-hidden mb-3 ${className}`}
     >
       {/* Header - always visible */}
       <CollapsibleHeader
@@ -106,6 +170,7 @@ const CollapsibleImportItemComponent = ({
         styling={styling}
         hasDuplicate={hasDuplicate}
         statusText={statusText}
+        completionPercentage={completionPercentage}
       />
 
       {/* Collapsible Content */}
