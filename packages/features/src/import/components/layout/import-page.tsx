@@ -5,7 +5,7 @@ import { ReactNode } from "react";
 import {
   ImportStateProvider,
   useImportState,
-} from "../../contexts/import-state-context";
+} from "../../contexts";
 import { useImportStatsRefetch } from "../../hooks/use-import-stats-refetch";
 import { ActivityLog } from "../activity-log";
 import { StatsSummary } from "../dashboard/stats-summary";

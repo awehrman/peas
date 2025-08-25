@@ -2,6 +2,14 @@
 
 import { useCallback, useRef, useState } from "react";
 
+// Add global type declarations for browser APIs
+declare global {
+  interface Window {
+    fetch: typeof fetch;
+    performance: Performance;
+  }
+}
+
 import { useImportState } from "../contexts/import-state-context";
 import { PerformanceMonitor } from "../utils/performance-monitor";
 
@@ -304,7 +312,7 @@ export function useOptimizedUpload(config: Partial<UploadConfig> = {}) {
         return allResults;
       } finally {
         // Stop performance monitoring
-        const metrics = performanceMonitorRef.current.stopMonitoring();
+        performanceMonitorRef.current.stopMonitoring();
         
         isUploadingRef.current = false;
         setProgress(prev => ({

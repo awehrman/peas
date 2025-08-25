@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { FileUpload } from "@peas/ui";
 
-import { useImportState } from "../../contexts/import-state-context";
+import { useImportState } from "../../contexts";
 import { extractTitlesFromFiles } from "../../utils/extract-title";
 
 declare const fetch: typeof globalThis.fetch;

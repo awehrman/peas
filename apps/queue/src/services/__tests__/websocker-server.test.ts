@@ -180,7 +180,7 @@ describe("websocket-server.ts", () => {
       it("should handle client messages", () => {
         // Clear the mock to start fresh
         mockWebSocket.send.mockClear();
-        
+
         connectionHandler(mockWebSocket, {});
 
         // Get the message handler
@@ -193,7 +193,7 @@ describe("websocket-server.ts", () => {
         // Test that the message handler can be called without errors
         const pingMessage = JSON.stringify({ type: "ping" });
         expect(() => messageHandler!(Buffer.from(pingMessage))).not.toThrow();
-        
+
         // Verify that at least the connection message was sent
         expect(mockWebSocket.send).toHaveBeenCalled();
       });
@@ -283,7 +283,7 @@ describe("websocket-server.ts", () => {
 
         // Clear the mock to start fresh
         mockWebSocket.send.mockClear();
-        
+
         const statusEvent = {
           importId: "test-import",
           noteId: "test-note",
@@ -306,7 +306,9 @@ describe("websocket-server.ts", () => {
 
         expect(mockWebSocket.send).toHaveBeenCalledTimes(2);
         expect(mockWebSocket.send).toHaveBeenCalledWith(
-          expect.stringMatching(/{"type":"status_update","data":{.*"i":"test-import".*"s":"COMPLETED".*}}/)
+          expect.stringMatching(
+            /{"type":"status_update","data":{.*"importId":"test-import".*"status":"COMPLETED".*}}/
+          )
         );
       });
 

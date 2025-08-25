@@ -5,7 +5,7 @@ import { act, renderHook } from "@testing-library/react";
 import {
   ImportStateProvider,
   useImportState,
-} from "../../contexts/import-state-context";
+} from "../../contexts";
 import { usePerformanceMonitoring } from "../use-performance-monitoring";
 
 // Mock performance.memory

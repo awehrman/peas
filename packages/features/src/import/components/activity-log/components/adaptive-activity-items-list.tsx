@@ -72,7 +72,7 @@ const AdaptiveActivityItemsListComponent = ({
   }, [items, showCollapsible, isExpanded]);
 
   // Use dynamic virtualization hook
-  const { shouldVirtualize, getEstimatedItemHeight, metrics } =
+  const { metrics } =
     useDynamicVirtualization(items, {
       defaultItemHeight,
       containerHeight,

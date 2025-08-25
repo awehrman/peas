@@ -35,7 +35,7 @@ const Form = ({
 
   return (
     <form
-      action={action as any}
+      action={action as (formData: FormData) => void}
       className="flex flex-col gap-y-2 bg-background"
     >
       {children}

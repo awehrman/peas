@@ -39,7 +39,7 @@ export function useImportStatsRefetch({
 
   useEffect(() => {
     // Listen for note completion events that should trigger stats refetch
-    const shouldRefetchEvents = events.filter((event: any) => {
+    const shouldRefetchEvents = events.filter((event) => {
       // Check for note completion events
       if (event.status === "COMPLETED" && event.context === "note_completion") {
         return true;

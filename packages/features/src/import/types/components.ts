@@ -2,7 +2,7 @@
 import { ActivityItem, ImportItem, StatusMetadata, UploadItem } from "./core";
 import { StatusEvent } from "./events";
 
-import { ReactNode } from "react";
+import React from "react";
 
 export interface ActivityLogProps {
   className?: string;
@@ -133,7 +133,7 @@ export interface FileUploadProps {
 }
 
 export interface ErrorBoundaryProps {
-  children: ReactNode;
-  fallback?: ReactNode;
+  children: React.ReactNode;
+  fallback?: React.ReactNode;
   onError?: (error: Error, errorInfo: React.ErrorInfo) => void;
 }

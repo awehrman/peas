@@ -17,6 +17,8 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
+    "lint": "eslint src --ext .ts,.tsx",
+    "lint:fix": "eslint src --ext .ts,.tsx --fix",
     "clean": "rm -rf dist",
     "build": "tsc && tsc-alias && npx @tailwindcss/cli -i ./src/styles.css -o ./dist/styles.css --config ./tailwind.config.js --minify",
     "dev": "tsc --watch",

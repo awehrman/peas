@@ -2,7 +2,7 @@ import { ReactNode } from "react";
 
 import { render, screen } from "@testing-library/react";
 
-import { ImportStateProvider } from "../../../../contexts/import-state-context";
+import { ImportStateProvider } from "../../../../contexts";
 import { StatusEvent } from "../../../../hooks/use-status-websocket";
 import { ActivityItem } from "../../../../types/core";
 import { AdaptiveActivityItemsList } from "../adaptive-activity-items-list";

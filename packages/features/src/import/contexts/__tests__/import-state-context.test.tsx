@@ -2,7 +2,7 @@ import { ReactNode } from "react";
 
 import { act, renderHook } from "@testing-library/react";
 
-import { ImportStateProvider, useImportState } from "../import-state-context";
+import { ImportStateProvider, useImportState } from "../index";
 
 // Mock localStorage
 const localStorageMock = {

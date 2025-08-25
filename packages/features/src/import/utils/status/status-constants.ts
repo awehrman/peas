@@ -1,4 +1,3 @@
-import type { StatusMetadata } from "../../types/core";
 import { STATUS_CONTEXT } from "../status-contexts";
 import type { ProcessingStep } from "../status-parser";
 

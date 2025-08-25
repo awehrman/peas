@@ -3,7 +3,12 @@
 import { ReactNode, memo } from "react";
 
 interface ConnectionStatusProps {
-  connectionStatus: "connecting" | "connected" | "disconnected" | "error" | "retrying";
+  connectionStatus:
+    | "connecting"
+    | "connected"
+    | "disconnected"
+    | "error"
+    | "retrying";
   error?: string;
   className?: string;
   onRetry?: () => void;
@@ -32,13 +37,7 @@ export const ConnectionStatus = memo(function ConnectionStatus({
   }
 
   if (connectionStatus === "connecting" || connectionStatus === "retrying") {
-    return (
-      <div className={`text-yellow-500 ${className}`}>
-        {connectionStatus === "connecting"
-          ? "Connecting to status feed..."
-          : "Reconnecting to status feed..."}
-      </div>
-    );
+    return null;
   }
 
   if (connectionStatus === "disconnected") {

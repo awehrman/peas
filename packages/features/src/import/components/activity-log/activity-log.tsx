@@ -3,9 +3,9 @@
 import { ConnectionStatus } from "./connection-status";
 import { ActivityLogProps } from "./types";
 
-import { ReactNode, useCallback, useEffect, useMemo, useRef } from "react";
+import { ReactNode, useEffect, useMemo, useRef } from "react";
 
-import { useImportState } from "../../contexts/import-state-context";
+import { useImportState } from "../../contexts";
 import { useImportItems } from "../../hooks/use-import-items";
 import { usePerformanceMonitoring } from "../../hooks/use-performance-monitoring";
 import { StatusEvent } from "../../hooks/use-status-websocket";
@@ -16,7 +16,6 @@ import { ActivityLogHeader } from "./components/activity-log-header";
 import { ActivityPagination } from "./components/activity-pagination";
 import { AdaptiveActivityItemsList } from "./components/adaptive-activity-items-list";
 import { PendingUploadsList } from "./components/pending-uploads-list";
-
 import { createFileMatchingMap, mergeActivityItems } from "./utils/item-merger";
 
 export function ActivityLog({
@@ -28,14 +27,8 @@ export function ActivityLog({
   defaultExpandedFirst = true,
 }: ActivityLogProps): ReactNode {
   // Use unified import state context
-  const {
-    state,
-    isExpanded,
-    toggleItem,
-    expandItem,
-    setItemsPerPage,
-    connectWebSocket,
-  } = useImportState();
+  const { state, isExpanded, expandItem, toggleItem, connectWebSocket } =
+    useImportState();
 
   // Initialize WebSocket integration
   useWebSocketIntegration({
@@ -44,7 +37,7 @@ export function ActivityLog({
   });
 
   // Initialize performance monitoring
-  const { generateReport } = usePerformanceMonitoring({
+  usePerformanceMonitoring({
     enableMemoryMonitoring: true,
     enableRenderTracking: true,
     reportingInterval: 30000, // Report every 30 seconds
@@ -54,12 +47,11 @@ export function ActivityLog({
   const { events, connection, uploadItems, fileTitles } = state;
 
   // Use custom hook for import items processing with pagination
-  const { allItems: allImportItems, paginatedItems: importItems } =
-    useImportItems({
-      events,
-      enablePagination: showPagination,
-      itemsPerPage,
-    });
+  const { paginatedItems: importItems } = useImportItems({
+    events,
+    enablePagination: showPagination,
+    itemsPerPage,
+  });
 
   // Memoize the combined items to avoid recalculation on every render
   const combinedItems = useMemo(

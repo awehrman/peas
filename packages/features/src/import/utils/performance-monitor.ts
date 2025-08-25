@@ -56,7 +56,8 @@ export class PerformanceMonitor {
   startMonitoring(fileCount: number, totalFileSize: number): void {
     if (!this.config.enableMonitoring) return;
 
-    this.uploadStartTime = performance.now();
+    this.uploadStartTime =
+      typeof performance !== "undefined" ? performance.now() : Date.now();
     this.memoryPeak = this.getCurrentMemoryUsage();
     this.batchMetrics = [];
 
@@ -129,12 +130,14 @@ export class PerformanceMonitor {
   stopMonitoring(): PerformanceMetrics | null {
     if (!this.config.enableMonitoring || !this.metrics) return null;
 
-    const uploadEndTime = performance.now();
+    const uploadEndTime =
+      typeof performance !== "undefined" ? performance.now() : Date.now();
     const totalDuration = uploadEndTime - this.uploadStartTime;
 
     this.metrics.uploadEndTime = uploadEndTime;
     this.metrics.totalDuration = totalDuration;
-    this.metrics.averageUploadTime = totalDuration / this.metrics.filesProcessed;
+    this.metrics.averageUploadTime =
+      totalDuration / this.metrics.filesProcessed;
     this.metrics.memoryUsage.after = this.getCurrentMemoryUsage();
     this.metrics.memoryUsage.peak = this.memoryPeak;
     this.metrics.batchMetrics = this.batchMetrics;
@@ -150,12 +153,18 @@ export class PerformanceMonitor {
    * Get current memory usage in MB
    */
   private getCurrentMemoryUsage(): number {
-    if (!this.config.trackMemory || typeof performance === "undefined" || !("memory" in performance)) {
+    if (
+      !this.config.trackMemory ||
+      typeof performance === "undefined" ||
+      !("memory" in performance)
+    ) {
       return 0;
     }
 
-    const memory = (performance as any).memory;
-    return Math.round(memory.usedJSHeapSize / 1024 / 1024);
+    const memory = (
+      performance as Performance & { memory?: { usedJSHeapSize: number } }
+    ).memory;
+    return Math.round((memory?.usedJSHeapSize || 0) / 1024 / 1024);
   }
 
   /**
@@ -163,11 +172,11 @@ export class PerformanceMonitor {
    */
   private formatBytes(bytes: number): string {
     if (bytes === 0) return "0 Bytes";
-    
+
     const k = 1024;
     const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    
+
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   }
 
@@ -178,19 +187,22 @@ export class PerformanceMonitor {
     if (!this.metrics) return;
 
     const { metrics } = this;
-    
+
     console.group("📊 Upload Performance Report");
     console.log("⏱️  Total Duration:", `${metrics.totalDuration.toFixed(2)}ms`);
     console.log("📁 Files Processed:", metrics.filesProcessed);
     console.log("📦 Total Size:", this.formatBytes(metrics.totalFileSize));
-    console.log("⚡ Average Upload Time:", `${metrics.averageUploadTime.toFixed(2)}ms per file`);
+    console.log(
+      "⚡ Average Upload Time:",
+      `${metrics.averageUploadTime.toFixed(2)}ms per file`
+    );
     console.log("💾 Memory Usage:", {
       before: `${metrics.memoryUsage.before}MB`,
       after: `${metrics.memoryUsage.after}MB`,
       peak: `${metrics.memoryUsage.peak}MB`,
       increase: `${metrics.memoryUsage.after - metrics.memoryUsage.before}MB`,
     });
-    
+
     if (metrics.batchMetrics.length > 0) {
       console.group("📦 Batch Performance");
       metrics.batchMetrics.forEach((batch, index) => {
@@ -202,7 +214,7 @@ export class PerformanceMonitor {
       });
       console.groupEnd();
     }
-    
+
     console.groupEnd();
   }
 
@@ -216,32 +228,49 @@ export class PerformanceMonitor {
     const { metrics } = this;
 
     // Check upload speed
-    const filesPerSecond = metrics.filesProcessed / (metrics.totalDuration / 1000);
+    const filesPerSecond =
+      metrics.filesProcessed / (metrics.totalDuration / 1000);
     if (filesPerSecond < 0.5) {
-      recommendations.push("Consider reducing batch size to improve upload speed");
+      recommendations.push(
+        "Consider reducing batch size to improve upload speed"
+      );
     } else if (filesPerSecond > 2) {
-      recommendations.push("Consider increasing batch size for better efficiency");
+      recommendations.push(
+        "Consider increasing batch size for better efficiency"
+      );
     }
 
     // Check memory usage
-    const memoryIncrease = metrics.memoryUsage.after - metrics.memoryUsage.before;
+    const memoryIncrease =
+      metrics.memoryUsage.after - metrics.memoryUsage.before;
     if (memoryIncrease > 100) {
-      recommendations.push("High memory usage detected. Consider processing files in smaller batches");
+      recommendations.push(
+        "High memory usage detected. Consider processing files in smaller batches"
+      );
     }
 
     // Check batch performance
     if (metrics.batchMetrics.length > 0) {
-      const avgBatchDuration = metrics.batchMetrics.reduce((sum, batch) => sum + batch.duration, 0) / metrics.batchMetrics.length;
+      const avgBatchDuration =
+        metrics.batchMetrics.reduce((sum, batch) => sum + batch.duration, 0) /
+        metrics.batchMetrics.length;
       if (avgBatchDuration > 10000) {
-        recommendations.push("Batch processing is slow. Consider reducing batch size or increasing delays");
+        recommendations.push(
+          "Batch processing is slow. Consider reducing batch size or increasing delays"
+        );
       }
     }
 
     // Check success rate
-    const totalSuccessful = metrics.batchMetrics.reduce((sum, batch) => sum + batch.successfulUploads, 0);
+    const totalSuccessful = metrics.batchMetrics.reduce(
+      (sum, batch) => sum + batch.successfulUploads,
+      0
+    );
     const successRate = (totalSuccessful / metrics.filesProcessed) * 100;
     if (successRate < 90) {
-      recommendations.push("Low success rate detected. Consider implementing retry logic or reducing concurrent uploads");
+      recommendations.push(
+        "Low success rate detected. Consider implementing retry logic or reducing concurrent uploads"
+      );
     }
 
     return recommendations;

@@ -45,7 +45,7 @@ export function usePerformanceMonitoring(config: PerformanceConfig = {}) {
     lastUpdateTime: Date.now(),
   });
 
-  const reportingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const reportingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Track component renders
   useEffect(() => {
@@ -96,7 +96,7 @@ export function usePerformanceMonitoring(config: PerformanceConfig = {}) {
     if (!enableMemoryMonitoring || typeof window === "undefined") return 0;
 
     if ("memory" in performance) {
-      return (performance as any).memory?.usedJSHeapSize || 0;
+      return (performance as Performance & { memory?: { usedJSHeapSize: number } }).memory?.usedJSHeapSize || 0;
     }
     return 0;
   }, [enableMemoryMonitoring]);

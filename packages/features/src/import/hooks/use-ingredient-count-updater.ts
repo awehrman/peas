@@ -19,11 +19,11 @@ export function useIngredientCountUpdater({
   useEffect(() => {
     // Listen for instruction count update events
     const instructionCountEvents = events.filter(
-      (event: any) =>
+      (event) =>
         (event.context === "parse_html_ingredients" ||
           event.context === "process_ingredients") &&
         typeof event.metadata?.processedInstructions === "number"
-    ) as any[];
+    );
 
     if (instructionCountEvents.length > 0) {
       // Get the latest event

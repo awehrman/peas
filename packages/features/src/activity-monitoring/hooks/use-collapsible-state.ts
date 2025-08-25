@@ -1,5 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+// Add global type declarations for browser APIs
+declare global {
+  interface Window {
+    localStorage: Storage;
+  }
+}
+
 export interface UseCollapsibleStateOptions {
   storageKey?: string;
   defaultExpanded?: boolean;
@@ -20,7 +27,7 @@ export interface UseCollapsibleStateReturn {
 
 export function useCollapsibleState({
   storageKey = "collapsible-state",
-  defaultExpanded = false,
+  defaultExpanded: _defaultExpanded = false,
   persistState = true,
   maxStoredItems = 50,
 }: UseCollapsibleStateOptions = {}): UseCollapsibleStateReturn {
@@ -29,7 +36,7 @@ export function useCollapsibleState({
   );
 
   // Debounce localStorage saves to improve performance
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mounted = useRef(true);
 
   // Load initial state from localStorage

@@ -4,7 +4,7 @@ import { ImportItem, ImportItemWithUploadProgress, UploadItem } from "./types";
 
 import { ReactNode, memo, useMemo } from "react";
 
-import { useImportStatusTracker } from "../../hooks/use-import-status-tracker";
+
 import { StatusEvent } from "../../hooks/use-status-websocket";
 import { choosePreviewUrl, getDuplicateCount } from "../../utils/metadata";
 import { BASE_STEP_DEFS } from "../../utils/status";

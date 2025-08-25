@@ -41,7 +41,7 @@ export function PaginationControls({
       // Show a window of page numbers around the current page
       const halfWindow = Math.floor(maxPageNumbers / 2);
       let start = Math.max(1, page - halfWindow);
-      let end = Math.min(totalPages, start + maxPageNumbers - 1);
+      const end = Math.min(totalPages, start + maxPageNumbers - 1);
 
       // Adjust if we're near the end
       if (end === totalPages) {

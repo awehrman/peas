@@ -21,28 +21,10 @@ interface StatusEvent {
   };
 }
 
-// Optimized event structure for reduced payload size
-interface OptimizedStatusEvent {
-  type: "status_update";
-  data: {
-    i: string; // importId (shortened)
-    n?: string; // noteId (shortened)
-    s: NoteStatus; // status (shortened)
-    m?: string; // message (shortened)
-    c?: string; // context (shortened)
-    e?: string; // errorMessage (shortened)
-    cc?: number; // currentCount (shortened)
-    tc?: number; // totalCount (shortened)
-    t: number; // timestamp (number instead of Date)
-    l?: number; // indentLevel (shortened)
-    md?: Record<string, unknown>; // metadata (shortened)
-  };
-}
-
 interface BatchedStatusEvent {
   type: "status_update_batch";
   data: {
-    events: OptimizedStatusEvent["data"][];
+    events: StatusEvent["data"][];
     batchId: string;
     timestamp: Date;
   };
@@ -74,44 +56,6 @@ export class WebSocketManager {
   private pendingEvents: StatusEvent["data"][] = [];
   private batchTimeout: ReturnType<typeof setTimeout> | null = null;
   private lastBatchId = 0;
-
-  // Convert full event to optimized format
-  private optimizeEvent(
-    event: StatusEvent["data"]
-  ): OptimizedStatusEvent["data"] {
-    return {
-      i: event.importId,
-      n: event.noteId,
-      s: event.status,
-      m: event.message,
-      c: event.context,
-      e: event.errorMessage,
-      cc: event.currentCount,
-      tc: event.totalCount,
-      t: event.createdAt.getTime(),
-      l: event.indentLevel,
-      md: event.metadata,
-    };
-  }
-
-  // Convert optimized event back to full format
-  private deoptimizeEvent(
-    event: OptimizedStatusEvent["data"]
-  ): StatusEvent["data"] {
-    return {
-      importId: event.i,
-      noteId: event.n,
-      status: event.s,
-      message: event.m,
-      context: event.c,
-      errorMessage: event.e,
-      currentCount: event.cc,
-      totalCount: event.tc,
-      createdAt: new Date(event.t),
-      indentLevel: event.l,
-      metadata: event.md,
-    };
-  }
 
   constructor(port: number = 8080) {
     this.port = port;
@@ -242,7 +186,6 @@ export class WebSocketManager {
     message: { type: string; data: unknown }
   ) {
     const client = this.clients.get(clientId);
-    /* istanbul ignore next -- @preserve */
     if (client && client.ws.readyState === WebSocket.OPEN) {
       // Rate limiting per client (less aggressive for critical events)
       const now = Date.now();
@@ -288,7 +231,7 @@ export class WebSocketManager {
       return;
     }
 
-    // Create batches of events
+    // Create batches of events - send all pending events immediately for better responsiveness
     const batches: StatusEvent["data"][] = [];
     while (this.pendingEvents.length > 0) {
       const batch = this.pendingEvents.splice(0, this.MAX_BATCH_SIZE);
@@ -297,11 +240,10 @@ export class WebSocketManager {
 
     // Send batched message
     const batchId = `batch_${++this.lastBatchId}_${Date.now()}`;
-    const optimizedEvents = batches.map((event) => this.optimizeEvent(event));
     const batchedMessage: BatchedStatusEvent = {
       type: "status_update_batch",
       data: {
-        events: optimizedEvents,
+        events: batches,
         batchId,
         timestamp: new Date(),
       },
@@ -316,9 +258,7 @@ export class WebSocketManager {
     this.batchTimeout = null;
   }
 
-  private broadcastMessage(
-    message: StatusEvent | OptimizedStatusEvent | BatchedStatusEvent
-  ) {
+  private broadcastMessage(message: StatusEvent | BatchedStatusEvent) {
     const messageStr = JSON.stringify(message);
 
     if (this.clients.size === 0) {
@@ -326,10 +266,18 @@ export class WebSocketManager {
       return;
     }
 
+    let successfulDeliveries = 0;
+    let failedDeliveries = 0;
+    let disconnectedClients = 0;
+
     for (const [clientId, client] of this.clients) {
       if (client.ws.readyState === WebSocket.OPEN) {
         try {
           client.ws.send(messageStr);
+          successfulDeliveries++;
+
+          // Update last message time for health monitoring
+          client.lastMessageTime = Date.now();
         } catch (error) {
           /* istanbul ignore next -- @preserve */
           console.error(
@@ -337,12 +285,24 @@ export class WebSocketManager {
             error
           );
           this.clients.delete(clientId);
+          failedDeliveries++;
         }
       } else {
         // Remove disconnected clients
         this.clients.delete(clientId);
         /* istanbul ignore next -- @preserve */
         console.log(`[WebSocket] Removed disconnected client ${clientId}`);
+        disconnectedClients++;
+      }
+    }
+
+    // Log delivery statistics for critical events
+    if ("data" in message && typeof message.data === "object" && message.data) {
+      const eventData = message.data as StatusEvent["data"];
+      if (eventData.status === "COMPLETED" || eventData.status === "FAILED") {
+        console.log(
+          `📊 [WebSocket] Event delivery stats: ${successfulDeliveries} successful, ${failedDeliveries} failed, ${disconnectedClients} disconnected`
+        );
       }
     }
   }
@@ -360,15 +320,30 @@ export class WebSocketManager {
       event.status === "FAILED" ||
       event.status === "COMPLETED" ||
       event.context?.includes("progress") ||
-      event.context?.includes("processing");
+      event.context?.includes("processing") ||
+      event.context?.includes("completion") ||
+      event.context?.includes("worker") ||
+      event.context?.includes("note_completion") ||
+      event.context?.includes("mark_worker_completed");
 
     if (isCriticalEvent) {
-      const optimizedEvent = this.optimizeEvent(event);
-      const immediateMessage: OptimizedStatusEvent = {
+      const immediateMessage: StatusEvent = {
         type: "status_update",
-        data: optimizedEvent,
+        data: event,
       };
       this.broadcastMessage(immediateMessage);
+
+      // Retry critical events if no clients received them
+      if (this.clients.size === 0) {
+        setTimeout(() => {
+          if (this.clients.size > 0) {
+            console.log(
+              `🔄 [WebSocket] Retrying critical event: ${event.status} - ${event.importId}`
+            );
+            this.broadcastMessage(immediateMessage);
+          }
+        }, 1000); // Retry after 1 second
+      }
     } else {
       // Add non-critical events to pending batch
       this.pendingEvents.push(event);

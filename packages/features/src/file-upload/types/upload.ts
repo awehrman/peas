@@ -1,3 +1,5 @@
+import React from "react";
+
 export interface UploadItem {
   importId: string;
   htmlFileName: string;

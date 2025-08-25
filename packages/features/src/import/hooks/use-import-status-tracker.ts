@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo } from "react";
-import { StatusEvent } from "./use-status-websocket";
-import { useImportState } from "../contexts/import-state-context";
-import { ImportStatusTracker } from "../contexts/import-state-context";
-import { createProcessingSteps } from "../utils/status-parser";
+
+import { useImportState } from "../contexts";
+import { ImportStatusTracker } from "../contexts";
 import { BASE_STEP_DEFS, STATUS } from "../utils/status";
+import { createProcessingSteps } from "../utils/status-parser";
 
 export function useImportStatusTracker() {
   const { state, dispatch } = useImportState();
@@ -16,7 +16,7 @@ export function useImportStatusTracker() {
     // Process events to build status trackers
     for (const event of events) {
       const importId = event.importId;
-      
+
       if (!trackers.has(importId)) {
         // Initialize new tracker
         trackers.set(importId, {
@@ -39,7 +39,7 @@ export function useImportStatusTracker() {
       }
 
       const tracker = trackers.get(importId)!;
-      
+
       // Update tracker with event data
       tracker.eventCount++;
       tracker.lastEventAt = new Date(event.createdAt);
@@ -56,19 +56,34 @@ export function useImportStatusTracker() {
       }
 
       // Update completion stages based on context
-      if (event.context?.includes("note_created") || event.context?.includes("note_completion")) {
+      if (
+        event.context?.includes("note_created") ||
+        event.context?.includes("note_completion")
+      ) {
         tracker.stages.noteCreated = true;
       }
-      if (event.context?.includes("ingredient") || event.context?.includes("ingredients")) {
+      if (
+        event.context?.includes("ingredient") ||
+        event.context?.includes("ingredients")
+      ) {
         tracker.stages.ingredientsProcessed = true;
       }
-      if (event.context?.includes("instruction") || event.context?.includes("instructions")) {
+      if (
+        event.context?.includes("instruction") ||
+        event.context?.includes("instructions")
+      ) {
         tracker.stages.instructionsProcessed = true;
       }
-      if (event.context?.includes("image") || event.context?.includes("images")) {
+      if (
+        event.context?.includes("image") ||
+        event.context?.includes("images")
+      ) {
         tracker.stages.imagesAdded = true;
       }
-      if (event.context?.includes("categorization") || event.context?.includes("category")) {
+      if (
+        event.context?.includes("categorization") ||
+        event.context?.includes("category")
+      ) {
         tracker.stages.categoriesAdded = true;
       }
       if (event.context?.includes("tag") || event.context?.includes("tags")) {
@@ -93,15 +108,15 @@ export function useImportStatusTracker() {
         // Calculate completion percentage using the same logic as the status bar
         if (tracker.status === "importing") {
           // Get all events for this import
-          const importEvents = events.filter(e => e.importId === importId);
+          const importEvents = events.filter((e) => e.importId === importId);
           const processingSteps = createProcessingSteps(importEvents);
-          
+
           // Use the same logic as ProgressStatusBar
           const byId = new Map();
           for (const step of processingSteps) {
             byId.set(step.id, step);
           }
-          
+
           function pickCombinedFromContexts(contextIds: string[]) {
             const candidates = contextIds
               .map((cid) => byId.get(cid))
@@ -114,7 +129,7 @@ export function useImportStatusTracker() {
             }
             return candidates[0];
           }
-          
+
           const derivedSteps = BASE_STEP_DEFS.map((def) => {
             const chosen = pickCombinedFromContexts(def.sourceIds);
             return {
@@ -126,11 +141,16 @@ export function useImportStatusTracker() {
               metadata: chosen?.metadata,
             };
           });
-          
+
           const totalSteps = BASE_STEP_DEFS.length;
-          const completedSteps = derivedSteps.filter((step) => step.status === STATUS.COMPLETED).length;
-          let progressPercentage = totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0;
-          
+          const completedSteps = derivedSteps.filter(
+            (step) => step.status === STATUS.COMPLETED
+          ).length;
+          let progressPercentage =
+            totalSteps > 0
+              ? Math.round((completedSteps / totalSteps) * 100)
+              : 0;
+
           // If note completion has been received, force overall progress to 100%
           const noteCompleted = processingSteps.some(
             (s) => s.id === "note_completion" && s.status === STATUS.COMPLETED
@@ -138,7 +158,7 @@ export function useImportStatusTracker() {
           if (noteCompleted) {
             progressPercentage = 100;
           }
-          
+
           tracker.completionPercentage = progressPercentage;
         }
       }
@@ -159,22 +179,32 @@ export function useImportStatusTracker() {
   }, [state.importStatusTracker]);
 
   // Get tracker by importId
-  const getTracker = useCallback((importId: string) => {
-    return state.importStatusTracker.get(importId);
-  }, [state.importStatusTracker]);
+  const getTracker = useCallback(
+    (importId: string) => {
+      return state.importStatusTracker.get(importId);
+    },
+    [state.importStatusTracker]
+  );
 
   // Get trackers by status
-  const getTrackersByStatus = useCallback((status: "importing" | "completed" | "failed") => {
-    return allTrackers.filter(tracker => tracker.status === status);
-  }, [allTrackers]);
+  const getTrackersByStatus = useCallback(
+    (status: "importing" | "completed" | "failed") => {
+      return allTrackers.filter((tracker) => tracker.status === status);
+    },
+    [allTrackers]
+  );
 
   // Get completion statistics
   const completionStats = useMemo(() => {
     const total = allTrackers.length;
-    const completed = allTrackers.filter(t => t.status === "completed").length;
-    const failed = allTrackers.filter(t => t.status === "failed").length;
-    const importing = allTrackers.filter(t => t.status === "importing").length;
-    
+    const completed = allTrackers.filter(
+      (t) => t.status === "completed"
+    ).length;
+    const failed = allTrackers.filter((t) => t.status === "failed").length;
+    const importing = allTrackers.filter(
+      (t) => t.status === "importing"
+    ).length;
+
     return {
       total,
       completed,

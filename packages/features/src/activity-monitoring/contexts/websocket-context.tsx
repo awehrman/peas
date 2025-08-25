@@ -71,8 +71,8 @@ export function WebSocketProvider({
   });
 
   const wsRef = useRef<WebSocket | null>(null);
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const heartbeatIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Memoized event handlers for better performance
   const handleConnect = useCallback(() => {
@@ -131,23 +131,28 @@ export function WebSocketProvider({
         const message: WebSocketMessage = JSON.parse(event.data);
 
         switch (message.type) {
-          case "status_update":
+          case "status_update": {
             const statusEvent = message.data as StatusEvent;
             addEvent(statusEvent);
             config.onMessage(statusEvent);
             break;
-          case "connection_established":
+          }
+          case "connection_established": {
             console.log("🔌 WebSocket connection confirmed");
             break;
-          case "pong":
+          }
+          case "pong": {
             // Heartbeat response - connection is alive
             break;
-          case "error":
+          }
+          case "error": {
             const errorData = message.data as { error: string };
             setState((prev) => ({ ...prev, error: errorData.error }));
             break;
-          default:
+          }
+          default: {
             console.warn("🔌 Unknown message type:", message.type);
+          }
         }
       } catch (error) {
         console.error("🔌 Failed to parse WebSocket message:", error);

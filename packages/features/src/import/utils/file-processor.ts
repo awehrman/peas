@@ -212,14 +212,20 @@ export class FileProcessor {
    */
   getMemoryInfo(): { used: number; total: number; percentage: number } {
     if (typeof performance !== "undefined" && "memory" in performance) {
-      const memory = (performance as any).memory;
-      return {
-        used: Math.round(memory.usedJSHeapSize / 1024 / 1024),
-        total: Math.round(memory.totalJSHeapSize / 1024 / 1024),
-        percentage: Math.round(
-          (memory.usedJSHeapSize / memory.totalJSHeapSize) * 100
-        ),
-      };
+      const memory = (
+        performance as Performance & {
+          memory?: { usedJSHeapSize: number; totalJSHeapSize: number };
+        }
+      ).memory;
+      if (memory) {
+        return {
+          used: Math.round(memory.usedJSHeapSize / 1024 / 1024),
+          total: Math.round(memory.totalJSHeapSize / 1024 / 1024),
+          percentage: Math.round(
+            (memory.usedJSHeapSize / memory.totalJSHeapSize) * 100
+          ),
+        };
+      }
     }
 
     return { used: 0, total: 0, percentage: 0 };
