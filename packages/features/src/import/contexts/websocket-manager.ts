@@ -50,7 +50,6 @@ export function useWebSocketManager({
     // Rate limiting: Don't reconnect more than once every rate limit period
     const now = Date.now();
     if (now - lastReconnectAttemptRef.current < WS_RATE_LIMIT_MS) {
-      console.log("🔌 WebSocket: Rate limiting reconnection attempts");
       return;
     }
 
@@ -72,21 +71,17 @@ export function useWebSocketManager({
     });
 
     try {
-      console.log(`🔌 WebSocket: Attempting connection to ${DEFAULT_WS_URL}`);
-
       // Create WebSocket with a connection timeout
       wsRef.current = new WebSocket(DEFAULT_WS_URL);
 
       // Set a connection timeout
       const connectionTimeout = setTimeout(() => {
         if (wsRef.current?.readyState === WebSocket.CONNECTING) {
-          console.log("🔌 WebSocket: Connection timeout, closing and retrying");
           wsRef.current.close();
         }
       }, WS_CONNECTION_TIMEOUT_MS);
 
       wsRef.current.onopen = () => {
-        console.log("🔌 WebSocket connected");
         clearTimeout(connectionTimeout);
         isConnectingRef.current = false;
         reconnectAttemptsRef.current = 0;
@@ -108,10 +103,7 @@ export function useWebSocketManager({
         }, WS_HEARTBEAT_INTERVAL_MS);
       };
 
-      wsRef.current.onclose = (event) => {
-        console.log(
-          `🔌 WebSocket disconnected (code: ${event.code}, reason: ${event.reason})`
-        );
+      wsRef.current.onclose = (_event) => {
         clearTimeout(connectionTimeout);
         isConnectingRef.current = false;
         dispatch({
@@ -145,26 +137,18 @@ export function useWebSocketManager({
             },
           });
 
-          console.log(
-            `🔌 WebSocket: Retrying in ${backoffDelay}ms (attempt ${reconnectAttemptsRef.current}/5)`
-          );
-
           reconnectTimeoutRef.current = setTimeout(() => {
             if (connectWebSocketRef.current) {
               connectWebSocketRef.current();
             }
           }, backoffDelay);
-        } else {
-          console.log(
-            "🔌 WebSocket: Max reconnection attempts reached, giving up"
-          );
         }
       };
 
       wsRef.current.onerror = (error) => {
         // Don't log the first connection error as it's expected when server isn't ready
         if (reconnectAttemptsRef.current > 0) {
-          console.error("🔌 WebSocket error:", error);
+          console.error("WebSocket connection error:", error);
         }
         clearTimeout(connectionTimeout);
         isConnectingRef.current = false;
@@ -187,14 +171,6 @@ export function useWebSocketManager({
               // Handle status events
               const statusEvent = message.data as StatusEvent;
 
-              if (
-                statusEvent.status === "COMPLETED" ||
-                statusEvent.status === "FAILED"
-              ) {
-                console.log(
-                  `📥 [FRONTEND] Received ${statusEvent.status}: ${statusEvent.importId} - ${statusEvent.context || "no-context"}`
-                );
-              }
               // Check for duplicate completion events
               const isDuplicateCompletion = currentEventsRef.current.some(
                 (existingEvent) =>
@@ -204,9 +180,6 @@ export function useWebSocketManager({
               );
 
               if (isDuplicateCompletion) {
-                console.log(
-                  `🔄 [FRONTEND] Skipping duplicate completion event: ${statusEvent.importId} - ${statusEvent.context}`
-                );
                 return;
               }
 
@@ -272,27 +245,9 @@ export function useWebSocketManager({
                 (event) => event as StatusEvent
               );
 
-              // Log completion events from batch
-              convertedEvents.forEach((event) => {
-                if (event.status === "COMPLETED" || event.status === "FAILED") {
-                  console.log(
-                    `📥 [FRONTEND] Received ${event.status} from batch: ${event.importId} - ${event.context || "no-context"}`
-                  );
-                }
-              });
               // Process batched events in chronological order (oldest first)
               const batchedEvents = [...convertedEvents];
 
-              // Log batch processing for debugging
-              if (
-                batchData.events.some(
-                  (e) => e.status === "COMPLETED" || e.status === "FAILED"
-                )
-              ) {
-                console.log(
-                  `📦 [FRONTEND] Processing batch ${batchData.batchId} with ${batchData.events.length} events`
-                );
-              }
               const updatedEventsFromBatch = [
                 ...currentEventsRef.current,
                 ...batchedEvents,
@@ -300,9 +255,7 @@ export function useWebSocketManager({
 
               // Warn if we're approaching the limit
               if (updatedEventsFromBatch.length > 950) {
-                console.warn(
-                  `⚠️ [FRONTEND] Event buffer approaching limit: ${updatedEventsFromBatch.length}/1000 events`
-                );
+                console.warn("Event buffer approaching limit:", { eventCount: updatedEventsFromBatch.length, maxEvents: 1000 });
               }
 
               const trimmedEventsFromBatch = updatedEventsFromBatch.slice(
@@ -317,7 +270,6 @@ export function useWebSocketManager({
               break;
             }
             case "connection_established":
-              console.log("🔌 WebSocket connection confirmed");
               break;
             case "pong":
               // Heartbeat response - connection is alive
@@ -335,14 +287,14 @@ export function useWebSocketManager({
               break;
             }
             default:
-              console.warn("🔌 Unknown message type:", message.type);
+              console.warn("Unknown WebSocket message type:", message.type);
           }
         } catch (error) {
-          console.error("🔌 Failed to parse WebSocket message:", error);
+          console.error("Failed to parse WebSocket message:", error);
         }
       };
     } catch (error) {
-      console.error("🔌 Failed to create WebSocket connection:", error);
+      console.error("Failed to create WebSocket connection:", error);
       isConnectingRef.current = false;
       dispatch({
         type: "CONNECTION_STATUS_CHANGED",

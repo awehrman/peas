@@ -112,7 +112,7 @@ export function RouteGuard({ children }: RouteGuardProps) {
     <ErrorBoundary
       FallbackComponent={RouteGuardErrorFallback}
       onError={(error, errorInfo) => {
-        console.error("🔴 RouteGuard Error:", error, errorInfo);
+        console.error("RouteGuard Error:", { error: error.message, errorInfo });
       }}
       onReset={() => {
         // Clear any auth-related state or redirect to login

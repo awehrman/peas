@@ -1,10 +1,11 @@
 "use client";
 
 import React from "react";
-import { ErrorBoundary as ReactErrorBoundary } from "react-error-boundary";
-import { AlertTriangle } from "lucide-react";
-import { Button, Placeholder } from "@peas/ui";
 import { useState } from "react";
+
+import { Button, Placeholder } from "@peas/ui";
+import { AlertTriangle } from "lucide-react";
+import { ErrorBoundary as ReactErrorBoundary } from "react-error-boundary";
 
 interface ErrorFallbackProps {
   error: Error;
@@ -50,11 +51,10 @@ export function AuthErrorBoundary({
     <ReactErrorBoundary
       FallbackComponent={fallback}
       onError={(error, errorInfo) => {
-        console.error(
-          "🔴 Auth Error Boundary caught an error:",
-          error,
-          errorInfo
-        );
+        console.error("Auth Error Boundary caught an error:", {
+          error: error.message,
+          errorInfo,
+        });
       }}
       onReset={() => {
         // Clear any auth-related state or redirect to login

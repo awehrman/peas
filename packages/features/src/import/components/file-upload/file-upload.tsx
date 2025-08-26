@@ -240,7 +240,7 @@ export function ImportFileUpload({ className }: Props) {
             // Handle timeout and network errors
             if (error instanceof Error) {
               if (error.name === "AbortError") {
-                console.error(`Upload timeout for ${htmlFile.name}`);
+                console.error("Upload timeout:", { fileName: htmlFile.name });
                 updateUploadItem(importId, { status: "failed" });
                 throw new Error(`Upload timeout for ${htmlFile.name}`);
               }
@@ -284,7 +284,7 @@ export function ImportFileUpload({ className }: Props) {
               failedResults.push(reason);
               const fileName = batch[batchIndex]?.name || "Unknown file";
               // Log error for debugging (consider removing in production)
-              console.error(`Upload failed for ${fileName}:`, reason);
+              console.error("Upload failed:", { fileName, error: reason instanceof Error ? reason.message : String(reason) });
             }
           });
 
@@ -347,14 +347,11 @@ export function ImportFileUpload({ className }: Props) {
           );
 
           if (stuckUploads.length > 0) {
-            console.warn(
-              "🚨 [UPLOAD_DEBUG] Found stuck uploads:",
-              stuckUploads.map(([id, _item]) => ({
-                importId: id,
-                fileName: _item.htmlFileName,
-                createdAt: _item.createdAt,
-              }))
-            );
+            console.warn("Found stuck uploads:", stuckUploads.map(([id, _item]) => ({
+              importId: id,
+              fileName: _item.htmlFileName,
+              createdAt: _item.createdAt,
+            })));
 
             stuckUploads.forEach(([importId, _item]) => {
               updateUploadItem(importId, { status: "failed" });
@@ -434,10 +431,9 @@ export function ImportFileUpload({ className }: Props) {
       // Remove HTML files from upload context after successful upload
       removeUploadingHtmlFiles(htmlFileNames);
     } catch (error) {
-      console.error("[FRONTEND] Upload error:", error);
-      setMessage(
-        `Upload failed: ${error instanceof Error ? error.message : "Unknown error"}`
-      );
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      console.error("File upload failed:", { error: errorMessage, files: files.length });
+      setMessage(`Upload failed: ${errorMessage}`);
 
       // Remove HTML files from upload context on error
       const htmlFileNames = files

@@ -36,13 +36,13 @@ export function useImportItems({
     );
   }, []);
 
-  // Memoized event sorting function
+  // Memoized event sorting function - sort by newest first
   const sortEventsByTimestamp = useCallback(
     (events: StatusEvent[]): StatusEvent[] => {
       return [...events].sort((a, b) => {
         const dateA = new Date(a.createdAt);
         const dateB = new Date(b.createdAt);
-        return dateA.getTime() - dateB.getTime();
+        return dateB.getTime() - dateA.getTime(); // Reverse order - newest first
       });
     },
     []
@@ -56,13 +56,6 @@ export function useImportItems({
 
       for (const event of sortedEvents) {
         const importId = event.importId;
-
-        // Debug logging for completion events
-        if (event.status === "COMPLETED" || event.status === "FAILED") {
-          console.log(
-            `📊 [NOTE_STATUS] ${event.status}: ${event.importId} - ${event.context || "no-context"}`
-          );
-        }
 
         // Skip certain events that shouldn't affect the display
         if (shouldSkipEvent(event)) {
@@ -99,9 +92,6 @@ export function useImportItems({
             event.context === "mark_note_worker_completed" ||
             event.message?.includes("completed successfully"))
         ) {
-          console.log(
-            `✅ [USE_IMPORT_ITEMS] Marking import as completed: ${importId} - ${event.context}`
-          );
           item.status = "completed";
           item.completedAt = new Date(event.createdAt);
         }
@@ -120,15 +110,12 @@ export function useImportItems({
       const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
       for (const [importId, item] of newItems.entries()) {
         if (item.status === "importing" && item.createdAt < tenMinutesAgo) {
-          console.warn(
-            "🚨 [USE_IMPORT_ITEMS] Marking stuck import as failed:",
-            {
-              importId,
-              htmlFileName: item.htmlFileName,
-              noteTitle: item.noteTitle,
-              createdAt: item.createdAt,
-            }
-          );
+          console.warn("Marking stuck import as failed:", {
+            importId,
+            htmlFileName: item.htmlFileName,
+            noteTitle: item.noteTitle,
+            createdAt: item.createdAt,
+          });
           item.status = "failed";
           item.completedAt = new Date();
         }

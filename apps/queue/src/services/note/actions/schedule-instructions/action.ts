@@ -43,7 +43,7 @@ export class ScheduleInstructionsAction extends BaseAction<
       deps,
       context,
       serviceCall: () => processInstructions(data, deps.logger, deps.queues),
-      contextName: "SCHEDULE_INSTRUCTIONS",
+      contextName: "schedule_instructions",
       suppressDefaultBroadcast: true,
       // startMessage: `Starting to process instructions for note: ${data.noteId}`,
       // Completion handled via per-instruction progress events; no final broadcast

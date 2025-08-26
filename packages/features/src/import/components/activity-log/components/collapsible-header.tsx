@@ -18,6 +18,7 @@ interface CollapsibleHeaderProps {
   hasDuplicate: boolean;
   statusText: string;
   completionPercentage?: number;
+  showExpandIcon?: boolean;
 }
 
 export function CollapsibleHeader({
@@ -28,6 +29,7 @@ export function CollapsibleHeader({
   hasDuplicate,
   statusText,
   completionPercentage,
+  showExpandIcon = true,
 }: CollapsibleHeaderProps): ReactNode {
   return (
     <button
@@ -67,23 +69,25 @@ export function CollapsibleHeader({
       </div>
 
       {/* Expand/Collapse Icon */}
-      <div className="flex-shrink-0">
-        <svg
-          className={`w-5 h-5 text-gray-500 transition-transform duration-200 ${
-            isExpanded ? "rotate-180" : ""
-          }`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M19 9l-7 7-7-7"
-          />
-        </svg>
-      </div>
+      {showExpandIcon && (
+        <div className="flex-shrink-0">
+          <svg
+            className={`w-5 h-5 text-gray-500 transition-transform duration-200 ${
+              isExpanded ? "rotate-180" : ""
+            }`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M19 9l-7 7-7-7"
+            />
+          </svg>
+        </div>
+      )}
     </button>
   );
 }

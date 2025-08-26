@@ -43,14 +43,14 @@ export class ScheduleImagesAction extends BaseAction<
       deps,
       context,
       serviceCall: () => processImages(data, deps.logger, deps.queues),
-      contextName: "SCHEDULE_IMAGES",
+      contextName: "schedule_images",
       suppressDefaultBroadcast: true,
       startMessage: `Starting to process images for note: ${data.noteId}`,
       // Completion handled via per-image progress events; no final broadcast
       additionalBroadcasting: async () => {
         // Add initial status broadcast showing 0/X images
         /* istanbul ignore next -- @preserve */
-        if (deps.statusBroadcaster && data.file?.images) {
+        if (deps.statusBroadcaster && data.file?.images && data.file.images.length > 0) {
           await deps.statusBroadcaster.addStatusEventAndBroadcast({
             importId: data.importId || "",
             noteId: data.noteId,

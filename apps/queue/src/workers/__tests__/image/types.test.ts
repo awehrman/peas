@@ -377,21 +377,22 @@ describe("Image Worker Types", () => {
     });
 
     it("should contain all ingredient actions", () => {
+      // Ingredient actions
       expect(ActionName.PARSE_INGREDIENT_LINE).toBe("parse_ingredient_line");
       expect(ActionName.SAVE_INGREDIENT_LINE).toBe("save_ingredient_line");
       expect(ActionName.CHECK_INGREDIENT_COMPLETION).toBe("check_ingredient_completion");
-      expect(ActionName.INGREDIENT_COMPLETED_STATUS).toBe("ingredient_completed_status");
-      expect(ActionName.UPDATE_INGREDIENT_COUNT).toBe("update_ingredient_count");
       expect(ActionName.SCHEDULE_CATEGORIZATION_AFTER_COMPLETION).toBe("schedule_categorization_after_completion");
     });
 
     it("should contain all instruction actions", () => {
+      // Instruction actions
       expect(ActionName.FORMAT_INSTRUCTION_LINE).toBe("format_instruction_line");
       expect(ActionName.SAVE_INSTRUCTION_LINE).toBe("save_instruction_line");
       expect(ActionName.CHECK_INSTRUCTION_COMPLETION).toBe("check_instruction_completion");
     });
 
     it("should contain all image actions", () => {
+      // Image actions
       expect(ActionName.PROCESS_IMAGE).toBe("process_image");
       expect(ActionName.UPLOAD_ORIGINAL).toBe("upload_original");
       expect(ActionName.UPLOAD_PROCESSED).toBe("upload_processed");
@@ -401,19 +402,18 @@ describe("Image Worker Types", () => {
     });
 
     it("should contain all categorization actions", () => {
-      expect(ActionName.PROCESS_CATEGORIZATION).toBe("process_categorization");
-      expect(ActionName.SAVE_CATEGORIZATION).toBe("save_categorization");
-      expect(ActionName.CATEGORIZATION_COMPLETED_STATUS).toBe("categorization_completed_status");
+      // Categorization actions
+      expect(ActionName.DETERMINE_CATEGORY).toBe("determine_category");
+      expect(ActionName.SAVE_CATEGORY).toBe("save_category");
+      expect(ActionName.DETERMINE_TAGS).toBe("determine_tags");
+      expect(ActionName.SAVE_TAGS).toBe("save_tags");
       expect(ActionName.TRACK_PATTERN).toBe("track_pattern");
       expect(ActionName.COMPLETION_STATUS).toBe("completion_status");
     });
 
     it("should contain all source actions", () => {
+      // Source actions
       expect(ActionName.PROCESS_SOURCE).toBe("process_source");
-      expect(ActionName.SAVE_SOURCE).toBe("save_source");
-      expect(ActionName.SOURCE_PROCESSING_STATUS).toBe("source_processing_status");
-      expect(ActionName.SOURCE_COMPLETED_STATUS).toBe("source_completed_status");
-      expect(ActionName.BROADCAST_SOURCE_COMPLETED).toBe("broadcast_source_completed");
     });
 
     it("should contain all utility actions", () => {

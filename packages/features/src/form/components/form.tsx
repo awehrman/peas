@@ -18,15 +18,11 @@ const Form = ({
 }: FormProps) => {
   useActionFeedback(actionState, {
     onSuccess: ({ actionState }) => {
-      if (actionState.message) {
-        // console.log(actionState.message);
-      }
-
       onSuccess?.(actionState);
     },
     onError: ({ actionState }) => {
       if (actionState.message) {
-        console.error(actionState.message);
+        console.error("Form action failed:", actionState.message);
       }
 
       onError?.(actionState);

@@ -53,21 +53,17 @@ export async function updateImageCompletedStatus(
         await statusBroadcaster.addStatusEventAndBroadcast({
           importId: updatedImage.importId,
           noteId: updatedImage.noteId,
-          status: "PROCESSING",
+          status: "COMPLETED",
           message: "Image processed",
           context: "image_processing",
           indentLevel: 1,
           metadata: {
-            // These fields may or may not be present depending on upload outcomes
-            r2ThumbnailUrl: (
-              updatedImage as unknown as Record<string, unknown>
-            )["r2ThumbnailUrl"],
-            r2Crop3x2Url: (updatedImage as unknown as Record<string, unknown>)[
-              "r2Crop3x2Url"
-            ],
-            r2OriginalUrl: (updatedImage as unknown as Record<string, unknown>)[
-              "r2OriginalUrl"
-            ],
+            // Use the correct database field names
+            r2OriginalUrl: updatedImage.originalImageUrl,
+            r2ThumbnailUrl: updatedImage.thumbnailImageUrl,
+            r2Crop3x2Url: updatedImage.crop3x2ImageUrl,
+            r2Crop4x3Url: updatedImage.crop4x3ImageUrl,
+            r2Crop16x9Url: updatedImage.crop16x9ImageUrl,
           },
         });
       } catch (broadcastErr) {

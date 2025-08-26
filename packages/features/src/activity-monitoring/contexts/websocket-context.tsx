@@ -42,8 +42,7 @@ interface WebSocketProviderProps extends UseStatusWebSocketOptions {
   maxEvents?: number;
 }
 
-const DEFAULT_WS_URL =
-  process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8080";
+const DEFAULT_WS_URL = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8080";
 const DEFAULT_OPTIONS: Required<UseStatusWebSocketOptions> = {
   url: DEFAULT_WS_URL,
   reconnectInterval: 3000,
@@ -71,12 +70,15 @@ export function WebSocketProvider({
   });
 
   const wsRef = useRef<WebSocket | null>(null);
-  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const heartbeatIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
+  const heartbeatIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
+    null
+  );
 
   // Memoized event handlers for better performance
   const handleConnect = useCallback(() => {
-    console.log("🔌 WebSocket connected");
     setState((prev) => ({
       ...prev,
       isConnected: true,
@@ -96,7 +98,6 @@ export function WebSocketProvider({
   }, [config]);
 
   const handleDisconnect = useCallback(() => {
-    console.log("🔌 WebSocket disconnected");
     setState((prev) => ({
       ...prev,
       isConnected: false,
@@ -113,7 +114,7 @@ export function WebSocketProvider({
 
   const handleError = useCallback(
     (error: Event) => {
-      console.error("🔌 WebSocket error:", error);
+      console.error("WebSocket connection error:", error);
       setState((prev) => ({
         ...prev,
         isConnected: false,
@@ -138,7 +139,6 @@ export function WebSocketProvider({
             break;
           }
           case "connection_established": {
-            console.log("🔌 WebSocket connection confirmed");
             break;
           }
           case "pong": {
@@ -151,11 +151,11 @@ export function WebSocketProvider({
             break;
           }
           default: {
-            console.warn("🔌 Unknown message type:", message.type);
+            console.warn("Unknown WebSocket message type:", message.type);
           }
         }
       } catch (error) {
-        console.error("🔌 Failed to parse WebSocket message:", error);
+        console.error("Failed to parse WebSocket message:", error);
       }
     },
     [config]
@@ -209,7 +209,7 @@ export function WebSocketProvider({
       wsRef.current.onerror = handleError;
       wsRef.current.onmessage = handleMessage;
     } catch (error) {
-      console.error("🔌 Failed to create WebSocket connection:", error);
+      console.error("Failed to create WebSocket connection:", error);
       setState((prev) => ({
         ...prev,
         connectionStatus: "error",

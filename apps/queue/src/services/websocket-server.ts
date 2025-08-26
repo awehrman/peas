@@ -21,15 +21,6 @@ interface StatusEvent {
   };
 }
 
-interface BatchedStatusEvent {
-  type: "status_update_batch";
-  data: {
-    events: StatusEvent["data"][];
-    batchId: string;
-    timestamp: Date;
-  };
-}
-
 interface Client {
   id: string;
   ws: WebSocket;
@@ -45,17 +36,10 @@ export class WebSocketManager {
   private port: number;
   private readonly MAX_CLIENTS = WEBSOCKET_CONSTANTS.MAX_CLIENTS;
   private readonly RATE_LIMIT_MS = WEBSOCKET_CONSTANTS.RATE_LIMIT_MS;
-  private readonly BATCH_INTERVAL_MS = WEBSOCKET_CONSTANTS.BATCH_INTERVAL_MS;
-  private readonly MAX_BATCH_SIZE = WEBSOCKET_CONSTANTS.MAX_BATCH_SIZE;
   private readonly HEARTBEAT_INTERVAL_MS =
     WEBSOCKET_CONSTANTS.HEARTBEAT_INTERVAL_MS;
   private readonly CONNECTION_TIMEOUT_MS =
     WEBSOCKET_CONSTANTS.CONNECTION_TIMEOUT_MS;
-
-  // Message batching
-  private pendingEvents: StatusEvent["data"][] = [];
-  private batchTimeout: ReturnType<typeof setTimeout> | null = null;
-  private lastBatchId = 0;
 
   constructor(port: number = 8080) {
     this.port = port;
@@ -215,50 +199,33 @@ export class WebSocketManager {
     }
   }
 
-  private scheduleBatch() {
-    if (this.batchTimeout) {
-      return; // Already scheduled
+  public broadcastStatusEvent(event: StatusEvent["data"]) {
+    // Debug logging for completion events
+    if (event.status === "COMPLETED" || event.status === "FAILED") {
+      console.log(
+        `📡 [WebSocket] Broadcasting ${event.status}: ${event.importId} - ${event.context || "no-context"} (${this.clients.size} clients)`
+      );
     }
 
-    this.batchTimeout = setTimeout(() => {
-      this.flushBatch();
-    }, this.BATCH_INTERVAL_MS);
-  }
-
-  private flushBatch() {
-    if (this.pendingEvents.length === 0) {
-      this.batchTimeout = null;
-      return;
+    // Debug logging for clean_html events
+    if (
+      event.context === "clean_html_start" ||
+      event.context === "clean_html_end"
+    ) {
+      console.log(
+        `🧹 [WebSocket] Broadcasting clean_html event: ${event.status} - ${event.importId} - ${event.context} (${this.clients.size} clients)`
+      );
     }
 
-    // Create batches of events - send all pending events immediately for better responsiveness
-    const batches: StatusEvent["data"][] = [];
-    while (this.pendingEvents.length > 0) {
-      const batch = this.pendingEvents.splice(0, this.MAX_BATCH_SIZE);
-      batches.push(...batch);
-    }
-
-    // Send batched message
-    const batchId = `batch_${++this.lastBatchId}_${Date.now()}`;
-    const batchedMessage: BatchedStatusEvent = {
-      type: "status_update_batch",
-      data: {
-        events: batches,
-        batchId,
-        timestamp: new Date(),
-      },
+    // Send all events immediately - the status broadcaster handles deduplication
+    const message: StatusEvent = {
+      type: "status_update",
+      data: event,
     };
-
-    console.log(
-      `[WebSocket] Broadcasting batched status events to ${this.clients.size} clients:`,
-      `${batches.length} events in batch ${batchId}`
-    );
-
-    this.broadcastMessage(batchedMessage);
-    this.batchTimeout = null;
+    this.broadcastMessage(message);
   }
 
-  private broadcastMessage(message: StatusEvent | BatchedStatusEvent) {
+  private broadcastMessage(message: StatusEvent) {
     const messageStr = JSON.stringify(message);
 
     if (this.clients.size === 0) {
@@ -296,59 +263,14 @@ export class WebSocketManager {
       }
     }
 
-    // Log delivery statistics for critical events
-    if ("data" in message && typeof message.data === "object" && message.data) {
-      const eventData = message.data as StatusEvent["data"];
-      if (eventData.status === "COMPLETED" || eventData.status === "FAILED") {
-        console.log(
-          `📊 [WebSocket] Event delivery stats: ${successfulDeliveries} successful, ${failedDeliveries} failed, ${disconnectedClients} disconnected`
-        );
-      }
-    }
-  }
-
-  public broadcastStatusEvent(event: StatusEvent["data"]) {
-    // Debug logging for completion events
-    if (event.status === "COMPLETED" || event.status === "FAILED") {
+    // Log delivery statistics for important events
+    if (
+      message.data.status === "COMPLETED" ||
+      message.data.status === "FAILED"
+    ) {
       console.log(
-        `📡 [WebSocket] Broadcasting ${event.status}: ${event.importId} - ${event.context || "no-context"} (${this.clients.size} clients)`
+        `📊 [WebSocket] Event delivery stats: ${successfulDeliveries} successful, ${failedDeliveries} failed, ${disconnectedClients} disconnected`
       );
-    }
-
-    // For immediate critical updates (errors, completions, progress), send immediately
-    const isCriticalEvent =
-      event.status === "FAILED" ||
-      event.status === "COMPLETED" ||
-      event.context?.includes("progress") ||
-      event.context?.includes("processing") ||
-      event.context?.includes("completion") ||
-      event.context?.includes("worker") ||
-      event.context?.includes("note_completion") ||
-      event.context?.includes("mark_worker_completed");
-
-    if (isCriticalEvent) {
-      const immediateMessage: StatusEvent = {
-        type: "status_update",
-        data: event,
-      };
-      this.broadcastMessage(immediateMessage);
-
-      // Retry critical events if no clients received them
-      if (this.clients.size === 0) {
-        setTimeout(() => {
-          if (this.clients.size > 0) {
-            console.log(
-              `🔄 [WebSocket] Retrying critical event: ${event.status} - ${event.importId}`
-            );
-            this.broadcastMessage(immediateMessage);
-          }
-        }, 1000); // Retry after 1 second
-      }
-    } else {
-      // Add non-critical events to pending batch
-      this.pendingEvents.push(event);
-      // Schedule batch flush if not already scheduled
-      this.scheduleBatch();
     }
   }
 
@@ -357,15 +279,6 @@ export class WebSocketManager {
   }
 
   public close() {
-    // Flush any pending events before closing
-    if (this.pendingEvents.length > 0) {
-      this.flushBatch();
-    }
-
-    if (this.batchTimeout) {
-      clearTimeout(this.batchTimeout);
-    }
-
     this.wss.close();
     console.log("🔌 WebSocket: Server closed");
   }

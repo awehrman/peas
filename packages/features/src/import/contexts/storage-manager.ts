@@ -32,10 +32,7 @@ export function useStorageManager({
         dispatch({ type: "EXPANDED_ITEMS_SET", payload: parsed });
       }
     } catch (error) {
-      console.warn(
-        "Failed to load collapsible state from localStorage:",
-        error
-      );
+      console.warn("Failed to load collapsible state from localStorage:", { error: error instanceof Error ? error.message : "Unknown error" });
     }
   }, [storageKey, persistCollapsibleState, dispatch]);
 
@@ -58,10 +55,7 @@ export function useStorageManager({
           JSON.stringify(Array.from(state.expandedItems))
         );
       } catch (error) {
-        console.warn(
-          "Failed to save collapsible state to localStorage:",
-          error
-        );
+        console.warn("Failed to save collapsible state to localStorage:", { error: error instanceof Error ? error.message : "Unknown error" });
       }
     }, 300); // 300ms debounce
 

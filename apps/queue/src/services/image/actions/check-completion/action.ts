@@ -42,7 +42,7 @@ export class CheckImageCompletionAction extends BaseAction<
       deps,
       context,
       serviceCall: () => checkImageCompletion(data, deps),
-      contextName: "CHECK_IMAGE_COMPLETION",
+      contextName: "check_image_completion",
       startMessage: `Checking image completion for note: ${data.noteId || "unknown"}`,
       completionMessage: "Image completion check completed",
     });

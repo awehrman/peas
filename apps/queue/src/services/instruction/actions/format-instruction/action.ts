@@ -46,7 +46,7 @@ export class FormatInstructionAction extends BaseAction<
       deps,
       context,
       serviceCall: () => deps.services.formatInstruction(data),
-      contextName: "FORMAT_INSTRUCTION_LINE",
+      contextName: "format_instruction_line",
       suppressDefaultBroadcast: true,
     });
   }

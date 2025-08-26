@@ -40,12 +40,12 @@ export const BASE_STEP_DEFS: StepDef[] = [
   {
     id: "cleaning",
     name: "Cleaning",
-    sourceIds: ["clean_html", "file_cleaning"],
+    sourceIds: ["cleaning"],
   },
   {
     id: "saving_note",
     name: "Saving Note",
-    sourceIds: ["save_note", "note_creation"],
+    sourceIds: ["save_note"],
   },
   {
     id: "ingredient_processing",
@@ -60,10 +60,7 @@ export const BASE_STEP_DEFS: StepDef[] = [
   {
     id: "connecting_source",
     name: "Connecting Source",
-    sourceIds: [
-      STATUS_CONTEXT.PROCESS_SOURCE,
-      STATUS_CONTEXT.SOURCE_CONNECTION,
-    ],
+    sourceIds: [STATUS_CONTEXT.SOURCE_CONNECTION],
   },
   {
     id: "adding_images",
@@ -73,20 +70,21 @@ export const BASE_STEP_DEFS: StepDef[] = [
   {
     id: "adding_categories",
     name: "Adding Categories",
-    sourceIds: ["categorization_save_complete", "categorization_save"],
+    sourceIds: [
+      "categorization_save_complete",
+      "categorization_save",
+      "categorization_complete",
+    ],
   },
   {
     id: "adding_tags",
     name: "Adding Tags",
-    sourceIds: ["tag_save_complete", "tag_save"],
+    sourceIds: ["tag_save_complete", "tag_save", "tag_determination_complete"],
   },
   {
     id: "check_duplicates",
     name: "Check Duplicates",
-    sourceIds: [
-      STATUS_CONTEXT.CHECK_DUPLICATES,
-      STATUS_CONTEXT.CHECK_DUPLICATES_LEGACY,
-    ],
+    sourceIds: [STATUS_CONTEXT.CHECK_DUPLICATES],
   },
 ];
 

@@ -191,7 +191,8 @@ export function usePerformanceMonitoring(config: PerformanceConfig = {}) {
       reportingTimerRef.current = setInterval(() => {
         const report = generateReport();
 
-        if (logToConsole) {
+        // Only log in development environment
+        if (logToConsole && process.env.NODE_ENV === "development") {
           console.group("🚀 Import Performance Report");
           console.log(report.summary);
           if (report.recommendations.length > 0) {

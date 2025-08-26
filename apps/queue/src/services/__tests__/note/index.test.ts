@@ -86,7 +86,9 @@ describe("Note Services Index", () => {
         expect.objectContaining({ name: ActionName.SCHEDULE_IMAGES }),
         expect.objectContaining({ name: ActionName.CHECK_DUPLICATES }),
         expect.objectContaining({ name: ActionName.WAIT_FOR_CATEGORIZATION }),
-        expect.objectContaining({ name: ActionName.MARK_NOTE_WORKER_COMPLETED }),
+        expect.objectContaining({
+          name: ActionName.MARK_NOTE_WORKER_COMPLETED,
+        }),
       ]);
     });
 
@@ -148,11 +150,13 @@ describe("Note Services Index", () => {
       expect(calls[6]?.[0]).toBe(ActionName.SCHEDULE_IMAGES);
       expect(calls[7]?.[0]).toBe(ActionName.CHECK_DUPLICATES);
       expect(calls[8]?.[0]).toBe(ActionName.WAIT_FOR_CATEGORIZATION);
-      
+
       // Check that the 10th action (MARK_NOTE_WORKER_COMPLETED) is in the registrations array
       const registrations = mockRegisterActions.mock.calls[0]?.[1];
       expect(registrations).toHaveLength(10);
-      expect(registrations[9]?.name).toBe(ActionName.MARK_NOTE_WORKER_COMPLETED);
+      expect(registrations[9]?.name).toBe(
+        ActionName.MARK_NOTE_WORKER_COMPLETED
+      );
     });
 
     it("should handle factory with different configurations", () => {
@@ -190,7 +194,7 @@ describe("Note Services Index", () => {
       registrations.forEach((registration: any, index: number) => {
         expect(registration).toHaveProperty("name");
         expect(typeof registration.name).toBe("string");
-        
+
         // Most registrations have actionClass, but the 10th one (index 9) has factory
         if (index === 9) {
           expect(registration).toHaveProperty("factory");
@@ -198,7 +202,10 @@ describe("Note Services Index", () => {
         } else {
           expect(registration).toHaveProperty("actionClass");
           // actionClass can be either a function (class) or object (instance)
-          expect(typeof registration.actionClass === "function" || typeof registration.actionClass === "object").toBe(true);
+          expect(
+            typeof registration.actionClass === "function" ||
+              typeof registration.actionClass === "object"
+          ).toBe(true);
         }
       });
     });

@@ -40,7 +40,7 @@ describe("addStatusEventAndBroadcast", () => {
       noteId: "note-123",
       status: "PROCESSING" as NoteStatus,
       message: "Test message",
-      context: "Test context",
+      context: "save_note",
       currentCount: 5,
       totalCount: 10,
       createdAt: new Date("2023-01-01T00:00:00.000Z"),
@@ -57,7 +57,7 @@ describe("addStatusEventAndBroadcast", () => {
       noteId: "note-123",
       status: "PROCESSING" as NoteStatus,
       message: "Test message",
-      context: "Test context",
+      context: "save_note",
       currentCount: 5,
       totalCount: 10,
       indentLevel: 1,
@@ -68,7 +68,7 @@ describe("addStatusEventAndBroadcast", () => {
       noteId: "note-123",
       status: "PROCESSING",
       message: "Test message",
-      context: "Test context",
+      context: "save_note",
       currentCount: 5,
       totalCount: 10,
     });
@@ -78,7 +78,7 @@ describe("addStatusEventAndBroadcast", () => {
       noteId: "note-123",
       status: "PROCESSING",
       message: "Test message",
-      context: "Test context",
+      context: "save_note",
       errorMessage: undefined,
       currentCount: 5,
       totalCount: 10,
@@ -102,7 +102,7 @@ describe("addStatusEventAndBroadcast", () => {
       importId: "import-1",
       status: "COMPLETED" as NoteStatus,
       message: "Import completed",
-      context: "Import context",
+      context: "note_completion",
       currentCount: 100,
       totalCount: 100,
       indentLevel: 0,
@@ -116,7 +116,7 @@ describe("addStatusEventAndBroadcast", () => {
       noteId: undefined,
       status: "COMPLETED",
       message: "Import completed",
-      context: "Import context",
+      context: "note_completion",
       errorMessage: undefined,
       currentCount: 100,
       totalCount: 100,
@@ -145,6 +145,7 @@ describe("addStatusEventAndBroadcast", () => {
         noteId: "note-123",
         status: "COMPLETED_WITH_ERROR" as NoteStatus,
         message: "Database error",
+        context: "save_note",
       })
     ).rejects.toThrow("Database connection failed");
 
@@ -152,12 +153,12 @@ describe("addStatusEventAndBroadcast", () => {
       noteId: "note-123",
       status: "COMPLETED_WITH_ERROR",
       message: "Database error",
-      context: undefined,
+      context: "save_note",
       currentCount: undefined,
       totalCount: undefined,
     });
 
-    // Should not attempt to broadcast when database fails
+    // Broadcast should not be called when database fails
     expect(mockBroadcastStatusEvent).not.toHaveBeenCalled();
   });
 
@@ -174,7 +175,7 @@ describe("addStatusEventAndBroadcast", () => {
       noteId: "note-123",
       status: "PROCESSING" as NoteStatus,
       message: "Test message",
-      context: "Test context",
+      context: "save_note",
       currentCount: 5,
       totalCount: 10,
       createdAt: new Date("2023-01-01T00:00:00.000Z"),
@@ -197,6 +198,7 @@ describe("addStatusEventAndBroadcast", () => {
         noteId: "note-123",
         status: "PROCESSING" as NoteStatus,
         message: "Test message",
+        context: "save_note",
       })
     ).rejects.toThrow("WebSocket connection failed");
 
@@ -217,7 +219,7 @@ describe("addStatusEventAndBroadcast", () => {
       noteId: "note-123",
       status: "PROCESSING" as NoteStatus,
       message: "Test message",
-      context: "Test context",
+      context: "save_note",
       currentCount: 5,
       totalCount: 10,
       createdAt: new Date("2023-01-01T00:00:00.000Z"),
@@ -234,6 +236,7 @@ describe("addStatusEventAndBroadcast", () => {
       noteId: "note-123",
       status: "PROCESSING" as NoteStatus,
       message: "Test message",
+      context: "save_note",
     });
 
     expect(mockBroadcastStatusEvent).toHaveBeenCalled();
@@ -253,6 +256,7 @@ describe("addStatusEventAndBroadcast", () => {
         noteId: "note-123",
         status: "COMPLETED_WITH_ERROR" as NoteStatus,
         message: "Database error",
+        context: "save_note",
       })
     ).rejects.toThrow("Database connection failed");
 
@@ -275,7 +279,7 @@ describe("addStatusEventAndBroadcast", () => {
       noteId: "note-123",
       status: "PROCESSING" as NoteStatus,
       message: "Test message",
-      context: "Test context",
+      context: "save_note",
       currentCount: 5,
       totalCount: 10,
       createdAt: new Date("2023-01-01T00:00:00.000Z"),
@@ -291,13 +295,14 @@ describe("addStatusEventAndBroadcast", () => {
       importId: "import-optional-test",
       noteId: "note-123",
       status: "PROCESSING" as NoteStatus,
+      context: "save_note",
     });
 
     expect(mockAddStatusEvent).toHaveBeenCalledWith({
       noteId: "note-123",
       status: "PROCESSING",
       message: undefined,
-      context: undefined,
+      context: "save_note",
       currentCount: undefined,
       totalCount: undefined,
     });
@@ -307,7 +312,7 @@ describe("addStatusEventAndBroadcast", () => {
       noteId: "note-123",
       status: "PROCESSING",
       message: undefined,
-      context: undefined,
+      context: "save_note",
       errorMessage: undefined,
       currentCount: undefined,
       totalCount: undefined,
@@ -335,7 +340,7 @@ describe("addStatusEventAndBroadcast", () => {
         noteId: "note-123",
         status,
         message: `Status: ${status}`,
-        context: "Test context",
+        context: "save_note",
         currentCount: 1,
         totalCount: 1,
         createdAt: new Date("2023-01-01T00:00:00.000Z"),
@@ -352,13 +357,14 @@ describe("addStatusEventAndBroadcast", () => {
         noteId: "note-123",
         status,
         message: `Status: ${status}`,
+        context: "save_note",
       });
 
       expect(mockAddStatusEvent).toHaveBeenCalledWith({
         noteId: "note-123",
         status,
         message: `Status: ${status}`,
-        context: undefined,
+        context: "save_note",
         currentCount: undefined,
         totalCount: undefined,
       });
@@ -368,7 +374,7 @@ describe("addStatusEventAndBroadcast", () => {
         noteId: "note-123",
         status,
         message: `Status: ${status}`,
-        context: undefined,
+        context: "save_note",
         errorMessage: undefined,
         currentCount: undefined,
         totalCount: undefined,

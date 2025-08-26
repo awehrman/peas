@@ -7,7 +7,7 @@ export const UPLOAD_STATUS_ICON: Record<string, string> = {
 };
 
 export const UPLOAD_BACKGROUND_COLOR: Record<string, string> = {
-  uploading: "bg-gray-50",
+  uploading: "bg-blue-50",
   uploaded: "bg-green-50",
   failed: "bg-red-50",
 };
@@ -38,7 +38,8 @@ export function getUploadProgressText(
   totalBatches: number
 ): string {
   const fileProgress = `${currentFile}/${totalFiles}`;
-  const batchProgress = totalBatches > 1 ? ` (Batch ${currentBatch}/${totalBatches})` : "";
+  const batchProgress =
+    totalBatches > 1 ? ` (Batch ${currentBatch}/${totalBatches})` : "";
   return `${fileProgress}${batchProgress}`;
 }
 
@@ -49,10 +50,10 @@ export function calculateUploadProgress(
   totalBatches: number
 ): number {
   if (totalFiles === 0 || totalBatches === 0) return 0;
-  
+
   const fileProgress = currentFile / totalFiles;
   const batchProgress = currentBatch / totalBatches;
-  
+
   // Weight batch progress more heavily for overall progress
   return Math.round((fileProgress * 0.3 + batchProgress * 0.7) * 100);
 }

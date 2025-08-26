@@ -240,7 +240,41 @@ export async function markWorkerCompleted(
 
   status.allCompleted = allCompleted;
 
-  // Only broadcast completion when ALL workers are completed
+  // Broadcast individual step completion for frontend progress tracking
+  if (statusBroadcaster && status.importId) {
+    const stepContextMap = {
+      note: "save_note",
+      instruction: "instruction_processing",
+      ingredient: "ingredient_processing",
+      image: "image_processing",
+    };
+
+    const stepContext = stepContextMap[workerType];
+    if (stepContext) {
+      try {
+        await statusBroadcaster.addStatusEventAndBroadcast({
+          importId: status.importId,
+          noteId: status.noteId,
+          status: "COMPLETED",
+          message: `${workerType} processing completed`,
+          context: stepContext,
+          indentLevel: 1,
+          metadata: {
+            workerType,
+            noteId: status.noteId,
+            htmlFileName: status.htmlFileName,
+          },
+        });
+      } catch (broadcastError) {
+        logger.log(
+          `[TRACK_COMPLETION] ❌ Failed to broadcast ${workerType} completion: ${broadcastError}`
+        );
+        // Don't fail the main completion if broadcast fails
+      }
+    }
+  }
+
+  // Only broadcast final completion when ALL workers are completed
   // This prevents intermediate status updates that cause UI resets
   if (allCompleted) {
     try {
@@ -265,21 +299,28 @@ export async function markWorkerCompleted(
 
       // Broadcast final completion event only
       if (statusBroadcaster && status.importId) {
-        await statusBroadcaster.addStatusEventAndBroadcast({
-          importId: status.importId,
-          noteId: status.noteId,
-          status: "COMPLETED",
-          message: "Note processing completed successfully",
-          context: "note_completion",
-          metadata: {
+        try {
+          await statusBroadcaster.addStatusEventAndBroadcast({
+            importId: status.importId,
             noteId: status.noteId,
-            htmlFileName: status.htmlFileName,
-            totalImageJobs: status.totalImageJobs,
-            completedImageJobs: status.completedImageJobs,
-            totalIngredientLines: status.totalIngredientLines,
-            completedIngredientLines: status.completedIngredientLines.size,
-          },
-        });
+            status: "COMPLETED",
+            message: "Note processing completed successfully",
+            context: "note_completion",
+            metadata: {
+              noteId: status.noteId,
+              htmlFileName: status.htmlFileName,
+              totalImageJobs: status.totalImageJobs,
+              completedImageJobs: status.completedImageJobs,
+              totalIngredientLines: status.totalIngredientLines,
+              completedIngredientLines: status.completedIngredientLines.size,
+            },
+          });
+        } catch (broadcastError) {
+          logger.log(
+            `[TRACK_COMPLETION] ❌ Failed to broadcast completion: ${broadcastError}`
+          );
+          // Don't fail the main completion if broadcast fails
+        }
       }
 
       // Clean up the completion status from memory
@@ -305,8 +346,8 @@ export async function markWorkerCompleted(
       logger.log(`[TRACK_COMPLETION] Error details: ${error}`);
     }
   }
-  // Note: We intentionally don't broadcast intermediate worker completions
-  // to prevent UI status resets and confusion
+  // Note: We now broadcast individual step completions for frontend progress tracking
+  // while still only broadcasting final completion when all workers are done
 }
 
 /**

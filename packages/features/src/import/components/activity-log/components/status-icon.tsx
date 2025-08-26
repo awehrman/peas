@@ -59,9 +59,11 @@ export function StatusIcon({
 
   const getColor = () => {
     if (step?.id === "check_duplicates") {
-      if (status === STATUS.PROCESSING) return "bg-amber-400";
-      const hasDuplicates = getDuplicateCount(step.metadata) > 0;
-      if (hasDuplicates) return "bg-amber-500";
+      if (status === STATUS.PROCESSING) return "bg-blue-500"; // Blue while processing
+      if (status === STATUS.COMPLETED) {
+        const hasDuplicates = getDuplicateCount(step.metadata) > 0;
+        if (hasDuplicates) return "bg-amber-500"; // Amber only when duplicates found
+      }
     }
     return STATUS_COLOR[status] ?? STATUS_COLOR[STATUS.PENDING];
   };

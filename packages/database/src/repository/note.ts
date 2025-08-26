@@ -295,19 +295,195 @@ export async function createNoteWithEvernoteMetadata(
       });
 
       if (existingNote) {
-        // Update the existing note
-        const response = await prisma.note.update({
-          where: { id: existingNote.id },
+        // Update the existing note with extended transaction timeout
+        const response = await prisma.$transaction(
+          async (tx) => {
+            return await tx.note.update({
+              where: { id: existingNote.id },
+              data: {
+                title: file.title,
+                html: file.contents,
+                // Counters
+                totalIngredientLines: file.ingredients.length,
+                totalInstructionLines: file.instructions.length,
+                parsingErrorCount: 0,
+                // Delete existing parsed lines and create new ones
+                parsedIngredientLines: {
+                  deleteMany: {},
+                  create: file.ingredients.map(
+                    (ingredient: ParsedIngredientLine) => ({
+                      reference: ingredient.reference,
+                      blockIndex: ingredient.blockIndex,
+                      lineIndex: ingredient.lineIndex,
+                      parseStatus: ingredient.parseStatus,
+                    })
+                  ),
+                },
+                parsedInstructionLines: {
+                  deleteMany: {},
+                  create: file.instructions.map(
+                    (instruction: ParsedInstructionLine) => ({
+                      originalText: instruction.reference,
+                      lineIndex: instruction.lineIndex,
+                      parseStatus: instruction.parseStatus,
+                    })
+                  ),
+                },
+                // Update EvernoteMetadata if we have metadata
+                ...(source || tags.length > 0 || originalCreatedAt
+                  ? {
+                      evernoteMetadata: {
+                        upsert: {
+                          create: {
+                            source: source || null,
+                            notebook: null,
+                            tags,
+                            originalCreatedAt: originalCreatedAt || null,
+                          },
+                          update: {
+                            source: source || null,
+                            notebook: null,
+                            tags,
+                            originalCreatedAt: originalCreatedAt || null,
+                          },
+                        },
+                      },
+                    }
+                  : {}),
+              },
+              select: {
+                id: true,
+                title: true,
+                evernoteMetadataId: true,
+                parsedIngredientLines: {
+                  select: {
+                    id: true,
+                    reference: true,
+                    blockIndex: true,
+                    lineIndex: true,
+                  },
+                },
+                parsedInstructionLines: {
+                  select: {
+                    id: true,
+                    originalText: true,
+                    lineIndex: true,
+                  },
+                },
+                createdAt: true,
+                updatedAt: true,
+              },
+            });
+          },
+          { timeout: 30000 }
+        ); // 30 second timeout
+
+        return response;
+      }
+    }
+
+    // Use a transaction to handle potential race conditions with extended timeout
+    return await prisma.$transaction(
+      async (tx) => {
+        // Double-check for existing note within the transaction
+        if (importId) {
+          const existingNoteInTx = await tx.note.findFirst({
+            where: { importId },
+          });
+
+          if (existingNoteInTx) {
+            // Update the existing note
+            return await tx.note.update({
+              where: { id: existingNoteInTx.id },
+              data: {
+                title: file.title,
+                html: file.contents,
+                // Counters
+                totalIngredientLines: file.ingredients.length,
+                totalInstructionLines: file.instructions.length,
+                parsingErrorCount: 0,
+                // Delete existing parsed lines and create new ones
+                parsedIngredientLines: {
+                  deleteMany: {},
+                  create: file.ingredients.map(
+                    (ingredient: ParsedIngredientLine) => ({
+                      reference: ingredient.reference,
+                      blockIndex: ingredient.blockIndex,
+                      lineIndex: ingredient.lineIndex,
+                      parseStatus: ingredient.parseStatus,
+                    })
+                  ),
+                },
+                parsedInstructionLines: {
+                  deleteMany: {},
+                  create: file.instructions.map(
+                    (instruction: ParsedInstructionLine) => ({
+                      originalText: instruction.reference,
+                      lineIndex: instruction.lineIndex,
+                      parseStatus: instruction.parseStatus,
+                    })
+                  ),
+                },
+                // Update EvernoteMetadata if we have metadata
+                ...(source || tags.length > 0 || originalCreatedAt
+                  ? {
+                      evernoteMetadata: {
+                        upsert: {
+                          create: {
+                            source: source || null,
+                            notebook: null,
+                            tags,
+                            originalCreatedAt: originalCreatedAt || null,
+                          },
+                          update: {
+                            source: source || null,
+                            notebook: null,
+                            tags,
+                            originalCreatedAt: originalCreatedAt || null,
+                          },
+                        },
+                      },
+                    }
+                  : {}),
+              },
+              select: {
+                id: true,
+                title: true,
+                evernoteMetadataId: true,
+                parsedIngredientLines: {
+                  select: {
+                    id: true,
+                    reference: true,
+                    blockIndex: true,
+                    lineIndex: true,
+                  },
+                },
+                parsedInstructionLines: {
+                  select: {
+                    id: true,
+                    originalText: true,
+                    lineIndex: true,
+                  },
+                },
+                createdAt: true,
+                updatedAt: true,
+              },
+            });
+          }
+        }
+
+        // If no existing note found, create a new one
+        const response = await tx.note.create({
           data: {
             title: file.title,
             html: file.contents,
+            importId: importId || null, // Add importId to the note
             // Counters
             totalIngredientLines: file.ingredients.length,
             totalInstructionLines: file.instructions.length,
             parsingErrorCount: 0,
-            // Delete existing parsed lines and create new ones
+            // Relations
             parsedIngredientLines: {
-              deleteMany: {},
               create: file.ingredients.map(
                 (ingredient: ParsedIngredientLine) => ({
                   reference: ingredient.reference,
@@ -318,7 +494,6 @@ export async function createNoteWithEvernoteMetadata(
               ),
             },
             parsedInstructionLines: {
-              deleteMany: {},
               create: file.instructions.map(
                 (instruction: ParsedInstructionLine) => ({
                   originalText: instruction.reference,
@@ -327,23 +502,15 @@ export async function createNoteWithEvernoteMetadata(
                 })
               ),
             },
-            // Update EvernoteMetadata if we have metadata
+            // Create EvernoteMetadata if we have metadata
             ...(source || tags.length > 0 || originalCreatedAt
               ? {
                   evernoteMetadata: {
-                    upsert: {
-                      create: {
-                        source: source || null,
-                        notebook: null,
-                        tags,
-                        originalCreatedAt: originalCreatedAt || null,
-                      },
-                      update: {
-                        source: source || null,
-                        notebook: null,
-                        tags,
-                        originalCreatedAt: originalCreatedAt || null,
-                      },
+                    create: {
+                      source: source || null,
+                      notebook: null, // Removed notebook as requested
+                      tags,
+                      originalCreatedAt: originalCreatedAt || null,
                     },
                   },
                 }
@@ -372,169 +539,10 @@ export async function createNoteWithEvernoteMetadata(
             updatedAt: true,
           },
         });
-
         return response;
-      }
-    }
-
-    // Use a transaction to handle potential race conditions
-    return await prisma.$transaction(async (tx) => {
-      // Double-check for existing note within the transaction
-      if (importId) {
-        const existingNoteInTx = await tx.note.findFirst({
-          where: { importId },
-        });
-
-        if (existingNoteInTx) {
-          // Update the existing note
-          return await tx.note.update({
-            where: { id: existingNoteInTx.id },
-            data: {
-              title: file.title,
-              html: file.contents,
-              // Counters
-              totalIngredientLines: file.ingredients.length,
-              totalInstructionLines: file.instructions.length,
-              parsingErrorCount: 0,
-              // Delete existing parsed lines and create new ones
-              parsedIngredientLines: {
-                deleteMany: {},
-                create: file.ingredients.map(
-                  (ingredient: ParsedIngredientLine) => ({
-                    reference: ingredient.reference,
-                    blockIndex: ingredient.blockIndex,
-                    lineIndex: ingredient.lineIndex,
-                    parseStatus: ingredient.parseStatus,
-                  })
-                ),
-              },
-              parsedInstructionLines: {
-                deleteMany: {},
-                create: file.instructions.map(
-                  (instruction: ParsedInstructionLine) => ({
-                    originalText: instruction.reference,
-                    lineIndex: instruction.lineIndex,
-                    parseStatus: instruction.parseStatus,
-                  })
-                ),
-              },
-              // Update EvernoteMetadata if we have metadata
-              ...(source || tags.length > 0 || originalCreatedAt
-                ? {
-                    evernoteMetadata: {
-                      upsert: {
-                        create: {
-                          source: source || null,
-                          notebook: null,
-                          tags,
-                          originalCreatedAt: originalCreatedAt || null,
-                        },
-                        update: {
-                          source: source || null,
-                          notebook: null,
-                          tags,
-                          originalCreatedAt: originalCreatedAt || null,
-                        },
-                      },
-                    },
-                  }
-                : {}),
-            },
-            select: {
-              id: true,
-              title: true,
-              evernoteMetadataId: true,
-              parsedIngredientLines: {
-                select: {
-                  id: true,
-                  reference: true,
-                  blockIndex: true,
-                  lineIndex: true,
-                },
-              },
-              parsedInstructionLines: {
-                select: {
-                  id: true,
-                  originalText: true,
-                  lineIndex: true,
-                },
-              },
-              createdAt: true,
-              updatedAt: true,
-            },
-          });
-        }
-      }
-
-      // If no existing note found, create a new one
-      const response = await tx.note.create({
-        data: {
-          title: file.title,
-          html: file.contents,
-          importId: importId || null, // Add importId to the note
-          // Counters
-          totalIngredientLines: file.ingredients.length,
-          totalInstructionLines: file.instructions.length,
-          parsingErrorCount: 0,
-          // Relations
-          parsedIngredientLines: {
-            create: file.ingredients.map(
-              (ingredient: ParsedIngredientLine) => ({
-                reference: ingredient.reference,
-                blockIndex: ingredient.blockIndex,
-                lineIndex: ingredient.lineIndex,
-                parseStatus: ingredient.parseStatus,
-              })
-            ),
-          },
-          parsedInstructionLines: {
-            create: file.instructions.map(
-              (instruction: ParsedInstructionLine) => ({
-                originalText: instruction.reference,
-                lineIndex: instruction.lineIndex,
-                parseStatus: instruction.parseStatus,
-              })
-            ),
-          },
-          // Create EvernoteMetadata if we have metadata
-          ...(source || tags.length > 0 || originalCreatedAt
-            ? {
-                evernoteMetadata: {
-                  create: {
-                    source: source || null,
-                    notebook: null, // Removed notebook as requested
-                    tags,
-                    originalCreatedAt: originalCreatedAt || null,
-                  },
-                },
-              }
-            : {}),
-        },
-        select: {
-          id: true,
-          title: true,
-          evernoteMetadataId: true,
-          parsedIngredientLines: {
-            select: {
-              id: true,
-              reference: true,
-              blockIndex: true,
-              lineIndex: true,
-            },
-          },
-          parsedInstructionLines: {
-            select: {
-              id: true,
-              originalText: true,
-              lineIndex: true,
-            },
-          },
-          createdAt: true,
-          updatedAt: true,
-        },
-      });
-      return response;
-    });
+      },
+      { timeout: 30000 }
+    ); // 30 second timeout
   } catch (error) {
     console.error(`[CREATE_NOTE_DEBUG] Error occurred:`, error);
     throw error;

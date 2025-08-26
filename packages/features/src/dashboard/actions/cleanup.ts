@@ -8,11 +8,11 @@ export async function cleanupAllDataAction(): Promise<{
   deletedCounts?: Record<string, number>;
 }> {
   try {
-    console.warn("🚨 DANGEROUS OPERATION: Cleaning up all database data");
+    console.warn("DANGEROUS OPERATION: Cleaning up all database data");
     
     const { deletedCounts } = await cleanupAllData();
 
-    console.log("✅ Database cleanup completed:", deletedCounts);
+    console.log("Database cleanup completed:", deletedCounts);
 
     return {
       success: true,
@@ -20,7 +20,7 @@ export async function cleanupAllDataAction(): Promise<{
       deletedCounts,
     };
   } catch (error) {
-    console.error("❌ Failed to cleanup database:", error);
+    console.error("Failed to cleanup database:", error);
     return {
       success: false,
       message: error instanceof Error ? error.message : "Unknown error occurred",

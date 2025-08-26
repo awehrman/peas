@@ -68,8 +68,6 @@ export enum ActionName {
   PARSE_INGREDIENT_LINE = "parse_ingredient_line",
   SAVE_INGREDIENT_LINE = "save_ingredient_line",
   CHECK_INGREDIENT_COMPLETION = "check_ingredient_completion",
-  INGREDIENT_COMPLETED_STATUS = "ingredient_completed_status",
-  UPDATE_INGREDIENT_COUNT = "update_ingredient_count",
   SCHEDULE_CATEGORIZATION_AFTER_COMPLETION = "schedule_categorization_after_completion",
 
   // Instruction actions
@@ -87,9 +85,6 @@ export enum ActionName {
   CHECK_IMAGE_COMPLETION = "check_image_completion",
 
   // Categorization actions
-  PROCESS_CATEGORIZATION = "process_categorization",
-  SAVE_CATEGORIZATION = "save_categorization",
-  CATEGORIZATION_COMPLETED_STATUS = "categorization_completed_status",
   DETERMINE_CATEGORY = "determine_category",
   SAVE_CATEGORY = "save_category",
   DETERMINE_TAGS = "determine_tags",
@@ -99,10 +94,6 @@ export enum ActionName {
 
   // Source actions
   PROCESS_SOURCE = "process_source",
-  SAVE_SOURCE = "save_source",
-  SOURCE_PROCESSING_STATUS = "source_processing_status",
-  SOURCE_COMPLETED_STATUS = "source_completed_status",
-  BROADCAST_SOURCE_COMPLETED = "broadcast_source_completed",
 
   // Utility actions
   NO_OP = "no_op",
@@ -257,7 +248,7 @@ export const QUEUE_ACTIONS: Record<QueueName, ActionName[]> = {
     ActionName.SAVE_NOTE,
     ActionName.SCHEDULE_ALL_FOLLOWUP_TASKS,
     ActionName.PROCESS_SOURCE,
-    ActionName.PROCESS_IMAGE,
+    ActionName.SCHEDULE_IMAGES,
     ActionName.SCHEDULE_INGREDIENT_LINES,
     ActionName.SCHEDULE_INSTRUCTION_LINES,
   ],
@@ -280,22 +271,15 @@ export const QUEUE_ACTIONS: Record<QueueName, ActionName[]> = {
     ActionName.SAVE_IMAGE,
     ActionName.CLEANUP_LOCAL_FILES,
     ActionName.IMAGE_COMPLETED_STATUS,
+    ActionName.CHECK_IMAGE_COMPLETION,
   ],
   [QueueName.CATEGORIZATION]: [
-    ActionName.PROCESS_CATEGORIZATION,
-    ActionName.SAVE_CATEGORIZATION,
     ActionName.DETERMINE_CATEGORY,
     ActionName.SAVE_CATEGORY,
     ActionName.DETERMINE_TAGS,
     ActionName.SAVE_TAGS,
   ],
-  [QueueName.SOURCE]: [
-    ActionName.PROCESS_SOURCE,
-    ActionName.SAVE_SOURCE,
-    ActionName.SOURCE_PROCESSING_STATUS,
-    ActionName.SOURCE_COMPLETED_STATUS,
-    ActionName.BROADCAST_SOURCE_COMPLETED,
-  ],
+  [QueueName.SOURCE]: [ActionName.PROCESS_SOURCE],
   [QueueName.PATTERN_TRACKING]: [ActionName.TRACK_PATTERN],
 };
 
@@ -317,8 +301,6 @@ export const ACTION_CATEGORIES: Record<ActionName, ActionCategory> = {
   [ActionName.PARSE_INGREDIENT_LINE]: ActionCategory.INGREDIENT,
   [ActionName.SAVE_INGREDIENT_LINE]: ActionCategory.INGREDIENT,
   [ActionName.CHECK_INGREDIENT_COMPLETION]: ActionCategory.INGREDIENT,
-  [ActionName.INGREDIENT_COMPLETED_STATUS]: ActionCategory.INGREDIENT,
-  [ActionName.UPDATE_INGREDIENT_COUNT]: ActionCategory.INGREDIENT,
   [ActionName.SCHEDULE_INGREDIENT_LINES]: ActionCategory.INGREDIENT,
   [ActionName.SCHEDULE_CATEGORIZATION_AFTER_COMPLETION]:
     ActionCategory.INGREDIENT,
@@ -339,9 +321,6 @@ export const ACTION_CATEGORIES: Record<ActionName, ActionCategory> = {
   [ActionName.CHECK_IMAGE_COMPLETION]: ActionCategory.IMAGE,
 
   // Categorization actions
-  [ActionName.PROCESS_CATEGORIZATION]: ActionCategory.CATEGORIZATION,
-  [ActionName.SAVE_CATEGORIZATION]: ActionCategory.CATEGORIZATION,
-  [ActionName.CATEGORIZATION_COMPLETED_STATUS]: ActionCategory.CATEGORIZATION,
   [ActionName.DETERMINE_CATEGORY]: ActionCategory.CATEGORIZATION,
   [ActionName.SAVE_CATEGORY]: ActionCategory.CATEGORIZATION,
   [ActionName.DETERMINE_TAGS]: ActionCategory.CATEGORIZATION,
@@ -351,10 +330,6 @@ export const ACTION_CATEGORIES: Record<ActionName, ActionCategory> = {
 
   // Source actions
   [ActionName.PROCESS_SOURCE]: ActionCategory.SOURCE,
-  [ActionName.SAVE_SOURCE]: ActionCategory.SOURCE,
-  [ActionName.SOURCE_PROCESSING_STATUS]: ActionCategory.SOURCE,
-  [ActionName.SOURCE_COMPLETED_STATUS]: ActionCategory.SOURCE,
-  [ActionName.BROADCAST_SOURCE_COMPLETED]: ActionCategory.SOURCE,
 
   // Utility actions
   [ActionName.NO_OP]: ActionCategory.NOTE,

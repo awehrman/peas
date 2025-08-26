@@ -9,17 +9,16 @@ export function useImportStatusTracker() {
   const { state, dispatch } = useImportState();
   const { events } = state;
 
-  // Update import status trackers when events change
-  useEffect(() => {
-    const trackers = new Map<string, ImportStatusTracker>();
+  // Memoize the trackers to prevent unnecessary re-renders
+  const trackers = useMemo(() => {
+    const trackerMap = new Map<string, ImportStatusTracker>();
 
-    // Process events to build status trackers
     for (const event of events) {
       const importId = event.importId;
 
-      if (!trackers.has(importId)) {
+      if (!trackerMap.has(importId)) {
         // Initialize new tracker
-        trackers.set(importId, {
+        trackerMap.set(importId, {
           importId,
           status: "importing",
           createdAt: new Date(event.createdAt),
@@ -38,7 +37,7 @@ export function useImportStatusTracker() {
         });
       }
 
-      const tracker = trackers.get(importId)!;
+      const tracker = trackerMap.get(importId)!;
 
       // Update tracker with event data
       tracker.eventCount++;
@@ -164,14 +163,18 @@ export function useImportStatusTracker() {
       }
     }
 
-    // Update state with new trackers
+    return trackerMap;
+  }, [events]);
+
+  // Update import status trackers when events change
+  useEffect(() => {
     for (const [importId, tracker] of trackers.entries()) {
       dispatch({
         type: "IMPORT_STATUS_UPDATED",
         payload: { importId, tracker },
       });
     }
-  }, [events, dispatch]);
+  }, [trackers, dispatch]);
 
   // Get all trackers
   const allTrackers = useMemo(() => {

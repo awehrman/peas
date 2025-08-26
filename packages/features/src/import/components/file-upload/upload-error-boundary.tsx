@@ -23,7 +23,7 @@ export class UploadErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error("Upload error boundary caught an error:", error, errorInfo);
+    console.error("Upload error boundary caught an error:", { error: error.message, errorInfo });
   }
 
   render() {

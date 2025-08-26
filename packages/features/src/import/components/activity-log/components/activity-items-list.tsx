@@ -29,7 +29,8 @@ const ActivityItemsListComponent = ({
   return (
     <div className={className}>
       {items.map((item) => {
-        if (showCollapsible && "noteTitle" in item && item.type === "import") {
+        // Use CollapsibleImportItem for both import items and upload items when showCollapsible is true
+        if (showCollapsible) {
           // Create a stable callback for each item to prevent unnecessary re-renders
           const handleToggle = () => onToggle(item.importId);
 

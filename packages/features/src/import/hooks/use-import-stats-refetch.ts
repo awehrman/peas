@@ -31,7 +31,7 @@ export function useImportStatsRefetch({
       const newStats = await getImportStats();
       setStats(newStats);
     } catch (error) {
-      console.error("Failed to refetch import stats:", error);
+      console.error("Failed to refetch import stats:", { error: error instanceof Error ? error.message : "Unknown error" });
     } finally {
       setIsRefetching(false);
     }

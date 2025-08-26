@@ -46,7 +46,7 @@ export class SaveInstructionAction extends BaseAction<
       deps,
       context,
       serviceCall: () => deps.services.saveInstruction(data),
-      contextName: "SAVE_INSTRUCTION_LINE",
+      contextName: "save_instruction_line",
       suppressDefaultBroadcast: true,
     });
   }

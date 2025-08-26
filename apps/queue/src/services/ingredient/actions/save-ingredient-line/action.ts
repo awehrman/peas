@@ -48,7 +48,7 @@ export class SaveIngredientLineAction extends BaseAction<
       deps,
       context,
       serviceCall: () => deps.services.saveIngredient(data),
-      contextName: "SAVE_INGREDIENT_LINE",
+      contextName: "save_ingredient_line",
       suppressDefaultBroadcast: true,
     });
   }

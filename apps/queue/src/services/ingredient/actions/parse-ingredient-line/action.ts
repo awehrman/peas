@@ -48,7 +48,7 @@ export class ParseIngredientLineAction extends BaseAction<
       deps,
       context,
       serviceCall: () => deps.services.parseIngredient(data),
-      contextName: "PARSE_INGREDIENT_LINE",
+      contextName: "parse_ingredient_line",
       suppressDefaultBroadcast: true,
     });
   }

@@ -28,7 +28,7 @@ export const ImportItemComponent = memo(function ImportItemComponent({
         case "uploading":
           return `Uploading ${uploadItem.htmlFileName}...`;
         case "uploaded":
-          return `Uploaded ${uploadItem.htmlFileName} (${uploadItem.imageCount} images)`;
+          return `Processing ${uploadItem.htmlFileName}...`;
         case "failed":
           return `Failed to upload ${uploadItem.htmlFileName}`;
         default:
@@ -41,7 +41,7 @@ export const ImportItemComponent = memo(function ImportItemComponent({
         case "uploading":
           return "spinner";
         case "uploaded":
-          return "✅";
+          return "...";
         case "failed":
           return "❌";
         default:
@@ -54,7 +54,7 @@ export const ImportItemComponent = memo(function ImportItemComponent({
         case "uploading":
           return "bg-gray-50"; // Grey for batched items waiting to be processed
         case "uploaded":
-          return "bg-green-50"; // Light green for success
+          return "bg-blue-50"; // Light blue for processing
         case "failed":
           return "bg-red-50"; // Light red for errors
         default:
@@ -73,12 +73,12 @@ export const ImportItemComponent = memo(function ImportItemComponent({
         {/* Status Icon */}
         <div className="flex-shrink-0">
           {statusIcon === "spinner" ? (
-            <div className="animate-spin rounded-full h-4 w-4"></div>
+            <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent"></div>
           ) : (
             <div
-              className={`text-lg ${
+              className={`text-lg font-medium ${
                 uploadItem.status === "uploaded"
-                  ? "text-green-600"
+                  ? "text-blue-600"
                   : uploadItem.status === "failed"
                     ? "text-red-600"
                     : "text-gray-600"
@@ -94,7 +94,7 @@ export const ImportItemComponent = memo(function ImportItemComponent({
           <div
             className={`font-medium ${
               uploadItem.status === "uploaded"
-                ? "text-green-800"
+                ? "text-blue-800"
                 : uploadItem.status === "failed"
                   ? "text-red-800"
                   : "text-gray-800"
@@ -117,7 +117,7 @@ export const ImportItemComponent = memo(function ImportItemComponent({
 
   if (!isImportItem(item)) {
     // This should not happen given our logic, but handle gracefully
-    console.warn("Unexpected item type in ImportItemComponent:", item);
+    console.warn("Unexpected item type in ImportItemComponent:", { itemType: typeof item, hasNoteTitle: 'noteTitle' in item, type: 'type' in item ? item.type : 'undefined' });
     return null;
   }
 

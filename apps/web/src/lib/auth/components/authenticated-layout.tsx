@@ -66,7 +66,7 @@ export function AuthenticatedLayout({
           <ErrorBoundary
             FallbackComponent={ContentErrorFallback}
             onError={(error, errorInfo) => {
-              console.error("🔴 AuthenticatedLayout Error:", error, errorInfo);
+              console.error("AuthenticatedLayout Error:", { error: error.message, errorInfo });
             }}
           >
             <Suspense

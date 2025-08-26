@@ -76,8 +76,8 @@ export class PerformanceMonitor {
       batchMetrics: [],
     };
 
-    if (this.config.logToConsole) {
-      console.log("🚀 Starting upload performance monitoring", {
+    if (this.config.logToConsole && process.env.NODE_ENV === "development") {
+      console.log("Starting upload performance monitoring", {
         fileCount,
         totalFileSize: this.formatBytes(totalFileSize),
       });
@@ -115,8 +115,8 @@ export class PerformanceMonitor {
       this.memoryPeak = currentMemory;
     }
 
-    if (this.config.logToConsole) {
-      console.log(`📦 Batch ${batchIndex} completed`, {
+    if (this.config.logToConsole && process.env.NODE_ENV === "development") {
+      console.log(`Batch ${batchIndex} completed`, {
         duration: `${batchMetric.duration.toFixed(2)}ms`,
         files: `${successfulUploads}/${filesInBatch} successful`,
         memory: `${this.formatBytes(currentMemory * 1024 * 1024)}`,
@@ -184,19 +184,19 @@ export class PerformanceMonitor {
    * Log final performance metrics
    */
   private logFinalMetrics(): void {
-    if (!this.metrics) return;
+    if (!this.metrics || process.env.NODE_ENV !== "development") return;
 
     const { metrics } = this;
 
-    console.group("📊 Upload Performance Report");
-    console.log("⏱️  Total Duration:", `${metrics.totalDuration.toFixed(2)}ms`);
-    console.log("📁 Files Processed:", metrics.filesProcessed);
-    console.log("📦 Total Size:", this.formatBytes(metrics.totalFileSize));
+    console.group("Upload Performance Report");
+    console.log("Total Duration:", `${metrics.totalDuration.toFixed(2)}ms`);
+    console.log("Files Processed:", metrics.filesProcessed);
+    console.log("Total Size:", this.formatBytes(metrics.totalFileSize));
     console.log(
-      "⚡ Average Upload Time:",
+      "Average Upload Time:",
       `${metrics.averageUploadTime.toFixed(2)}ms per file`
     );
-    console.log("💾 Memory Usage:", {
+    console.log("Memory Usage:", {
       before: `${metrics.memoryUsage.before}MB`,
       after: `${metrics.memoryUsage.after}MB`,
       peak: `${metrics.memoryUsage.peak}MB`,
@@ -204,7 +204,7 @@ export class PerformanceMonitor {
     });
 
     if (metrics.batchMetrics.length > 0) {
-      console.group("📦 Batch Performance");
+      console.group("Batch Performance");
       metrics.batchMetrics.forEach((batch, index) => {
         console.log(`Batch ${index + 1}:`, {
           duration: `${batch.duration.toFixed(2)}ms`,

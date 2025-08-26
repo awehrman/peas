@@ -37,7 +37,7 @@ export class ScheduleAllFollowupTasksAction extends BaseAction<
       deps,
       context,
       serviceCall: () => scheduleAllFollowupTasks(data, deps.logger, deps),
-      contextName: "SCHEDULE_ALL_FOLLOWUP_TASKS",
+      contextName: "schedule_all_followup_tasks",
       suppressDefaultBroadcast: true,
       // startMessage: `Starting to schedule followup tasks for note: ${data.noteId}`,
       // completionMessage: `Successfully scheduled all followup tasks for note: ${data.noteId}`,

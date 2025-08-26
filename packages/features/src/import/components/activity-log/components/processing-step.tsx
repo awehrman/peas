@@ -7,8 +7,8 @@ import { StatusMetadata } from "@/import/types/status-metadata";
 
 import React from "react";
 
-import { ProcessingStep } from "../../../utils/status-parser";
 import { STATUS_TEXT } from "../../../utils/status";
+import { ProcessingStep } from "../../../utils/status-parser";
 import { ACTIVITY_LOG_STYLES } from "../styles/activity-log-styles";
 
 export interface ProcessingStepProps {

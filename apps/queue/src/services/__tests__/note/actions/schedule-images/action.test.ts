@@ -171,10 +171,24 @@ describe("ScheduleImagesAction", () => {
         mockContext
       );
 
-      // additionalBroadcasting should not be called because suppressDefaultBroadcast is true
+      // additionalBroadcasting should be called even when suppressDefaultBroadcast is true
+      // because suppressDefaultBroadcast only affects default broadcasts, not additionalBroadcasting
       expect(
         mockDependencies.statusBroadcaster?.addStatusEventAndBroadcast
-      ).not.toHaveBeenCalled();
+      ).toHaveBeenCalledWith({
+        importId: "test-import-456",
+        noteId: "test-note-123",
+        status: "AWAITING_PARSING",
+        message: "Processing 0/2 images",
+        context: "image_processing",
+        currentCount: 0,
+        totalCount: 2,
+        indentLevel: 1,
+        metadata: {
+          totalImages: 2,
+          currentImages: 0,
+        },
+      });
       expect(result).toEqual(dataWithImages);
     });
 

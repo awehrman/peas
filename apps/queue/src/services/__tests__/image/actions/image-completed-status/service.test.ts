@@ -142,7 +142,7 @@ describe("updateImageCompletedStatus", () => {
       ).toHaveBeenCalledWith(
         expect.objectContaining({
           context: "image_processing",
-          status: "PROCESSING",
+          status: "COMPLETED",
           message: "Image processed",
           indentLevel: 1,
           metadata: expect.any(Object),
@@ -289,7 +289,9 @@ describe("updateImageCompletedStatus", () => {
 
     it("should handle status broadcaster preview metadata errors gracefully", async () => {
       const previewBroadcastError = new Error("Preview broadcast failed");
-      mockStatusBroadcaster.addStatusEventAndBroadcast.mockRejectedValue(previewBroadcastError);
+      mockStatusBroadcaster.addStatusEventAndBroadcast.mockRejectedValue(
+        previewBroadcastError
+      );
 
       const result = await updateImageCompletedStatus(
         mockData,
@@ -401,7 +403,7 @@ describe("updateImageCompletedStatus", () => {
       ).toHaveBeenCalledWith(
         expect.objectContaining({
           context: "image_processing",
-          status: "PROCESSING",
+          status: "COMPLETED",
           message: "Image processed",
           metadata: expect.any(Object),
         })

@@ -52,10 +52,9 @@ export function useCollapsibleState({
         setExpandedItemsState(new Set(limitedItems));
       }
     } catch (error) {
-      console.warn(
-        "Failed to load collapsible state from localStorage:",
-        error
-      );
+      console.warn("Failed to load collapsible state from localStorage:", {
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
       setExpandedItemsState(new Set());
     }
   }, [storageKey, persistState, maxStoredItems]);
@@ -79,10 +78,7 @@ export function useCollapsibleState({
         const limitedItems = itemsArray.slice(0, maxStoredItems);
         localStorage.setItem(storageKey, JSON.stringify(limitedItems));
       } catch (error) {
-        console.warn(
-          "Failed to save collapsible state to localStorage:",
-          error
-        );
+        console.warn("Failed to save collapsible state to localStorage:", { error: error instanceof Error ? error.message : "Unknown error" });
       }
     }, 300); // 300ms debounce
 

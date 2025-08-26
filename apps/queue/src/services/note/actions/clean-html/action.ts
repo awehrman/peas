@@ -19,15 +19,30 @@ export class CleanHtmlAction extends BaseAction<
     deps: NoteWorkerDependencies,
     context: ActionContext
   ): Promise<NotePipelineData> {
+    // Send start event with clean_html_start context
+    if (deps.statusBroadcaster && data?.importId) {
+      await deps.statusBroadcaster.addStatusEventAndBroadcast({
+        importId: data.importId,
+        noteId: data.noteId,
+        status: "PROCESSING",
+        message: "Cleaning .html files...",
+        context: "clean_html_start",
+        indentLevel: 1,
+      });
+    }
+
     return this.executeServiceAction({
       data,
       deps,
       context,
       serviceCall: () => deps.services.cleanHtml(data),
-      contextName: "clean_html",
       startMessage: "Cleaning .html files...",
       completionMessage: "Cleaned .html files!",
+      suppressDefaultBroadcast: true, // Don't send default start/completion events
       additionalBroadcasting: async (result) => {
+        console.log(
+          `🧹 [CLEAN_HTML_ACTION] Service completed, sending completion event`
+        );
         /* istanbul ignore next -- @preserve */
         if (deps.statusBroadcaster) {
           const originalLength = data?.content?.length ?? 0;
@@ -44,13 +59,14 @@ export class CleanHtmlAction extends BaseAction<
             noteId: data.noteId,
             status: "COMPLETED",
             message: "Cleaned .html files!",
-            context: "clean_html",
+            context: "clean_html_end",
             indentLevel: 1,
             metadata: {
               sizeRemoved,
               originalSize,
             },
           });
+          console.log(`🧹 [CLEAN_HTML_ACTION] Completion event sent`);
         }
       },
     });

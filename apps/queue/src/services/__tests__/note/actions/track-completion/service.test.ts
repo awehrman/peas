@@ -395,7 +395,7 @@ describe("Track Completion Service", () => {
       // The error should be logged but not thrown
       expect(mockLogger.log).toHaveBeenCalledWith(
         expect.stringContaining(
-          "❌ Failed to update note status or broadcast completion"
+          "❌ Failed to broadcast completion"
         )
       );
     });
@@ -457,7 +457,7 @@ describe("Track Completion Service", () => {
       // The error should be logged but not thrown
       expect(mockLogger.log).toHaveBeenCalledWith(
         expect.stringContaining(
-          "❌ Failed to update note status or broadcast completion"
+          "❌ Failed to broadcast completion"
         )
       );
     });
@@ -884,7 +884,7 @@ describe("Track Completion Service", () => {
       // The error should be logged but not thrown
       expect(mockLogger.log).toHaveBeenCalledWith(
         expect.stringContaining(
-          "❌ Failed to update note status or broadcast completion"
+          "❌ Failed to broadcast completion"
         )
       );
     });

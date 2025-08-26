@@ -191,7 +191,7 @@ describe("ScheduleAllFollowupTasksAction", () => {
         deps: mockDeps,
         context: mockContext,
         serviceCall: expect.any(Function),
-        contextName: "SCHEDULE_ALL_FOLLOWUP_TASKS",
+        contextName: "schedule_all_followup_tasks",
         suppressDefaultBroadcast: true,
       });
     });

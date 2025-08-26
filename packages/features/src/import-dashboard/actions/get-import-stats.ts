@@ -27,7 +27,7 @@ export async function getImportStats(): Promise<ImportStats> {
       parsingErrorCount,
     };
   } catch (error) {
-    console.error("Failed to fetch import stats:", error);
+    console.error("Failed to fetch import stats:", { error: error instanceof Error ? error.message : "Unknown error" });
     throw new Error("Failed to fetch import statistics");
   }
 }

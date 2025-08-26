@@ -4,7 +4,6 @@ export { StepTitle } from "./step-title";
 export { ProcessingStepItem } from "./processing-step";
 export { CollapsibleHeader } from "./collapsible-header";
 export { CollapsibleContent } from "./collapsible-content";
-export { UploadItemComponent } from "./upload-item";
 export { ActivityLogHeader } from "./activity-log-header";
 export { PendingUploadsList } from "./pending-uploads-list";
 export { ActivityItemsList } from "./activity-items-list";

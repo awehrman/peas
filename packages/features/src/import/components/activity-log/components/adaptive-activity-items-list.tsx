@@ -5,7 +5,6 @@ import { VirtualizedActivityItemsList } from "./virtualized-activity-items-list"
 
 import { ReactNode, memo, useEffect, useRef, useState } from "react";
 
-import { useDynamicVirtualization } from "../../../hooks/use-dynamic-virtualization";
 import { StatusEvent } from "../../../hooks/use-status-websocket";
 import { ActivityItem } from "../../../types/core";
 
@@ -43,23 +42,30 @@ const AdaptiveActivityItemsListComponent = ({
           // Calculate height based on items and their expansion state
           const collapsedHeight = 80; // Height of collapsed items
           const expandedHeight = 650; // Height of expanded items
-          
+
           // Count expanded and collapsed items
-          const expandedCount = items.filter(item => 
-            showCollapsible && item.type === "import" && isExpanded(item.importId)
+          const expandedCount = items.filter(
+            (item) =>
+              showCollapsible &&
+              item.type === "import" &&
+              isExpanded(item.importId)
           ).length;
           const collapsedCount = items.length - expandedCount;
-          
+
           // Calculate total content height
-          const contentHeight = (collapsedCount * collapsedHeight) + (expandedCount * expandedHeight);
-          
+          const contentHeight =
+            collapsedCount * collapsedHeight + expandedCount * expandedHeight;
+
           // Add some padding and ensure minimum height
-          const minHeight = Math.max(400, collapsedHeight * Math.min(items.length, 3));
+          const minHeight = Math.max(
+            400,
+            collapsedHeight * Math.min(items.length, 3)
+          );
           const calculatedHeight = Math.max(minHeight, contentHeight + 100);
-          
+
           // Cap at a reasonable maximum to prevent excessive height
           const maxHeight = Math.min(calculatedHeight, 1200);
-          
+
           setContainerHeight(maxHeight);
         }
       };
@@ -71,35 +77,11 @@ const AdaptiveActivityItemsListComponent = ({
     }
   }, [items, showCollapsible, isExpanded]);
 
-  // Use dynamic virtualization hook
-  const { metrics } =
-    useDynamicVirtualization(items, {
-      defaultItemHeight,
-      containerHeight,
-      overscanCount: 5,
-      enableDynamicHeight: true,
-    });
-
   // Only use virtualization for large lists or when content height exceeds container
   const forceVirtualization = items.length > virtualizationThreshold;
   const contentHeight = items.length * defaultItemHeight;
   const shouldUseVirtualization = contentHeight > containerHeight * 1.5; // Only virtualize if content is significantly larger
   const useVirtualization = shouldUseVirtualization || forceVirtualization;
-
-  // Performance monitoring in development
-  useEffect(() => {
-    if (process.env.NODE_ENV === "development") {
-      console.log("📊 [ActivityList] Performance Metrics:", {
-        itemCount: metrics.totalItems,
-        shouldVirtualize: useVirtualization,
-        reason: forceVirtualization ? "threshold exceeded" : shouldUseVirtualization ? "content height" : "standard rendering",
-        estimatedHeight: metrics.estimatedTotalHeight,
-        containerHeight,
-        contentHeight,
-        averageItemHeight: metrics.averageItemHeight,
-      });
-    }
-  }, [metrics, useVirtualization, forceVirtualization, shouldUseVirtualization, containerHeight, contentHeight]);
 
   if (items.length === 0) {
     return (

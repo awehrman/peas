@@ -144,7 +144,7 @@ describe("CheckDuplicatesAction", () => {
         importId: mockData.importId,
         status: "PROCESSING",
         message: "Checking for duplicate notes...",
-        context: "CHECK_DUPLICATES",
+        context: "check_duplicates",
         noteId: mockData.noteId,
       });
 
@@ -155,7 +155,7 @@ describe("CheckDuplicatesAction", () => {
         importId: mockData.importId,
         status: "COMPLETED",
         message: "Duplicate note identified!",
-        context: "CHECK_DUPLICATES",
+        context: "check_duplicates",
         noteId: mockData.noteId,
         metadata: { duplicateCount: 1 },
       });
@@ -188,7 +188,7 @@ describe("CheckDuplicatesAction", () => {
         importId: mockData.importId,
         status: "COMPLETED",
         message: "Verified no duplicates!",
-        context: "CHECK_DUPLICATES",
+        context: "check_duplicates",
         noteId: mockData.noteId,
         metadata: { duplicateCount: 0 },
       });

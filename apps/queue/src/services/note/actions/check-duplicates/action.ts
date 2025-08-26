@@ -40,7 +40,7 @@ export class CheckDuplicatesAction extends BaseAction<
         importId: data.importId,
         status: "PROCESSING",
         message: "Checking for duplicate notes...",
-        context: "CHECK_DUPLICATES",
+        context: "check_duplicates",
         noteId: data.noteId,
         metadata: undefined,
       });
@@ -54,7 +54,7 @@ export class CheckDuplicatesAction extends BaseAction<
         importId: data.importId,
         status: "COMPLETED",
         message: completionMessage,
-        context: "CHECK_DUPLICATES",
+        context: "check_duplicates",
         noteId: data.noteId,
         metadata: {
           duplicateCount: serviceResult.hasDuplicates ? 1 : 0,

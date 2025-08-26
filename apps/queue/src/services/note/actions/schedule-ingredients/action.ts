@@ -43,7 +43,7 @@ export class ScheduleIngredientsAction extends BaseAction<
       deps,
       context,
       serviceCall: () => processIngredients(data, deps.logger, deps.queues),
-      contextName: "SCHEDULE_INGREDIENTS",
+      contextName: "schedule_ingredients",
       suppressDefaultBroadcast: true,
       startMessage: `Starting to process ingredients for note: ${data.noteId}`,
       // Completion handled via per-ingredient progress events; no final broadcast

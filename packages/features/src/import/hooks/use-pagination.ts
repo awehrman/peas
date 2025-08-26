@@ -1,5 +1,6 @@
-import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useMemo } from "react";
+
+import { useRouter, useSearchParams } from "next/navigation";
 
 export interface PaginationState {
   page: number;
@@ -41,8 +42,8 @@ export function usePagination({
       const pageParam = searchParams.get("page");
       const page = pageParam ? parseInt(pageParam, 10) : defaultPage;
       return Math.max(1, isNaN(page) ? defaultPage : page);
-    } catch (error) {
-      console.warn("Failed to parse page parameter:", error);
+    } catch {
+      // If parsing fails, use default values
       return defaultPage;
     }
   }, [searchParams, defaultPage]);
@@ -52,8 +53,8 @@ export function usePagination({
       const limitParam = searchParams.get("limit");
       const limit = limitParam ? parseInt(limitParam, 10) : defaultLimit;
       return Math.max(1, Math.min(100, isNaN(limit) ? defaultLimit : limit)); // Ensure limit is between 1 and 100
-    } catch (error) {
-      console.warn("Failed to parse limit parameter:", error);
+    } catch {
+      // If parsing fails, use default values
       return defaultLimit;
     }
   }, [searchParams, defaultLimit]);
@@ -81,7 +82,7 @@ export function usePagination({
   const updateURL = useCallback(
     (newPage: number, newLimit?: number) => {
       const params = new URLSearchParams(searchParams.toString());
-      
+
       if (newPage > 1) {
         params.set("page", newPage.toString());
       } else {
@@ -103,7 +104,10 @@ export function usePagination({
   // Navigation functions
   const goToPage = useCallback(
     (page: number) => {
-      const validPage = Math.max(1, Math.min(page, paginationState.totalPages || 1));
+      const validPage = Math.max(
+        1,
+        Math.min(page, paginationState.totalPages || 1)
+      );
       updateURL(validPage);
     },
     [updateURL, paginationState.totalPages]

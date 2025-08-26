@@ -46,8 +46,8 @@ export function usePagination({
 
       const page = parseInt(pageParam, 10);
       return Math.max(1, isNaN(page) ? defaultPage : page);
-    } catch (error) {
-      console.warn("Failed to parse page parameter:", error);
+    } catch {
+      // If parsing fails, use default values
       return defaultPage;
     }
   }, [searchParams, defaultPage]);
@@ -62,8 +62,7 @@ export function usePagination({
         1,
         Math.min(maxLimit, isNaN(limit) ? defaultLimit : limit)
       );
-    } catch (error) {
-      console.warn("Failed to parse limit parameter:", error);
+    } catch {
       return defaultLimit;
     }
   }, [searchParams, defaultLimit, maxLimit]);

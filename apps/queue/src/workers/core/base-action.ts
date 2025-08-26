@@ -220,13 +220,14 @@ export abstract class BaseAction<
     const result = await serviceCall();
 
     // Handle completion broadcasting
-    if (!suppressDefaultBroadcast && hasImportId && hasStatusBroadcaster) {
+    if (hasImportId && hasStatusBroadcaster) {
       try {
         if (additionalBroadcasting) {
           // If additional broadcasting is provided, let it handle all completion messages
+          // (This should always be called, even when suppressDefaultBroadcast is true)
           await additionalBroadcasting(result);
-        } else {
-          // Otherwise, send the standard completion message
+        } else if (!suppressDefaultBroadcast) {
+          // Otherwise, send the standard completion message only if not suppressed
           /* istanbul ignore next -- @preserve */
           const finalContextName = contextName || this.name;
           /* istanbul ignore next -- @preserve */

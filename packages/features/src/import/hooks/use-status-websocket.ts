@@ -27,9 +27,6 @@ export function useStatusWebSocket(
 ) {
   // This hook is now deprecated in favor of useImportState
   // It returns a mock implementation for backward compatibility
-  console.warn(
-    "useStatusWebSocket is deprecated. Use useImportState instead for unified state management."
-  );
   
   return {
     events: [],

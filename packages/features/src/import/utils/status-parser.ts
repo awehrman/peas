@@ -215,25 +215,30 @@ export function createStatusSummary(events: StatusEvent[]): StatusSummary {
     const metadata = event.metadata || {};
 
     // File cleaning
-    if (event.context === "file_cleaning" && event.status === "COMPLETED") {
-      const sizeRemoved = parseFileSize(metadata);
-      if (sizeRemoved) {
-        summary.fileCleaned = {
-          sizeRemoved,
-          originalSize: metadata.originalSize
-            ? String(metadata.originalSize)
-            : "unknown",
-        };
+    if (event.context === "clean_html_end") {
+      if (event.status === "COMPLETED") {
+        const sizeRemoved = parseFileSize(metadata);
+        if (sizeRemoved) {
+          summary.fileCleaned = {
+            sizeRemoved,
+            originalSize: metadata.originalSize
+              ? String(metadata.originalSize)
+              : "unknown",
+          };
+        }
       }
     }
 
     // Note creation
-    if (event.context === "note_creation" && event.status === "COMPLETED") {
+    if (event.context === "save_note" && event.status === "COMPLETED") {
       summary.noteCreated = true;
     }
 
     // Ingredient processing
-    if (event.context === "ingredient_processing") {
+    if (
+      event.context === "ingredient_processing" &&
+      event.status === "COMPLETED"
+    ) {
       const total = metadata.totalIngredientLines as number;
       const current = metadata.completedIngredientLines as number;
       const errors = (metadata.parsingErrors as number) || 0;
@@ -244,7 +249,10 @@ export function createStatusSummary(events: StatusEvent[]): StatusSummary {
     }
 
     // Instruction processing
-    if (event.context === "instruction_processing") {
+    if (
+      event.context === "instruction_processing" &&
+      event.status === "COMPLETED"
+    ) {
       const total = metadata.totalInstructions as number;
       const current = metadata.completedInstructions as number;
 
@@ -274,10 +282,25 @@ export function createStatusSummary(events: StatusEvent[]): StatusSummary {
     }
 
     // Categorization
-    if (event.context === "categorization" && event.status === "COMPLETED") {
+    if (
+      (event.context === "categorization_save_complete" ||
+        event.context === "categorization_complete") &&
+      event.status === "COMPLETED"
+    ) {
       const { categories, tags } = parseCategorizationInfo(metadata);
       summary.categoriesAdded = categories;
       summary.tagsAdded = tags;
+    }
+
+    // Tags (separate from categorization)
+    if (
+      (event.context === "tag_save_complete" ||
+        event.context === "tag_determination_complete") &&
+      event.status === "COMPLETED"
+    ) {
+      const { categories, tags } = parseCategorizationInfo(metadata);
+      if (!summary.categoriesAdded) summary.categoriesAdded = categories;
+      if (!summary.tagsAdded) summary.tagsAdded = tags;
     }
 
     // Parsing errors
@@ -369,13 +392,40 @@ export function calculateProgress(events: StatusEvent[]): number {
 }
 
 /**
+ * Normalize context to step ID for proper grouping
+ */
+function normalizeStepId(context: string): string {
+  // Map different contexts to the same step ID
+  const normalizationMap: Record<string, string> = {
+    // Clean HTML contexts
+    clean_html_start: "cleaning",
+    clean_html_end: "cleaning",
+
+    // Parse HTML contexts
+    parse_html: "parsing",
+    parse_html_start: "parsing",
+
+    // Other contexts that should be grouped
+    save_note: "saving_note",
+    note_creation: "saving_note",
+
+    // Keep others as-is
+  };
+
+  return normalizationMap[context] || context;
+}
+
+/**
  * Create processing steps from events
  */
 export function createProcessingSteps(events: StatusEvent[]): ProcessingStep[] {
   const stepMap = new Map<string, ProcessingStep>();
 
   for (const event of events) {
-    const stepId = event.context || "unknown";
+    const context = event.context || "unknown";
+    // Normalize context for step grouping
+    const normalizedStepId = normalizeStepId(context);
+    const stepId = normalizedStepId;
 
     if (!stepMap.has(stepId)) {
       stepMap.set(stepId, {
@@ -389,13 +439,20 @@ export function createProcessingSteps(events: StatusEvent[]): ProcessingStep[] {
 
     const step = stepMap.get(stepId)!;
 
-    // Update step status
-    if (event.status === "PROCESSING") {
-      step.status = "processing";
-    } else if (event.status === "COMPLETED") {
-      step.status = "completed";
-    } else if (event.status === "FAILED") {
+    // Update step status with proper precedence
+    // FAILED > COMPLETED > PROCESSING > PENDING
+    if (event.status === "FAILED") {
       step.status = "failed";
+    } else if (event.status === "COMPLETED") {
+      // Only update to completed if not already failed
+      if (step.status !== "failed") {
+        step.status = "completed";
+      }
+    } else if (event.status === "PROCESSING") {
+      // Only update to processing if not already completed or failed
+      if (step.status !== "completed" && step.status !== "failed") {
+        step.status = "processing";
+      }
     }
 
     // Update step message
@@ -418,7 +475,9 @@ export function createProcessingSteps(events: StatusEvent[]): ProcessingStep[] {
     }
   }
 
-  return Array.from(stepMap.values());
+  const steps = Array.from(stepMap.values());
+
+  return steps;
 }
 
 /**
@@ -426,14 +485,73 @@ export function createProcessingSteps(events: StatusEvent[]): ProcessingStep[] {
  */
 function formatStepName(context: string): string {
   const nameMap: Record<string, string> = {
-    file_cleaning: "File Cleaning",
+    // Note processing
+    clean_html_start: "Cleaning",
+    clean_html_end: "Cleaning",
+    cleaning: "Cleaning",
+    parse_html: "Parsing",
+    parsing: "Parsing",
+    save_note: "Saving Note",
     note_creation: "Note Creation",
-    ingredient_processing: "Ingredient Processing",
-    instruction_processing: "Instruction Processing",
-    image_processing: "Image Processing",
-    source_connection: "Source Connection",
-    categorization: "Categorization",
     note_completion: "Note Completion",
+
+    // Ingredient processing
+    ingredient_processing: "Ingredient Processing",
+    parse_ingredient_line: "Ingredient Processing",
+    save_ingredient_line: "Ingredient Processing",
+    check_ingredient_completion: "Ingredient Processing",
+
+    // Instruction processing
+    instruction_processing: "Instruction Processing",
+    format_instruction_line: "Instruction Processing",
+    save_instruction_line: "Instruction Processing",
+    check_instruction_completion: "Instruction Processing",
+
+    // Image processing
+    image_processing: "Image Processing",
+    process_image: "Image Processing",
+    upload_original: "Image Processing",
+    upload_processed: "Image Processing",
+    image_save: "Image Processing",
+    cleanup_local_files: "Image Processing",
+    image_completed_status: "Image Processing",
+    check_image_completion: "Image Processing",
+
+    // Source processing
+    source_connection: "Connecting Source",
+    process_source: "Connecting Source",
+
+    // Categorization
+    categorization_save: "Adding Categories",
+    categorization_save_complete: "Adding Categories",
+    categorization_start: "Adding Categories",
+    categorization_complete: "Adding Categories",
+
+    // Tags
+    tag_save: "Adding Tags",
+    tag_save_complete: "Adding Tags",
+    tag_determination_start: "Adding Tags",
+    tag_determination_complete: "Adding Tags",
+
+    // Scheduling
+    schedule_images: "Image Processing",
+    schedule_ingredients: "Ingredient Processing",
+    schedule_instructions: "Instruction Processing",
+    schedule_all_followup_tasks: "Scheduling Tasks",
+
+    // Completion tracking
+    track_completion: "Tracking Completion",
+    track_completion_complete: "Tracking Completion",
+    mark_worker_completed: "Worker Completion",
+    mark_worker_completed_complete: "Worker Completion",
+    initialize_completion_tracking_complete: "Initializing Tracking",
+
+    // Wait states
+    wait_for_categorization: "Waiting for Categorization",
+    wait_for_categorization_complete: "Waiting for Categorization",
+
+    // Duplicates
+    check_duplicates: "Check Duplicates",
   };
 
   return (

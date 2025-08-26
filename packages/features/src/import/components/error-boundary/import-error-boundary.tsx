@@ -27,7 +27,7 @@ export class ImportErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     // Log the error
-    console.error("Import Error Boundary caught an error:", error, errorInfo);
+    console.error("Import Error Boundary caught an error:", { error: error.message, errorInfo });
     
     // Call the onError callback if provided
     this.props.onError?.(error, errorInfo);

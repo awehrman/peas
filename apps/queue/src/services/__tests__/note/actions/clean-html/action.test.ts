@@ -56,7 +56,7 @@ describe("CleanHtmlAction", () => {
       queueName: "notes",
       retryCount: 0,
       startTime: Date.now(),
-      operation: "clean_html",
+      operation: "clean_html_end",
       workerName: "test-worker",
       attemptNumber: 1,
     };
@@ -100,9 +100,9 @@ describe("CleanHtmlAction", () => {
         deps: mockDeps,
         context: mockContext,
         serviceCall: expect.any(Function),
-        contextName: "clean_html",
         startMessage: "Cleaning .html files...",
         completionMessage: "Cleaned .html files!",
+        suppressDefaultBroadcast: true,
         additionalBroadcasting: expect.any(Function),
       });
     });
@@ -198,7 +198,7 @@ describe("CleanHtmlAction", () => {
         queueName: "different-queue",
         retryCount: 1,
         startTime: Date.now() - 1000,
-        operation: "clean_html",
+        operation: "clean_html_start",
         workerName: "different-worker",
         attemptNumber: 2,
       };

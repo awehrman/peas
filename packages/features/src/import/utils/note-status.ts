@@ -36,7 +36,11 @@ export function getStatusFromText(
 
   // Check for instruction count patterns (e.g., "7/7 instructions")
   const instructionCountMatch = text.match(/(\d+)\/(\d+)\s+instructions/);
-  if (instructionCountMatch && instructionCountMatch[1] && instructionCountMatch[2]) {
+  if (
+    instructionCountMatch &&
+    instructionCountMatch[1] &&
+    instructionCountMatch[2]
+  ) {
     const processed = parseInt(instructionCountMatch[1], 10);
     const total = parseInt(instructionCountMatch[2], 10);
     if (processed === total && total > 0) {
@@ -48,7 +52,11 @@ export function getStatusFromText(
 
   // Check for ingredient count patterns (e.g., "11/11 ingredients")
   const ingredientCountMatch = text.match(/(\d+)\/(\d+)\s+ingredients/);
-  if (ingredientCountMatch && ingredientCountMatch[1] && ingredientCountMatch[2]) {
+  if (
+    ingredientCountMatch &&
+    ingredientCountMatch[1] &&
+    ingredientCountMatch[2]
+  ) {
     const processed = parseInt(ingredientCountMatch[1], 10);
     const total = parseInt(ingredientCountMatch[2], 10);
     if (processed === total && total > 0) {
@@ -146,6 +154,9 @@ export function groupStatusItems(items: Item[]): GroupedItem[] {
           context === "clean_html_start"
         ) {
           status = "start";
+            } else if (context === "clean_html_end") {
+      // Handle clean_html_end completion event
+          status = "completion";
         }
 
         const key = `${context}-${status}`;
@@ -200,12 +211,13 @@ export function groupStatusItems(items: Item[]): GroupedItem[] {
       }
     }
 
-    // Sort by context (clean_html first, then parse_html, then import_complete)
+    // Sort by context (clean_html_start first, then clean_html_end, then parse_html, then import_complete)
     const sortedMessages = filteredMessages.sort((a, b) => {
       const contextOrder: Record<string, number> = {
-        clean_html: 1,
-        parse_html: 2,
-        import_complete: 3,
+        clean_html_start: 1,
+        clean_html_end: 2,
+        parse_html: 3,
+        import_complete: 4,
       };
       const aOrder = contextOrder[a.context || "unknown"] || 999;
       const bOrder = contextOrder[b.context || "unknown"] || 999;

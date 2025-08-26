@@ -1,4 +1,4 @@
-import type { ImportState, ImportAction } from "./types";
+import type { ImportAction, ImportState } from "./types";
 import { DEFAULT_ITEMS_PER_PAGE } from "./types";
 
 // Initial state
@@ -81,7 +81,8 @@ export function importStateReducer(
       // Check if updates would actually change the item
       const hasChanges = Object.keys(updates).some(
         (key) =>
-          existing[key as keyof typeof existing] !== updates[key as keyof typeof updates]
+          existing[key as keyof typeof existing] !==
+          updates[key as keyof typeof updates]
       );
 
       if (!hasChanges) return state;
@@ -120,10 +121,10 @@ export function importStateReducer(
     case "EVENTS_UPDATED": {
       const newEvents = action.payload;
 
-      // Deduplicate events based on importId, status, and timestamp
+      // Deduplicate events based on importId, status, context, and timestamp
       const seenEvents = new Set<string>();
       const deduplicatedEvents = newEvents.filter((event) => {
-        const eventKey = `${event.importId}_${event.status}_${event.createdAt}`;
+        const eventKey = `${event.importId}_${event.status}_${event.context || "no-context"}_${event.createdAt}`;
         if (seenEvents.has(eventKey)) {
           return false;
         }
