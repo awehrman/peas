@@ -1,23 +1,27 @@
 "use client";
 
 import React from "react";
-import { ProcessingStep } from "../../../utils/status-parser";
+
+import { formatBytes } from "../../../utils/formatting";
 import {
+  getDuplicateCount,
   getImageSummary,
   getSavedCategory,
   getSavedTags,
   getSourceName,
-  getDuplicateCount,
 } from "../../../utils/metadata";
 import { getDefaultStatusMessage } from "../../../utils/status";
-import { formatBytes } from "../../../utils/formatting";
+import { ProcessingStep } from "../../../utils/status-parser";
 
 export interface StepMessageProps {
   step: ProcessingStep;
   className?: string;
 }
 
-export function StepMessage({ step, className = "" }: StepMessageProps): React.ReactElement | null {
+export function StepMessage({
+  step,
+  className = "",
+}: StepMessageProps): React.ReactElement | null {
   // Cleaning: show "Removed 123kb from file" when we have size info
   if (step.id === "cleaning") {
     const sizeRemoved = getSizeRemoved(step.metadata);
@@ -37,9 +41,11 @@ export function StepMessage({ step, className = "" }: StepMessageProps): React.R
     if (count !== undefined || types.length > 0) {
       const cropCount = cropSizes?.length || 0;
       const label = `${cropCount} image${cropCount === 1 ? "" : "s"} added`;
-      const typesText = types.length > 0 ? `, created [${types.join(", ")}]` : "";
-      const cropText = cropSizes && cropSizes.length > 0 ? ` [${cropSizes.join(", ")}]` : "";
-      
+      const typesText =
+        types.length > 0 ? `, created [${types.join(", ")}]` : "";
+      const cropText =
+        cropSizes && cropSizes.length > 0 ? ` [${cropSizes.join(", ")}]` : "";
+
       return (
         <p className={`text-xs text-gray-600 mt-1 truncate ${className}`}>
           {`${label}${typesText}${cropText}`}
@@ -107,6 +113,25 @@ export function StepMessage({ step, className = "" }: StepMessageProps): React.R
           : step.status === "failed"
             ? `${step.name} failed`
             : `${step.name} completed`);
+
+    return (
+      <p className={`text-xs text-gray-600 mt-1 truncate ${className}`}>
+        {base}
+      </p>
+    );
+  }
+
+  // Saving Note: show custom format
+  if (step.id === "saving_note") {
+    const base =
+      step.message ||
+      (step.status === "pending"
+        ? "Waiting to save note..."
+        : step.status === "processing"
+          ? "Saving note to database..."
+          : step.status === "failed"
+            ? "Failed to save note"
+            : "Note saved successfully");
 
     return (
       <p className={`text-xs text-gray-600 mt-1 truncate ${className}`}>

@@ -67,11 +67,14 @@ function shouldSendUpdate(
   progress: ImportProgress,
   stepId: string,
   newStatus: string,
-  newMessage?: string
+  newMessage?: string,
+  newCurrentCount?: number,
+  _newTotalCount?: number
 ): boolean {
   const step = progress.steps.get(stepId);
   if (!step) {
     // New step, always send update
+
     return true;
   }
 
@@ -86,15 +89,17 @@ function shouldSendUpdate(
   }
 
   // For processing steps, check if progress changed significantly
-  if (newStatus === "processing" && step.currentCount !== undefined) {
+  if (newStatus === "processing" && newCurrentCount !== undefined) {
     // Only send update if progress changed by more than 5% or 1 item
     const progressChanged =
-      Math.abs((step.currentCount || 0) - (step.currentCount || 0)) >
+      Math.abs((step.currentCount || 0) - newCurrentCount) >
       Math.max(1, Math.floor((step.totalCount || 1) * 0.05));
-    return progressChanged;
+
+    if (progressChanged) {
+      return true;
+    }
   }
 
-  // Don't send update if nothing meaningful changed
   return false;
 }
 
@@ -153,6 +158,7 @@ export async function addStatusEventAndBroadcast({
         `🧹 [BROADCAST] Processing clean_html event: ${status} - ${importId} - ${context}`
       );
     }
+
     // Get or create progress tracking for this import
     let progress = importProgress.get(importId);
     if (!progress) {
@@ -213,7 +219,9 @@ export async function addStatusEventAndBroadcast({
         progress,
         stepId,
         stepProgress.status,
-        stepProgress.message
+        stepProgress.message,
+        stepProgress.currentCount,
+        stepProgress.totalCount
       )
     ) {
       progress.steps.set(stepId, stepProgress);

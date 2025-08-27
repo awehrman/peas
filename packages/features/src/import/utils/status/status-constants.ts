@@ -1,4 +1,3 @@
-import { STATUS_CONTEXT } from "../status-contexts";
 import type { ProcessingStep } from "../status-parser";
 
 export const STATUS = {
@@ -33,58 +32,44 @@ export const STATUS_TEXT = {
 export interface StepDef {
   id: string;
   name: string;
-  sourceIds: string[];
 }
 
 export const BASE_STEP_DEFS: StepDef[] = [
   {
     id: "cleaning",
     name: "Cleaning",
-    sourceIds: ["cleaning"],
   },
   {
     id: "saving_note",
     name: "Saving Note",
-    sourceIds: ["save_note"],
   },
   {
     id: "ingredient_processing",
     name: "Ingredient Processing",
-    sourceIds: ["ingredient_processing"],
   },
   {
     id: "instruction_processing",
     name: "Instruction Processing",
-    sourceIds: ["instruction_processing"],
   },
   {
     id: "connecting_source",
     name: "Connecting Source",
-    sourceIds: [STATUS_CONTEXT.SOURCE_CONNECTION],
   },
   {
     id: "adding_images",
     name: "Adding Images",
-    sourceIds: ["image_processing"],
   },
   {
     id: "adding_categories",
     name: "Adding Categories",
-    sourceIds: [
-      "categorization_save_complete",
-      "categorization_save",
-      "categorization_complete",
-    ],
   },
   {
     id: "adding_tags",
     name: "Adding Tags",
-    sourceIds: ["tag_save_complete", "tag_save", "tag_determination_complete"],
   },
   {
     id: "check_duplicates",
     name: "Check Duplicates",
-    sourceIds: [STATUS_CONTEXT.CHECK_DUPLICATES],
   },
 ];
 

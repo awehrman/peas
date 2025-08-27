@@ -228,11 +228,9 @@ export abstract class BaseAction<
           await additionalBroadcasting(result);
         } else if (!suppressDefaultBroadcast) {
           // Otherwise, send the standard completion message only if not suppressed
-          /* istanbul ignore next -- @preserve */
           const finalContextName = contextName || this.name;
-          /* istanbul ignore next -- @preserve */
           const finalCompletionMessage =
-            completionMessage || `${this.name} completed successfully`;
+            completionMessage || `${this.name} completed`;
 
           await (
             deps.statusBroadcaster as StatusBroadcaster

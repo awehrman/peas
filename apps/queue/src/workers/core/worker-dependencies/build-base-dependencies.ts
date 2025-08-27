@@ -1,5 +1,5 @@
 import type { IServiceContainer } from "../../../services/container";
-import type { OperationContext, StatusEventData } from "../../../types/common";
+import type { OperationContext } from "../../../types/common";
 import type { BaseWorkerDependencies } from "../../types";
 
 /**
@@ -63,18 +63,30 @@ export function buildBaseDependencies(
       addStatusEventAndBroadcast: async (
         event: Record<string, unknown>
       ): Promise<Record<string, unknown>> => {
-        // Convert Record<string, unknown> to StatusEventData
-        const statusEvent: StatusEventData = {
-          type: (event.type as string) || "status",
-          message: (event.message as string) || "",
-          severity:
-            (event.severity as "info" | "warn" | "error" | "critical") ||
-            "info",
-          ...event,
-        };
-        return container.statusBroadcaster.addStatusEventAndBroadcast(
-          statusEvent
-        );
+        // The statusBroadcaster expects specific parameters, not a generic Record
+        const {
+          importId,
+          noteId,
+          status,
+          message,
+          context,
+          currentCount,
+          totalCount,
+          indentLevel,
+          metadata,
+        } = event;
+
+        return container.statusBroadcaster.addStatusEventAndBroadcast({
+          importId: importId as string,
+          noteId: noteId as string | undefined,
+          status: status as string,
+          message: message as string | undefined,
+          context: context as string | undefined,
+          currentCount: currentCount as number | undefined,
+          totalCount: totalCount as number | undefined,
+          indentLevel: indentLevel as number | undefined,
+          metadata: metadata as Record<string, unknown> | undefined,
+        });
       },
     },
     queues: {

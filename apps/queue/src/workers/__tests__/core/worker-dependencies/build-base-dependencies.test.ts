@@ -289,14 +289,8 @@ describe("buildBaseDependencies", () => {
         ).toHaveBeenCalledWith(
           expect.objectContaining({
             importId: "test-import",
-            noteId: "test-note",
             status: "test-status",
             message: "Test message",
-            context: "test-context",
-            indentLevel: 1,
-            metadata: { key: "value" },
-            type: "status",
-            severity: "info",
           })
         );
       });
@@ -318,8 +312,6 @@ describe("buildBaseDependencies", () => {
             importId: "test-import",
             status: "test-status",
             message: "Test message",
-            type: "status",
-            severity: "info",
           })
         );
       });
@@ -349,8 +341,6 @@ describe("buildBaseDependencies", () => {
             context: "test-context",
             indentLevel: 2,
             metadata: { custom: "value", nested: { key: "value" } },
-            type: "status",
-            severity: "info",
           })
         );
       });
@@ -370,9 +360,7 @@ describe("buildBaseDependencies", () => {
           expect.objectContaining({
             importId: "test-import",
             status: "test-status",
-            message: "",
-            type: "status",
-            severity: "info",
+            message: undefined,
           })
         );
       });
@@ -394,9 +382,7 @@ describe("buildBaseDependencies", () => {
             importId: "test-import",
             status: "test-status",
             metadata: { customKey: "customValue" },
-            message: "",
-            type: "status",
-            severity: "info",
+            message: undefined,
           })
         );
       });
@@ -418,9 +404,7 @@ describe("buildBaseDependencies", () => {
             importId: "test-import",
             status: "test-status",
             indentLevel: 5,
-            message: "",
-            type: "status",
-            severity: "info",
+            message: undefined,
           })
         );
       });

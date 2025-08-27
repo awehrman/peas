@@ -405,9 +405,48 @@ function normalizeStepId(context: string): string {
     parse_html: "parsing",
     parse_html_start: "parsing",
 
-    // Other contexts that should be grouped
+    // Note processing contexts
     save_note: "saving_note",
     note_creation: "saving_note",
+    note_completion: "saving_note",
+
+    // Ingredient processing contexts
+    ingredient_processing: "ingredient_processing",
+    parse_ingredient_line: "ingredient_processing",
+    save_ingredient_line: "ingredient_processing",
+    check_ingredient_completion: "ingredient_processing",
+
+    // Instruction processing contexts
+    instruction_processing: "instruction_processing",
+    format_instruction_line: "instruction_processing",
+    save_instruction_line: "instruction_processing",
+    check_instruction_completion: "instruction_processing",
+
+    // Source connection contexts
+    source_connection: "connecting_source",
+    process_source: "connecting_source",
+
+    // Image processing contexts
+    image_processing: "adding_images",
+    process_image: "adding_images",
+    upload_original: "adding_images",
+    upload_processed: "adding_images",
+    image_save: "adding_images",
+    cleanup_local_files: "adding_images",
+    image_completed_status: "adding_images",
+    check_image_completion: "adding_images",
+
+    // Categorization contexts
+    categorization_save_complete: "adding_categories",
+    categorization_save: "adding_categories",
+    categorization_start: "adding_categories",
+    categorization_complete: "adding_categories",
+
+    // Tag contexts
+    tag_save_complete: "adding_tags",
+    tag_save: "adding_tags",
+    tag_determination_start: "adding_tags",
+    tag_determination_complete: "adding_tags",
 
     // Keep others as-is
   };
@@ -455,9 +494,17 @@ export function createProcessingSteps(events: StatusEvent[]): ProcessingStep[] {
       }
     }
 
-    // Update step message
+    // Update step message - prefer completion messages over processing messages
+    // Use semantic status instead of parsing message text
     if (event.message) {
-      step.message = event.message;
+      const isCompletionEvent = event.status === "COMPLETED";
+      const hasCompletionMessage = step.status === "completed";
+
+      // Always update if no existing message, or if this is a completion event,
+      // or if existing step is not completed
+      if (!step.message || isCompletionEvent || !hasCompletionMessage) {
+        step.message = event.message;
+      }
     }
 
     // Update progress if available
@@ -492,6 +539,7 @@ function formatStepName(context: string): string {
     parse_html: "Parsing",
     parsing: "Parsing",
     save_note: "Saving Note",
+    saving_note: "Saving Note",
     note_creation: "Note Creation",
     note_completion: "Note Completion",
 
@@ -509,6 +557,7 @@ function formatStepName(context: string): string {
 
     // Image processing
     image_processing: "Image Processing",
+    adding_images: "Adding Images",
     process_image: "Image Processing",
     upload_original: "Image Processing",
     upload_processed: "Image Processing",
@@ -519,6 +568,7 @@ function formatStepName(context: string): string {
 
     // Source processing
     source_connection: "Connecting Source",
+    connecting_source: "Connecting Source",
     process_source: "Connecting Source",
 
     // Categorization
@@ -526,12 +576,14 @@ function formatStepName(context: string): string {
     categorization_save_complete: "Adding Categories",
     categorization_start: "Adding Categories",
     categorization_complete: "Adding Categories",
+    adding_categories: "Adding Categories",
 
     // Tags
     tag_save: "Adding Tags",
     tag_save_complete: "Adding Tags",
     tag_determination_start: "Adding Tags",
     tag_determination_complete: "Adding Tags",
+    adding_tags: "Adding Tags",
 
     // Scheduling
     schedule_images: "Image Processing",

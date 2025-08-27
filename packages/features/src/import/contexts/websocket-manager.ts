@@ -168,7 +168,6 @@ export function useWebSocketManager({
 
           switch (message.type) {
             case "status_update": {
-              // Handle status events
               const statusEvent = message.data as StatusEvent;
 
               // Check for duplicate completion events

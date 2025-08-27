@@ -3,8 +3,8 @@
 import { ReactNode } from "react";
 import { useMemo } from "react";
 
-import { ProcessingStep } from "../../utils/status-parser";
 import { BASE_STEP_DEFS, STATUS } from "../../utils/status";
+import { ProcessingStep } from "../../utils/status-parser";
 
 import { ProcessingStepItem } from "./components/processing-step";
 import { ACTIVITY_LOG_STYLES } from "./styles/activity-log-styles";
@@ -33,31 +33,16 @@ export function ProgressStatusBar({
     return m;
   }, [steps]);
 
-  function pickCombinedFromContexts(
-    contextIds: string[]
-  ): ProcessingStep | undefined {
-    const candidates = contextIds
-      .map((cid) => byId.get(cid))
-      .filter(Boolean) as ProcessingStep[];
-    if (candidates.length === 0) return undefined;
-    // Status precedence: failed > completed > processing > pending
-    const order: ProcessingStep["status"][] = [
-      "failed",
-      "completed",
-      "processing",
-      "pending",
-    ];
-    for (const status of order) {
-      const found = candidates.find((c) => c.status === status);
-      if (found) return found;
-    }
-    return candidates[0];
+  // Simplified: Just get the step directly by ID
+  function getStepById(stepId: string): ProcessingStep | undefined {
+    return byId.get(stepId);
   }
 
   const derivedSteps = useMemo(
     () =>
       BASE_STEP_DEFS.map((def) => {
-        const chosen = pickCombinedFromContexts(def.sourceIds);
+        const chosen = getStepById(def.id);
+
         return {
           id: def.id,
           name: def.name,
@@ -67,7 +52,7 @@ export function ProgressStatusBar({
           metadata: chosen?.metadata,
         } as ProcessingStep;
       }),
-    [byId]
+    [byId, steps]
   );
 
   const totalSteps = BASE_STEP_DEFS.length;

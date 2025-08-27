@@ -116,21 +116,8 @@ export function useImportStatusTracker() {
             byId.set(step.id, step);
           }
 
-          function pickCombinedFromContexts(contextIds: string[]) {
-            const candidates = contextIds
-              .map((cid) => byId.get(cid))
-              .filter(Boolean);
-            if (candidates.length === 0) return undefined;
-            const order = ["failed", "completed", "processing", "pending"];
-            for (const status of order) {
-              const found = candidates.find((c) => c.status === status);
-              if (found) return found;
-            }
-            return candidates[0];
-          }
-
           const derivedSteps = BASE_STEP_DEFS.map((def) => {
-            const chosen = pickCombinedFromContexts(def.sourceIds);
+            const chosen = byId.get(def.id);
             return {
               id: def.id,
               name: def.name,
