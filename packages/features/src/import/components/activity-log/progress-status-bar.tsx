@@ -22,10 +22,6 @@ export function ProgressStatusBar({
   showDetails = true,
   compact = false,
 }: ProgressStatusBarProps): ReactNode {
-  if (steps.length === 0) {
-    return null;
-  }
-
   // Build derived steps from incoming steps, limited to the base set
   const byId = useMemo(() => {
     const m = new Map<string, (typeof steps)[number]>();
@@ -83,6 +79,11 @@ export function ProgressStatusBar({
   );
   if (noteCompleted) {
     progressPercentage = 100;
+  }
+
+  // Early return after all hooks
+  if (steps.length === 0) {
+    return null;
   }
 
   return (

@@ -2,7 +2,7 @@
 
 import { ImportItem, ImportItemWithUploadProgress, UploadItem } from "./types";
 
-import { ReactNode, memo } from "react";
+import React, { memo } from "react";
 
 import {
   getDisplayTitle,
@@ -18,7 +18,7 @@ interface ImportItemProps {
 export const ImportItemComponent = memo(function ImportItemComponent({
   item,
   fileTitles,
-}: ImportItemProps): ReactNode {
+}: ImportItemProps): React.ReactElement | null {
   // Handle upload items separately
   if ("imageCount" in item && item.type === "upload") {
     const uploadItem = item;
@@ -117,7 +117,11 @@ export const ImportItemComponent = memo(function ImportItemComponent({
 
   if (!isImportItem(item)) {
     // This should not happen given our logic, but handle gracefully
-    console.warn("Unexpected item type in ImportItemComponent:", { itemType: typeof item, hasNoteTitle: 'noteTitle' in item, type: 'type' in item ? item.type : 'undefined' });
+    console.warn("Unexpected item type in ImportItemComponent:", {
+      itemType: typeof item,
+      hasNoteTitle: "noteTitle" in item,
+      type: "type" in item ? item.type : "undefined",
+    });
     return null;
   }
 

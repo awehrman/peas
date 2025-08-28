@@ -2,7 +2,7 @@
 
 import { StatusIcon } from "./status-icon";
 
-import { ReactNode } from "react";
+import React from "react";
 
 import { ProcessingStep } from "../../../utils/status-parser";
 import { formatStatusText } from "../../utils/status-text-formatter";
@@ -30,7 +30,7 @@ export function CollapsibleHeader({
   statusText,
   completionPercentage,
   showExpandIcon = true,
-}: CollapsibleHeaderProps): ReactNode {
+}: CollapsibleHeaderProps): React.ReactElement {
   return (
     <button
       type="button"

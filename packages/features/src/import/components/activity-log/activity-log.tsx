@@ -105,14 +105,21 @@ export function ActivityLog({
     />
   );
 
-  if (connection.status !== "connected") {
+  // Determine what to render based on connection status and items
+  const shouldShowConnectionStatus = connection.status !== "connected";
+  const hasNoItems = combinedItems.length === 0;
+
+  // If not connected, show connection status
+  if (shouldShowConnectionStatus) {
     return connectionStatusComponent;
   }
 
-  if (combinedItems.length === 0) {
+  // If no items, show nothing
+  if (hasNoItems) {
     return null;
   }
 
+  // Main render with items
   return (
     <ImportErrorBoundary>
       <div className={`space-y-3 ${className || ""}`}>

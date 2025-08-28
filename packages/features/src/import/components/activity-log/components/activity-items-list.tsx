@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, memo } from "react";
+import React, { memo } from "react";
 
 import { StatusEvent } from "../../../hooks/use-status-websocket";
 import { ActivityItem } from "../../../types/core";
@@ -17,7 +17,7 @@ interface ActivityItemsListProps {
   className?: string;
 }
 
-const ActivityItemsListComponent = ({
+function ActivityItemsListComponent({
   items,
   eventsByImportId,
   fileTitles,
@@ -25,12 +25,14 @@ const ActivityItemsListComponent = ({
   isExpanded,
   onToggle,
   className = "",
-}: ActivityItemsListProps): ReactNode => {
+}: ActivityItemsListProps): React.ReactElement {
+  const useCollapsible = showCollapsible;
+
   return (
     <div className={className}>
       {items.map((item) => {
         // Use CollapsibleImportItem for both import items and upload items when showCollapsible is true
-        if (showCollapsible) {
+        if (useCollapsible && showCollapsible) {
           // Create a stable callback for each item to prevent unnecessary re-renders
           const handleToggle = () => onToggle(item.importId);
 
@@ -59,7 +61,6 @@ const ActivityItemsListComponent = ({
       })}
     </div>
   );
-};
+}
 
-// Memoize the component to prevent unnecessary re-renders
 export const ActivityItemsList = memo(ActivityItemsListComponent);

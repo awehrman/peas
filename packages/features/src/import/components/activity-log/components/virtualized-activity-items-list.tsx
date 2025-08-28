@@ -136,16 +136,6 @@ const VirtualizedActivityItemsListComponent = ({
     }
   }, [items, showCollapsible, isExpanded]);
 
-  if (items.length === 0) {
-    return (
-      <div
-        className={`flex items-center justify-center py-8 text-gray-500 ${className}`}
-      >
-        No items to display
-      </div>
-    );
-  }
-
   // Create a key that changes when expansion state changes to force re-render
   const listKey = useMemo(() => {
     const expandedCount = items.filter(
@@ -154,6 +144,20 @@ const VirtualizedActivityItemsListComponent = ({
     ).length;
     return `list-${items.length}-${expandedCount}`;
   }, [items, showCollapsible, isExpanded]);
+
+  // Check if we should show empty state
+  const hasNoItems = items.length === 0;
+
+  // Early return after all hooks
+  if (hasNoItems) {
+    return (
+      <div
+        className={`flex items-center justify-center py-8 text-gray-500 ${className}`}
+      >
+        No items to display
+      </div>
+    );
+  }
 
   return (
     <div className={className}>

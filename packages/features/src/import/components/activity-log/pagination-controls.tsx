@@ -22,11 +22,6 @@ export function PaginationControls({
     defaultLimit: 10,
   });
 
-  // Don't render if there's only one page or no items
-  if (pagination.totalPages <= 1) {
-    return null;
-  }
-
   // Calculate which page numbers to show
   const getVisiblePageNumbers = () => {
     const { page, totalPages } = pagination;
@@ -62,6 +57,11 @@ export function PaginationControls({
   const lastVisible: number = hasVisiblePages
     ? visiblePageNumbers[visiblePageNumbers.length - 1]!
     : pagination.totalPages;
+
+  // Don't render if there's only one page or no items
+  if (pagination.totalPages <= 1) {
+    return null;
+  }
 
   return (
     <div className={`flex items-center justify-between ${className}`}>

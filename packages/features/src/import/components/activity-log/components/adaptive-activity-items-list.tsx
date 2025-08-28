@@ -83,7 +83,11 @@ const AdaptiveActivityItemsListComponent = ({
   const shouldUseVirtualization = contentHeight > containerHeight * 1.5; // Only virtualize if content is significantly larger
   const useVirtualization = shouldUseVirtualization || forceVirtualization;
 
-  if (items.length === 0) {
+  // Check if we should show empty state
+  const hasNoItems = items.length === 0;
+
+  // Early return after all hooks
+  if (hasNoItems) {
     return (
       <div
         className={`flex items-center justify-center py-8 text-gray-500 ${className}`}

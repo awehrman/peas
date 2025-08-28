@@ -2,7 +2,7 @@
 
 import { ImportItem, ImportItemWithUploadProgress, UploadItem } from "./types";
 
-import { ReactNode, memo, useMemo } from "react";
+import React, { memo, useEffect, useMemo, useState } from "react";
 
 import { StatusEvent } from "../../hooks/use-status-websocket";
 import { choosePreviewUrl, getDuplicateCount } from "../../utils/metadata";
@@ -25,100 +25,87 @@ export interface CollapsibleImportItemProps {
   className?: string;
 }
 
-const CollapsibleImportItemComponent = ({
+function CollapsibleImportItemComponent({
   item,
   fileTitles,
   events,
   isExpanded,
   onToggle,
   className = "",
-}: CollapsibleImportItemProps): ReactNode => {
-  // Handle upload items with just the header (no collapsible content)
-  if (isUploadItem(item)) {
-    const uploadItem = item;
-    const displayTitle = uploadItem.htmlFileName;
-
-    // For upload items, we want to show "Processing filename" as the status text
-    // The completion percentage will be shown separately by CollapsibleHeader
-    const statusText = `Uploading ${displayTitle}`;
-
-    // For upload items, we don't have processing steps, so use 0% progress
-    const completionPercentage = 0;
-
-    // Create simple styling for upload items
-    const getUploadStyling = (status: string) => {
-      switch (status) {
-        case "uploaded":
-          return {
-            backgroundColor: "bg-blue-50",
-            hoverBackgroundColor: "hover:bg-blue-100",
-            textColor: "text-blue-800",
-          };
-        case "failed":
-          return {
-            backgroundColor: "bg-red-50",
-            hoverBackgroundColor: "hover:bg-red-100",
-            textColor: "text-red-800",
-          };
-        case "cancelled":
-          return {
-            backgroundColor: "bg-gray-50",
-            hoverBackgroundColor: "hover:bg-gray-100",
-            textColor: "text-gray-800",
-          };
-        default:
-          return {
-            backgroundColor: "bg-gray-50",
-            hoverBackgroundColor: "hover:bg-gray-100",
-            textColor: "text-gray-800",
-          };
-      }
-    };
-
-    const styling = getUploadStyling(uploadItem.status);
-
-    // Create a minimal item object that matches the expected interface
-    const headerItem: ImportItem = {
-      importId: uploadItem.importId,
-      htmlFileName: uploadItem.htmlFileName,
-      status:
-        uploadItem.status === "uploaded"
-          ? "importing" // This will show "..." icon and "0% complete"
-          : uploadItem.status === "failed"
-            ? "failed"
-            : "importing",
-      createdAt: uploadItem.createdAt,
-      type: "import",
-    };
-
-    return (
-      <div
-        className={`rounded-lg border border-gray-200 overflow-hidden mb-3 ${className}`}
-      >
-        <CollapsibleHeader
-          item={headerItem}
-          isExpanded={false} // Upload items are never expanded
-          onToggle={() => {}} // No-op for upload items
-          styling={styling}
-          hasDuplicate={false}
-          statusText={statusText}
-          completionPercentage={completionPercentage}
-          showExpandIcon={false} // Hide expand icon for upload items
-        />
-      </div>
-    );
-  }
-
+}: CollapsibleImportItemProps): React.ReactElement | null {
   // Handle import items (from WebSocket events)
   if (!isImportItem(item)) {
     console.warn("Unexpected item type in CollapsibleImportItem:", {
       itemType: typeof item,
       hasImportId: "importId" in item,
     });
-    return null;
   }
 
+  // Handle upload items with just the header (no collapsible content)
+  const isUpload = isUploadItem(item);
+  const uploadItem = isUpload ? item : null;
+
+  // For upload items, we want to show "Processing filename" as the status text
+  // The completion percentage will be shown separately by CollapsibleHeader
+  const uploadStatusText = uploadItem
+    ? `Uploading ${uploadItem.htmlFileName}`
+    : "";
+
+  // For upload items, we don't have processing steps, so use 0% progress
+  const uploadCompletionPercentage = 0;
+
+  // Create simple styling for upload items
+  const getUploadStyling = (status: string) => {
+    switch (status) {
+      case "uploaded":
+        return {
+          backgroundColor: "bg-blue-50",
+          hoverBackgroundColor: "hover:bg-blue-100",
+          textColor: "text-blue-800",
+        };
+      case "failed":
+        return {
+          backgroundColor: "bg-red-50",
+          hoverBackgroundColor: "hover:bg-red-100",
+          textColor: "text-red-800",
+        };
+      case "cancelled":
+        return {
+          backgroundColor: "bg-gray-50",
+          hoverBackgroundColor: "hover:bg-gray-100",
+          textColor: "text-gray-800",
+        };
+      default:
+        return {
+          backgroundColor: "bg-gray-50",
+          hoverBackgroundColor: "hover:bg-gray-100",
+          textColor: "text-gray-800",
+        };
+    }
+  };
+
+  // Create a minimal item object that matches the expected interface for upload items
+  const uploadHeaderItem: ImportItem | null = uploadItem
+    ? {
+        importId: uploadItem.importId,
+        htmlFileName: uploadItem.htmlFileName,
+        status:
+          uploadItem.status === "uploaded"
+            ? "importing" // This will show "..." icon and "0% complete"
+            : uploadItem.status === "failed"
+              ? "failed"
+              : "importing",
+        createdAt: uploadItem.createdAt,
+        type: "import",
+      }
+    : null;
+
   const importItem = item;
+
+  // Ensure this is an import item before proceeding
+  if (!isImportItem(importItem)) {
+    return null;
+  }
 
   // Memoize expensive calculations
   const displayTitle = useMemo(
@@ -209,13 +196,47 @@ const CollapsibleImportItemComponent = ({
     return null;
   }, [itemEvents]);
 
+  // Persist the last non-null preview URL so the placeholder doesn't reset
+  const [stablePreviewUrl, setStablePreviewUrl] = useState<string | null>(null);
+  useEffect(() => {
+    if (previewUrl) setStablePreviewUrl(previewUrl);
+  }, [previewUrl]);
+
   // Get styling configuration
   const styling = useMemo(
     () => getImportItemStyling(importItem, hasDuplicate),
     [importItem, hasDuplicate]
   );
 
-  return (
+  // Prepare upload styling and data
+  const uploadStyling =
+    isUpload && uploadItem ? getUploadStyling(uploadItem.status) : null;
+
+  // Determine what to render
+  const shouldRenderAsUpload = isUpload && uploadItem && uploadHeaderItem;
+
+  // Check if this is an import item
+  const isImportItemType = isImportItem(importItem);
+
+  // Calculate all derived values before any returns
+  const uploadComponent = shouldRenderAsUpload ? (
+    <div
+      className={`rounded-lg border border-gray-200 overflow-hidden mb-3 ${className}`}
+    >
+      <CollapsibleHeader
+        item={uploadHeaderItem!}
+        isExpanded={false} // Upload items are never expanded
+        onToggle={() => {}} // No-op for upload items
+        styling={uploadStyling!}
+        hasDuplicate={false}
+        statusText={uploadStatusText}
+        completionPercentage={uploadCompletionPercentage}
+        showExpandIcon={false} // Hide expand icon for upload items
+      />
+    </div>
+  ) : null;
+
+  const importComponent = isImportItemType ? (
     <div
       className={`rounded-lg border border-gray-200 overflow-hidden mb-3 ${className}`}
     >
@@ -235,12 +256,24 @@ const CollapsibleImportItemComponent = ({
         <CollapsibleContent
           item={importItem}
           processingSteps={derivedSteps}
-          previewUrl={previewUrl}
+          previewUrl={stablePreviewUrl ?? previewUrl}
         />
       )}
     </div>
-  );
-};
+  ) : null;
 
-// Memoize the component to prevent unnecessary re-renders
+  // Return based on item type after all hooks are called
+  if (shouldRenderAsUpload) {
+    return uploadComponent;
+  }
+
+  if (isImportItemType) {
+    return importComponent;
+  }
+
+  return null;
+}
+
+CollapsibleImportItemComponent.displayName = "CollapsibleImportItemComponent";
 export const CollapsibleImportItem = memo(CollapsibleImportItemComponent);
+CollapsibleImportItem.displayName = "CollapsibleImportItem";

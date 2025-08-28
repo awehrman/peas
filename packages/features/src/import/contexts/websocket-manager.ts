@@ -170,29 +170,30 @@ export function useWebSocketManager({
             case "status_update": {
               const statusEvent = message.data as StatusEvent;
 
-              // Only dedupe COMPLETED/FAILED events; keep PROCESSING updates (0/x,1/x,...)
-              if (
+              // Keep newest terminal events to avoid dropping metadata-bearing duplicates
+              const isTerminal =
                 statusEvent.status === "COMPLETED" ||
-                statusEvent.status === "FAILED"
-              ) {
-                const isDuplicateTerminal = currentEventsRef.current.some(
-                  (existingEvent) =>
-                    existingEvent.importId === statusEvent.importId &&
-                    existingEvent.status === statusEvent.status &&
-                    existingEvent.context === statusEvent.context
-                );
-                if (isDuplicateTerminal) {
-                  return;
-                }
-              }
+                statusEvent.status === "FAILED";
 
               // Optimize event processing by avoiding unnecessary array operations
               const currentEvents = currentEventsRef.current;
               const newEventCount = currentEvents.length + 1;
 
+              // If terminal, remove older duplicate with same importId/context/status
+              const baseEvents = isTerminal
+                ? currentEvents.filter(
+                    (e) =>
+                      !(
+                        e.importId === statusEvent.importId &&
+                        e.status === statusEvent.status &&
+                        e.context === statusEvent.context
+                      )
+                  )
+                : currentEvents;
+
               // If we're under the limit, just add the event
               if (newEventCount <= 1000) {
-                const updatedEvents = [statusEvent, ...currentEvents];
+                const updatedEvents = [statusEvent, ...baseEvents];
                 currentEventsRef.current = updatedEvents;
                 dispatch({
                   type: "EVENTS_UPDATED",
@@ -202,16 +203,13 @@ export function useWebSocketManager({
               }
 
               // If we're over the limit, preserve completion events and trim
-              const completionEvents = currentEvents.filter(
+              const completionEvents = baseEvents.filter(
                 (event) =>
                   event.status === "COMPLETED" || event.status === "FAILED"
               );
 
               // Add the new event and trim to 1000
-              const updatedEvents = [statusEvent, ...currentEvents].slice(
-                0,
-                1000
-              );
+              const updatedEvents = [statusEvent, ...baseEvents].slice(0, 1000);
 
               // Ensure completion events are preserved
               const preservedCompletionEvents = completionEvents.filter(

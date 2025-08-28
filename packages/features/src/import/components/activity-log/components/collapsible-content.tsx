@@ -17,6 +17,7 @@ export function CollapsibleContent({
   processingSteps,
   previewUrl,
 }: CollapsibleContentProps): ReactNode {
+  const effectivePreviewUrl = previewUrl;
   return (
     <div
       id={`import-item-${item.importId}`}
@@ -41,11 +42,11 @@ export function CollapsibleContent({
                 className="border border-gray-200 rounded-md overflow-hidden w-full"
                 aria-live="polite"
               >
-                {previewUrl ? (
+                {effectivePreviewUrl ? (
                   <div className="relative w-full">
                     <div className="aspect-[4/3] w-full">
                       <img
-                        src={previewUrl}
+                        src={effectivePreviewUrl}
                         alt="Imported image preview"
                         className="block w-full h-full object-cover"
                       />
