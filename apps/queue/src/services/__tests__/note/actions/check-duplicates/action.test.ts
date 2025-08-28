@@ -187,7 +187,7 @@ describe("CheckDuplicatesAction", () => {
       ).toHaveBeenNthCalledWith(2, {
         importId: mockData.importId,
         status: "COMPLETED",
-        message: "Verified no duplicates!",
+        message: "Verified unique note",
         context: "check_duplicates",
         noteId: mockData.noteId,
         metadata: { duplicateCount: 0 },

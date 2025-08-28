@@ -64,43 +64,15 @@ function getStepIdFromContext(context: string): string | null {
 }
 
 function shouldSendUpdate(
-  progress: ImportProgress,
-  stepId: string,
-  newStatus: string,
-  newMessage?: string,
-  newCurrentCount?: number,
+  _progress: ImportProgress,
+  _stepId: string,
+  _newStatus: string,
+  _newMessage?: string,
+  _newCurrentCount?: number,
   _newTotalCount?: number
 ): boolean {
-  const step = progress.steps.get(stepId);
-  if (!step) {
-    // New step, always send update
-
-    return true;
-  }
-
-  // Check if status changed
-  if (step.status !== newStatus) {
-    return true;
-  }
-
-  // Check if message changed
-  if (step.message !== newMessage) {
-    return true;
-  }
-
-  // For processing steps, check if progress changed significantly
-  if (newStatus === "processing" && newCurrentCount !== undefined) {
-    // Only send update if progress changed by more than 5% or 1 item
-    const progressChanged =
-      Math.abs((step.currentCount || 0) - newCurrentCount) >
-      Math.max(1, Math.floor((step.totalCount || 1) * 0.05));
-
-    if (progressChanged) {
-      return true;
-    }
-  }
-
-  return false;
+  // Always send updates - we'll handle throttling at the service level
+  return true;
 }
 
 export async function addStatusEventAndBroadcast({
@@ -131,7 +103,11 @@ export async function addStatusEventAndBroadcast({
       "clean_html_end",
       "save_note",
       "ingredient_processing",
+      "parse_ingredient_line",
+      "save_ingredient_line",
       "instruction_processing",
+      "format_instruction_line",
+      "save_instruction_line",
       "source_connection",
       "image_processing",
       "categorization_save_complete",
@@ -280,7 +256,11 @@ async function broadcastEvent(eventData: {
     "clean_html_end",
     "save_note",
     "ingredient_processing",
+    "parse_ingredient_line",
+    "save_ingredient_line",
     "instruction_processing",
+    "format_instruction_line",
+    "save_instruction_line",
     "source_connection",
     "image_processing",
     "categorization_save_complete",
@@ -322,6 +302,13 @@ async function broadcastEvent(eventData: {
     );
   }
 
+  // Debug logging for image_processing events
+  if (event.context === "image_processing") {
+    console.log(
+      `🖼️ [BROADCAST] Sending image_processing event: ${event.status} - ${event.importId} - hasMetadata: ${!!event.metadata && Object.keys(event.metadata).length > 0}`
+    );
+  }
+
   // Debug logging for clean_html events
   if (
     event.context === "clean_html_start" ||
@@ -339,11 +326,31 @@ async function broadcastEvent(eventData: {
     );
     const manager = initializeWebSocketServer();
     if (manager) {
+      // Debug logs for processing contexts with counts to trace 0/x, 1/x...
+      if (
+        (event.context === "ingredient_processing" ||
+          event.context === "instruction_processing") &&
+        event.status === "PROCESSING"
+      ) {
+        console.log(
+          `📤 [BROADCAST] Processing progress: ${event.currentCount ?? "-"}/${event.totalCount ?? "-"} (${event.context}) importId=${event.importId} noteId=${event.noteId}`
+        );
+      }
       manager.broadcastStatusEvent(event);
     }
   } catch (error) {
     console.error(`❌ [BROADCAST] Failed to broadcast event:`, error);
     // Fallback to regular broadcast if manager initialization fails
+    // Add debug on fallback path as well
+    if (
+      (event.context === "ingredient_processing" ||
+        event.context === "instruction_processing") &&
+      event.status === "PROCESSING"
+    ) {
+      console.log(
+        `📤 [BROADCAST:FALLBACK] Processing progress: ${event.currentCount ?? "-"}/${event.totalCount ?? "-"} (${event.context}) importId=${event.importId} noteId=${event.noteId}`
+      );
+    }
     broadcastStatusEvent(event);
   }
 }

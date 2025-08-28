@@ -203,7 +203,7 @@ const CollapsibleImportItemComponent = ({
   const previewUrl = useMemo(() => {
     const processingSteps = createProcessingSteps(itemEvents);
     for (const step of processingSteps) {
-      if (step.id !== "image_processing" || !step.metadata) continue;
+      if (step.id !== "adding_images" || !step.metadata) continue;
       return choosePreviewUrl(step.metadata as Record<string, unknown>);
     }
     return null;

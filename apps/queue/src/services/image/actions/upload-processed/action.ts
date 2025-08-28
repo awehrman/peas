@@ -33,6 +33,20 @@ export class UploadProcessedAction extends BaseAction<
         /* istanbul ignore next -- @preserve */
         if (deps.statusBroadcaster) {
           const r = result as unknown as Record<string, unknown>;
+          const metadata = {
+            r2OriginalUrl: r["r2OriginalUrl"],
+            r2ThumbnailUrl: r["r2ThumbnailUrl"],
+            r2Crop3x2Url: r["r2Crop3x2Url"],
+            r2Crop4x3Url: r["r2Crop4x3Url"],
+            r2Crop16x9Url: r["r2Crop16x9Url"],
+          };
+          deps.logger.log(
+            `[UPLOAD_PROCESSED] Broadcasting metadata: ${JSON.stringify(metadata)}`
+          );
+          deps.logger.log(
+            `[UPLOAD_PROCESSED] Result object keys: ${Object.keys(r)}`
+          );
+
           await deps.statusBroadcaster.addStatusEventAndBroadcast({
             importId: data.importId,
             noteId: data.noteId,
@@ -41,13 +55,7 @@ export class UploadProcessedAction extends BaseAction<
             // Use image_processing so the UI step can pick it up immediately
             context: "image_processing",
             indentLevel: 1,
-            metadata: {
-              r2OriginalUrl: r["r2OriginalUrl"],
-              r2ThumbnailUrl: r["r2ThumbnailUrl"],
-              r2Crop3x2Url: r["r2Crop3x2Url"],
-              r2Crop4x3Url: r["r2Crop4x3Url"],
-              r2Crop16x9Url: r["r2Crop16x9Url"],
-            },
+            metadata,
           });
         }
       },

@@ -201,7 +201,7 @@ describe("SaveNoteAction", () => {
         context: mockContext,
         serviceCall: expect.any(Function),
         contextName: "save_note",
-        startMessage: "Creating note structure...",
+        startMessage: "Creating note structure",
         completionMessage: "Created note structure",
       });
     });

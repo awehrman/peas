@@ -45,26 +45,50 @@ export async function updateImageCompletedStatus(
       `[IMAGE_COMPLETED_STATUS] Processing status: ${updatedImage.processingStatus}`
     );
     logger.log(`[IMAGE_COMPLETED_STATUS] ImportId: ${updatedImage.importId}`);
+    logger.log(`[IMAGE_COMPLETED_STATUS] R2 URLs from database:`);
+    logger.log(
+      `[IMAGE_COMPLETED_STATUS]   originalImageUrl: ${updatedImage.originalImageUrl}`
+    );
+    logger.log(
+      `[IMAGE_COMPLETED_STATUS]   thumbnailImageUrl: ${updatedImage.thumbnailImageUrl}`
+    );
+    logger.log(
+      `[IMAGE_COMPLETED_STATUS]   crop3x2ImageUrl: ${updatedImage.crop3x2ImageUrl}`
+    );
+    logger.log(
+      `[IMAGE_COMPLETED_STATUS]   crop4x3ImageUrl: ${updatedImage.crop4x3ImageUrl}`
+    );
+    logger.log(
+      `[IMAGE_COMPLETED_STATUS]   crop16x9ImageUrl: ${updatedImage.crop16x9ImageUrl}`
+    );
 
     // Optionally broadcast a lightweight image processed event with preview URLs
     // This enables the UI to show a thumbnail without spamming every step
     if (statusBroadcaster) {
       try {
+        const metadata = {
+          // Use the correct database field names
+          r2OriginalUrl: updatedImage.originalImageUrl,
+          r2ThumbnailUrl: updatedImage.thumbnailImageUrl,
+          r2Crop3x2Url: updatedImage.crop3x2ImageUrl,
+          r2Crop4x3Url: updatedImage.crop4x3ImageUrl,
+          r2Crop16x9Url: updatedImage.crop16x9ImageUrl,
+        };
+        logger.log(
+          `[IMAGE_COMPLETED_STATUS] Broadcasting metadata: ${JSON.stringify(metadata)}`
+        );
+        logger.log(
+          `[IMAGE_COMPLETED_STATUS] Using importId: ${data.importId} (from job data, not database: ${updatedImage.importId})`
+        );
+
         await statusBroadcaster.addStatusEventAndBroadcast({
-          importId: updatedImage.importId,
+          importId: data.importId, // Use the original importId from the job data, not the database
           noteId: updatedImage.noteId,
           status: "COMPLETED",
           message: "Image processed",
           context: "image_processing",
           indentLevel: 1,
-          metadata: {
-            // Use the correct database field names
-            r2OriginalUrl: updatedImage.originalImageUrl,
-            r2ThumbnailUrl: updatedImage.thumbnailImageUrl,
-            r2Crop3x2Url: updatedImage.crop3x2ImageUrl,
-            r2Crop4x3Url: updatedImage.crop4x3ImageUrl,
-            r2Crop16x9Url: updatedImage.crop16x9ImageUrl,
-          },
+          metadata,
         });
       } catch (broadcastErr) {
         logger.log(

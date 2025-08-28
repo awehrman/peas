@@ -124,10 +124,27 @@ export function importStateReducer(
       // Deduplicate events based on importId, status, context, and timestamp
       const seenEvents = new Set<string>();
       const deduplicatedEvents = newEvents.filter((event) => {
-        const eventKey = `${event.importId}_${event.status}_${event.context || "no-context"}_${event.createdAt}`;
+        // Keep PROCESSING progress updates granular; include counts in key
+        const isProgressEvent =
+          event.status === "PROCESSING" &&
+          (event.context === "ingredient_processing" ||
+            event.context === "instruction_processing");
+
+        const baseKey = `${event.importId}_${event.status}_${event.context || "no-context"}_${event.createdAt}`;
+        const eventKey = isProgressEvent
+          ? `${baseKey}_${event.currentCount ?? "-"}/${event.totalCount ?? "-"}`
+          : baseKey;
+
         if (seenEvents.has(eventKey)) {
           return false;
         }
+
+        // Always preserve terminal events by reserving a dedicated key variant
+        if (event.status === "COMPLETED" || event.status === "FAILED") {
+          const terminalKey = `${eventKey}_terminal`;
+          seenEvents.add(terminalKey);
+        }
+
         seenEvents.add(eventKey);
         return true;
       });

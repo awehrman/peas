@@ -38,22 +38,31 @@ export function ProgressStatusBar({
     return byId.get(stepId);
   }
 
-  const derivedSteps = useMemo(
-    () =>
-      BASE_STEP_DEFS.map((def) => {
-        const chosen = getStepById(def.id);
+  const derivedSteps = useMemo(() => {
+    const result = BASE_STEP_DEFS.map((def) => {
+      const chosen = getStepById(def.id);
 
-        return {
-          id: def.id,
-          name: def.name,
-          status: chosen?.status ?? STATUS.PENDING,
-          message: chosen?.message ?? "",
-          progress: chosen?.progress,
-          metadata: chosen?.metadata,
-        } as ProcessingStep;
-      }),
-    [byId, steps]
-  );
+      const step = {
+        id: def.id,
+        name: def.name,
+        // If step is completed, keep it completed; otherwise if we have numeric
+        // progress but no terminal status, show PROCESSING; else use existing/pending
+        status:
+          chosen?.status === STATUS.COMPLETED
+            ? STATUS.COMPLETED
+            : chosen?.progress && typeof chosen.progress.current === "number"
+              ? STATUS.PROCESSING
+              : (chosen?.status ?? STATUS.PENDING),
+        message: chosen?.message ?? "",
+        progress: chosen?.progress,
+        metadata: chosen?.metadata,
+      } as ProcessingStep;
+
+      return step;
+    });
+
+    return result;
+  }, [byId, steps]);
 
   const totalSteps = BASE_STEP_DEFS.length;
   const completedSteps = useMemo(

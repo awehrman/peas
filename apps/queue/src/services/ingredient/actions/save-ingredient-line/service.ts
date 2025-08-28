@@ -180,12 +180,8 @@ export async function saveIngredientLine(
           `[SAVE_INGREDIENT_LINE] Completion status for note ${data.noteId}: ${completionStatus.completedIngredients}/${completionStatus.totalIngredients} (isComplete: ${completionStatus.isComplete})`
         );
 
-        // Only broadcast at meaningful milestones to prevent UI resets
-        const shouldBroadcast =
-          completionStatus.isComplete || // All done
-          completionStatus.completedIngredients %
-            Math.max(1, Math.floor(completionStatus.totalIngredients / 4)) ===
-            0; // Every 25% milestone
+        // Always broadcast progress updates
+        const shouldBroadcast = true;
 
         /* istanbul ignore next -- @preserve */
         if (shouldBroadcast) {

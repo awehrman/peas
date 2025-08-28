@@ -170,16 +170,20 @@ export function useWebSocketManager({
             case "status_update": {
               const statusEvent = message.data as StatusEvent;
 
-              // Check for duplicate completion events
-              const isDuplicateCompletion = currentEventsRef.current.some(
-                (existingEvent) =>
-                  existingEvent.importId === statusEvent.importId &&
-                  existingEvent.status === statusEvent.status &&
-                  existingEvent.context === statusEvent.context
-              );
-
-              if (isDuplicateCompletion) {
-                return;
+              // Only dedupe COMPLETED/FAILED events; keep PROCESSING updates (0/x,1/x,...)
+              if (
+                statusEvent.status === "COMPLETED" ||
+                statusEvent.status === "FAILED"
+              ) {
+                const isDuplicateTerminal = currentEventsRef.current.some(
+                  (existingEvent) =>
+                    existingEvent.importId === statusEvent.importId &&
+                    existingEvent.status === statusEvent.status &&
+                    existingEvent.context === statusEvent.context
+                );
+                if (isDuplicateTerminal) {
+                  return;
+                }
               }
 
               // Optimize event processing by avoiding unnecessary array operations
@@ -254,7 +258,10 @@ export function useWebSocketManager({
 
               // Warn if we're approaching the limit
               if (updatedEventsFromBatch.length > 950) {
-                console.warn("Event buffer approaching limit:", { eventCount: updatedEventsFromBatch.length, maxEvents: 1000 });
+                console.warn("Event buffer approaching limit:", {
+                  eventCount: updatedEventsFromBatch.length,
+                  maxEvents: 1000,
+                });
               }
 
               const trimmedEventsFromBatch = updatedEventsFromBatch.slice(

@@ -182,6 +182,18 @@ export class WebSocketManager {
         !isCriticalMessage &&
         now - client.lastMessageTime < this.RATE_LIMIT_MS
       ) {
+        const d = message.data as StatusEvent["data"]; // narrow
+        // Debug when rate-limiting PROCESSING progress events
+        if (
+          d?.context &&
+          (d.context === "ingredient_processing" ||
+            d.context === "instruction_processing") &&
+          d.status === "PROCESSING"
+        ) {
+          console.log(
+            `⏱️ [WebSocket] Rate-limited progress message ${d.currentCount ?? "-"}/${d.totalCount ?? "-"} for ${d.context} (importId=${d.importId})`
+          );
+        }
         return; // Skip this message due to rate limiting
       }
 

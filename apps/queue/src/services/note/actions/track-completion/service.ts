@@ -124,15 +124,8 @@ export async function markImageJobCompleted(
   );
   logger.log(`[TRACK_COMPLETION] ImportId: ${status.importId}`);
 
-  // Only broadcast progress updates for significant milestones or when all images are done
-  // This reduces noise and prevents UI resets
-  const shouldBroadcast =
-    statusBroadcaster &&
-    status.totalImageJobs > 0 &&
-    (status.completedImageJobs === status.totalImageJobs || // All done
-      status.completedImageJobs %
-        Math.max(1, Math.floor(status.totalImageJobs / 4)) ===
-        0); // Every 25% milestone
+  // Always broadcast progress updates
+  const shouldBroadcast = statusBroadcaster && status.totalImageJobs > 0;
 
   /* istanbul ignore else -- @preserve */
   if (shouldBroadcast) {
@@ -141,6 +134,44 @@ export async function markImageJobCompleted(
       logger.log(
         `[TRACK_COMPLETION] Broadcasting image progress update: ${status.completedImageJobs}/${status.totalImageJobs}${isComplete ? " (COMPLETE)" : ""}`
       );
+
+      // If this is the completion broadcast, include R2 URLs from database
+      let metadata: Record<string, unknown> = {
+        totalImages: status.totalImageJobs,
+        completedImages: status.completedImageJobs,
+      };
+
+      if (isComplete) {
+        try {
+          // Get R2 URLs from the most recent image for this note
+          const { PrismaClient } = await import("@prisma/client");
+          const prisma = new PrismaClient();
+
+          const latestImage = await prisma.image.findFirst({
+            where: { noteId: status.noteId },
+            orderBy: { createdAt: "desc" },
+          });
+
+          if (latestImage && latestImage.originalImageUrl) {
+            logger.log(
+              `[TRACK_COMPLETION] Including R2 URLs in completion broadcast`
+            );
+            metadata = {
+              ...metadata,
+              r2OriginalUrl: latestImage.originalImageUrl,
+              r2ThumbnailUrl: latestImage.thumbnailImageUrl,
+              r2Crop3x2Url: latestImage.crop3x2ImageUrl,
+              r2Crop4x3Url: latestImage.crop4x3ImageUrl,
+              r2Crop16x9Url: latestImage.crop16x9ImageUrl,
+            };
+          }
+
+          await prisma.$disconnect();
+        } catch (dbError) {
+          logger.log(`[TRACK_COMPLETION] Failed to fetch R2 URLs: ${dbError}`);
+        }
+      }
+
       await statusBroadcaster.addStatusEventAndBroadcast({
         importId: status.importId,
         noteId: status.noteId,
@@ -152,10 +183,7 @@ export async function markImageJobCompleted(
         currentCount: status.completedImageJobs,
         totalCount: status.totalImageJobs,
         indentLevel: 1,
-        metadata: {
-          totalImages: status.totalImageJobs,
-          completedImages: status.completedImageJobs,
-        },
+        metadata,
       });
       logger.log(
         `[TRACK_COMPLETION] ✅ Broadcasted image progress update: ${status.completedImageJobs}/${status.totalImageJobs}`

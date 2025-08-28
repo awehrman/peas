@@ -460,7 +460,14 @@ function normalizeStepId(context: string): string {
 export function createProcessingSteps(events: StatusEvent[]): ProcessingStep[] {
   const stepMap = new Map<string, ProcessingStep>();
 
-  for (const event of events) {
+  // Process events in chronological order so newer events win
+  const eventsChrono = [...events].sort((a, b) => {
+    const aTime = new Date(a.createdAt).getTime();
+    const bTime = new Date(b.createdAt).getTime();
+    return aTime - bTime;
+  });
+
+  for (const event of eventsChrono) {
     const context = event.context || "unknown";
     // Normalize context for step grouping
     const normalizedStepId = normalizeStepId(context);
@@ -507,13 +514,39 @@ export function createProcessingSteps(events: StatusEvent[]): ProcessingStep[] {
       }
     }
 
-    // Update progress if available
+    // Update progress if available (never regress counts)
     if (event.currentCount !== undefined && event.totalCount !== undefined) {
+      const percentage = Math.round(
+        (event.currentCount / Math.max(event.totalCount, 1)) * 100
+      );
+
+      // Do not decrease progress if an older/lower count arrives later
+      const existing = step.progress;
+      if (
+        !existing ||
+        event.currentCount >= existing.current ||
+        event.totalCount !== existing.total
+      ) {
+        step.progress = {
+          current: event.currentCount,
+          total: event.totalCount,
+          percentage,
+        };
+      }
+    } else if (
+      event.status === "COMPLETED" &&
+      step.progress &&
+      step.progress.total > 0
+    ) {
+      // For completion events without explicit counts, set progress to 100%
       step.progress = {
-        current: event.currentCount,
-        total: event.totalCount,
-        percentage: Math.round((event.currentCount / event.totalCount) * 100),
+        current: step.progress.total,
+        total: step.progress.total,
+        percentage: 100,
       };
+
+      // Ensure completed status is reflected for UI (turns icon green)
+      step.status = "completed";
     }
 
     // Merge metadata

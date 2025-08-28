@@ -47,7 +47,7 @@ export function ProcessingStepItem({
             step={step}
             className={`${ACTIVITY_LOG_STYLES.step.title} ${getStatusTextColor(step.status)}`}
           />
-          {step.id !== "adding_images" && step.progress && showProgress && (
+          {step.progress && showProgress && (
             <span className={ACTIVITY_LOG_STYLES.step.progress}>
               {step.progress.current}/{step.progress.total}
             </span>
@@ -55,7 +55,7 @@ export function ProcessingStepItem({
         </div>
 
         {/* Step progress bar */}
-        {step.id !== "adding_images" && step.progress && showProgress && (
+        {step.progress && showProgress && (
           <div
             className="mt-1 w-full bg-gray-200 rounded-full h-1"
             role="progressbar"

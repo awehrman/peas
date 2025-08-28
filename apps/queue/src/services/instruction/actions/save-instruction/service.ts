@@ -51,12 +51,9 @@ export async function saveInstruction(
           data.noteId
         );
 
-        // Only broadcast at meaningful milestones to prevent UI resets
-        const shouldBroadcast =
-          completionStatus.isComplete || // All done
-          completionStatus.completedInstructions %
-            Math.max(1, Math.floor(completionStatus.totalInstructions / 4)) ===
-            0; // Every 25% milestone
+        // Always broadcast progress updates
+        // TODO we'll come back to this as we scale up
+        const shouldBroadcast = true;
 
         /* istanbul ignore else -- @preserve */
         if (shouldBroadcast) {

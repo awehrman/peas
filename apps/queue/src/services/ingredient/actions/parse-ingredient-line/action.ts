@@ -49,7 +49,44 @@ export class ParseIngredientLineAction extends BaseAction<
       context,
       serviceCall: () => deps.services.parseIngredient(data),
       contextName: "parse_ingredient_line",
-      suppressDefaultBroadcast: true,
+      suppressDefaultBroadcast: false,
+      startMessage: `Parsing ingredient line ${data.lineIndex}`,
+      additionalBroadcasting: async () => {
+        // Emit a per-line pre-save progress update (e.g., 0/x, 1/x before increment)
+        try {
+          if (deps.statusBroadcaster && data.importId && data.noteId) {
+            const { getIngredientCompletionStatus } = await import(
+              "../../../note/actions/track-completion/service"
+            );
+            const completionStatus = getIngredientCompletionStatus(data.noteId);
+
+            // Debug logging to trace pre-save broadcast values
+            if (deps.logger && typeof deps.logger.log === "function") {
+              deps.logger.log(
+                `[PARSE_INGREDIENT_LINE] Pre-save progress (before save): ${completionStatus.completedIngredients}/${completionStatus.totalIngredients} (noteId=${data.noteId}, importId=${data.importId}, lineIndex=${data.lineIndex})`
+              );
+            }
+
+            await deps.statusBroadcaster.addStatusEventAndBroadcast({
+              importId: data.importId,
+              noteId: data.noteId,
+              status: "PROCESSING",
+              message: `Processing ${completionStatus.completedIngredients}/${completionStatus.totalIngredients} ingredients`,
+              context: "ingredient_processing",
+              currentCount: completionStatus.completedIngredients,
+              totalCount: completionStatus.totalIngredients,
+              indentLevel: 1,
+              metadata: {
+                totalIngredients: completionStatus.totalIngredients,
+                completedIngredients: completionStatus.completedIngredients,
+                lineIndex: data.lineIndex,
+              },
+            });
+          }
+        } catch {
+          // Ignore broadcast errors here; save step will still emit progress
+        }
+      },
     });
   }
 }

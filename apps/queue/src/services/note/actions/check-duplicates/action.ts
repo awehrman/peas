@@ -48,7 +48,7 @@ export class CheckDuplicatesAction extends BaseAction<
       // Send appropriate completion message based on duplicate status
       const completionMessage = serviceResult.hasDuplicates
         ? "Duplicate note identified!"
-        : "Verified no duplicates!";
+        : "Verified unique note";
 
       await deps.statusBroadcaster.addStatusEventAndBroadcast({
         importId: data.importId,

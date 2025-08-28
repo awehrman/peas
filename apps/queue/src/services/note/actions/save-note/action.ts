@@ -35,7 +35,7 @@ export class SaveNoteAction extends BaseAction<
       context,
       serviceCall: () => deps.services.saveNote(data),
       contextName: "save_note",
-      startMessage: "Creating note structure...",
+      startMessage: "Creating note structure",
       completionMessage: "Created note structure",
     });
   }

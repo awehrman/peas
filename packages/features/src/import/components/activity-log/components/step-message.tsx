@@ -22,6 +22,21 @@ export function StepMessage({
   step,
   className = "",
 }: StepMessageProps): React.ReactElement | null {
+  // Ingredient/Instruction processing: always show "Processing x/y lines"
+  if (
+    (step.id === "ingredient_processing" ||
+      step.id === "instruction_processing") &&
+    step.progress &&
+    typeof step.progress.current === "number" &&
+    typeof step.progress.total === "number"
+  ) {
+    return (
+      <p className={`text-xs text-gray-600 mt-1 truncate ${className}`}>
+        {`Processing ${step.progress.current}/${step.progress.total} lines`}
+      </p>
+    );
+  }
+
   // Cleaning: show "Removed 123kb from file" when we have size info
   if (step.id === "cleaning") {
     const sizeRemoved = getSizeRemoved(step.metadata);
@@ -34,11 +49,12 @@ export function StepMessage({
     }
   }
 
-  // Images: textual summary instead of a progress bar
+  // Images: show preview and textual summary
   if (step.id === "adding_images") {
     const { count, types, cropSizes } = getImageSummary(step.metadata);
+    const previewUrl = getImagePreviewUrl(step.metadata);
 
-    if (count !== undefined || types.length > 0) {
+    if (count !== undefined || types.length > 0 || previewUrl) {
       const cropCount = cropSizes?.length || 0;
       const label = `${cropCount} image${cropCount === 1 ? "" : "s"} added`;
       const typesText =
@@ -47,9 +63,25 @@ export function StepMessage({
         cropSizes && cropSizes.length > 0 ? ` [${cropSizes.join(", ")}]` : "";
 
       return (
-        <p className={`text-xs text-gray-600 mt-1 truncate ${className}`}>
-          {`${label}${typesText}${cropText}`}
-        </p>
+        <div className={`mt-1 ${className}`}>
+          {previewUrl && (
+            <div className="mb-2">
+              <img
+                src={previewUrl}
+                alt="Image preview"
+                className="w-16 h-16 object-cover rounded border border-gray-200 shadow-sm"
+                loading="lazy"
+                onError={(e) => {
+                  // Hide image if it fails to load
+                  e.currentTarget.style.display = "none";
+                }}
+              />
+            </div>
+          )}
+          <p className="text-xs text-gray-600 truncate">
+            {`${label}${typesText}${cropText}`}
+          </p>
+        </div>
       );
     }
   }
@@ -155,5 +187,26 @@ function getSizeRemoved(metadata?: Record<string, unknown>): string | null {
   const raw = metadata.sizeRemoved as unknown;
   if (typeof raw === "number") return formatBytes(raw);
   if (typeof raw === "string" && raw.trim().length > 0) return raw;
+  return null;
+}
+
+function getImagePreviewUrl(metadata?: Record<string, unknown>): string | null {
+  if (!metadata) return null;
+
+  // Priority order: thumbnail, 4:3 crop, 3:2 crop, 16:9 crop, original
+  const candidates = [
+    metadata.r2ThumbnailUrl,
+    metadata.r2Crop4x3Url,
+    metadata.r2Crop3x2Url,
+    metadata.r2Crop16x9Url,
+    metadata.r2OriginalUrl,
+  ];
+
+  for (const url of candidates) {
+    if (typeof url === "string" && url.trim()) {
+      return url;
+    }
+  }
+
   return null;
 }
