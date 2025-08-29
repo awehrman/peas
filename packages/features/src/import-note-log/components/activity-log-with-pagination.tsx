@@ -2,20 +2,19 @@
 
 import { ActivityLogHeader } from "./activity-log-header";
 import { AdaptiveActivityItemsListNew } from "./adaptive-activity-items-list-new";
+import { ConnectionStatus } from "./connection-status";
 import { PendingUploadsList } from "./pending-uploads-list";
 
 import { ReactNode, useEffect, useMemo, useRef } from "react";
 
-import { useImportState } from "../../../contexts";
-import { PaginationProvider } from "../../../features/pagination";
-import { PaginationControls } from "../../../features/pagination";
-import { usePaginatedItems } from "../../../features/pagination/hooks/use-paginated-items";
-import { useImportItems } from "../../../hooks/use-import-items";
-import { usePerformanceMonitoring } from "../../../hooks/use-performance-monitoring";
-import { StatusEvent } from "../../../hooks/use-status-websocket";
-import { useWebSocketIntegration } from "../../../hooks/use-websocket-integration";
-import { ImportErrorBoundary } from "../../error-boundary";
-import { ConnectionStatus } from "../connection-status";
+import { usePagination } from "@peas/components";
+import { usePerformanceMonitoring } from "@peas/components";
+import { useWebSocket as useWebSocketIntegration } from "@peas/components";
+
+import { ImportErrorBoundary } from "../../import/components/error-boundary";
+import { useImportState } from "../../import/contexts";
+import { useImportItems } from "../hooks/use-import-items";
+import { StatusEvent } from "../hooks/use-status-websocket";
 import { ActivityLogProps } from "../types";
 import {
   createFileMatchingMap,
@@ -36,6 +35,7 @@ function ActivityLogContent({
 
   // Initialize WebSocket integration
   useWebSocketIntegration({
+    url: "ws://localhost:3001", // Default WebSocket URL
     reconnectInterval: 3000,
     maxReconnectAttempts: 5,
   });
@@ -63,8 +63,18 @@ function ActivityLogContent({
     [uploadItems, importItems]
   );
 
-  // Use the new pagination hook to get paginated items
-  const { paginatedItems: combinedItems } = usePaginatedItems(allCombinedItems);
+  // Use pagination hook to manage pagination state
+  const pagination = usePagination({
+    totalItems: allCombinedItems.length,
+    defaultLimit: itemsPerPage,
+  });
+
+  // Get paginated items based on current page
+  const combinedItems = useMemo(() => {
+    const startIndex = pagination.startIndex;
+    const endIndex = pagination.endIndex;
+    return allCombinedItems.slice(startIndex, endIndex);
+  }, [allCombinedItems, pagination.startIndex, pagination.endIndex]);
 
   // Track if we've already expanded the first item to prevent race conditions
   const hasExpandedFirstItem = useRef(false);
@@ -145,14 +155,28 @@ function ActivityLogContent({
           showCollapsible={showCollapsible}
           isExpanded={isExpanded}
           onToggle={toggleItem}
-          virtualizationThreshold={50}
-          defaultItemHeight={80}
         />
 
-        {/* Pagination controls using the new feature */}
+        {/* Simple pagination controls */}
         {showPagination && allCombinedItems.length > itemsPerPage && (
-          <div className="mt-6">
-            <PaginationControls />
+          <div className="mt-6 flex justify-center space-x-2">
+            <button
+              onClick={pagination.goToPreviousPage}
+              disabled={!pagination.hasPreviousPage}
+              className="px-3 py-1 border rounded disabled:opacity-50"
+            >
+              Previous
+            </button>
+            <span className="px-3 py-1">
+              Page {pagination.page} of {pagination.totalPages}
+            </span>
+            <button
+              onClick={pagination.goToNextPage}
+              disabled={!pagination.hasNextPage}
+              className="px-3 py-1 border rounded disabled:opacity-50"
+            >
+              Next
+            </button>
           </div>
         )}
       </div>
@@ -161,32 +185,5 @@ function ActivityLogContent({
 }
 
 export function ActivityLogWithPagination(props: ActivityLogProps): ReactNode {
-  // We need to calculate the total items first, so we'll use a wrapper
-  return <ActivityLogWrapper {...props} />;
-}
-
-function ActivityLogWrapper(props: ActivityLogProps): ReactNode {
-  // Use unified import state context to get total items
-  const { state } = useImportState();
-  const { events, uploadItems } = state;
-
-  // Use custom hook for import items processing to get total count
-  const { paginatedItems: importItems } = useImportItems({
-    events,
-    enablePagination: false, // Don't paginate here, just get the count
-    itemsPerPage: props.itemsPerPage || 10,
-  });
-
-  // Calculate total items (this is a simplified version of mergeActivityItems)
-  const totalItems = uploadItems.size + importItems.length;
-
-  return (
-    <PaginationProvider
-      totalItems={totalItems}
-      defaultLimit={props.itemsPerPage || 10}
-      defaultPage={1}
-    >
-      <ActivityLogContent {...props} />
-    </PaginationProvider>
-  );
+  return <ActivityLogContent {...props} />;
 }

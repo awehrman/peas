@@ -4,9 +4,9 @@ import { StatusIcon } from "./status-icon";
 
 import React from "react";
 
-import { ProcessingStep } from "../../../utils/status-parser";
-import { formatStatusText } from "../../utils/status-text-formatter";
-import { ACTIVITY_LOG_STYLES } from "../styles/activity-log-styles";
+import { ProcessingStep } from "../../import/utils/status-parser";
+import { formatStatusText } from "../utils/status-text-formatter";
+import { ACTIVITY_LOG_STYLES } from "../activity-log-styles";
 import { ImportItem, ImportItemWithUploadProgress } from "../types";
 import { StylingConfig } from "../utils/styling-utils";
 

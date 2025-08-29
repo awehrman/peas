@@ -1,9 +1,8 @@
 "use client";
 
-import { ImportItem, ImportItemWithUploadProgress, UploadItem } from "./types";
-
 import React, { memo } from "react";
 
+import { ImportItem, ImportItemWithUploadProgress, UploadItem } from "../types";
 import {
   getDisplayTitle,
   getStatusIcon,

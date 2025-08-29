@@ -2,7 +2,7 @@
 
 import { ReactNode } from "react";
 
-import { PaginationControls } from "../pagination-controls";
+import { PaginationControls } from "./pagination-controls";
 
 interface ActivityPaginationProps {
   showPagination: boolean;

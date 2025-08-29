@@ -1,4 +1,4 @@
-import { StatusEvent } from "../hooks/use-status-websocket";
+import { StatusEvent } from "../../import-note-log/hooks/use-status-websocket";
 import type { StatusMetadata } from "../types";
 
 export interface ProcessingStep {

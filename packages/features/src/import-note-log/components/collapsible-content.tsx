@@ -2,8 +2,8 @@
 
 import { ReactNode } from "react";
 
-import { ProcessingStep } from "../../../utils/status-parser";
-import { ProgressStatusBar } from "../progress-status-bar";
+import { ProcessingStep } from "../../import/utils/status-parser";
+import { ProgressStatusBar } from "./progress-status-bar";
 import { ImportItem, ImportItemWithUploadProgress } from "../types";
 
 interface CollapsibleContentProps {

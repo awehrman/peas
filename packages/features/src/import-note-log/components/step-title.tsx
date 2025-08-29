@@ -2,8 +2,8 @@
 
 import React from "react";
 
-import { ProcessingStep } from "../../../utils/status-parser";
-import { getDuplicateCount } from "../../../utils/metadata";
+import { ProcessingStep } from "../../import/utils/status-parser";
+import { getDuplicateCount } from "../../import/utils/metadata";
 
 export interface StepTitleProps {
   step: ProcessingStep;

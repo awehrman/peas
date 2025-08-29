@@ -1,12 +1,12 @@
 "use client";
 
 import { ActivityItemsList } from "./activity-items-list";
-import { VirtualizedActivityItemsList } from "./virtualized-activity-items-list";
 
-import { ReactNode, memo, useEffect, useRef, useState } from "react";
+import { ReactNode, memo, useEffect, useRef } from "react";
 
-import { StatusEvent } from "../../../hooks/use-status-websocket";
-import { ActivityItem } from "../../../types/core";
+// Removed virtualization for now to simplify the component
+import { StatusEvent } from "../hooks/use-status-websocket";
+import { ActivityItem } from "../types";
 
 interface AdaptiveActivityItemsListProps {
   items: ActivityItem[];
@@ -16,8 +16,6 @@ interface AdaptiveActivityItemsListProps {
   isExpanded: (itemId: string) => boolean;
   onToggle: (itemId: string) => void;
   className?: string;
-  virtualizationThreshold?: number; // Number of items before switching to virtualization
-  defaultItemHeight?: number; // Default height for virtualized items
 }
 
 const AdaptiveActivityItemsListComponent = ({
@@ -28,11 +26,8 @@ const AdaptiveActivityItemsListComponent = ({
   isExpanded,
   onToggle,
   className = "",
-  virtualizationThreshold = 50,
-  defaultItemHeight = 80,
 }: AdaptiveActivityItemsListProps): ReactNode => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [containerHeight, setContainerHeight] = useState(600); // Default height
 
   // Calculate dynamic height based on content and expansion state
   useEffect(() => {
@@ -66,7 +61,8 @@ const AdaptiveActivityItemsListComponent = ({
           // Cap at a reasonable maximum to prevent excessive height
           const maxHeight = Math.min(calculatedHeight, 1200);
 
-          setContainerHeight(maxHeight);
+          // Set the container height directly
+          containerRef.current.style.height = `${maxHeight}px`;
         }
       };
 
@@ -77,11 +73,37 @@ const AdaptiveActivityItemsListComponent = ({
     }
   }, [items, showCollapsible, isExpanded]);
 
+  // Render function for virtualized list (currently unused - simplified component)
+  // const renderItem = (
+  //   item: ActivityItem,
+  //   _index: number
+  // ): React.ReactElement => {
+  //   const handleToggle = () => {
+  //     onToggle(item.importId);
+  //   };
+
+  //   return (
+  //     <div className="px-2 py-1 pb-4">
+  //       {showCollapsible && item.type === "import" ? (
+  //         <CollapsibleImportItem
+  //           item={item}
+  //           fileTitles={fileTitles}
+  //           events={eventsByImportId.get(item.importId) || []}
+  //           isExpanded={isExpanded(item.importId)}
+  //           onToggle={handleToggle}
+  //         />
+  //       ) : (
+  //         <ImportItemComponent item={item} fileTitles={fileTitles} />
+  //       )}
+  //     </div>
+  //   );
+  // };
+
   // Only use virtualization for large lists or when content height exceeds container
-  const forceVirtualization = items.length > virtualizationThreshold;
-  const contentHeight = items.length * defaultItemHeight;
-  const shouldUseVirtualization = contentHeight > containerHeight * 1.5; // Only virtualize if content is significantly larger
-  const useVirtualization = shouldUseVirtualization || forceVirtualization;
+  // const forceVirtualization = items.length > virtualizationThreshold;
+  // const contentHeight = items.length * defaultItemHeight;
+  // const shouldUseVirtualization = contentHeight > containerHeight * 1.5; // Only virtualize if content is significantly larger
+  // const shouldVirtualize = shouldUseVirtualization || forceVirtualization;
 
   // Check if we should show empty state
   const hasNoItems = items.length === 0;
@@ -99,32 +121,19 @@ const AdaptiveActivityItemsListComponent = ({
 
   return (
     <div ref={containerRef} className={className}>
-      {useVirtualization ? (
-        <VirtualizedActivityItemsList
-          items={items}
-          eventsByImportId={eventsByImportId}
-          fileTitles={fileTitles}
-          showCollapsible={showCollapsible}
-          isExpanded={isExpanded}
-          onToggle={onToggle}
-          height={containerHeight}
-          itemHeight={defaultItemHeight}
-        />
-      ) : (
-        <ActivityItemsList
-          items={items}
-          eventsByImportId={eventsByImportId}
-          fileTitles={fileTitles}
-          showCollapsible={showCollapsible}
-          isExpanded={isExpanded}
-          onToggle={onToggle}
-        />
-      )}
+      <ActivityItemsList
+        items={items}
+        eventsByImportId={eventsByImportId}
+        fileTitles={fileTitles}
+        showCollapsible={showCollapsible}
+        isExpanded={isExpanded}
+        onToggle={onToggle}
+      />
     </div>
   );
 };
 
 // Memoize the component to prevent unnecessary re-renders
-export const AdaptiveActivityItemsList = memo(
+export const AdaptiveActivityItemsListNew = memo(
   AdaptiveActivityItemsListComponent
 );

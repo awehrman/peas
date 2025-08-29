@@ -16,6 +16,4 @@ export * from "./status-contexts";
 export * from "./status-parser";
 
 // Activity log specific utilities
-export * from "../components/activity-log/utils/item-merger";
-export * from "../components/activity-log/utils/styling-utils";
-export * from "../components/activity-log/utils/type-guards";
+// These utilities have been moved to import-note-log feature

@@ -2,10 +2,10 @@
 
 import React, { memo } from "react";
 
-import { StatusEvent } from "../../../hooks/use-status-websocket";
-import { ActivityItem } from "../../../types/core";
-import { CollapsibleImportItem } from "../collapsible-import-item";
-import { ImportItemComponent } from "../import-item";
+import { StatusEvent } from "../hooks/use-status-websocket";
+import { ActivityItem } from "../types";
+import { CollapsibleImportItem } from "./collapsible-import-item";
+import { ImportItemComponent } from "./import-item";
 
 interface ActivityItemsListProps {
   items: ActivityItem[];

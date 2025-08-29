@@ -5,7 +5,7 @@ import { ReactNode } from "react";
 import {
   StatusSummary,
   generateStatusMessages,
-} from "../../utils/status-parser";
+} from "../../import/utils/status-parser";
 
 export interface DetailedStatusProps {
   summary: StatusSummary;

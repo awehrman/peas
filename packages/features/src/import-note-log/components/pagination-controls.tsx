@@ -2,7 +2,7 @@
 
 import { ReactNode } from "react";
 
-import { usePagination } from "../../hooks/use-pagination";
+import { usePagination } from "@peas/components";
 
 export interface PaginationControlsProps {
   totalItems: number;

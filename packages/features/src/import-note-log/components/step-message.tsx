@@ -2,16 +2,17 @@
 
 import React from "react";
 
-import { formatBytes } from "../../../utils/formatting";
+import { formatBytes } from "@peas/components";
+
 import {
   getDuplicateCount,
   getImageSummary,
   getSavedCategory,
   getSavedTags,
   getSourceName,
-} from "../../../utils/metadata";
-import { getDefaultStatusMessage } from "../../../utils/status";
-import { ProcessingStep } from "../../../utils/status-parser";
+} from "../../import/utils/metadata";
+import { getDefaultStatusMessage } from "../../import/utils/status";
+import { ProcessingStep } from "../../import/utils/status-parser";
 
 export interface StepMessageProps {
   step: ProcessingStep;

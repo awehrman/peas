@@ -1,20 +1,22 @@
 "use client";
 
-import { ImportItem, ImportItemWithUploadProgress, UploadItem } from "./types";
+import { CollapsibleContent } from "./collapsible-content";
+import { CollapsibleHeader } from "./collapsible-header";
 
 import React, { memo, useEffect, useMemo, useState } from "react";
 
-import { StatusEvent } from "../../hooks/use-status-websocket";
-import { choosePreviewUrl, getDuplicateCount } from "../../utils/metadata";
-import { BASE_STEP_DEFS } from "../../utils/status";
-import { STATUS_CONTEXT } from "../../utils/status-contexts";
-import { createProcessingSteps } from "../../utils/status-parser";
+import {
+  choosePreviewUrl,
+  getDuplicateCount,
+} from "../../import/utils/metadata";
+import { BASE_STEP_DEFS } from "../../import/utils/status";
+import { STATUS_CONTEXT } from "../../import/utils/status-contexts";
+import { createProcessingSteps } from "../../import/utils/status-parser";
+import { StatusEvent } from "../hooks/use-status-websocket";
+import { ImportItem, ImportItemWithUploadProgress, UploadItem } from "../types";
 import { getDisplayTitle, getStatusText } from "../utils/display-utils";
-
-import { CollapsibleContent } from "./components/collapsible-content";
-import { CollapsibleHeader } from "./components/collapsible-header";
-import { getImportItemStyling } from "./utils/styling-utils";
-import { isImportItem, isUploadItem } from "./utils/type-guards";
+import { getImportItemStyling } from "../utils/styling-utils";
+import { isImportItem, isUploadItem } from "../utils/type-guards";
 
 export interface CollapsibleImportItemProps {
   item: ImportItem | UploadItem | ImportItemWithUploadProgress;

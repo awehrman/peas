@@ -2,13 +2,13 @@
 
 import React from "react";
 
-import { getDuplicateCount } from "../../../utils/metadata";
-import { STATUS, STATUS_COLOR, STATUS_ICON } from "../../../utils/status";
-import { ProcessingStep } from "../../../utils/status-parser";
+import { getDuplicateCount } from "../../import/utils/metadata";
+import { STATUS, STATUS_COLOR, STATUS_ICON } from "../../import/utils/status";
+import { ProcessingStep } from "../../import/utils/status-parser";
 import {
   ACTIVITY_LOG_STYLES,
   ICON_POSITIONING,
-} from "../styles/activity-log-styles";
+} from "../activity-log-styles";
 
 export interface StatusIconProps {
   status: ProcessingStep["status"];

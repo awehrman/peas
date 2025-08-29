@@ -1,9 +1,11 @@
-import { type PaginationState, usePagination } from "./use-pagination";
+"use client";
+
+import { type PaginationState, usePagination } from "@peas/components";
 import { StatusEvent } from "./use-status-websocket";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { ImportItem } from "../components/activity-log/types";
+import { ImportItem } from "../types/types";
 
 interface UseImportItemsOptions {
   events: StatusEvent[];

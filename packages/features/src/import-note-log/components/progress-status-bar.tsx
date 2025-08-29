@@ -1,13 +1,13 @@
 "use client";
 
+import { ProcessingStepItem } from "./processing-step";
+
 import { ReactNode } from "react";
 import { useMemo } from "react";
 
-import { BASE_STEP_DEFS, STATUS } from "../../utils/status";
-import { ProcessingStep } from "../../utils/status-parser";
-
-import { ProcessingStepItem } from "./components/processing-step";
-import { ACTIVITY_LOG_STYLES } from "./styles/activity-log-styles";
+import { BASE_STEP_DEFS, STATUS } from "../../import/utils/status";
+import { ProcessingStep } from "../../import/utils/status-parser";
+import { ACTIVITY_LOG_STYLES } from "../activity-log-styles";
 
 export interface ProgressStatusBarProps {
   steps: ProcessingStep[];

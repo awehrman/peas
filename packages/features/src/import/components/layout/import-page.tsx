@@ -2,12 +2,9 @@
 
 import { ReactNode } from "react";
 
-import {
-  ImportStateProvider,
-  useImportState,
-} from "../../contexts";
+import { ImportStateProvider, useImportState } from "../../contexts";
 import { useImportStatsRefetch } from "../../hooks/use-import-stats-refetch";
-import { ActivityLog } from "../activity-log";
+import { ActivityLog } from "../../../import-note-log/components";
 import { StatsSummary } from "../dashboard/stats-summary";
 import { ImportFileUpload } from "../file-upload/file-upload";
 

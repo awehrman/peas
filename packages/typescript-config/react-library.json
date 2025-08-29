@@ -12,6 +12,10 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "baseUrl": ".",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "downlevelIteration": true,
+    "skipLibCheck": true,
     "paths": {
       "@/*": ["./src/*"]
     }

@@ -2,8 +2,8 @@
 
 import { ReactNode } from "react";
 
-import { ActivityItem } from "../../../types/core";
-import { PendingUploadItem } from "../pending-upload-item";
+import { ActivityItem } from "../types";
+import { PendingUploadItem } from "./pending-upload-item";
 
 interface PendingUploadsListProps {
   htmlFiles: string[];

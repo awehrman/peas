@@ -1,22 +1,22 @@
 "use client";
 
 import { ConnectionStatus } from "./connection-status";
-import { ActivityLogProps } from "./types";
+import { ActivityLogProps } from "../types";
 
 import { ReactNode, useEffect, useMemo, useRef } from "react";
 
-import { useImportState } from "../../contexts";
-import { useImportItems } from "../../hooks/use-import-items";
-import { usePerformanceMonitoring } from "../../hooks/use-performance-monitoring";
-import { StatusEvent } from "../../hooks/use-status-websocket";
-import { useWebSocketIntegration } from "../../hooks/use-websocket-integration";
-import { ImportErrorBoundary } from "../error-boundary";
+import { useImportState } from "../../import/contexts";
+import { useImportItems } from "../hooks/use-import-items";
+import { usePerformanceMonitoring } from "@peas/components";
+import { StatusEvent } from "../hooks/use-status-websocket";
+import { useWebSocket as useWebSocketIntegration } from "@peas/components";
+import { ImportErrorBoundary } from "../../import/components/error-boundary";
 
-import { ActivityLogHeader } from "./components/activity-log-header";
-import { ActivityPagination } from "./components/activity-pagination";
-import { AdaptiveActivityItemsList } from "./components/adaptive-activity-items-list";
-import { PendingUploadsList } from "./components/pending-uploads-list";
-import { createFileMatchingMap, mergeActivityItems } from "./utils/item-merger";
+import { ActivityLogHeader } from "./activity-log-header";
+import { ActivityPagination } from "./activity-pagination";
+import { AdaptiveActivityItemsList } from "./adaptive-activity-items-list";
+import { PendingUploadsList } from "./pending-uploads-list";
+import { createFileMatchingMap, mergeActivityItems } from "../utils/item-merger";
 
 export function ActivityLog({
   className,
@@ -32,6 +32,7 @@ export function ActivityLog({
 
   // Initialize WebSocket integration
   useWebSocketIntegration({
+    url: "ws://localhost:3001", // Default WebSocket URL
     reconnectInterval: 3000,
     maxReconnectAttempts: 5,
   });
