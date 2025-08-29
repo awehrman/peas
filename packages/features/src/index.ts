@@ -2,7 +2,11 @@
 export * from "./dashboard";
 
 // File Upload
-export { FileUpload, OptimizedFileUpload, UploadErrorBoundary } from "./file-upload";
+export {
+  FileUpload,
+  OptimizedFileUpload,
+  UploadErrorBoundary,
+} from "./file-upload";
 
 // Form
 export * from "./form";
@@ -27,3 +31,12 @@ export * from "./utils";
 
 // WebSocket Manager
 export { useWebSocketManager } from "./websocket-manager";
+
+// Note Processing
+export * from "./note-processing";
+
+// Import Dashboard
+export { StatsSummary } from "./import-dashboard";
+
+// Import Workflow
+export * from "./import-workflow";
