@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@peas/ui";
+import { Button } from "@peas/components";
 import clsx from "clsx";
 import { LucideLoaderCircle } from "lucide-react";
 import { cloneElement } from "react";

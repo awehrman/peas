@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@import "@peas/ui/styles.css";
+@import "@peas/components/styles.css";
 
 @layer base {
   button:not([disabled]),

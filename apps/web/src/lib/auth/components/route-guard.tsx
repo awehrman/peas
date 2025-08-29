@@ -4,7 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { AlertTriangle } from "lucide-react";
-import { Button, Placeholder } from "@peas/ui";
+import { Button, Placeholder } from "@peas/components";
 import { getAuth } from "../queries/get-auth";
 import { loginPath } from "../../../paths";
 import { PUBLIC_ROUTES } from "../constants";

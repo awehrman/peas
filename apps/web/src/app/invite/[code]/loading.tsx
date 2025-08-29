@@ -1,4 +1,4 @@
-import { Spinner } from "@peas/ui";
+import { Spinner } from "@peas/components";
 
 export default function Loading() {
   return (

@@ -8,7 +8,7 @@ import {
   FieldError,
   SubmitButton,
 } from "@peas/features";
-import { Input } from "@peas/ui";
+import { Input } from "@peas/components";
 import { UnauthenticatedLayout } from "../unauthenticated-layout";
 
 interface LoginFormProps {

@@ -9,7 +9,7 @@ import {
 import { NavigationProps } from "../types/navigation";
 import { NavItem } from "../molecules/navigation/nav-item";
 import { Button } from "../ui/button";
-import { cn } from "../../lib/utils";
+import { cn } from "../lib/utils";
 
 function SidebarNavigation({
   LinkComponent,

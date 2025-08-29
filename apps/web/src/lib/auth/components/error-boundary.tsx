@@ -3,7 +3,7 @@
 import React from "react";
 import { useState } from "react";
 
-import { Button, Placeholder } from "@peas/ui";
+import { Button, Placeholder } from "@peas/components";
 import { AlertTriangle } from "lucide-react";
 import { ErrorBoundary as ReactErrorBoundary } from "react-error-boundary";
 

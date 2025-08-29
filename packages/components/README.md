@@ -1,4 +1,4 @@
-# @peas/ui
+# @peas/components
 
 Design system and UI component library for the Peas project.
 
@@ -28,13 +28,13 @@ src/components/
 ## Installation
 
 ```bash
-yarn add @peas/ui
+yarn add @peas/components
 ```
 
 ## Usage
 
 ```tsx
-import { Button, FileUpload, Navigation } from "@peas/ui";
+import { Button, FileUpload, Navigation } from "@peas/components";
 
 function MyComponent() {
   return (

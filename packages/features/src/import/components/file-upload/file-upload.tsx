@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { FileUpload } from "@peas/ui";
+import { FileUpload } from "@peas/components";
 
 import { useImportState } from "../../contexts";
 import { extractTitlesFromFiles } from "../../utils/extract-title";
