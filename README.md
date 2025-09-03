@@ -216,7 +216,7 @@ The application uses Prisma with PostgreSQL and includes:
 
 ### Component Development
 
-1. Create component in `packages/ui/src/components/`
+1. Create component in `packages/components/src/components/`
 2. Add Storybook stories for testing
 3. Export from package index
 4. Import and use in applications

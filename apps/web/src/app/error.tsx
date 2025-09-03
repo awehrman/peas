@@ -1,7 +1,8 @@
 "use client";
 
-import { Button, Placeholder } from "@peas/ui";
 import Link from "next/link";
+
+import { Button, Placeholder } from "@peas/components";
 import { dashboardPath } from "src/paths";
 
 export default function Error({

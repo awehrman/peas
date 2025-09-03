@@ -1,9 +1,10 @@
 "use client";
 
-import { Button } from "@peas/ui";
+import { cloneElement } from "react";
+
+import { Button } from "@peas/components";
 import clsx from "clsx";
 import { LucideLoaderCircle } from "lucide-react";
-import { cloneElement } from "react";
 import { useFormStatus } from "react-dom";
 
 type SubmitButtonProps = {

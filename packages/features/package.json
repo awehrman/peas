@@ -45,7 +45,7 @@
     "typescript": "^5.8.3"
   },
   "dependencies": {
-    "@peas/ui": "*",
+    "@peas/components": "*",
     "@radix-ui/react-slot": "^1.2.3",
     "@tailwindcss/postcss": "^4.1.11",
     "@types/react-window": "^1.8.8",

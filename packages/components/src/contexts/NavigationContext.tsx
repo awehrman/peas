@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useRef, useState, ReactNode } from "react";
-import { navigationItems as items } from "../../config/navigation";
+import { navigationItems as items } from "../config/navigation";
 import { NavigationItem } from "../types/navigation";
 
 interface NavigationContextType {

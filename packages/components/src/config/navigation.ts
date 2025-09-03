@@ -1,11 +1,12 @@
 import {
-  Home,
-  CloudDownload,
   Carrot,
+  CloudDownload,
   CookingPot,
+  Home,
   StickyNote,
 } from "lucide-react";
-import { NavigationItem } from "../components/types/navigation";
+
+import { NavigationItem } from "../types/navigation";
 
 export const navigationItems: NavigationItem[] = [
   { name: "Dashboard", href: "/", icon: Home },

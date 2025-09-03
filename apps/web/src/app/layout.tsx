@@ -3,9 +3,9 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { Source_Sans_3 } from "next/font/google";
 
+import { Spinner, ThemeProvider } from "@peas/components";
+import "@peas/components/styles.css";
 import "@peas/features/styles.css";
-import { Spinner, ThemeProvider } from "@peas/ui";
-import "@peas/ui/styles.css";
 
 import { AuthErrorBoundary } from "../lib/auth/components/error-boundary";
 import { RouteGuard } from "../lib/auth/components/route-guard";

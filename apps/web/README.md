@@ -9,7 +9,7 @@ This is a [Next.js](https://nextjs.org) application that provides the user inter
 - **Next.js 15** with App Router
 - **Tailwind CSS v4** for styling
 - **shadcn/ui** components
-- **@peas/ui** design system components
+- **@peas/components** design system components
 - **@peas/features** feature components
 - **PhysicsBackground** animated backgrounds with bouncing peas
 
@@ -45,7 +45,7 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 The app uses the shared packages from the monorepo:
 
-- `@peas/ui` - Design system components
+- `@peas/components` - Design system components
 - `@peas/features` - Feature-specific components
 - `@peas/database` - Database client and types
 - `@peas/theme` - Design tokens and theming

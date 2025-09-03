@@ -53,7 +53,7 @@ The package includes:
 
 This package is used by:
 
-- `@peas/ui` - Design system components
+- `@peas/components` - Design system components
 - `@peas/features` - Feature components
 - All applications for consistent styling
 

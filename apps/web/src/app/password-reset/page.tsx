@@ -1,6 +1,8 @@
 import { ReactNode } from "react";
+
+import { Button, Input } from "@peas/components";
+
 import { UnauthenticatedLayout } from "../../lib/auth/components/unauthenticated-layout";
-import { Button, Input } from "@peas/ui";
 
 export default function PasswordResetPage(): ReactNode {
   return (

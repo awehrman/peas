@@ -23,7 +23,7 @@ yarn add @peas/theme
 ## Usage
 
 ```tsx
-import { colors, typography, spacing } from "@peas/theme";
+import { colors, spacing, typography } from "@peas/theme";
 
 // Use design tokens in your components
 const styles = {
@@ -77,7 +77,7 @@ yarn dev
 
 This package is used by:
 
-- `@peas/ui` - Design system components
+- `@peas/components` - Design system components
 - `@peas/features` - Feature components
 - All applications for consistent theming
 

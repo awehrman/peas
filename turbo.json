@@ -39,12 +39,12 @@
       "dependsOn": ["^build"],
       "cache": false,
       "persistent": true,
-      "inputs": ["packages/ui/dist/**"]
+      "inputs": ["packages/components/dist/**"]
     },
     "build-storybook": {
       "dependsOn": ["^build"],
       "outputs": ["storybook-static/**"],
-      "inputs": ["packages/ui/dist/**"]
+      "inputs": ["packages/components/dist/**"]
     },
     "generate": {
       "dependsOn": ["^build"],

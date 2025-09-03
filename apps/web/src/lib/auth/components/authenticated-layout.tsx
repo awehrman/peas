@@ -5,7 +5,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { Button, Header, Navigation, Placeholder, Spinner } from "@peas/ui";
+import { Button, Header, Navigation, Placeholder, Spinner } from "@peas/components";
 import { AlertTriangle } from "lucide-react";
 import { ErrorBoundary } from "react-error-boundary";
 

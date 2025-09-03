@@ -1,10 +1,10 @@
 # @peas/features
 
-Feature-specific components that build on top of `@peas/ui`.
+Feature-specific components that build on top of `@peas/components`.
 
 ## Overview
 
-This package contains domain-specific components and features that are used across the Peas applications. These components are built using the design system from `@peas/ui` and provide higher-level functionality.
+This package contains domain-specific components and features that are used across the Peas applications. These components are built using the design system from `@peas/components` and provide higher-level functionality.
 
 ## Architecture
 
@@ -67,10 +67,10 @@ yarn typecheck
 
 This package depends on:
 
-- `@peas/ui` - Design system components
+- `@peas/components` - Design system components
 - `@peas/theme` - Design tokens and theming
 
 ## Learn More
 
-- [@peas/ui](../ui/README.md) - Design system components
+- [@peas/components](../ui/README.md) - Design system components
 - [@peas/theme](../theme/README.md) - Design tokens

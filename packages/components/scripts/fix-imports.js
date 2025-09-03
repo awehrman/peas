@@ -1,7 +1,9 @@
-import { readdir, readFile, writeFile } from "fs/promises";
+import { readFile, readdir, writeFile } from "fs/promises";
 import { join } from "path";
-import { fileURLToPath } from "url";
 import { dirname } from "path";
+import { fileURLToPath } from "url";
+
+/* global console */
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -20,28 +22,32 @@ async function fixImports() {
         // Replace path aliases with relative paths
         let fixedContent = content;
 
+        // Calculate the relative path from the current file to src
+        const fileDepth = file.split("/").length - 1;
+        const relativePath = fileDepth > 0 ? "../".repeat(fileDepth) : "./";
+
         // Handle @/lib/utils
         fixedContent = fixedContent.replace(
           /from ["']@\/lib\/utils["']/g,
-          "from '../../lib/utils.js'"
+          `from '${relativePath}lib/utils.js'`
         );
 
         // Handle @/lib/* imports
         fixedContent = fixedContent.replace(
           /from ["']@\/lib\/([^"']+)["']/g,
-          "from '../../lib/$1.js'"
+          `from '${relativePath}lib/$1.js'`
         );
 
         // Handle @/config/* imports
         fixedContent = fixedContent.replace(
           /from ["']@\/config\/([^"']+)["']/g,
-          "from '../../config/$1.js'"
+          `from '${relativePath}config/$1.js'`
         );
 
         // Handle @/components/* imports
         fixedContent = fixedContent.replace(
           /from ["']@\/components\/([^"']+)["']/g,
-          "from '../../components/$1.js'"
+          `from '${relativePath}components/$1.js'`
         );
 
         if (content !== fixedContent) {

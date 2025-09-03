@@ -13,7 +13,7 @@ import { ServiceContainer } from "./services";
 import { ErrorSeverity, ErrorType, HttpStatus } from "./types";
 
 import { createBullBoard } from "@bull-board/api";
-import { BullMQAdapter } from "@bull-board/api/bullMQAdapter.js";
+import { BullMQAdapter } from "@bull-board/api/dist/queueAdapters/bullMQ.js";
 import { ExpressAdapter } from "@bull-board/express";
 import cors from "cors";
 import express from "express";

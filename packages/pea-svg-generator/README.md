@@ -142,7 +142,7 @@ The generator creates SVG files with:
 
 This package is used by:
 
-- `@peas/ui` - For PhysicsBackground component
+- `@peas/components` - For PhysicsBackground component
 - `@peas/web` - For decorative elements
 - `@peas/docs` - For documentation graphics
 

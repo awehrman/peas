@@ -2,7 +2,7 @@
 
 import { ReactNode, useState } from "react";
 
-import { Button } from "@peas/ui";
+import { Button } from "@peas/components";
 
 import { cleanupAllDataAction } from "../actions/cleanup";
 

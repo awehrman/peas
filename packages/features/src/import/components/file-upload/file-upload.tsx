@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { FileUpload } from "@peas/ui";
+import { FileUpload } from "@peas/components";
 
 import { useImportState } from "../../contexts";
 import { extractTitlesFromFiles } from "../../utils/extract-title";
@@ -284,7 +284,11 @@ export function ImportFileUpload({ className }: Props) {
               failedResults.push(reason);
               const fileName = batch[batchIndex]?.name || "Unknown file";
               // Log error for debugging (consider removing in production)
-              console.error("Upload failed:", { fileName, error: reason instanceof Error ? reason.message : String(reason) });
+              console.error("Upload failed:", {
+                fileName,
+                error:
+                  reason instanceof Error ? reason.message : String(reason),
+              });
             }
           });
 
@@ -347,11 +351,14 @@ export function ImportFileUpload({ className }: Props) {
           );
 
           if (stuckUploads.length > 0) {
-            console.warn("Found stuck uploads:", stuckUploads.map(([id, _item]) => ({
-              importId: id,
-              fileName: _item.htmlFileName,
-              createdAt: _item.createdAt,
-            })));
+            console.warn(
+              "Found stuck uploads:",
+              stuckUploads.map(([id, _item]) => ({
+                importId: id,
+                fileName: _item.htmlFileName,
+                createdAt: _item.createdAt,
+              }))
+            );
 
             stuckUploads.forEach(([importId, _item]) => {
               updateUploadItem(importId, { status: "failed" });
@@ -431,8 +438,12 @@ export function ImportFileUpload({ className }: Props) {
       // Remove HTML files from upload context after successful upload
       removeUploadingHtmlFiles(htmlFileNames);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
-      console.error("File upload failed:", { error: errorMessage, files: files.length });
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      console.error("File upload failed:", {
+        error: errorMessage,
+        files: files.length,
+      });
       setMessage(`Upload failed: ${errorMessage}`);
 
       // Remove HTML files from upload context on error

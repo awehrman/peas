@@ -1,5 +1,6 @@
 import { forwardRef } from "react";
-import { cn } from "../../../lib/utils";
+
+import { cn } from "../../lib/utils";
 
 interface NavLinkProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
   active?: boolean;
