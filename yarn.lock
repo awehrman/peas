@@ -2681,6 +2681,7 @@ __metadata:
   dependencies:
     "@peas/components": "npm:*"
     "@peas/eslint-config": "npm:*"
+    "@peas/theme": "npm:*"
     "@peas/typescript-config": "npm:*"
     "@radix-ui/react-slot": "npm:^1.2.3"
     "@tailwindcss/postcss": "npm:^4.1.11"

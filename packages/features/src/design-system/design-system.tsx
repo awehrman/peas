@@ -1,291 +1,74 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
-// Helper to get CSS variable value
-const getVar = (name: string) => `var(${name})`;
-
-function useCSSVar(varName: string, fallback: number = 16) {
-  const [value, setValue] = useState<number>(fallback);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const v = getComputedStyle(document.documentElement).getPropertyValue(
-        varName
-      );
-      setValue(Number(v) || fallback);
-    }
-  }, [varName, fallback]);
-
-  return value;
-}
-
-const colorGroups = [
-  {
-    name: "Primary",
-    prefix: "--color-primary",
-    shades: [
-      "50",
-      "100",
-      "200",
-      "300",
-      "400",
-      "500",
-      "600",
-      "700",
-      "800",
-      "900",
-      "950",
-      "",
-    ],
-    foreground: "--color-primary-foreground",
-  },
-  {
-    name: "Secondary",
-    prefix: "--color-secondary",
-    shades: [
-      "50",
-      "100",
-      "200",
-      "300",
-      "400",
-      "500",
-      "600",
-      "700",
-      "800",
-      "900",
-      "950",
-      "",
-    ],
-    foreground: "--color-secondary-foreground",
-  },
-  {
-    name: "Destructive",
-    prefix: "--color-destructive",
-    shades: [""],
-    foreground: "--color-destructive-foreground",
-  },
-  {
-    name: "Muted",
-    prefix: "--color-muted",
-    shades: [""],
-    foreground: "--color-muted-foreground",
-  },
-  {
-    name: "Accent",
-    prefix: "--color-accent",
-    shades: [""],
-    foreground: "--color-accent-foreground",
-  },
-  {
-    name: "Popover",
-    prefix: "--color-popover",
-    shades: [""],
-    foreground: "--color-popover-foreground",
-  },
-  {
-    name: "Card",
-    prefix: "--color-card",
-    shades: [""],
-    foreground: "--color-card-foreground",
-  },
-];
-
-const spacingKeys = [
-  0, 1, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 24, 32, 40, 48, 56, 64, 72, 80, 96,
-];
-
-const fontSizes = [
-  "xs",
-  "sm",
-  "base",
-  "lg",
-  "xl",
-  "2xl",
-  "3xl",
-  "4xl",
-  "5xl",
-  "6xl",
-  "7xl",
-  "8xl",
-  "9xl",
-];
-
-const fontWeights = [
-  "thin",
-  "extralight",
-  "light",
-  "normal",
-  "medium",
-  "semibold",
-  "bold",
-  "extrabold",
-  "black",
-];
-
-const breakpoints = ["sm", "md", "lg", "xl", "2xl"];
-
-const shadows = ["sm", "md", "lg", "xl", "2xl", "inner", "none"];
+const palettes = {
+  "Pea Green": [
+    "oklch(0.503 0.092 130.0)",
+    "oklch(0.559 0.103 130.0)",
+    "oklch(0.615 0.113 130.0)",
+    "oklch(0.671 0.123 130.0)",
+    "oklch(0.727 0.133 130.0)",
+    "oklch(0.782 0.144 130.0)",
+    "oklch(0.838 0.154 130.0)",
+    "oklch(0.894 0.164 130.0)",
+    "oklch(0.950 0.081 130.0)",
+  ],
+  "Pea Purple": [
+    "oklch(0.050 0.004 339.6)",
+    "oklch(0.143 0.011 339.6)",
+    "oklch(0.237 0.017 339.6)",
+    "oklch(0.330 0.024 339.6)",
+    "oklch(0.424 0.031 339.6)",
+    "oklch(0.517 0.038 339.6)",
+    "oklch(0.610 0.045 339.6)",
+    "oklch(0.704 0.044 339.6)",
+    "oklch(0.797 0.027 339.6)",
+  ],
+  Neutrals: [
+    "oklch(0.271 0.019 96.0)",
+    "oklch(0.356 0.025 96.0)",
+    "oklch(0.441 0.031 96.0)",
+    "oklch(0.526 0.037 96.0)",
+    "oklch(0.611 0.043 96.0)",
+    "oklch(0.695 0.049 96.0)",
+    "oklch(0.780 0.055 96.0)",
+    "oklch(0.865 0.061 96.0)",
+    "oklch(0.950 0.029 96.0)",
+  ],
+  Greys: [
+    "oklch(0.058 0.002 275.8)",
+    "oklch(0.158 0.005 275.8)",
+    "oklch(0.258 0.008 275.8)",
+    "oklch(0.358 0.012 275.8)",
+    "oklch(0.458 0.015 275.8)",
+    "oklch(0.558 0.013 275.8)",
+    "oklch(0.658 0.009 275.8)",
+    "oklch(0.758 0.006 275.8)",
+    "oklch(0.858 0.004 275.8)",
+  ],
+};
 
 export function DesignSystem() {
   return (
-    <div className="font-sans p-10">
-      <h1 className="text-3xl font-bold mb-8">Design System Tokens</h1>
-
-      {/* Colors */}
-      <section className="mb-12">
-        <h2 className="text-2xl font-semibold mb-4">Colors</h2>
-        {colorGroups.map((group) => (
-          <div key={group.name} className="mb-6">
-            <h3 className="font-semibold mb-2">{group.name}</h3>
-            <div className="flex flex-wrap gap-2">
-              {group.shades.map((shade) => {
-                const varName = group.prefix + (shade ? `-${shade}` : "");
-                return (
-                  <div key={varName} className="text-center">
-                    <div
-                      className="w-12 h-12 rounded border mb-1"
-                      style={{
-                        background: getVar(varName),
-                        borderColor: "#ccc",
-                      }}
-                    />
-                    <div className="text-xs">{varName}</div>
-                  </div>
-                );
-              })}
-              {group.foreground && (
-                <div className="text-center">
-                  <div
-                    className="w-12 h-12 rounded border mb-1"
-                    style={{
-                      background: getVar(group.foreground),
-                      borderColor: "#ccc",
-                    }}
-                  />
-                  <div className="text-xs">{group.foreground}</div>
-                </div>
-              )}
-            </div>
-          </div>
-        ))}
-      </section>
-
-      {/* Typography */}
-      <section className="mb-12">
-        <h2 className="text-2xl font-semibold mb-4">Typography</h2>
-        <div className="mb-6">
-          <h3 className="font-semibold mb-2">Font Sizes</h3>
-          <div className="flex flex-wrap gap-4">
-            {fontSizes.map((size) => (
-              <div key={size} className="text-center">
-                <div
-                  className="border p-2 min-w-[60px] mb-1"
-                  style={{
-                    fontSize: getVar(`--font-size-${size}`),
-                    borderColor: "#eee",
-                  }}
-                >
-                  Aa
-                </div>
-                <div className="text-xs">{`--font-size-${size}`}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="mb-6">
-          <h3 className="font-semibold mb-2">Font Weights</h3>
-          <div className="flex flex-wrap gap-4">
-            {fontWeights.map((weight) => (
-              <div key={weight} className="text-center">
-                <div
-                  className="border p-2 min-w-[60px] mb-1"
-                  style={{
-                    fontWeight: `var(--font-weight-${weight})`,
-                    borderColor: "#eee",
-                  }}
-                >
-                  Aa
-                </div>
-                <div className="text-xs">{`--font-weight-${weight}`}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div>
-          <h3 className="font-semibold mb-2">Font Families</h3>
-          <div className="flex gap-4">
-            <div style={{ fontFamily: getVar("--font-family-sans") }}>
-              <div className="border p-2 mb-1" style={{ borderColor: "#eee" }}>
-                Sans
-              </div>
-              <div className="text-xs">--font-family-sans</div>
-            </div>
-            <div style={{ fontFamily: getVar("--font-family-mono") }}>
-              <div className="border p-2 mb-1" style={{ borderColor: "#eee" }}>
-                Mono
-              </div>
-              <div className="text-xs">--font-family-mono</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Spacing */}
-      <section className="mb-12">
-        <h2 className="text-2xl font-semibold mb-4">Spacing</h2>
-        <div className="flex flex-wrap gap-2">
-          {spacingKeys.map((key) => {
-            const height = useCSSVar(`--spacing-${key}`, 16);
-            return (
-              <div key={key} className="text-center">
-                <div
-                  className="w-8 rounded mx-auto mb-1"
-                  style={{ height, background: "#eee" }}
-                />
-                <div className="text-xs">{`--spacing-${key}`}</div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* Breakpoints */}
-      <section className="mb-12">
-        <h2 className="text-2xl font-semibold mb-4">Breakpoints</h2>
-        <div className="flex gap-4">
-          {breakpoints.map((bp) => (
-            <div key={bp} className="text-center">
+    <div style={{ padding: "1rem", fontFamily: "sans-serif" }}>
+      {Object.entries(palettes).map(([name, colors]) => (
+        <div key={name} style={{ marginBottom: "2rem" }}>
+          <h3>{name}</h3>
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+            {colors.map((c, i) => (
               <div
-                className="w-20 h-10 flex items-center justify-center border mb-1 bg-gray-100"
-                style={{ fontSize: 14, borderColor: "#ccc" }}
-              >
-                {getVar(`--breakpoint-${bp}`)}
-              </div>
-              <div className="text-xs">{`--breakpoint-${bp}`}</div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Shadows */}
-      <section className="mb-12">
-        <h2 className="text-2xl font-semibold mb-4">Shadows</h2>
-        <div className="flex flex-wrap gap-4">
-          {shadows.map((shadow) => (
-            <div key={shadow} className="text-center">
-              <div
-                className="w-16 h-8 bg-white border mb-1"
+                key={i}
                 style={{
-                  boxShadow: getVar(`--shadow-${shadow}`),
-                  borderColor: "#eee",
+                  background: c,
+                  width: "60px",
+                  height: "60px",
+                  borderRadius: "4px",
                 }}
+                title={c}
               />
-              <div className="text-xs">{`--shadow-${shadow}`}</div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </section>
+      ))}
     </div>
   );
 }
