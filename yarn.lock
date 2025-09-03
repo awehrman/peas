@@ -2616,6 +2616,7 @@ __metadata:
     "@peas/pea-svg-generator": "npm:*"
     "@peas/typescript-config": "npm:*"
     "@radix-ui/react-slot": "npm:^1.2.3"
+    "@radix-ui/react-toggle": "npm:^1.1.10"
     "@tailwindcss/postcss": "npm:^4.1.11"
     "@types/matter-js": "npm:^0"
     "@types/react": "npm:^19.1.8"
@@ -3483,7 +3484,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@radix-ui/react-toggle@npm:1.1.10":
+"@radix-ui/react-toggle@npm:1.1.10, @radix-ui/react-toggle@npm:^1.1.10":
   version: 1.1.10
   resolution: "@radix-ui/react-toggle@npm:1.1.10"
   dependencies:

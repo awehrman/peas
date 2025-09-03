@@ -1,12 +1,8 @@
 "use client";
 
-import { createContext, useContext, useRef, useState, ReactNode } from "react";
-import { navigationItems as items } from "../config/navigation";
-import { NavigationItem } from "../types/navigation";
+import { ReactNode, createContext, useContext, useRef, useState } from "react";
 
 interface NavigationContextType {
-  items: NavigationItem[];
-
   isExpanded: boolean;
   setIsExpanded: (value: boolean) => void;
   sidebarRef: React.RefObject<HTMLDivElement | null>;
@@ -29,7 +25,6 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
   const [isHovering, setIsHovering] = useState(false);
 
   const value = {
-    items,
     isExpanded,
     setIsExpanded,
     sidebarRef,

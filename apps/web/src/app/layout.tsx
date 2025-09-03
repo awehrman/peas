@@ -3,7 +3,8 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { Source_Sans_3 } from "next/font/google";
 
-import { Spinner, ThemeProvider } from "@peas/components";
+import { Spinner } from "@peas/components";
+import { ThemeProvider } from "@peas/features";
 import "@peas/components/styles.css";
 import "@peas/features/styles.css";
 

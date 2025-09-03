@@ -37,15 +37,7 @@ export interface UploadProviderProps {
   children: React.ReactNode;
 }
 
-export interface FileUploadProps {
-  onFilesSelected?: (files: File[]) => void;
-  onUploadComplete?: (results: UploadResult[]) => void;
-  onUploadError?: (error: Error) => void;
-  acceptedFileTypes?: string[];
-  maxFileSize?: number;
-  maxFiles?: number;
-  className?: string;
-}
+// FileUploadProps moved to component file to avoid duplication
 
 export interface UploadResult {
   file: File;

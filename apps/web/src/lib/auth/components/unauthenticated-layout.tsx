@@ -2,7 +2,7 @@
 
 import { ReactNode } from "react";
 
-import { PhysicsBackground } from "@peas/components";
+import { PhysicsBackground } from "@peas/features";
 
 interface UnauthenticatedLayoutProps {
   children: ReactNode;

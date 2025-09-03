@@ -1,6 +1,6 @@
 import { LucideIcon } from "lucide-react";
-import { NavIcon } from "../../atoms/navigation/nav-icon";
-import { useNavigation } from "../../contexts/NavigationContext";
+
+import { useNavigation } from "../contexts/NavigationContext";
 
 interface NavItemProps {
   name: string;
@@ -35,9 +35,10 @@ export function NavItem({
     }
   };
 
+  const IconComponent = icon;
   const content = (
     <>
-      <NavIcon icon={icon} />
+      <IconComponent className="h-4 w-4" />
       <span>{name}</span>
     </>
   );

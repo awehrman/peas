@@ -1,22 +1,42 @@
 "use client";
 
-import { MoreVertical, LogOut } from "lucide-react";
+import { NavItem } from "./nav-item";
+
 import { useState } from "react";
+
+import { Toggle } from "@peas/components";
+import { cn } from "@peas/components";
+import { LogOut, LucideIcon, MoreVertical } from "lucide-react";
+
 import {
   NavigationProvider,
   useNavigation,
 } from "../contexts/NavigationContext";
-import { NavigationProps } from "../types/navigation";
-import { NavItem } from "../molecules/navigation/nav-item";
-import { Button } from "../ui/button";
-import { cn } from "../lib/utils";
+
+// Pure UI interface - no business logic
+export interface PureNavigationProps {
+  navigationItems: Array<{
+    name: string;
+    href: string;
+    icon: LucideIcon;
+  }>;
+  LinkComponent?: React.ComponentType<{
+    href: string;
+    className?: string;
+    children: React.ReactNode;
+    onClick?: () => void;
+  }>;
+  pathname?: string;
+  signOut: () => Promise<void>;
+}
 
 function SidebarNavigation({
+  navigationItems,
   LinkComponent,
   pathname,
   signOut,
-}: NavigationProps) {
-  const { items, isExpanded, setIsExpanded } = useNavigation();
+}: PureNavigationProps) {
+  const { isExpanded, setIsExpanded } = useNavigation();
   const [mouseY, setMouseY] = useState(16); // Default to top-4 (16px)
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -36,20 +56,26 @@ function SidebarNavigation({
       onMouseMove={handleMouseMove}
     >
       {/* Toggle button */}
-      <Button
-        variant="ghost"
-        size="icon"
-        className="absolute z-50 h-6 w-6 bg-transparent hover:bg-transparent transition-all duration-150"
+      <div
         style={{
-          top: `${mouseY}px`,
+          position: "absolute",
+          top: `${mouseY - 18}px`, // Center vertically (half of h-9 = 18px)
           left: isExpanded ? "auto" : "50%",
-          right: isExpanded ? "0" : "auto",
+          right: isExpanded ? "8px" : "auto",
           transform: isExpanded ? "none" : "translateX(-50%)",
         }}
-        onClick={() => setIsExpanded(!isExpanded)}
       >
-        <MoreVertical className="h-4 w-4 text-primary" />
-      </Button>
+        <Toggle
+          pressed={isExpanded}
+          onPressedChange={() => setIsExpanded(!isExpanded)}
+          size="default"
+          variant="default"
+          aria-label={isExpanded ? "Collapse sidebar" : "Expand sidebar"}
+          className="h-9 w-9 bg-transparent hover:bg-transparent focus:bg-transparent focus-visible:bg-transparent data-[state=on]:bg-transparent transition-all duration-300 group/toggle"
+        >
+          <MoreVertical className="h-6 w-6 text-primary transition-all duration-300 group-hover/toggle:h-7 group-hover/toggle:w-7" />
+        </Toggle>
+      </div>
 
       {/* Navigation items - hidden when collapsed */}
       <nav
@@ -58,7 +84,7 @@ function SidebarNavigation({
           isExpanded ? "opacity-100" : "opacity-0 pointer-events-none"
         )}
       >
-        {items.map((item) => {
+        {navigationItems.map((item) => {
           const isActive = pathname === item.href;
           return (
             <div key={item.href} className="relative group/item">
@@ -79,7 +105,7 @@ function SidebarNavigation({
         })}
         <form
           action={signOut}
-          className="flex items-center gap-3 w-full p-3 rounded-md transition-colors text-muted-foreground hover:text-foreground hover:bg-muted"
+          className="flex gap-2 items-center w-full p-3 rounded-md transition-colors text-muted-foreground hover:text-foreground hover:bg-muted"
           onSubmit={() => setIsExpanded(false)}
         >
           <LogOut className="mr-2 h-4 w-4" />
@@ -90,18 +116,10 @@ function SidebarNavigation({
   );
 }
 
-export function Navigation({
-  LinkComponent,
-  pathname,
-  signOut,
-}: NavigationProps) {
+export function Navigation(props: PureNavigationProps) {
   return (
     <NavigationProvider>
-      <SidebarNavigation
-        LinkComponent={LinkComponent}
-        pathname={pathname}
-        signOut={signOut}
-      />
+      <SidebarNavigation {...props} />
     </NavigationProvider>
   );
 }

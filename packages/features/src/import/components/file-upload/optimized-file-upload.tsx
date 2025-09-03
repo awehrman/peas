@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 
-import { FileUpload } from "@peas/components";
+import { FileUpload } from "../../../file-upload/components/file-upload";
 
 import { useImportState } from "../../contexts";
 import { useOptimizedUpload } from "../../hooks/use-optimized-upload";

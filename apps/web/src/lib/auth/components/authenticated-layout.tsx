@@ -5,7 +5,8 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { Button, Header, Navigation, Placeholder, Spinner } from "@peas/components";
+import { Button, Header, Placeholder, Spinner } from "@peas/components";
+import { Navigation, navigationItems } from "@peas/features";
 import { AlertTriangle } from "lucide-react";
 import { ErrorBoundary } from "react-error-boundary";
 
@@ -56,6 +57,7 @@ export function AuthenticatedLayout({
   return (
     <div className="flex h-screen">
       <Navigation
+        navigationItems={navigationItems}
         LinkComponent={NextLink}
         pathname={pathname}
         signOut={signOut}
@@ -66,7 +68,10 @@ export function AuthenticatedLayout({
           <ErrorBoundary
             FallbackComponent={ContentErrorFallback}
             onError={(error, errorInfo) => {
-              console.error("AuthenticatedLayout Error:", { error: error.message, errorInfo });
+              console.error("AuthenticatedLayout Error:", {
+                error: error.message,
+                errorInfo,
+              });
             }}
           >
             <Suspense
