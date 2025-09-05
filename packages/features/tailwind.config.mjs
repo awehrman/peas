@@ -1,4 +1,4 @@
-import { tailwindTheme } from "../../theme/src/tailwind.js";
+import { tailwindTheme } from '../../theme/dist/tailwind.js';
 
 /** @type {import('tailwindcss').Config} */
 export default {

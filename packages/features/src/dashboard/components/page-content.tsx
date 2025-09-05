@@ -39,8 +39,8 @@ export function DashboardPageContent(): ReactNode {
 
   return (
     <div className="space-y-6 md:w-1/3">
-      <div className="bg-white shadow rounded-lg p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">
+      <div className="bg-card shadow rounded-lg p-6">
+        <h2 className="text-xl font-semibold text-greyscale-900 mb-4">
           Database Management
         </h2>
 
@@ -58,13 +58,13 @@ export function DashboardPageContent(): ReactNode {
             <div
               className={`border-l-4 p-4 max-w-full overflow-hidden ${
                 cleanupResult.success
-                  ? "border-green-500 bg-green-50"
-                  : "border-red-500 bg-red-50"
+                  ? "border-success-500 bg-success-50"
+                  : "border-error-500 bg-error-50"
               }`}
             >
               <h4
                 className={`font-medium mb-2 ${
-                  cleanupResult.success ? "text-green-800" : "text-red-800"
+                  cleanupResult.success ? "text-success-800" : "text-error-800"
                 }`}
               >
                 {cleanupResult.success
@@ -73,7 +73,7 @@ export function DashboardPageContent(): ReactNode {
               </h4>
               <p
                 className={`${
-                  cleanupResult.success ? "text-green-700" : "text-red-700"
+                  cleanupResult.success ? "text-success-700" : "text-error-700"
                 } break-words`}
               >
                 {cleanupResult.message}

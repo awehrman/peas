@@ -23,23 +23,26 @@ export class UploadErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error("Upload error boundary caught an error:", { error: error.message, errorInfo });
+    console.error("Upload error boundary caught an error:", {
+      error: error.message,
+      errorInfo,
+    });
   }
 
   render() {
     if (this.state.hasError) {
       return (
         this.props.fallback || (
-          <div className="p-4 bg-red-50 rounded-md">
-            <h3 className="text-sm font-medium text-red-800">Upload Error</h3>
-            <p className="mt-1 text-sm text-red-700">
+          <div className="p-4 bg-error-50 rounded-md">
+            <h3 className="text-sm font-medium text-error-800">Upload Error</h3>
+            <p className="mt-1 text-sm text-error-700">
               An unexpected error occurred during upload. Please try again.
             </p>
             <button
               onClick={() =>
                 this.setState({ hasError: false, error: undefined })
               }
-              className="mt-2 text-sm text-red-600 hover:text-red-500"
+              className="mt-2 text-sm text-error-600 hover:text-error-500"
             >
               Try Again
             </button>

@@ -31,7 +31,7 @@ export function StepMessage({
     typeof step.progress.total === "number"
   ) {
     return (
-      <p className={`text-xs text-gray-600 mt-1 truncate ${className}`}>
+      <p className={`text-xs text-greyscale-600 mt-1 truncate ${className}`}>
         {`Processing ${step.progress.current}/${step.progress.total} lines`}
       </p>
     );
@@ -42,7 +42,7 @@ export function StepMessage({
     const sizeRemoved = getSizeRemoved(step.metadata);
     if (sizeRemoved) {
       return (
-        <p className={`text-xs text-gray-600 mt-1 truncate ${className}`}>
+        <p className={`text-xs text-greyscale-600 mt-1 truncate ${className}`}>
           Removed {sizeRemoved}
         </p>
       );
@@ -69,7 +69,7 @@ export function StepMessage({
               <img
                 src={previewUrl}
                 alt="Image preview"
-                className="w-16 h-16 object-cover rounded border border-gray-200 shadow-sm"
+                className="w-16 h-16 object-cover rounded border border-greyscale-200 shadow-sm"
                 loading="lazy"
                 onError={(e) => {
                   // Hide image if it fails to load
@@ -78,7 +78,7 @@ export function StepMessage({
               />
             </div>
           )}
-          <p className="text-xs text-gray-600 truncate">
+          <p className="text-xs text-greyscale-600 truncate">
             {`${label}${typesText}${cropText}`}
           </p>
         </div>
@@ -92,7 +92,7 @@ export function StepMessage({
     // Only show message when step is completed
     if (step.status === "completed") {
       return (
-        <p className={`text-xs text-gray-600 mt-1 truncate ${className}`}>
+        <p className={`text-xs text-greyscale-600 mt-1 truncate ${className}`}>
           {savedCategory ? "Category added" : "No category added"}
         </p>
       );
@@ -104,7 +104,7 @@ export function StepMessage({
     // Only show message when step is completed
     if (step.status === "completed") {
       return (
-        <p className={`text-xs text-gray-600 mt-1 truncate ${className}`}>
+        <p className={`text-xs text-greyscale-600 mt-1 truncate ${className}`}>
           {savedTags && savedTags.length > 0 ? "Tags added" : "No tags added"}
         </p>
       );
@@ -116,7 +116,7 @@ export function StepMessage({
     const sourceName = getSourceName(step.metadata);
     if (sourceName) {
       return (
-        <p className={`text-xs text-gray-600 mt-1 truncate ${className}`}>
+        <p className={`text-xs text-greyscale-600 mt-1 truncate ${className}`}>
           Added <span className="italic">{sourceName}</span>
         </p>
       );
@@ -129,7 +129,7 @@ export function StepMessage({
 
     if (step.status === "completed" && dupCount > 0) {
       return (
-        <p className={`text-xs text-gray-600 mt-1 truncate ${className}`}>
+        <p className={`text-xs text-greyscale-600 mt-1 truncate ${className}`}>
           {dupCount} duplicate{dupCount === 1 ? "" : "s"} note found
         </p>
       );
@@ -147,7 +147,7 @@ export function StepMessage({
             : `${step.name} completed`);
 
     return (
-      <p className={`text-xs text-gray-600 mt-1 truncate ${className}`}>
+      <p className={`text-xs text-greyscale-600 mt-1 truncate ${className}`}>
         {base}
       </p>
     );
@@ -166,7 +166,7 @@ export function StepMessage({
             : "Note saved successfully");
 
     return (
-      <p className={`text-xs text-gray-600 mt-1 truncate ${className}`}>
+      <p className={`text-xs text-greyscale-600 mt-1 truncate ${className}`}>
         {base}
       </p>
     );
@@ -176,7 +176,7 @@ export function StepMessage({
   const fallback = getDefaultStatusMessage(step.name, step.status);
 
   return (
-    <p className={`text-xs text-gray-600 mt-1 truncate ${className}`}>
+    <p className={`text-xs text-greyscale-600 mt-1 truncate ${className}`}>
       {step.message || fallback}
     </p>
   );

@@ -106,7 +106,7 @@ function MobileSidebarNavigation({
   return (
     <aside
       className={cn(
-        "bg-card border-b border-border fixed top-0 left-0 right-0 z-50 transition-all duration-300",
+        "bg-navigation border-b border-border fixed top-0 left-0 right-0 z-50 transition-all duration-300",
         sidebarHeightClass
       )}
     >

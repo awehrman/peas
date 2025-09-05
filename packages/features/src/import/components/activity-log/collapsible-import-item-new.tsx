@@ -4,13 +4,17 @@ import { ImportItem, ImportItemWithUploadProgress, UploadItem } from "./types";
 
 import React, { memo, useEffect, useMemo, useState } from "react";
 
+import {
+  CollapsibleContent,
+  CollapsibleHeader,
+  CollapsibleWrapper,
+} from "../../features/collapsible";
 import { StatusEvent } from "../../hooks/use-status-websocket";
 import { choosePreviewUrl, getDuplicateCount } from "../../utils/metadata";
 import { BASE_STEP_DEFS } from "../../utils/status";
 import { STATUS_CONTEXT } from "../../utils/status-contexts";
 import { createProcessingSteps } from "../../utils/status-parser";
 import { getDisplayTitle, getStatusText } from "../utils/display-utils";
-import { CollapsibleWrapper, CollapsibleHeader, CollapsibleContent } from "../../features/collapsible";
 
 import { CollapsibleContent as OldCollapsibleContent } from "./components/collapsible-content";
 import { CollapsibleHeader as OldCollapsibleHeader } from "./components/collapsible-header";
@@ -60,27 +64,27 @@ function CollapsibleImportItemComponent({
     switch (status) {
       case "uploaded":
         return {
-          backgroundColor: "bg-blue-50",
-          hoverBackgroundColor: "hover:bg-blue-100",
-          textColor: "text-blue-800",
+          backgroundColor: "bg-info-50",
+          hoverBackgroundColor: "hover:bg-info-100",
+          textColor: "text-info-800",
         };
       case "failed":
         return {
-          backgroundColor: "bg-red-50",
-          hoverBackgroundColor: "hover:bg-red-100",
-          textColor: "text-red-800",
+          backgroundColor: "bg-error-50",
+          hoverBackgroundColor: "hover:bg-error-100",
+          textColor: "text-error-800",
         };
       case "cancelled":
         return {
-          backgroundColor: "bg-gray-50",
-          hoverBackgroundColor: "hover:bg-gray-100",
-          textColor: "text-gray-800",
+          backgroundColor: "bg-greyscale-50",
+          hoverBackgroundColor: "hover:bg-greyscale-100",
+          textColor: "text-greyscale-800",
         };
       default:
         return {
-          backgroundColor: "bg-gray-50",
-          hoverBackgroundColor: "hover:bg-gray-100",
-          textColor: "text-gray-800",
+          backgroundColor: "bg-greyscale-50",
+          hoverBackgroundColor: "hover:bg-greyscale-100",
+          textColor: "text-greyscale-800",
         };
     }
   };
@@ -222,7 +226,7 @@ function CollapsibleImportItemComponent({
   // Calculate all derived values before any returns
   const uploadComponent = shouldRenderAsUpload ? (
     <div
-      className={`rounded-lg border border-gray-200 overflow-hidden mb-3 ${className}`}
+      className={`rounded-lg border border-greyscale-200 overflow-hidden mb-3 ${className}`}
     >
       <OldCollapsibleHeader
         item={uploadHeaderItem!}
@@ -239,7 +243,7 @@ function CollapsibleImportItemComponent({
 
   const importComponent = isImportItemType ? (
     <div
-      className={`rounded-lg border border-gray-200 overflow-hidden mb-3 ${className}`}
+      className={`rounded-lg border border-greyscale-200 overflow-hidden mb-3 ${className}`}
     >
       <CollapsibleWrapper
         isExpanded={isExpanded}
@@ -265,10 +269,7 @@ function CollapsibleImportItemComponent({
           />
         </CollapsibleHeader>
 
-        <CollapsibleContent
-          className="p-4"
-          isExpanded={isExpanded}
-        >
+        <CollapsibleContent className="p-4" isExpanded={isExpanded}>
           {/* Use the old content component for now to maintain styling */}
           <OldCollapsibleContent
             item={importItem}

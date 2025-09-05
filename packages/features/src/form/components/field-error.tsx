@@ -10,7 +10,7 @@ const FieldError = ({ actionState, name }: FieldErrorProps) => {
 
   if (!message) return null;
 
-  return <span className="text-xs text-red-500">{message}</span>;
+  return <span className="text-xs text-error-500">{message}</span>;
 };
 
 export { FieldError };

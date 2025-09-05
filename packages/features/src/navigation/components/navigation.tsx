@@ -162,7 +162,7 @@ function SidebarNavigation({
   return (
     <aside
       className={cn(
-        "bg-card border-r border-border relative group h-screen",
+        "bg-navigation border-r border-border relative group h-screen",
         NAVIGATION_CONSTANTS.SIDEBAR_TRANSITION,
         sidebarWidthClass
       )}

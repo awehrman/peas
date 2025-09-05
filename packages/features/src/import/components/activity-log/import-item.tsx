@@ -54,11 +54,11 @@ export const ImportItemComponent = memo(function ImportItemComponent({
         case "uploading":
           return "bg-gray-50"; // Grey for batched items waiting to be processed
         case "uploaded":
-          return "bg-blue-50"; // Light blue for processing
+          return "bg-info-50"; // Light blue for processing
         case "failed":
-          return "bg-red-50"; // Light red for errors
+          return "bg-error-50"; // Light red for errors
         default:
-          return "bg-gray-50";
+          return "bg-greyscale-50";
       }
     };
 
@@ -73,15 +73,15 @@ export const ImportItemComponent = memo(function ImportItemComponent({
         {/* Status Icon */}
         <div className="flex-shrink-0">
           {statusIcon === "spinner" ? (
-            <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent"></div>
+            <div className="animate-spin rounded-full h-4 w-4 border-2 border-info-500 border-t-transparent"></div>
           ) : (
             <div
               className={`text-lg font-medium ${
                 uploadItem.status === "uploaded"
-                  ? "text-blue-600"
+                  ? "text-info-600"
                   : uploadItem.status === "failed"
-                    ? "text-red-600"
-                    : "text-gray-600"
+                    ? "text-error-600"
+                    : "text-greyscale-600"
               }`}
             >
               {statusIcon}
@@ -94,10 +94,10 @@ export const ImportItemComponent = memo(function ImportItemComponent({
           <div
             className={`font-medium ${
               uploadItem.status === "uploaded"
-                ? "text-blue-800"
+                ? "text-info-800"
                 : uploadItem.status === "failed"
-                  ? "text-red-800"
-                  : "text-gray-800"
+                  ? "text-error-800"
+                  : "text-greyscale-800"
             }`}
           >
             {statusText}
@@ -133,13 +133,13 @@ export const ImportItemComponent = memo(function ImportItemComponent({
   const getImportBackgroundColor = () => {
     switch (importItem.status) {
       case "importing":
-        return "bg-blue-50"; // Light primary color for processing
+        return "bg-info-50"; // Light primary color for processing
       case "completed":
-        return "bg-green-50"; // Light green for success
+        return "bg-success-50"; // Light green for success
       case "failed":
-        return "bg-red-50"; // Light red for errors
+        return "bg-error-50"; // Light red for errors
       default:
-        return "bg-blue-50";
+        return "bg-info-50";
     }
   };
 
@@ -157,10 +157,10 @@ export const ImportItemComponent = memo(function ImportItemComponent({
           <div
             className={`text-lg ${
               importItem.status === "completed"
-                ? "text-green-600"
+                ? "text-success-600"
                 : importItem.status === "failed"
-                  ? "text-red-600"
-                  : "text-blue-600"
+                  ? "text-error-600"
+                  : "text-info-600"
             }`}
           >
             {statusIcon}
@@ -173,10 +173,10 @@ export const ImportItemComponent = memo(function ImportItemComponent({
         <div
           className={`font-medium ${
             importItem.status === "completed"
-              ? "text-green-800"
+              ? "text-success-800"
               : importItem.status === "failed"
-                ? "text-red-800"
-                : "text-blue-800"
+                ? "text-error-800"
+                : "text-info-800"
           }`}
         >
           {statusText}

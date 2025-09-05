@@ -67,12 +67,12 @@ export function ProcessingStepItem({
             <div
               className={`h-1 rounded-full transition-all duration-300 ${
                 step.status === "completed"
-                  ? "bg-green-500"
+                  ? "bg-success-500"
                   : step.status === "processing"
-                    ? "bg-blue-500"
+                    ? "bg-primary-500"
                     : step.status === "failed"
-                      ? "bg-red-500"
-                      : "bg-gray-300"
+                      ? "bg-error-500"
+                      : "bg-greyscale-300"
               }`}
               style={{ width: `${step.progress.percentage}%` }}
             />

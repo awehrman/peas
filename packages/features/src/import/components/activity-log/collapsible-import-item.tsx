@@ -59,27 +59,27 @@ function CollapsibleImportItemComponent({
     switch (status) {
       case "uploaded":
         return {
-          backgroundColor: "bg-blue-50",
-          hoverBackgroundColor: "hover:bg-blue-100",
-          textColor: "text-blue-800",
+          backgroundColor: "bg-info-50",
+          hoverBackgroundColor: "hover:bg-info-100",
+          textColor: "text-info-800",
         };
       case "failed":
         return {
-          backgroundColor: "bg-red-50",
-          hoverBackgroundColor: "hover:bg-red-100",
-          textColor: "text-red-800",
+          backgroundColor: "bg-error-50",
+          hoverBackgroundColor: "hover:bg-error-100",
+          textColor: "text-error-800",
         };
       case "cancelled":
         return {
-          backgroundColor: "bg-gray-50",
-          hoverBackgroundColor: "hover:bg-gray-100",
-          textColor: "text-gray-800",
+          backgroundColor: "bg-greyscale-50",
+          hoverBackgroundColor: "hover:bg-greyscale-100",
+          textColor: "text-greyscale-800",
         };
       default:
         return {
-          backgroundColor: "bg-gray-50",
-          hoverBackgroundColor: "hover:bg-gray-100",
-          textColor: "text-gray-800",
+          backgroundColor: "bg-greyscale-50",
+          hoverBackgroundColor: "hover:bg-greyscale-100",
+          textColor: "text-greyscale-800",
         };
     }
   };

@@ -21,7 +21,7 @@ export function CollapsibleContent({
   return (
     <div
       id={`import-item-${item.importId}`}
-      className="border-t border-gray-200 bg-white h-[600px] overflow-y-auto"
+      className="border-t border-greyscale-200 bg-card h-[600px] overflow-y-auto"
     >
       <div className="p-4">
         <div className="md:flex md:items-start md:gap-6">

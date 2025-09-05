@@ -22,7 +22,7 @@ export function DetailedStatus({
 
   if (statusMessages.length === 0) {
     return (
-      <div className={`text-sm text-gray-500 ${className}`}>
+      <div className={`text-sm text-greyscale-500 ${className}`}>
         No status information available
       </div>
     );
@@ -52,15 +52,15 @@ export function DetailedStatus({
 
   const getStatusColor = (message: string) => {
     if (message.includes("error") || message.includes("failed")) {
-      return "text-red-700";
+      return "text-error-700";
     }
     if (message.includes("completed") || message.includes("successfully")) {
-      return "text-green-700";
+      return "text-success-700";
     }
     if (message.includes("processing") || message.includes("Processed")) {
-      return "text-blue-700";
+      return "text-info-700";
     }
-    return "text-gray-700";
+    return "text-greyscale-700";
   };
 
   return (
@@ -82,10 +82,10 @@ export function DetailedStatus({
 
       {/* Additional details */}
       {showAllDetails && (
-        <div className="pt-2 border-t border-gray-200">
+        <div className="pt-2 border-t border-greyscale-200">
           {/* Parsing errors */}
           {summary.parsingErrors > 0 && (
-            <div className="flex items-center space-x-2 text-sm text-red-600">
+            <div className="flex items-center space-x-2 text-sm text-error-600">
               <span>⚠️</span>
               <span>
                 {summary.parsingErrors} parsing error
@@ -96,16 +96,16 @@ export function DetailedStatus({
 
           {/* File cleaning details */}
           {summary.fileCleaned && (
-            <div className="text-xs text-gray-500 mt-1">
+            <div className="text-xs text-greyscale-500 mt-1">
               Original size: {summary.fileCleaned.originalSize}
             </div>
           )}
 
           {/* Ingredient processing details */}
           {summary.ingredientsProcessed && (
-            <div className="text-xs text-gray-500 mt-1">
+            <div className="text-xs text-greyscale-500 mt-1">
               {summary.ingredientsProcessed.errors > 0 && (
-                <span className="text-red-600">
+                <span className="text-error-600">
                   {summary.ingredientsProcessed.errors} ingredient parsing error
                   {summary.ingredientsProcessed.errors !== 1 ? "s" : ""}
                 </span>
@@ -115,14 +115,14 @@ export function DetailedStatus({
 
           {/* Image processing details */}
           {summary.imagesAdded && summary.imagesAdded.types.length > 0 && (
-            <div className="text-xs text-gray-500 mt-1">
+            <div className="text-xs text-greyscale-500 mt-1">
               Image types: {summary.imagesAdded.types.join(", ")}
             </div>
           )}
 
           {/* Source details */}
           {summary.sourceConnected && (
-            <div className="text-xs text-gray-500 mt-1">
+            <div className="text-xs text-greyscale-500 mt-1">
               Source type: {summary.sourceConnected.type}
             </div>
           )}

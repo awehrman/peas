@@ -16,17 +16,17 @@ export const STATUS_ICON = {
 } as const;
 
 export const STATUS_COLOR = {
-  [STATUS.COMPLETED]: "bg-green-500",
-  [STATUS.PROCESSING]: "bg-blue-500",
-  [STATUS.FAILED]: "bg-red-500",
-  [STATUS.PENDING]: "bg-gray-300",
+  [STATUS.COMPLETED]: "bg-success-500",
+  [STATUS.PROCESSING]: "bg-info-500",
+  [STATUS.PENDING]: "bg-greyscale-300",
+  [STATUS.FAILED]: "bg-error-500",
 } as const;
 
 export const STATUS_TEXT = {
-  [STATUS.COMPLETED]: "text-green-700",
-  [STATUS.PROCESSING]: "text-blue-700",
-  [STATUS.FAILED]: "text-red-700",
-  [STATUS.PENDING]: "text-gray-500",
+  [STATUS.COMPLETED]: "text-success-700",
+  [STATUS.PROCESSING]: "text-info-700",
+  [STATUS.PENDING]: "text-greyscale-500",
+  [STATUS.FAILED]: "text-error-700",
 } as const;
 
 export interface StepDef {

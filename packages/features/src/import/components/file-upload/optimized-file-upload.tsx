@@ -3,7 +3,6 @@
 import { useCallback, useState } from "react";
 
 import { FileUpload } from "../../../file-upload/components/file-upload";
-
 import { useImportState } from "../../contexts";
 import { useOptimizedUpload } from "../../hooks/use-optimized-upload";
 import { FileProcessor } from "../../utils/file-processor";
@@ -164,9 +163,9 @@ export function OptimizedFileUpload({ className, onUploadComplete }: Props) {
             <div className="text-center">
               <div className="mb-2">{getProgressMessage()}</div>
               {progress.overallProgress > 0 && (
-                <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
+                <div className="w-full bg-greyscale-200 rounded-full h-2 mb-4">
                   <div
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                    className="bg-info-600 h-2 rounded-full transition-all duration-300"
                     style={{ width: `${progress.overallProgress}%` }}
                   />
                 </div>
@@ -174,7 +173,7 @@ export function OptimizedFileUpload({ className, onUploadComplete }: Props) {
               <button
                 type="button"
                 onClick={handleCancel}
-                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+                className="px-4 py-2 bg-error-500 text-white rounded hover:bg-error-600 transition-colors"
               >
                 Cancel Upload
               </button>
@@ -189,10 +188,10 @@ export function OptimizedFileUpload({ className, onUploadComplete }: Props) {
         <div
           className={`mt-4 p-3 rounded ${
             message.includes("✅")
-              ? "bg-green-100 text-green-800"
+              ? "bg-success-100 text-success-800"
               : message.includes("❌")
-                ? "bg-red-100 text-red-800"
-                : "bg-yellow-100 text-yellow-800"
+                ? "bg-error-100 text-error-800"
+                : "bg-warning-100 text-warning-800"
           }`}
         >
           {message}
@@ -214,7 +213,7 @@ export function OptimizedFileUpload({ className, onUploadComplete }: Props) {
 
       {/* Memory usage indicator (for debugging) */}
       {process.env.NODE_ENV === "development" && (
-        <div className="mt-4 p-2 bg-gray-100 rounded text-xs text-gray-600">
+        <div className="mt-4 p-2 bg-greyscale-100 rounded text-xs text-greyscale-600">
           Memory: {fileProcessor.getMemoryInfo().used}MB used
         </div>
       )}

@@ -1,6 +1,6 @@
-import type { Meta, StoryObj } from "@storybook/react";
 import { Button } from "@peas/components";
 import { cn } from "@peas/components";
+import type { Meta, StoryObj } from "@storybook/react";
 
 const meta = {
   title: "Atoms/Button",
@@ -121,6 +121,6 @@ export const WithCustomClass: Story = {
   args: {
     children: "Custom Style",
     className:
-      "bg-purple-500 hover:bg-purple-600 text-white rounded-full px-6 py-2",
+      "bg-primary hover:bg-primary/90 text-white rounded-full px-6 py-2",
   },
 };

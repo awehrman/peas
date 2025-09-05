@@ -66,7 +66,7 @@ export function PaginationControls({
   return (
     <div className={`flex items-center justify-between ${className}`}>
       {/* Left side - Page info */}
-      <div className="text-sm text-gray-700">
+      <div className="text-sm text-greyscale-700">
         Showing {pagination.startIndex + 1} to {pagination.endIndex} of{" "}
         {pagination.totalItems} items
       </div>
@@ -79,8 +79,8 @@ export function PaginationControls({
           disabled={!pagination.hasPreviousPage}
           className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
             pagination.hasPreviousPage
-              ? "text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 transition-colors"
-              : "text-gray-400 bg-gray-100 border border-gray-200 cursor-not-allowed"
+              ? "text-greyscale-700 bg-card border border-greyscale-300 hover:bg-greyscale-50 transition-colors"
+              : "text-greyscale-400 bg-greyscale-100 border border-greyscale-200 cursor-not-allowed"
           }`}
           aria-label="Go to previous page"
         >
@@ -95,12 +95,12 @@ export function PaginationControls({
               <>
                 <button
                   onClick={() => pagination.goToPage(1)}
-                  className="px-3 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                  className="px-3 py-1 text-sm font-medium text-greyscale-700 bg-card border border-greyscale-300 rounded-md hover:bg-greyscale-50 transition-colors"
                 >
                   1
                 </button>
                 {firstVisible > 2 && (
-                  <span className="px-2 text-gray-500">...</span>
+                  <span className="px-2 text-greyscale-500">...</span>
                 )}
               </>
             )}
@@ -112,8 +112,8 @@ export function PaginationControls({
                 onClick={() => pagination.goToPage(pageNumber)}
                 className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
                   pageNumber === pagination.page
-                    ? "text-white bg-blue-600 border border-blue-600"
-                    : "text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 transition-colors"
+                    ? "text-card-foreground bg-info-600 border border-info-600"
+                    : "text-greyscale-700 bg-card border border-greyscale-300 hover:bg-greyscale-50 transition-colors"
                 }`}
                 aria-label={`Go to page ${pageNumber}`}
                 aria-current={
@@ -128,11 +128,11 @@ export function PaginationControls({
             {hasVisiblePages && lastVisible < pagination.totalPages && (
               <>
                 {lastVisible < pagination.totalPages - 1 && (
-                  <span className="px-2 text-gray-500">...</span>
+                  <span className="px-2 text-greyscale-500">...</span>
                 )}
                 <button
                   onClick={() => pagination.goToPage(pagination.totalPages)}
-                  className="px-3 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                  className="px-3 py-1 text-sm font-medium text-greyscale-700 bg-card border border-greyscale-300 rounded-md hover:bg-greyscale-50 transition-colors"
                 >
                   {pagination.totalPages}
                 </button>
@@ -147,8 +147,8 @@ export function PaginationControls({
           disabled={!pagination.hasNextPage}
           className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
             pagination.hasNextPage
-              ? "text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 transition-colors"
-              : "text-gray-400 bg-gray-100 border border-gray-200 cursor-not-allowed"
+              ? "text-greyscale-700 bg-card border border-greyscale-300 hover:bg-greyscale-50 transition-colors"
+              : "text-greyscale-400 bg-greyscale-100 border border-greyscale-200 cursor-not-allowed"
           }`}
           aria-label="Go to next page"
         >

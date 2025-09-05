@@ -79,7 +79,7 @@ export function TestErrorBoundary() {
       <h2 className="text-lg font-semibold mb-4">Error Boundary Test</h2>
       <button
         onClick={() => setShouldThrow(true)}
-        className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+        className="px-4 py-2 bg-error-600 text-white rounded-md hover:bg-error-700 transition-colors"
       >
         Throw Test Error
       </button>

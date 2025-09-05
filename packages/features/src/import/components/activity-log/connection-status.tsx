@@ -22,12 +22,12 @@ export const ConnectionStatus = memo(function ConnectionStatus({
 }: ConnectionStatusProps): ReactNode {
   if (connectionStatus === "error" && error) {
     return (
-      <div className={`text-red-500 ${className}`}>
+      <div className={`text-error-500 ${className}`}>
         Error connecting to status feed: {error}
         {onRetry && (
           <button
             onClick={onRetry}
-            className="ml-2 px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700"
+            className="ml-2 px-2 py-1 text-xs bg-error-600 text-white rounded hover:bg-error-700"
           >
             Retry
           </button>
@@ -42,7 +42,7 @@ export const ConnectionStatus = memo(function ConnectionStatus({
 
   if (connectionStatus === "disconnected") {
     return (
-      <div className={`text-red-500 ${className}`}>
+      <div className={`text-error-500 ${className}`}>
         Disconnected from status feed
       </div>
     );
@@ -50,7 +50,7 @@ export const ConnectionStatus = memo(function ConnectionStatus({
 
   if (connectionStatus === "connected") {
     return (
-      <div className={`text-green-500 text-sm ${className}`}>
+      <div className={`text-success-500 text-sm ${className}`}>
         ✓ Connected to status feed
       </div>
     );

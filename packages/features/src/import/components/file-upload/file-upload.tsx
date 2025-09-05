@@ -3,7 +3,6 @@
 import { useState } from "react";
 
 import { FileUpload } from "../../../file-upload/components/file-upload";
-
 import { useImportState } from "../../contexts";
 import { extractTitlesFromFiles } from "../../utils/extract-title";
 
@@ -474,8 +473,8 @@ export function ImportFileUpload({ className }: Props) {
             <div
               className={
                 message.includes("failed")
-                  ? "text-red-700 bg-red-50 px-4 py-2 rounded-md mb-4"
-                  : "text-green-700 bg-green-50 px-4 py-2 rounded-md mb-4"
+                  ? "text-error-700 bg-error-50 px-4 py-2 rounded-md mb-4"
+                  : "text-success-700 bg-success-50 px-4 py-2 rounded-md mb-4"
               }
             >
               {message}

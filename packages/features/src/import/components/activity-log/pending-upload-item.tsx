@@ -18,7 +18,7 @@ export const PendingUploadItem = memo(function PendingUploadItem({
   return (
     <div
       key={`pending-${index}`}
-      className="flex items-center space-x-3 p-3 bg-blue-50 rounded"
+      className="flex items-center space-x-3 p-3 bg-info-50 rounded"
     >
       <div className="animate-spin rounded-full h-4 w-4"></div>
       <div className="text-gray-800">Importing {displayName}...</div>

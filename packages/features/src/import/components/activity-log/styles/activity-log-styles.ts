@@ -14,9 +14,9 @@ export const ACTIVITY_LOG_STYLES = {
     bar: "w-full bg-gray-200 rounded-full h-2",
     fill: "h-2 rounded-full transition-all duration-300",
     colors: {
-      completed: "bg-green-500",
-      processing: "bg-blue-500",
-      failed: "bg-red-500",
+      completed: "bg-success-500",
+      processing: "bg-info-500",
+      failed: "bg-error-500",
     },
   },
 
@@ -49,7 +49,7 @@ export const ACTIVITY_LOG_STYLES = {
       md: "text-xs",
       lg: "text-sm",
     },
-    base: "rounded-full flex items-center justify-center font-bold text-white",
+    base: "rounded-full flex items-center justify-center font-bold text-card-foreground",
   },
 
   // Step-specific status icon styling
@@ -62,18 +62,18 @@ export const ACTIVITY_LOG_STYLES = {
     container: "mt-1 w-full bg-gray-200 rounded-full h-1",
     fill: "h-1 rounded-full transition-all duration-300",
     colors: {
-      completed: "bg-green-500",
-      processing: "bg-blue-500",
-      failed: "bg-red-500",
-      pending: "bg-gray-300",
+      completed: "bg-success-500",
+      processing: "bg-info-500",
+      failed: "bg-error-500",
+      pending: "bg-greyscale-300",
     },
   },
 
   // Summary section
   summary: {
     container:
-      "flex items-center justify-center gap-4 text-xs text-gray-500 pt-2 border-t border-gray-200",
-    failed: "text-red-600 font-medium",
+      "flex items-center justify-center gap-4 text-xs text-greyscale-500 pt-2 border-t border-greyscale-200",
+    failed: "text-error-600 font-medium",
   },
 
   // Collapsible item styling
@@ -81,7 +81,7 @@ export const ACTIVITY_LOG_STYLES = {
     container: "rounded-lg border border-gray-200 overflow-hidden",
     button:
       "w-full text-left flex items-center space-x-3 p-4 transition-colors", // 🎯 ADJUST BUTTON PADDING HERE
-    content: "border-t border-gray-200 bg-white",
+    content: "border-t border-greyscale-200 bg-card",
     statusIcon: "flex-shrink-0", // 🎯 ADJUST STATUS ICON CONTAINER HERE
   },
 
@@ -106,19 +106,19 @@ export const ICON_POSITIONING = {
 export const COLOR_SCHEMES = {
   status: {
     completed: {
-      background: "bg-green-500",
-      text: "text-green-700",
-      textDark: "text-green-800",
+      background: "bg-success-500",
+      text: "text-success-700",
+      textDark: "text-success-800",
     },
     processing: {
-      background: "bg-blue-500",
-      text: "text-blue-700",
-      textDark: "text-blue-800",
+      background: "bg-info-500",
+      text: "text-info-700",
+      textDark: "text-info-800",
     },
     failed: {
-      background: "bg-red-500",
-      text: "text-red-700",
-      textDark: "text-red-800",
+      background: "bg-error-500",
+      text: "text-error-700",
+      textDark: "text-error-800",
     },
     pending: {
       background: "bg-gray-300",

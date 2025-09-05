@@ -91,8 +91,10 @@ export function ProgressStatusBar({
       {/* Overall progress bar */}
       <div className={ACTIVITY_LOG_STYLES.progressBar.container}>
         <div className="flex items-center justify-between text-sm">
-          <span className="font-medium text-gray-700">Import progress</span>
-          <span className="text-gray-500">{progressPercentage}%</span>
+          <span className="font-medium text-greyscale-700">
+            Import progress
+          </span>
+          <span className="text-greyscale-500">{progressPercentage}%</span>
         </div>
         <div
           className={ACTIVITY_LOG_STYLES.progressBar.bar}

@@ -35,16 +35,4 @@
   animation: fadeIn 0.3s ease-out;
 }
 
-/* Dark mode styles */
-.dark {
-  --color-background: #0f0f0f;
-  --color-foreground: #ffffff;
-  --color-border: #2a2a2a;
-  --color-input: #2a2a2a;
-  --color-card: #1a1a1a;
-  --color-card-foreground: #ffffff;
-  --color-popover: #1a1a1a;
-  --color-popover-foreground: #ffffff;
-  --color-muted: #2a2a2a;
-  --color-muted-foreground: #a0a0a0;
-}
+/* Dark mode styles - now using theme system */

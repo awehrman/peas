@@ -7,9 +7,9 @@ export const UPLOAD_STATUS_ICON: Record<string, string> = {
 };
 
 export const UPLOAD_BACKGROUND_COLOR: Record<string, string> = {
-  uploading: "bg-blue-50",
-  uploaded: "bg-green-50",
-  failed: "bg-red-50",
+  uploading: "bg-info-50",
+  uploaded: "bg-success-50",
+  failed: "bg-error-50",
 };
 
 export function getUploadStatusText(

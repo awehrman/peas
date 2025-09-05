@@ -1,7 +1,8 @@
 "use client";
 
-import { Placeholder } from "@peas/components";
 import React from "react";
+
+import { Placeholder } from "@peas/components";
 import { Button } from "@peas/components";
 
 export interface FileUploadProps {
@@ -63,11 +64,13 @@ export function FileUpload({
 
   return (
     <div className={className}>
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">{title}</h3>
+      <h3 className="text-lg font-semibold text-greyscale-900 mb-4">{title}</h3>
 
       <div
-        className={`border-2 border-dashed border-gray-300 rounded-lg p-8 transition-colors ${
-          disabled ? "opacity-50 cursor-not-allowed" : "hover:border-gray-400"
+        className={`border-2 border-dashed border-greyscale-400 rounded-lg p-8 transition-colors ${
+          disabled
+            ? "opacity-50 cursor-not-allowed"
+            : "hover:border-greyscale-400"
         }`}
         onDragOver={handleDragOver}
         onDrop={handleDrop}

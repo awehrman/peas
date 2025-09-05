@@ -27,11 +27,14 @@ export class ImportErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     // Log the error
-    console.error("Import Error Boundary caught an error:", { error: error.message, errorInfo });
-    
+    console.error("Import Error Boundary caught an error:", {
+      error: error.message,
+      errorInfo,
+    });
+
     // Call the onError callback if provided
     this.props.onError?.(error, errorInfo);
-    
+
     // Update state with error info
     this.setState({ error, errorInfo });
   }
@@ -45,11 +48,11 @@ export class ImportErrorBoundary extends Component<Props, State> {
 
       // Default error UI
       return (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+        <div className="p-4 bg-error-50 border border-error-200 rounded-lg">
           <div className="flex items-center">
             <div className="flex-shrink-0">
               <svg
-                className="h-5 w-5 text-red-400"
+                className="h-5 w-5 text-error-400"
                 viewBox="0 0 20 20"
                 fill="currentColor"
               >
@@ -61,19 +64,21 @@ export class ImportErrorBoundary extends Component<Props, State> {
               </svg>
             </div>
             <div className="ml-3">
-              <h3 className="text-sm font-medium text-red-800">
+              <h3 className="text-sm font-medium text-error-800">
                 Something went wrong with the import
               </h3>
-              <div className="mt-2 text-sm text-red-700">
+              <div className="mt-2 text-sm text-error-700">
                 <p>
-                  An error occurred while processing your import. Please try refreshing the page or contact support if the problem persists.
+                  An error occurred while processing your import. Please try
+                  refreshing the page or contact support if the problem
+                  persists.
                 </p>
                 {process.env.NODE_ENV === "development" && this.state.error && (
                   <details className="mt-2">
                     <summary className="cursor-pointer text-xs">
                       Error Details (Development)
                     </summary>
-                    <pre className="mt-1 text-xs bg-red-100 p-2 rounded overflow-auto">
+                    <pre className="mt-1 text-xs bg-error-100 p-2 rounded overflow-auto">
                       {this.state.error.toString()}
                       {this.state.errorInfo?.componentStack}
                     </pre>
@@ -83,8 +88,14 @@ export class ImportErrorBoundary extends Component<Props, State> {
               <div className="mt-4">
                 <button
                   type="button"
-                  onClick={() => this.setState({ hasError: false, error: undefined, errorInfo: undefined })}
-                  className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                  onClick={() =>
+                    this.setState({
+                      hasError: false,
+                      error: undefined,
+                      errorInfo: undefined,
+                    })
+                  }
+                  className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-error-700 bg-error-100 hover:bg-error-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-error-500"
                 >
                   Try Again
                 </button>

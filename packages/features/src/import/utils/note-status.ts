@@ -97,13 +97,15 @@ export function getStatusFromText(
 export function getStatusColor(status: string): string {
   switch (status) {
     case "processing":
-      return "text-blue-600";
+      return "text-info-600";
     case "completed":
-      return "text-green-600";
-    case "error":
-      return "text-red-600";
+      return "text-success-600";
+    case "failed":
+      return "text-error-600";
+    case "cancelled":
+      return "text-greyscale-600";
     default:
-      return "text-gray-600";
+      return "text-greyscale-600";
   }
 }
 
@@ -154,8 +156,8 @@ export function groupStatusItems(items: Item[]): GroupedItem[] {
           context === "clean_html_start"
         ) {
           status = "start";
-            } else if (context === "clean_html_end") {
-      // Handle clean_html_end completion event
+        } else if (context === "clean_html_end") {
+          // Handle clean_html_end completion event
           status = "completion";
         }
 
