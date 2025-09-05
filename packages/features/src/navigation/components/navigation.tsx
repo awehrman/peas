@@ -147,10 +147,10 @@ function SidebarNavigation({
               icon={item.icon}
               LinkComponent={LinkComponent}
               className={cn(
-                "flex items-center gap-3 w-full p-3 rounded-md transition-colors",
+                "flex items-center gap-3 w-full p-3 rounded-md transition-colors font-normal opacity-80",
                 isActive
-                  ? "bg-transparent text-primary"
-                  : "hover:bg-transparent text-muted-foreground hover:text-primary"
+                  ? "text-[color:var(--color-header)] opacity-100"
+                  : "text-navigation-foreground hover:text-[color:var(--color-header)] hover:opacity-100"
               )}
             />
           </NavigationMenuItem>
@@ -162,7 +162,7 @@ function SidebarNavigation({
   return (
     <aside
       className={cn(
-        "bg-navigation border-r border-border relative group h-screen",
+        "bg-navigation border-r border-border relative group h-screen min-h-screen",
         NAVIGATION_CONSTANTS.SIDEBAR_TRANSITION,
         sidebarWidthClass
       )}
@@ -191,28 +191,35 @@ function SidebarNavigation({
       <div
         className={cn(
           NAVIGATION_CONSTANTS.SIDEBAR_PADDING,
-          NAVIGATION_CONSTANTS.TOP_PADDING
+          NAVIGATION_CONSTANTS.TOP_PADDING,
+          "h-full min-h-full flex flex-col"
         )}
       >
         {isExpanded ? (
-          // Expanded state - use NavigationMenu
-          <NavigationMenu orientation="vertical" className="w-full">
-            <NavigationMenuList className="flex-col space-y-2 w-full">
-              {navigationItemsList}
-              <NavigationMenuItem className="w-full">
+          <>
+            {/* Main navigation items - kept at top */}
+            <div className="flex-none">
+              <NavigationMenu orientation="vertical" className="w-full">
+                <NavigationMenuList className="flex-col space-y-2 w-full">
+                  {navigationItemsList}
+                </NavigationMenuList>
+              </NavigationMenu>
+            </div>
+
+            {/* Sign out button at bottom */}
+            <div className="mt-auto pb-4">
+              <div className="w-full list-none">
                 <form
                   action={signOut}
-                  className="flex gap-2 items-center w-full p-3 rounded-md transition-colors text-muted-foreground hover:text-foreground hover:bg-muted"
+                  className="flex gap-3 items-center w-full p-3 rounded-md transition-colors font-normal opacity-80 text-navigation-foreground hover:text-[color:var(--color-header)] hover:opacity-100"
                   onSubmit={handleSignOutSubmit}
                 >
                   <LogOut className="mr-2 h-4 w-4" />
                   <button type="submit">Sign Out</button>
                 </form>
-              </NavigationMenuItem>
-            </NavigationMenuList>
-            {/* Bottom padding to prevent toggle button wrapping */}
-            <div className={NAVIGATION_CONSTANTS.BOTTOM_SPACING}></div>
-          </NavigationMenu>
+              </div>
+            </div>
+          </>
         ) : (
           // Collapsed state - only show the toggle button
           <div className="h-full flex items-center justify-center">

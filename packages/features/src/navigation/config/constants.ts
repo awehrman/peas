@@ -22,7 +22,7 @@ export const NAVIGATION_CONSTANTS = {
 
   // Layout
   SIDEBAR_PADDING: "p-4",
-  TOP_PADDING: "pt-12",
+  TOP_PADDING: "pt-10",
   BOTTOM_SPACING: "h-8",
 
   // Positioning percentages

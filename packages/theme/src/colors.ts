@@ -73,116 +73,134 @@ export type ColorPalette = {
 const white = "#ffffff";
 const black = "#000000";
 
+/**
+ * OKLCH lightness scale for consistent color progression
+ * Maps to Tailwind color scale: 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950
+ */
+const oklchScale = {
+  50: 100.0, // Lightest
+  100: 95.0,
+  200: 90.0,
+  300: 80.0,
+  400: 70.0,
+  500: 60.0, // Base/middle
+  600: 50.0,
+  700: 40.0,
+  800: 30.0,
+  900: 20.0,
+  950: 10.0, // Darkest
+} as const;
+
 const primaryColors = {
-  50: "oklch(95.0% 0.0900 127.79)",
-  100: "oklch(90.0% 0.0900 127.79)",
-  200: "oklch(80.0% 0.0900 127.79)",
-  300: "oklch(70.0% 0.0900 127.79)",
-  400: "oklch(60.0% 0.0900 127.79)",
-  500: "oklch(50.0% 0.0900 127.79)",
-  600: "oklch(40.0% 0.0900 127.79)",
-  700: "oklch(30.0% 0.0900 127.79)",
-  800: "oklch(20.0% 0.0900 127.79)",
-  900: "oklch(20.0% 0.0900 127.79)",
-  950: "oklch(20.0% 0.0900 127.79)",
+  50: `oklch(${oklchScale[50]}% 0.0900 127.79)`,
+  100: `oklch(${oklchScale[100]}% 0.0900 127.79)`,
+  200: `oklch(${oklchScale[200]}% 0.0900 127.79)`,
+  300: `oklch(${oklchScale[300]}% 0.0900 127.79)`,
+  400: `oklch(${oklchScale[400]}% 0.0900 127.79)`,
+  500: `oklch(${oklchScale[500]}% 0.0900 127.79)`,
+  600: `oklch(${oklchScale[600]}% 0.0900 127.79)`,
+  700: `oklch(${oklchScale[700]}% 0.0900 127.79)`,
+  800: `oklch(${oklchScale[800]}% 0.0900 127.79)`,
+  900: `oklch(${oklchScale[900]}% 0.0900 127.79)`,
+  950: `oklch(${oklchScale[950]}% 0.0900 127.79)`,
 } as const;
 
 const secondaryColors = {
-  50: "oklch(95.0% 0.0300 335.85)",
-  100: "oklch(90.0% 0.0300 335.85)",
-  200: "oklch(80.0% 0.0300 335.85)",
-  300: "oklch(70.0% 0.0300 335.85)",
-  400: "oklch(60.0% 0.0300 335.85)",
-  500: "oklch(50.0% 0.0300 335.85)",
-  600: "oklch(40.0% 0.0300 335.85)",
-  700: "oklch(30.0% 0.0300 335.85)",
-  800: "oklch(20.0% 0.0300 335.85)",
-  900: "oklch(20.0% 0.0300 335.85)",
-  950: "oklch(20.0% 0.0300 335.85)",
+  50: `oklch(${oklchScale[50]}% 0.0300 335.85)`,
+  100: `oklch(${oklchScale[100]}% 0.0300 335.85)`,
+  200: `oklch(${oklchScale[200]}% 0.0300 335.85)`,
+  300: `oklch(${oklchScale[300]}% 0.0300 335.85)`,
+  400: `oklch(${oklchScale[400]}% 0.0300 335.85)`,
+  500: `oklch(${oklchScale[500]}% 0.0300 335.85)`,
+  600: `oklch(${oklchScale[600]}% 0.0300 335.85)`,
+  700: `oklch(${oklchScale[700]}% 0.0300 335.85)`,
+  800: `oklch(${oklchScale[800]}% 0.0300 335.85)`,
+  900: `oklch(${oklchScale[900]}% 0.0300 335.85)`,
+  950: `oklch(${oklchScale[950]}% 0.0300 335.85)`,
 } as const;
 
 const successColors = {
-  50: "oklch(95.0% 0.1788 132.11)",
-  100: "oklch(90.0% 0.1788 132.11)",
-  200: "oklch(80.0% 0.1788 132.11)",
-  300: "oklch(70.0% 0.1788 132.11)",
-  400: "oklch(60.0% 0.1788 132.11)",
-  500: "oklch(50.0% 0.1788 132.11)",
-  600: "oklch(40.0% 0.1788 132.11)",
-  700: "oklch(30.0% 0.1788 132.11)",
-  800: "oklch(20.0% 0.1788 132.11)",
-  900: "oklch(20.0% 0.1788 132.11)",
-  950: "oklch(20.0% 0.1788 132.11)",
+  50: `oklch(${oklchScale[50]}% 0.1788 132.11)`,
+  100: `oklch(${oklchScale[100]}% 0.1788 132.11)`,
+  200: `oklch(${oklchScale[200]}% 0.1788 132.11)`,
+  300: `oklch(${oklchScale[300]}% 0.1788 132.11)`,
+  400: `oklch(${oklchScale[400]}% 0.1788 132.11)`,
+  500: `oklch(${oklchScale[500]}% 0.1788 132.11)`,
+  600: `oklch(${oklchScale[600]}% 0.1788 132.11)`,
+  700: `oklch(${oklchScale[700]}% 0.1788 132.11)`,
+  800: `oklch(${oklchScale[800]}% 0.1788 132.11)`,
+  900: `oklch(${oklchScale[900]}% 0.1788 132.11)`,
+  950: `oklch(${oklchScale[950]}% 0.1788 132.11)`,
 } as const;
 
 const warningColors = {
-  50: "oklch(95.0% 0.1609 93.25)",
-  100: "oklch(90.0% 0.1609 93.25)",
-  200: "oklch(80.0% 0.1609 93.25)",
-  300: "oklch(70.0% 0.1609 93.25)",
-  400: "oklch(60.0% 0.1609 93.25)",
-  500: "oklch(50.0% 0.1609 93.25)",
-  600: "oklch(40.0% 0.1609 93.25)",
-  700: "oklch(30.0% 0.1609 93.25)",
-  800: "oklch(20.0% 0.1609 93.25)",
-  900: "oklch(20.0% 0.1609 93.25)",
-  950: "oklch(20.0% 0.1609 93.25)",
+  50: `oklch(${oklchScale[50]}% 0.1609 93.25)`,
+  100: `oklch(${oklchScale[100]}% 0.1609 93.25)`,
+  200: `oklch(${oklchScale[200]}% 0.1609 93.25)`,
+  300: `oklch(${oklchScale[300]}% 0.1609 93.25)`,
+  400: `oklch(${oklchScale[400]}% 0.1609 93.25)`,
+  500: `oklch(${oklchScale[500]}% 0.1609 93.25)`,
+  600: `oklch(${oklchScale[600]}% 0.1609 93.25)`,
+  700: `oklch(${oklchScale[700]}% 0.1609 93.25)`,
+  800: `oklch(${oklchScale[800]}% 0.1609 93.25)`,
+  900: `oklch(${oklchScale[900]}% 0.1609 93.25)`,
+  950: `oklch(${oklchScale[950]}% 0.1609 93.25)`,
 } as const;
 
 const errorColors = {
-  50: "oklch(95.0% 0.1433 35.05)",
-  100: "oklch(90.0% 0.1433 35.05)",
-  200: "oklch(80.0% 0.1433 35.05)",
-  300: "oklch(70.0% 0.1433 35.05)",
-  400: "oklch(60.0% 0.1433 35.05)",
-  500: "oklch(50.0% 0.1433 35.05)",
-  600: "oklch(40.0% 0.1433 35.05)",
-  700: "oklch(30.0% 0.1433 35.05)",
-  800: "oklch(20.0% 0.1433 35.05)",
-  900: "oklch(20.0% 0.1433 35.05)",
-  950: "oklch(20.0% 0.1433 35.05)",
+  50: `oklch(${oklchScale[50]}% 0.1433 35.05)`,
+  100: `oklch(${oklchScale[100]}% 0.1433 35.05)`,
+  200: `oklch(${oklchScale[200]}% 0.1433 35.05)`,
+  300: `oklch(${oklchScale[300]}% 0.1433 35.05)`,
+  400: `oklch(${oklchScale[400]}% 0.1433 35.05)`,
+  500: `oklch(${oklchScale[500]}% 0.1433 35.05)`,
+  600: `oklch(${oklchScale[600]}% 0.1433 35.05)`,
+  700: `oklch(${oklchScale[700]}% 0.1433 35.05)`,
+  800: `oklch(${oklchScale[800]}% 0.1433 35.05)`,
+  900: `oklch(${oklchScale[900]}% 0.1433 35.05)`,
+  950: `oklch(${oklchScale[950]}% 0.1433 35.05)`,
 } as const;
 
 const infoColors = {
-  50: "oklch(95.0% 0.1153 192.59)",
-  100: "oklch(90.0% 0.1153 192.59)",
-  200: "oklch(80.0% 0.1153 192.59)",
-  300: "oklch(70.0% 0.1153 192.59)",
-  400: "oklch(60.0% 0.1153 192.59)",
-  500: "oklch(50.0% 0.1153 192.59)",
-  600: "oklch(40.0% 0.1153 192.59)",
-  700: "oklch(30.0% 0.1153 192.59)",
-  800: "oklch(20.0% 0.1153 192.59)",
-  900: "oklch(20.0% 0.1153 192.59)",
-  950: "oklch(20.0% 0.1153 192.59)",
+  50: `oklch(${oklchScale[50]}% 0.1153 192.59)`,
+  100: `oklch(${oklchScale[100]}% 0.1153 192.59)`,
+  200: `oklch(${oklchScale[200]}% 0.1153 192.59)`,
+  300: `oklch(${oklchScale[300]}% 0.1153 192.59)`,
+  400: `oklch(${oklchScale[400]}% 0.1153 192.59)`,
+  500: `oklch(${oklchScale[500]}% 0.1153 192.59)`,
+  600: `oklch(${oklchScale[600]}% 0.1153 192.59)`,
+  700: `oklch(${oklchScale[700]}% 0.1153 192.59)`,
+  800: `oklch(${oklchScale[800]}% 0.1153 192.59)`,
+  900: `oklch(${oklchScale[900]}% 0.1153 192.59)`,
+  950: `oklch(${oklchScale[950]}% 0.1153 192.59)`,
 } as const;
 
 const greyscaleColors = {
-  50: "oklch(90.7% 0.013 150.5)",
-  100: "oklch(80.7% 0.017 150.5)",
-  200: "oklch(70.7% 0.015 150.5)",
-  300: "oklch(60.7% 0.013 150.5)",
-  400: "oklch(50.7% 0.011 150.5)",
-  500: "oklch(40.7% 0.009 150.5)",
-  600: "oklch(30.7% 0.007 150.5)",
-  700: "oklch(20.7% 0.004 150.5)",
-  800: "oklch(10.7% 0.002 150.5)",
-  900: "oklch(10.7% 0.002 150.5)",
-  950: "oklch(10.7% 0.002 150.5)",
+  50: `oklch(${oklchScale[50]}% 0.013 150.5)`,
+  100: `oklch(${oklchScale[100]}% 0.017 150.5)`,
+  200: `oklch(${oklchScale[200]}% 0.015 150.5)`,
+  300: `oklch(${oklchScale[300]}% 0.013 150.5)`,
+  400: `oklch(${oklchScale[400]}% 0.011 150.5)`,
+  500: `oklch(${oklchScale[500]}% 0.009 150.5)`,
+  600: `oklch(${oklchScale[600]}% 0.007 150.5)`,
+  700: `oklch(${oklchScale[700]}% 0.004 150.5)`,
+  800: `oklch(${oklchScale[800]}% 0.002 150.5)`,
+  900: `oklch(${oklchScale[900]}% 0.002 150.5)`,
+  950: `oklch(${oklchScale[950]}% 0.002 150.5)`,
 } as const;
 
 const neutralColors = {
-  50: "oklch(100.0% 0.0382 96.53)",
-  100: "oklch(95.0% 0.0382 96.53)",
-  200: "oklch(90.0% 0.0382 96.53)",
-  300: "oklch(80.0% 0.0382 96.53)",
-  400: "oklch(70.0% 0.0382 96.53)",
-  500: "oklch(60.0% 0.0382 96.53)",
-  600: "oklch(50.0% 0.0382 96.53)",
-  700: "oklch(40.0% 0.0382 96.53)",
-  800: "oklch(30.0% 0.0382 96.53)",
-  900: "oklch(20.0% 0.0382 96.53)",
-  950: "oklch(20.0% 0.0382 96.53)",
+  50: `oklch(${oklchScale[50] + 5.0}% 0.0382 96.53)`, // 100% for neutrals-50 (extra light)
+  100: `oklch(${oklchScale[50]}% 0.0382 96.53)`,
+  200: `oklch(${oklchScale[100]}% 0.0382 96.53)`,
+  300: `oklch(${oklchScale[200]}% 0.0382 96.53)`,
+  400: `oklch(${oklchScale[300]}% 0.0382 96.53)`,
+  500: `oklch(${oklchScale[400]}% 0.0382 96.53)`,
+  600: `oklch(${oklchScale[500]}% 0.0382 96.53)`,
+  700: `oklch(${oklchScale[600]}% 0.0382 96.53)`,
+  800: `oklch(${oklchScale[700]}% 0.0382 96.53)`,
+  900: `oklch(${oklchScale[800]}% 0.0382 96.53)`,
+  950: `oklch(${oklchScale[900]}% 0.0382 96.53)`,
 } as const;
 
 /**
@@ -244,11 +262,11 @@ export const colors: ColorPalette = {
     foreground: greyscaleColors[900], // Text color on card backgrounds
   },
   navigation: {
-    DEFAULT: white, // Used for navigation/sidebar backgrounds
-    foreground: greyscaleColors[900], // Text color on navigation backgrounds
+    DEFAULT: primaryColors[800], // Used for navigation/sidebar backgrounds
+    foreground: primaryColors[100], // Text color on navigation backgrounds
   },
   header: {
-    DEFAULT: white, // Used for header/topbar backgrounds
+    DEFAULT: "#fbfff7", // Used for header/topbar backgrounds
     foreground: greyscaleColors[900], // Text color on header backgrounds
   },
   border: greyscaleColors[200], // Used for borders, dividers, outlines

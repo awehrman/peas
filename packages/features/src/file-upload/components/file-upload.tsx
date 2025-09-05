@@ -64,13 +64,13 @@ export function FileUpload({
 
   return (
     <div className={className}>
-      <h3 className="text-lg font-semibold text-greyscale-900 mb-4">{title}</h3>
+      <h3 className="text-md font-semibold text-greyscale-900 mb-4">{title}</h3>
 
       <div
-        className={`border-2 border-dashed border-greyscale-400 rounded-lg p-8 transition-colors ${
+        className={`border-2 border-dashed border-greyscale-100 rounded-lg p-8 transition-colors ${
           disabled
             ? "opacity-50 cursor-not-allowed"
-            : "hover:border-greyscale-400"
+            : "hover:border-greyscale-100"
         }`}
         onDragOver={handleDragOver}
         onDrop={handleDrop}

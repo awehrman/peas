@@ -2,6 +2,13 @@
 @import "@peas/components/styles.css";
 
 @layer base {
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+  }
+
   button:not([disabled]),
   [role="button"]:not([disabled]) {
     cursor: pointer;
