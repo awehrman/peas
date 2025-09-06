@@ -91,10 +91,10 @@ function MobileSidebarNavigation({
               icon={item.icon}
               LinkComponent={LinkComponent}
               className={cn(
-                "flex items-center gap-3 w-full p-3 rounded-md transition-colors font-normal opacity-80",
+                "flex items-center gap-3 w-full p-3 rounded-md transition-colors font-normal",
                 isActive
-                  ? "text-[color:var(--color-header)] opacity-100"
-                  : "text-navigation-foreground hover:text-[color:var(--color-header)] hover:opacity-100"
+                  ? "text-primary-500"
+                  : "text-navigation-foreground hover:text-primary-500"
               )}
             />
           </NavigationMenuItem>
@@ -140,7 +140,7 @@ function MobileSidebarNavigation({
               <NavigationMenuItem className="w-full mt-auto">
                 <form
                   action={signOut}
-                  className="flex gap-2 items-center w-full p-3 rounded-md transition-colors font-normal opacity-80 text-navigation-foreground hover:bg-accent hover:text-[color:var(--color-header)] hover:opacity-100"
+                  className="flex gap-2 items-center w-full p-3 rounded-md transition-colors font-normal text-navigation-foreground hover:bg-accent hover:text-primary-500"
                   onSubmit={handleSignOutSubmit}
                 >
                   <LogOut className="mr-2 h-4 w-4" />

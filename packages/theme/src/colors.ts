@@ -263,7 +263,7 @@ export const colors: ColorPalette = {
   },
   navigation: {
     DEFAULT: white, // Used for navigation/sidebar backgrounds
-    foreground: primaryColors[800], // Text color on navigation backgrounds
+    foreground: primaryColors[600], // Text color on navigation backgrounds
   },
   header: {
     DEFAULT: "#fbfff7", // Used for header/topbar backgrounds

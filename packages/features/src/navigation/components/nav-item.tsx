@@ -8,11 +8,13 @@ interface NavItemProps {
   icon: LucideIcon;
   onClick?: () => void;
   className?: string;
+  style?: React.CSSProperties;
   LinkComponent?: React.ComponentType<{
     href: string;
     className?: string;
     children: React.ReactNode;
     onClick?: () => void;
+    style?: React.CSSProperties;
   }>;
 }
 
@@ -22,6 +24,7 @@ export function NavItem({
   icon,
   onClick,
   className,
+  style,
   LinkComponent,
 }: NavItemProps) {
   const { setIsExpanded } = useNavigation();
@@ -38,8 +41,8 @@ export function NavItem({
   const IconComponent = icon;
   const content = (
     <>
-      <IconComponent className="h-4 w-4" />
-      <span>{name}</span>
+      <IconComponent className="h-4 w-4" style={style} />
+      <span style={style}>{name}</span>
     </>
   );
 
@@ -50,6 +53,7 @@ export function NavItem({
       <LinkComponent
         href={href}
         className={`${baseClassName} ${className || ""}`}
+        style={style}
         onClick={handleClick}
       >
         {content}
@@ -61,6 +65,7 @@ export function NavItem({
     <a
       href={href}
       className={`${baseClassName} ${className || ""}`}
+      style={style}
       onClick={handleClick}
     >
       {content}

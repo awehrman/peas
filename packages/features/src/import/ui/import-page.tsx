@@ -45,8 +45,6 @@ export function ImportPage({
 
   return (
     <div className="container mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-6">Import Feature</h1>
-
       <div className="grid gap-6">
         <div className="bg-card p-4 rounded-lg border">
           <h2 className="text-xl font-semibold mb-3">Context Status</h2>

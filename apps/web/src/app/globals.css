@@ -1,6 +1,9 @@
 @import "tailwindcss";
 @import "@peas/components/styles.css";
 
+/* Import CSS variables directly */
+@import "@peas/tailwind/shared-styles.css";
+
 @layer base {
   html,
   body {
