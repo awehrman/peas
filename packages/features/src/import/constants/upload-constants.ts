@@ -39,6 +39,8 @@ export const FILE_PATTERNS = {
   IMAGE_FILE: /\.(png|jpg|jpeg|gif|webp|svg|bmp)$/i,
   /** Pattern to match files that should be ignored */
   IGNORE_PATTERN: /^index\.html$/i,
+  /** Pattern to match system files that should be ignored */
+  SYSTEM_FILES: /^(\.|__).*|.*\.(tmp|temp|log|cache)$/i,
 } as const;
 
 // Upload states

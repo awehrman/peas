@@ -22,12 +22,15 @@ export const fileValidationSchema = z
   })
   .refine(
     (file) => {
+      // Extract just the filename from the full path (for directory uploads)
+      const fileName = file.name.split("/").pop() || file.name;
+
       // HTML files
       if (
         (SUPPORTED_FILE_TYPES.HTML_MIME_TYPES as readonly string[]).includes(
           file.type
         ) ||
-        FILE_PATTERNS.HTML_FILE.test(file.name)
+        FILE_PATTERNS.HTML_FILE.test(fileName)
       ) {
         return true;
       }
@@ -37,16 +40,15 @@ export const fileValidationSchema = z
         (SUPPORTED_FILE_TYPES.IMAGE_MIME_TYPES as readonly string[]).includes(
           file.type
         ) ||
-        FILE_PATTERNS.IMAGE_FILE.test(file.name)
+        FILE_PATTERNS.IMAGE_FILE.test(fileName)
       ) {
         return true;
       }
 
       // Binary images without extensions (will be validated server-side)
-      if (!file.name.includes(".") && file.type === "") {
+      if (!fileName.includes(".") && file.type === "") {
         return true;
       }
-
       return false;
     },
     {
@@ -147,7 +149,20 @@ export function validateFileList(
 ):
   | { success: true; data: ValidatedFile[] }
   | { success: false; error: z.ZodError } {
-  const fileDataList = files.map((file) => ({
+  // Filter out system files before validation
+  const filteredFiles = files.filter((file) => {
+    const fileName = file.name.split("/").pop() || file.name;
+    const isSystemFile = FILE_PATTERNS.SYSTEM_FILES.test(fileName);
+
+    if (isSystemFile) {
+      console.log(`Filtering out system file: ${file.name}`);
+      return false;
+    }
+
+    return true;
+  });
+
+  const fileDataList = filteredFiles.map((file) => ({
     name: file.name,
     type: file.type,
     size: file.size,
@@ -180,30 +195,34 @@ export function groupFilesByHtmlAndImages(
   const groups: FileGroup[] = [];
 
   // Separate HTML files and other files
-  const htmlFiles = files.filter(
-    (file) =>
+  const htmlFiles = files.filter((file) => {
+    const fileName = file.name.split("/").pop() || file.name;
+    return (
       (SUPPORTED_FILE_TYPES.HTML_MIME_TYPES as readonly string[]).includes(
         file.type
-      ) || FILE_PATTERNS.HTML_FILE.test(file.name)
-  );
+      ) || FILE_PATTERNS.HTML_FILE.test(fileName)
+    );
+  });
 
-  const otherFiles = files.filter(
-    (file) =>
-      !(
-        (SUPPORTED_FILE_TYPES.HTML_MIME_TYPES as readonly string[]).includes(
-          file.type
-        ) || FILE_PATTERNS.HTML_FILE.test(file.name)
-      )
-  );
+  const otherFiles = files.filter((file) => {
+    const fileName = file.name.split("/").pop() || file.name;
+    return !(
+      (SUPPORTED_FILE_TYPES.HTML_MIME_TYPES as readonly string[]).includes(
+        file.type
+      ) || FILE_PATTERNS.HTML_FILE.test(fileName)
+    );
+  });
 
   // Process each HTML file
   for (const htmlFile of htmlFiles) {
-    const htmlName = htmlFile.name.replace(/\.(html|htm)$/i, "");
+    // Extract just the filename without directory path
+    const fileName = htmlFile.name.split("/").pop() || htmlFile.name;
+    const htmlName = fileName.replace(/\.(html|htm)$/i, "");
 
     // Skip index.html files without associated directories
-    if (FILE_PATTERNS.IGNORE_PATTERN.test(htmlFile.name)) {
+    if (FILE_PATTERNS.IGNORE_PATTERN.test(fileName)) {
       const hasAssociatedDir = otherFiles.some((file) =>
-        file.name.startsWith(htmlName + "/")
+        file.name.includes(htmlName + "/")
       );
 
       if (!hasAssociatedDir) {
@@ -212,9 +231,52 @@ export function groupFilesByHtmlAndImages(
       }
     }
 
-    // Find associated image files (files in directory with same name)
-    const associatedImages = otherFiles.filter((file) =>
-      file.name.startsWith(htmlName + "/")
+    // Find associated image files
+    // Look for images in any subdirectory that might be related to this HTML file
+    // This handles cases like "1-egg.html" with images in "1-egg files/" directory
+    let associatedImages = otherFiles.filter((file) => {
+      // Check if the file is in a subdirectory that starts with the HTML name
+      const filePath = file.name;
+      const htmlBaseName = htmlName.toLowerCase().replace(/[^a-z0-9]/g, ""); // Remove non-alphanumeric chars
+
+      // Look for directories that contain the HTML base name
+      const pathParts = filePath.split("/");
+      for (let i = 0; i < pathParts.length - 1; i++) {
+        const pathPart = pathParts[i];
+        if (pathPart) {
+          const dirName = pathPart.toLowerCase().replace(/[^a-z0-9]/g, "");
+          if (
+            dirName.includes(htmlBaseName) ||
+            htmlBaseName.includes(dirName)
+          ) {
+            return true;
+          }
+        }
+      }
+      return false;
+    });
+
+    console.log(`HTML file: ${htmlFile.name}, htmlName: ${htmlName}`);
+    console.log(
+      `Images in related subdirectory: ${associatedImages.map((f) => f.name).join(", ")}`
+    );
+
+    // If no images found in subdirectory, look for images in the same directory
+    // This handles cases where HTML and images are in the same folder
+    if (associatedImages.length === 0) {
+      associatedImages = otherFiles.filter((file) => {
+        const fileDir = file.name.split("/").slice(0, -1).join("/");
+        const htmlDir = htmlFile.name.split("/").slice(0, -1).join("/");
+        const isInSameDir = fileDir === htmlDir;
+        console.log(
+          `File: ${file.name}, fileDir: "${fileDir}", htmlDir: "${htmlDir}", sameDir: ${isInSameDir}`
+        );
+        return isInSameDir;
+      });
+    }
+
+    console.log(
+      `Final associated images: ${associatedImages.map((f) => f.name).join(", ")}`
     );
 
     // Generate unique importId for this HTML file

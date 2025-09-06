@@ -181,7 +181,7 @@ export function ImportFileUpload({
       {/* Previous Batches */}
       {state.previousBatches.length > 0 && (
         <div className="mt-4 space-y-2">
-          {state.previousBatches.map((batch, index) => (
+          {state.previousBatches.map((batch) => (
             <div
               key={batch.importId}
               className={`p-3 rounded-lg border ${

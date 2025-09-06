@@ -140,9 +140,9 @@ export function FileDropZone({
       </div>
 
       {error && (
-        <Alert variant="destructive" className="mt-4">
+        <Alert variant="destructive" className="mt-4 [&>svg+div]:translate-y-0">
           <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
+          <AlertDescription className="leading-4">{error}</AlertDescription>
         </Alert>
       )}
     </div>
