@@ -1,17 +1,23 @@
 import { ReactNode } from "react";
-import { ImportPageContent, getImportStats } from "@peas/features";
+
+import { ImportPage, ImportProvider } from "@peas/features";
 
 export const dynamic = "force-dynamic";
 
 export default async function ImportPageRoute(): Promise<ReactNode> {
-  const { noteCount, ingredientCount, parsingErrorCount } =
-    await getImportStats();
+  // Using static values for development/testing
+  // TODO: Implement getImportStats() to fetch real data from the server
+  const initialNoteCount = 0;
+  const initialIngredientCount = 0;
+  const initialParsingErrorCount = 0;
 
   return (
-    <ImportPageContent
-      initialNoteCount={noteCount}
-      initialIngredientCount={ingredientCount}
-      initialParsingErrorCount={parsingErrorCount}
-    />
+    <ImportProvider>
+      <ImportPage
+        initialNoteCount={initialNoteCount}
+        initialIngredientCount={initialIngredientCount}
+        initialParsingErrorCount={initialParsingErrorCount}
+      />
+    </ImportProvider>
   );
 }

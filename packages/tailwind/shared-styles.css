@@ -145,8 +145,8 @@
     --color-card-foreground: oklch(20% 0.002 150.5);
 
     /* Navigation Colors */
-    --color-navigation: oklch(30% 0.0900 127.79);
-    --color-navigation-foreground: oklch(95% 0.0900 127.79);
+    --color-navigation: #ffffff;
+    --color-navigation-foreground: oklch(30% 0.0900 127.79);
 
     /* Header Colors */
     --color-header: #fbfff7;

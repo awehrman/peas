@@ -25,6 +25,8 @@
     "**/*.js.map",
     "src/**/__tests__/**",
     "src/**/*.test.ts",
-    "src/**/*.test.tsx"
+    "src/**/*.test.tsx",
+    "src/bak/**/*",
+    "src/bak-import/**/*"
   ]
 }

@@ -262,8 +262,8 @@ export const colors: ColorPalette = {
     foreground: greyscaleColors[900], // Text color on card backgrounds
   },
   navigation: {
-    DEFAULT: primaryColors[800], // Used for navigation/sidebar backgrounds
-    foreground: primaryColors[100], // Text color on navigation backgrounds
+    DEFAULT: white, // Used for navigation/sidebar backgrounds
+    foreground: primaryColors[800], // Text color on navigation backgrounds
   },
   header: {
     DEFAULT: "#fbfff7", // Used for header/topbar backgrounds
