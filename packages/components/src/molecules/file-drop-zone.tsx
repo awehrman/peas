@@ -1,12 +1,12 @@
 "use client";
 
+import { FileInput } from "./file-input";
 import { Placeholder } from "./placeholder";
 
 import React, { useCallback, useState } from "react";
 
 import { AlertCircle, File, Upload } from "lucide-react";
 
-import { FileInput } from "../atoms/file-input";
 import { cn } from "../lib/utils";
 import { Alert, AlertDescription } from "../ui/alert";
 import { Button } from "../ui/button-shadcn";

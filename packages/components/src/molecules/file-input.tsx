@@ -2,7 +2,9 @@
 
 import React from "react";
 
+import { FileInputField } from "../atoms/file-input-field";
 import { cn } from "../lib/utils";
+import { Button } from "../ui/button-shadcn";
 
 export interface FileInputProps {
   /** Callback when files are selected */
@@ -23,6 +25,10 @@ export interface FileInputProps {
   showInput?: boolean;
 }
 
+/**
+ * File input molecule component
+ * Combines atomic file input fields with button controls
+ */
 export function FileInput({
   onFilesChange,
   multiple = true,
@@ -33,15 +39,6 @@ export function FileInput({
   id = "file-input",
   showInput = false,
 }: FileInputProps) {
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || []);
-    if (files.length > 0 && onFilesChange) {
-      onFilesChange(files);
-    }
-    // Reset the input value to allow selecting the same files again
-    event.target.value = "";
-  };
-
   const openFileDialog = () => {
     document.getElementById(id)?.click();
   };
@@ -52,50 +49,38 @@ export function FileInput({
 
   return (
     <div className={cn("file-input", className)}>
-      {/* Hidden file inputs */}
-      <input
+      {/* Atomic file input fields */}
+      <FileInputField
         id={id}
-        type="file"
+        onFilesChange={onFilesChange}
         multiple={multiple}
-        onChange={handleFileChange}
-        className="hidden"
+        allowDirectories={allowDirectories}
         accept={accept}
         disabled={disabled}
       />
 
-      {allowDirectories && (
-        <input
-          id={`${id}-directory`}
-          type="file"
-          multiple={true}
-          {...{ webkitdirectory: "" }}
-          onChange={handleFileChange}
-          className="hidden"
-          accept={accept}
-          disabled={disabled}
-        />
-      )}
-
-      {/* Show input if requested */}
+      {/* Show UI controls if requested */}
       {showInput && (
         <div className="flex gap-2">
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="sm"
             onClick={openFileDialog}
             disabled={disabled}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Choose files
-          </button>
+          </Button>
           {allowDirectories && (
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               onClick={openDirectoryDialog}
               disabled={disabled}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Choose directory
-            </button>
+            </Button>
           )}
         </div>
       )}

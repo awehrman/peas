@@ -172,35 +172,15 @@ export function ImportFileUpload({
       {/* Upload Progress */}
       {state.currentBatch && (
         <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <h4 className="font-medium text-blue-900 mb-2">
-            Uploading: {state.currentBatch.directoryName || "Files"}
+          <h4 className="font-medium text-blue-900">
+            Uploading {state.currentBatch.numberOfFiles} files...
           </h4>
-          <div className="space-y-2">
-            {state.currentBatch.files.map((file) => (
-              <div
-                key={file.id}
-                className="flex items-center justify-between text-sm"
-              >
-                <span className="text-blue-700">{file.file.name}</span>
-                <span className="text-blue-600">
-                  {file.status === "completed"
-                    ? "✓"
-                    : file.status === "failed"
-                      ? "✗"
-                      : file.status === "uploading"
-                        ? "⏳"
-                        : "⏸"}
-                </span>
-              </div>
-            ))}
-          </div>
         </div>
       )}
 
       {/* Previous Batches */}
       {state.previousBatches.length > 0 && (
         <div className="mt-4 space-y-2">
-          <h4 className="font-medium text-gray-900">Previous uploads:</h4>
           {state.previousBatches.map((batch, index) => (
             <div
               key={batch.importId}
@@ -210,24 +190,15 @@ export function ImportFileUpload({
                   : "bg-green-50 border-green-200"
               }`}
             >
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">
-                  {batch.directoryName || `Upload ${index + 1}`}
-                </span>
-                <span className="text-sm">
-                  {batch.errorMessage ? "Failed" : "Success"}
-                </span>
-              </div>
-              {batch.successMessage && (
-                <p className="text-sm text-green-700 mt-1">
-                  {batch.successMessage}
-                </p>
-              )}
-              {batch.errorMessage && (
-                <p className="text-sm text-red-700 mt-1">
-                  {batch.errorMessage}
-                </p>
-              )}
+              <h4
+                className={`font-medium ${
+                  batch.errorMessage ? "text-red-900" : "text-green-900"
+                }`}
+              >
+                {batch.errorMessage
+                  ? `Failed to upload ${batch.numberOfFiles} files`
+                  : `Uploaded ${batch.numberOfFiles} files successfully`}
+              </h4>
             </div>
           ))}
         </div>
