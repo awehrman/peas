@@ -255,11 +255,11 @@ export const colors: ColorPalette = {
   },
   popover: {
     DEFAULT: white, // Used for dropdown/popover backgrounds (same as background)
-    foreground: greyscaleColors[900], // Text color on popover backgrounds
+    foreground: greyscaleColors[500], // Text color on popover backgrounds
   },
   card: {
     DEFAULT: white, // Used for card/panel backgrounds (same as background)
-    foreground: greyscaleColors[900], // Text color on card backgrounds
+    foreground: greyscaleColors[500], // Text color on card backgrounds
   },
   navigation: {
     DEFAULT: white, // Used for navigation/sidebar backgrounds
@@ -267,7 +267,7 @@ export const colors: ColorPalette = {
   },
   header: {
     DEFAULT: "#fbfff7", // Used for header/topbar backgrounds
-    foreground: greyscaleColors[900], // Text color on header backgrounds
+    foreground: greyscaleColors[700], // Text color on header backgrounds
   },
   border: greyscaleColors[200], // Used for borders, dividers, outlines
   input: neutralColors[300], // Used for input field backgrounds (80% lightness)

@@ -138,11 +138,11 @@
 
     /* Popover Colors */
     --color-popover: #ffffff;
-    --color-popover-foreground: oklch(20% 0.002 150.5);
+    --color-popover-foreground: oklch(60% 0.009 150.5);
 
     /* Card Colors */
     --color-card: #ffffff;
-    --color-card-foreground: oklch(20% 0.002 150.5);
+    --color-card-foreground: oklch(60% 0.009 150.5);
 
     /* Navigation Colors */
     --color-navigation: #ffffff;
@@ -150,7 +150,7 @@
 
     /* Header Colors */
     --color-header: #fbfff7;
-    --color-header-foreground: oklch(20% 0.002 150.5);
+    --color-header-foreground: oklch(40% 0.004 150.5);
 
     --color-border: oklch(90% 0.015 150.5);
     --color-input: oklch(90% 0.0382 96.53);

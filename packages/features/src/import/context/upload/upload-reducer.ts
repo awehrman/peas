@@ -1,4 +1,8 @@
-import type { UploadAction, UploadState } from "../../types/import-types";
+import type {
+  FileUploadItem,
+  UploadAction,
+  UploadState,
+} from "../../types/import-types";
 
 /**
  * Upload reducer - handles upload batch state
@@ -15,6 +19,63 @@ export function uploadReducer(
           importId: action.importId,
           createdAt: action.createdAt,
           numberOfFiles: action.numberOfFiles,
+          files: [],
+        },
+      };
+    }
+
+    case "ADD_FILES": {
+      if (!state.currentBatch) return state;
+      return {
+        ...state,
+        currentBatch: {
+          ...state.currentBatch,
+          files: [...state.currentBatch.files, ...action.files],
+          directoryName: action.directoryName,
+        },
+      };
+    }
+
+    case "UPDATE_FILE_STATUS": {
+      if (!state.currentBatch) return state;
+      return {
+        ...state,
+        currentBatch: {
+          ...state.currentBatch,
+          files: state.currentBatch.files.map((file) =>
+            file.id === action.fileId
+              ? {
+                  ...file,
+                  status: action.status,
+                  progress: action.progress ?? file.progress,
+                  error: action.error,
+                }
+              : file
+          ),
+        },
+      };
+    }
+
+    case "REMOVE_FILE": {
+      if (!state.currentBatch) return state;
+      return {
+        ...state,
+        currentBatch: {
+          ...state.currentBatch,
+          files: state.currentBatch.files.filter(
+            (file) => file.id !== action.fileId
+          ),
+        },
+      };
+    }
+
+    case "CLEAR_FILES": {
+      if (!state.currentBatch) return state;
+      return {
+        ...state,
+        currentBatch: {
+          ...state.currentBatch,
+          files: [],
         },
       };
     }
@@ -51,6 +112,13 @@ export function uploadReducer(
       return {
         ...state,
         currentBatch: undefined,
+      };
+
+    case "CLEAR_ALL_BATCHES":
+      return {
+        ...state,
+        currentBatch: undefined,
+        previousBatches: [],
       };
 
     default:

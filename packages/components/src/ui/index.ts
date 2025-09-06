@@ -1,4 +1,6 @@
+export * from "./alert";
 export * from "./aspect-ratio";
+export * from "./badge";
 export * from "./button-shadcn";
 export * from "./card";
 export * from "./collapsible";

@@ -2,10 +2,20 @@
  * Import feature types based on the architecture document
  */
 
+export interface FileUploadItem {
+  id: string;
+  file: File;
+  status: "pending" | "uploading" | "completed" | "failed";
+  progress: number;
+  error?: string;
+}
+
 export interface UploadBatch {
   importId: string;
   createdAt: string;
   numberOfFiles: number;
+  files: FileUploadItem[];
+  directoryName?: string;
   successMessage?: string;
   errorMessage?: string;
 }
@@ -92,9 +102,20 @@ export type UploadAction =
       createdAt: string;
       numberOfFiles: number;
     }
+  | { type: "ADD_FILES"; files: FileUploadItem[]; directoryName?: string }
+  | {
+      type: "UPDATE_FILE_STATUS";
+      fileId: string;
+      status: FileUploadItem["status"];
+      progress?: number;
+      error?: string;
+    }
+  | { type: "REMOVE_FILE"; fileId: string }
+  | { type: "CLEAR_FILES" }
   | { type: "COMPLETE_BATCH"; successMessage: string }
   | { type: "FAIL_BATCH"; errorMessage: string }
-  | { type: "RESET_CURRENT_BATCH" };
+  | { type: "RESET_CURRENT_BATCH" }
+  | { type: "CLEAR_ALL_BATCHES" };
 
 export type WsAction =
   | { type: "WS_CONNECTING" }
