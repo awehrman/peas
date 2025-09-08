@@ -28,19 +28,18 @@ export function useInitialization({
     hasInitialized.current = true;
 
     // Initialize stats with server data if provided
-    if (initialNoteCount > 0) {
-      stats.dispatch({ type: "INCREMENT_NOTES", count: initialNoteCount });
-    }
-    if (initialIngredientCount > 0) {
+    if (
+      initialNoteCount > 0 ||
+      initialIngredientCount > 0 ||
+      initialParsingErrorCount > 0
+    ) {
       stats.dispatch({
-        type: "INCREMENT_INGREDIENTS",
-        count: initialIngredientCount,
-      });
-    }
-    if (initialParsingErrorCount > 0) {
-      stats.dispatch({
-        type: "INCREMENT_ERRORS",
-        count: initialParsingErrorCount,
+        type: "REFRESH_STATS",
+        stats: {
+          numberOfNotes: initialNoteCount,
+          numberOfIngredients: initialIngredientCount,
+          numberOfParsingErrors: initialParsingErrorCount,
+        },
       });
     }
 

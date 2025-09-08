@@ -9,27 +9,27 @@ import { WsProvider } from "./ws";
 import { type ReactNode } from "react";
 
 import { useWebSocketUploadIntegration } from "../hooks/use-websocket-upload-integration";
+import type { ImportStatsState, StatusEvent } from "../types/import-types";
 
 interface ImportProviderProps {
   children: ReactNode;
+  onStatsRefresh?: () => Promise<ImportStatsState>;
 }
 
 /**
- * Internal component that provides WebSocket integration with upload context
+ * Internal component that provides WebSocket integration
  */
-function WebSocketIntegrationWrapper({ children }: { children: ReactNode }) {
-  const { handleStatusUpdate } = useWebSocketUploadIntegration();
+function WebSocketIntegrationWrapper({
+  children,
+  onStatsRefresh,
+}: {
+  children: ReactNode;
+  onStatsRefresh?: () => Promise<ImportStatsState>;
+}) {
+  const { handleStatusUpdate } = useWebSocketUploadIntegration(onStatsRefresh);
 
   return (
-    <WsProvider onStatusUpdate={handleStatusUpdate}>
-      <ContextErrorBoundary>
-        <StatsProvider>
-          <ContextErrorBoundary>
-            <ActivityProvider>{children}</ActivityProvider>
-          </ContextErrorBoundary>
-        </StatsProvider>
-      </ContextErrorBoundary>
-    </WsProvider>
+    <WsProvider onStatusUpdate={handleStatusUpdate}>{children}</WsProvider>
   );
 }
 
@@ -38,7 +38,10 @@ function WebSocketIntegrationWrapper({ children }: { children: ReactNode }) {
  * Provides upload, websocket, stats, and activity contexts to children
  * Includes error boundaries for better error handling
  */
-export function ImportProvider({ children }: ImportProviderProps) {
+export function ImportProvider({
+  children,
+  onStatsRefresh,
+}: ImportProviderProps) {
   return (
     <ContextErrorBoundary
       onError={(error, errorInfo) => {
@@ -47,7 +50,15 @@ export function ImportProvider({ children }: ImportProviderProps) {
     >
       <ImportUploadProvider>
         <ContextErrorBoundary>
-          <WebSocketIntegrationWrapper>{children}</WebSocketIntegrationWrapper>
+          <StatsProvider>
+            <ContextErrorBoundary>
+              <WebSocketIntegrationWrapper onStatsRefresh={onStatsRefresh}>
+                <ContextErrorBoundary>
+                  <ActivityProvider>{children}</ActivityProvider>
+                </ContextErrorBoundary>
+              </WebSocketIntegrationWrapper>
+            </ContextErrorBoundary>
+          </StatsProvider>
         </ContextErrorBoundary>
       </ImportUploadProvider>
     </ContextErrorBoundary>

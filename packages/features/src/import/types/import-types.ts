@@ -131,11 +131,7 @@ export type WsAction =
   | { type: "WS_RETRY" }
   | { type: "WS_ERROR" };
 
-export type StatsAction =
-  | { type: "INCREMENT_INGREDIENTS"; count: number }
-  | { type: "INCREMENT_NOTES"; count: number }
-  | { type: "INCREMENT_ERRORS"; count: number }
-  | { type: "RESET_STATS" };
+export type StatsAction = { type: "REFRESH_STATS"; stats: ImportStatsState };
 
 export type ActivityAction =
   | { type: "ADD_IMPORT_CARD"; pageIndex: number; card: ImportCard }

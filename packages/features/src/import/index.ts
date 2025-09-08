@@ -25,6 +25,7 @@ export * from "./components";
 
 // Hook exports
 export { useImport } from "./hooks/use-import";
+export { useWebSocketUploadIntegration } from "./hooks/use-websocket-upload-integration";
 
 // Service exports
 export * from "./services";

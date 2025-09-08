@@ -91,6 +91,7 @@ export default [
         window: "readonly",
         document: "readonly",
         React: "readonly",
+        fetch: "readonly", // Available in Node.js 18+ and Next.js
       },
     },
   },

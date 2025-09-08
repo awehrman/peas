@@ -35,7 +35,9 @@ export function ImportPage({
   });
 
   const handleAddNote = () => {
-    stats.dispatch({ type: "INCREMENT_NOTES", count: 1 });
+    // Note: Manual increment removed - stats are now refreshed automatically
+    // when note processing completes via WebSocket events
+    console.log("Add note clicked - stats will be refreshed automatically");
   };
 
   const handleCompleteBatch = () => {

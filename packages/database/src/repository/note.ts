@@ -769,3 +769,38 @@ export async function getNoteTags(
     throw error;
   }
 }
+
+/**
+ * Get import statistics for the dashboard
+ */
+export async function getImportStats(): Promise<{
+  numberOfIngredients: number;
+  numberOfNotes: number;
+  numberOfParsingErrors: number;
+}> {
+  try {
+    const [ingredientCount, noteCount, parsingErrorCount] = await Promise.all([
+      // Count total ingredients
+      prisma.ingredient.count(),
+
+      // Count total notes
+      prisma.note.count(),
+
+      // Count total parsing errors (sum of parsingErrorCount from all notes)
+      prisma.note.aggregate({
+        _sum: {
+          parsingErrorCount: true,
+        },
+      }),
+    ]);
+
+    return {
+      numberOfIngredients: ingredientCount,
+      numberOfNotes: noteCount,
+      numberOfParsingErrors: parsingErrorCount._sum.parsingErrorCount || 0,
+    };
+  } catch (error) {
+    console.error("Failed to get import stats:", error);
+    throw error;
+  }
+}

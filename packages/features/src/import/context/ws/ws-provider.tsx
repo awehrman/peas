@@ -85,6 +85,16 @@ export function WsProvider({
       return;
     }
 
+    // Clean up any existing connection before creating a new one
+    if (wsRef.current) {
+      try {
+        wsRef.current.close();
+      } catch {
+        // ignore cleanup errors
+      }
+      wsRef.current = null;
+    }
+
     try {
       dispatch({ type: "WS_CONNECTING" });
 
@@ -156,12 +166,24 @@ export function WsProvider({
   const disconnect = useCallback(() => {
     isManualDisconnectRef.current = true;
     clearTimers();
-    try {
-      wsRef.current?.close();
-    } finally {
-      wsRef.current = null;
-      dispatch({ type: "WS_DISCONNECTED" });
+
+    if (wsRef.current) {
+      try {
+        // Only close if not already closed
+        if (
+          wsRef.current.readyState === WebSocket.OPEN ||
+          wsRef.current.readyState === WebSocket.CONNECTING
+        ) {
+          wsRef.current.close();
+        }
+      } catch {
+        // ignore cleanup errors
+      } finally {
+        wsRef.current = null;
+      }
     }
+
+    dispatch({ type: "WS_DISCONNECTED" });
   }, [clearTimers]);
 
   const sendMessage = useCallback(<T extends WebSocketMessage>(message: T) => {
