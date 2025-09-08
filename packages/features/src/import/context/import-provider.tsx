@@ -8,8 +8,29 @@ import { WsProvider } from "./ws";
 
 import { type ReactNode } from "react";
 
+import { useWebSocketUploadIntegration } from "../hooks/use-websocket-upload-integration";
+
 interface ImportProviderProps {
   children: ReactNode;
+}
+
+/**
+ * Internal component that provides WebSocket integration with upload context
+ */
+function WebSocketIntegrationWrapper({ children }: { children: ReactNode }) {
+  const { handleStatusUpdate } = useWebSocketUploadIntegration();
+
+  return (
+    <WsProvider onStatusUpdate={handleStatusUpdate}>
+      <ContextErrorBoundary>
+        <StatsProvider>
+          <ContextErrorBoundary>
+            <ActivityProvider>{children}</ActivityProvider>
+          </ContextErrorBoundary>
+        </StatsProvider>
+      </ContextErrorBoundary>
+    </WsProvider>
+  );
 }
 
 /**
@@ -26,15 +47,7 @@ export function ImportProvider({ children }: ImportProviderProps) {
     >
       <ImportUploadProvider>
         <ContextErrorBoundary>
-          <WsProvider>
-            <ContextErrorBoundary>
-              <StatsProvider>
-                <ContextErrorBoundary>
-                  <ActivityProvider>{children}</ActivityProvider>
-                </ContextErrorBoundary>
-              </StatsProvider>
-            </ContextErrorBoundary>
-          </WsProvider>
+          <WebSocketIntegrationWrapper>{children}</WebSocketIntegrationWrapper>
         </ContextErrorBoundary>
       </ImportUploadProvider>
     </ContextErrorBoundary>

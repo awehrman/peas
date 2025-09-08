@@ -26,6 +26,9 @@ export * from "./components";
 // Hook exports
 export { useImport } from "./hooks/use-import";
 
+// Service exports
+export * from "./services";
+
 // UI exports
 export { ImportPage } from "./ui/import-page";
 

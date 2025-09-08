@@ -80,6 +80,27 @@ export function uploadReducer(
       };
     }
 
+    case "UPDATE_BATCH_STATUS": {
+      if (
+        !state.currentBatch ||
+        state.currentBatch.importId !== action.importId
+      ) {
+        return state;
+      }
+      return {
+        ...state,
+        currentBatch: {
+          ...state.currentBatch,
+          files: state.currentBatch.files.map((file) => ({
+            ...file,
+            status: action.status,
+            progress: action.progress ?? file.progress,
+            error: action.error,
+          })),
+        },
+      };
+    }
+
     case "COMPLETE_BATCH": {
       if (!state.currentBatch) return state;
       return {

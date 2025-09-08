@@ -155,7 +155,6 @@ export function validateFileList(
     const isSystemFile = FILE_PATTERNS.SYSTEM_FILES.test(fileName);
 
     if (isSystemFile) {
-      console.log(`Filtering out system file: ${file.name}`);
       return false;
     }
 
@@ -171,12 +170,21 @@ export function validateFileList(
   const result = fileListValidationSchema.safeParse(fileDataList);
 
   if (result.success) {
+    // Map validated data back to original files by name
+    const dataWithFiles = result.data.map((fileData) => {
+      const originalFile = filteredFiles.find((f) => f.name === fileData.name);
+      if (!originalFile) {
+        throw new Error(`File not found: ${fileData.name}`);
+      }
+      return {
+        ...fileData,
+        file: originalFile,
+      };
+    });
+
     return {
       success: true,
-      data: result.data.map((fileData, index) => ({
-        ...fileData,
-        file: files[index]!,
-      })),
+      data: dataWithFiles,
     };
   }
 
@@ -256,28 +264,15 @@ export function groupFilesByHtmlAndImages(
       return false;
     });
 
-    console.log(`HTML file: ${htmlFile.name}, htmlName: ${htmlName}`);
-    console.log(
-      `Images in related subdirectory: ${associatedImages.map((f) => f.name).join(", ")}`
-    );
-
     // If no images found in subdirectory, look for images in the same directory
     // This handles cases where HTML and images are in the same folder
     if (associatedImages.length === 0) {
       associatedImages = otherFiles.filter((file) => {
         const fileDir = file.name.split("/").slice(0, -1).join("/");
         const htmlDir = htmlFile.name.split("/").slice(0, -1).join("/");
-        const isInSameDir = fileDir === htmlDir;
-        console.log(
-          `File: ${file.name}, fileDir: "${fileDir}", htmlDir: "${htmlDir}", sameDir: ${isInSameDir}`
-        );
-        return isInSameDir;
+        return fileDir === htmlDir;
       });
     }
-
-    console.log(
-      `Final associated images: ${associatedImages.map((f) => f.name).join(", ")}`
-    );
 
     // Generate unique importId for this HTML file
     const importId = generateImportId();

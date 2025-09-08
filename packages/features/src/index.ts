@@ -2,7 +2,6 @@
 export * from "./import";
 
 // UI components
-export * from "./file-upload";
 export * from "./dashboard";
 export * from "./form";
 

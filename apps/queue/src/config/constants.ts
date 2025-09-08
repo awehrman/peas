@@ -166,7 +166,12 @@ export const SECURITY_CONSTANTS = {
   CORS: {
     ALLOWED_ORIGINS: ["http://localhost:3000", "http://localhost:4200"],
     ALLOWED_METHODS: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    ALLOWED_HEADERS: ["Content-Type", "Authorization", "X-Requested-With"],
+    ALLOWED_HEADERS: [
+      "Content-Type",
+      "Authorization",
+      "X-Requested-With",
+      "x-import-id",
+    ],
   },
   /** Security headers */
   SECURITY_HEADERS: {

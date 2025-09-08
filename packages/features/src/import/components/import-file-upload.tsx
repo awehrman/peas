@@ -9,6 +9,7 @@ import {
   UPLOAD_STATES,
 } from "../constants/upload-constants";
 import { useImportUpload } from "../context/upload/upload-provider";
+import { UploadService } from "../services/upload-service";
 import type { FileUploadItem } from "../types/import-types";
 import {
   groupFilesByHtmlAndImages,
@@ -96,14 +97,46 @@ export function ImportFileUpload({
             directoryName: group.htmlFile.name.replace(/\.(html|htm)$/i, ""),
           });
 
-          // TODO: Implement actual upload to /upload endpoint
-          // For now, just mark as completed
-          setTimeout(() => {
-            dispatch({
-              type: "COMPLETE_BATCH",
-              successMessage: `Successfully uploaded ${group.htmlFile.name} with ${group.imageFiles.length} images`,
+          // Upload the group to the queue
+          try {
+            await UploadService.uploadFileGroup(group, (progress) => {
+              // Update individual file statuses based on progress
+              fileUploadItems.forEach((fileItem) => {
+                dispatch({
+                  type: "UPDATE_FILE_STATUS",
+                  fileId: fileItem.id,
+                  status:
+                    progress.status === "uploading"
+                      ? "uploading"
+                      : progress.status === "completed"
+                        ? "completed"
+                        : "failed",
+                  progress: progress.progress,
+                  error: progress.error,
+                });
+              });
+
+              // Complete or fail the batch based on progress
+              if (progress.status === "completed") {
+                dispatch({
+                  type: "COMPLETE_BATCH",
+                  successMessage: `Successfully uploaded ${group.htmlFile.name} with ${group.imageFiles.length} images`,
+                });
+              } else if (progress.status === "failed") {
+                dispatch({
+                  type: "FAIL_BATCH",
+                  errorMessage: progress.error || "Upload failed",
+                });
+              }
             });
-          }, 1000);
+          } catch (error) {
+            console.error(`Failed to upload group ${group.importId}:`, error);
+            dispatch({
+              type: "FAIL_BATCH",
+              errorMessage:
+                error instanceof Error ? error.message : "Upload failed",
+            });
+          }
         }
 
         setIsProcessing(false);

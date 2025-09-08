@@ -112,6 +112,13 @@ export type UploadAction =
     }
   | { type: "REMOVE_FILE"; fileId: string }
   | { type: "CLEAR_FILES" }
+  | {
+      type: "UPDATE_BATCH_STATUS";
+      importId: string;
+      status: FileUploadItem["status"];
+      progress?: number;
+      error?: string;
+    }
   | { type: "COMPLETE_BATCH"; successMessage: string }
   | { type: "FAIL_BATCH"; errorMessage: string }
   | { type: "RESET_CURRENT_BATCH" }

@@ -30,6 +30,7 @@ interface WsProviderProps {
   children: ReactNode;
   initialState?: WsConnectionState;
   autoConnect?: boolean;
+  onStatusUpdate?: (statusEvent: StatusEvent) => void;
 }
 
 /**
@@ -39,6 +40,7 @@ export function WsProvider({
   children,
   initialState = defaultWsState,
   autoConnect = true,
+  onStatusUpdate,
 }: WsProviderProps) {
   const [state, dispatch] = useReducer(wsReducer, initialState);
 
@@ -125,7 +127,8 @@ export function WsProvider({
             case "status_update":
               const statusEvent = message.data as StatusEvent;
               console.debug("Status update:", statusEvent);
-              // TODO: Dispatch status update to activity context
+              // Call the status update callback if provided
+              onStatusUpdate?.(statusEvent);
               break;
             case "connection_established":
               console.debug("Connection established:", message.data);
