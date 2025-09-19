@@ -1,3 +1,5 @@
+"use client";
+
 import { useActivity } from "../context/activity";
 import { useStats } from "../context/stats";
 import { useImportUpload } from "../context/upload";

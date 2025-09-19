@@ -1,6 +1,7 @@
-import Matter from "matter-js";
 import { PHYSICS_CONFIG } from "./config.js";
 import { peaManager } from "./pea-manager.js";
+
+import Matter from "matter-js";
 
 /**
  * Manages the physics engine and pea bodies
@@ -8,7 +9,7 @@ import { peaManager } from "./pea-manager.js";
 export class PhysicsEngine {
   private engine: Matter.Engine | null = null;
   private bodies: Matter.Body[] = [];
-  private timeouts: NodeJS.Timeout[] = [];
+  private timeouts: ReturnType<typeof setTimeout>[] = [];
   private mouseBody: Matter.Body | null = null;
   private mouseMoveListener?: (e: MouseEvent) => void;
   private isRunning = false;
@@ -159,8 +160,10 @@ export class PhysicsEngine {
     });
 
     // Store metadata on the body
-    (body as any).peaIdx = peaIdx;
-    (body as any).sizeScale = sizeScale;
+    (body as Matter.Body & { peaIdx?: number; sizeScale?: number }).peaIdx =
+      peaIdx;
+    (body as Matter.Body & { peaIdx?: number; sizeScale?: number }).sizeScale =
+      sizeScale;
 
     this.bodies.push(body);
     Matter.Composite.add(this.engine.world, body);

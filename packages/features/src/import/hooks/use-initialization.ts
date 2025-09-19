@@ -1,3 +1,5 @@
+"use client";
+
 import { useImport } from "./use-import";
 
 import { useEffect, useRef } from "react";

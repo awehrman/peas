@@ -1,3 +1,4 @@
+import { ImportError, logError, normalizeError } from "../utils/error-utils";
 import type { FileGroup } from "../validation/file-validation";
 
 export interface ImportUploadResult {
@@ -17,7 +18,20 @@ export interface UploadProgress {
 }
 
 export class UploadService {
-  private static readonly UPLOAD_ENDPOINT = "http://localhost:4200/upload";
+  private static getUploadEndpoint(): string {
+    // Use environment variable if available
+    if (process.env.NEXT_PUBLIC_UPLOAD_ENDPOINT) {
+      return process.env.NEXT_PUBLIC_UPLOAD_ENDPOINT;
+    }
+
+    // Fallback to relative API route in browser
+    if (typeof window !== "undefined") {
+      return `${window.location.origin}/api/upload`;
+    }
+
+    // Server-side fallback
+    return "http://localhost:4200/upload";
+  }
 
   /**
    * Upload a group of files (HTML + associated images) to the queue
@@ -54,7 +68,7 @@ export class UploadService {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
-      const response = await fetch(this.UPLOAD_ENDPOINT, {
+      const response = await fetch(this.getUploadEndpoint(), {
         method: "POST",
         body: formData,
         headers,
@@ -65,9 +79,16 @@ export class UploadService {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.error || `Upload failed with status ${response.status}`
-        );
+        const errorMessage =
+          errorData.error || `Upload failed with status ${response.status}`;
+        throw new ImportError(errorMessage, {
+          code: "UPLOAD_SERVER_ERROR",
+          recoverable: response.status >= 500, // Server errors are potentially recoverable
+          userMessage:
+            response.status >= 500
+              ? "Server error occurred. Please try again later."
+              : errorMessage,
+        });
       }
 
       const result: ImportUploadResult = await response.json();
@@ -82,28 +103,18 @@ export class UploadService {
 
       return result;
     } catch (error) {
-      let errorMessage = "Upload failed";
-
-      if (error instanceof Error) {
-        if (error.name === "AbortError") {
-          errorMessage = "Upload timed out. Please try again.";
-        } else if (error.message.includes("Failed to fetch")) {
-          errorMessage =
-            "Network error. Please check your connection and try again.";
-        } else {
-          errorMessage = error.message;
-        }
-      }
+      const normalizedError = normalizeError(error);
+      logError("UploadService.uploadFileGroup", error);
 
       // Report upload failure
       onProgress?.({
         importId: group.importId,
         status: "failed",
         progress: 0,
-        error: errorMessage,
+        error: normalizedError.userMessage,
       });
 
-      throw new Error(errorMessage);
+      throw normalizedError;
     }
   }
 

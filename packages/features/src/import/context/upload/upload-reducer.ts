@@ -1,8 +1,4 @@
-import type {
-  FileUploadItem,
-  UploadAction,
-  UploadState,
-} from "../../types/import-types";
+import type { UploadAction, UploadState } from "../../types/import-types";
 
 /**
  * Upload reducer - handles upload batch state

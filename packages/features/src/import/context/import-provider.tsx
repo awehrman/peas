@@ -9,7 +9,7 @@ import { WsProvider } from "./ws";
 import { type ReactNode } from "react";
 
 import { useWebSocketUploadIntegration } from "../hooks/use-websocket-upload-integration";
-import type { ImportStatsState, StatusEvent } from "../types/import-types";
+import type { ImportStatsState } from "../types/import-types";
 
 interface ImportProviderProps {
   children: ReactNode;

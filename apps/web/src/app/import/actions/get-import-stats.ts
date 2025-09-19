@@ -19,11 +19,12 @@ export async function getImportStats(): Promise<ImportStatsState> {
   } catch (error) {
     console.error("Failed to fetch import stats:", error);
 
-    // Re-throw the error to let the caller handle it appropriately
-    // This prevents masking real database issues
-    throw new Error(
-      `Failed to fetch import stats: ${error instanceof Error ? error.message : "Unknown error"}`
-    );
+    // Return default stats instead of throwing to provide graceful fallback
+    return {
+      numberOfNotes: 0,
+      numberOfIngredients: 0,
+      numberOfParsingErrors: 0,
+    };
   }
 }
 

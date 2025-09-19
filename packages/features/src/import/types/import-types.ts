@@ -34,7 +34,7 @@ export interface WsConnectionState {
 // WebSocket message types for better type safety
 export interface WebSocketMessage {
   type: "status_update" | "connection_established" | "pong" | "error";
-  data: any;
+  data: StatusEvent | { message: string } | Record<string, unknown>;
 }
 
 export interface StatusEvent {

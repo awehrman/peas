@@ -134,12 +134,13 @@ export function WsProvider({
 
           // Handle different message types with proper typing
           switch (message.type) {
-            case "status_update":
+            case "status_update": {
               const statusEvent = message.data as StatusEvent;
               console.debug("Status update:", statusEvent);
               // Call the status update callback if provided
               onStatusUpdate?.(statusEvent);
               break;
+            }
             case "connection_established":
               console.debug("Connection established:", message.data);
               break;

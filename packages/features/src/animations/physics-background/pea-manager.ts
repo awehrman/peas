@@ -1,6 +1,7 @@
-import type { BlobPeaConfig } from "@peas/pea-svg-generator";
-import { PeaGenerator, BlobShapeGenerator } from "@peas/pea-svg-generator";
 import { PEA_GENERATOR_CONFIG } from "./config.js";
+
+import type { BlobPeaConfig } from "@peas/pea-svg-generator";
+import { BlobShapeGenerator, PeaGenerator } from "@peas/pea-svg-generator";
 
 /**
  * Manages pea generation and image creation for the physics background
@@ -57,7 +58,7 @@ export class PeaManager {
    * Generate SVG string for a blob pea config with "locked" highlights
    */
   private blobPeaConfigToSVG(pea: BlobPeaConfig): string {
-    const { width, height, color, highlights } = pea;
+    const { width, height, highlights } = pea;
 
     // Create a group that contains the main blob and all highlights as a single unit
     let svg = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">`;
@@ -92,7 +93,7 @@ export class PeaManager {
       const highlightX = width / 2 + highlight.x;
       const highlightY = height / 2 + highlight.y;
 
-      svg += `<g transform=\"translate(${highlightX}, ${highlightY})\">`;
+      svg += `<g transform="translate(${highlightX}, ${highlightY})">`;
       svg += highlightBlobGenerator
         .generateBlobPea(highlightConfig)
         .replace('stroke="1"', 'stroke="none"');
@@ -111,7 +112,7 @@ export class PeaManager {
     return peas.map((pea) => {
       const img = new window.Image();
       const svg = this.blobPeaConfigToSVG(pea);
-      img.src = `data:image/svg+xml;base64,${btoa(svg)}`;
+      img.src = `data:image/svg+xml;base64,${window.btoa(svg)}`;
       return img;
     });
   }

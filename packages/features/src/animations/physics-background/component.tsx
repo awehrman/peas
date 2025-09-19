@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import Matter from "matter-js";
 import { PhysicsEngine, PhysicsRenderer, peaManager } from "./index.js";
+
+import { useEffect, useRef } from "react";
+
+import Matter from "matter-js";
 
 interface PhysicsBackgroundProps {
   children: React.ReactNode;
@@ -65,7 +67,7 @@ export function PhysicsBackground({
       const bodies = physicsEngine.getBodies();
       renderer.drawPeas(bodies);
 
-      requestAnimationFrame(animate);
+      window.requestAnimationFrame(animate);
     }
     animate();
 

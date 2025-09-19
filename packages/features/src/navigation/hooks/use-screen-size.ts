@@ -48,7 +48,7 @@ export function useScreenSize(
     // Mark as mounted
     setIsMounted(true);
 
-    let timeoutId: NodeJS.Timeout;
+    let timeoutId: ReturnType<typeof setTimeout>;
 
     const updateDimensions = () => {
       const newDimensions = {

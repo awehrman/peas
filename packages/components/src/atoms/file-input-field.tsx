@@ -9,8 +9,6 @@ export interface FileInputFieldProps {
   onFilesChange?: (files: File[]) => void;
   /** Whether to allow multiple files */
   multiple?: boolean;
-  /** Whether to allow directory selection */
-  allowDirectories?: boolean;
   /** Accepted file types */
   accept?: string;
   /** Whether the input is disabled */
@@ -27,8 +25,7 @@ export interface FileInputFieldProps {
  */
 export function FileInputField({
   onFilesChange,
-  multiple = true,
-  allowDirectories = false,
+  multiple = false,
   accept,
   disabled = false,
   className,
@@ -55,20 +52,17 @@ export function FileInputField({
         accept={accept}
         disabled={disabled}
       />
-
-      {/* Directory input if needed */}
-      {allowDirectories && (
-        <input
-          id={`${id}-directory`}
-          type="file"
-          multiple={true}
-          {...{ webkitdirectory: "" }}
-          onChange={handleFileChange}
-          className={cn("hidden", className)}
-          accept={accept}
-          disabled={disabled}
-        />
-      )}
+      {/* Directory input */}
+      <input
+        id={`${id}-directory`}
+        type="file"
+        multiple={true}
+        {...{ webkitdirectory: "" }}
+        onChange={handleFileChange}
+        className={cn("hidden", className)}
+        accept={accept}
+        disabled={disabled}
+      />
     </>
   );
 }

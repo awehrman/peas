@@ -31,7 +31,7 @@ export interface FileInputProps {
  */
 export function FileInput({
   onFilesChange,
-  multiple = true,
+  multiple = false,
   allowDirectories = false,
   accept,
   disabled = false,
@@ -39,10 +39,6 @@ export function FileInput({
   id = "file-input",
   showInput = false,
 }: FileInputProps) {
-  const openFileDialog = () => {
-    document.getElementById(id)?.click();
-  };
-
   const openDirectoryDialog = () => {
     document.getElementById(`${id}-directory`)?.click();
   };
@@ -54,34 +50,22 @@ export function FileInput({
         id={id}
         onFilesChange={onFilesChange}
         multiple={multiple}
-        allowDirectories={allowDirectories}
         accept={accept}
         disabled={disabled}
       />
 
       {/* Show UI controls if requested */}
-      {showInput && (
+      {showInput && allowDirectories && (
         <div className="flex gap-2">
           <Button
             type="button"
             variant="outline"
             size="sm"
-            onClick={openFileDialog}
+            onClick={openDirectoryDialog}
             disabled={disabled}
           >
-            Choose files
+            Choose directory
           </Button>
-          {allowDirectories && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={openDirectoryDialog}
-              disabled={disabled}
-            >
-              Choose directory
-            </Button>
-          )}
         </div>
       )}
     </div>

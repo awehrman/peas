@@ -1,6 +1,7 @@
-import Matter from "matter-js";
 import { PHYSICS_CONFIG } from "./config.js";
 import { peaManager } from "./pea-manager.js";
+
+import Matter from "matter-js";
 
 /**
  * Handles canvas rendering for the physics background
@@ -38,7 +39,7 @@ export class PhysicsRenderer {
     if (!ctx) return;
 
     ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    requestAnimationFrame(() => this.draw());
+    window.requestAnimationFrame(() => this.draw());
   }
 
   /**
@@ -65,8 +66,8 @@ export class PhysicsRenderer {
     // Only draw peas that are visible (culling for performance)
     if (!this.isPeaVisible(body)) return;
 
-    const peaIdx = (body as any).peaIdx as number;
-    const sizeScale = (body as any).sizeScale as number;
+    const peaIdx = (body as Matter.Body & { peaIdx?: number }).peaIdx;
+    const sizeScale = (body as Matter.Body & { sizeScale?: number }).sizeScale;
 
     if (typeof peaIdx !== "number" || typeof sizeScale !== "number") return;
 
