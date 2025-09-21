@@ -9,7 +9,7 @@ global.WebSocket = vi.fn(() => ({
   close: vi.fn(),
   send: vi.fn(),
   readyState: 1, // OPEN
-})) as any;
+})) as unknown as typeof WebSocket;
 
 // Mock window.btoa for base64 encoding
 global.btoa = vi.fn((str: string) =>
@@ -34,13 +34,13 @@ global.File = vi.fn((fileBits, fileName, options) => ({
   slice: vi.fn(),
   stream: vi.fn(),
   text: vi.fn(),
-})) as any;
+})) as unknown as typeof File;
 
 global.FileList = vi.fn(() => ({
   length: 0,
   item: vi.fn(),
   [Symbol.iterator]: vi.fn(),
-})) as any;
+})) as typeof FileList;
 
 // Mock URL.createObjectURL
 global.URL.createObjectURL = vi.fn(() => "mock-object-url");

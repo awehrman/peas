@@ -4,10 +4,14 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "dotenv -e ../../.env.local -- next build",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\""
+    "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:debug": "playwright test --debug"
   },
   "dependencies": {
     "@node-rs/argon2": "^2.0.2",
@@ -26,9 +30,11 @@
     "zod": "^4.0.5"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.10.2",
     "@peas/eslint-config": "*",
     "@peas/tailwind": "*",
     "@peas/typescript-config": "*",
+    "@playwright/test": "^1.54.1",
     "@tailwindcss/postcss": "^4.1.11",
     "@types/matter-js": "^0.19.8",
     "@types/node": "^24.0.13",

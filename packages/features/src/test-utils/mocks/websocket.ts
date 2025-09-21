@@ -24,28 +24,32 @@ export class MockWebSocket {
   public readonly CLOSING = 2;
   public readonly CLOSED = 3;
 
-  private eventListeners: Map<string, Function[]> = new Map();
+  private eventListeners: Map<string, ((event: Event) => void)[]> = new Map();
 
   constructor(url: string) {
     this.url = url;
   }
 
-  public addEventListener = vi.fn((type: string, listener: Function) => {
-    if (!this.eventListeners.has(type)) {
-      this.eventListeners.set(type, []);
+  public addEventListener = vi.fn(
+    (type: string, listener: (event: Event) => void) => {
+      if (!this.eventListeners.has(type)) {
+        this.eventListeners.set(type, []);
+      }
+      this.eventListeners.get(type)!.push(listener);
     }
-    this.eventListeners.get(type)!.push(listener);
-  });
+  );
 
-  public removeEventListener = vi.fn((type: string, listener: Function) => {
-    const listeners = this.eventListeners.get(type);
-    if (listeners) {
-      const index = listeners.indexOf(listener);
-      if (index > -1) {
-        listeners.splice(index, 1);
+  public removeEventListener = vi.fn(
+    (type: string, listener: (event: Event) => void) => {
+      const listeners = this.eventListeners.get(type);
+      if (listeners) {
+        const index = listeners.indexOf(listener);
+        if (index > -1) {
+          listeners.splice(index, 1);
+        }
       }
     }
-  });
+  );
 
   public close = vi.fn((code?: number, reason?: string) => {
     this.readyState = this.CLOSED;
@@ -54,9 +58,11 @@ export class MockWebSocket {
     this.dispatchEvent(closeEvent);
   });
 
-  public send = vi.fn((data: string | ArrayBuffer | Blob | ArrayBufferView) => {
-    // Mock send implementation
-  });
+  public send = vi.fn(
+    (_data: string | ArrayBuffer | Blob | ArrayBufferView) => {
+      // Mock send implementation
+    }
+  );
 
   public dispatchEvent = vi.fn((event: Event) => {
     const listeners = this.eventListeners.get(event.type);
@@ -82,7 +88,7 @@ export class MockWebSocket {
     this.dispatchEvent(messageEvent);
   }
 
-  public simulateError(error?: string) {
+  public simulateError(_error?: string) {
     this.readyState = this.CLOSED;
     const errorEvent = new Event("error");
     this.onerror?.(errorEvent);
@@ -129,7 +135,7 @@ export const mockWebSocketConstructor = vi.fn(
 
 // Setup WebSocket mock
 export const setupWebSocketMock = () => {
-  global.WebSocket = mockWebSocketConstructor as any;
+  global.WebSocket = mockWebSocketConstructor as unknown as typeof WebSocket;
   return mockWebSocketConstructor;
 };
 

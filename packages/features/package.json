@@ -9,6 +9,10 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
+    "./test-utils": {
+      "types": "./dist/test-utils-export.d.ts",
+      "default": "./dist/test-utils-export.js"
+    },
     "./styles.css": "./dist/styles.css",
     "./*": {
       "types": "./dist/*.d.ts",

@@ -163,7 +163,7 @@ export const createMockWebSocket = () => {
 
 // Mock fetch response helpers
 export const createMockFetchResponse = (
-  data: any,
+  data: unknown,
   status = 200,
   ok = true
 ): Response =>

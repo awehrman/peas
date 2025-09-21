@@ -27,6 +27,7 @@ export * from "./components";
 export { useImport } from "./hooks/use-import";
 export { useInitialization } from "./hooks/use-initialization";
 export { useWebSocketUploadIntegration } from "./hooks/use-websocket-upload-integration";
+export { useFileUpload } from "./hooks/use-file-upload";
 
 // Service exports
 export * from "./services";

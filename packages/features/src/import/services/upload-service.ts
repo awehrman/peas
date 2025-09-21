@@ -9,7 +9,7 @@ export interface ImportUploadResult {
   importId: string;
 }
 
-export interface UploadProgress {
+export interface UploadProgressData {
   importId: string;
   status: "uploading" | "completed" | "failed";
   progress: number; // 0-100
@@ -38,7 +38,7 @@ export class UploadService {
    */
   static async uploadFileGroup(
     group: FileGroup,
-    onProgress?: (progress: UploadProgress) => void
+    onProgress?: (progress: UploadProgressData) => void
   ): Promise<ImportUploadResult> {
     const formData = new FormData();
 
@@ -123,7 +123,7 @@ export class UploadService {
    */
   static async uploadFileGroups(
     groups: FileGroup[],
-    onProgress?: (progress: UploadProgress) => void
+    onProgress?: (progress: UploadProgressData) => void
   ): Promise<ImportUploadResult[]> {
     const results: ImportUploadResult[] = [];
 

@@ -8,7 +8,6 @@ interface UseInitializationProps {
   initialNoteCount?: number;
   initialIngredientCount?: number;
   initialParsingErrorCount?: number;
-  enableDemoInit?: boolean;
 }
 
 /**
@@ -19,7 +18,6 @@ export function useInitialization({
   initialNoteCount = 0,
   initialIngredientCount = 0,
   initialParsingErrorCount = 0,
-  enableDemoInit = false,
 }: UseInitializationProps) {
   const { upload, stats } = useImport();
   const hasInitialized = useRef(false);
@@ -44,20 +42,10 @@ export function useInitialization({
         },
       });
     }
-
-    if (enableDemoInit) {
-      upload.dispatch({
-        type: "START_BATCH",
-        importId: `test-batch-${Date.now()}`,
-        createdAt: new Date().toISOString(),
-        numberOfFiles: 5,
-      });
-    }
   }, [
     initialNoteCount,
     initialIngredientCount,
     initialParsingErrorCount,
-    enableDemoInit,
     // Remove stats and upload from deps to prevent infinite loops
     // They are stable references from context
   ]);

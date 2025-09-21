@@ -14,7 +14,7 @@
     "format": "turbo run format --concurrency=15",
     "test": "turbo run test --concurrency=15",
     "test:ci": "turbo run test:ci --concurrency=15",
-    "postinstall": "node --trace-warnings ./scripts/fix-max-event-listeners.js",
+    "postinstall": "node --trace-warnings ./scripts/fix-max-event-listeners.mjs",
     "storybook": "turbo storybook --concurrency=15",
     "build-storybook": "turbo build-storybook --concurrency=15",
     "generate-peas": "turbo run generate --concurrency=15",

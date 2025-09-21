@@ -2,7 +2,7 @@ import { vi } from "vitest";
 
 import type {
   ImportUploadResult,
-  UploadProgress,
+  UploadProgressData,
 } from "../../import/services/upload-service";
 import type { FileGroup } from "../../import/validation/file-validation";
 
@@ -36,7 +36,7 @@ export const createFailedUploadResponse = (
 
 // Helper to simulate upload progress
 export const simulateUploadProgress = (
-  onProgress: (progress: UploadProgress) => void,
+  onProgress: (progress: UploadProgressData) => void,
   importId = "test-import-1",
   shouldFail = false
 ) => {
@@ -118,7 +118,7 @@ export const setupUploadServiceMock = (
   mockUploadService.uploadFileGroup.mockImplementation(
     async (
       fileGroup: FileGroup,
-      onProgress: (progress: UploadProgress) => void
+      onProgress: (progress: UploadProgressData) => void
     ) => {
       return new Promise((resolve, reject) => {
         if (scenario === "network-error") {
