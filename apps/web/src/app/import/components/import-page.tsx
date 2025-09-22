@@ -28,9 +28,9 @@ export function ImportPage({
   return (
     <div className="container mx-auto p-6">
       <div className="grid gap-6">
-        {/* File Upload Section */}
+        {/* Import Notes Section */}
         <div className="bg-card p-4 rounded-lg border">
-          <h2 className="text-xl font-semibold mb-4">File Upload</h2>
+          <h2 className="text-lg font-semibold mb-4">Import Notes</h2>
           <ImportFileUpload />
         </div>
       </div>

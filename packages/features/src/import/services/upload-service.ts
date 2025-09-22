@@ -24,12 +24,7 @@ export class UploadService {
       return process.env.NEXT_PUBLIC_UPLOAD_ENDPOINT;
     }
 
-    // Fallback to relative API route in browser
-    if (typeof window !== "undefined") {
-      return `${window.location.origin}/api/upload`;
-    }
-
-    // Server-side fallback
+    // Always use the queue service endpoint directly
     return "http://localhost:4200/upload";
   }
 

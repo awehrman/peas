@@ -4,7 +4,7 @@ import React from "react";
 
 import { FileInputField } from "../atoms/file-input-field";
 import { cn } from "../lib/utils";
-import { Button } from "../ui/button-shadcn";
+import { Button } from "../ui/button";
 
 export interface FileInputProps {
   /** Callback when files are selected */

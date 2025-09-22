@@ -1,4 +1,4 @@
-import { ButtonProps, buttonVariants } from "./button-shadcn";
+import { ButtonProps, buttonVariants } from "./button";
 
 import * as React from "react";
 

@@ -11,7 +11,6 @@ import type {
   WsConnectionState,
 } from "../import/types/import-types";
 
-// File Upload Item Factory
 export const createMockFile = (overrides: Partial<File> = {}): File => {
   const mockFile = {
     name: "test-file.html",

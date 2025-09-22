@@ -15,23 +15,13 @@ export function getUploadState(
   return UPLOAD_STATES.INITIAL;
 }
 
-export function getUploadTitle(uploadState: string): string {
-  switch (uploadState) {
-    case UPLOAD_STATES.UPLOADING:
-      return "Uploading files...";
-    case UPLOAD_STATES.INITIAL:
-    default:
-      return "Import Files";
-  }
-}
-
 export function getUploadDescription(uploadState: string): string {
   switch (uploadState) {
     case UPLOAD_STATES.UPLOADING:
       return "Processing your files...";
     case UPLOAD_STATES.INITIAL:
     default:
-      return "Select a directory containing HTML files with associated image folders (e.g., file.html + file/ folder)";
+      return "Select an Evernote export directory.";
   }
 }
 

@@ -12,7 +12,6 @@ import {
   getUploadDescription,
   getUploadError,
   getUploadState,
-  getUploadTitle,
 } from "../utils/upload-ui-helpers";
 
 export interface ImportFileUploadProps {
@@ -30,7 +29,6 @@ export function ImportFileUpload({
     useFileUpload();
 
   const uploadState = getUploadState(state.currentBatch, isProcessing);
-  const title = getUploadTitle(uploadState);
   const description = getUploadDescription(uploadState);
   const error = getUploadError(validationError, state.currentBatch);
 
@@ -38,11 +36,9 @@ export function ImportFileUpload({
     <div className={className}>
       <FileDropZone
         onFilesChange={handleFilesChange}
-        multiple={true}
-        allowDirectories={true}
-        accept=".html,.htm,.png,.jpg,.jpeg,.gif,.webp,.svg,.bmp"
+        multiple
+        allowDirectories
         disabled={disabled || isProcessing}
-        title={title}
         description={description}
         error={error}
         isProcessing={isProcessing}

@@ -25,13 +25,12 @@ const Placeholder = ({
             }
           )
         : null}
-      {label && (
-        React.isValidElement(label) ? (
+      {label &&
+        (React.isValidElement(label) ? (
           label
         ) : (
-          <h2 className="text-lg text-center">{label as React.ReactNode}</h2>
-        )
-      )}
+          <h2 className="text-md text-center">{label as React.ReactNode}</h2>
+        ))}
       {button &&
         React.cloneElement(button, {
           className: `${button.props.className ?? ""} ${

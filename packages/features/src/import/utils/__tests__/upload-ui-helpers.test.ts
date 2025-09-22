@@ -8,7 +8,6 @@ import {
   getUploadDescription,
   getUploadError,
   getUploadState,
-  getUploadTitle,
 } from "../upload-ui-helpers";
 
 describe("upload-ui-helpers", () => {
@@ -66,23 +65,6 @@ describe("upload-ui-helpers", () => {
       });
       const state = getUploadState(batch, false);
       expect(state).toBe("uploading");
-    });
-  });
-
-  describe("getUploadTitle", () => {
-    it("should return correct title for initial state", () => {
-      const title = getUploadTitle("initial");
-      expect(title).toBe("Import Files");
-    });
-
-    it("should return correct title for uploading state", () => {
-      const title = getUploadTitle("uploading");
-      expect(title).toBe("Uploading files...");
-    });
-
-    it("should handle unknown states gracefully", () => {
-      const title = getUploadTitle("unknown" as any);
-      expect(title).toBe("Import Files");
     });
   });
 
@@ -166,12 +148,10 @@ describe("upload-ui-helpers", () => {
     it("should work together for complete upload flow", () => {
       // Start with initial state
       let state = getUploadState(undefined, false);
-      let title = getUploadTitle(state);
       let description = getUploadDescription(state);
       let error = getUploadError(null, undefined);
 
       expect(state).toBe("initial");
-      expect(title).toBe("Import Files");
       expect(description).toBe(
         "Select a directory containing HTML files with associated image folders (e.g., file.html + file/ folder)"
       );
@@ -179,11 +159,9 @@ describe("upload-ui-helpers", () => {
 
       // Move to processing
       state = getUploadState(undefined, true);
-      title = getUploadTitle(state);
       description = getUploadDescription(state);
 
       expect(state).toBe("uploading");
-      expect(title).toBe("Uploading files...");
       expect(description).toBe("Processing your files...");
 
       // Move to uploading with batch
@@ -193,11 +171,9 @@ describe("upload-ui-helpers", () => {
         ],
       });
       state = getUploadState(uploadingBatch, true);
-      title = getUploadTitle(state);
       description = getUploadDescription(state);
 
       expect(state).toBe("uploading");
-      expect(title).toBe("Uploading files...");
       expect(description).toBe("Processing your files...");
 
       // Batch completed but still shows uploading (simplified state management)
@@ -207,11 +183,9 @@ describe("upload-ui-helpers", () => {
         ],
       });
       state = getUploadState(completedBatch, false);
-      title = getUploadTitle(state);
       description = getUploadDescription(state);
 
       expect(state).toBe("uploading"); // Still uploading state when batch exists
-      expect(title).toBe("Uploading files...");
       expect(description).toBe("Processing your files...");
     });
 
@@ -225,12 +199,10 @@ describe("upload-ui-helpers", () => {
         errorMessage: "Server error occurred",
       });
       const state = getUploadState(failedBatch, false);
-      const title = getUploadTitle(state);
       const description = getUploadDescription(state);
       error = getUploadError(null, failedBatch);
 
       expect(state).toBe("uploading"); // Still uploading when batch exists
-      expect(title).toBe("Uploading files...");
       expect(description).toBe("Processing your files...");
       expect(error).toBe("Server error occurred");
     });

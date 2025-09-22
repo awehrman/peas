@@ -6,11 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { Button, Header, Placeholder, Spinner, cn } from "@peas/components";
-import {
-  ResponsiveNavigation,
-  navigationItems,
-  useScreenSize,
-} from "@peas/features";
+import { ResponsiveNavigation, navigationItems } from "@peas/features";
 import { AlertTriangle } from "lucide-react";
 import { ErrorBoundary } from "react-error-boundary";
 
@@ -50,7 +46,6 @@ export function AuthenticatedLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const { isMobile } = useScreenSize();
 
   // Convert pathname to route name
   let routeName = "Dashboard";
@@ -67,7 +62,7 @@ export function AuthenticatedLayout({
         pathname={pathname}
         signOut={signOut}
       />
-      <div className={cn("flex-1 flex flex-col h-screen", isMobile && "pt-12")}>
+      <div className={cn("flex-1 flex flex-col h-screen")}>
         <Header routeName={routeName} />
         <main className="flex-1 overflow-auto p-10">
           <ErrorBoundary

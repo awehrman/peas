@@ -9,7 +9,7 @@ import { AlertCircle, File, Upload } from "lucide-react";
 
 import { cn } from "../lib/utils";
 import { Alert, AlertDescription } from "../ui/alert";
-import { Button } from "../ui/button-shadcn";
+import { Button } from "../ui/button";
 
 export interface FileDropZoneProps {
   /** Callback when files are dropped or selected */
@@ -18,8 +18,6 @@ export interface FileDropZoneProps {
   multiple?: boolean;
   /** Whether to allow directory selection */
   allowDirectories?: boolean;
-  /** Accepted file types */
-  accept?: string;
   /** Whether the drop zone is disabled */
   disabled?: boolean;
   /** Additional CSS classes */
@@ -37,11 +35,9 @@ export interface FileDropZoneProps {
 export function FileDropZone({
   onFilesChange,
   multiple = true,
-  allowDirectories = false,
-  accept,
+  allowDirectories = true,
   disabled = false,
   className,
-  title = "Upload files",
   description = "Drop or choose files",
   error,
   isProcessing = false,
@@ -92,8 +88,6 @@ export function FileDropZone({
 
   return (
     <div className={cn("file-drop-zone", className)}>
-      <h3 className="text-md font-semibold text-greyscale-900 mb-4">{title}</h3>
-
       <div
         className={cn(
           "border-2 border-dashed rounded-lg p-8 transition-colors",
@@ -130,7 +124,6 @@ export function FileDropZone({
                 onFilesChange={handleFiles}
                 multiple={multiple}
                 allowDirectories={allowDirectories}
-                accept={accept}
                 disabled={isDisabled}
                 showInput={true}
               />
