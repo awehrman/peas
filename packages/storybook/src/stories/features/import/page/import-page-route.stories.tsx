@@ -414,37 +414,6 @@ export const ValidationError: Story = {
   },
 };
 
-export const WithServerData: Story = {
-  args: {
-    scenario: "withData",
-    uploadScenario: "initial",
-    isLoading: false,
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "Import page route with data fetched from the server, ready for new uploads.",
-      },
-    },
-  },
-};
-
-export const LargeDataset: Story = {
-  args: {
-    scenario: "large",
-    uploadScenario: "initial",
-    isLoading: false,
-  },
-  parameters: {
-    docs: {
-      description: {
-        story: "Import page route with a large dataset from the server.",
-      },
-    },
-  },
-};
-
 export const Loading: Story = {
   args: {
     scenario: "withData",

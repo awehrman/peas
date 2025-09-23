@@ -19,7 +19,7 @@ export function useInitialization({
   initialIngredientCount = 0,
   initialParsingErrorCount = 0,
 }: UseInitializationProps) {
-  const { upload, stats } = useImport();
+  const { stats } = useImport();
   const hasInitialized = useRef(false);
 
   useEffect(() => {

@@ -15,6 +15,7 @@
     "visual-test": "chromatic --project-token=<your-project-token>"
   },
   "dependencies": {
+    "@fontsource/source-sans-3": "^5.2.9",
     "@peas/components": "workspace:^",
     "@peas/features": "workspace:^",
     "react": "^19.1.0",
