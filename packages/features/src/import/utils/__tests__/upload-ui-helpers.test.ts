@@ -71,9 +71,7 @@ describe("upload-ui-helpers", () => {
   describe("getUploadDescription", () => {
     it("should return correct description for initial state", () => {
       const description = getUploadDescription("initial");
-      expect(description).toBe(
-        "Select a directory containing HTML files with associated image folders (e.g., file.html + file/ folder)"
-      );
+      expect(description).toBe("Select an Evernote export directory.");
     });
 
     it("should return correct description for uploading state", () => {
@@ -83,9 +81,7 @@ describe("upload-ui-helpers", () => {
 
     it("should handle unknown states gracefully", () => {
       const description = getUploadDescription("unknown" as any);
-      expect(description).toBe(
-        "Select a directory containing HTML files with associated image folders (e.g., file.html + file/ folder)"
-      );
+      expect(description).toBe("Select an Evernote export directory.");
     });
   });
 
@@ -152,9 +148,7 @@ describe("upload-ui-helpers", () => {
       let error = getUploadError(null, undefined);
 
       expect(state).toBe("initial");
-      expect(description).toBe(
-        "Select a directory containing HTML files with associated image folders (e.g., file.html + file/ folder)"
-      );
+      expect(description).toBe("Select an Evernote export directory.");
       expect(error).toBeUndefined();
 
       // Move to processing

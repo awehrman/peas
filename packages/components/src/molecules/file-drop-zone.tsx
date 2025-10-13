@@ -9,7 +9,6 @@ import { AlertCircle, File, Upload } from "lucide-react";
 
 import { cn } from "../lib/utils";
 import { Alert, AlertDescription } from "../ui/alert";
-import { Button } from "../ui/button";
 
 export interface FileDropZoneProps {
   /** Callback when files are dropped or selected */

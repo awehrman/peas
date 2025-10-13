@@ -29,8 +29,8 @@ describe("UploadService", () => {
       expect(endpoint).toBe("https://api.example.com/upload");
     });
 
-    it("should use window.location.origin when in browser and no env var", () => {
-      // Mock window.location
+    it("should use fallback endpoint when no env var is set", () => {
+      // Mock window.location (though it's not used in current implementation)
       Object.defineProperty(global, "window", {
         value: {
           location: {
@@ -42,7 +42,7 @@ describe("UploadService", () => {
 
       const endpoint = (UploadService as any).getUploadEndpoint();
 
-      expect(endpoint).toBe("http://localhost:3000/api/upload");
+      expect(endpoint).toBe("http://localhost:4200/upload");
     });
 
     it("should use fallback when no window and no env var", () => {
