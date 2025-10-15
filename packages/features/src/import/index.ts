@@ -27,6 +27,7 @@ export * from "./components";
 export { useImport } from "./hooks/use-import";
 export { useInitialization } from "./hooks/use-initialization";
 export { useWebSocketUploadIntegration } from "./hooks/use-websocket-upload-integration";
+export { useWebSocketActivityIntegration } from "./hooks/use-websocket-activity-integration";
 export { useFileUpload } from "./hooks/use-file-upload";
 
 // Service exports
@@ -35,6 +36,7 @@ export * from "./services";
 // Utility exports
 export * from "./utils/error-utils";
 export * from "./utils/upload-ui-helpers";
+export * from "./utils/activity-helpers";
 
 // UI exports - ImportPage moved to web app
 

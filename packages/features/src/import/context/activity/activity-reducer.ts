@@ -57,6 +57,21 @@ export function activityReducer(
       };
     }
 
+    case "UPDATE_CARD_TITLE": {
+      const card = state.cardsById[action.cardId];
+      if (!card) return state;
+      return {
+        ...state,
+        cardsById: {
+          ...state.cardsById,
+          [action.cardId]: {
+            ...card,
+            imageThumbnail: action.title,
+          },
+        },
+      };
+    }
+
     case "SET_PAGE":
       return {
         ...state,

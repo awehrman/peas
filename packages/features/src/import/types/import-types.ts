@@ -39,9 +39,15 @@ export interface WebSocketMessage {
 
 export interface StatusEvent {
   importId: string;
+  noteId?: string;
   status: string;
   progress?: number;
   message?: string;
+  context?: string;
+  currentCount?: number;
+  totalCount?: number;
+  indentLevel?: number;
+  metadata?: Record<string, unknown>;
 }
 
 export interface ImportStatsState {
@@ -143,6 +149,7 @@ export type ActivityAction =
       step: keyof ImportCard["status"];
       statusUpdate: Partial<StepStatus>;
     }
+  | { type: "UPDATE_CARD_TITLE"; cardId: string; title: string }
   | { type: "SET_PAGE"; pageIndex: number }
   | { type: "RESET_ACTIVITY" };
 

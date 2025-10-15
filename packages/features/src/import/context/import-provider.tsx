@@ -6,10 +6,11 @@ import { StatsProvider } from "./stats";
 import { ImportUploadProvider } from "./upload";
 import { WsProvider } from "./ws";
 
-import { type ReactNode } from "react";
+import { type ReactNode, useCallback } from "react";
 
+import { useWebSocketActivityIntegration } from "../hooks/use-websocket-activity-integration";
 import { useWebSocketUploadIntegration } from "../hooks/use-websocket-upload-integration";
-import type { ImportStatsState } from "../types/import-types";
+import type { ImportStatsState, StatusEvent } from "../types/import-types";
 
 interface ImportProviderProps {
   children: ReactNode;
@@ -17,7 +18,8 @@ interface ImportProviderProps {
 }
 
 /**
- * Internal component that provides WebSocket integration
+ * Internal component that integrates both upload and activity handlers
+ * Must be inside ActivityProvider to use useWebSocketActivityIntegration
  */
 function WebSocketIntegrationWrapper({
   children,
@@ -27,9 +29,21 @@ function WebSocketIntegrationWrapper({
   onStatsRefresh?: () => Promise<ImportStatsState>;
 }) {
   const { handleStatusUpdate } = useWebSocketUploadIntegration(onStatsRefresh);
+  const { handleActivityStatusUpdate } = useWebSocketActivityIntegration();
+
+  // Combined handler that calls both upload and activity handlers
+  const handleCombinedStatusUpdate = useCallback(
+    (statusEvent: StatusEvent) => {
+      handleStatusUpdate(statusEvent);
+      handleActivityStatusUpdate(statusEvent);
+    },
+    [handleStatusUpdate, handleActivityStatusUpdate]
+  );
 
   return (
-    <WsProvider onStatusUpdate={handleStatusUpdate}>{children}</WsProvider>
+    <WsProvider onStatusUpdate={handleCombinedStatusUpdate}>
+      {children}
+    </WsProvider>
   );
 }
 
@@ -52,11 +66,13 @@ export function ImportProvider({
         <ContextErrorBoundary>
           <StatsProvider>
             <ContextErrorBoundary>
-              <WebSocketIntegrationWrapper onStatsRefresh={onStatsRefresh}>
+              <ActivityProvider>
                 <ContextErrorBoundary>
-                  <ActivityProvider>{children}</ActivityProvider>
+                  <WebSocketIntegrationWrapper onStatsRefresh={onStatsRefresh}>
+                    {children}
+                  </WebSocketIntegrationWrapper>
                 </ContextErrorBoundary>
-              </WebSocketIntegrationWrapper>
+              </ActivityProvider>
             </ContextErrorBoundary>
           </StatsProvider>
         </ContextErrorBoundary>

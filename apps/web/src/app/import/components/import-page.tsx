@@ -1,6 +1,10 @@
 "use client";
 
-import { ImportFileUpload, useInitialization } from "@peas/features";
+import {
+  ImportActivityList,
+  ImportFileUpload,
+  useInitialization,
+} from "@peas/features";
 
 interface ImportPageProps {
   /** Initial note count from server (defaults to 0) */
@@ -29,9 +33,14 @@ export function ImportPage({
     <div className="container mx-auto p-6">
       <div className="grid gap-6">
         {/* Import Notes Section */}
-        <div className="bg-card p-4 rounded-lg border">
+        <div className="bg-card p-6 rounded-lg border shadow-sm">
           <h2 className="text-lg font-semibold mb-4">Import Notes</h2>
           <ImportFileUpload />
+        </div>
+
+        {/* Import Activity Section */}
+        <div className="bg-card p-6 rounded-lg border shadow-sm">
+          <ImportActivityList />
         </div>
       </div>
     </div>
