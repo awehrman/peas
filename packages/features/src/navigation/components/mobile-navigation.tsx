@@ -4,43 +4,20 @@ import { NavItem } from "./nav-item";
 
 import { useCallback, useMemo } from "react";
 
-import { Toggle, cn } from "@peas/components";
-import {
-  NavigationMenu,
-  NavigationMenuItem,
-  NavigationMenuList,
-} from "@peas/components";
-import { LogOut, LucideIcon, MoreVertical } from "lucide-react";
+import { cn, NavigationMenu, NavigationMenuItem, NavigationMenuList } from "@peas/components";
+import { LogOut } from "lucide-react";
 
-import { NAVIGATION_CONSTANTS } from "../config";
-import {
-  NavigationProvider,
-  useNavigation,
-} from "../contexts/NavigationContext";
-
-// Pure UI interface - no business logic
-export interface PureMobileNavigationProps {
-  navigationItems: Array<{
-    name: string;
-    href: string;
-    icon: LucideIcon;
-  }>;
-  LinkComponent?: React.ComponentType<{
-    href: string;
-    className?: string;
-    children: React.ReactNode;
-    onClick?: () => void;
-  }>;
-  pathname?: string;
-  signOut: () => Promise<void>;
-}
+import { NAVIGATION_CONSTANTS } from "../config/constants";
+import { NavigationProvider, useNavigation } from "../contexts/NavigationContext";
+import { NavigationToggle } from "./navigation-toggle";
+import { PureNavigationProps } from "../types/navigation";
 
 function MobileSidebarNavigation({
   navigationItems,
   LinkComponent,
   pathname,
   signOut,
-}: PureMobileNavigationProps) {
+}: PureNavigationProps) {
   const { isExpanded, setIsExpanded } = useNavigation();
 
   // Memoize the toggle button positioning for mobile layout
@@ -53,20 +30,11 @@ function MobileSidebarNavigation({
     []
   );
 
-  // Memoize the sidebar height class for mobile
-  const sidebarHeightClass = useMemo(
-    () =>
-      isExpanded
-        ? NAVIGATION_CONSTANTS.MOBILE_EXPANDED_HEIGHT
-        : NAVIGATION_CONSTANTS.MOBILE_COLLAPSED_HEIGHT,
-    [isExpanded]
-  );
+  const sidebarHeightClass = isExpanded
+    ? NAVIGATION_CONSTANTS.MOBILE_EXPANDED_HEIGHT
+    : NAVIGATION_CONSTANTS.MOBILE_COLLAPSED_HEIGHT;
 
-  // Memoize the toggle button aria-label
-  const toggleAriaLabel = useMemo(
-    () => (isExpanded ? "Collapse navigation" : "Expand navigation"),
-    [isExpanded]
-  );
+  const toggleAriaLabel = isExpanded ? "Collapse navigation" : "Expand navigation";
 
   // Memoize the sign out form submission handler
   const handleSignOutSubmit = useCallback(() => {
@@ -75,33 +43,8 @@ function MobileSidebarNavigation({
 
   // Memoize the toggle button change handler
   const handleToggleChange = useCallback(() => {
-    setIsExpanded(!isExpanded);
-  }, [isExpanded, setIsExpanded]);
-
-  // Memoize the navigation items to avoid unnecessary re-renders
-  const navigationItemsList = useMemo(
-    () =>
-      navigationItems.map((item) => {
-        const isActive = pathname === item.href;
-        return (
-          <NavigationMenuItem key={item.href} className="w-full">
-            <NavItem
-              name={item.name}
-              href={item.href}
-              icon={item.icon}
-              LinkComponent={LinkComponent}
-              className={cn(
-                "flex items-center gap-3 w-full p-3 rounded-md transition-colors font-normal",
-                isActive
-                  ? "text-primary-500"
-                  : "text-navigation-foreground hover:text-primary-500"
-              )}
-            />
-          </NavigationMenuItem>
-        );
-      }),
-    [navigationItems, pathname, LinkComponent]
-  );
+    setIsExpanded((current) => !current);
+  }, [setIsExpanded]);
 
   return (
     <aside
@@ -111,21 +54,12 @@ function MobileSidebarNavigation({
       )}
     >
       {/* Custom mouse-positioned toggle button */}
-      <div style={toggleButtonStyle}>
-        <Toggle
-          pressed={isExpanded}
-          onPressedChange={handleToggleChange}
-          size={NAVIGATION_CONSTANTS.TOGGLE_SIZE}
-          variant="default"
-          aria-label={toggleAriaLabel}
-          className={cn(
-            "h-6 w-6 bg-transparent hover:bg-transparent focus:bg-transparent focus-visible:bg-transparent data-[state=on]:bg-transparent",
-            NAVIGATION_CONSTANTS.TOGGLE_TRANSITION
-          )}
-        >
-          <MoreVertical className="h-4 w-4 text-primary" />
-        </Toggle>
-      </div>
+      <NavigationToggle
+        ariaLabel={toggleAriaLabel}
+        isExpanded={isExpanded}
+        onToggleChange={handleToggleChange}
+        style={toggleButtonStyle}
+      />
 
       {/* Navigation content */}
       <div className={cn("h-full flex flex-col", isExpanded ? "pt-4" : "")}>
@@ -136,7 +70,25 @@ function MobileSidebarNavigation({
             className="w-full h-full flex flex-col"
           >
             <NavigationMenuList className="flex-col space-y-1 w-full flex-1">
-              {navigationItemsList}
+              {navigationItems.map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <NavigationMenuItem key={item.href} className="w-full">
+                    <NavItem
+                      name={item.name}
+                      href={item.href}
+                      icon={item.icon}
+                      LinkComponent={LinkComponent}
+                      className={cn(
+                        "flex items-center gap-3 w-full p-3 rounded-md transition-colors font-normal",
+                        isActive
+                          ? "!text-primary-500"
+                          : "text-navigation-foreground hover:!text-primary-500"
+                      )}
+                    />
+                  </NavigationMenuItem>
+                );
+              })}
               <NavigationMenuItem className="w-full mt-auto">
                 <form
                   action={signOut}
@@ -160,7 +112,7 @@ function MobileSidebarNavigation({
   );
 }
 
-export function MobileNavigation(props: PureMobileNavigationProps) {
+export function MobileNavigation(props: PureNavigationProps) {
   return (
     <NavigationProvider>
       <MobileSidebarNavigation {...props} />

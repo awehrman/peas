@@ -1,6 +1,10 @@
-import { LucideIcon } from "lucide-react";
+import type React from "react";
+import type { CSSProperties } from "react";
+
+import type { LucideIcon } from "lucide-react";
 
 import { useNavigation } from "../contexts/NavigationContext";
+import type { NavigationLinkComponentProps } from "../types/navigation";
 
 interface NavItemProps {
   name: string;
@@ -8,14 +12,8 @@ interface NavItemProps {
   icon: LucideIcon;
   onClick?: () => void;
   className?: string;
-  style?: React.CSSProperties;
-  LinkComponent?: React.ComponentType<{
-    href: string;
-    className?: string;
-    children: React.ReactNode;
-    onClick?: () => void;
-    style?: React.CSSProperties;
-  }>;
+  style?: CSSProperties;
+  LinkComponent?: React.ComponentType<NavigationLinkComponentProps>;
 }
 
 export function NavItem({

@@ -1,4 +1,4 @@
-import type { PrismaClient } from "@peas/database";
+import type { Prisma, PrismaClient } from "@prisma/client";
 
 /**
  * Get patterns with their related ingredient lines
@@ -14,7 +14,7 @@ export async function getPatternsWithIngredientLines(
 ) {
   const { limit = 50, offset = 0, minOccurrenceCount = 1, noteId } = options;
 
-  const whereClause: any = {
+  const whereClause: Prisma.UniqueLinePatternWhereInput = {
     occurrenceCount: {
       gte: minOccurrenceCount,
     },
@@ -62,7 +62,7 @@ export async function getIngredientLinesByPattern(
 ) {
   const { limit = 100, offset = 0, noteId } = options;
 
-  const whereClause: any = {
+  const whereClause: Prisma.ParsedIngredientLineWhereInput = {
     uniqueLinePatternId: patternId,
   };
 
@@ -192,7 +192,7 @@ export async function getUnlinkedIngredientLines(
 ) {
   const { limit = 100, offset = 0, noteId } = options;
 
-  const whereClause: any = {
+  const whereClause: Prisma.ParsedIngredientLineWhereInput = {
     uniqueLinePatternId: null,
   };
 

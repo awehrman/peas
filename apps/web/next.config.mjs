@@ -3,11 +3,11 @@ const nextConfig = {
   transpilePackages: ["@peas/components", "@peas/theme", "@peas/tailwind"],
   reactStrictMode: true,
   experimental: {
-    serverComponentsExternalPackages: [],
     serverActions: {
       bodySizeLimit: "50mb",
     },
   },
+  serverExternalPackages: [],
 };
 
 export default nextConfig;

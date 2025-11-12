@@ -1,6 +1,5 @@
-import React from "react";
-
-import { LucideIcon } from "lucide-react";
+import type { CSSProperties, ReactNode, ComponentType } from "react";
+import type { LucideIcon } from "lucide-react";
 
 export interface NavigationItem {
   name: string;
@@ -9,12 +8,23 @@ export interface NavigationItem {
 }
 
 export interface NavigationProps {
-  LinkComponent?: React.ComponentType<{
-    href: string;
-    className?: string;
-    children: React.ReactNode;
-    onClick?: () => void;
-  }>;
+  LinkComponent?: ComponentType<NavigationLinkComponentProps>;
   pathname?: string;
   signOut: () => Promise<void>;
+}
+
+export interface NavigationLinkComponentProps {
+  href: string;
+  className?: string;
+  children: ReactNode;
+  onClick?: () => void;
+  style?: CSSProperties;
+}
+
+export interface PureNavigationProps extends NavigationProps {
+  navigationItems: NavigationItem[];
+}
+
+export interface ResponsiveNavigationProps extends PureNavigationProps {
+  breakpoint?: number;
 }

@@ -1,15 +1,21 @@
 import { prisma } from "../client";
-import type { QueueJob, QueueJobStatus, QueueJobType, ErrorCode } from "@prisma/client";
+import type {
+  ErrorCode,
+  Prisma,
+  QueueJob,
+  QueueJobStatus,
+  QueueJobType,
+} from "@prisma/client";
 
 export interface CreateQueueJobData {
   jobId: string;
   type: QueueJobType;
   status?: QueueJobStatus;
   noteId: string;
-  data?: Record<string, unknown>;
+  data?: Prisma.InputJsonValue;
   errorMessage?: string;
   errorCode?: ErrorCode;
-  errorDetails?: Record<string, unknown>;
+  errorDetails?: Prisma.InputJsonValue;
   retryCount?: number;
   maxRetries?: number;
 }
@@ -18,7 +24,7 @@ export interface UpdateQueueJobData {
   status?: QueueJobStatus;
   errorMessage?: string;
   errorCode?: ErrorCode;
-  errorDetails?: Record<string, unknown>;
+  errorDetails?: Prisma.InputJsonValue;
   retryCount?: number;
   startedAt?: Date;
   completedAt?: Date;
@@ -34,12 +40,12 @@ export async function createQueueJob(data: CreateQueueJobData): Promise<QueueJob
       type: data.type,
       status: data.status || "PENDING",
       noteId: data.noteId,
-      data: data.data as any,
+      data: data.data ?? undefined,
       errorMessage: data.errorMessage,
       errorCode: data.errorCode,
-      errorDetails: data.errorDetails as any,
-      retryCount: data.retryCount || 0,
-      maxRetries: data.maxRetries || 3,
+      errorDetails: data.errorDetails ?? undefined,
+      retryCount: data.retryCount ?? 0,
+      maxRetries: data.maxRetries ?? 3,
     },
   });
 }
@@ -57,7 +63,7 @@ export async function updateQueueJob(
       status: data.status,
       errorMessage: data.errorMessage,
       errorCode: data.errorCode,
-      errorDetails: data.errorDetails as any,
+      errorDetails: data.errorDetails ?? undefined,
       retryCount: data.retryCount,
       startedAt: data.startedAt,
       completedAt: data.completedAt,
