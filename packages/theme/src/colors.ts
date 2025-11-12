@@ -266,7 +266,7 @@ export const colors: ColorPalette = {
     foreground: primaryColors[600], // Text color on navigation backgrounds
   },
   header: {
-    DEFAULT: "#fbfff7", // Used for header/topbar backgrounds
+    DEFAULT: primaryColors[100], // Used for header/topbar backgrounds
     foreground: greyscaleColors[700], // Text color on header backgrounds
   },
   border: greyscaleColors[200], // Used for borders, dividers, outlines

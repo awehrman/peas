@@ -2,7 +2,7 @@
 @import "@peas/components/styles.css";
 
 /* Import CSS variables directly */
-@import "@peas/tailwind/shared-styles.css";
+@import "@peas/tailwind";
 
 @layer base {
   html,

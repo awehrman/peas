@@ -1,5 +1,4 @@
 import { cn } from "@peas/components";
-import { useScreenSize } from "@peas/features";
 
 export interface HeaderProps {
   routeName?: string;
@@ -10,13 +9,11 @@ export function Header({
   routeName = "Dashboard",
   className = "",
 }: HeaderProps) {
-  const { isMobile } = useScreenSize();
-
   return (
     <header
       className={cn(
-        `bg-header border-b border-border p-10 md:block ${className}`,
-        isMobile && "mt-12"
+        "bg-header border-b border-border p-10 md:block mt-12 md:mt-0",
+        className
       )}
     >
       <div className="flex items-center justify-between">

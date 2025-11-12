@@ -25,7 +25,7 @@
     "lint:fix": "eslint src --ext .ts,.tsx --fix",
     "clean": "rm -rf dist",
     "build": "tsc && tsc-alias && npx @tailwindcss/cli -i ./src/styles.css -o ./dist/styles.css --config ./tailwind.config.mjs --minify",
-    "dev": "tsc --watch",
+    "dev": "concurrently \"tsc --watch\" \"npx @tailwindcss/cli -i ./src/styles.css -o ./dist/styles.css --config ./tailwind.config.mjs --watch\"",
     "watch": "concurrently \"tsc --watch\" \"npx @tailwindcss/cli -i ./src/styles.css -o ./dist/styles.css --config ./tailwind.config.mjs --watch\"",
     "check-types": "tsc --noEmit",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",

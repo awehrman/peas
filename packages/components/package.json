@@ -19,7 +19,7 @@
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist",
     "build": "tsc && node scripts/fix-imports.js && npx @tailwindcss/cli -i ./src/styles.css -o ./dist/styles.css --minify",
-    "dev": "concurrently \"tsc --watch\" \"node scripts/watch-and-fix.js\"",
+    "dev": "concurrently \"tsc --watch\" \"npx @tailwindcss/cli -i ./src/styles.css -o ./dist/styles.css --watch\" \"node scripts/watch-and-fix.js\"",
     "watch": "concurrently \"tsc --watch\" \"npx @tailwindcss/cli -i ./src/styles.css -o ./dist/styles.css --watch\"",
     "check-types": "tsc --noEmit",
     "lint": "eslint src --ext .ts,.tsx",
