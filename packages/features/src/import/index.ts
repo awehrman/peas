@@ -1,5 +1,6 @@
 // Context exports
 export { ImportProvider } from "./context/import-provider";
+export type { QueueTokenProvider } from "./context/queue-auth";
 export {
   ActivityProvider,
   useActivity,

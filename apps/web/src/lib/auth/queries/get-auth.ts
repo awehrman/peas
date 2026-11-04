@@ -1,9 +1,11 @@
-"use server";
+import { cache } from "react";
 
 import { cookies } from "next/headers";
-import { cache } from "react";
-import { SESSION_COOKIE_NAME } from "../utils/session-cookie";
+
+import "server-only";
+
 import { validateSession } from "../session";
+import { SESSION_COOKIE_NAME } from "../utils/session-cookie";
 
 export const getAuth = cache(async () => {
   const sessionToken =

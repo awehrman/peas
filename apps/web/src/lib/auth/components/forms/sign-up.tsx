@@ -1,17 +1,23 @@
 "use client";
 
 import { useActionState } from "react";
-import { signUp } from "../../actions/sign-up";
+
+import { Input } from "@peas/components";
 import {
   EMPTY_ACTION_STATE,
-  Form,
   FieldError,
+  Form,
   SubmitButton,
 } from "@peas/features";
-import { Input } from "@peas/components";
+
+import { signUp } from "../../actions/sign-up";
 import { UnauthenticatedLayout } from "../unauthenticated-layout";
 
-const SignUpForm = () => {
+interface SignUpFormProps {
+  code: string;
+}
+
+const SignUpForm = ({ code }: SignUpFormProps) => {
   const [actionState, action] = useActionState(signUp, EMPTY_ACTION_STATE);
 
   return (
@@ -20,6 +26,7 @@ const SignUpForm = () => {
       subtitle="Sign up to get started with Peas"
     >
       <Form action={action} actionState={actionState}>
+        <input type="hidden" name="code" value={code} />
         <Input
           name="username"
           placeholder="Username"

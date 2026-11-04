@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 
 import { UPLOAD_ERROR_MESSAGES } from "../constants/upload-constants";
+import { useQueueTokenProvider } from "../context/queue-auth";
 import { useImportUpload } from "../context/upload/upload-provider";
 import { UploadService } from "../services/upload-service";
 import type { FileUploadItem } from "../types/import-types";
@@ -18,6 +19,7 @@ import {
  */
 export function useFileUpload() {
   const { state, dispatch } = useImportUpload();
+  const getQueueToken = useQueueTokenProvider();
   const [validationError, setValidationError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -58,34 +60,40 @@ export function useFileUpload() {
 
       // Upload the group to the queue
       try {
-        await UploadService.uploadFileGroup(group, (progress) => {
-          // Batch update all files in the group at once
-          dispatch({
-            type: "UPDATE_BATCH_STATUS",
-            importId: group.importId,
-            status:
-              progress.status === "uploading"
-                ? "uploading"
-                : progress.status === "completed"
-                  ? "completed"
-                  : "failed",
-            progress: progress.progress,
-            error: progress.error,
-          });
+        const authToken = await getQueueToken?.();
 
-          // Complete or fail the batch based on progress
-          if (progress.status === "completed") {
+        await UploadService.uploadFileGroup(
+          group,
+          (progress) => {
+            // Batch update all files in the group at once
             dispatch({
-              type: "COMPLETE_BATCH",
-              successMessage: `Successfully uploaded ${group.htmlFile.name} with ${group.imageFiles.length} images`,
+              type: "UPDATE_BATCH_STATUS",
+              importId: group.importId,
+              status:
+                progress.status === "uploading"
+                  ? "uploading"
+                  : progress.status === "completed"
+                    ? "completed"
+                    : "failed",
+              progress: progress.progress,
+              error: progress.error,
             });
-          } else if (progress.status === "failed") {
-            dispatch({
-              type: "FAIL_BATCH",
-              errorMessage: progress.error || "Upload failed",
-            });
-          }
-        });
+
+            // Complete or fail the batch based on progress
+            if (progress.status === "completed") {
+              dispatch({
+                type: "COMPLETE_BATCH",
+                successMessage: `Successfully uploaded ${group.htmlFile.name} with ${group.imageFiles.length} images`,
+              });
+            } else if (progress.status === "failed") {
+              dispatch({
+                type: "FAIL_BATCH",
+                errorMessage: progress.error || "Upload failed",
+              });
+            }
+          },
+          authToken
+        );
       } catch (error) {
         logError(`Upload group ${group.importId}`, error);
         dispatch({
@@ -94,7 +102,7 @@ export function useFileUpload() {
         });
       }
     },
-    [dispatch]
+    [dispatch, getQueueToken]
   );
 
   const handleFilesChange = useCallback(

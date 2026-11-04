@@ -1,8 +1,20 @@
-import { prisma } from "@peas/database";
+import { type Prisma, prisma } from "@peas/database";
+import "server-only";
+
 import { hashToken } from "./utils/crypto";
 
 const SESSION_REFRESH_INTERVAL_MS = 1000 * 60 * 60 * 24 * 15; // 15 days
 const SESSION_MAX_DURATION_MS = SESSION_REFRESH_INTERVAL_MS * 2; // 30 days
+
+const authUserSelect = {
+  id: true,
+  name: true,
+  username: true,
+  email: true,
+  userType: true,
+} satisfies Prisma.UserSelect;
+
+export type AuthUser = Prisma.UserGetPayload<{ select: typeof authUserSelect }>;
 
 export const createSession = async (sessionToken: string, userId: string) => {
   const sessionId = hashToken(sessionToken);
@@ -28,7 +40,7 @@ export const validateSession = async (sessionToken: string) => {
       id: sessionId,
     },
     include: {
-      user: true,
+      user: { select: authUserSelect },
     },
   });
 

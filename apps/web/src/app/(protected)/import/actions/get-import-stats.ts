@@ -3,10 +3,14 @@
 import { getImportStats as getDbImportStats } from "@peas/database";
 import type { ImportStatsState } from "@peas/features";
 
+import { getAuthOrRedirect } from "../../../../lib/auth/queries/get-auth-or-redirect";
+
 /**
  * Server action to fetch import statistics directly from database
  */
 export async function getImportStats(): Promise<ImportStatsState> {
+  await getAuthOrRedirect();
+
   try {
     // Query the database directly using the existing function
     const stats = await getDbImportStats();

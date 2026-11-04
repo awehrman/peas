@@ -2,6 +2,8 @@ import { ReactNode } from "react";
 
 import { ImportProvider } from "@peas/features";
 
+import { getQueueToken } from "../../../lib/auth/actions/get-queue-token";
+
 import { getImportStats, refetchImportStats } from "./actions/get-import-stats";
 import { ImportPage } from "./components/import-page";
 
@@ -12,7 +14,10 @@ export default async function ImportPageRoute(): Promise<ReactNode> {
     await getImportStats();
 
   return (
-    <ImportProvider onStatsRefresh={refetchImportStats}>
+    <ImportProvider
+      onStatsRefresh={refetchImportStats}
+      getQueueToken={getQueueToken}
+    >
       <ImportPage
         initialNoteCount={numberOfNotes}
         initialIngredientCount={numberOfIngredients}

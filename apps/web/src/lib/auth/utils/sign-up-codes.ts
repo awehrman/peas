@@ -44,10 +44,43 @@ export function getSignUpCodes(): SignUpCode[] {
     return [];
   }
 
-  try {
-    return JSON.parse(codesString);
-  } catch {
-    // Fallback to simple string format
-    return codesString.split(",").map((code) => ({ code: code.trim() }));
+  const parsed = parseSignUpCodesJson(codesString);
+
+  if (parsed) {
+    return parsed;
   }
+
+  return codesString
+    .split(",")
+    .map((code) => code.trim())
+    .filter((code) => code.length > 0)
+    .map((code) => ({ code }));
+}
+
+interface SignUpCodeJson {
+  code: string;
+  maxUses?: number;
+  expiresAt?: string;
+  usedCount?: number;
+}
+
+function parseSignUpCodesJson(codesString: string): SignUpCode[] | null {
+  let parsed: unknown;
+
+  try {
+    parsed = JSON.parse(codesString);
+  } catch {
+    return null;
+  }
+
+  if (!Array.isArray(parsed)) {
+    return null;
+  }
+
+  return (parsed as SignUpCodeJson[])
+    .filter((entry) => typeof entry?.code === "string" && entry.code !== "")
+    .map(({ expiresAt, ...entry }) => ({
+      ...entry,
+      expiresAt: expiresAt ? new Date(expiresAt) : undefined,
+    }));
 }

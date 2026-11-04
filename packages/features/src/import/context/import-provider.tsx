@@ -2,6 +2,7 @@
 
 import { ActivityProvider } from "./activity";
 import { ContextErrorBoundary } from "./error-boundary";
+import { QueueAuthContext, type QueueTokenProvider } from "./queue-auth";
 import { StatsProvider } from "./stats";
 import { ImportUploadProvider } from "./upload";
 import { WsProvider } from "./ws";
@@ -15,6 +16,7 @@ import type { ImportStatsState, StatusEvent } from "../types/import-types";
 interface ImportProviderProps {
   children: ReactNode;
   onStatsRefresh?: () => Promise<ImportStatsState>;
+  getQueueToken?: QueueTokenProvider;
 }
 
 /**
@@ -55,6 +57,7 @@ function WebSocketIntegrationWrapper({
 export function ImportProvider({
   children,
   onStatsRefresh,
+  getQueueToken,
 }: ImportProviderProps) {
   return (
     <ContextErrorBoundary
@@ -62,21 +65,25 @@ export function ImportProvider({
         console.error("Import context error:", error, errorInfo);
       }}
     >
-      <ImportUploadProvider>
-        <ContextErrorBoundary>
-          <StatsProvider>
-            <ContextErrorBoundary>
-              <ActivityProvider>
-                <ContextErrorBoundary>
-                  <WebSocketIntegrationWrapper onStatsRefresh={onStatsRefresh}>
-                    {children}
-                  </WebSocketIntegrationWrapper>
-                </ContextErrorBoundary>
-              </ActivityProvider>
-            </ContextErrorBoundary>
-          </StatsProvider>
-        </ContextErrorBoundary>
-      </ImportUploadProvider>
+      <QueueAuthContext.Provider value={getQueueToken}>
+        <ImportUploadProvider>
+          <ContextErrorBoundary>
+            <StatsProvider>
+              <ContextErrorBoundary>
+                <ActivityProvider>
+                  <ContextErrorBoundary>
+                    <WebSocketIntegrationWrapper
+                      onStatsRefresh={onStatsRefresh}
+                    >
+                      {children}
+                    </WebSocketIntegrationWrapper>
+                  </ContextErrorBoundary>
+                </ActivityProvider>
+              </ContextErrorBoundary>
+            </StatsProvider>
+          </ContextErrorBoundary>
+        </ImportUploadProvider>
+      </QueueAuthContext.Provider>
     </ContextErrorBoundary>
   );
 }

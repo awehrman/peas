@@ -4,22 +4,32 @@ import { ReactNode, useState } from "react";
 
 import { Button } from "@peas/components";
 
-import { cleanupAllDataAction } from "../actions/cleanup";
+export interface CleanupAllDataResult {
+  success: boolean;
+  message: string;
+  deletedCounts?: Record<string, number>;
+}
 
-export function DashboardPageContent(): ReactNode {
+interface DashboardPageContentProps {
+  /** Only provided for admins; the cleanup card is hidden without it */
+  onCleanupAllData?: () => Promise<CleanupAllDataResult>;
+}
+
+export function DashboardPageContent({
+  onCleanupAllData,
+}: DashboardPageContentProps): ReactNode {
   const [isCleaning, setIsCleaning] = useState(false);
-  const [cleanupResult, setCleanupResult] = useState<{
-    success: boolean;
-    message: string;
-    deletedCounts?: Record<string, number>;
-  } | null>(null);
+  const [cleanupResult, setCleanupResult] =
+    useState<CleanupAllDataResult | null>(null);
+
+  if (!onCleanupAllData) return null;
 
   const handleCleanupAll = async () => {
     setIsCleaning(true);
     setCleanupResult(null);
 
     try {
-      const result = await cleanupAllDataAction();
+      const result = await onCleanupAllData();
 
       setCleanupResult({
         success: result.success,

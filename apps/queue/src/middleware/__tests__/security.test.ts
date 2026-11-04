@@ -13,6 +13,7 @@ import {
   addSecurityHeaders,
   configureCORS,
   createRateLimitMiddleware,
+  parseAllowedOrigins,
   validateContent,
   validatePagination,
   validateRequestSize,
@@ -607,6 +608,21 @@ describe("security.ts", () => {
       expect(SecurityMiddleware.addSecurityHeaders).toBe(addSecurityHeaders);
       expect(SecurityMiddleware.configureCORS).toBe(configureCORS);
       expect(SecurityMiddleware.validateRequestSize).toBe(validateRequestSize);
+    });
+
+    it("should parse a comma-separated origin allowlist", () => {
+      expect(
+        parseAllowedOrigins(" https://peas.app, https://www.peas.app ,")
+      ).toEqual(["https://peas.app", "https://www.peas.app"]);
+    });
+
+    it("should fall back to local origins when the allowlist is unset", () => {
+      expect(parseAllowedOrigins(undefined)).toEqual([
+        ...SECURITY_CONSTANTS.CORS.ALLOWED_ORIGINS,
+      ]);
+      expect(parseAllowedOrigins("")).toEqual([
+        ...SECURITY_CONSTANTS.CORS.ALLOWED_ORIGINS,
+      ]);
     });
 
     it("should export all middleware functions correctly", () => {

@@ -4,12 +4,11 @@ import type { Metadata } from "next";
 import { Source_Sans_3 } from "next/font/google";
 
 import { Spinner } from "@peas/components";
-import { ThemeProvider } from "@peas/features";
 import "@peas/components/styles.css";
+import { ThemeProvider } from "@peas/features";
 import "@peas/features/styles.css";
 
 import { AuthErrorBoundary } from "../lib/auth/components/error-boundary";
-import { RouteGuard } from "../lib/auth/components/route-guard";
 
 import "./fonts.css";
 import "./globals.css";
@@ -41,7 +40,7 @@ export default function RootLayout({
                 </div>
               }
             >
-              <RouteGuard>{children}</RouteGuard>
+              {children}
             </Suspense>
           </AuthErrorBoundary>
         </ThemeProvider>

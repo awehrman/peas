@@ -1,4 +1,5 @@
 import type { NoteStatus } from "@peas/database";
+import { createHmac } from "crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { WebSocket, WebSocketServer } from "ws";
 
@@ -88,14 +89,48 @@ describe("websocket-server.ts", () => {
         const manager = new WebSocketManager();
 
         expect(manager).toBeInstanceOf(WebSocketManager);
-        expect(WebSocketServer).toHaveBeenCalledWith({ port: 8080 });
+        expect(WebSocketServer).toHaveBeenCalledWith({
+          port: 8080,
+          verifyClient: expect.any(Function),
+        });
       });
 
       it("should create WebSocketManager with custom port", () => {
         const manager = new WebSocketManager(9000);
 
         expect(manager).toBeInstanceOf(WebSocketManager);
-        expect(WebSocketServer).toHaveBeenCalledWith({ port: 9000 });
+        expect(WebSocketServer).toHaveBeenCalledWith({
+          port: 9000,
+          verifyClient: expect.any(Function),
+        });
+      });
+
+      it("should only accept handshakes that carry a valid queue token", () => {
+        const secret = "a".repeat(32);
+        vi.stubEnv("QUEUE_AUTH_SECRET", secret);
+
+        const [{ verifyClient }] = (
+          WebSocketServer as unknown as ReturnType<typeof vi.fn>
+        ).mock.calls.at(-1) as [
+          { verifyClient: (info: { req: { url?: string } }) => boolean },
+        ];
+
+        const payload = Buffer.from(
+          JSON.stringify({ sub: "user-1", exp: Date.now() / 1000 + 60 })
+        ).toString("base64url");
+        const signature = createHmac("sha256", secret)
+          .update(payload)
+          .digest("base64url");
+
+        expect(verifyClient({ req: { url: "/" } })).toBe(false);
+        expect(verifyClient({ req: { url: "/?token=forged.token" } })).toBe(
+          false
+        );
+        expect(
+          verifyClient({ req: { url: `/?token=${payload}.${signature}` } })
+        ).toBe(true);
+
+        vi.unstubAllEnvs();
       });
 
       it("should setup event handlers", () => {
@@ -446,7 +481,10 @@ describe("websocket-server.ts", () => {
         const manager = initializeWebSocketServer(8080);
 
         expect(manager).toBeDefined();
-        expect(WebSocketServer).toHaveBeenCalledWith({ port: 8080 });
+        expect(WebSocketServer).toHaveBeenCalledWith({
+          port: 8080,
+          verifyClient: expect.any(Function),
+        });
       });
 
       it("should return existing instance on subsequent calls", async () => {

@@ -80,6 +80,51 @@ describe("UploadService", () => {
       ],
     };
 
+    it("should send the queue auth token as a bearer header", async () => {
+      mockFetch.mockResolvedValue(
+        createMockFetchResponse({
+          totalFiles: 3,
+          htmlFiles: 1,
+          imageFiles: 2,
+          errors: [],
+          importId: "test-import-1",
+        })
+      );
+
+      await UploadService.uploadFileGroup(mockFileGroup, vi.fn(), "token-123");
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          headers: {
+            "x-import-id": "test-import-1",
+            Authorization: "Bearer token-123",
+          },
+        })
+      );
+    });
+
+    it("should omit the Authorization header without a token", async () => {
+      mockFetch.mockResolvedValue(
+        createMockFetchResponse({
+          totalFiles: 3,
+          htmlFiles: 1,
+          imageFiles: 2,
+          errors: [],
+          importId: "test-import-1",
+        })
+      );
+
+      await UploadService.uploadFileGroup(mockFileGroup, vi.fn());
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          headers: { "x-import-id": "test-import-1" },
+        })
+      );
+    });
+
     it("should upload file group successfully", async () => {
       const mockResponse = createMockFetchResponse({
         totalFiles: 3,

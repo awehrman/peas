@@ -219,6 +219,21 @@ export function configureCORS(
   };
 }
 
+/**
+ * Parses a comma-separated CORS_ALLOWED_ORIGINS value, falling back to the
+ * local development origins when it is unset or empty.
+ */
+export function parseAllowedOrigins(value: string | undefined): string[] {
+  const origins = (value ?? "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter((origin) => origin.length > 0);
+
+  return origins.length > 0
+    ? origins
+    : [...SECURITY_CONSTANTS.CORS.ALLOWED_ORIGINS];
+}
+
 // ============================================================================
 // REQUEST SIZE LIMITS
 // ============================================================================

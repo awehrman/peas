@@ -33,7 +33,8 @@ export class UploadService {
    */
   static async uploadFileGroup(
     group: FileGroup,
-    onProgress?: (progress: UploadProgressData) => void
+    onProgress?: (progress: UploadProgressData) => void,
+    authToken?: string
   ): Promise<ImportUploadResult> {
     const formData = new FormData();
 
@@ -49,6 +50,10 @@ export class UploadService {
     const headers: Record<string, string> = {
       "x-import-id": group.importId,
     };
+
+    if (authToken) {
+      headers.Authorization = `Bearer ${authToken}`;
+    }
 
     try {
       // Report upload start

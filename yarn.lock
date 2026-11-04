@@ -3701,6 +3701,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@peas/web@workspace:apps/web"
   dependencies:
+    "@aws-sdk/client-s3": "npm:^3.864.0"
     "@axe-core/playwright": "npm:^4.10.2"
     "@node-rs/argon2": "npm:^2.0.2"
     "@oslojs/crypto": "npm:^1.0.1"
@@ -3728,6 +3729,7 @@ __metadata:
     react: "npm:^19.1.0"
     react-dom: "npm:^19.1.0"
     react-error-boundary: "npm:^6.0.0"
+    server-only: "npm:^0.0.1"
     tailwindcss: "npm:^4.1.11"
     typescript: "npm:^5.8.3"
     zod: "npm:^4.0.5"
@@ -17730,6 +17732,13 @@ __metadata:
     parseurl: "npm:^1.3.3"
     send: "npm:^1.2.0"
   checksum: 10c0/30e2ed1dbff1984836cfd0c65abf5d3f3f83bcd696c99d2d3c97edbd4e2a3ff4d3f87108a7d713640d290a7b6fe6c15ddcbc61165ab2eaad48ea8d3b52c7f913
+  languageName: node
+  linkType: hard
+
+"server-only@npm:^0.0.1":
+  version: 0.0.1
+  resolution: "server-only@npm:0.0.1"
+  checksum: 10c0/4704f0ef85da0be981af6d4ed8e739d39bcfd265b9c246a684060acda5642d0fdc6daffc2308e71e2682c5f508090978802eae0a77623c9b90a49f9ae68048d6
   languageName: node
   linkType: hard
 

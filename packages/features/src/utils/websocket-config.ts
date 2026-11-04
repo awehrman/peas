@@ -18,6 +18,24 @@ export function getWebSocketUrl(): string {
 }
 
 /**
+ * Get the WebSocket URL with a queue auth token attached, when one is available.
+ * Browsers can't set headers on WebSocket handshakes, so the token goes in the query.
+ */
+export async function getAuthenticatedWebSocketUrl(
+  getQueueToken?: () => Promise<string>
+): Promise<string> {
+  const url = getWebSocketUrl();
+
+  if (!getQueueToken) {
+    return url;
+  }
+
+  const authenticatedUrl = new URL(url);
+  authenticatedUrl.searchParams.set("token", await getQueueToken());
+  return authenticatedUrl.toString();
+}
+
+/**
  * WebSocket configuration options
  */
 export interface WebSocketConfig {

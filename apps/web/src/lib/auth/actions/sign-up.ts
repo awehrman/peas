@@ -1,23 +1,27 @@
 "use server";
 
-import { Prisma } from "@prisma/client";
+import { dashboardPath } from "@/paths";
+
 import { redirect } from "next/navigation";
-import { z } from "zod";
 
 import { prisma } from "@peas/database";
-import { dashboardPath } from "@/paths";
 import {
-  toActionState,
   ActionState,
   fromErrorToActionState,
+  toActionState,
 } from "@peas/features";
-import { hashPassword } from "../utils/hash-and-verify";
-import { generateRandomToken } from "../utils/crypto";
+import { Prisma } from "@prisma/client";
+import { z } from "zod";
+
 import { createSession } from "../session";
+import { generateRandomToken } from "../utils/crypto";
+import { hashPassword } from "../utils/hash-and-verify";
 import { setSessionCookie } from "../utils/session-cookie";
+import { getSignUpCodes, validateSignUpCode } from "../utils/sign-up-codes";
 
 const signUpSchema = z
   .object({
+    code: z.string().optional(),
     username: z
       .string()
       .min(1)
@@ -42,9 +46,15 @@ const signUpSchema = z
 
 export const signUp = async (_actionState: ActionState, formData: FormData) => {
   try {
-    const { username, email, password } = signUpSchema.parse(
+    const { code, username, email, password } = signUpSchema.parse(
       Object.fromEntries(formData)
     );
+
+    const { isValid, error } = validateSignUpCode(code, getSignUpCodes());
+
+    if (!isValid) {
+      return toActionState("ERROR", error ?? "Invalid sign-up code", formData);
+    }
 
     const passwordHash = await hashPassword(password);
 

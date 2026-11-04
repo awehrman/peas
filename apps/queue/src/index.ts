@@ -15,13 +15,17 @@ import { ErrorSeverity, ErrorType, HttpStatus } from "./types";
 import { createBullBoard } from "@bull-board/api";
 import { BullMQAdapter } from "@bull-board/api/dist/queueAdapters/bullMQ.js";
 import { ExpressAdapter } from "@bull-board/express";
-import cors from "cors";
 import express from "express";
 
 import { configManager } from "./config/configuration-manager";
 import { ManagerFactory } from "./config/factory";
 import "./config/load-env";
-import { SecurityMiddleware } from "./middleware/security";
+import {
+  createBasicAuthMiddleware,
+  getQueueAuthSecret,
+  requireQueueAuth,
+} from "./middleware/auth";
+import { SecurityMiddleware, parseAllowedOrigins } from "./middleware/security";
 import { errorHandler as stdErrorHandler } from "./utils/standardized-error-handler";
 import { LOG_MESSAGES, LoggerFactory } from "./utils/standardized-logger";
 import { startWorkers } from "./workers/startup";
@@ -43,6 +47,9 @@ function createError(value: unknown): Error {
 }
 
 async function initializeApp() {
+  // Fail fast: every API route and the WebSocket server depend on this secret
+  getQueueAuthSecret();
+
   // Initialize standardized systems
   const config = configManager.loadConfig();
   const logger = LoggerFactory.getLogger();
@@ -94,7 +101,6 @@ async function initializeApp() {
 
     // Add comprehensive request logging
     console.log(`[EXPRESS] ${req.method} ${req.path} - Request received`);
-    console.log(`[EXPRESS] Headers:`, req.headers);
     console.log(`[EXPRESS] Content-Type: ${req.get("Content-Type")}`);
     console.log(`[EXPRESS] Content-Length: ${req.get("Content-Length")}`);
 
@@ -124,9 +130,9 @@ async function initializeApp() {
   // Apply security middleware globally
   app.use(SecurityMiddleware.addSecurityHeaders);
   app.use(
-    SecurityMiddleware.configureCORS([
-      ...SECURITY_CONSTANTS.CORS.ALLOWED_ORIGINS,
-    ])
+    SecurityMiddleware.configureCORS(
+      parseAllowedOrigins(process.env.CORS_ALLOWED_ORIGINS)
+    )
   );
   app.use(
     SecurityMiddleware.validateRequestSize(
@@ -139,9 +145,6 @@ async function initializeApp() {
       SECURITY_CONSTANTS.RATE_LIMITS.GLOBAL_MAX_REQUESTS
     )
   );
-
-  // Fallback CORS for compatibility
-  app.use(cors());
 
   app.use(express.json({ limit: SERVER_DEFAULTS.REQUEST_SIZE_LIMIT }));
 
@@ -183,36 +186,52 @@ async function initializeApp() {
 
   // Bull-Board setup with error handling
   const serverAdapter = new ExpressAdapter();
-  try {
-    createBullBoard({
-      queues: [
-        new BullMQAdapter(serviceContainer.queues.noteQueue),
-        new BullMQAdapter(serviceContainer.queues.imageQueue),
-        // TODO: Add back other queues as needed
-        // new BullMQAdapter(serviceContainer.queues.ingredientQueue),
-        // new BullMQAdapter(serviceContainer.queues.instructionQueue),
-        // new BullMQAdapter(serviceContainer.queues.categorizationQueue),
-        // new BullMQAdapter(serviceContainer.queues.sourceQueue),
-      ],
-      serverAdapter,
-    });
-
-    serverAdapter.setBasePath("/bull-board");
-    app.use("/bull-board", serverAdapter.getRouter());
-  } catch (error) {
-    const properError = createError(error);
-    serviceContainer.errorHandler.createJobError(properError, {
-      operation: "bull_board_setup",
-      timestamp: new Date(),
-    });
-    serviceContainer.errorHandler.logError(properError, {
-      operation: "bull_board_setup",
-      timestamp: new Date(),
-    });
+  const bullBoardPassword = process.env.BULL_BOARD_PASSWORD;
+  if (!bullBoardPassword) {
     serviceContainer.logger.log(
-      "Failed to setup Bull Board, continuing without it",
-      "error"
+      "Bull Board disabled: set BULL_BOARD_PASSWORD to enable it",
+      "info"
     );
+  } else {
+    try {
+      createBullBoard({
+        queues: [
+          new BullMQAdapter(serviceContainer.queues.noteQueue),
+          new BullMQAdapter(serviceContainer.queues.imageQueue),
+          // TODO: Add back other queues as needed
+          // new BullMQAdapter(serviceContainer.queues.ingredientQueue),
+          // new BullMQAdapter(serviceContainer.queues.instructionQueue),
+          // new BullMQAdapter(serviceContainer.queues.categorizationQueue),
+          // new BullMQAdapter(serviceContainer.queues.sourceQueue),
+        ],
+        serverAdapter,
+      });
+
+      serverAdapter.setBasePath("/bull-board");
+      app.use(
+        "/bull-board",
+        createBasicAuthMiddleware(
+          process.env.BULL_BOARD_USERNAME || "admin",
+          bullBoardPassword,
+          "Bull Board"
+        ),
+        serverAdapter.getRouter()
+      );
+    } catch (error) {
+      const properError = createError(error);
+      serviceContainer.errorHandler.createJobError(properError, {
+        operation: "bull_board_setup",
+        timestamp: new Date(),
+      });
+      serviceContainer.errorHandler.logError(properError, {
+        operation: "bull_board_setup",
+        timestamp: new Date(),
+      });
+      serviceContainer.logger.log(
+        "Failed to setup Bull Board, continuing without it",
+        "error"
+      );
+    }
   }
 
   return { app, serviceContainer };
@@ -222,15 +241,14 @@ async function initializeApp() {
 initializeApp()
   .then(({ app, serviceContainer }) => {
     // Routes
-    app.use("/import", importRouter);
-    app.use("/upload", uploadRouter); // Unified HTML + image upload
-    app.use("/notes", notesRouter);
-    app.use("/images", imagesRouter);
-    app.use("/health", healthEnhancedRouter); // Enhanced health endpoints
-    // Test routes removed - use health endpoints for testing
-    app.use("/metrics", metricsRouter);
-    app.use("/cache", cacheRouter); // Cache management endpoints
-    app.use("/performance", performanceRouter); // Performance monitoring endpoints
+    app.use("/health", healthEnhancedRouter); // Public so platform health checks work
+    app.use("/import", requireQueueAuth, importRouter);
+    app.use("/upload", requireQueueAuth, uploadRouter); // Unified HTML + image upload
+    app.use("/notes", requireQueueAuth, notesRouter);
+    app.use("/images", requireQueueAuth, imagesRouter);
+    app.use("/metrics", requireQueueAuth, metricsRouter);
+    app.use("/cache", requireQueueAuth, cacheRouter); // Cache management endpoints
+    app.use("/performance", requireQueueAuth, performanceRouter); // Performance monitoring endpoints
 
     // 404 handler
     app.use((req, res) => {

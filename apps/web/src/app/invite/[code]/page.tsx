@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+
 import {
   getSignUpCodes,
   validateSignUpCode,
@@ -16,15 +17,10 @@ export default async function InvitePage({
   const { code } = await params;
   const allowedCodes = getSignUpCodes();
 
-  // If the app has no codes configured, allow anyone in.
   if (allowedCodes.length === 0) {
-    const { SignUpForm } = await import(
-      "../../../lib/auth/components/forms/sign-up"
-    );
-    return <SignUpForm />;
+    redirect("/login?error=Sign-up%20is%20currently%20closed");
   }
 
-  // Extract the code from the dynamic segment.
   if (!code) {
     redirect("/login?error=Sign-up%20code%20is%20required");
   }
@@ -40,5 +36,5 @@ export default async function InvitePage({
   const { SignUpForm } = await import(
     "../../../lib/auth/components/forms/sign-up"
   );
-  return <SignUpForm />;
+  return <SignUpForm code={code} />;
 }
