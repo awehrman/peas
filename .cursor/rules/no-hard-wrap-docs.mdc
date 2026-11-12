@@ -1,0 +1,19 @@
+---
+description: Write documentation and plans without hard line wraps
+alwaysApply: true
+---
+
+# No hard-wrapped documentation
+
+Editors here have word wrap on. In Markdown docs, plans, READMEs, and generated reports, write each paragraph and each list item on one line. Break lines only where Markdown needs it: headings, list items, table rows, code blocks, and blank lines between paragraphs.
+
+```markdown
+<!-- BAD -->
+The parser reads normalized text and returns a syntax tree with
+quantities, a food phrase, and trailing notes.
+
+<!-- GOOD -->
+The parser reads normalized text and returns a syntax tree with quantities, a food phrase, and trailing notes.
+```
+
+This applies to prose inside code too when it is rendered as Markdown (for example report templates). Ordinary code comments can keep normal line lengths.

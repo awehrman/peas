@@ -2,6 +2,7 @@ import type { LexiconRole, ParseMode } from "../ast/types.js";
 import { normalizeText } from "../normalize/normalize-text.js";
 import { type Token, tokenKey, tokenize } from "../normalize/tokenize.js";
 
+import { LexiconSnapshotSchema } from "./schemas.js";
 import type { LexiconEntryInput, LexiconMatch, LexiconSnapshot } from "./types.js";
 
 interface TrieNode {
@@ -40,9 +41,12 @@ export interface Lexicon {
 
 /**
  * Builds token tries over an in-memory snapshot. Conservative parsing uses
- * only ACTIVE entries; exploratory parsing also sees PROPOSED ones.
+ * only ACTIVE entries; exploratory parsing also sees PROPOSED ones. Throws a
+ * ZodError when an id is not a UUID or appears twice.
  */
 export function buildLexicon(snapshot: LexiconSnapshot): Lexicon {
+  LexiconSnapshotSchema.parse(snapshot);
+
   const entries = new Map(snapshot.entries.map((entry) => [entry.id, entry]));
   const conservative = createNode();
   const exploratory = createNode();

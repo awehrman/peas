@@ -43,7 +43,7 @@ async function loadStaticV1Parser(): Promise<ResolvedIngredientParser> {
 
 /**
  * Returns the parser the import queue uses for ingredient lines (static v1
- * until v3 replaces it).
+ * until v2 replaces it).
  */
 export async function resolveIngredientParser(
   _logger?: StructuredLogger

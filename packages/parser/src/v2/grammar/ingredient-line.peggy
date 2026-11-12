@@ -1,4 +1,4 @@
-// v3 structural ingredient-line grammar.
+// v2 structural ingredient-line grammar.
 //
 // Recognizes what is syntactically present (amounts, ranges, units, packages,
 // parentheticals, trailing comments, multi-ingredient lines) and leaves food
@@ -6,7 +6,7 @@
 // descriptor lists. Number, fraction, range, and package handling are ported
 // from the v1 grammar (packages/parser/src/v1/parser.peggy).
 //
-// Runs on normalized text (see src/v3/normalize) and reads three parse
+// Runs on normalized text (see src/v2/normalize) and reads three parse
 // options supplied by parse-line.ts:
 //   options.units    UnitMatcher            - unit spelled at an offset
 //   options.lexicon  Map<offset, match>     - chosen lexicon matches

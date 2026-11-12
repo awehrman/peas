@@ -1,63 +1,32 @@
-// Example usage of the parser package
-// This shows how to import and use different versions
+// Example usage of the v2 ingredient-line parser.
+// Run after building the package: node packages/parser/examples/usage.js
+import { randomUUID } from "node:crypto";
 
-// Default import (uses v2)
-import { parse } from "@peas/parser";
+import { buildLexicon, describeSyntax, parseLine, parseLineBest } from "@peas/parser/v2";
 
-// Version-specific imports
-import { v1, v2 } from "@peas/parser";
+const lexicon = buildLexicon({
+  revision: 1,
+  entries: [
+    { id: randomUUID(), text: "all-purpose flour", role: "FOOD" },
+    { id: randomUUID(), text: "heaping", role: "MEASUREMENT_MODIFIER" },
+    { id: randomUUID(), text: "sifted", role: "PREPARATION" },
+    { id: randomUUID(), text: "olive oil", role: "FOOD" },
+    { id: randomUUID(), text: "virgin olive oil", role: "FOOD", status: "PROPOSED" },
+  ],
+});
 
-// Minified imports
-import v1Minified from "@peas/parser/v1/minified";
-import v2Minified from "@peas/parser/v2/minified";
+// One syntax tree in the default CONSERVATIVE mode
+const tree = parseLineBest("2 heaping cups all-purpose flour, sifted", { lexicon });
+console.log(describeSyntax(tree));
+// [2 cup] <{heaping:MEASUREMENT_MODIFIER}> {all-purpose flour:FOOD} , {sifted:PREPARATION}
 
-// Example recipe text
-const recipeText = `
-Title: Chocolate Chip Cookies
-Ingredients:
-- 2 cups flour
-- 1 cup sugar
-- 1/2 cup butter
-Instructions:
-1. Mix ingredients
-2. Bake at 350°F for 10 minutes
-`;
-
-// Using default parser (v2)
-try {
-  const result = parse(recipeText);
-  console.log("Default parser result:", result);
-} catch (error) {
-  console.error("Default parser error:", error.message);
+// EXPLORATORY mode also considers PROPOSED entries and returns alternatives
+for (const alternative of parseLine("1 tbsp virgin olive oil", { lexicon, mode: "EXPLORATORY" })) {
+  console.log(alternative.segmentationIndex, describeSyntax(alternative));
 }
+// 0 [1 tbsp] {virgin olive oil:FOOD}
+// 1 [1 tbsp] virgin {olive oil:FOOD}
 
-// Using v1 parser
-try {
-  const v1Result = v1.parse(recipeText);
-  console.log("V1 parser result:", v1Result);
-} catch (error) {
-  console.error("V1 parser error:", error.message);
-}
-
-// Using v2 parser explicitly
-try {
-  const v2Result = v2.parse(recipeText);
-  console.log("V2 parser result:", v2Result);
-} catch (error) {
-  console.error("V2 parser error:", error.message);
-}
-
-// Using minified versions
-try {
-  const v1MinResult = v1Minified.parse(recipeText);
-  console.log("V1 minified result:", v1MinResult);
-} catch (error) {
-  console.error("V1 minified error:", error.message);
-}
-
-try {
-  const v2MinResult = v2Minified.parse(recipeText);
-  console.log("V2 minified result:", v2MinResult);
-} catch (error) {
-  console.error("V2 minified error:", error.message);
-}
+// Without a lexicon the structure still parses; unknown words are kept
+console.log(describeSyntax(parseLineBest("1 (14-ounce) can diced tomatoes")));
+// [1 (14 oz) can] diced tomatoes

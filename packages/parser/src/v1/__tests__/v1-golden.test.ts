@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
-import { loadGoldenCases } from "../../v3/__tests__/helpers/golden.js";
+import { loadGoldenCases } from "../../v2/__tests__/helpers/golden.js";
 
 // Plain Node loads the ~11 MB generated v1 parser far faster than Vite can
 // transform it, so v1 runs in a child process.
@@ -25,7 +25,7 @@ process.stdout.write(JSON.stringify(results));
 
 /**
  * Records how v1 parses the structural dev set so its behavior is measurable
- * while v3 replaces it. This is a reference, not ground truth.
+ * while v2 replaces it. This is a reference, not ground truth.
  */
 describe("v1 baseline on the structural dev set", () => {
   it("matches the recorded snapshot", () => {

@@ -1,23 +1,15 @@
 # Web Modernization (Next.js to TanStack Start, GraphQL with Apollo Client 4)
 
-Status: audit complete (12 November 2026); no framework code changed yet.
-This covers modernization phases M3 (tooling) and M4 (framework), and feeds
-M5 ([cache consistency](./cache-consistency.md)).
+Status: audit complete (12 November 2026); no framework code changed yet. This covers modernization phases M3 (tooling) and M4 (framework), and feeds M5 ([cache consistency](./cache-consistency.md)).
 
 ## Headline finding: GraphQL does not exist today
 
 The amendment assumes GraphQL and Apollo are retained. They are not present:
 
-- No workspace depends on `graphql`, `@apollo/*`, `graphql-yoga`, `urql`, or
-  `@graphql-codegen/*`; there are no `.graphql` files, `gql` tags, or codegen
-  configs. `graphql@16.11.0` appears only as a transitive dependency of `msw`.
-- The web app reads data in async server components that call
-  `@peas/database` directly (5 pages) and writes through 9 server-action
-  files (14 actions). There are no route handlers.
+- No workspace depends on `graphql`, `@apollo/*`, `graphql-yoga`, `urql`, or `@graphql-codegen/*`; there are no `.graphql` files, `gql` tags, or codegen configs. `graphql@16.11.0` appears only as a transitive dependency of `msw`.
+- The web app reads data in async server components that call `@peas/database` directly (5 pages) and writes through 9 server-action files (14 actions). There are no route handlers.
 
-Adopting GraphQL is therefore **new work**: a schema, a server, resolvers over
-the domain services, codegen, and an Apollo client. That is compatible with the
-target architecture but changes the size of M4. See "Decisions needed".
+Adopting GraphQL is therefore **new work**: a schema, a server, resolvers over the domain services, codegen, and an Apollo client. That is compatible with the target architecture but changes the size of M4. See "Decisions needed".
 
 ## Current stack
 
@@ -51,39 +43,45 @@ target architecture but changes the size of M4. See "Decisions needed".
 | `NEXT_PUBLIC_*` reads | `@peas/features` (upload endpoint, WebSocket URL/host/port) | must move to `import.meta.env.VITE_*` or a build-time define |
 | Config | `transpilePackages`, `serverActions.bodySizeLimit: 50mb`, `next/core-web-vitals` ESLint, `nextjs.json` tsconfig | |
 
-Routes to migrate: `/login`, `/invite/:code`, `/password-reset`, and the
-protected group (`/`, `/import`, `/notes`, `/notes/:id`, `/recipes`,
-`/recipes/:id`, `/ingredients`, `/design`), plus root `loading`, `error`, and
-`not-found` boundaries.
+Routes to migrate: `/login`, `/invite/:code`, `/password-reset`, and the protected group (`/`, `/import`, `/notes`, `/notes/:id`, `/recipes`, `/recipes/:id`, `/ingredients`, `/design`), plus root `loading`, `error`, and `not-found` boundaries.
 
 ## Migration plan (M4)
 
-1. **GraphQL server and schema.** Host the server in a TanStack Start server
-   route (see decisions) and define the schema over domain services in
-   `packages/database` (later, ontology services). Prisma types never become
-   the GraphQL contract.
-2. **New app.** Scaffold `apps/web-start` (TanStack Start + TanStack Router)
-   alongside `apps/web`, reusing `@peas/features`, `@peas/components`,
-   `@peas/theme`, `@peas/tailwind`. Inject TanStack Router's `Link` and
-   `navigate` through `AppNavigationProvider`.
-3. **Apollo Client 4.** Request-scoped clients on the server, cache
-   restoration on hydration, type policies keyed by immutable ids, and
-   session isolation between users.
-4. **Codegen.** GraphQL Code Generator with stable fragments for
-   FoodConcept, FoodTerm, IngredientMention, KnowledgeProposal,
-   KnowledgeDecision, Recipe, and ImportJob.
-5. **Auth.** Port session validation to TanStack Start server functions or
-   middleware (cookie read/write without `next/headers`); keep the session
-   table, token hashing, and argon2 unchanged. The GraphQL context resolves
-   the user from the same cookie.
-6. **Representative slice first:** notes list and note detail (query, the
-   line-review mutation, routing, loading and error states, cache behavior,
-   Playwright + axe test). Then migrate the remaining routes.
-7. **Env and assets.** Replace `NEXT_PUBLIC_*` with `VITE_*`; replace
-   `next/font` with `@fontsource` (Storybook already uses it).
-8. **Cutover.** Point Playwright and `railway.toml` at the new app; remove
-   Next.js dependencies and config only after it is stable. Never combine
-   the cutover with a destructive ontology migration.
+1. **GraphQL server and schema.** Host the server in a TanStack Start server route (see decisions) and define the schema over domain services in `packages/database` (later, ontology services). Prisma types never become the GraphQL contract.
+2. **New app.** Scaffold `apps/web-start` (TanStack Start + TanStack Router) alongside `apps/web`, reusing `@peas/features`, `@peas/components`, `@peas/theme`, `@peas/tailwind`. Inject TanStack Router's `Link` and `navigate` through `AppNavigationProvider`.
+3. **Apollo Client 4.** Request-scoped clients on the server, cache restoration on hydration, type policies keyed by immutable ids, and session isolation between users.
+4. **Codegen.** GraphQL Code Generator with stable fragments for FoodConcept, FoodTerm, IngredientMention, KnowledgeProposal, KnowledgeDecision, Recipe, and ImportJob.
+5. **Auth.** Port session validation to TanStack Start server functions or middleware (cookie read/write without `next/headers`); keep the session table, token hashing, and argon2 unchanged. The GraphQL context resolves the user from the same cookie.
+6. **Representative slice first:** notes list and note detail (query, the line-review mutation, routing, loading and error states, cache behavior, Playwright + axe test). Then migrate the remaining routes.
+7. **Env and assets.** Replace `NEXT_PUBLIC_*` with `VITE_*`; replace `next/font` with `@fontsource` (Storybook already uses it).
+8. **Cutover.** Point Playwright and `railway.toml` at the new app; remove Next.js dependencies and config only after it is stable. Never combine the cutover with a destructive ontology migration.
+
+### M4 implementation notes (researched 12 November 2026)
+
+**TanStack Start 1.169 (first stable release):**
+- Requires Vite 8, which the repo already has. Path aliases use Vite's native `resolve.tsconfigPaths: true`; `vite-tsconfig-paths` is not needed.
+- Server functions use `.validator()` (renamed from `.inputValidator()`). `useSession`/`getSession` were removed, so sessions use `getCookie`/`setCookie`/`deleteCookie` from `@tanstack/react-start/server` with the existing session table.
+- `setResponseHeader("set-cookie", …)` replaces every outgoing cookie; use `setCookie` instead.
+- Server routes are `createFileRoute("/api/graphql")({ server: { handlers: { GET, POST } } })`. Automatic CSRF protection covers server functions only, so the GraphQL route relies on Apollo Server's CSRF prevention, which is on by default. Adding a `src/start.ts` removes the automatic server-function CSRF middleware unless `createCsrfMiddleware()` is added back explicitly.
+- Production runs through the `nitro()` Vite plugin (`node .output/server/index.mjs`). The built server does not read `.env` files.
+- Client code only sees `import.meta.env.VITE_*`. Two shared files read `process.env.NEXT_PUBLIC_*` (`packages/features/src/utils/websocket-config.ts` and `packages/features/src/import/services/upload-service.ts`); switch them to injected values or `VITE_*`.
+
+**Apollo Server 5.5:**
+- Requires `graphql ^16.11` (npm `latest` is 17.1, so pin 16 across the whole monorepo; two copies break at runtime).
+- There is no Fetch-API integration (`@as-integrations/fetch` does not exist; `@as-integrations/next` needs `next` and mishandles `application/json; charset=utf-8`). `@peas/api` ships its own small adapter around `executeHTTPGraphQLRequest`, started with `startInBackgroundHandlingStartupErrorsByLoggingAndFailingAllRequests()`. It passes `body: undefined` for non-JSON POSTs so Apollo's CSRF check rejects them.
+- Set `introspection`, stack traces, and the landing page explicitly instead of relying on `NODE_ENV`.
+- Resolver tests use `server.executeOperation(…, { contextValue })` without starting the server.
+
+**GraphQL Code Generator 8 (released 7 November 2026, Node 22.18 or newer):**
+- Server: `typescript` + `typescript-resolvers` with `useIndexSignature: true`, `contextType`, `useTypeImports`, and `enumsAsTypes`.
+- Client: Apollo recommends `typescript-operations` (optionally with `typed-document-node`) over `client-preset`; if the preset is used, set `fragmentMasking: false`, `nonOptionalTypename: true`, `skipTypeNameForRoot: true`, and `enumType: "string-literal"` (the preset ignores `enumsAsTypes`). Nullable fields generate as `T | null`, not optional.
+- CLI 8 picks up `#graphql`-tagged strings by default, so client `documents` globs stay scoped to the web app.
+
+**Apollo Client 4.3 with SSR:**
+- Hooks come from `@apollo/client/react`; `rxjs` is a required peer; `HttpLink` must be passed explicitly; `ApolloError` is gone (use `CombinedGraphQLErrors.is` / `ServerError.is`); `useQuery` has no `onCompleted`/`onError`; use `skipToken` instead of `skip`.
+- `client.refetchQueries({ updateCache(cache) { cache.evict(…) } })` refetches every active query affected by the eviction, which is the mechanism the M5 cache coordinator uses.
+- `@apollo/client-integration-tanstack-start` is still a release candidate (`0.14.5-rc.0`). It is tested by Apollo against Start 1.132 and Vite 7, not 1.169 and Vite 8, and has an open Safari/WebKit hydration crash ([#559](https://github.com/apollographql/apollo-client-integrations/issues/559), fix in unmerged [PR #574](https://github.com/apollographql/apollo-client-integrations/pull/574)). Plan: build the notes slice on it, test Safari first, and apply the PR as a `yarn patch` if it still crashes. If the integration does not work on 1.169, fall back to route loaders that call server functions plus client-only Apollo hydration from the loader data.
+- `ApolloClient` and `InMemoryCache` must be imported from the integration package, created inside `getRouter()` (one per request on the server). During SSR the GraphQL server runs in the same process, so the server branch can use `SchemaLink` with the viewer resolved from the request cookie instead of an HTTP round trip.
 
 ## Tooling (M3) record, 12 November 2026
 
@@ -123,10 +121,7 @@ protected group (`/`, `/import`, `/notes`, `/notes/:id`, `/recipes`,
 
 ### Group D: low-risk updates (within majors)
 
-Peggy 5.0.6 → 5.1.1, Zod 4.1.5 → 4.6.7, React/React DOM 19.1.1 → 19.3.1,
-`@types/react` → 19.3.0, Tailwind 4.1.12 → 4.3.5, Playwright 1.55 → 1.65,
-AWS SDK 3.879 → 3.1167. Duplicate copies of `@types/react` and
-`playwright-core` were deduplicated (`yarn dedupe`) to fix type conflicts.
+Peggy 5.0.6 → 5.1.1, Zod 4.1.5 → 4.6.7, React/React DOM 19.1.1 → 19.3.1, `@types/react` → 19.3.0, Tailwind 4.1.12 → 4.3.5, Playwright 1.55 → 1.65, AWS SDK 3.879 → 3.1167. Duplicate copies of `@types/react` and `playwright-core` were deduplicated (`yarn dedupe`) to fix type conflicts.
 
 ### Deferred
 
@@ -137,29 +132,20 @@ AWS SDK 3.879 → 3.1167. Duplicate copies of `@types/react` and
 | react-window | 1.8.11 | Evaluate TanStack Virtual first |
 | ESLint, react-hooks plugin | 9.34, 5.2 | After the Next.js cutover |
 
-Runtime: Node 22.23.4, Yarn 4.9.1 (`nodeLinker: node-modules`,
-`enableScripts: false`), root `engines.node >= 18` (should be raised to match
-Prisma and TanStack Start requirements).
+Runtime: Node 22.23.4, Yarn 4.9.1 (`nodeLinker: node-modules`, `enableScripts: false`), root `engines.node >= 18` (should be raised to match Prisma and TanStack Start requirements).
 
 ## Pre-existing issues found during the audit
 
-- Fixed in M3: 9 queue tests hard-coded `/Users/awehrman/projects/peas/...`;
-  they now derive paths from `process.cwd()`.
+- Fixed in M3: 9 queue tests hard-coded `/Users/awehrman/projects/peas/...`; they now derive paths from `process.cwd()`.
 - Unused web dependencies: `oslo`, `matter-js`, `@peas/parser` (until Phase 4).
-- `.env.local.example` lists `NEXT_PUBLIC_UPLOAD_ENDPOINT` but not the
-  `NEXT_PUBLIC_WEBSOCKET_*` variables.
+- `.env.local.example` lists `NEXT_PUBLIC_UPLOAD_ENDPOINT` but not the `NEXT_PUBLIC_WEBSOCKET_*` variables.
 
 ## Decisions
 
-1. **Decided (12 November 2026): the GraphQL server runs inside the TanStack
-   Start app** as a server route, sharing the session cookie with page
-   requests. The queue service stays a job/upload service and is not a GraphQL
-   host.
+1. **Decided (12 November 2026): the GraphQL server runs inside the TanStack Start app** as a server route, sharing the session cookie with page requests. The queue service stays a job/upload service and is not a GraphQL host.
 
-2. **Decided (12 November 2026): Apollo Server 5** as the GraphQL server
-   library, paired with Apollo Client 4 on the frontend.
-3. **Decided: M4 starts after the M1–M3 changes are reviewed and committed**,
-   so the framework migration is reviewed on its own.
+2. **Decided (12 November 2026): Apollo Server 5** as the GraphQL server library, paired with Apollo Client 4 on the frontend.
+3. **Decided: M4 starts after the M1–M3 changes are reviewed and committed**, so the framework migration is reviewed on its own.
 
 Still open:
 

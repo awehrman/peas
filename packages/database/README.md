@@ -61,21 +61,13 @@ prisma/
    npm run db:generate
    ```
 
-4. **Create a migration** (see below). Schema changes always go through
-   `yarn db:migrate`; `db:push` is only for throwaway databases, because
-   anything pushed without a migration is missing from every other
-   environment.
+4. **Create a migration** (see below). Schema changes always go through `yarn db:migrate`; `db:push` is only for throwaway databases, because anything pushed without a migration is missing from every other environment.
 
 ### Prisma 7 notes
 
-- Connection settings live in `prisma.config.ts` (not in the schema). The CLI
-  reads `DATABASE_URL` from the environment or the root `.env.local`, and
-  `SHADOW_DATABASE_URL` when set.
-- Clients connect through the `pg` driver adapter. Create them with
-  `createPrismaClient()` from `@peas/database` (or `scripts/prisma-client.js`
-  in standalone scripts) rather than `new PrismaClient()`.
-- `prisma migrate dev` and `db push` no longer run `prisma generate`; run
-  `yarn build` (or `prisma generate`) after schema changes.
+- Connection settings live in `prisma.config.ts` (not in the schema). The CLI reads `DATABASE_URL` from the environment or the root `.env.local`, and `SHADOW_DATABASE_URL` when set.
+- Clients connect through the `pg` driver adapter. Create them with `createPrismaClient()` from `@peas/database` (or `scripts/prisma-client.js` in standalone scripts) rather than `new PrismaClient()`.
+- `prisma migrate dev` and `db push` no longer run `prisma generate`; run `yarn build` (or `prisma generate`) after schema changes.
 
 ### Available Scripts
 

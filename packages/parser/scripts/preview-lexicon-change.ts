@@ -3,28 +3,35 @@
  *
  * Usage:
  *   yarn preview:lexicon --add "whole milk:FOOD" [--add "packed:MEASUREMENT_MODIFIER"]
- *                        [--remove <entryId>] [--lexicon fixtures/lexicon/structural.json]
+ *                        [--remove <entry text or id>] [--lexicon fixtures/lexicon/structural.json]
  *                        [--limit 20]
  */
+import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { parseArgs } from "node:util";
 
-import { loadCorpus } from "../src/v3/__tests__/helpers/golden.js";
-import { LEXICON_ROLES, type LexiconRole } from "../src/v3/ast/types.js";
-import { buildLexicon } from "../src/v3/lexicon/token-trie.js";
-import type { LexiconEntryInput, LexiconSnapshot } from "../src/v3/lexicon/types.js";
-import { parseLineBest } from "../src/v3/parse-line.js";
-import { diffSyntax } from "../src/v3/preview/diff.js";
+import { loadCorpus } from "../src/v2/__tests__/helpers/golden.js";
+import { LEXICON_ROLES, type LexiconRole } from "../src/v2/ast/types.js";
+import { buildLexicon } from "../src/v2/lexicon/token-trie.js";
+import type { LexiconEntryInput, LexiconSnapshot } from "../src/v2/lexicon/types.js";
+import { parseLineBest } from "../src/v2/parse-line.js";
+import { diffSyntax } from "../src/v2/preview/diff.js";
 
-function parseAddition(value: string, index: number): LexiconEntryInput {
+function parseAddition(value: string): LexiconEntryInput {
   const separator = value.lastIndexOf(":");
   const text = value.slice(0, separator).trim();
   const role = value.slice(separator + 1).trim().toUpperCase();
   if (separator <= 0 || !text || !(LEXICON_ROLES as readonly string[]).includes(role)) {
     throw new Error(`--add expects "text:ROLE" with ROLE in ${LEXICON_ROLES.join(", ")}; got "${value}"`);
   }
-  return { id: `preview-${index}`, text, role: role as LexiconRole };
+  return { id: randomUUID(), text, role: role as LexiconRole };
+}
+
+function isRemoved(entry: LexiconEntryInput, removals: string[]): boolean {
+  return removals.some(
+    (removal) => removal === entry.id || removal.trim().toLowerCase() === entry.text.toLowerCase()
+  );
 }
 
 function main(): void {
@@ -46,7 +53,7 @@ function main(): void {
   const before = buildLexicon(base);
   const after = buildLexicon({
     revision: (base.revision ?? 0) + 1,
-    entries: [...base.entries.filter((entry) => !values.remove.includes(entry.id)), ...additions],
+    entries: [...base.entries.filter((entry) => !isRemoved(entry, values.remove)), ...additions],
   });
 
   const corpus = loadCorpus();

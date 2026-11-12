@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { describe, expect, it } from "vitest";
 
 import type { IngredientLineSyntax, PhraseItem, Quantity, TextSpan } from "../ast/types.js";
@@ -97,9 +99,9 @@ describe("parse invariants", () => {
     const lexicon = buildLexicon({
       revision: 1,
       entries: [
-        { id: "parsley", text: "flat-leaf parsley", role: "FOOD" },
-        { id: "tomatoes", text: "tomatoes", role: "FOOD" },
-        { id: "olive-oil", text: "olive oil", role: "FOOD" },
+        { id: randomUUID(), text: "flat-leaf parsley", role: "FOOD" },
+        { id: randomUUID(), text: "tomatoes", role: "FOOD" },
+        { id: randomUUID(), text: "olive oil", role: "FOOD" },
       ],
     });
     for (const input of SAMPLE_LINES) {
@@ -113,9 +115,9 @@ describe("parse invariants", () => {
     const lexicon = buildLexicon({
       revision: 2,
       entries: [
-        { id: "whole-milk", text: "whole milk", role: "FOOD" },
-        { id: "whole", text: "whole", role: "ATTRIBUTE" },
-        { id: "milk", text: "milk", role: "FOOD" },
+        { id: randomUUID(), text: "whole milk", role: "FOOD" },
+        { id: randomUUID(), text: "whole", role: "ATTRIBUTE" },
+        { id: randomUUID(), text: "milk", role: "FOOD" },
       ],
     });
     expect(parseLine("1 cup whole milk", { lexicon })).toHaveLength(1);

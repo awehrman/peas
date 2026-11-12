@@ -2,7 +2,7 @@
 import { execSync } from "child_process";
 import fs from "fs";
 
-import { generateV3Parser } from "./generate-v3.js";
+import { generateV2Parser } from "./generate-v2.js";
 
 // Clean and create dist directories
 console.log("Cleaning dist directory...");
@@ -11,7 +11,7 @@ if (fs.existsSync("dist")) {
 }
 fs.mkdirSync("dist/v1", { recursive: true });
 
-// Build v1 parser (the live import parser until v3 replaces it)
+// Build v1 parser (the live import parser until v2 replaces it)
 console.log("Building v1 parser...");
 execSync("peggy -o dist/v1/parser.js --format es src/v1/parser.peggy", {
   stdio: "inherit",
@@ -36,11 +36,11 @@ execSync(
   }
 );
 
-// v3: generate the grammar, then compile the TypeScript sources
-console.log("Generating v3 grammar...");
-generateV3Parser();
+// v2: generate the grammar, then compile the TypeScript sources
+console.log("Generating v2 grammar...");
+generateV2Parser();
 
-console.log("Compiling v3...");
+console.log("Compiling v2...");
 execSync("npx tsc -p tsconfig.build.json", {
   stdio: "inherit",
 });

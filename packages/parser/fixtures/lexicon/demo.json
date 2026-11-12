@@ -1,0 +1,31 @@
+{
+  "description": "A tiny illustrative lexicon for docs and `yarn explain:line --lexicon demo`. It is not used by tests and is not real food knowledge; Phase 2 and 3 replace it with the curated ontology.",
+  "revision": 1,
+  "entries": [
+    { "id": "4c887345-b5ea-4032-b144-5e4eab990663", "text": "heaping", "role": "MEASUREMENT_MODIFIER" },
+    { "id": "d9ae4bc6-09a9-4dc0-93b3-df1eef3e6c8c", "text": "packed", "role": "MEASUREMENT_MODIFIER" },
+    { "id": "d78f4571-cc00-41bb-b321-76db14c854f6", "text": "all-purpose flour", "role": "FOOD" },
+    { "id": "8be110e1-e9e0-4a98-9642-9e27638c1381", "text": "brown sugar", "role": "FOOD" },
+    { "id": "c5ca59fd-4c27-4ca3-80a9-4be7dfd77fa5", "text": "garlic", "role": "FOOD" },
+    { "id": "25fbce6a-5c26-48fa-bd47-4425ded7f44f", "text": "garlic cloves", "role": "FOOD" },
+    { "id": "8c8c30a0-d40c-4b2d-9be8-bb854004860b", "text": "olive oil", "role": "FOOD" },
+    { "id": "46642bac-3ce9-47f1-b7e2-0b4e826afcce", "text": "extra-virgin olive oil", "role": "FOOD" },
+    { "id": "d845a2be-bd49-44ba-bf15-fb63a7ae6204", "text": "kosher salt", "role": "FOOD" },
+    { "id": "ce565c64-bb93-4f23-86c3-e44a8b36da10", "text": "black pepper", "role": "FOOD" },
+    { "id": "b1bf44d5-e39b-4069-9af0-26032c475207", "text": "butter", "role": "FOOD" },
+    { "id": "a81ca9bd-dcb2-45da-b4c0-dd9456e7d15f", "text": "tomatoes", "role": "FOOD" },
+    { "id": "dd7c1dc0-1496-4e33-88f2-5957e86a448f", "text": "chicken thighs", "role": "FOOD" },
+    { "id": "106d5357-1f28-4124-97e1-ea280ba9e1b8", "text": "unsalted", "role": "ATTRIBUTE" },
+    { "id": "ff1ee660-a0bc-43ea-9b57-3540de0a2407", "text": "boneless", "role": "ATTRIBUTE" },
+    { "id": "986ab39d-0849-4988-ac72-4b55a2184c14", "text": "skinless", "role": "ATTRIBUTE" },
+    { "id": "6861db09-ea95-4404-9824-a3fa48626699", "text": "large", "role": "ATTRIBUTE" },
+    { "id": "10f23d19-6348-41c4-84ab-843d311dceff", "text": "freshly ground", "role": "ATTRIBUTE" },
+    { "id": "d22c3c4d-d31d-4578-bf61-bfb01075d79c", "text": "minced", "role": "PREPARATION" },
+    { "id": "17f825ab-ca0f-42b0-903e-b936a6327a9e", "text": "softened", "role": "PREPARATION" },
+    { "id": "251f3682-d366-4e25-b654-b38a13651871", "text": "diced", "role": "PREPARATION" },
+    { "id": "510dfa16-9c49-4c3d-8101-b255e1a10136", "text": "sifted", "role": "PREPARATION" },
+    { "id": "4499944d-af65-463a-a7bb-363b6d8a5dea", "text": "finely", "role": "DEGREE" },
+    { "id": "adb593ff-abfb-4bb8-8f0d-0753360a9d05", "text": "divided", "role": "INSTRUCTION" },
+    { "id": "929025ed-f287-4b67-afdd-5b9566054df6", "text": "virgin olive oil", "role": "FOOD", "status": "PROPOSED" }
+  ]
+}

@@ -2,16 +2,16 @@
   "description": "Measurement modifiers and degrees the structural golden tests assume. Food knowledge does not belong here.",
   "revision": 0,
   "entries": [
-    { "id": "mm-heaping", "text": "heaping", "role": "MEASUREMENT_MODIFIER" },
-    { "id": "mm-heaped", "text": "heaped", "role": "MEASUREMENT_MODIFIER" },
-    { "id": "mm-packed", "text": "packed", "role": "MEASUREMENT_MODIFIER" },
-    { "id": "mm-level", "text": "level", "role": "MEASUREMENT_MODIFIER" },
-    { "id": "mm-scant", "text": "scant", "role": "MEASUREMENT_MODIFIER" },
-    { "id": "mm-generous", "text": "generous", "role": "MEASUREMENT_MODIFIER" },
-    { "id": "mm-rounded", "text": "rounded", "role": "MEASUREMENT_MODIFIER" },
-    { "id": "deg-loosely", "text": "loosely", "role": "DEGREE" },
-    { "id": "deg-firmly", "text": "firmly", "role": "DEGREE" },
-    { "id": "deg-lightly", "text": "lightly", "role": "DEGREE" },
-    { "id": "deg-tightly", "text": "tightly", "role": "DEGREE" }
+    { "id": "08e88da7-4d0e-47ad-b09a-c89e203bb87d", "text": "heaping", "role": "MEASUREMENT_MODIFIER" },
+    { "id": "2dc8cc9c-84cd-4c25-809a-8bb0c55a67ed", "text": "heaped", "role": "MEASUREMENT_MODIFIER" },
+    { "id": "54621bfb-ff7e-41d1-a3b4-7028c989e1ee", "text": "packed", "role": "MEASUREMENT_MODIFIER" },
+    { "id": "4155166d-7675-40df-b4b4-e43b06b40107", "text": "level", "role": "MEASUREMENT_MODIFIER" },
+    { "id": "f0a3ca62-ea76-469e-b6b2-31e65f085783", "text": "scant", "role": "MEASUREMENT_MODIFIER" },
+    { "id": "ec65d76b-4fb9-4ee8-9f35-495486effc99", "text": "generous", "role": "MEASUREMENT_MODIFIER" },
+    { "id": "0568c885-6132-4dab-aad2-2b00d054c9ac", "text": "rounded", "role": "MEASUREMENT_MODIFIER" },
+    { "id": "ab2957b7-f4be-4570-b8c4-879edce54a20", "text": "loosely", "role": "DEGREE" },
+    { "id": "b1937825-2a29-42ec-bce2-cf9d5bc54b12", "text": "firmly", "role": "DEGREE" },
+    { "id": "27d6c636-9245-4c12-bbb6-30d74c9da573", "text": "lightly", "role": "DEGREE" },
+    { "id": "57092945-583c-4b6e-941d-03585ecfc301", "text": "tightly", "role": "DEGREE" }
   ]
 }

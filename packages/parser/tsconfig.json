@@ -11,6 +11,6 @@
     "lib": ["es2022"],
     "types": ["node"]
   },
-  "include": ["src/v3/**/*.ts"],
+  "include": ["src/v2/**/*.ts"],
   "exclude": ["node_modules", "dist", "legacy"]
 }

@@ -1,8 +1,6 @@
 # Users and Sign-Up Codes
 
-Accounts are created through an invite link. There is no open sign-up: if
-`SIGN_UP_CODES` is unset, the invite page redirects to the login page with
-"Sign-up is currently closed".
+Accounts are created through an invite link. There is no open sign-up: if `SIGN_UP_CODES` is unset, the invite page redirects to the login page with "Sign-up is currently closed".
 
 ## Creating your first user
 
@@ -18,13 +16,11 @@ Accounts are created through an invite link. There is no open sign-up: if
    http://localhost:3000/invite/my-secret-code
    ```
 
-3. Fill in username, email and password. You're signed in afterwards; later
-   sign-ins use `/login` with your email and password.
+3. Fill in username, email and password. You're signed in afterwards; later sign-ins use `/login` with your email and password.
 
 ## Making a user an admin
 
-New accounts are `USER`. Admins additionally get "Delete All Data" on the
-dashboard and "Create recipes from completed notes" on `/recipes`.
+New accounts are `USER`. Admins additionally get "Delete All Data" on the dashboard and "Create recipes from completed notes" on `/recipes`.
 
 ```bash
 # list accounts and their roles
@@ -57,8 +53,7 @@ SIGN_UP_CODES=code1,code2,code3
 SIGN_UP_CODES='[{"code":"invite123"},{"code":"beta2024","expiresAt":"2026-12-31T23:59:59Z"}]'
 ```
 
-`maxUses` is accepted in the JSON but not enforced yet: usage counts aren't
-stored, so a code works until it's removed or expires.
+`maxUses` is accepted in the JSON but not enforced yet: usage counts aren't stored, so a code works until it's removed or expires.
 
 ## Security notes
 

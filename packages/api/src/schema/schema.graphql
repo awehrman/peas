@@ -1,0 +1,589 @@
+"""
+Peas GraphQL API. Types mirror the shapes the @peas/features components consume; dates are ISO 8601 strings. Every mutation returns a payload with a MutationEffect describing what the client cache must reconcile.
+"""
+schema {
+  query: Query
+  mutation: Mutation
+}
+
+# ---------------------------------------------------------------------------
+# Viewer
+# ---------------------------------------------------------------------------
+
+enum UserType {
+  ADMIN
+  USER
+}
+
+"""
+The signed-in user, resolved from the session cookie. Null when signed out.
+
+Example: query { viewer { id username userType } } -> { "viewer": { "id": "cm3x...", "username": "allie", "userType": "ADMIN" } }
+"""
+type Viewer {
+  id: ID!
+  username: String!
+  email: String!
+  "A data: URL for the user's generated pea avatar, e.g. \"data:image/svg+xml;base64,...\"."
+  avatarUrl: String
+  userType: UserType!
+}
+
+# ---------------------------------------------------------------------------
+# Notes
+# ---------------------------------------------------------------------------
+
+"Import lifecycle of an Evernote note: PENDING -> PROCESSING -> COMPLETED, or FAILED / DUPLICATE."
+enum NoteStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  DUPLICATE
+}
+
+"A person's verdict on how an ingredient line was parsed."
+enum LineReviewStatus {
+  UNREVIEWED
+  CORRECT
+  INCORRECT
+}
+
+enum ParseStatus {
+  AWAITING_PARSING
+  COMPLETED_WITH_ERROR
+  COMPLETED_SUCCESSFULLY
+}
+
+"""
+One row of the notes list.
+
+Example: { "id": "cm3n...", "title": "Weeknight Chili", "status": "COMPLETED", "parsingErrorCount": 0, "ingredientLineCount": 14, "instructionLineCount": 6, "recipeId": null, "createdAt": "2026-11-12T15:23:02.335Z" }
+"""
+type NoteSummary {
+  id: ID!
+  title: String
+  status: NoteStatus!
+  "0-1 similarity to an existing note when status is DUPLICATE, e.g. 0.93."
+  duplicateConfidence: Float
+  parsingErrorCount: Int!
+  ingredientLineCount: Int!
+  instructionLineCount: Int!
+  thumbnailUrl: String
+  "Evernote notebook name, e.g. \"Soups\"."
+  notebook: String
+  "Set once the note has been promoted to a recipe."
+  recipeId: ID
+  createdAt: String!
+}
+
+"""
+A page of notes. Pages are 1-based.
+
+Example: query { notes(status: COMPLETED, query: "chili", page: 2) { total page pageSize items { id title } } }
+"""
+type NotesPage {
+  items: [NoteSummary!]!
+  total: Int!
+  page: Int!
+  pageSize: Int!
+}
+
+"""
+One piece of a parsed ingredient line as stored by the import pipeline (v1 parser today).
+
+Example for "2 cups flour": [{ "index": 0, "type": "amount", "value": "2" }, { "index": 1, "type": "unit", "value": "cups" }, { "index": 2, "type": "ingredient", "value": "flour", "ingredientId": "cm3i..." }]
+"""
+type ParsedSegment {
+  index: Int!
+  "Segment role from the parser, e.g. amount, unit, ingredient, description."
+  type: String!
+  value: String!
+  "Grammar rule that produced the segment, when recorded."
+  rule: String
+  "Linked ingredient for ingredient segments."
+  ingredientId: ID
+}
+
+"""
+One raw ingredient line from a note, with its parse and review state.
+
+Example: { "id": "cm3l...", "blockIndex": 0, "lineIndex": 2, "reference": "2 cups flour", "parseStatus": "COMPLETED_SUCCESSFULLY", "reviewStatus": "UNREVIEWED", "parserVersion": "v1" }
+"""
+type IngredientLine {
+  id: ID!
+  "Which ingredient list in the note (0 for the first, 1 for e.g. \"For the sauce\")."
+  blockIndex: Int!
+  lineIndex: Int!
+  "The line exactly as written in the note."
+  reference: String!
+  parseStatus: ParseStatus!
+  reviewStatus: LineReviewStatus!
+  isActive: Boolean!
+  parserVersion: String
+  segments: [ParsedSegment!]!
+}
+
+"An ingredient list within a note, e.g. the main list (blockIndex 0) and a \"For the glaze\" list (blockIndex 1)."
+type IngredientBlock {
+  blockIndex: Int!
+  lines: [IngredientLine!]!
+}
+
+"Example: { \"id\": \"cm3s...\", \"lineIndex\": 0, \"text\": \"Preheat the oven to 350°F.\", \"isActive\": true }"
+type InstructionLine {
+  id: ID!
+  lineIndex: Int!
+  text: String!
+  isActive: Boolean!
+}
+
+"Example: { \"source\": \"https://cooking.example.com/chili\", \"notebook\": \"Soups\", \"tags\": [\"weeknight\"], \"originalCreatedAt\": \"2019-03-02T00:00:00.000Z\" }"
+type EvernoteMetadata {
+  source: String
+  notebook: String
+  tags: [String!]!
+  originalCreatedAt: String
+}
+
+"Example: { \"id\": \"cm3g...\", \"url\": \"https://r2.example.com/processed/chili.jpg\", \"thumbnailUrl\": \"https://r2.example.com/processed/chili-thumb.jpg\", \"processingStatus\": \"COMPLETED\" }"
+type NoteImage {
+  id: ID!
+  url: String!
+  thumbnailUrl: String
+  processingStatus: String!
+}
+
+"Example: { \"id\": \"cm3u...\", \"url\": \"https://cooking.example.com/chili\", \"isBrokenLink\": false, \"siteName\": \"Example Cooking\" }"
+type SourceUrl {
+  id: ID!
+  url: String!
+  isBrokenLink: Boolean!
+  siteName: String
+}
+
+"Example: { \"title\": \"Salt, Fat, Acid, Heat\", \"author\": \"Samin Nosrat\" }"
+type SourceBook {
+  title: String!
+  author: String
+}
+
+"Where a recipe came from: one or more URLs and/or a book."
+type Source {
+  id: ID!
+  urls: [SourceUrl!]!
+  book: SourceBook
+}
+
+"A category or tag. Example: { \"id\": \"cm3c...\", \"name\": \"Dinner\" }"
+type NamedTag {
+  id: ID!
+  name: String!
+}
+
+"""
+Everything shown on the note detail page.
+
+Example: query { note(id: "cm3n...") { title status ingredientBlocks { blockIndex lines { reference reviewStatus } } } }
+"""
+type Note {
+  id: ID!
+  title: String
+  status: NoteStatus!
+  createdAt: String!
+  "Why the import failed, when status is FAILED."
+  errorMessage: String
+  duplicateConfidence: Float
+  parsingErrorCount: Int!
+  evernote: EvernoteMetadata
+  images: [NoteImage!]!
+  sources: [Source!]!
+  categories: [NamedTag!]!
+  tags: [NamedTag!]!
+  ingredientBlocks: [IngredientBlock!]!
+  instructions: [InstructionLine!]!
+  recipeId: ID
+}
+
+"Background queue job status, mirroring BullMQ through the QueueJob table."
+enum JobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum JobType {
+  PROCESS_NOTE
+  PROCESS_INGREDIENT_LINE
+  PROCESS_INSTRUCTION_LINE
+  PROCESS_CATEGORIZATION
+}
+
+"""
+Background queue job state, polled by the client while active.
+
+Example: query { job(jobId: "cm3n...-ingredient-0-2") { status errorMessage completedAt } } -> { "job": { "status": "COMPLETED", "errorMessage": null, "completedAt": "2026-11-12T15:23:04.010Z" } }
+"""
+type Job {
+  "BullMQ job id, e.g. \"cm3n...-ingredient-0-2\" (note, block 0, line 2)."
+  jobId: ID!
+  type: JobType!
+  status: JobStatus!
+  noteId: ID!
+  errorMessage: String
+  retryCount: Int!
+  startedAt: String
+  completedAt: String
+}
+
+"Counts for the import page. Example: { \"numberOfNotes\": 1, \"numberOfIngredients\": 10, \"numberOfParsingErrors\": 0 }"
+type ImportStats {
+  numberOfNotes: Int!
+  numberOfIngredients: Int!
+  numberOfParsingErrors: Int!
+}
+
+# ---------------------------------------------------------------------------
+# Recipes
+# ---------------------------------------------------------------------------
+
+"""
+One card on the recipes list.
+
+Example: { "id": "cm3r...", "title": "Weeknight Chili", "imageUrl": null, "categories": ["Dinner"], "tags": ["spicy"], "ingredientLineCount": 14, "createdAt": "2026-11-12T16:00:00.000Z" }
+"""
+type RecipeSummary {
+  id: ID!
+  title: String!
+  imageUrl: String
+  categories: [String!]!
+  tags: [String!]!
+  ingredientLineCount: Int!
+  createdAt: String!
+}
+
+"Example: query { recipes(category: \"Dinner\", tag: \"spicy\", page: 1) { total items { id title } } }"
+type RecipesPage {
+  items: [RecipeSummary!]!
+  total: Int!
+  page: Int!
+  pageSize: Int!
+}
+
+"Every category and tag name in use, for filter menus. Example: { \"categories\": [\"Dessert\", \"Dinner\"], \"tags\": [\"spicy\", \"weeknight\"] }"
+type RecipeTaxonomy {
+  categories: [String!]!
+  tags: [String!]!
+}
+
+"A recipe promoted from a note. It shares the note's sources, ingredient blocks, and instructions."
+type Recipe {
+  id: ID!
+  title: String!
+  noteId: ID!
+  imageUrl: String
+  categories: [NamedTag!]!
+  tags: [NamedTag!]!
+  sources: [Source!]!
+  ingredientBlocks: [IngredientBlock!]!
+  instructions: [InstructionLine!]!
+  createdAt: String!
+}
+
+"""
+Replaces a recipe's title, categories, and tags. Unknown category and tag names are created.
+
+Example: { "id": "cm3r...", "title": "Weeknight Chili", "categories": ["Dinner"], "tags": ["spicy", "freezer"] }
+"""
+input RecipeUpdateInput {
+  id: ID!
+  title: String!
+  categories: [String!]!
+  tags: [String!]!
+}
+
+# ---------------------------------------------------------------------------
+# Ingredients
+# ---------------------------------------------------------------------------
+
+"Which ingredients the ingredients page lists. Lowercase to match the page's ?view= search param."
+enum IngredientView {
+  all
+  unreviewed
+}
+
+enum IngredientProperty {
+  VEGAN
+  VEGETARIAN
+  GLUTEN_FREE
+  MEAT
+  FISH
+  DAIRY
+  EGG
+  GRAIN
+  LEGUME
+  FRUIT
+  VEGETABLE
+  HERB
+  SPICE
+  NUTS
+  SHELLFISH
+  SOY
+  SESAME
+  CORN
+  ALCOHOL
+}
+
+"""
+One row of the ingredients list.
+
+Example: { "id": "cm3i...", "name": "garlic", "plural": null, "isReviewed": true, "parentIngredientId": null, "properties": ["VEGAN", "VEGETARIAN", "VEGETABLE"], "referenceCount": 42 }
+"""
+type IngredientSummary {
+  id: ID!
+  name: String!
+  plural: String
+  isReviewed: Boolean!
+  "Set for variants, e.g. \"smoked paprika\" points at \"paprika\"."
+  parentIngredientId: ID
+  properties: [IngredientProperty!]!
+  "How many ingredient lines mention this ingredient."
+  referenceCount: Int!
+}
+
+"Example: { \"all\": 10, \"unreviewed\": 7 }"
+type IngredientCounts {
+  all: Int!
+  unreviewed: Int!
+}
+
+"A lightweight ingredient reference for pickers. Example: { \"id\": \"cm3i...\", \"name\": \"paprika\" }"
+type IngredientOption {
+  id: ID!
+  name: String!
+}
+
+"Another name for an ingredient. Example: { \"id\": \"cm3a...\", \"name\": \"scallion\" } on \"green onion\"."
+type IngredientAlias {
+  id: ID!
+  name: String!
+}
+
+"A line that mentions the ingredient. Example: { \"id\": \"cm3f...\", \"reference\": \"3 garlic cloves, minced\", \"noteId\": \"cm3n...\", \"noteTitle\": \"Weeknight Chili\" }"
+type IngredientReference {
+  id: ID!
+  reference: String!
+  noteId: ID
+  noteTitle: String
+}
+
+"""
+Everything shown in the ingredient editor.
+
+Example: query { ingredient(id: "cm3i...") { name plural aliases { name } parent { name } variants { name } references { reference noteTitle } } }
+"""
+type Ingredient {
+  id: ID!
+  name: String!
+  plural: String
+  isReviewed: Boolean!
+  reviewedAt: String
+  "True for ingredients made of other ingredients, e.g. \"garam masala\"."
+  isComposedIngredient: Boolean!
+  properties: [IngredientProperty!]!
+  aliases: [IngredientAlias!]!
+  substitutions: [IngredientOption!]!
+  parent: IngredientOption
+  variants: [IngredientOption!]!
+  "e.g. \"Spices\"."
+  category: String
+  tags: [String!]!
+  referenceCount: Int!
+  "The most recent references (capped at 50)."
+  references: [IngredientReference!]!
+}
+
+"""
+Saves the ingredient editor form. Set advanceToNext to get the next unreviewed ingredient's id back.
+
+Example: { "id": "cm3i...", "name": "smoked paprika", "plural": null, "properties": ["VEGAN", "SPICE"], "isComposedIngredient": false, "parentIngredientId": "cm3p...", "substitutionIds": [], "aliases": ["pimentón"], "category": "Spices", "tags": [], "markReviewed": true, "advanceToNext": true }
+"""
+input IngredientSaveInput {
+  id: ID!
+  name: String!
+  plural: String
+  properties: [IngredientProperty!]!
+  isComposedIngredient: Boolean!
+  parentIngredientId: ID
+  substitutionIds: [ID!]!
+  aliases: [String!]!
+  category: String
+  tags: [String!]!
+  markReviewed: Boolean!
+  advanceToNext: Boolean!
+}
+
+"Example: { \"name\": \"shallot\", \"plural\": \"shallots\" }"
+input IngredientCreateInput {
+  name: String!
+  plural: String
+}
+
+# ---------------------------------------------------------------------------
+# Mutation effects (cache reconciliation contract)
+# ---------------------------------------------------------------------------
+
+"""
+Query areas whose cached results a mutation may have made stale. The client's cache coordinator refetches active queries registered for each domain.
+
+Example: renaming an ingredient invalidates INGREDIENTS (the list shows the name) and INGREDIENT_DETAIL (other ingredients show it as a parent or substitution).
+"""
+enum InvalidationDomain {
+  NOTES
+  NOTE_DETAIL
+  RECIPES
+  RECIPE_DETAIL
+  RECIPE_TAXONOMY
+  INGREDIENTS
+  INGREDIENT_DETAIL
+  IMPORT_STATS
+}
+
+"A cache identity: GraphQL type name plus immutable id. Example: { \"typename\": \"Recipe\", \"id\": \"cm3r...\" }"
+type EntityRef {
+  typename: String!
+  id: ID!
+}
+
+"""
+What a mutation changed beyond the entities returned in its payload (Apollo merges those automatically).
+
+- changed: entities whose cached fields are stale; the client evicts them so mounted views refetch.
+- evicted: identities that no longer exist (deleted or merged away).
+- invalidatedDomains: query areas to refetch.
+
+Id lists are capped at 100; larger changes rely on invalidatedDomains, lexiconRevision, and reprocessingJobId.
+
+Example (updateRecipe): { "changed": [{ "typename": "Recipe", "id": "cm3r..." }], "evicted": [], "invalidatedDomains": ["RECIPES", "RECIPE_TAXONOMY"], "lexiconRevision": null, "reprocessingJobId": null }
+"""
+type MutationEffect {
+  changed: [EntityRef!]!
+  evicted: [EntityRef!]!
+  invalidatedDomains: [InvalidationDomain!]!
+  "Lexicon revision after the mutation, once the ontology exists. Null until then."
+  lexiconRevision: Int
+  "Queue job reinterpreting affected lines, polled with Query.job."
+  reprocessingJobId: ID
+}
+
+"""
+Shared shape of every mutation result. Expected failures (validation, permissions) come back as success: false with a message rather than as GraphQL errors.
+
+Example failure: { "success": false, "message": "title: Title is required", "effect": { "changed": [], "evicted": [], "invalidatedDomains": [], "lexiconRevision": null, "reprocessingJobId": null } }
+"""
+interface MutationPayload {
+  success: Boolean!
+  message: String
+  effect: MutationEffect!
+}
+
+type BasicPayload implements MutationPayload {
+  success: Boolean!
+  message: String
+  effect: MutationEffect!
+}
+
+"Example: { \"success\": true, \"recipeId\": \"cm3r...\", \"effect\": { \"changed\": [Note, NoteSummary], \"invalidatedDomains\": [\"RECIPES\", \"RECIPE_TAXONOMY\"] } }"
+type PromoteNotePayload implements MutationPayload {
+  success: Boolean!
+  message: String
+  effect: MutationEffect!
+  recipeId: ID
+}
+
+"Example: { \"success\": true, \"created\": 12 }"
+type PromoteCompletedNotesPayload implements MutationPayload {
+  success: Boolean!
+  message: String
+  effect: MutationEffect!
+  created: Int
+}
+
+"Example: { \"success\": true, \"nextId\": \"cm3j...\" } (nextId is null when advanceToNext was false or nothing is left to review)"
+type SaveIngredientPayload implements MutationPayload {
+  success: Boolean!
+  message: String
+  effect: MutationEffect!
+  nextId: ID
+}
+
+"Example: { \"success\": true, \"id\": \"cm3k...\" }"
+type CreateIngredientPayload implements MutationPayload {
+  success: Boolean!
+  message: String
+  effect: MutationEffect!
+  id: ID
+}
+
+"Example: { \"key\": \"notes\", \"count\": 1 }"
+type DeletedCount {
+  key: String!
+  count: Int!
+}
+
+type CleanupAllDataPayload implements MutationPayload {
+  success: Boolean!
+  message: String
+  effect: MutationEffect!
+  deletedCounts: [DeletedCount!]
+}
+
+"""
+Example: mutation { setLineReviewStatus(lineId: "cm3l...", status: CORRECT) { success note { id ingredientBlocks { lines { id reviewStatus } } } } }
+"""
+type SetLineReviewStatusPayload implements MutationPayload {
+  success: Boolean!
+  message: String
+  effect: MutationEffect!
+  "The refreshed note, so every mounted view of it updates from the payload."
+  note: Note
+}
+
+# ---------------------------------------------------------------------------
+# Root types
+# ---------------------------------------------------------------------------
+
+type Query {
+  viewer: Viewer
+  "Filters are optional; blank strings are ignored. Example: notes(status: FAILED, page: 1)"
+  notes(status: NoteStatus, query: String, page: Int): NotesPage!
+  note(id: ID!): Note
+  importStats: ImportStats!
+  job(jobId: ID!): Job
+  "Example: recipes(query: \"chili\", category: \"Dinner\")"
+  recipes(query: String, category: String, tag: String, page: Int): RecipesPage!
+  recipe(id: ID!): Recipe
+  recipeTaxonomy: RecipeTaxonomy!
+  ingredients(view: IngredientView!): [IngredientSummary!]!
+  ingredientCounts: IngredientCounts!
+  ingredient(id: ID!): Ingredient
+  ingredientCategoryNames: [String!]!
+  "Name search for pickers, up to 10 results. Example: searchIngredients(query: \"papr\", excludeId: \"cm3i...\") -> [{ name: \"paprika\" }, { name: \"smoked paprika\" }]"
+  searchIngredients(query: String!, excludeId: ID): [IngredientOption!]!
+}
+
+type Mutation {
+  "Marks how well a line was parsed. Example: setLineReviewStatus(lineId: \"cm3l...\", status: INCORRECT)"
+  setLineReviewStatus(lineId: ID!, status: LineReviewStatus!): SetLineReviewStatusPayload!
+  "Creates a recipe from a note (or returns the existing one). Example: promoteNoteToRecipe(noteId: \"cm3n...\")"
+  promoteNoteToRecipe(noteId: ID!): PromoteNotePayload!
+  "Admin only. Promotes every COMPLETED note that has no recipe yet."
+  promoteCompletedNotes: PromoteCompletedNotesPayload!
+  updateRecipe(input: RecipeUpdateInput!): BasicPayload!
+  saveIngredient(input: IngredientSaveInput!): SaveIngredientPayload!
+  createIngredient(input: IngredientCreateInput!): CreateIngredientPayload!
+  "Admin only. Deletes all imported data and R2 objects; users and sessions are kept."
+  cleanupAllData: CleanupAllDataPayload!
+}

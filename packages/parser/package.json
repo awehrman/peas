@@ -18,23 +18,24 @@
       "types": "./types/index.d.ts",
       "default": "./dist/v1/index.min.js"
     },
-    "./v3": {
-      "types": "./dist/v3/index.d.ts",
-      "default": "./dist/v3/index.js"
+    "./v2": {
+      "types": "./dist/v2/index.d.ts",
+      "default": "./dist/v2/index.js"
     }
   },
   "scripts": {
     "build": "node scripts/build.js",
     "build:v1": "peggy -o dist/v1/parser.js --format es src/v1/parser.peggy && node -e \"require('fs').writeFileSync('dist/v1/index.js', 'export { parse } from \\'./parser.js\\';')\"",
-    "generate:v3": "node scripts/generate-v3.js",
-    "build:v3": "yarn generate:v3 && tsc -p tsconfig.build.json",
-    "typecheck": "yarn generate:v3 && tsc -p tsconfig.json --noEmit",
+    "generate:v2": "node scripts/generate-v2.js",
+    "build:v2": "yarn generate:v2 && tsc -p tsconfig.build.json",
+    "typecheck": "yarn generate:v2 && tsc -p tsconfig.json --noEmit",
     "clean": "rm -rf dist",
     "test": "vitest",
     "test:run": "vitest run",
     "corpus:baseline-v1": "node scripts/baseline-v1.js",
-    "report:compare": "tsx scripts/compare-v1-v3.ts",
-    "preview:lexicon": "tsx scripts/preview-lexicon-change.ts"
+    "report:compare": "tsx scripts/compare-v1-v2.ts",
+    "preview:lexicon": "tsx scripts/preview-lexicon-change.ts",
+    "explain:line": "tsx scripts/explain-line.ts"
   },
   "dependencies": {
     "peggy": "^5.1.1",
