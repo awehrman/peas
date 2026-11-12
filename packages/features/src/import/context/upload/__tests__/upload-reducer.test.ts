@@ -379,6 +379,7 @@ describe("uploadReducer", () => {
       expect(result.previousBatches[0]).toBe(existingBatch);
       expect(result.previousBatches[1]).toEqual({
         ...currentBatch,
+        files: [],
         successMessage: "Upload completed successfully",
       });
     });
@@ -414,6 +415,7 @@ describe("uploadReducer", () => {
       expect(result.previousBatches).toHaveLength(1);
       expect(result.previousBatches[0]).toEqual({
         ...currentBatch,
+        files: [],
         errorMessage: "Upload failed due to network error",
       });
     });

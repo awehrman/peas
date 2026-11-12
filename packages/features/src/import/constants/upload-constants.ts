@@ -38,7 +38,7 @@ export const FILE_PATTERNS = {
   /** Pattern to match image files with extensions */
   IMAGE_FILE: /\.(png|jpg|jpeg|gif|webp|svg|bmp)$/i,
   /** Pattern to match files that should be ignored */
-  IGNORE_PATTERN: /^index\.html$/i,
+  IGNORE_PATTERN: /^(evernote_)?index\.html?$/i,
   /** Pattern to match system files that should be ignored */
   SYSTEM_FILES: /^(\.|__).*|.*\.(tmp|temp|log|cache)$/i,
 } as const;

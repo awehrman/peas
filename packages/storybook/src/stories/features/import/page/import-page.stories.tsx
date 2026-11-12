@@ -4,7 +4,6 @@ import { FileDropZone } from "@peas/components";
 import {
   ImportProvider,
   UploadBatchHistory,
-  UploadProgress,
 } from "@peas/features";
 import type { Meta, StoryObj } from "@storybook/react";
 
@@ -164,13 +163,10 @@ const MockImportFileUpload: React.FC<MockImportFileUploadProps> = ({
         isProcessing={mockData.isProcessing}
       />
 
-      {/* Upload Progress */}
-      {mockData.state.currentBatch && (
-        <UploadProgress batch={mockData.state.currentBatch} />
-      )}
-
-      {/* Previous Batches */}
-      <UploadBatchHistory batches={mockData.state.previousBatches} />
+      <UploadBatchHistory
+        batches={mockData.state.previousBatches}
+        currentBatch={mockData.state.currentBatch}
+      />
     </div>
   );
 };

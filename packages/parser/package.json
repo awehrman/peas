@@ -25,22 +25,36 @@
     "./v2/minified": {
       "types": "./types/index.d.ts",
       "default": "./dist/v2/index.min.js"
+    },
+    "./dynamic": {
+      "types": "./dist/dynamic/index.d.ts",
+      "default": "./dist/dynamic/index.js"
+    },
+    "./dynamic/compile": {
+      "types": "./dist/dynamic/compile-grammar.d.ts",
+      "default": "./dist/dynamic/compile-grammar.js"
     }
   },
   "scripts": {
     "build": "node scripts/build.js",
     "build:v1": "peggy -o dist/v1/parser.js --format es src/v1/parser.peggy && node -e \"require('fs').writeFileSync('dist/v1/index.js', 'export { parse } from \\'./parser.js\\';')\"",
     "build:v2": "peggy -o dist/v2/grammar.js --format es src/v2/grammar.peggy && node -e \"require('fs').writeFileSync('dist/v2/index.js', 'export { parse } from \\'./grammar.js\\';')\"",
+    "build:dynamic": "tsc -p tsconfig.build.json",
     "build:minified": "yarn build && yarn minify:v1 && yarn minify:v2",
     "minify:v1": "npx terser dist/v1/index.js --compress --mangle -o dist/v1/index.min.js",
     "minify:v2": "npx terser dist/v2/index.js --compress --mangle -o dist/v2/index.min.js",
     "clean": "rm -rf dist",
-    "prebuild": "yarn clean && mkdir -p dist/v1 dist/v2"
+    "prebuild": "yarn clean && mkdir -p dist/v1 dist/v2",
+    "test": "vitest",
+    "test:run": "vitest run"
   },
   "dependencies": {
     "peggy": "^5.0.5"
   },
   "devDependencies": {
-    "terser": "^5.43.1"
+    "@peas/typescript-config": "*",
+    "terser": "^5.43.1",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
   }
 }

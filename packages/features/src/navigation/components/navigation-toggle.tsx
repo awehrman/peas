@@ -31,7 +31,7 @@ export function NavigationToggle({
         variant="default"
         aria-label={ariaLabel}
         className={cn(
-          "absolute z-50 h-6 w-6 bg-transparent hover:bg-transparent focus:bg-transparent focus-visible:bg-transparent data-[state=on]:bg-transparent text-neutral-400 transition-colors duration-200 hover:text-neutral-300 focus:text-neutral-300 focus-visible:text-neutral-300 data-[state=on]:text-neutral-300",
+          "absolute z-50 h-6 w-6 min-w-6 px-0 bg-transparent hover:bg-transparent focus:bg-transparent focus-visible:bg-transparent data-[state=on]:bg-transparent text-neutral-400 transition-colors duration-200 hover:text-neutral-300 focus:text-neutral-300 focus-visible:text-neutral-300 data-[state=on]:text-neutral-300",
           NAVIGATION_CONSTANTS.TOGGLE_TRANSITION
         )}
         onMouseEnter={onHoverStart}

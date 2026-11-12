@@ -18,6 +18,7 @@
     "@fontsource/source-sans-3": "^5.2.9",
     "@peas/components": "workspace:^",
     "@peas/features": "workspace:^",
+    "@peas/pea-svg-generator": "workspace:^",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },

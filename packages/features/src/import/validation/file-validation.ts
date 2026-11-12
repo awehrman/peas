@@ -1,3 +1,4 @@
+import { getFilePath } from "@peas/components/lib/file-paths";
 import { z } from "zod";
 
 import {
@@ -87,6 +88,7 @@ export const fileListValidationSchema = z
  * Interface for validated file data
  */
 export interface ValidatedFile {
+  /** Path within the selected folder or archive, e.g. "Venison/Venison Stew.html" */
   name: string;
   type: string;
   size: number;
@@ -121,7 +123,7 @@ export function validateFile(
   | { success: true; data: ValidatedFile }
   | { success: false; error: z.ZodError } {
   const fileData = {
-    name: file.name,
+    name: getFilePath(file),
     type: file.type,
     size: file.size,
   };
@@ -141,6 +143,11 @@ export function validateFile(
   return result;
 }
 
+/** Hidden files anywhere in the path (".DS_Store", "__MACOSX/...") are skipped. */
+function isSystemPath(path: string): boolean {
+  return path.split("/").some((part) => FILE_PATTERNS.SYSTEM_FILES.test(part));
+}
+
 /**
  * Validates a list of files
  */
@@ -149,159 +156,142 @@ export function validateFileList(
 ):
   | { success: true; data: ValidatedFile[] }
   | { success: false; error: z.ZodError } {
-  // Filter out system files before validation
-  const filteredFiles = files.filter((file) => {
-    const fileName = file.name.split("/").pop() || file.name;
-    const isSystemFile = FILE_PATTERNS.SYSTEM_FILES.test(fileName);
-
-    if (isSystemFile) {
-      return false;
-    }
-
-    return true;
-  });
+  const filteredFiles = files.filter((file) => !isSystemPath(getFilePath(file)));
 
   const fileDataList = filteredFiles.map((file) => ({
-    name: file.name,
+    name: getFilePath(file),
     type: file.type,
     size: file.size,
   }));
 
   const result = fileListValidationSchema.safeParse(fileDataList);
 
-  if (result.success) {
-    // Map validated data back to original files by name
-    const dataWithFiles = result.data.map((fileData) => {
-      const originalFile = filteredFiles.find((f) => f.name === fileData.name);
+  if (!result.success) return result;
+
+  // Map by position: exports contain many images that share a name ("Evernote")
+  return {
+    success: true,
+    data: result.data.map((fileData, index) => {
+      const originalFile = filteredFiles[index];
       if (!originalFile) {
         throw new Error(`File not found: ${fileData.name}`);
       }
-      return {
-        ...fileData,
-        file: originalFile,
-      };
-    });
+      return { ...fileData, file: originalFile };
+    }),
+  };
+}
 
-    return {
-      success: true,
-      data: dataWithFiles,
-    };
-  }
+function isHtmlFile(file: ValidatedFile): boolean {
+  const fileName = file.name.split("/").pop() || file.name;
+  return (
+    (SUPPORTED_FILE_TYPES.HTML_MIME_TYPES as readonly string[]).includes(file.type) ||
+    FILE_PATTERNS.HTML_FILE.test(fileName)
+  );
+}
 
-  return result;
+function splitPath(path: string): { directory: string; baseName: string } {
+  const separator = path.lastIndexOf("/");
+  return separator === -1
+    ? { directory: "", baseName: path }
+    : { directory: path.slice(0, separator), baseName: path.slice(separator + 1) };
+}
+
+/** Case- and accent-form-insensitive key ("Purée" typed vs. decomposed). */
+function normalizeName(name: string): string {
+  return name.normalize("NFC").trim().toLowerCase();
+}
+
+function stripHtmlExtension(fileName: string): string {
+  return fileName.replace(/\.(html|htm)$/i, "");
 }
 
 /**
- * Groups files by HTML file and associated image directory
- * Expects structure: file-a.html + file-a/ directory with images
+ * The note an image folder belongs to: Evernote names it "<title> files",
+ * some browsers use "<title>_files", and older exports use "<title>".
+ */
+function folderNoteKey(folderName: string): string {
+  return normalizeName(folderName.replace(/(\s|_)files$/i, ""));
+}
+
+/**
+ * Groups each HTML note with its images.
+ *
+ * Images are matched by folder, as Evernote exports them:
+ *   Venison/Venison Hot Pot.html
+ *   Venison/Venison Hot Pot files/CleanShot.png
+ *
+ * Loose images next to the HTML are attached when that folder has a single
+ * note, or to the note whose title prefixes the image name. Anything that
+ * still has no note is ignored (or reported, if nothing else was found).
  */
 export function groupFilesByHtmlAndImages(
   files: ValidatedFile[]
 ): DirectoryValidationResult {
-  const errors: string[] = [];
   const ignoredFiles: string[] = [];
-  const groups: FileGroup[] = [];
+  const groupsByPath = new Map<string, FileGroup>();
+  const notesByFolder = new Map<string, Map<string, FileGroup>>();
+  const notesInDirectory = new Map<string, FileGroup[]>();
 
-  // Separate HTML files and other files
-  const htmlFiles = files.filter((file) => {
-    const fileName = file.name.split("/").pop() || file.name;
-    return (
-      (SUPPORTED_FILE_TYPES.HTML_MIME_TYPES as readonly string[]).includes(
-        file.type
-      ) || FILE_PATTERNS.HTML_FILE.test(fileName)
-    );
-  });
-
-  const otherFiles = files.filter((file) => {
-    const fileName = file.name.split("/").pop() || file.name;
-    return !(
-      (SUPPORTED_FILE_TYPES.HTML_MIME_TYPES as readonly string[]).includes(
-        file.type
-      ) || FILE_PATTERNS.HTML_FILE.test(fileName)
-    );
-  });
-
-  // Process each HTML file
-  for (const htmlFile of htmlFiles) {
-    // Extract just the filename without directory path
-    const fileName = htmlFile.name.split("/").pop() || htmlFile.name;
-    const htmlName = fileName.replace(/\.(html|htm)$/i, "");
-
-    // Skip index.html files without associated directories
-    if (FILE_PATTERNS.IGNORE_PATTERN.test(fileName)) {
-      const hasAssociatedDir = otherFiles.some((file) =>
-        file.name.includes(htmlName + "/")
-      );
-
-      if (!hasAssociatedDir) {
-        ignoredFiles.push(htmlFile.name);
-        continue;
-      }
+  for (const htmlFile of files.filter(isHtmlFile)) {
+    const { directory, baseName } = splitPath(htmlFile.name);
+    if (FILE_PATTERNS.IGNORE_PATTERN.test(baseName)) {
+      ignoredFiles.push(htmlFile.name);
+      continue;
     }
 
-    // Find associated image files
-    // Look for images in any subdirectory that might be related to this HTML file
-    // This handles cases like "1-egg.html" with images in "1-egg files/" directory
-    let associatedImages = otherFiles.filter((file) => {
-      // Check if the file is in a subdirectory that starts with the HTML name
-      const filePath = file.name;
-      const htmlBaseName = htmlName.toLowerCase().replace(/[^a-z0-9]/g, ""); // Remove non-alphanumeric chars
+    const group: FileGroup = { htmlFile, imageFiles: [], importId: generateImportId() };
+    groupsByPath.set(htmlFile.name, group);
 
-      // Look for directories that contain the HTML base name
-      const pathParts = filePath.split("/");
-      for (let i = 0; i < pathParts.length - 1; i++) {
-        const pathPart = pathParts[i];
-        if (pathPart) {
-          const dirName = pathPart.toLowerCase().replace(/[^a-z0-9]/g, "");
-          if (
-            dirName.includes(htmlBaseName) ||
-            htmlBaseName.includes(dirName)
-          ) {
-            return true;
-          }
-        }
-      }
-      return false;
-    });
+    const folderKeys = notesByFolder.get(directory) ?? new Map<string, FileGroup>();
+    folderKeys.set(normalizeName(stripHtmlExtension(baseName)), group);
+    notesByFolder.set(directory, folderKeys);
 
-    // If no images found in subdirectory, look for images in the same directory
-    // This handles cases where HTML and images are in the same folder
-    if (associatedImages.length === 0) {
-      associatedImages = otherFiles.filter((file) => {
-        const fileDir = file.name.split("/").slice(0, -1).join("/");
-        const htmlDir = htmlFile.name.split("/").slice(0, -1).join("/");
-        return fileDir === htmlDir;
-      });
-    }
-
-    // Generate unique importId for this HTML file
-    const importId = generateImportId();
-
-    groups.push({
-      htmlFile,
-      imageFiles: associatedImages,
-      importId,
-    });
+    notesInDirectory.set(directory, [...(notesInDirectory.get(directory) ?? []), group]);
   }
 
-  // Check for orphaned files (files that don't belong to any HTML file)
-  const usedFiles = new Set([
-    ...htmlFiles.map((f) => f.name),
-    ...groups.flatMap((g) => g.imageFiles.map((f) => f.name)),
-  ]);
+  const orphanedFiles: string[] = [];
 
-  const orphanedFiles = files.filter((f) => !usedFiles.has(f.name));
-  if (orphanedFiles.length > 0) {
-    errors.push(
-      `Orphaned files found: ${orphanedFiles.map((f) => f.name).join(", ")}`
-    );
+  for (const file of files.filter((candidate) => !isHtmlFile(candidate))) {
+    const { directory, baseName } = splitPath(file.name);
+    const { directory: parentDirectory, baseName: folderName } = splitPath(directory);
+
+    const folderMatch = directory
+      ? notesByFolder.get(parentDirectory)?.get(folderNoteKey(folderName))
+      : undefined;
+
+    const siblings = notesInDirectory.get(directory) ?? [];
+    const looseMatch =
+      siblings.length === 1
+        ? siblings[0]
+        : siblings
+            .filter((group) =>
+              normalizeName(baseName).startsWith(
+                normalizeName(stripHtmlExtension(splitPath(group.htmlFile.name).baseName))
+              )
+            )
+            .sort((a, b) => b.htmlFile.name.length - a.htmlFile.name.length)[0];
+
+    const owner = folderMatch ?? looseMatch;
+    if (owner) owner.imageFiles.push(file);
+    else orphanedFiles.push(file.name);
+  }
+
+  const groups = [...groupsByPath.values()];
+
+  if (groups.length === 0 && orphanedFiles.length > 0) {
+    return {
+      isValid: false,
+      groups,
+      errors: [`Orphaned files found: ${orphanedFiles.join(", ")}`],
+      ignoredFiles,
+    };
   }
 
   return {
-    isValid: errors.length === 0,
+    isValid: true,
     groups,
-    errors,
-    ignoredFiles,
+    errors: [],
+    ignoredFiles: [...ignoredFiles, ...orphanedFiles],
   };
 }
 

@@ -1,3 +1,5 @@
+// Must run first: config modules read process.env when they are imported
+import "./config/load-env";
 import { SECURITY_CONSTANTS, SERVER_DEFAULTS } from "./config";
 import {
   cacheRouter,
@@ -19,7 +21,6 @@ import express from "express";
 
 import { configManager } from "./config/configuration-manager";
 import { ManagerFactory } from "./config/factory";
-import "./config/load-env";
 import {
   createBasicAuthMiddleware,
   getQueueAuthSecret,
@@ -134,15 +135,19 @@ async function initializeApp() {
       parseAllowedOrigins(process.env.CORS_ALLOWED_ORIGINS)
     )
   );
+  // /upload has its own size and rate limits, mounted with its route
+  const isUploadRequest = (req: express.Request) => req.path.startsWith("/upload");
   app.use(
     SecurityMiddleware.validateRequestSize(
-      SECURITY_CONSTANTS.REQUEST_LIMITS.MAX_REQUEST_SIZE_BYTES
+      SECURITY_CONSTANTS.REQUEST_LIMITS.MAX_REQUEST_SIZE_BYTES,
+      { skip: isUploadRequest }
     )
   );
   app.use(
     SecurityMiddleware.rateLimit(
       SECURITY_CONSTANTS.RATE_LIMITS.GLOBAL_WINDOW_MS,
-      SECURITY_CONSTANTS.RATE_LIMITS.GLOBAL_MAX_REQUESTS
+      SECURITY_CONSTANTS.RATE_LIMITS.GLOBAL_MAX_REQUESTS,
+      { skip: isUploadRequest }
     )
   );
 
@@ -243,7 +248,18 @@ initializeApp()
     // Routes
     app.use("/health", healthEnhancedRouter); // Public so platform health checks work
     app.use("/import", requireQueueAuth, importRouter);
-    app.use("/upload", requireQueueAuth, uploadRouter); // Unified HTML + image upload
+    app.use(
+      "/upload",
+      SecurityMiddleware.validateRequestSize(
+        SECURITY_CONSTANTS.REQUEST_LIMITS.MAX_UPLOAD_REQUEST_SIZE_BYTES
+      ),
+      SecurityMiddleware.rateLimit(
+        SECURITY_CONSTANTS.RATE_LIMITS.UPLOAD_WINDOW_MS,
+        SECURITY_CONSTANTS.RATE_LIMITS.UPLOAD_MAX_REQUESTS
+      ),
+      requireQueueAuth,
+      uploadRouter
+    ); // Unified HTML + image upload
     app.use("/notes", requireQueueAuth, notesRouter);
     app.use("/images", requireQueueAuth, imagesRouter);
     app.use("/metrics", requireQueueAuth, metricsRouter);

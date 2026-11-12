@@ -8,6 +8,12 @@ import {
   actionCache,
 } from "../../workers/core/cache/action-cache";
 
+import {
+  type ResolvedIngredientParser,
+  STATIC_V1_PARSER_ID,
+  resolveIngredientParser,
+} from "./parser-resolver";
+
 // ============================================================================
 // CACHED INGREDIENT PARSER
 // ============================================================================
@@ -27,6 +33,8 @@ export interface IngredientParseResult {
     processingTime: number;
   }>;
   processingTime: number;
+  /** Which parser produced the result ("static_v1" or "grammar:<versionId>") */
+  parserVersion?: string;
 }
 
 /**
@@ -53,14 +61,14 @@ export class CachedIngredientParser {
     logger?: StructuredLogger
   ): Promise<IngredientParseResult> {
     const { cacheResults = true } = options;
+    const parser = await resolveIngredientParser(logger);
 
     if (!cacheResults) {
-      // If caching is disabled, use v1 parser directly
-      return this.parseWithV1Parser(line, logger);
+      return this.parseWithResolvedParser(line, parser, logger);
     }
 
-    // Generate cache key based on line content and options
-    const cacheKey = this.generateCacheKey(line, options);
+    // Cache per parser so switching grammars never serves stale results
+    const cacheKey = this.generateCacheKey(line, options, parser.id);
 
     return actionCache
       .getOrSet(
@@ -77,8 +85,7 @@ export class CachedIngredientParser {
               `[CACHED_INGREDIENT_PARSER] Cache miss for line: "${line}"`
             );
           }
-          // Use v1 parser and save result to cache
-          return this.parseWithV1Parser(line, logger);
+          return this.parseWithResolvedParser(line, parser, logger);
         },
         CACHE_OPTIONS.INGREDIENT_PARSING
       )
@@ -154,7 +161,8 @@ export class CachedIngredientParser {
    */
   private static generateCacheKey(
     line: string,
-    options: IngredientParsingOptions
+    options: IngredientParsingOptions,
+    parserId: string = STATIC_V1_PARSER_ID
   ): string {
     const normalizedLine = line.toLowerCase().trim();
     const optionsHash = createHash("sha256")
@@ -164,8 +172,54 @@ export class CachedIngredientParser {
 
     return CacheKeyGenerator.actionResult(
       "parse_ingredient_line",
-      `${normalizedLine}_${optionsHash}`
+      `${parserId}_${normalizedLine}_${optionsHash}`
     );
+  }
+
+  /**
+   * Parse with whichever parser the resolver picked. Static v1 keeps its
+   * existing conversion; database grammars are already normalized.
+   */
+  private static async parseWithResolvedParser(
+    line: string,
+    parser: ResolvedIngredientParser,
+    logger?: StructuredLogger
+  ): Promise<IngredientParseResult> {
+    if (parser.id === STATIC_V1_PARSER_ID) {
+      const result = await this.parseWithV1Parser(line, logger);
+      return { ...result, parserVersion: parser.id };
+    }
+
+    const startTime = Date.now();
+    try {
+      const parseResult = parser.parse(line);
+      const processingTime = Date.now() - startTime;
+      return {
+        rule: parseResult.rule,
+        type: parseResult.type,
+        values: parseResult.values.map((segment, index) => ({
+          index,
+          rule: segment.rule,
+          type: segment.type,
+          value: segment.value,
+          processingTime,
+        })),
+        processingTime,
+        parserVersion: parser.id,
+      };
+    } catch (error) {
+      logger?.log(
+        `[CACHED_INGREDIENT_PARSER] ${parser.id} failed for "${line}": ${error}`,
+        LogLevel.ERROR
+      );
+      return {
+        rule: "error",
+        type: "error",
+        values: [],
+        processingTime: Date.now() - startTime,
+        parserVersion: parser.id,
+      };
+    }
   }
 
   /**

@@ -46,6 +46,11 @@ export async function saveIngredientLine(
         }>
       | undefined;
 
+    const parserVersion =
+      typeof data.metadata?.parserVersion === "string"
+        ? data.metadata.parserVersion
+        : undefined;
+
     // Update the ingredient line in the database with segments
     const result = await saveParsedIngredientLine(
       data.noteId,
@@ -55,7 +60,8 @@ export async function saveIngredientLine(
       undefined, // rule
       0, // blockIndex
       data.isActive,
-      parsedSegments || []
+      parsedSegments || [],
+      parserVersion
     );
 
     if (parsedSegments && parsedSegments.length > 0) {

@@ -43,6 +43,10 @@ export function FileInput({
     document.getElementById(`${id}-directory`)?.click();
   };
 
+  const openFileDialog = () => {
+    document.getElementById(id)?.click();
+  };
+
   return (
     <div className={cn("file-input", className)}>
       {/* Atomic file input fields */}
@@ -55,17 +59,30 @@ export function FileInput({
       />
 
       {/* Show UI controls if requested */}
-      {showInput && allowDirectories && (
+      {showInput && (
         <div className="flex gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={openDirectoryDialog}
-            disabled={disabled}
-          >
-            Choose directory
-          </Button>
+          {allowDirectories ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={openDirectoryDialog}
+              disabled={disabled}
+            >
+              Choose directory
+            </Button>
+          ) : null}
+          {accept ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={openFileDialog}
+              disabled={disabled}
+            >
+              Choose files
+            </Button>
+          ) : null}
         </div>
       )}
     </div>

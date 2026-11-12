@@ -6,6 +6,7 @@ import type { ParsedSegment } from "../../../../schemas/base";
 import type { StructuredLogger } from "../../../../types";
 import type { IngredientJobData } from "../../../../workers/ingredient/dependencies";
 import { CachedIngredientParser } from "../../cached-ingredient-parser";
+import { STATIC_V1_PARSER_ID, resolveIngredientParser } from "../../parser-resolver";
 
 /**
  * Parse an ingredient line into structured segments.
@@ -38,6 +39,7 @@ export async function parseIngredientLine(
     let parseResult: ParserResult = { rule: "", type: "", values: [] };
     let parsedSegments: ParsedSegment[] = [];
     let usedCache = false;
+    let parserVersion = STATIC_V1_PARSER_ID;
 
     try {
       const cachedResult = await CachedIngredientParser.parseIngredientLine(
@@ -73,6 +75,7 @@ export async function parseIngredientLine(
 
       parsedSegments = cachedSegments;
       parseResult = cachedResult;
+      parserVersion = cachedResult.parserVersion ?? STATIC_V1_PARSER_ID;
 
       // Log the cached result structure
       logger.log(
@@ -91,24 +94,24 @@ export async function parseIngredientLine(
       let parse: (input: string) => ParserResult;
 
       try {
-        // Use v1 parser
-        const v1Module = await import("@peas/parser/v1/minified");
-        parse = v1Module.parse;
+        const parser = await resolveIngredientParser(logger);
+        parse = parser.parse;
+        parserVersion = parser.id;
         logger.log(
-          `[PARSE_INGREDIENT_LINE] Using v1 parser for: "${data.ingredientReference}"`
+          `[PARSE_INGREDIENT_LINE] Using ${parser.id} parser for: "${data.ingredientReference}"`
         );
-      } catch (v1Error) {
+      } catch (parserError) {
         /* istanbul ignore next -- @preserve */
-        logger.log(`[PARSE_INGREDIENT_LINE] v1 parser failed: ${v1Error}`);
+        logger.log(`[PARSE_INGREDIENT_LINE] Parser failed to load: ${parserError}`);
         /* istanbul ignore next -- @preserve */
-        throw new Error(`Failed to load v1 ingredient parser: ${v1Error}`);
+        throw new Error(`Failed to load ingredient parser: ${parserError}`);
       }
 
       parseResult = parse(data.ingredientReference);
 
       // Log the entire stringified parser result
       logger.log(
-        `[PARSE_INGREDIENT_LINE] v1 parser raw result: ${JSON.stringify(parseResult, null, 2)}`
+        `[PARSE_INGREDIENT_LINE] ${parserVersion} parser raw result: ${JSON.stringify(parseResult, null, 2)}`
       );
 
       // Map raw parser segments → shared ParsedSegment shape
@@ -138,7 +141,7 @@ export async function parseIngredientLine(
         parseResult,
         rule: parseResult.rule,
         usedCache,
-        parserVersion: usedCache ? "cached" : "v1",
+        parserVersion,
         // Note: patternRules will be generated during save step
       },
     };

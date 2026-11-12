@@ -71,6 +71,7 @@ export interface StepStatus {
 
 export interface ImportCard {
   id: string;
+  noteId?: string;
   isExpanded: boolean;
   imageThumbnail?: string;
   status: {
@@ -140,7 +141,7 @@ export type WsAction =
 export type StatsAction = { type: "REFRESH_STATS"; stats: ImportStatsState };
 
 export type ActivityAction =
-  | { type: "ADD_IMPORT_CARD"; pageIndex: number; card: ImportCard }
+  | { type: "ADD_IMPORT_CARD"; card: ImportCard }
   | { type: "TOGGLE_CARD_EXPANDED"; pageIndex: number; cardId: string }
   | {
       type: "UPDATE_CARD_STATUS";
@@ -148,6 +149,7 @@ export type ActivityAction =
       cardId: string;
       step: keyof ImportCard["status"];
       statusUpdate: Partial<StepStatus>;
+      noteId?: string;
     }
   | { type: "UPDATE_CARD_TITLE"; cardId: string; title: string }
   | { type: "SET_PAGE"; pageIndex: number }

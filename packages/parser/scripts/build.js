@@ -64,4 +64,10 @@ execSync(
   }
 );
 
+// Database-driven grammar tooling (compile, build, normalize, test)
+console.log("Building dynamic grammar module...");
+execSync("npx tsc -p tsconfig.build.json", {
+  stdio: "inherit",
+});
+
 console.log("Build completed successfully!");

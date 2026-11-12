@@ -5,12 +5,19 @@ export interface NavigationItem {
   name: string;
   href: string;
   icon: LucideIcon;
+  adminOnly?: boolean;
+}
+
+export interface NavigationUser {
+  username: string;
+  avatarUrl?: string | null;
 }
 
 export interface NavigationProps {
   LinkComponent?: ComponentType<NavigationLinkComponentProps>;
   pathname?: string;
   signOut: () => Promise<void>;
+  user?: NavigationUser;
 }
 
 export interface NavigationLinkComponentProps {
@@ -19,6 +26,8 @@ export interface NavigationLinkComponentProps {
   children: ReactNode;
   onClick?: () => void;
   style?: CSSProperties;
+  "aria-current"?: "page" | undefined;
+  "aria-label"?: string;
 }
 
 export interface PureNavigationProps extends NavigationProps {

@@ -17,7 +17,9 @@
     "test:coverage": "vitest run --coverage",
     "lint": "eslint --ext .ts,.tsx src",
     "type-check": "tsc --noEmit",
-    "cleanup:imports": "node scripts/cleanup-orphaned-imports.js"
+    "cleanup:imports": "node scripts/cleanup-orphaned-imports.js",
+    "preview-export": "tsx scripts/preview-export.ts",
+    "clear-imports": "tsx scripts/clear-imports.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.864.0",

@@ -46,6 +46,9 @@ function buildCss({
   let css = `@import "tailwindcss";
 
 `;
+  css += `@custom-variant dark (&:where(.dark, .dark *));
+
+`;
   css += `
 /* ================= Theme Tokens ================= */
 @theme {
@@ -86,27 +89,33 @@ function buildCss({
   /* Typography */
 
 `;
-  for (const [key, value] of Object.entries(typography)) {
-    if (value && typeof value === "object") {
-      for (const [subKey, subValue] of Object.entries(
-        value
-      )) {
-        if (Array.isArray(subValue)) {
-          css += `    --${toKebabCase(key)}-${toKebabCase(
-            subKey
-          )}: ${subValue.join(", ")};
+  const typographyGroups = typography;
+  const lineHeights = typographyGroups.lineHeight ?? {};
+  for (const [family, stack] of Object.entries(typographyGroups.fontFamily ?? {})) {
+    css += `    --font-${family}: ${Array.isArray(stack) ? stack.join(", ") : stack};
 `;
-        } else {
-          css += `    --${toKebabCase(key)}-${toKebabCase(subKey)}: ${subValue};
+  }
+  css += `
 `;
-        }
-      }
-      css += `
+  for (const [size, value] of Object.entries(typographyGroups.fontSize ?? {})) {
+    css += `    --text-${size}: ${value};
 `;
-    } else if (value != null) {
-      css += `    --font-${toKebabCase(key)}: ${value};
+    if (lineHeights[size] != null) {
+      css += `    --text-${size}--line-height: ${lineHeights[size]};
 `;
     }
+  }
+  css += `
+`;
+  for (const [weight, value] of Object.entries(typographyGroups.fontWeight ?? {})) {
+    css += `    --font-weight-${weight}: ${value};
+`;
+  }
+  css += `
+`;
+  for (const [tracking, value] of Object.entries(typographyGroups.tracking ?? {})) {
+    css += `    --tracking-${tracking}: ${value};
+`;
   }
   css += `
   /* Spacing */
@@ -146,6 +155,27 @@ function buildCss({
 `;
   css += `}
 
+`;
+  css += `@layer base {
+  *, ::after, ::before, ::backdrop, ::file-selector-button {
+    border-color: var(--color-border);
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    color: var(--color-foreground);
+    background-color: var(--color-background);
+  }
+
+  h1, h2, h3 {
+    letter-spacing: var(--tracking-tight);
+  }
+}
 `;
   return css;
 }

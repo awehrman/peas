@@ -804,3 +804,298 @@ export async function getImportStats(): Promise<{
     throw error;
   }
 }
+
+// ============================================================================
+// NOTE VIEWER
+// ============================================================================
+
+export const NOTE_STATUSES = [
+  "PENDING",
+  "PROCESSING",
+  "COMPLETED",
+  "FAILED",
+  "DUPLICATE",
+] as const;
+
+export type NoteStatusValue = (typeof NOTE_STATUSES)[number];
+
+export interface NotesPageQuery {
+  status?: NoteStatusValue;
+  query?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface NoteListItemRecord {
+  id: string;
+  title: string | null;
+  status: NoteStatusValue;
+  duplicateConfidence: number | null;
+  parsingErrorCount: number;
+  ingredientLineCount: number;
+  instructionLineCount: number;
+  thumbnailUrl: string | null;
+  notebook: string | null;
+  recipeId: string | null;
+  createdAt: string;
+}
+
+export interface NotesPageResult {
+  items: NoteListItemRecord[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface NoteSegmentRecord {
+  index: number;
+  type: string;
+  value: string;
+  rule: string;
+  ingredientId?: string;
+}
+
+export interface NoteIngredientLineRecord {
+  id: string;
+  blockIndex: number;
+  lineIndex: number;
+  reference: string;
+  parseStatus:
+    | "AWAITING_PARSING"
+    | "COMPLETED_WITH_ERROR"
+    | "COMPLETED_SUCCESSFULLY";
+  reviewStatus: "UNREVIEWED" | "CORRECT" | "INCORRECT";
+  isActive: boolean;
+  parserVersion: string | null;
+  segments: NoteSegmentRecord[];
+}
+
+export interface NoteDetailRecord {
+  id: string;
+  title: string | null;
+  status: NoteStatusValue;
+  createdAt: string;
+  errorMessage: string | null;
+  duplicateConfidence: number | null;
+  parsingErrorCount: number;
+  evernote: {
+    source: string | null;
+    notebook: string | null;
+    tags: string[];
+    originalCreatedAt: string | null;
+  } | null;
+  images: {
+    id: string;
+    url: string;
+    thumbnailUrl: string | null;
+    processingStatus: string;
+  }[];
+  sources: {
+    id: string;
+    urls: { id: string; url: string; isBrokenLink: boolean; siteName: string | null }[];
+    book: { title: string; author: string | null } | null;
+  }[];
+  categories: { id: string; name: string }[];
+  tags: { id: string; name: string }[];
+  ingredientBlocks: { blockIndex: number; lines: NoteIngredientLineRecord[] }[];
+  instructions: { id: string; lineIndex: number; text: string; isActive: boolean }[];
+  recipeId: string | null;
+}
+
+const DEFAULT_NOTES_PAGE_SIZE = 25;
+
+/**
+ * Paginated, filterable note list for the /notes page.
+ */
+export async function getNotesPage({
+  status,
+  query,
+  page = 1,
+  pageSize = DEFAULT_NOTES_PAGE_SIZE,
+}: NotesPageQuery = {}): Promise<NotesPageResult> {
+  const currentPage = Math.max(1, Math.floor(page));
+  const trimmedQuery = query?.trim();
+
+  const where: Prisma.NoteWhereInput = {
+    ...(status ? { status } : {}),
+    ...(trimmedQuery
+      ? { title: { contains: trimmedQuery, mode: "insensitive" } }
+      : {}),
+  };
+
+  const [total, notes] = await Promise.all([
+    prisma.note.count({ where }),
+    prisma.note.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip: (currentPage - 1) * pageSize,
+      take: pageSize,
+      select: {
+        id: true,
+        title: true,
+        status: true,
+        duplicateConfidence: true,
+        parsingErrorCount: true,
+        createdAt: true,
+        evernoteMetadata: { select: { notebook: true } },
+        images: {
+          select: { thumbnailImageUrl: true, originalImageUrl: true },
+          take: 1,
+        },
+        recipe: { select: { id: true } },
+        _count: {
+          select: { parsedIngredientLines: true, parsedInstructionLines: true },
+        },
+      },
+    }),
+  ]);
+
+  return {
+    total,
+    page: currentPage,
+    pageSize,
+    items: notes.map((note) => {
+      const image = note.images[0];
+      return {
+        id: note.id,
+        title: note.title,
+        status: note.status,
+        duplicateConfidence: note.duplicateConfidence,
+        parsingErrorCount: note.parsingErrorCount,
+        ingredientLineCount: note._count.parsedIngredientLines,
+        instructionLineCount: note._count.parsedInstructionLines,
+        thumbnailUrl: image
+          ? (image.thumbnailImageUrl ?? image.originalImageUrl)
+          : null,
+        notebook: note.evernoteMetadata?.notebook ?? null,
+        recipeId: note.recipe?.id ?? null,
+        createdAt: note.createdAt.toISOString(),
+      };
+    }),
+  };
+}
+
+/**
+ * Everything the note detail page needs, shaped for display.
+ */
+export async function getNoteDetail(
+  noteId: string
+): Promise<NoteDetailRecord | null> {
+  const note = await prisma.note.findUnique({
+    where: { id: noteId },
+    include: {
+      evernoteMetadata: true,
+      images: { orderBy: { createdAt: "asc" } },
+      sources: {
+        include: {
+          urls: { include: { website: { select: { siteName: true } } } },
+          book: { select: { title: true, author: true } },
+        },
+      },
+      categories: { select: { id: true, name: true } },
+      tags: { select: { id: true, name: true } },
+      parsedIngredientLines: {
+        orderBy: [{ blockIndex: "asc" }, { lineIndex: "asc" }],
+        include: {
+          parsed: { orderBy: { index: "asc" } },
+          ingredientReferences: {
+            select: { ingredientId: true, segmentIndex: true },
+          },
+        },
+      },
+      parsedInstructionLines: { orderBy: { lineIndex: "asc" } },
+      recipe: { select: { id: true } },
+    },
+  });
+
+  if (!note) return null;
+
+  const blocks = new Map<number, NoteIngredientLineRecord[]>();
+  for (const line of note.parsedIngredientLines) {
+    const ingredientBySegment = new Map(
+      line.ingredientReferences.map((ref) => [ref.segmentIndex, ref.ingredientId])
+    );
+    const record: NoteIngredientLineRecord = {
+      id: line.id,
+      blockIndex: line.blockIndex,
+      lineIndex: line.lineIndex,
+      reference: line.reference,
+      parseStatus: line.parseStatus,
+      reviewStatus: line.reviewStatus,
+      isActive: line.isActive,
+      parserVersion: line.parserVersion,
+      segments: line.parsed.map((segment) => ({
+        index: segment.index,
+        type: segment.type,
+        value: segment.value,
+        rule: segment.rule,
+        ingredientId: ingredientBySegment.get(segment.index),
+      })),
+    };
+    const block = blocks.get(line.blockIndex) ?? [];
+    block.push(record);
+    blocks.set(line.blockIndex, block);
+  }
+
+  const metadata = note.evernoteMetadata;
+
+  return {
+    id: note.id,
+    title: note.title,
+    status: note.status,
+    createdAt: note.createdAt.toISOString(),
+    errorMessage: note.errorMessage,
+    duplicateConfidence: note.duplicateConfidence,
+    parsingErrorCount: note.parsingErrorCount,
+    evernote: metadata
+      ? {
+          source: metadata.source,
+          notebook: metadata.notebook,
+          tags: metadata.tags,
+          originalCreatedAt: metadata.originalCreatedAt?.toISOString() ?? null,
+        }
+      : null,
+    images: note.images.map((image) => ({
+      id: image.id,
+      url: image.crop3x2ImageUrl ?? image.originalImageUrl,
+      thumbnailUrl: image.thumbnailImageUrl,
+      processingStatus: image.processingStatus,
+    })),
+    sources: note.sources.map((source) => ({
+      id: source.id,
+      urls: source.urls.map((url) => ({
+        id: url.id,
+        url: url.url,
+        isBrokenLink: url.isBrokenLink,
+        siteName: url.website?.siteName ?? null,
+      })),
+      book: source.book,
+    })),
+    categories: note.categories,
+    tags: note.tags,
+    ingredientBlocks: [...blocks.entries()]
+      .sort(([a], [b]) => a - b)
+      .map(([blockIndex, lines]) => ({ blockIndex, lines })),
+    instructions: note.parsedInstructionLines.map((line) => ({
+      id: line.id,
+      lineIndex: line.lineIndex,
+      text: line.normalizedText ?? line.originalText,
+      isActive: line.isActive,
+    })),
+    recipeId: note.recipe?.id ?? null,
+  };
+}
+
+/**
+ * Record whether a parsed ingredient line came out right.
+ */
+export async function setIngredientLineReviewStatus(
+  lineId: string,
+  reviewStatus: "UNREVIEWED" | "CORRECT" | "INCORRECT"
+): Promise<{ id: string; noteId: string | null }> {
+  return prisma.parsedIngredientLine.update({
+    where: { id: lineId },
+    data: { reviewStatus },
+    select: { id: true, noteId: true },
+  });
+}

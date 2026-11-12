@@ -16,6 +16,7 @@ import { z } from "zod";
 import { createSession } from "../session";
 import { generateRandomToken } from "../utils/crypto";
 import { hashPassword } from "../utils/hash-and-verify";
+import { createPeaAvatarUrl } from "../utils/pea-avatar";
 import { setSessionCookie } from "../utils/session-cookie";
 import { getSignUpCodes, validateSignUpCode } from "../utils/sign-up-codes";
 
@@ -63,6 +64,7 @@ export const signUp = async (_actionState: ActionState, formData: FormData) => {
         username,
         email,
         passwordHash,
+        avatarUrl: createPeaAvatarUrl(),
       },
     });
 

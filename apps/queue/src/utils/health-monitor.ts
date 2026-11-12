@@ -2,7 +2,7 @@ import { ErrorHandler } from "./error-handler";
 
 import { prisma } from "../config/database";
 import { ManagerFactory } from "../config/factory";
-import { redisConnection } from "../config/redis";
+import { redisConfig, redisConnection } from "../config/redis";
 import {
   DegradedCheck,
   ErrorSeverity,
@@ -219,9 +219,9 @@ export class HealthMonitor {
     const startTime = Date.now();
 
     try {
-      // For now, just check if Redis connection config is available
+      // Queues connect through BullMQ with redisConfig
       // In a real implementation, you'd test actual queue connectivity
-      if (!redisConnection.host) {
+      if (!redisConfig.host) {
         throw new Error("Queue system failed");
       }
 

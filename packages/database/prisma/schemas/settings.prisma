@@ -1,0 +1,20 @@
+// Settings module
+// App-wide configuration stored as a single row (id = "global")
+
+enum ActiveParser {
+  STATIC_V1
+  DATABASE
+}
+
+model AppSetting {
+  id String @id @default("global")
+
+  // Which grammar the import queue uses for ingredient lines
+  activeParser ActiveParser @default(STATIC_V1)
+
+  // Published grammar used when activeParser = DATABASE
+  activeGrammarVersion   GrammarVersion? @relation(fields: [activeGrammarVersionId], references: [id], onDelete: SetNull)
+  activeGrammarVersionId String?
+
+  updatedAt DateTime @updatedAt
+}

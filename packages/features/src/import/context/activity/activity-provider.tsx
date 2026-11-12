@@ -1,8 +1,15 @@
 "use client";
 
-import { activityReducer, defaultActivityState } from "./activity-reducer";
+import { activityBatchReducer, defaultActivityState } from "./activity-reducer";
 
-import { type ReactNode, useMemo, useReducer } from "react";
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+} from "react";
 
 import {
   createContext as createSelectorContext,
@@ -26,19 +33,50 @@ interface ActivityProviderProps {
 }
 
 /**
- * Activity context provider for managing import activity state
- * Provides optimized reducer with better performance for array operations
- * Memoized to prevent unnecessary re-renders
+ * Activity context provider for managing import activity state.
+ * Each imported note emits dozens of status events, so actions are queued
+ * and applied together once per animation frame.
  */
 export function ActivityProvider({
   children,
   initialState = defaultActivityState,
 }: ActivityProviderProps) {
-  const [state, dispatch] = useReducer(activityReducer, initialState);
+  const [state, applyActions] = useReducer(activityBatchReducer, initialState);
+  const queueRef = useRef<ActivityAction[]>([]);
+  const cancelFlushRef = useRef<(() => void) | null>(null);
 
-  // Memoize context value to prevent unnecessary re-renders
-  // Only recreate when state actually changes
-  const contextValue = useMemo(() => ({ state, dispatch }), [state]);
+  const flush = useCallback(() => {
+    cancelFlushRef.current = null;
+    const actions = queueRef.current;
+    queueRef.current = [];
+    if (actions.length > 0) applyActions(actions);
+  }, []);
+
+  const dispatch = useCallback(
+    (action: ActivityAction) => {
+      queueRef.current.push(action);
+      if (!cancelFlushRef.current) cancelFlushRef.current = scheduleFrame(flush);
+    },
+    [flush]
+  );
+
+  useEffect(() => {
+    const reschedule = () => {
+      cancelFlushRef.current?.();
+      cancelFlushRef.current =
+        queueRef.current.length > 0 ? scheduleFrame(flush) : null;
+    };
+
+    reschedule();
+    document.addEventListener("visibilitychange", reschedule);
+    return () => {
+      document.removeEventListener("visibilitychange", reschedule);
+      cancelFlushRef.current?.();
+      cancelFlushRef.current = null;
+    };
+  }, [flush]);
+
+  const contextValue = useMemo(() => ({ state, dispatch }), [state, dispatch]);
 
   return (
     <ActivityContext.Provider value={contextValue}>
@@ -57,4 +95,18 @@ export function useActivity(): ActivityContextValue {
     throw new Error("useActivity must be used within an ActivityProvider");
   }
   return context;
+}
+
+// Animation frames pause in background tabs, which would let the queue grow
+// for the whole import; hidden tabs flush on a timer instead
+const HIDDEN_TAB_FLUSH_MS = 250;
+
+function scheduleFrame(callback: () => void): () => void {
+  const isHidden = typeof document !== "undefined" && document.hidden;
+  if (!isHidden && typeof window !== "undefined" && window.requestAnimationFrame) {
+    const frame = window.requestAnimationFrame(callback);
+    return () => window.cancelAnimationFrame(frame);
+  }
+  const timeout = setTimeout(callback, isHidden ? HIDDEN_TAB_FLUSH_MS : 16);
+  return () => clearTimeout(timeout);
 }

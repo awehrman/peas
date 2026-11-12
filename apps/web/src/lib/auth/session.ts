@@ -11,6 +11,7 @@ const authUserSelect = {
   name: true,
   username: true,
   email: true,
+  avatarUrl: true,
   userType: true,
 } satisfies Prisma.UserSelect;
 

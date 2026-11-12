@@ -9,11 +9,15 @@ export * from "./form";
 export * from "./recipes";
 export * from "./notes";
 export * from "./ingredients";
+export * from "./parser";
 
 // Utilities and monitoring
 export * from "./utils";
 
 // App-wide features
+export * from "./app-navigation";
+export * from "./parsed-line";
+export * from "./shared";
 export * from "./navigation";
 export * from "./theme";
 export * from "./animations";

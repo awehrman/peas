@@ -1,4 +1,4 @@
-import type { ParseStatus } from "@prisma/client";
+import type { ParseStatus, Prisma, PropertyType } from "@prisma/client";
 
 import { prisma } from "../client.js";
 
@@ -84,7 +84,8 @@ export async function saveParsedIngredientLine(
   rule: string | undefined,
   blockIndex: number,
   isActive: boolean,
-  parsedSegments: ParsedSegment[]
+  parsedSegments: ParsedSegment[],
+  parserVersion?: string
 ): Promise<{ id: string }> {
   // Use upsert to create or update the ingredient line
   console.log(
@@ -105,6 +106,7 @@ export async function saveParsedIngredientLine(
       rule,
       parsedAt: new Date(),
       isActive,
+      ...(parserVersion ? { parserVersion } : {}),
     },
     create: {
       noteId,
@@ -115,6 +117,7 @@ export async function saveParsedIngredientLine(
       parseStatus,
       parsedAt: new Date(),
       isActive,
+      parserVersion: parserVersion ?? null,
     },
   });
 
@@ -323,6 +326,7 @@ export async function getParsingRuleStatistics(): Promise<{
  */
 export async function cleanupAllData(): Promise<{
   deletedCounts: {
+    recipes: number;
     notes: number;
     ingredients: number;
     parsedSegments: number;
@@ -335,11 +339,14 @@ export async function cleanupAllData(): Promise<{
     queueJobs: number;
     statusEvents: number;
     urls: number;
+    categories: number;
+    tags: number;
   };
 }> {
   try {
     // Delete in order to respect foreign key constraints
     const deletedCounts = {
+      recipes: 0,
       notes: 0,
       ingredients: 0,
       parsedSegments: 0,
@@ -352,7 +359,13 @@ export async function cleanupAllData(): Promise<{
       queueJobs: 0,
       statusEvents: 0,
       urls: 0,
+      categories: 0,
+      tags: 0,
     };
+
+    // Delete recipes (they reference notes and images)
+    const recipesResult = await prisma.recipe.deleteMany({});
+    deletedCounts.recipes = recipesResult.count;
 
     // Delete queue jobs first (they reference notes)
     const queueJobsResult = await prisma.queueJob.deleteMany({});
@@ -378,6 +391,10 @@ export async function cleanupAllData(): Promise<{
     // Delete notes (this will cascade to related data)
     const notesResult = await prisma.note.deleteMany({});
     deletedCounts.notes = notesResult.count;
+
+    // Delete rows that reference ingredients without cascading
+    await prisma.alias.deleteMany({});
+    await prisma.ingredientProperty.deleteMany({});
 
     // Delete ingredients
     const ingredientsResult = await prisma.ingredient.deleteMany({});
@@ -412,6 +429,11 @@ export async function cleanupAllData(): Promise<{
     // Delete sources (after URLs are deleted)
     const sourcesResult = await prisma.source.deleteMany({});
     deletedCounts.sources = sourcesResult.count;
+
+    // Note categories and tags come from imported notebooks and Evernote tags.
+    // Seeded ingredient categories and tags are kept.
+    deletedCounts.categories = (await prisma.category.deleteMany({})).count;
+    deletedCounts.tags = (await prisma.tag.deleteMany({})).count;
 
     return { deletedCounts };
   } catch (error) {
@@ -481,4 +503,335 @@ export async function getIngredientsWithCategories(noteId: string) {
     console.error("Failed to get ingredients with categories:", error);
     throw error;
   }
+}
+
+// ============================================================================
+// INGREDIENT MANAGEMENT
+// ============================================================================
+
+export type IngredientView = "all" | "unreviewed";
+
+export interface IngredientSummaryRecord {
+  id: string;
+  name: string;
+  plural: string | null;
+  isReviewed: boolean;
+  parentIngredientId: string | null;
+  properties: PropertyType[];
+  referenceCount: number;
+}
+
+export interface IngredientOption {
+  id: string;
+  name: string;
+}
+
+export interface IngredientDetailRecord {
+  id: string;
+  name: string;
+  plural: string | null;
+  isReviewed: boolean;
+  reviewedAt: string | null;
+  isComposedIngredient: boolean;
+  properties: PropertyType[];
+  aliases: { id: string; name: string }[];
+  substitutions: IngredientOption[];
+  parent: IngredientOption | null;
+  variants: IngredientOption[];
+  category: string | null;
+  tags: string[];
+  referenceCount: number;
+  references: {
+    id: string;
+    reference: string;
+    noteId: string | null;
+    noteTitle: string | null;
+  }[];
+}
+
+export interface IngredientSaveInput {
+  id: string;
+  name: string;
+  plural: string | null;
+  properties: PropertyType[];
+  isComposedIngredient: boolean;
+  parentIngredientId: string | null;
+  substitutionIds: string[];
+  aliases: string[];
+  category: string | null;
+  tags: string[];
+  markReviewed: boolean;
+}
+
+const INGREDIENT_REFERENCE_LIMIT = 50;
+
+function unreviewedWhere(view: IngredientView): Prisma.IngredientWhereInput {
+  return view === "unreviewed" ? { isReviewed: false } : {};
+}
+
+export async function getIngredientCounts(): Promise<{
+  all: number;
+  unreviewed: number;
+}> {
+  const [all, unreviewed] = await Promise.all([
+    prisma.ingredient.count(),
+    prisma.ingredient.count({ where: { isReviewed: false } }),
+  ]);
+  return { all, unreviewed };
+}
+
+/**
+ * Lightweight rows for grouping on the /ingredients page.
+ */
+export async function getIngredientSummaries(
+  view: IngredientView = "all"
+): Promise<IngredientSummaryRecord[]> {
+  const ingredients = await prisma.ingredient.findMany({
+    where: unreviewedWhere(view),
+    orderBy: { name: "asc" },
+    select: {
+      id: true,
+      name: true,
+      plural: true,
+      isReviewed: true,
+      parentIngredientId: true,
+      properties: { select: { propertyType: true } },
+      _count: { select: { references: true } },
+    },
+  });
+
+  return ingredients.map((ingredient) => ({
+    id: ingredient.id,
+    name: ingredient.name,
+    plural: ingredient.plural,
+    isReviewed: ingredient.isReviewed,
+    parentIngredientId: ingredient.parentIngredientId,
+    properties: ingredient.properties.map((property) => property.propertyType),
+    referenceCount: ingredient._count.references,
+  }));
+}
+
+export async function getIngredientDetail(
+  id: string
+): Promise<IngredientDetailRecord | null> {
+  const ingredient = await prisma.ingredient.findUnique({
+    where: { id },
+    include: {
+      aliases: { select: { id: true, name: true }, orderBy: { name: "asc" } },
+      properties: { select: { propertyType: true } },
+      substitutions: { select: { id: true, name: true }, orderBy: { name: "asc" } },
+      parentIngredient: { select: { id: true, name: true } },
+      variants: { select: { id: true, name: true }, orderBy: { name: "asc" } },
+      category: { select: { name: true } },
+      tags: { select: { name: true }, orderBy: { name: "asc" } },
+      references: {
+        take: INGREDIENT_REFERENCE_LIMIT,
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          reference: true,
+          noteId: true,
+          parsedLine: { select: { Note: { select: { title: true } } } },
+        },
+      },
+      _count: { select: { references: true } },
+    },
+  });
+
+  if (!ingredient) return null;
+
+  return {
+    id: ingredient.id,
+    name: ingredient.name,
+    plural: ingredient.plural,
+    isReviewed: ingredient.isReviewed,
+    reviewedAt: ingredient.reviewedAt?.toISOString() ?? null,
+    isComposedIngredient: ingredient.isComposedIngredient,
+    properties: ingredient.properties.map((property) => property.propertyType),
+    aliases: ingredient.aliases,
+    substitutions: ingredient.substitutions,
+    parent: ingredient.parentIngredient,
+    variants: ingredient.variants,
+    category: ingredient.category?.name ?? null,
+    tags: ingredient.tags.map((tag) => tag.name),
+    referenceCount: ingredient._count.references,
+    references: ingredient.references.map((reference) => ({
+      id: reference.id,
+      reference: reference.reference,
+      noteId: reference.noteId,
+      noteTitle: reference.parsedLine.Note?.title ?? null,
+    })),
+  };
+}
+
+/**
+ * The next unreviewed ingredient alphabetically after `afterName`,
+ * wrapping around to the first one.
+ */
+export async function getNextUnreviewedIngredientId(
+  afterName: string,
+  excludeId: string
+): Promise<string | null> {
+  const next = await prisma.ingredient.findFirst({
+    where: { isReviewed: false, name: { gt: afterName }, id: { not: excludeId } },
+    orderBy: { name: "asc" },
+    select: { id: true },
+  });
+  if (next) return next.id;
+
+  const first = await prisma.ingredient.findFirst({
+    where: { isReviewed: false, id: { not: excludeId } },
+    orderBy: { name: "asc" },
+    select: { id: true },
+  });
+  return first?.id ?? null;
+}
+
+export async function searchIngredients(
+  query: string,
+  excludeId?: string,
+  limit = 10
+): Promise<IngredientOption[]> {
+  const trimmed = query.trim();
+  if (!trimmed) return [];
+
+  return prisma.ingredient.findMany({
+    where: {
+      ...(excludeId ? { id: { not: excludeId } } : {}),
+      OR: [
+        { name: { contains: trimmed, mode: "insensitive" } },
+        { plural: { contains: trimmed, mode: "insensitive" } },
+        { aliases: { some: { name: { contains: trimmed, mode: "insensitive" } } } },
+      ],
+    },
+    orderBy: { name: "asc" },
+    take: limit,
+    select: { id: true, name: true },
+  });
+}
+
+export async function getIngredientCategoryNames(): Promise<string[]> {
+  const categories = await prisma.ingredientCategory.findMany({
+    orderBy: { name: "asc" },
+    select: { name: true },
+    distinct: ["name"],
+  });
+  return categories.map((category) => category.name);
+}
+
+async function assertIngredientNameAvailable(
+  name: string,
+  excludeId?: string
+): Promise<void> {
+  const existing = await prisma.ingredient.findFirst({
+    where: {
+      name: { equals: name, mode: "insensitive" },
+      ...(excludeId ? { id: { not: excludeId } } : {}),
+    },
+    select: { id: true },
+  });
+  if (existing) {
+    throw new Error(`An ingredient named "${name}" already exists`);
+  }
+}
+
+export async function createIngredient(input: {
+  name: string;
+  plural: string | null;
+}): Promise<{ id: string }> {
+  const name = input.name.trim();
+  await assertIngredientNameAvailable(name);
+
+  return prisma.ingredient.create({
+    data: { name, plural: input.plural?.trim() || null },
+    select: { id: true },
+  });
+}
+
+async function findOrCreateIngredientCategoryId(
+  tx: Prisma.TransactionClient,
+  name: string | null
+): Promise<string | null> {
+  const trimmed = name?.trim();
+  if (!trimmed) return null;
+
+  const existing = await tx.ingredientCategory.findFirst({
+    where: { name: { equals: trimmed, mode: "insensitive" } },
+    select: { id: true },
+  });
+  if (existing) return existing.id;
+
+  const created = await tx.ingredientCategory.create({
+    data: { name: trimmed },
+    select: { id: true },
+  });
+  return created.id;
+}
+
+/**
+ * Saves the full ingredient card in one transaction: scalar fields,
+ * properties, aliases, relations, category and tags.
+ */
+export async function saveIngredientDetails(
+  input: IngredientSaveInput
+): Promise<{ id: string; name: string }> {
+  const name = input.name.trim();
+  await assertIngredientNameAvailable(name, input.id);
+
+  if (input.parentIngredientId === input.id) {
+    throw new Error("An ingredient cannot be its own parent");
+  }
+
+  const substitutionIds = [...new Set(input.substitutionIds)].filter(
+    (substitutionId) => substitutionId !== input.id
+  );
+  const aliasNames = [
+    ...new Set(input.aliases.map((alias) => alias.trim()).filter(Boolean)),
+  ];
+  const tagNames = [
+    ...new Set(input.tags.map((tag) => tag.trim().toLowerCase()).filter(Boolean)),
+  ];
+
+  return prisma.$transaction(async (tx) => {
+    const categoryId = await findOrCreateIngredientCategoryId(tx, input.category);
+
+    await tx.ingredientProperty.deleteMany({ where: { ingredientId: input.id } });
+    await tx.alias.deleteMany({ where: { ingredientId: input.id } });
+
+    await tx.ingredient.update({
+      where: { id: input.id },
+      data: {
+        name,
+        plural: input.plural?.trim() || null,
+        isComposedIngredient: input.isComposedIngredient,
+        parentIngredientId: input.parentIngredientId,
+        isChildVariant: input.parentIngredientId !== null,
+        categoryId,
+        ...(input.markReviewed ? { isReviewed: true, reviewedAt: new Date() } : {}),
+        properties: {
+          create: [...new Set(input.properties)].map((propertyType) => ({
+            propertyType,
+          })),
+        },
+        aliases: { create: aliasNames.map((alias) => ({ name: alias })) },
+        substitutions: {
+          set: substitutionIds.map((substitutionId) => ({ id: substitutionId })),
+        },
+        tags: { set: [] },
+      },
+    });
+
+    return tx.ingredient.update({
+      where: { id: input.id },
+      data: {
+        tags: {
+          connectOrCreate: tagNames.map((tag) => ({
+            where: { name: tag },
+            create: { name: tag },
+          })),
+        },
+      },
+      select: { id: true, name: true },
+    });
+  });
 }

@@ -156,11 +156,17 @@ export const SECURITY_CONSTANTS = {
     IMPORT_MAX_REQUESTS: 50,
     API_WINDOW_MS: 15 * 60 * 1000, // 15 minutes
     API_MAX_REQUESTS: 200,
+    // Uploads send one authenticated request per note, so an export of a
+    // few thousand notes needs a much larger budget than the global limit
+    UPLOAD_WINDOW_MS: 15 * 60 * 1000, // 15 minutes
+    UPLOAD_MAX_REQUESTS: 10_000,
   },
   /** Request size limits */
   REQUEST_LIMITS: {
     MAX_REQUEST_SIZE_BYTES: 10 * 1024 * 1024, // 10MB
     MAX_IMPORT_REQUEST_SIZE_BYTES: 50 * 1024 * 1024, // 50MB
+    // One note plus all of its images; multer still caps each file at 50MB
+    MAX_UPLOAD_REQUEST_SIZE_BYTES: 250 * 1024 * 1024, // 250MB
   },
   /** CORS settings */
   CORS: {

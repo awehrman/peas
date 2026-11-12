@@ -8,6 +8,7 @@ import { useImportUpload } from "../context/upload/upload-provider";
 import { UploadService } from "../services/upload-service";
 import type { FileUploadItem } from "../types/import-types";
 import { getUserErrorMessage, logError } from "../utils/error-utils";
+import { expandArchives } from "../utils/expand-archives";
 import {
   groupFilesByHtmlAndImages,
   validateFileList,
@@ -21,6 +22,7 @@ export function useFileUpload() {
   const { state, dispatch } = useImportUpload();
   const getQueueToken = useQueueTokenProvider();
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [selectionSummary, setSelectionSummary] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
   const processFileGroup = useCallback(
@@ -55,7 +57,10 @@ export function useFileUpload() {
       dispatch({
         type: "ADD_FILES",
         files: fileUploadItems,
-        directoryName: group.htmlFile.name.replace(/\.(html|htm)$/i, ""),
+        directoryName: (group.htmlFile.name.split("/").pop() ?? group.htmlFile.name).replace(
+          /\.(html|htm)$/i,
+          ""
+        ),
       });
 
       // Upload the group to the queue
@@ -110,11 +115,13 @@ export function useFileUpload() {
       if (files.length === 0) return;
 
       setValidationError(null);
+      setSelectionSummary(null);
       setIsProcessing(true);
 
       try {
-        // Validate files
-        const validationResult = validateFileList(files);
+        // Zipped exports are unpacked in the browser and grouped like folders
+        const expandedFiles = await expandArchives(files);
+        const validationResult = validateFileList(expandedFiles);
         if (!validationResult.success) {
           const errorMessage = validationResult.error.issues
             .map((err) => err.message)
@@ -138,6 +145,16 @@ export function useFileUpload() {
           return;
         }
 
+        const imageCount = groupingResult.groups.reduce(
+          (total, group) => total + group.imageFiles.length,
+          0
+        );
+        const skipped = groupingResult.ignoredFiles.length;
+        setSelectionSummary(
+          `Queuing ${groupingResult.groups.length} notes with ${imageCount} images` +
+            (skipped > 0 ? ` (skipped ${skipped}: ${groupingResult.ignoredFiles.join(", ")})` : "")
+        );
+
         // Process each group (HTML file + associated images)
         for (const group of groupingResult.groups) {
           await processFileGroup(group);
@@ -156,6 +173,7 @@ export function useFileUpload() {
   return {
     state,
     validationError,
+    selectionSummary,
     isProcessing,
     handleFilesChange,
   };

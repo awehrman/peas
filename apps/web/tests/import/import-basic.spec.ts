@@ -1,61 +1,40 @@
 import { expect, test } from "@playwright/test";
 
-test.describe("Import Page Basic Tests", () => {
+import { expectNoAccessibilityViolations } from "../helpers/a11y";
+import { signIn, skipWithoutCredentials } from "../helpers/auth";
+
+test.describe("Import page", () => {
+  skipWithoutCredentials();
+
   test.beforeEach(async ({ page }) => {
+    await signIn(page);
     await page.goto("/import");
   });
 
-  test("should load import page successfully", async ({ page }) => {
-    // Check that the page loads
-    await expect(page.locator("body")).toBeVisible();
+  test("shows the import section with folder and file pickers", async ({ page }) => {
+    const importSection = page.getByRole("region", { name: "Import notes" });
 
-    // Check for any heading on the page (more flexible)
-    const headings = page.locator("h1, h2, h3, h4, h5, h6");
-    const headingCount = await headings.count();
-
-    if (headingCount > 0) {
-      await expect(headings.first()).toBeVisible();
-    }
-
-    // Check that the import component container is present
-    const importContainer = page.locator(".container");
-    await expect(importContainer).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Import" })).toBeVisible();
+    await expect(importSection.getByRole("button", { name: "Choose directory" })).toBeVisible();
+    await expect(importSection.getByRole("button", { name: "Choose files" })).toBeVisible();
+    await expect(page.locator('input[type="file"]').first()).toBeAttached();
   });
 
-  test("should have file upload functionality", async ({ page }) => {
-    // Look for file input elements
-    const fileInputs = page.locator('input[type="file"]');
-    const fileInputCount = await fileInputs.count();
+  test("keeps the import section usable on mobile and desktop", async ({ page }) => {
+    const importSection = page.getByRole("region", { name: "Import notes" });
 
-    // Should have at least one file input
-    expect(fileInputCount).toBeGreaterThan(0);
-
-    // File input should be visible or accessible
-    const firstFileInput = fileInputs.first();
-    await expect(firstFileInput).toBeAttached();
-  });
-
-  test("should be responsive", async ({ page }) => {
-    // Test mobile view
     await page.setViewportSize({ width: 375, height: 667 });
-    await expect(page.locator(".container")).toBeVisible();
+    await expect(importSection).toBeVisible();
 
-    // Test desktop view
     await page.setViewportSize({ width: 1200, height: 800 });
-    await expect(page.locator(".container")).toBeVisible();
+    await expect(importSection).toBeVisible();
   });
 
-  test("should have proper page structure", async ({ page }) => {
-    // Check for main container
-    const container = page.locator(".container");
-    await expect(container).toBeVisible();
+  test("hides the activity section until something is imported", async ({ page }) => {
+    await expect(page.getByRole("region", { name: "Import activity" })).toHaveCount(0);
+  });
 
-    // Check for grid layout
-    const grid = page.locator(".grid");
-    await expect(grid).toBeVisible();
-
-    // Check for card with file upload
-    const card = page.locator(".bg-card");
-    await expect(card).toBeVisible();
+  test("has no WCAG 2.1 AA violations", async ({ page }) => {
+    await expectNoAccessibilityViolations(page, { include: "main" });
   });
 });

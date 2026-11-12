@@ -82,7 +82,9 @@ export function getStepLabel(step: keyof ImportCard["status"]): string {
 }
 
 /**
- * Creates an initial card with default step statuses
+ * Creates an initial card with default step statuses.
+ * Cards are keyed by importId: every queue event carries it, while noteId
+ * only exists once the note has been saved.
  */
 export function createInitialCard(
   importId: string,
@@ -95,10 +97,12 @@ export function createInitialCard(
   };
 
   return {
-    id: noteId || importId,
+    id: importId,
+    ...(noteId ? { noteId } : {}),
     isExpanded: false,
     status: {
-      uploaded: { ...initialStepStatus, started: true }, // Upload starts immediately
+      // Cards are created from queue events, so the upload has already landed
+      uploaded: { ...initialStepStatus, started: true, completed: true },
       cleanedNote: { ...initialStepStatus },
       savedNote: { ...initialStepStatus },
       ingredientProcessing: { ...initialStepStatus },

@@ -4,6 +4,10 @@
 /* Import CSS variables directly */
 @import "@peas/tailwind";
 
+/* Workspace packages resolve through node_modules, which Tailwind skips */
+@source "../../../../packages/features/src";
+@source "../../../../packages/components/src";
+
 @layer base {
   html,
   body {

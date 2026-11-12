@@ -1,0 +1,16 @@
+{
+  "extends": "@peas/typescript-config/base.json",
+  "compilerOptions": {
+    "outDir": "./dist/dynamic",
+    "rootDir": "./src/dynamic",
+    "declaration": true,
+    "declarationMap": false,
+    "sourceMap": false,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["es2022"],
+    "types": []
+  },
+  "include": ["src/dynamic/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}
