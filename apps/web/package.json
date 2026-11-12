@@ -21,6 +21,7 @@
     "@peas/components": "*",
     "@peas/database": "*",
     "@peas/features": "*",
+    "@peas/parser": "*",
     "lucide-react": "^0.525.0",
     "matter-js": "^0.20.0",
     "next": "15.4.2",

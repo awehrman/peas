@@ -30,19 +30,18 @@ export function ImportPage({
   });
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="grid gap-6">
-        {/* Import Notes Section */}
-        <div className="bg-card p-6 rounded-lg border shadow-sm">
-          <h2 className="text-lg font-semibold mb-4">Import Notes</h2>
-          <ImportFileUpload />
-        </div>
+    <div className="grid gap-6">
+      <section
+        aria-labelledby="import-notes-heading"
+        className="bg-card flex max-h-[32rem] flex-col rounded-lg border p-5 shadow-xs"
+      >
+        <h2 id="import-notes-heading" className="mb-4 text-base font-semibold">
+          Import notes
+        </h2>
+        <ImportFileUpload className="flex min-h-0 flex-1 flex-col" />
+      </section>
 
-        {/* Import Activity Section */}
-        <div className="bg-card p-6 rounded-lg border shadow-sm">
-          <ImportActivityList />
-        </div>
-      </div>
+      <ImportActivityList />
     </div>
   );
 }

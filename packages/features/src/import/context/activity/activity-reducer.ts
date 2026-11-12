@@ -1,4 +1,16 @@
+import { CARDS_PER_PAGE } from "../../constants/activity-constants";
 import type { ActivityAction, ActivityState } from "../../types/import-types";
+
+/**
+ * Applies a group of actions in order, so a burst of websocket events
+ * costs a single render.
+ */
+export function activityBatchReducer(
+  state: ActivityState,
+  actions: readonly ActivityAction[]
+): ActivityState {
+  return actions.reduce(activityReducer, state);
+}
 
 /**
  * Activity reducer - handles activity log state
@@ -10,7 +22,11 @@ export function activityReducer(
 ): ActivityState {
   switch (action.type) {
     case "ADD_IMPORT_CARD": {
-      const existingIds = state.pageToCardIds[action.pageIndex] || [];
+      if (state.cardsById[action.card.id]) return state;
+      const pageIndex = Math.floor(
+        Object.keys(state.cardsById).length / CARDS_PER_PAGE
+      );
+      const existingIds = state.pageToCardIds[pageIndex] || [];
       return {
         ...state,
         cardsById: {
@@ -19,7 +35,7 @@ export function activityReducer(
         },
         pageToCardIds: {
           ...state.pageToCardIds,
-          [action.pageIndex]: [...existingIds, action.card.id],
+          [pageIndex]: [...existingIds, action.card.id],
         },
       };
     }
@@ -45,6 +61,7 @@ export function activityReducer(
           ...state.cardsById,
           [action.cardId]: {
             ...existing,
+            noteId: existing.noteId ?? action.noteId,
             status: {
               ...existing.status,
               [action.step]: {

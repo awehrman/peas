@@ -2,27 +2,43 @@
 
 import { ImportActivityCard } from "./import-activity-card";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  type MouseEvent,
+  type ReactNode,
+  memo,
+  useCallback,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+} from "react";
 
 import {
   Pagination,
   PaginationContent,
+  PaginationEllipsis,
   PaginationItem,
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
 } from "@peas/components";
-import { VariableSizeList as List } from "react-window";
+import { VariableSizeList as List, areEqual } from "react-window";
 
+import { CARDS_PER_PAGE } from "../constants/activity-constants";
 import { useActivity } from "../context/activity";
 import type { ImportCard } from "../types/import-types";
+import { getPageWindow } from "../utils/page-window";
 
-const CARDS_PER_PAGE = 10;
 const COLLAPSED_CARD_HEIGHT = 80; // Height for collapsed cards
-const EXPANDED_CARD_BASE_HEIGHT = 120; // Base height for expanded card header
+const EXPANDED_CARD_BASE_HEIGHT = 152; // Expanded card header plus the "View note" link
 const STEP_HEIGHT = 50; // Height per step in expanded view
+const EXPANDED_STEP_COUNT = 10;
 const CARD_GAP = 12; // Gap between cards
 const LIST_MAX_HEIGHT = 800; // Max height for the virtualized list
+interface RowData {
+  cards: ImportCard[];
+  onToggle: (cardId: string) => void;
+}
 
 /**
  * Container component for the virtualized, paginated activity list
@@ -30,111 +46,82 @@ const LIST_MAX_HEIGHT = 800; // Max height for the virtualized list
  */
 export function ImportActivityList() {
   const { state, dispatch } = useActivity();
-  const [currentPage, setCurrentPage] = useState(0);
-  const listRef = useRef<List>(null);
+  const listRef = useRef<List<RowData>>(null);
 
-  const currentPageCardIds = state.pageToCardIds[currentPage] || [];
-  const currentPageCards: ImportCard[] = useMemo(
+  const totalCards = Object.keys(state.cardsById).length;
+  const totalPages = Math.ceil(totalCards / CARDS_PER_PAGE);
+  const currentPage = Math.min(state.currentPageIndex, Math.max(0, totalPages - 1));
+
+  const currentPageCardIds = state.pageToCardIds[currentPage];
+  const currentPageCards = useMemo(
     () =>
-      currentPageCardIds
+      (currentPageCardIds ?? [])
         .map((id) => state.cardsById[id])
         .filter((card): card is ImportCard => card !== undefined),
     [currentPageCardIds, state.cardsById]
   );
 
-  const totalCards = Object.keys(state.cardsById).length;
-  const totalPages = Math.ceil(totalCards / CARDS_PER_PAGE);
-
-  // Calculate height for each card based on expansion state
   const getItemSize = useCallback(
-    (index: number): number => {
-      const card = currentPageCards[index];
-      if (!card) return COLLAPSED_CARD_HEIGHT + CARD_GAP;
-
-      if (card.isExpanded) {
-        // Count number of steps to show (10 steps)
-        const stepCount = 10;
-        return EXPANDED_CARD_BASE_HEIGHT + stepCount * STEP_HEIGHT + CARD_GAP;
-      }
-
-      return COLLAPSED_CARD_HEIGHT + CARD_GAP;
-    },
+    (index: number) => getCardHeight(currentPageCards[index]),
     [currentPageCards]
   );
 
-  // Calculate total height for all visible cards
   const totalListHeight = useMemo(() => {
-    let height = 0;
-    for (let i = 0; i < currentPageCards.length; i++) {
-      height += getItemSize(i);
-    }
+    const height = currentPageCards.reduce((sum, card) => sum + getCardHeight(card), 0);
     return Math.min(height, LIST_MAX_HEIGHT);
-  }, [currentPageCards.length, getItemSize]);
+  }, [currentPageCards]);
+
+  // Heights change when a card expands or the page changes, so drop cached sizes
+  const expansionKey = currentPageCards.map((card) => (card.isExpanded ? 1 : 0)).join("");
+  useLayoutEffect(() => {
+    listRef.current?.resetAfterIndex(0);
+  }, [expansionKey, currentPage]);
 
   const handleToggle = useCallback(
     (cardId: string) => {
-      dispatch({
-        type: "TOGGLE_CARD_EXPANDED",
-        pageIndex: currentPage,
-        cardId,
-      });
-
-      // Reset item size cache when a card is toggled
-      // This forces the list to recalculate heights
-      if (listRef.current) {
-        listRef.current.resetAfterIndex(0);
-      }
+      dispatch({ type: "TOGGLE_CARD_EXPANDED", pageIndex: currentPage, cardId });
     },
     [dispatch, currentPage]
   );
 
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    dispatch({
-      type: "SET_PAGE",
-      pageIndex: page,
-    });
-  };
+  const itemData = useMemo<RowData>(
+    () => ({ cards: currentPageCards, onToggle: handleToggle }),
+    [currentPageCards, handleToggle]
+  );
 
   if (totalCards === 0) {
     return null;
   }
 
-  const Row = ({
-    index,
-    style,
-  }: {
-    index: number;
-    style: React.CSSProperties;
-  }) => {
-    const card = currentPageCards[index];
-    if (!card) return null;
-
-    return (
-      <div style={style} className="px-4 py-2">
-        <ImportActivityCard
-          card={card}
-          isExpanded={card.isExpanded}
-          onToggle={() => handleToggle(card.id)}
-        />
-      </div>
-    );
+  const goToPage = (page: number) => (event: MouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault();
+    dispatch({ type: "SET_PAGE", pageIndex: page });
   };
 
+  const isFirstPage = currentPage === 0;
+  const isLastPage = currentPage === totalPages - 1;
+
   return (
-    <div className="space-y-4">
-      <h3 className="text-lg font-semibold">Import Activity</h3>
+    <section
+      aria-labelledby="import-activity-heading"
+      className="bg-card space-y-4 rounded-lg border p-5 shadow-xs"
+    >
+      <h2 id="import-activity-heading" className="text-base font-semibold">
+        Import activity
+      </h2>
 
       {/* Virtualized List */}
       <div className="border rounded-lg overflow-hidden bg-gray-50">
-        <List
+        <List<RowData>
           ref={listRef}
           height={totalListHeight}
           itemCount={currentPageCards.length}
           itemSize={getItemSize}
+          itemData={itemData}
+          itemKey={(index, data) => data.cards[index]?.id ?? index}
           width="100%"
         >
-          {Row}
+          {ActivityRow}
         </List>
       </div>
 
@@ -145,42 +132,70 @@ export function ImportActivityList() {
             <PaginationContent>
               <PaginationItem>
                 <PaginationPrevious
-                  onClick={() => handlePageChange(Math.max(0, currentPage - 1))}
-                  aria-disabled={currentPage === 0}
-                  className={
-                    currentPage === 0 ? "pointer-events-none opacity-50" : ""
-                  }
+                  href="#"
+                  onClick={goToPage(Math.max(0, currentPage - 1))}
+                  aria-disabled={isFirstPage}
+                  tabIndex={isFirstPage ? -1 : undefined}
+                  className={isFirstPage ? "pointer-events-none opacity-50" : ""}
                 />
               </PaginationItem>
 
-              {Array.from({ length: totalPages }, (_, i) => (
-                <PaginationItem key={i}>
-                  <PaginationLink
-                    onClick={() => handlePageChange(i)}
-                    isActive={currentPage === i}
-                  >
-                    {i + 1}
-                  </PaginationLink>
+              {getPageWindow(currentPage, totalPages).map((item) => (
+                <PaginationItem key={item}>
+                  {typeof item === "number" ? (
+                    <PaginationLink
+                      href="#"
+                      onClick={goToPage(item)}
+                      isActive={currentPage === item}
+                      aria-label={`Page ${item + 1}`}
+                    >
+                      {item + 1}
+                    </PaginationLink>
+                  ) : (
+                    <PaginationEllipsis />
+                  )}
                 </PaginationItem>
               ))}
 
               <PaginationItem>
                 <PaginationNext
-                  onClick={() =>
-                    handlePageChange(Math.min(totalPages - 1, currentPage + 1))
-                  }
-                  aria-disabled={currentPage === totalPages - 1}
-                  className={
-                    currentPage === totalPages - 1
-                      ? "pointer-events-none opacity-50"
-                      : ""
-                  }
+                  href="#"
+                  onClick={goToPage(Math.min(totalPages - 1, currentPage + 1))}
+                  aria-disabled={isLastPage}
+                  tabIndex={isLastPage ? -1 : undefined}
+                  className={isLastPage ? "pointer-events-none opacity-50" : ""}
                 />
               </PaginationItem>
             </PaginationContent>
           </Pagination>
         </div>
       )}
+    </section>
+  );
+}
+
+const ActivityRow = memo(function ActivityRow({
+  index,
+  style,
+  data,
+}: {
+  index: number;
+  style: CSSProperties;
+  data: RowData;
+}): ReactNode {
+  const card = data.cards[index];
+  if (!card) return null;
+
+  return (
+    <div style={style} className="px-4 py-2">
+      <ImportActivityCard card={card} isExpanded={card.isExpanded} onToggle={data.onToggle} />
     </div>
   );
+}, areEqual);
+
+function getCardHeight(card: ImportCard | undefined): number {
+  if (card?.isExpanded) {
+    return EXPANDED_CARD_BASE_HEIGHT + EXPANDED_STEP_COUNT * STEP_HEIGHT + CARD_GAP;
+  }
+  return COLLAPSED_CARD_HEIGHT + CARD_GAP;
 }

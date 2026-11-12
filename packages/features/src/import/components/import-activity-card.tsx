@@ -1,6 +1,8 @@
 import { ImportActivityCardContent } from "./import-activity-card-content";
 import { ImportActivityCardHeader } from "./import-activity-card-header";
 
+import { memo } from "react";
+
 import {
   Collapsible,
   CollapsibleContent,
@@ -12,20 +14,20 @@ import type { ImportCard } from "../types/import-types";
 interface ImportActivityCardProps {
   card: ImportCard;
   isExpanded: boolean;
-  onToggle: () => void;
+  onToggle: (cardId: string) => void;
 }
 
 /**
  * Main card component wrapper
  * Handles expand/collapse functionality and renders header/content
  */
-export function ImportActivityCard({
+export const ImportActivityCard = memo(function ImportActivityCard({
   card,
   isExpanded,
   onToggle,
 }: ImportActivityCardProps) {
   return (
-    <Collapsible open={isExpanded} onOpenChange={onToggle}>
+    <Collapsible open={isExpanded} onOpenChange={() => onToggle(card.id)}>
       <div className="bg-white border rounded-lg shadow-sm hover:shadow-md transition-shadow">
         <CollapsibleTrigger asChild>
           <button
@@ -46,4 +48,4 @@ export function ImportActivityCard({
       </div>
     </Collapsible>
   );
-}
+});

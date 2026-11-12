@@ -1,5 +1,6 @@
 import { ImportActivityStep } from "./import-activity-step";
 
+import { AppLink } from "../../app-navigation";
 import type { ImportCard } from "../types/import-types";
 import { getStepLabel } from "../utils/activity-helpers";
 
@@ -28,6 +29,8 @@ export function ImportActivityCardContent({
     "checkDuplicates",
   ];
 
+  const canViewNote = !!card.noteId && card.status.savedNote.completed;
+
   return (
     <div className="space-y-0.5">
       {stepOrder.map((stepKey) => (
@@ -37,6 +40,16 @@ export function ImportActivityCardContent({
           status={card.status[stepKey]}
         />
       ))}
+      {canViewNote ? (
+        <div className="pt-2">
+          <AppLink
+            href={`/notes/${card.noteId}`}
+            className="text-sm font-medium text-primary hover:underline"
+          >
+            View note
+          </AppLink>
+        </div>
+      ) : null}
     </div>
   );
 }

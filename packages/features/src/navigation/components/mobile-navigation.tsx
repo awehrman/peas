@@ -8,6 +8,7 @@ import { cn, NavigationMenu, NavigationMenuItem, NavigationMenuList } from "@pea
 import { LogOut } from "lucide-react";
 
 import { NAVIGATION_CONSTANTS } from "../config/constants";
+import { isNavigationItemActive } from "../config/navigation";
 import { NavigationProvider, useNavigation } from "../contexts/NavigationContext";
 import { NavigationToggle } from "./navigation-toggle";
 import { PureNavigationProps } from "../types/navigation";
@@ -24,7 +25,7 @@ function MobileSidebarNavigation({
   const toggleButtonStyle = useMemo(
     () => ({
       position: "absolute" as const,
-      right: `${10 + NAVIGATION_CONSTANTS.TOGGLE_VERTICAL_OFFSET}px`, // 10px from right edge
+      right: `${NAVIGATION_CONSTANTS.MOBILE_TOGGLE_RIGHT}px`,
       top: "8px", // Always at top for mobile
     }),
     []
@@ -71,7 +72,7 @@ function MobileSidebarNavigation({
           >
             <NavigationMenuList className="flex-col space-y-1 w-full flex-1">
               {navigationItems.map((item) => {
-                const isActive = pathname === item.href;
+                const isActive = isNavigationItemActive(pathname, item.href);
                 return (
                   <NavigationMenuItem key={item.href} className="w-full">
                     <NavItem
@@ -82,8 +83,8 @@ function MobileSidebarNavigation({
                       className={cn(
                         "flex items-center gap-3 w-full p-3 rounded-md transition-colors font-normal",
                         isActive
-                          ? "!text-primary-500"
-                          : "text-navigation-foreground hover:!text-primary-500"
+                          ? "!text-primary-300"
+                          : "text-navigation-foreground hover:!text-primary-300"
                       )}
                     />
                   </NavigationMenuItem>
@@ -92,7 +93,7 @@ function MobileSidebarNavigation({
               <NavigationMenuItem className="w-full mt-auto">
                 <form
                   action={signOut}
-                  className="flex gap-2 items-center w-full p-3 rounded-md transition-colors font-normal text-navigation-foreground hover:bg-accent hover:text-primary-500"
+                  className="flex gap-2 items-center w-full p-3 rounded-md transition-colors font-normal text-navigation-foreground hover:bg-white/10 hover:text-primary-300"
                   onSubmit={handleSignOutSubmit}
                 >
                   <LogOut className="mr-2 h-4 w-4" />

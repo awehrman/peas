@@ -16,12 +16,12 @@ const Placeholder = ({
   buttonSize = "md",
 }: PlaceholderProps) => {
   return (
-    <div className="flex-1 self-center flex flex-col items-center justify-center gap-y-2">
+    <div className="flex-1 self-center flex flex-col items-center justify-center gap-y-3 py-10">
       {icon && React.isValidElement(icon)
         ? React.cloneElement(
             icon as React.ReactElement<{ className?: string }>,
             {
-              className: "w-16 h-16",
+              className: "h-10 w-10 text-greyscale-400",
             }
           )
         : null}
@@ -29,7 +29,9 @@ const Placeholder = ({
         (React.isValidElement(label) ? (
           label
         ) : (
-          <h2 className="text-md text-center">{label as React.ReactNode}</h2>
+          <h2 className="max-w-sm text-center text-sm font-normal text-greyscale-600">
+            {label as React.ReactNode}
+          </h2>
         ))}
       {button &&
         React.cloneElement(button, {

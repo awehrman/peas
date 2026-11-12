@@ -117,6 +117,7 @@ describe("Save Ingredient Line Service", () => {
               processingTime: 15,
             },
           ],
+          parserVersion: "grammar:version-1",
         },
       };
 
@@ -156,7 +157,8 @@ describe("Save Ingredient Line Service", () => {
             value: "flour",
             processingTime: 15,
           },
-        ]
+        ],
+        "grammar:version-1"
       );
 
       expect(mockDatabase.findOrCreateParsingRule).toHaveBeenCalledTimes(3);
@@ -197,7 +199,8 @@ describe("Save Ingredient Line Service", () => {
         undefined,
         0,
         true,
-        []
+        [],
+        undefined
       );
 
       expect(mockDatabase.findOrCreateParsingRule).not.toHaveBeenCalled();

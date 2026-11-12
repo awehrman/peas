@@ -10,7 +10,11 @@ export default async function ProtectedLayout({
 }: Readonly<{
   children: ReactNode;
 }>) {
-  await getAuthOrRedirect();
+  const { user } = await getAuthOrRedirect();
 
-  return <AuthenticatedLayout>{children}</AuthenticatedLayout>;
+  return (
+    <AuthenticatedLayout isAdmin={user.userType === "ADMIN"}>
+      {children}
+    </AuthenticatedLayout>
+  );
 }

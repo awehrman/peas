@@ -32,6 +32,9 @@ model ParsedIngredientLine {
   // New field to mark lines as active/inactive
   isActive Boolean @default(true)
 
+  // Which parser produced the segments: "static_v1" or "grammar:<versionId>"
+  parserVersion String?
+
   Note   Note?   @relation(fields: [noteId], references: [id], onDelete: Cascade)
   noteId String?
 
@@ -130,3 +133,90 @@ model UniqueLinePattern {
   @@unique([ruleIds])
   @@index([occurrenceCount])
 } 
+// Grammar builder
+// Database-backed PEG rules edited on /parser. These are compiled into a
+// grammar and, once published, can replace the static v1 grammar for imports.
+// Not to be confused with ParsingRule, which records rule paths seen in
+// parser output.
+
+enum GrammarRuleDefinitionType {
+  RULE
+  LIST
+}
+
+model GrammarRule {
+  id String @id @default(cuid())
+
+  order Int
+  name  String @unique
+  label String
+
+  definitions GrammarRuleDefinition[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([order])
+}
+
+model GrammarRuleDefinition {
+  id String @id @default(cuid())
+
+  order     Int
+  type      GrammarRuleDefinitionType @default(RULE)
+  example   String                    @default("")
+  rule      String                    @default("")
+  formatter String                    @default("") @db.Text
+  list      String[]
+
+  grammarRule   GrammarRule @relation(fields: [grammarRuleId], references: [id], onDelete: Cascade)
+  grammarRuleId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([grammarRuleId])
+}
+
+model GrammarTest {
+  id String @id @default(cuid())
+
+  // The ingredient line under test, e.g. "2 cups flour"
+  reference String
+
+  expectations GrammarTestExpectation[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model GrammarTestExpectation {
+  id String @id @default(cuid())
+
+  order Int
+  // Lowercase segment type as emitted by the parser (amount, unit, ingredient, ...)
+  type  String
+  value String
+
+  grammarTest   GrammarTest @relation(fields: [grammarTestId], references: [id], onDelete: Cascade)
+  grammarTestId String
+
+  @@index([grammarTestId])
+}
+
+// Frozen snapshot of the compiled grammar so edits in progress never change
+// how imports parse.
+model GrammarVersion {
+  id String @id @default(cuid())
+
+  source    String @db.Text
+  hash      String @unique
+  ruleCount Int
+
+  testsPassed Int @default(0)
+  testsTotal  Int @default(0)
+
+  appSettings AppSetting[]
+
+  publishedAt DateTime @default(now())
+}

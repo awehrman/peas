@@ -145,6 +145,26 @@ export const MixedBatches: Story = {
   },
 };
 
+export const Uploading: Story = {
+  args: {
+    batches: mockSuccessfulBatches,
+    currentBatch: {
+      importId: "batch-uploading",
+      createdAt: "2024-01-15T14:30:00Z",
+      numberOfFiles: 3,
+      files: [],
+      directoryName: "Country Fried Venison Steak",
+    },
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: "The note being uploaded sits on top of the list with a spinner.",
+      },
+    },
+  },
+};
+
 export const SingleBatch: Story = {
   args: {
     batches: [mockSuccessfulBatches[0]],

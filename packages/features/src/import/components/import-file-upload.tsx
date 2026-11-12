@@ -1,7 +1,6 @@
 "use client";
 
 import { UploadBatchHistory } from "./upload-batch-history";
-import { UploadProgressDisplay } from "./upload-progress";
 
 import React from "react";
 
@@ -14,6 +13,9 @@ import {
   getUploadState,
 } from "../utils/upload-ui-helpers";
 
+/** Zipped exports, or individual notes and their images */
+const ACCEPTED_FILES = ".zip,.html,.htm,image/*";
+
 export interface ImportFileUploadProps {
   /** Additional CSS classes */
   className?: string;
@@ -25,7 +27,7 @@ export function ImportFileUpload({
   className,
   disabled = false,
 }: ImportFileUploadProps) {
-  const { state, validationError, isProcessing, handleFilesChange } =
+  const { state, validationError, selectionSummary, isProcessing, handleFilesChange } =
     useFileUpload();
 
   const uploadState = getUploadState(state.currentBatch, isProcessing);
@@ -38,19 +40,24 @@ export function ImportFileUpload({
         onFilesChange={handleFilesChange}
         multiple
         allowDirectories
+        accept={ACCEPTED_FILES}
         disabled={disabled || isProcessing}
         description={description}
         error={error}
         isProcessing={isProcessing}
       />
 
-      {/* Upload Progress */}
-      {state.currentBatch && (
-        <UploadProgressDisplay batch={state.currentBatch} />
-      )}
+      {selectionSummary ? (
+        <p role="status" className="mt-3 text-sm text-greyscale-600">
+          {selectionSummary}
+        </p>
+      ) : null}
 
-      {/* Previous Batches */}
-      <UploadBatchHistory batches={state.previousBatches} />
+      <UploadBatchHistory
+        batches={state.previousBatches}
+        currentBatch={state.currentBatch}
+        className="flex-1"
+      />
     </div>
   );
 }

@@ -23,6 +23,8 @@ vi.mock("../../config/factory", () => ({
 vi.mock("../../config/redis", () => ({
   redisConnection: {
     get: vi.fn(),
+  },
+  redisConfig: {
     host: "localhost",
   },
 }));
@@ -42,6 +44,7 @@ describe("HealthMonitor", () => {
   let ManagerFactory: any;
   let ErrorHandler: any;
   let redisConnection: any;
+  let redisConfig: { host: string | undefined };
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -75,6 +78,8 @@ describe("HealthMonitor", () => {
     ManagerFactory = factoryModule.ManagerFactory;
     ErrorHandler = errorHandlerModule.ErrorHandler;
     redisConnection = redisModule.redisConnection;
+    redisConfig = redisModule.redisConfig;
+    redisConfig.host = "localhost";
 
     // Setup the mocks
     (ManagerFactory.createDatabaseManager as any).mockReturnValue(
@@ -319,7 +324,7 @@ describe("HealthMonitor", () => {
       mockDatabaseManager.executeWithRetry.mockResolvedValue(undefined);
       mockCacheManager.isReady.mockReturnValue(true);
       (redisConnection.get as any).mockResolvedValue("test");
-      (redisConnection.host as any) = undefined; // This will cause queue check to fail
+      redisConfig.host = undefined; // This will cause queue check to fail
 
       mockErrorHandler.createJobError.mockReturnValue({
         message: "Queue system failed",
@@ -529,7 +534,7 @@ describe("HealthMonitor", () => {
 
   describe("checkQueueHealth", () => {
     it("should return healthy status for all queues", async () => {
-      (redisConnection.host as any) = "localhost";
+      redisConfig.host = "localhost";
 
       const result = await (healthMonitor as any).checkQueueHealth();
 
@@ -542,7 +547,7 @@ describe("HealthMonitor", () => {
     });
 
     it("should return unhealthy status when Redis host is missing", async () => {
-      (redisConnection.host as any) = undefined;
+      redisConfig.host = undefined;
 
       mockErrorHandler.createJobError.mockReturnValue({
         message: "Queue system failed",

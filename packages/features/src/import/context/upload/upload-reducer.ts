@@ -104,6 +104,9 @@ export function uploadReducer(
           ...state.previousBatches,
           {
             ...state.currentBatch,
+            // Finished batches keep counts and messages only, so the
+            // uploaded File objects (images included) can be garbage collected
+            files: [],
             successMessage: action.successMessage,
           },
         ],
@@ -118,6 +121,7 @@ export function uploadReducer(
           ...state.previousBatches,
           {
             ...state.currentBatch,
+            files: [],
             errorMessage: action.errorMessage,
           },
         ],

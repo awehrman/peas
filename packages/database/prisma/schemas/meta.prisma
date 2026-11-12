@@ -6,7 +6,8 @@ model Category {
 
   name String
 
-  notes Note[]
+  notes   Note[]
+  recipes Recipe[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -17,8 +18,9 @@ model Tag {
 
   name String
 
-  notes Note[]
+  notes   Note[]
+  recipes Recipe[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-} 
+}

@@ -9,5 +9,9 @@ export const invitePath = (code?: string) =>
 export const passwordResetPath = () => "/password-reset";
 
 export const ingredientsPath = () => "/ingredients";
+export const ingredientPath = (id: string) => `/ingredients?id=${id}`;
 export const notesPath = () => "/notes";
+export const notePath = (id: string) => `/notes/${id}`;
 export const recipesPath = () => "/recipes";
+export const recipePath = (id: string) => `/recipes/${id}`;
+export const parserPath = () => "/parser";

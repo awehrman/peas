@@ -56,6 +56,11 @@ export function WsProvider({
   );
   const reconnectAttemptsRef = useRef(0);
   const isManualDisconnectRef = useRef(false);
+  const onStatusUpdateRef = useRef(onStatusUpdate);
+
+  useEffect(() => {
+    onStatusUpdateRef.current = onStatusUpdate;
+  }, [onStatusUpdate]);
 
   const clearTimers = useCallback(() => {
     if (reconnectTimeoutRef.current) {
@@ -143,18 +148,11 @@ export function WsProvider({
 
           // Handle different message types with proper typing
           switch (message.type) {
-            case "status_update": {
-              const statusEvent = message.data as StatusEvent;
-              console.debug("Status update:", statusEvent);
-              // Call the status update callback if provided
-              onStatusUpdate?.(statusEvent);
+            case "status_update":
+              onStatusUpdateRef.current?.(message.data as StatusEvent);
               break;
-            }
             case "connection_established":
-              console.debug("Connection established:", message.data);
-              break;
             case "pong":
-              console.debug("Pong received:", message.data);
               break;
             case "error":
               console.error("WebSocket error:", message.data);

@@ -7,6 +7,7 @@ import React, { useCallback, useState } from "react";
 
 import { AlertCircle, File, Upload } from "lucide-react";
 
+import { collectDroppedFiles } from "../lib/file-paths";
 import { cn } from "../lib/utils";
 import { Alert, AlertDescription } from "../ui/alert";
 
@@ -17,6 +18,8 @@ export interface FileDropZoneProps {
   multiple?: boolean;
   /** Whether to allow directory selection */
   allowDirectories?: boolean;
+  /** Accepted types for the "Choose files" picker, e.g. ".zip,.html" */
+  accept?: string;
   /** Whether the drop zone is disabled */
   disabled?: boolean;
   /** Additional CSS classes */
@@ -35,6 +38,7 @@ export function FileDropZone({
   onFilesChange,
   multiple = true,
   allowDirectories = true,
+  accept,
   disabled = false,
   className,
   description = "Drop or choose files",
@@ -71,14 +75,13 @@ export function FileDropZone({
   );
 
   const handleDrop = useCallback(
-    (event: React.DragEvent<HTMLDivElement>) => {
+    async (event: React.DragEvent<HTMLDivElement>) => {
       event.preventDefault();
       setIsDragOver(false);
 
       if (disabled || isProcessing) return;
 
-      const files = Array.from(event.dataTransfer.files || []);
-      handleFiles(files);
+      handleFiles(await collectDroppedFiles(event.dataTransfer));
     },
     [disabled, isProcessing, handleFiles]
   );
@@ -89,13 +92,13 @@ export function FileDropZone({
     <div className={cn("file-drop-zone", className)}>
       <div
         className={cn(
-          "border-2 border-dashed rounded-lg p-8 transition-colors",
+          "border-2 border-dashed rounded-lg px-6 py-2 transition-colors",
           isDragOver && !isDisabled
             ? "border-blue-400 bg-blue-50"
-            : "border-greyscale-100",
+            : "border-greyscale-200",
           isDisabled
             ? "opacity-50 cursor-not-allowed"
-            : "hover:border-greyscale-200 cursor-pointer"
+            : "hover:border-greyscale-300 cursor-pointer"
         )}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -123,6 +126,7 @@ export function FileDropZone({
                 onFilesChange={handleFiles}
                 multiple={multiple}
                 allowDirectories={allowDirectories}
+                accept={accept}
                 disabled={isDisabled}
                 showInput={true}
               />

@@ -78,11 +78,15 @@ export async function scheduleCategorizationJob(
       `[SCHEDULE_CATEGORIZATION] Created job data: ${JSON.stringify(categorizationJobData, null, 2)}`
     );
 
-    // Add the categorization job to the queue
+    // The tracking row must exist before the worker can pick the job up
+    const { jobId } = categorizationJobData;
+    await createCategorizationQueueJob(noteId, jobId, logger);
+
     const job = await categorizationQueue.add(
       ActionName.DETERMINE_CATEGORY,
       categorizationJobData,
       {
+        jobId,
         removeOnComplete: 100,
         removeOnFail: 50,
         attempts: 3,
@@ -96,15 +100,6 @@ export async function scheduleCategorizationJob(
     logger.log(
       `[SCHEDULE_CATEGORIZATION] Added job to queue with ID: ${job.id}`
     );
-
-    // Create QueueJob entry for tracking
-    if (job.id) {
-      await createCategorizationQueueJob(noteId, job.id, logger);
-    } else {
-      logger.log(
-        `[SCHEDULE_CATEGORIZATION] Warning: Job ID is undefined, skipping QueueJob creation`
-      );
-    }
 
     logger.log(
       `[SCHEDULE_CATEGORIZATION] Successfully scheduled categorization for note: ${noteId}`

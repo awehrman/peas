@@ -27,6 +27,8 @@ model Image {
   note Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
   noteId String
   importId String? // Import session identifier for tracking and upserts
+
+  recipes Recipe[]
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

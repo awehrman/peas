@@ -38,15 +38,16 @@ export function useWebSocketActivityIntegration() {
         metadata,
       } = statusEvent;
 
-      // Get the current page index (always add to current page)
       const pageIndex = currentState.currentPageIndex;
 
-      // Determine the card ID (prefer noteId, fallback to importId)
-      const cardId = noteId || importId;
+      // Early events (cleaning, parsing) arrive before the note has an id,
+      // so cards are keyed by importId and pick up the noteId later
+      const cardId = importId;
 
-      // Check if this card already exists in state
-      const cardExists = !!currentState.cardsById[cardId];
-      const isNewImport = !seenImportIds.current.has(importId) && !cardExists;
+      // State is applied once per frame, so a card queued moments ago may not
+      // be in currentState yet; seenImportIds covers that gap
+      const knownCard = currentState.cardsById[cardId];
+      const isNewImport = !seenImportIds.current.has(importId) && !knownCard;
 
       if (isNewImport) {
         // Create a new card for this import
@@ -63,17 +64,11 @@ export function useWebSocketActivityIntegration() {
           newCard.imageThumbnail = metadata.title;
         }
 
-        dispatch({
-          type: "ADD_IMPORT_CARD",
-          pageIndex,
-          card: newCard,
-        });
+        dispatch({ type: "ADD_IMPORT_CARD", card: newCard });
 
         seenImportIds.current.add(importId);
       } else if (metadata && typeof metadata.title === "string") {
-        // Update note title if card already exists and we have a title
-        const existingCard = currentState.cardsById[cardId];
-        if (existingCard && existingCard.imageThumbnail !== metadata.title) {
+        if (knownCard?.imageThumbnail !== metadata.title) {
           dispatch({
             type: "UPDATE_CARD_TITLE",
             cardId,
@@ -149,6 +144,7 @@ export function useWebSocketActivityIntegration() {
         cardId,
         step,
         statusUpdate,
+        noteId,
       });
     },
     [dispatch] // Only dispatch, state is accessed via ref to avoid recreating callback

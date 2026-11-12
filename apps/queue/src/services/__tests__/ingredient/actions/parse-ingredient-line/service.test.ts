@@ -45,6 +45,18 @@ vi.mock("@peas/parser/v1/minified", () => ({
   parse: vi.fn(),
 }));
 
+// The parser switch defaults to static v1; delegate to the mocked module above
+vi.mock("../../../../ingredient/parser-resolver", async () => {
+  const v1 = await import("@peas/parser/v1/minified");
+  return {
+    STATIC_V1_PARSER_ID: "static_v1",
+    resolveIngredientParser: vi.fn(async () => ({
+      id: "static_v1",
+      parse: (line: string) => v1.parse(line),
+    })),
+  };
+});
+
 describe("Parse Ingredient Line Service", () => {
   let mockLogger: StructuredLogger;
   let mockCachedIngredientParser: {
@@ -154,7 +166,7 @@ describe("Parse Ingredient Line Service", () => {
           parseResult: mockCachedResult,
           rule: "ingredient",
           usedCache: true,
-          parserVersion: "cached",
+          parserVersion: "static_v1",
         },
       });
     });
@@ -219,7 +231,7 @@ describe("Parse Ingredient Line Service", () => {
           parseResult: mockV1Result,
           rule: "ingredient",
           usedCache: false,
-          parserVersion: "v1",
+          parserVersion: "static_v1",
         },
       });
     });
@@ -497,7 +509,7 @@ describe("Parse Ingredient Line Service", () => {
         "[PARSE_INGREDIENT_LINE] Cache check failed: Error: Cache check failed"
       );
       expect(result.metadata?.usedCache).toBe(false);
-      expect(result.metadata?.parserVersion).toBe("v1");
+      expect(result.metadata?.parserVersion).toBe("static_v1");
     });
   });
 });

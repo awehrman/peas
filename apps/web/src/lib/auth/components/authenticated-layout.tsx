@@ -1,12 +1,16 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useMemo } from "react";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 import { Button, Header, Placeholder, Spinner, cn } from "@peas/components";
-import { ResponsiveNavigation, navigationItems } from "@peas/features";
+import {
+  AppNavigationProvider,
+  ResponsiveNavigation,
+  getNavigationItems,
+} from "@peas/features";
 import { AlertTriangle } from "lucide-react";
 import { ErrorBoundary } from "react-error-boundary";
 
@@ -40,52 +44,60 @@ function ContentErrorFallback({
   );
 }
 
+function getRouteName(pathname: string | null): string {
+  const firstSegment = pathname?.split("/").filter(Boolean)[0];
+  if (!firstSegment) return "Dashboard";
+  return firstSegment.charAt(0).toUpperCase() + firstSegment.slice(1);
+}
+
 export function AuthenticatedLayout({
   children,
+  isAdmin,
 }: {
   children: React.ReactNode;
+  isAdmin: boolean;
 }) {
   const pathname = usePathname();
-
-  // Convert pathname to route name
-  let routeName = "Dashboard";
-  if (pathname && pathname !== "/") {
-    routeName =
-      pathname.substring(1).charAt(0).toUpperCase() + pathname.substring(2);
-  }
+  const router = useRouter();
+  const navigationItems = useMemo(() => getNavigationItems(isAdmin), [isAdmin]);
+  const routeName = getRouteName(pathname);
 
   return (
-    <div className="flex h-screen">
-      <ResponsiveNavigation
-        navigationItems={navigationItems}
-        LinkComponent={NextLink}
-        pathname={pathname}
-        signOut={signOut}
-      />
-      <div className={cn("flex-1 flex flex-col h-screen")}>
-        <Header routeName={routeName} />
-        <main className="flex-1 overflow-auto p-10">
-          <ErrorBoundary
-            FallbackComponent={ContentErrorFallback}
-            onError={(error, errorInfo) => {
-              console.error("AuthenticatedLayout Error:", {
-                error: error.message,
-                errorInfo,
-              });
-            }}
-          >
-            <Suspense
-              fallback={
-                <div className="flex items-center justify-center h-full">
-                  <Spinner />
-                </div>
-              }
-            >
-              {children}
-            </Suspense>
-          </ErrorBoundary>
-        </main>
+    <AppNavigationProvider LinkComponent={NextLink} push={router.push}>
+      <div className="flex h-screen">
+        <ResponsiveNavigation
+          navigationItems={navigationItems}
+          LinkComponent={NextLink}
+          pathname={pathname}
+          signOut={signOut}
+        />
+        <div className={cn("flex-1 flex flex-col h-screen")}>
+          <Header routeName={routeName} />
+          <main className="flex-1 overflow-auto px-6 py-6 md:px-8 md:py-8">
+            <div className="mx-auto w-full max-w-7xl">
+              <ErrorBoundary
+                FallbackComponent={ContentErrorFallback}
+                onError={(error, errorInfo) => {
+                  console.error("AuthenticatedLayout Error:", {
+                    error: error.message,
+                    errorInfo,
+                  });
+                }}
+              >
+                <Suspense
+                  fallback={
+                    <div className="flex items-center justify-center h-full">
+                      <Spinner />
+                    </div>
+                  }
+                >
+                  {children}
+                </Suspense>
+              </ErrorBoundary>
+            </div>
+          </main>
+        </div>
       </div>
-    </div>
+    </AppNavigationProvider>
   );
 }

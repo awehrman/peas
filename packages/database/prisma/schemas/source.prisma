@@ -14,6 +14,9 @@ model Source {
   // Notes that reference this source
   notes Note[]
 
+  // Recipes promoted from those notes
+  recipes Recipe[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

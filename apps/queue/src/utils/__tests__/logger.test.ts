@@ -5,6 +5,7 @@ import {
   type LogConfig,
   type LogEntry,
   createLogger,
+  getLogConfigFromEnv,
   logger,
 } from "../logger";
 
@@ -840,6 +841,40 @@ describe("EnhancedLoggerService", () => {
         debugLogger as unknown as { shouldLog: (level: string) => boolean }
       ).shouldLog("debug");
       expect(result).toBe(false);
+    });
+  });
+
+  describe("getLogConfigFromEnv", () => {
+    it("reads level and toggles from the environment", () => {
+      expect(
+        getLogConfigFromEnv({
+          LOG_LEVEL: "WARN",
+          ENABLE_FILE_LOGGING: "false",
+          ENABLE_CONSOLE_LOGGING: "false",
+          LOG_DIR: "/tmp/peas-logs",
+        })
+      ).toEqual({
+        logLevel: "warn",
+        enableFileLogging: false,
+        enableConsoleLogging: false,
+        logDir: "/tmp/peas-logs",
+      });
+    });
+
+    it("ignores unknown levels and unset toggles", () => {
+      expect(getLogConfigFromEnv({ LOG_LEVEL: "loud" })).toEqual({});
+    });
+
+    it("lets createLogger skip info logs when LOG_LEVEL=warn", async () => {
+      const previous = process.env.LOG_LEVEL;
+      process.env.LOG_LEVEL = "warn";
+      const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+      createLogger({ enableFileLogging: false }).info("routine detail");
+
+      expect(consoleSpy).not.toHaveBeenCalled();
+      consoleSpy.mockRestore();
+      process.env.LOG_LEVEL = previous;
     });
   });
 

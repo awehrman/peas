@@ -39,6 +39,15 @@ vi.mock("@peas/parser/v1/minified", () => ({
   parse: vi.fn(),
 }));
 
+// Default to the static v1 parser so tests never read parser settings
+vi.mock("../../ingredient/parser-resolver", () => ({
+  STATIC_V1_PARSER_ID: "static_v1",
+  resolveIngredientParser: vi.fn().mockResolvedValue({
+    id: "static_v1",
+    parse: vi.fn(),
+  }),
+}));
+
 describe("CachedIngredientParser", () => {
   let mockLogger: StructuredLogger;
   let mockActionCache: ReturnType<
@@ -276,6 +285,7 @@ describe("CachedIngredientParser", () => {
         type: "error",
         values: [],
         processingTime: expect.any(Number),
+        parserVersion: "static_v1",
       });
     });
 
@@ -304,9 +314,52 @@ describe("CachedIngredientParser", () => {
         type: "error",
         values: [],
         processingTime: expect.any(Number),
+        parserVersion: "static_v1",
       });
 
       consoleSpy.mockRestore();
+    });
+
+    it("should parse with a published database grammar and tag the result", async () => {
+      const resolverModule = await import("../../ingredient/parser-resolver");
+      vi.mocked(resolverModule.resolveIngredientParser).mockResolvedValueOnce({
+        id: "grammar:version-1",
+        parse: () => ({
+          rule: "#1_ingredientLine",
+          type: "ingredientLine",
+          values: [
+            { rule: "#1_ingredientLine >> #1_amount", type: "amount", value: "2" },
+            { rule: "#1_ingredientLine >> #1_ingredient", type: "ingredient", value: "eggs" },
+          ],
+        }),
+      });
+
+      const result = await CachedIngredientParser.parseIngredientLine("2 eggs", {
+        cacheResults: false,
+      });
+
+      expect(mockV1Parser).not.toHaveBeenCalled();
+      expect(result.parserVersion).toBe("grammar:version-1");
+      expect(result.values.map(({ index, type, value }) => ({ index, type, value }))).toEqual([
+        { index: 0, type: "amount", value: "2" },
+        { index: 1, type: "ingredient", value: "eggs" },
+      ]);
+    });
+
+    it("should include the parser id in the cache key", async () => {
+      mockActionCache.getOrSet.mockResolvedValue({
+        rule: "r",
+        type: "t",
+        values: [],
+        processingTime: 0,
+      });
+
+      await CachedIngredientParser.parseIngredientLine("Salt", {});
+
+      expect(mockCacheKeyGenerator.actionResult).toHaveBeenCalledWith(
+        "parse_ingredient_line",
+        expect.stringMatching(/^static_v1_salt_/)
+      );
     });
 
     it("should handle cache miss without logger", async () => {

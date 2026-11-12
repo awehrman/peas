@@ -30,16 +30,19 @@ yarn dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+To create an account and make it an admin, see [SIGN_UP_CODES.md](./SIGN_UP_CODES.md).
+
 ## Available Pages
 
-- `/` - Home page
-- `/recipes` - Recipe management
-- `/ingredients` - Ingredient management
+- `/` - Dashboard (admin data tools)
+- `/import` - Upload Evernote exports (.zip or folder) and watch the queue
+- `/notes`, `/notes/[id]` - Imported notes with parsed ingredient lines
+- `/ingredients` - Browse, group, review and edit ingredients
+- `/recipes`, `/recipes/[id]` - Recipes promoted from notes
+- `/parser` - Grammar rule builder, grammar tests and the import parser switch (admins)
 - `/design` - Design system showcase
-- `/import` - Recipe import functionality
-- `/notes` - Notes and documentation
-- `/login` - Authentication
-- `/logout` - Logout
+- `/login` - Sign in (sign out is in the navigation)
+- `/invite/[code]` - Sign up with a code from `SIGN_UP_CODES`
 
 ## Development
 
