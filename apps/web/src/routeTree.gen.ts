@@ -13,15 +13,22 @@ import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as PasswordResetRouteImport } from './routes/password-reset'
 import { Route as AuthedIndexRouteImport } from './routes/_authed/index'
+import { Route as AuthedConceptsRouteRouteImport } from './routes/_authed/concepts/route'
 import { Route as AuthedDesignRouteImport } from './routes/_authed/design'
 import { Route as AuthedImportRouteImport } from './routes/_authed/import'
 import { Route as AuthedIngredientsRouteImport } from './routes/_authed/ingredients'
+import { Route as AuthedTeachRouteRouteImport } from './routes/_authed/teach/route'
 import { Route as ApiGraphqlRouteImport } from './routes/api/graphql'
 import { Route as InviteCodeRouteImport } from './routes/invite.$code'
+import { Route as AuthedConceptsIndexRouteImport } from './routes/_authed/concepts/index'
+import { Route as AuthedConceptsIdRouteImport } from './routes/_authed/concepts/$id'
 import { Route as AuthedNotesIndexRouteImport } from './routes/_authed/notes/index'
 import { Route as AuthedNotesIdRouteImport } from './routes/_authed/notes/$id'
 import { Route as AuthedRecipesIndexRouteImport } from './routes/_authed/recipes/index'
 import { Route as AuthedRecipesIdRouteImport } from './routes/_authed/recipes/$id'
+import { Route as AuthedTeachIndexRouteImport } from './routes/_authed/teach/index'
+import { Route as AuthedTeachDiscoveryIdRouteImport } from './routes/_authed/teach/$discoveryId'
+import { Route as AuthedTeachPlaygroundRouteImport } from './routes/_authed/teach/playground'
 
 const AuthedRoute = AuthedRouteImport.update({
   id: '/_authed',
@@ -42,6 +49,11 @@ const AuthedIndexRoute = AuthedIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedConceptsRouteRoute = AuthedConceptsRouteRouteImport.update({
+  id: '/concepts',
+  path: '/concepts',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedDesignRoute = AuthedDesignRouteImport.update({
   id: '/design',
   path: '/design',
@@ -57,6 +69,11 @@ const AuthedIngredientsRoute = AuthedIngredientsRouteImport.update({
   path: '/ingredients',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedTeachRouteRoute = AuthedTeachRouteRouteImport.update({
+  id: '/teach',
+  path: '/teach',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const ApiGraphqlRoute = ApiGraphqlRouteImport.update({
   id: '/api/graphql',
   path: '/api/graphql',
@@ -66,6 +83,16 @@ const InviteCodeRoute = InviteCodeRouteImport.update({
   id: '/invite/$code',
   path: '/invite/$code',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthedConceptsIndexRoute = AuthedConceptsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthedConceptsRouteRoute,
+} as any)
+const AuthedConceptsIdRoute = AuthedConceptsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AuthedConceptsRouteRoute,
 } as any)
 const AuthedNotesIndexRoute = AuthedNotesIndexRouteImport.update({
   id: '/notes/',
@@ -87,20 +114,42 @@ const AuthedRecipesIdRoute = AuthedRecipesIdRouteImport.update({
   path: '/recipes/$id',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedTeachIndexRoute = AuthedTeachIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthedTeachRouteRoute,
+} as any)
+const AuthedTeachDiscoveryIdRoute = AuthedTeachDiscoveryIdRouteImport.update({
+  id: '/$discoveryId',
+  path: '/$discoveryId',
+  getParentRoute: () => AuthedTeachRouteRoute,
+} as any)
+const AuthedTeachPlaygroundRoute = AuthedTeachPlaygroundRouteImport.update({
+  id: '/playground',
+  path: '/playground',
+  getParentRoute: () => AuthedTeachRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthedIndexRoute
   '/login': typeof LoginRoute
   '/password-reset': typeof PasswordResetRoute
+  '/concepts': typeof AuthedConceptsRouteRouteWithChildren
+  '/teach': typeof AuthedTeachRouteRouteWithChildren
   '/design': typeof AuthedDesignRoute
   '/import': typeof AuthedImportRoute
   '/ingredients': typeof AuthedIngredientsRoute
   '/api/graphql': typeof ApiGraphqlRoute
   '/invite/$code': typeof InviteCodeRoute
+  '/concepts/$id': typeof AuthedConceptsIdRoute
   '/notes/$id': typeof AuthedNotesIdRoute
   '/recipes/$id': typeof AuthedRecipesIdRoute
+  '/teach/$discoveryId': typeof AuthedTeachDiscoveryIdRoute
+  '/teach/playground': typeof AuthedTeachPlaygroundRoute
+  '/concepts/': typeof AuthedConceptsIndexRoute
   '/notes/': typeof AuthedNotesIndexRoute
   '/recipes/': typeof AuthedRecipesIndexRoute
+  '/teach/': typeof AuthedTeachIndexRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
@@ -111,26 +160,38 @@ export interface FileRoutesByTo {
   '/api/graphql': typeof ApiGraphqlRoute
   '/invite/$code': typeof InviteCodeRoute
   '/': typeof AuthedIndexRoute
+  '/concepts/$id': typeof AuthedConceptsIdRoute
   '/notes/$id': typeof AuthedNotesIdRoute
   '/recipes/$id': typeof AuthedRecipesIdRoute
+  '/teach/$discoveryId': typeof AuthedTeachDiscoveryIdRoute
+  '/teach/playground': typeof AuthedTeachPlaygroundRoute
+  '/concepts': typeof AuthedConceptsIndexRoute
   '/notes': typeof AuthedNotesIndexRoute
   '/recipes': typeof AuthedRecipesIndexRoute
+  '/teach': typeof AuthedTeachIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authed': typeof AuthedRouteWithChildren
   '/login': typeof LoginRoute
   '/password-reset': typeof PasswordResetRoute
+  '/_authed/concepts': typeof AuthedConceptsRouteRouteWithChildren
+  '/_authed/teach': typeof AuthedTeachRouteRouteWithChildren
   '/_authed/design': typeof AuthedDesignRoute
   '/_authed/import': typeof AuthedImportRoute
   '/_authed/ingredients': typeof AuthedIngredientsRoute
   '/api/graphql': typeof ApiGraphqlRoute
   '/invite/$code': typeof InviteCodeRoute
   '/_authed/': typeof AuthedIndexRoute
+  '/_authed/concepts/$id': typeof AuthedConceptsIdRoute
   '/_authed/notes/$id': typeof AuthedNotesIdRoute
   '/_authed/recipes/$id': typeof AuthedRecipesIdRoute
+  '/_authed/teach/$discoveryId': typeof AuthedTeachDiscoveryIdRoute
+  '/_authed/teach/playground': typeof AuthedTeachPlaygroundRoute
+  '/_authed/concepts/': typeof AuthedConceptsIndexRoute
   '/_authed/notes/': typeof AuthedNotesIndexRoute
   '/_authed/recipes/': typeof AuthedRecipesIndexRoute
+  '/_authed/teach/': typeof AuthedTeachIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -138,15 +199,22 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/password-reset'
+    | '/concepts'
+    | '/teach'
     | '/design'
     | '/import'
     | '/ingredients'
     | '/api/graphql'
     | '/invite/$code'
+    | '/concepts/$id'
     | '/notes/$id'
     | '/recipes/$id'
+    | '/teach/$discoveryId'
+    | '/teach/playground'
+    | '/concepts/'
     | '/notes/'
     | '/recipes/'
+    | '/teach/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
@@ -157,25 +225,37 @@ export interface FileRouteTypes {
     | '/api/graphql'
     | '/invite/$code'
     | '/'
+    | '/concepts/$id'
     | '/notes/$id'
     | '/recipes/$id'
+    | '/teach/$discoveryId'
+    | '/teach/playground'
+    | '/concepts'
     | '/notes'
     | '/recipes'
+    | '/teach'
   id:
     | '__root__'
     | '/_authed'
     | '/login'
     | '/password-reset'
+    | '/_authed/concepts'
+    | '/_authed/teach'
     | '/_authed/design'
     | '/_authed/import'
     | '/_authed/ingredients'
     | '/api/graphql'
     | '/invite/$code'
     | '/_authed/'
+    | '/_authed/concepts/$id'
     | '/_authed/notes/$id'
     | '/_authed/recipes/$id'
+    | '/_authed/teach/$discoveryId'
+    | '/_authed/teach/playground'
+    | '/_authed/concepts/'
     | '/_authed/notes/'
     | '/_authed/recipes/'
+    | '/_authed/teach/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -216,6 +296,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/concepts': {
+      id: '/_authed/concepts'
+      path: '/concepts'
+      fullPath: '/concepts'
+      preLoaderRoute: typeof AuthedConceptsRouteRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/design': {
       id: '/_authed/design'
       path: '/design'
@@ -237,6 +324,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedIngredientsRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/teach': {
+      id: '/_authed/teach'
+      path: '/teach'
+      fullPath: '/teach'
+      preLoaderRoute: typeof AuthedTeachRouteRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/api/graphql': {
       id: '/api/graphql'
       path: '/api/graphql'
@@ -250,6 +344,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/invite/$code'
       preLoaderRoute: typeof InviteCodeRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authed/concepts/': {
+      id: '/_authed/concepts/'
+      path: '/'
+      fullPath: '/concepts/'
+      preLoaderRoute: typeof AuthedConceptsIndexRouteImport
+      parentRoute: typeof AuthedConceptsRouteRoute
+    }
+    '/_authed/concepts/$id': {
+      id: '/_authed/concepts/$id'
+      path: '/$id'
+      fullPath: '/concepts/$id'
+      preLoaderRoute: typeof AuthedConceptsIdRouteImport
+      parentRoute: typeof AuthedConceptsRouteRoute
     }
     '/_authed/notes/': {
       id: '/_authed/notes/'
@@ -279,10 +387,61 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedRecipesIdRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/teach/': {
+      id: '/_authed/teach/'
+      path: '/'
+      fullPath: '/teach/'
+      preLoaderRoute: typeof AuthedTeachIndexRouteImport
+      parentRoute: typeof AuthedTeachRouteRoute
+    }
+    '/_authed/teach/$discoveryId': {
+      id: '/_authed/teach/$discoveryId'
+      path: '/$discoveryId'
+      fullPath: '/teach/$discoveryId'
+      preLoaderRoute: typeof AuthedTeachDiscoveryIdRouteImport
+      parentRoute: typeof AuthedTeachRouteRoute
+    }
+    '/_authed/teach/playground': {
+      id: '/_authed/teach/playground'
+      path: '/playground'
+      fullPath: '/teach/playground'
+      preLoaderRoute: typeof AuthedTeachPlaygroundRouteImport
+      parentRoute: typeof AuthedTeachRouteRoute
+    }
   }
 }
 
+interface AuthedConceptsRouteRouteChildren {
+  AuthedConceptsIdRoute: typeof AuthedConceptsIdRoute
+  AuthedConceptsIndexRoute: typeof AuthedConceptsIndexRoute
+}
+
+const AuthedConceptsRouteRouteChildren: AuthedConceptsRouteRouteChildren = {
+  AuthedConceptsIdRoute: AuthedConceptsIdRoute,
+  AuthedConceptsIndexRoute: AuthedConceptsIndexRoute,
+}
+
+const AuthedConceptsRouteRouteWithChildren =
+  AuthedConceptsRouteRoute._addFileChildren(AuthedConceptsRouteRouteChildren)
+
+interface AuthedTeachRouteRouteChildren {
+  AuthedTeachDiscoveryIdRoute: typeof AuthedTeachDiscoveryIdRoute
+  AuthedTeachPlaygroundRoute: typeof AuthedTeachPlaygroundRoute
+  AuthedTeachIndexRoute: typeof AuthedTeachIndexRoute
+}
+
+const AuthedTeachRouteRouteChildren: AuthedTeachRouteRouteChildren = {
+  AuthedTeachDiscoveryIdRoute: AuthedTeachDiscoveryIdRoute,
+  AuthedTeachPlaygroundRoute: AuthedTeachPlaygroundRoute,
+  AuthedTeachIndexRoute: AuthedTeachIndexRoute,
+}
+
+const AuthedTeachRouteRouteWithChildren =
+  AuthedTeachRouteRoute._addFileChildren(AuthedTeachRouteRouteChildren)
+
 interface AuthedRouteChildren {
+  AuthedConceptsRouteRoute: typeof AuthedConceptsRouteRouteWithChildren
+  AuthedTeachRouteRoute: typeof AuthedTeachRouteRouteWithChildren
   AuthedDesignRoute: typeof AuthedDesignRoute
   AuthedImportRoute: typeof AuthedImportRoute
   AuthedIngredientsRoute: typeof AuthedIngredientsRoute
@@ -294,6 +453,8 @@ interface AuthedRouteChildren {
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
+  AuthedConceptsRouteRoute: AuthedConceptsRouteRouteWithChildren,
+  AuthedTeachRouteRoute: AuthedTeachRouteRouteWithChildren,
   AuthedDesignRoute: AuthedDesignRoute,
   AuthedImportRoute: AuthedImportRoute,
   AuthedIngredientsRoute: AuthedIngredientsRoute,

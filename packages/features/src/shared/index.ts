@@ -4,6 +4,7 @@ export * from "./format-date";
 export * from "./inline-error";
 export * from "./mutation-result";
 export * from "./page-links";
+export * from "./removable-list";
 export * from "./search-form";
 export * from "./use-element-size";
 export * from "./use-mutation";

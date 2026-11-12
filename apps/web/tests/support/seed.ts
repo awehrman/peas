@@ -23,6 +23,36 @@ export const E2E_RECIPE = {
   lines: ["1 cup flour", "2 lemons"],
 } as const;
 
+/**
+ * Teach Peas fixtures. Decisions change global knowledge, and Chromium and WebKit share one seeded database, so every phrase a test teaches or corrects exists once per browser project.
+ */
+export const E2E_TEACH = {
+  noteTitle: "E2E Teach Peas",
+  shared: ["2 green apples", "1 lb boneless skinless chicken thighs"],
+  perProject: {
+    chromium: {
+      alias: "confectioners sugar",
+      modifier: "organic",
+      correct: "raw",
+    },
+    webkit: { alias: "icing sugar", modifier: "grassfed", correct: "skim" },
+  },
+} as const;
+
+export type E2eProject = keyof typeof E2E_TEACH.perProject;
+
+/** The teach note's lines: the shared ones plus each project's alias, modifier, and correction lines. */
+export function teachLines(): string[] {
+  return [
+    ...E2E_TEACH.shared,
+    ...Object.values(E2E_TEACH.perProject).flatMap((fixture) => [
+      `2 tbsp ${fixture.alias}`,
+      `2 cups ${fixture.modifier} milk`,
+      `1 cup ${fixture.correct} milk`,
+    ]),
+  ];
+}
+
 export const E2E_INGREDIENTS = [
   { name: "garlic", isReviewed: true },
   { name: "lemon", isReviewed: false },
@@ -46,7 +76,9 @@ export async function seedE2eDatabase(): Promise<{
   const { hashPassword } = await import("@peas/api/auth");
 
   await prisma.$executeRawUnsafe(
-    `TRUNCATE "Note", "Recipe", "Ingredient", "IngredientCategory", "IngredientTag", "Category", "Tag", "Session", "User" RESTART IDENTITY CASCADE`
+    `TRUNCATE "Note", "Recipe", "Ingredient", "IngredientCategory", "IngredientTag", "Category", "Tag", "Session", "User",
+      "LexiconRevision", "FoodConcept", "LexiconEntry", "AttributeDefinition", "PreparationOperation", "Discovery", "LexiconDecision"
+     RESTART IDENTITY CASCADE`
   );
 
   await prisma.user.create({
@@ -124,8 +156,145 @@ export async function seedE2eDatabase(): Promise<{
     });
   }
 
+  await seedTeachData();
+
   await prisma.$disconnect();
   return { noteId: note.id, lineIds };
+}
+
+/**
+ * A small ontology (powdered sugar, apple, milk, chicken thigh PART_OF chicken, and the attributes the scenarios need), a note with the teach lines, and a backfill so mentions and discoveries exist.
+ */
+async function seedTeachData(): Promise<void> {
+  const {
+    addRelationship,
+    backfillMentions,
+    bumpRevision,
+    createConcept,
+    createLexiconEntries,
+    getAttributeVocabulary,
+    loadResolverContext,
+    prisma,
+    seedOntologyVocabulary,
+    setApplicability,
+  } = await import("@peas/database");
+
+  await seedOntologyVocabulary();
+  const vocabulary = await getAttributeVocabulary();
+  const definition = (key: string) => {
+    const found = vocabulary.definitions.find((row) => row.key === key);
+    if (!found) throw new Error(`Missing attribute dimension ${key}`);
+    return found;
+  };
+  const value = (definitionKey: string, valueKey: string) => {
+    const found = definition(definitionKey).values.find(
+      (row) => row.key === valueKey
+    );
+    if (!found)
+      throw new Error(`Missing attribute value ${definitionKey}:${valueKey}`);
+    return found.id;
+  };
+
+  await prisma.$transaction(async (tx) => {
+    const revision = await bumpRevision(tx, "e2e:teach");
+    const concept = async (canonicalName: string, names: string[]) => {
+      const { id } = await createConcept(tx, {
+        canonicalName,
+        status: "VERIFIED",
+      });
+      await createLexiconEntries(
+        tx,
+        names.map((text, index) => ({
+          text,
+          role: "FOOD" as const,
+          kind: index === 0 ? ("CANONICAL" as const) : ("PLURAL" as const),
+          conceptId: id,
+          status: "ACTIVE" as const,
+        })),
+        revision
+      );
+      return id;
+    };
+    await concept("powdered sugar", ["powdered sugar"]);
+    const apple = await concept("apple", ["apple", "apples"]);
+    await concept("milk", ["milk"]);
+    const chicken = await concept("chicken", ["chicken"]);
+    const thigh = await concept("chicken thigh", [
+      "chicken thigh",
+      "chicken thighs",
+    ]);
+    await addRelationship(tx, {
+      sourceId: thigh,
+      targetId: chicken,
+      type: "PART_OF",
+      status: "ACTIVE",
+    });
+    await createLexiconEntries(
+      tx,
+      [
+        {
+          text: "green",
+          role: "ATTRIBUTE",
+          attributeValueId: value("color", "green"),
+          status: "ACTIVE",
+        },
+        {
+          text: "green",
+          role: "ATTRIBUTE",
+          attributeValueId: value("ripeness", "unripe"),
+          status: "ACTIVE",
+        },
+        {
+          text: "boneless",
+          role: "ATTRIBUTE",
+          attributeValueId: value("bone", "boneless"),
+          status: "ACTIVE",
+        },
+        {
+          text: "skinless",
+          role: "ATTRIBUTE",
+          attributeValueId: value("skin", "skinless"),
+          status: "ACTIVE",
+        },
+      ],
+      revision
+    );
+    await setApplicability(tx, definition("color").id, [apple]);
+    await setApplicability(tx, definition("bone").id, [chicken]);
+    await setApplicability(tx, definition("skin").id, [chicken]);
+  });
+
+  const lines = teachLines();
+  await prisma.note.create({
+    data: {
+      title: E2E_TEACH.noteTitle,
+      html: "<p></p>",
+      status: "COMPLETED",
+      totalIngredientLines: lines.length,
+      parsedIngredientLines: {
+        create: lines.map((reference, lineIndex) => ({
+          blockIndex: 0,
+          lineIndex,
+          reference,
+          parseStatus: "COMPLETED_SUCCESSFULLY" as const,
+          parserVersion: "static_v1",
+        })),
+      },
+    },
+  });
+
+  await backfillMentions(await loadResolverContext());
+}
+
+/** Re-runs the mention backfill against the test database (scenario E checks that verified mentions survive it). */
+export async function rerunBackfill(): Promise<void> {
+  const testUrl = process.env.TEST_DATABASE_URL;
+  if (!testUrl) throw new Error("TEST_DATABASE_URL must be set");
+  process.env.DATABASE_URL = testUrl;
+  const { backfillMentions, loadResolverContext, prisma } =
+    await import("@peas/database");
+  await backfillMentions(await loadResolverContext());
+  await prisma.$disconnect();
 }
 
 if (process.argv[1]?.endsWith("seed.ts")) {

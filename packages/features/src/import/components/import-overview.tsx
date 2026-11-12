@@ -11,6 +11,7 @@ import {
   StatCard,
   StatTile,
   formatCount,
+  formatPercent,
 } from "../../dashboard/components/stat-charts";
 import type { ImportStatsState } from "../types/import-types";
 import {
@@ -27,7 +28,11 @@ export interface ImportOverviewProps {
   library: ImportStatsState;
 }
 
-/** Dashboard-style report on the notes being imported in this session. */
+/**
+ * Dashboard-style report on the notes being imported in this session.
+ * Headline numbers and bar edges are measured against the full selection,
+ * so they only move forward while notes upload and import concurrently.
+ */
 export function ImportOverview({ rows, steps, library }: ImportOverviewProps): ReactNode {
   if (rows.length === 0) {
     return (
@@ -35,7 +40,7 @@ export function ImportOverview({ rows, steps, library }: ImportOverviewProps): R
         {library.numberOfNotes > 0
           ? `You have ${formatCount(library.numberOfNotes)} ${pluralize(library.numberOfNotes, "note", "notes")} so far. `
           : ""}
-        Maybe add some more.
+        Import more notes.
       </p>
     );
   }
@@ -63,41 +68,40 @@ function OverviewTiles({
   summary: ImportSummary;
   library: ImportStatsState;
 }): ReactNode {
-  const { counts } = summary;
-  const inProgress = counts.uploading + counts.queued + counts.importing;
+  const { counts, total } = summary;
 
   return (
     <section aria-label="Import overview" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <StatTile
-        label="Notes in this import"
-        value={summary.total}
+        label="Uploaded"
+        value={summary.uploaded}
         detail={
-          counts.uploadFailed > 0
-            ? `${formatCount(counts.uploadFailed)} failed to upload`
-            : counts.uploading > 0
-              ? "Uploading files…"
-              : "Every file uploaded"
-        }
-      />
-      <StatTile
-        label="In progress"
-        value={inProgress}
-        detail={
-          counts.queued > 0
-            ? `${formatCount(counts.queued)} waiting in the queue`
-            : inProgress > 0
-              ? "Nothing waiting in the queue"
-              : "Queue is clear"
+          <div className="flex flex-col gap-1.5 pt-1">
+            <Progress value={percent(summary.uploaded, total)} aria-label="Upload progress" />
+            <span>
+              of {formatCount(total)} {pluralize(total, "note", "notes")}
+              {counts.uploadFailed > 0 ? ` · ${formatCount(counts.uploadFailed)} failed` : ""}
+            </span>
+          </div>
         }
       />
       <StatTile
         label="Imported"
-        value={counts.imported}
+        value={summary.imported}
         detail={
           <div className="flex flex-col gap-1.5 pt-1">
             <Progress value={summary.overallProgress} aria-label="Import progress" />
             <span>{summary.overallProgress}% of this import done</span>
           </div>
+        }
+      />
+      <StatTile
+        label="Needs a look"
+        value={summary.needsAttention}
+        detail={
+          summary.needsAttention > 0
+            ? "Use the “Needs a look” filter below"
+            : "No problems so far"
         }
       />
       <StatTile
@@ -110,39 +114,34 @@ function OverviewTiles({
 }
 
 function ImportStatusCard({ summary }: { summary: ImportSummary }): ReactNode {
-  const { counts } = summary;
-  const needsAttention = counts.needsAttention + counts.uploadFailed;
-  const inProgress = counts.uploading + counts.queued + counts.importing;
-
-  const description =
+  const { counts, total, imported, needsAttention } = summary;
+  const isFinished = imported + counts.uploadFailed === total;
+  const attention =
     needsAttention > 0
-      ? `${formatCount(needsAttention)} ${needsAttention === 1 ? "note needs" : "notes need"} a look`
-      : inProgress > 0
-        ? `${formatCount(counts.imported)} of ${formatCount(summary.total)} notes imported so far`
-        : "Every note imported cleanly";
+      ? `${formatCount(needsAttention)} ${needsAttention === 1 ? "needs" : "need"} a look`
+      : "";
 
+  const description = isFinished
+    ? attention
+      ? `Done · ${attention}`
+      : "Every note imported cleanly"
+    : `${formatCount(imported)} of ${formatCount(total)} imported (${formatPercent(imported, total)})${attention ? ` · ${attention}` : ""}`;
+
+  // Ordered so each boundary (imported, picked up, uploaded) only moves right
   return (
     <StatCard title="Import status" description={description}>
       <StackedBar
         label="Notes by import status"
         segments={[
-          { label: "Imported", count: counts.imported, colorClassName: "bg-primary-500" },
+          { label: "Imported", count: imported, colorClassName: "bg-primary-500" },
           { label: "Importing", count: counts.importing, colorClassName: "bg-secondary-400" },
+          { label: "In the queue", count: counts.queued, colorClassName: "bg-greyscale-400" },
           {
-            label: "Waiting",
-            count: counts.queued + counts.uploading,
-            colorClassName: "bg-greyscale-300",
+            label: "Not uploaded yet",
+            count: counts.notUploaded + counts.uploading,
+            colorClassName: "bg-greyscale-200",
           },
-          {
-            label: "Needs a look",
-            count: counts.needsAttention,
-            colorClassName: "bg-warning-400",
-          },
-          {
-            label: "Upload failed",
-            count: counts.uploadFailed,
-            colorClassName: "bg-error-500",
-          },
+          { label: "Upload failed", count: counts.uploadFailed, colorClassName: "bg-error-500" },
         ]}
       />
     </StatCard>
@@ -155,11 +154,7 @@ function PipelineCard({ steps }: { steps: ImportStepSummary[] }): ReactNode {
   return (
     <StatCard
       title="Pipeline"
-      description={
-        total > 0
-          ? `How far ${formatCount(total)} ${pluralize(total, "note has", "notes have")} made it through each step`
-          : "Steps will fill in once notes reach the queue"
-      }
+      description={`Notes through each step, out of ${formatCount(total)} in this import`}
     >
       <ol aria-label="Notes finished per step" className="grid gap-x-6 gap-y-2.5 sm:grid-cols-2">
         {steps.map((step) => (
@@ -172,8 +167,8 @@ function PipelineCard({ steps }: { steps: ImportStepSummary[] }): ReactNode {
             </div>
             <div className="h-1.5 w-full rounded-full bg-greyscale-100" aria-hidden="true">
               <div
-                className="h-full rounded-full bg-primary-400 transition-[width]"
-                style={{ width: `${step.total > 0 ? (step.completed / step.total) * 100 : 0}%` }}
+                className="h-full rounded-full bg-primary-400 transition-[width] duration-500 ease-out"
+                style={{ width: `${percent(step.completed, step.total)}%` }}
               />
             </div>
           </li>
@@ -181,6 +176,10 @@ function PipelineCard({ steps }: { steps: ImportStepSummary[] }): ReactNode {
       </ol>
     </StatCard>
   );
+}
+
+function percent(part: number, whole: number): number {
+  return whole > 0 ? (part / whole) * 100 : 0;
 }
 
 function pluralize(count: number, singular: string, plural: string): string {

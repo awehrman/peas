@@ -41,6 +41,8 @@ test.describe("Import page", () => {
   });
 
   test("loads without application errors in the console", async ({ page }) => {
+    // Leaving the dashboard cancels its in-flight requests, which WebKit reports as console errors from that page.
+    await page.goto("about:blank");
     const errors: string[] = [];
     page.on("console", (message) => {
       if (message.type() === "error") errors.push(message.text());

@@ -16,6 +16,7 @@ The Peas web app on TanStack Start, with a GraphQL API (Apollo Server 5, in `@pe
 - **Mutations** use `useMutationAction(Document, { variables, payload, result })`, which returns the `MutationAction` shape `@peas/features` components expect and sends each mutation's effect to the cache coordinator.
 - **Auth** uses TanStack server functions in `src/server/auth.functions.ts` (sign in, sign up, sign out, current viewer, queue token). The session cookie is the same one `apps/web` uses.
 - **UI** comes from `@peas/features` and `@peas/components`, unchanged. `RouterNavigationProvider` gives them TanStack Router navigation.
+- **Teach Peas** (admins only, enforced by the routes' `beforeLoad` and by the resolvers): `/teach` (review queue), `/teach/$discoveryId` (review card), `/teach/playground`, `/concepts`, and `/concepts/$id`. `src/lib/teach.ts` holds the shared actions (apply, defer, preview, concept search); decision payloads go to GraphQL as JSON and are validated on the server.
 
 ```text
 src/
@@ -68,8 +69,8 @@ The import page calls the queue from the browser, so the queue's `CORS_ALLOWED_O
 ```bash
 yarn workspace @peas/web typecheck
 yarn workspace @peas/web lint
-yarn workspace @peas/web test:run     # cache coordinator unit tests
+yarn workspace @peas/web test:run     # cache coordinator, search params, teach helpers
 TEST_DATABASE_URL=postgresql://<you>@localhost:5432/peas_test yarn workspace @peas/web test:e2e
 ```
 
-The end-to-end run starts its own dev server on port 3110 against `TEST_DATABASE_URL`, applies migrations, and seeds a user (`e2e@peas.test` / `peas-e2e-password`), a note, a recipe, and three ingredients. Suites cover auth, notes, recipes, ingredients, and import in Chromium and WebKit, with axe WCAG 2.1 AA scans. Install the browsers once with `npx playwright install chromium webkit`. `yarn workspace @peas/web test:coverage` reports unit coverage; see [testing](../../docs/testing.md) for every suite and the coverage floors.
+The end-to-end run starts its own dev server on port 3110 against `TEST_DATABASE_URL`, applies migrations, and seeds a user (`e2e@peas.test` / `peas-e2e-password`), a note, a recipe, three ingredients, and for Teach Peas a small ontology and a backfilled note. Suites cover auth, notes, recipes, ingredients, import, and Teach Peas (scenarios A, B, C, E and a keyboard-only review) in Chromium and WebKit, with axe WCAG 2.1 AA scans. Install the browsers once with `npx playwright install chromium webkit`. `yarn workspace @peas/web test:coverage` reports unit coverage; see [testing](../../docs/testing.md) for every suite and the coverage floors.

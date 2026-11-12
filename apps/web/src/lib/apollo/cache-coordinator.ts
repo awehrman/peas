@@ -36,6 +36,19 @@ export const DOMAIN_CACHE_KEYS: Readonly<
   INGREDIENT_DETAIL: { fields: ["ingredient"], types: ["Ingredient"] },
   IMPORT_STATS: { fields: ["importStats"], types: [] },
   DASHBOARD_STATS: { fields: ["dashboardStats"], types: [] },
+  DISCOVERIES: {
+    fields: ["discoveryQueue", "discoveryCounts", "discovery"],
+    types: ["Discovery"],
+  },
+  CONCEPTS: {
+    fields: ["concepts", "searchConcepts"],
+    types: ["ConceptSummary"],
+  },
+  CONCEPT_DETAIL: { fields: ["concept"], types: ["Concept"] },
+  MENTIONS: {
+    fields: ["mention", "playground", "previewDecision"],
+    types: ["Mention"],
+  },
 };
 
 export type JobState = NonNullable<JobStatusQuery["job"]>["status"] | "MISSING";
@@ -56,6 +69,8 @@ export interface CacheCoordinatorOptions {
 export interface CacheCoordinator {
   /** Reconciles the cache with a mutation's effect and resolves once affected active queries have refetched. */
   apply(effect: unknown): Promise<void>;
+  /** Refetches active queries in these domains while their cached data stays on screen; for data that background work changes without a mutation, such as import stats. */
+  refresh(domains: readonly InvalidationDomain[]): Promise<void>;
   /** The newest lexicon revision seen in any effect, or null before one arrives. */
   readonly lexiconRevision: number | null;
   /** Starts polling a background job (also done automatically for `reprocessingJobId`). */
@@ -226,6 +241,29 @@ export function createCacheCoordinator(
         return;
       }
       await reconcile(parsed.data);
+    },
+    async refresh(domains) {
+      const fieldNames = [
+        ...new Set(
+          domains.flatMap((domain) => DOMAIN_CACHE_KEYS[domain].fields)
+        ),
+      ];
+      if (fieldNames.length === 0) return;
+
+      // INVALIDATE marks the fields stale without removing them, so suspense queries keep rendering their data while the refetch runs
+      await client.refetchQueries({
+        updateCache: (cache) =>
+          cache.modify({
+            id: "ROOT_QUERY",
+            fields: Object.fromEntries(
+              fieldNames.map((fieldName) => [
+                fieldName,
+                (value: unknown, { INVALIDATE }: { INVALIDATE: unknown }) =>
+                  INVALIDATE,
+              ])
+            ),
+          }),
+      });
     },
     get lexiconRevision() {
       return lexiconRevision;

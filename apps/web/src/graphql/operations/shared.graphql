@@ -49,6 +49,9 @@ fragment IngredientBlockFields on IngredientBlock {
       rule
       ingredientId
     }
+    mentions {
+      ...MentionFields
+    }
   }
 }
 

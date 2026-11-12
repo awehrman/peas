@@ -1,0 +1,257 @@
+fragment TextSpanFields on TextSpan {
+  start
+  end
+  text
+}
+
+fragment ConceptRefFields on ConceptRef {
+  id
+  canonicalName
+  status
+}
+
+fragment ResolutionViewFields on ResolutionView {
+  status
+  conceptId
+  conceptName
+  attributes
+  preparations
+  candidateCount
+  score
+  text
+  highlights {
+    ...TextSpanFields
+  }
+}
+
+fragment SyntaxTokenFields on SyntaxToken {
+  span {
+    ...TextSpanFields
+  }
+  kind
+  roles
+  zone
+}
+
+fragment CandidateFields on ResolutionCandidateView {
+  conceptId
+  conceptName
+  score
+  reasons
+  attributes
+  preparations
+  modifiers
+}
+
+fragment MentionFields on Mention {
+  id
+  segmentIndex
+  rawText
+  status
+  concept {
+    ...ConceptRefFields
+  }
+  score
+  quantity
+  verified
+  lexiconRevision
+  summary {
+    ...ResolutionViewFields
+  }
+  tokens {
+    ...SyntaxTokenFields
+  }
+  candidates {
+    ...CandidateFields
+  }
+  unresolved {
+    ...TextSpanFields
+  }
+}
+
+fragment DiscoveryFields on Discovery {
+  id
+  type
+  key
+  status
+  priority
+  mentionCount
+  distinctNoteCount
+  title
+  payload
+  concepts {
+    ...ConceptRefFields
+  }
+  entries {
+    id
+    text
+    role
+    targetLabel
+    conceptId
+    attributeValueId
+  }
+}
+
+fragment DiscoveryExampleFields on DiscoveryExample {
+  mentionId
+  noteId
+  noteTitle
+  lineText
+  span {
+    ...TextSpanFields
+  }
+}
+
+query DiscoveryQueue($type: DiscoveryType, $cursor: ID) {
+  discoveryQueue(type: $type, cursor: $cursor) {
+    items {
+      ...DiscoveryFields
+    }
+    nextCursor
+  }
+  discoveryCounts {
+    type
+    count
+  }
+}
+
+# The card plus the ids around it, for previous/next.
+query DiscoveryReview($id: ID!) {
+  discovery(id: $id) {
+    ...DiscoveryFields
+    examples(limit: 5) {
+      ...DiscoveryExampleFields
+    }
+  }
+  vocabulary {
+    definitions {
+      id
+      key
+      name
+    }
+    attributeValues {
+      id
+      key
+      label
+      definitionId
+      definitionKey
+      definitionName
+    }
+    preparations {
+      id
+      key
+      label
+    }
+    degreeKeys
+    measurementModifierKeys
+    instructionKeys
+  }
+  discoveryQueue(limit: 100) {
+    items {
+      id
+    }
+  }
+}
+
+query DiscoveryExamples($id: ID!, $limit: Int, $offset: Int) {
+  discovery(id: $id) {
+    id
+    examples(limit: $limit, offset: $offset) {
+      ...DiscoveryExampleFields
+    }
+  }
+}
+
+query PreviewDecision($payload: JSON!) {
+  previewDecision(payload: $payload) {
+    revision
+    truncated
+    counts {
+      scanned
+      affected
+      newlyResolved
+      conceptChanged
+      attributesChanged
+      becameAmbiguous
+      becameUnresolved
+      verifiedConflicts
+    }
+    examples {
+      mentionId
+      noteId
+      noteTitle
+      lineText
+      verifiedConflict
+      before {
+        ...ResolutionViewFields
+      }
+      after {
+        ...ResolutionViewFields
+      }
+    }
+  }
+}
+
+query Playground($line: String!, $mode: ParseMode) {
+  playground(line: $line, mode: $mode) {
+    line
+    revision
+    mode
+    syntax
+    alternativeCount
+    mentions {
+      segmentIndex
+      partIndex
+      span {
+        ...TextSpanFields
+      }
+      status
+      quantity
+      tokens {
+        ...SyntaxTokenFields
+      }
+      candidates {
+        ...CandidateFields
+      }
+      unresolved {
+        ...TextSpanFields
+      }
+      summary {
+        ...ResolutionViewFields
+      }
+    }
+  }
+}
+
+query SearchConcepts($query: String!) {
+  searchConcepts(query: $query) {
+    ...ConceptRefFields
+  }
+}
+
+mutation ApplyDecision($input: ApplyDecisionInput!) {
+  applyDecision(input: $input) {
+    ...PayloadFields
+    decisionId
+    revision
+    summary
+    mentionsUpdated
+    needsBackgroundReinterpret
+    reinterpretCommand
+  }
+}
+
+mutation DeferDiscovery($id: ID!) {
+  deferDiscovery(id: $id) {
+    ...PayloadFields
+  }
+}
+
+mutation RefreshDiscoveries {
+  refreshDiscoveries {
+    ...PayloadFields
+    identityUpdated
+    modifiersUpdated
+    relationshipSuggestions
+  }
+}

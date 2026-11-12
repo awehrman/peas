@@ -199,7 +199,12 @@ export const INSTRUCTION_KEYS = [
   "for_serving",
   "plus_more",
   "reserved",
+  "noise",
 ] as const;
+
+/** INSTRUCTION value key for words a reviewer chose to ignore ("good-quality"): the resolver counts them as explained and leaves them out of the result. */
+export const NOISE_VALUE_KEY =
+  "noise" satisfies (typeof INSTRUCTION_KEYS)[number];
 
 export type DegreeKey = (typeof DEGREE_KEYS)[number];
 export type MeasurementModifierKey = (typeof MEASUREMENT_MODIFIER_KEYS)[number];

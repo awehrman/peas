@@ -8,6 +8,33 @@ import type { UploadAction, UploadState } from "../../../types/import-types";
 import { defaultUploadState, uploadReducer } from "../upload-reducer";
 
 describe("uploadReducer", () => {
+  describe("QUEUE_BATCHES", () => {
+    it("lists notes before they upload, then moves each one into the current batch", () => {
+      const queued = uploadReducer(defaultUploadState, {
+        type: "QUEUE_BATCHES",
+        batches: [
+          createMockUploadBatch({ importId: "a", directoryName: "Venison stew", files: [] }),
+          createMockUploadBatch({ importId: "b", directoryName: "Cornbread", files: [] }),
+        ],
+      });
+
+      const started = uploadReducer(queued, {
+        type: "START_BATCH",
+        importId: "a",
+        createdAt: "2023-01-01T00:00:00.000Z",
+        numberOfFiles: 2,
+      });
+      const completed = uploadReducer(started, {
+        type: "COMPLETE_BATCH",
+        successMessage: "Uploaded",
+      });
+
+      expect(started.pendingBatches.map((batch) => batch.importId)).toEqual(["b"]);
+      expect(started.currentBatch).toMatchObject({ importId: "a", directoryName: "Venison stew" });
+      expect(completed.pendingBatches.map((batch) => batch.importId)).toEqual(["b"]);
+    });
+  });
+
   describe("START_BATCH", () => {
     it("should start a new batch with provided details", () => {
       const action: UploadAction = {
@@ -20,6 +47,7 @@ describe("uploadReducer", () => {
       const result = uploadReducer(defaultUploadState, action);
 
       expect(result).toEqual({
+        pendingBatches: [],
         previousBatches: [],
         currentBatch: {
           importId: "test-import-1",
@@ -32,6 +60,7 @@ describe("uploadReducer", () => {
 
     it("should replace existing current batch when starting new one", () => {
       const initialState: UploadState = {
+        pendingBatches: [],
         previousBatches: [],
         currentBatch: createMockUploadBatch({ importId: "old-batch" }),
       };
@@ -60,6 +89,7 @@ describe("uploadReducer", () => {
         files: [createMockFileUploadItem({ id: "existing-file" })],
       });
       const initialState: UploadState = {
+        pendingBatches: [],
         previousBatches: [],
         currentBatch,
       };
@@ -113,6 +143,7 @@ describe("uploadReducer", () => {
       ];
       const currentBatch = createMockUploadBatch({ files });
       const initialState: UploadState = {
+        pendingBatches: [],
         previousBatches: [],
         currentBatch,
       };
@@ -138,6 +169,7 @@ describe("uploadReducer", () => {
       const files = [createMockFileUploadItem({ id: "file-1" })];
       const currentBatch = createMockUploadBatch({ files });
       const initialState: UploadState = {
+        pendingBatches: [],
         previousBatches: [],
         currentBatch,
       };
@@ -175,6 +207,7 @@ describe("uploadReducer", () => {
       const files = [createMockFileUploadItem({ id: "file-1" })];
       const currentBatch = createMockUploadBatch({ files });
       const initialState: UploadState = {
+        pendingBatches: [],
         previousBatches: [],
         currentBatch,
       };
@@ -204,6 +237,7 @@ describe("uploadReducer", () => {
       ];
       const currentBatch = createMockUploadBatch({ files });
       const initialState: UploadState = {
+        pendingBatches: [],
         previousBatches: [],
         currentBatch,
       };
@@ -240,6 +274,7 @@ describe("uploadReducer", () => {
       ];
       const currentBatch = createMockUploadBatch({ files });
       const initialState: UploadState = {
+        pendingBatches: [],
         previousBatches: [],
         currentBatch,
       };
@@ -276,6 +311,7 @@ describe("uploadReducer", () => {
         files,
       });
       const initialState: UploadState = {
+        pendingBatches: [],
         previousBatches: [],
         currentBatch,
       };
@@ -302,6 +338,7 @@ describe("uploadReducer", () => {
         files: [createMockFileUploadItem()],
       });
       const initialState: UploadState = {
+        pendingBatches: [],
         previousBatches: [],
         currentBatch,
       };
@@ -326,6 +363,7 @@ describe("uploadReducer", () => {
         importId: "different-import-id",
       });
       const initialState: UploadState = {
+        pendingBatches: [],
         previousBatches: [],
         currentBatch,
       };
@@ -400,6 +438,7 @@ describe("uploadReducer", () => {
     it("should move current batch to previous batches with error message", () => {
       const currentBatch = createMockUploadBatch();
       const initialState: UploadState = {
+        pendingBatches: [],
         previousBatches: [],
         currentBatch,
       };
@@ -488,6 +527,7 @@ describe("uploadReducer", () => {
   describe("defaultUploadState", () => {
     it("should have correct initial state", () => {
       expect(defaultUploadState).toEqual({
+        pendingBatches: [],
         previousBatches: [],
         currentBatch: undefined,
       });

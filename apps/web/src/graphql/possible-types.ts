@@ -1,11 +1,13 @@
 export type PossibleTypesResultData = {
   "possibleTypes": {
     "MutationPayload": [
+      "ApplyDecisionPayload",
       "BasicPayload",
       "CleanupAllDataPayload",
       "CreateIngredientPayload",
       "PromoteCompletedNotesPayload",
       "PromoteNotePayload",
+      "RefreshDiscoveriesPayload",
       "SaveIngredientPayload",
       "SetLineReviewStatusPayload"
     ]
@@ -14,11 +16,13 @@ export type PossibleTypesResultData = {
 const result: PossibleTypesResultData = {
   "possibleTypes": {
     "MutationPayload": [
+      "ApplyDecisionPayload",
       "BasicPayload",
       "CleanupAllDataPayload",
       "CreateIngredientPayload",
       "PromoteCompletedNotesPayload",
       "PromoteNotePayload",
+      "RefreshDiscoveriesPayload",
       "SaveIngredientPayload",
       "SetLineReviewStatusPayload"
     ]

@@ -15,6 +15,7 @@ const config: CodegenConfig = {
         enumType: "string-literal",
         nonOptionalTypename: true,
         skipTypeNameForRoot: true,
+        scalars: { JSON: "unknown" },
       },
     },
     // Apollo needs every interface's implementations to match fragments such as `PayloadFields on MutationPayload`.

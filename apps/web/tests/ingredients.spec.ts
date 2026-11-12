@@ -63,7 +63,7 @@ test.describe("Ingredients", () => {
     ).toBeVisible();
   });
 
-  test("marking an ingredient reviewed updates the needs-review count", async ({
+  test("saving an ingredient marks it reviewed and updates the needs-review count", async ({
     page,
   }) => {
     const ingredient =
@@ -85,11 +85,9 @@ test.describe("Ingredients", () => {
     );
     await expect(card.getByRole("group", { name: "Properties" })).toBeVisible();
 
-    await card.getByRole("button", { name: "Mark reviewed" }).click();
+    await card.getByRole("button", { name: "Save", exact: true }).click();
     await expect(needsReview).toContainText(`(${before - 1})`);
-    await expect(
-      card.getByRole("button", { name: "Mark reviewed" })
-    ).toHaveCount(0);
+    await expect(card.getByText("Reviewed", { exact: true })).toBeVisible();
   });
 
   test("has no WCAG 2.1 AA violations on desktop and mobile", async ({

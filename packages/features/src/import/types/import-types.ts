@@ -21,6 +21,8 @@ export interface UploadBatch {
 }
 
 export interface UploadState {
+  /** Notes from the current selection that have not started uploading yet */
+  pendingBatches: UploadBatch[];
   currentBatch?: UploadBatch;
   previousBatches: UploadBatch[];
 }
@@ -111,6 +113,7 @@ export interface ImportState {
 
 // Action types
 export type UploadAction =
+  | { type: "QUEUE_BATCHES"; batches: UploadBatch[] }
   | {
       type: "START_BATCH";
       importId: string;

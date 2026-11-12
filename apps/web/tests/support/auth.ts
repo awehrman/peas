@@ -19,11 +19,13 @@ export async function signIn(page: Page): Promise<void> {
   await visit(page, "/login");
   await page.getByRole("textbox", { name: "Email" }).fill(E2E_USER.email);
   await page.getByLabel("Password").fill(E2E_USER.password);
-  await page.getByRole("button", { name: "Sign In" }).click();
+  await page.getByLabel("Password").press("Enter");
   await expect(page).toHaveURL("/");
   await expect(
     page.getByRole("heading", { name: "Dashboard", level: 1 })
   ).toBeVisible();
+  // WebKit logs requests cancelled by the next navigation as console errors, which tests that watch the console would count.
+  await page.waitForLoadState("networkidle");
 }
 
 /**

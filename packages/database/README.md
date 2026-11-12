@@ -87,7 +87,12 @@ parseLineBest("1 lb chicken thighs", { lexicon }); // [1 lb] {chicken thighs:FOO
 | `discoveries.ts` | `upsertDiscoveries` (counts and priority from evidence), `getDiscoveryQueue` (cursor paging), `getDiscoveryDetail` |
 | `decisions.ts` | `recordDecision` (own revision; closes the discovery) |
 | `legacy-mapping.ts` | `upsertLegacyMapping`, `getLegacyMapping` |
-| `resolver-context.ts` | `loadResolverSnapshot` (everything the resolver needs as one JSON-safe `ResolverSnapshot`: ACTIVE and PROPOSED entries with targets, vocabulary, concepts, relationships, applicability, concept attributes, verified-choice priors, revision) |
+| `apply-decision.ts` | `applyDecision` / `applyDecisionInTransaction` (one transaction, one revision; effects recorded for REVERT), `deferDiscovery` |
+| `merge.ts` | `mergeConcepts` (moves every reference to the survivor; aborts with `MergeConflictError` on contradicting classifications), `undoMerge` |
+| `preview.ts` | `previewDecision` (before/after impact without side effects), `findAffectedMentions` (decision D20 prefilter), `reinterpretAffected` (up to 1,000 lines in the request) |
+| `backfill.ts` | `processLines` (mentions plus grouped discoveries for a batch), `backfillMentions` (resumable by checkpoint), `mentionInputsFor`, `getCorpusCoverage` |
+| `adjacency.ts` | `computeAdjacency` (words right before each head concept, per distinct note), `refreshDiscoveries` |
+| `resolver-context.ts` | `loadResolverContext` (snapshot plus `buildResolverContext`) and `loadResolverSnapshot` (everything the resolver needs as one JSON-safe `ResolverSnapshot`: ACTIVE and PROPOSED entries with targets, vocabulary, concepts, relationships, applicability, concept attributes, verified-choice priors, revision) |
 | `helpers.ts` | `computeTargetKey`, `slugify`, `uuidv7`, `isUniqueViolation`, `OntologyError` |
 
 The resolver runs on a snapshot, so a new verified entry takes effect on the next load with no grammar change:
@@ -111,6 +116,21 @@ Run in this order; each is idempotent and bumps the lexicon revision only when i
 | `db:seed:legacy [--batch 200] [--dry-run]` | Legacy `Ingredient` rows to concepts in three passes, keyed by `LegacyIngredientMapping` so it resumes where it stopped. Pass 1: one- or two-word or reviewed names become concepts with CANONICAL, PLURAL, and ALIAS entries (ACTIVE if reviewed, else PROPOSED). Pass 2: longer names go through the resolver; modifier-composed names ("finely chopped parsley") map to the head concept for review, attribute-composed names ("boneless skinless chicken thigh") become proposed concepts plus an IDENTITY_DECISION discovery, and anything else becomes a proposed concept. Pass 3: parents become RELATIONSHIP_SUGGESTION discoveries (never relationships), properties become LEGACY classifications through `LEGACY_PROPERTY_CLASSIFICATIONS`, categories become CATEGORY classifications, and tags, substitutions, brands (as products), and composed flags carry over onto concepts created from that ingredient. `--dry-run` runs everything in one transaction and rolls it back. |
 
 `db:evaluate:resolution [--limit 5000] [--export-snapshot path]` writes a read-only resolution report over stored lines to `packages/parser/fixtures/reports/resolution.db.md`.
+
+### Teaching Peas
+
+A reviewed decision goes through `applyDecision`, then `reinterpretAffected` rewrites the mentions it touches. `previewDecision` answers "what would change?" first, without writing anything:
+
+```ts
+import { applyDecision, previewDecision, reinterpretAffected } from "@peas/database";
+
+const payload = { type: "MAP_TO_CONCEPT", phrase: "icing sugar", conceptId: powderedSugarId, kind: "ALIAS" };
+const preview = await previewDecision(payload); // { counts: { affected: 12, newlyResolved: 12, ... }, examples: [...] }
+const applied = await applyDecision({ payload, userId, discoveryId }); // { revision: 15, effects: { created: [<entry>], ... } }
+await reinterpretAffected(applied.payload); // { linesReprocessed: 12, mentionsChanged: 12, needsBackgroundReinterpret: false }
+```
+
+The queue scripts `backfill:mentions` and `reinterpret` page through lines with `backfillMentions`; upserting a mention whose stored content is unchanged writes nothing, so repeated runs are no-ops.
 
 Every JSON column (`syntax`, `quantity`, `resolution`, discovery and decision payloads, decision effects) is validated with its Zod schema from `@peas/parser/v2` on write and on read.
 

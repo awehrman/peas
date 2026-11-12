@@ -14,11 +14,11 @@ import type {
 } from "../types/import-types";
 
 export type ImportRowStatus =
+  | "notUploaded"
   | "uploading"
   | "uploadFailed"
   | "queued"
   | "importing"
-  | "needsAttention"
   | "imported";
 
 export type ImportRowStepState = "done" | "active" | "error" | "pending";
@@ -34,6 +34,9 @@ export interface ImportRow {
   id: string;
   title: string;
   status: ImportRowStatus;
+  /** A step reported an error; stays set so problems don't flicker away */
+  hasIssues: boolean;
+  /** 0-100, only ever increases */
   progress: number;
   /** What is happening to the note right now, e.g. "Parsing ingredients · 12 of 20" */
   activity: string;
@@ -44,10 +47,21 @@ export interface ImportRow {
   steps: ImportRowStep[];
 }
 
+/**
+ * Totals for the import. `total`, `uploaded`, `started`, `imported` and
+ * `needsAttention` only grow while an import runs, so they make calm
+ * headline numbers; per-status counts like `importing` go up and down.
+ */
 export interface ImportSummary {
   total: number;
   counts: Record<ImportRowStatus, number>;
-  /** Average progress across notes that are still expected to finish */
+  /** Uploaded successfully, whatever happened next */
+  uploaded: number;
+  /** Notes the queue has picked up */
+  started: number;
+  imported: number;
+  needsAttention: number;
+  /** Combined progress out of every note expected to finish */
   overallProgress: number;
 }
 
@@ -57,16 +71,6 @@ export interface ImportStepSummary {
   completed: number;
   total: number;
 }
-
-/** Lower sorts first: problems, then active work, then waiting, then done. */
-const STATUS_ORDER: Record<ImportRowStatus, number> = {
-  needsAttention: 0,
-  uploadFailed: 0,
-  importing: 1,
-  uploading: 2,
-  queued: 3,
-  imported: 4,
-};
 
 const STEP_SUMMARY_LABELS: Record<ImportStepKey, string> = {
   uploaded: "Uploaded",
@@ -81,70 +85,115 @@ const STEP_SUMMARY_LABELS: Record<ImportStepKey, string> = {
   checkDuplicates: "Duplicate check",
 };
 
+interface RowInputs {
+  batch: UploadBatch | undefined;
+  card: ImportCard | undefined;
+  isUploading: boolean;
+  isPending: boolean;
+}
+
+type ImportRowBuilder = (uploads: UploadState, activity: ActivityState) => ImportRow[];
+
 /**
  * Merges upload batches and queue cards (both keyed by importId) into one
- * row per note, ordered so problems and active notes come first.
+ * row per note, in upload order so rows never move while they update.
  */
 export function buildImportRows(
   uploads: UploadState,
   activity: ActivityState
 ): ImportRow[] {
-  const batches = uploads.currentBatch
-    ? [...uploads.previousBatches, uploads.currentBatch]
-    : uploads.previousBatches;
-  const batchesById = new Map(batches.map((batch) => [batch.importId, batch]));
-  const orderedIds = [
-    ...new Set([...batches.map((batch) => batch.importId), ...activity.cardIds]),
-  ];
+  return createImportRowBuilder()(uploads, activity);
+}
 
-  const rows = orderedIds.map((id) =>
-    buildRow(
-      id,
-      batchesById.get(id),
-      activity.cardsById[id],
-      id === uploads.currentBatch?.importId
-    )
-  );
+/**
+ * Like buildImportRows, but remembers each note's inputs and returns the
+ * same row object while they are unchanged. The reducers keep untouched
+ * batches and cards identical, so a frame of queue events rebuilds only the
+ * handful of notes it touched and memoized rows skip rendering.
+ */
+export function createImportRowBuilder(): ImportRowBuilder {
+  let cache = new Map<string, RowInputs & { row: ImportRow }>();
 
-  return rows
-    .map((row, index) => ({ row, index }))
-    .sort(
-      (a, b) =>
-        STATUS_ORDER[a.row.status] - STATUS_ORDER[b.row.status] ||
-        a.index - b.index
-    )
-    .map(({ row }) => row);
+  return (uploads, activity) => {
+    const batches = [
+      ...uploads.previousBatches,
+      ...(uploads.currentBatch ? [uploads.currentBatch] : []),
+      ...uploads.pendingBatches,
+    ];
+    const batchesById = new Map(batches.map((batch) => [batch.importId, batch]));
+    const pendingIds = new Set(uploads.pendingBatches.map((batch) => batch.importId));
+    const orderedIds = [
+      ...new Set([...batches.map((batch) => batch.importId), ...activity.cardIds]),
+    ];
+    const nextCache = new Map<string, RowInputs & { row: ImportRow }>();
+
+    const rows = orderedIds.map((id) => {
+      const inputs: RowInputs = {
+        batch: batchesById.get(id),
+        card: activity.cardsById[id],
+        isUploading: id === uploads.currentBatch?.importId,
+        isPending: pendingIds.has(id),
+      };
+      const cached = cache.get(id);
+      const row =
+        cached &&
+        cached.batch === inputs.batch &&
+        cached.card === inputs.card &&
+        cached.isUploading === inputs.isUploading &&
+        cached.isPending === inputs.isPending
+          ? cached.row
+          : buildRow(id, inputs);
+      nextCache.set(id, { ...inputs, row });
+      return row;
+    });
+
+    cache = nextCache;
+    return rows;
+  };
 }
 
 export function summarizeImportRows(rows: ImportRow[]): ImportSummary {
   const counts: Record<ImportRowStatus, number> = {
+    notUploaded: 0,
     uploading: 0,
     uploadFailed: 0,
     queued: 0,
     importing: 0,
-    needsAttention: 0,
     imported: 0,
   };
   let progressTotal = 0;
+  let withIssues = 0;
 
   for (const row of rows) {
     counts[row.status] += 1;
-    if (row.status !== "uploadFailed") progressTotal += row.progress;
+    progressTotal += row.progress;
+    if (row.hasIssues) withIssues += 1;
   }
 
   const expected = rows.length - counts.uploadFailed;
   return {
     total: rows.length,
     counts,
-    overallProgress: expected > 0 ? Math.round(progressTotal / expected) : 0,
+    uploaded: counts.queued + counts.importing + counts.imported,
+    started: counts.importing + counts.imported,
+    imported: counts.imported,
+    needsAttention: counts.uploadFailed + withIssues,
+    overallProgress: expected > 0 ? Math.floor(progressTotal / expected) : 0,
   };
 }
 
-/** How many notes have finished each pipeline step after the upload. */
-export function summarizeSteps(activity: ActivityState): ImportStepSummary[] {
+/**
+ * How many notes have finished each pipeline step after the upload, out of
+ * every note expected to finish, so the bars only grow.
+ */
+export function summarizeSteps(
+  activity: ActivityState,
+  expectedTotal: number
+): ImportStepSummary[] {
   const cards = activity.cardIds
     .map((id) => activity.cardsById[id])
     .filter((card): card is ImportCard => card !== undefined);
+  const total = Math.max(expectedTotal, cards.length);
 
   return IMPORT_STEP_ORDER.filter((key) => key !== "uploaded").map((key) => ({
     key,
@@ -152,7 +201,7 @@ export function summarizeSteps(activity: ActivityState): ImportStepSummary[] {
     completed: cards.filter(
       (card) => card.isComplete || card.status[key].completed
     ).length,
-    total: cards.length,
+    total,
   }));
 }
 
@@ -169,16 +218,10 @@ export function formatSource(source: string): { label: string; href?: string } {
   return { label: source };
 }
 
-function buildRow(
-  id: string,
-  batch: UploadBatch | undefined,
-  card: ImportCard | undefined,
-  isUploading: boolean
-): ImportRow {
-  const title = card?.title ?? batch?.directoryName ?? "Untitled note";
+function buildRow(id: string, { batch, card, isUploading, isPending }: RowInputs): ImportRow {
   const base = {
     id,
-    title,
+    title: card?.title ?? batch?.directoryName ?? "Untitled note",
     thumbnailUrl: card?.thumbnailUrl,
     source: card?.source,
     noteId: card?.noteId,
@@ -188,6 +231,7 @@ function buildRow(
     return {
       ...base,
       status: "uploadFailed",
+      hasIssues: false,
       progress: 0,
       activity: "Upload failed",
       errorMessage: batch.errorMessage,
@@ -196,41 +240,34 @@ function buildRow(
   }
 
   if (!card) {
+    const fileCount = batch?.numberOfFiles ?? 1;
     return {
       ...base,
-      status: isUploading ? "uploading" : "queued",
+      status: isUploading ? "uploading" : isPending ? "notUploaded" : "queued",
+      hasIssues: false,
       progress: 0,
       activity: isUploading
-        ? `Uploading ${batch?.numberOfFiles ?? 1} ${batch?.numberOfFiles === 1 ? "file" : "files"}`
-        : "Waiting in the queue",
-      steps: buildSteps(undefined, isUploading ? "active" : "done"),
+        ? `Uploading ${fileCount} ${fileCount === 1 ? "file" : "files"}`
+        : isPending
+          ? "Waiting to upload"
+          : "Waiting in the queue",
+      steps: buildSteps(undefined, isUploading ? "active" : isPending ? "pending" : "done"),
     };
-  }
-
-  const steps = buildSteps(card, "done");
-
-  if (card.isComplete) {
-    return { ...base, status: "imported", progress: 100, activity: "Imported", steps };
   }
 
   const failedStep = IMPORT_STEP_ORDER.find((key) => card.status[key].hasError);
-  if (failedStep) {
-    return {
-      ...base,
-      status: "needsAttention",
-      progress: calculateCardProgress(card),
-      activity: `${getStepLabel(failedStep)} failed`,
-      errorMessage: card.status[failedStep].errorMessage,
-      steps,
-    };
-  }
-
   return {
     ...base,
-    status: "importing",
+    status: card.isComplete ? "imported" : "importing",
+    hasIssues: failedStep !== undefined,
     progress: calculateCardProgress(card),
-    activity: describeCurrentStep(card),
-    steps,
+    activity: card.isComplete
+      ? failedStep
+        ? `Imported · ${getStepLabel(failedStep).toLowerCase()} had errors`
+        : "Imported"
+      : describeCurrentStep(card),
+    errorMessage: failedStep ? card.status[failedStep].errorMessage : undefined,
+    steps: buildSteps(card, "done"),
   };
 }
 

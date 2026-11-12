@@ -27,6 +27,7 @@
     "@oslojs/crypto": "^1.0.1",
     "@oslojs/encoding": "^1.1.0",
     "@peas/database": "*",
+    "@peas/parser": "*",
     "@peas/pea-svg-generator": "*",
     "graphql": "^16.15.0",
     "zod": "^4.6.7"

@@ -72,7 +72,11 @@ export const ingredientSaveSchema = z
     plural: pluralSchema,
     properties: z.array(z.enum(PROPERTY_VALUES)),
     isComposedIngredient: z.boolean(),
-    parentIngredientId: z.string().min(1).nullish().transform((v) => v ?? null),
+    parentIngredientId: z
+      .string()
+      .min(1)
+      .nullish()
+      .transform((v) => v ?? null),
     substitutionIds: z.array(z.string().min(1)),
     aliases: z.array(z.string().trim().min(1).max(200)),
     category: z

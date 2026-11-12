@@ -7,8 +7,9 @@ test.describe("Authentication", () => {
   test("sends signed-out visitors to the login page", async ({ page }) => {
     await page.goto("/notes");
     await expect(page).toHaveURL("/login");
+    await expect(page.getByRole("textbox", { name: "Email" })).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "Sign in", level: 1 })
+      page.getByRole("button", { name: "Eat the Peas" })
     ).toBeVisible();
   });
 
@@ -18,7 +19,7 @@ test.describe("Authentication", () => {
     await visit(page, "/login");
     await page.getByRole("textbox", { name: "Email" }).fill(E2E_USER.email);
     await page.getByLabel("Password").fill("wrong-password");
-    await page.getByRole("button", { name: "Sign In" }).click();
+    await page.getByRole("button", { name: "Eat the Peas" }).click();
     await expect(page.getByRole("alert")).toHaveText(
       "Incorrect email or password"
     );

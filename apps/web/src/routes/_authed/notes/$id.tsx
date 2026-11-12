@@ -5,6 +5,7 @@ import {
   SetLineReviewStatusDocument,
 } from "~/graphql/generated";
 import { useMutationAction } from "~/lib/apollo/cache-coordinator-provider";
+import { useTeachActions } from "~/lib/teach";
 
 import { useReadQuery } from "@apollo/client/react";
 import { type LineReviewStatus, NoteDetailPageContent } from "@peas/features";
@@ -23,6 +24,8 @@ export const Route = createFileRoute("/_authed/notes/$id")({
 function NoteDetailPage() {
   const { queryRef } = Route.useLoaderData();
   const { data } = useReadQuery(queryRef);
+  const { viewer } = Route.useRouteContext();
+  const { onApplyDecision, onSearchConcepts } = useTeachActions();
 
   // The payload returns the refreshed note, so this view (and any other view of the note) updates from the cache.
   const onSetReviewStatus = useMutationAction(SetLineReviewStatusDocument, {
@@ -47,6 +50,8 @@ function NoteDetailPage() {
       note={data.note}
       onSetReviewStatus={onSetReviewStatus}
       onPromoteToRecipe={onPromoteToRecipe}
+      onCorrectMention={viewer.isAdmin ? onApplyDecision : undefined}
+      onSearchConcepts={viewer.isAdmin ? onSearchConcepts : undefined}
     />
   );
 }

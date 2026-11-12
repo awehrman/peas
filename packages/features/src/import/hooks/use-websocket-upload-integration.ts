@@ -15,7 +15,7 @@ export const STATS_REFRESH_INTERVAL_MS = 2000;
  * refresh the counts.
  */
 export function useWebSocketUploadIntegration(
-  onStatsRefresh?: () => Promise<ImportStatsState>
+  onStatsRefresh?: () => Promise<ImportStatsState | void>
 ) {
   const { dispatch: statsDispatch } = useStats();
 
@@ -46,12 +46,9 @@ export function useWebSocketUploadIntegration(
     lastRefreshAt.current = Date.now();
 
     try {
+      // Apps that keep the stats in their own cache refresh it and return nothing
       const newStats = await onStatsRefresh();
-
-      statsDispatch({
-        type: "REFRESH_STATS",
-        stats: newStats,
-      });
+      if (newStats) statsDispatch({ type: "REFRESH_STATS", stats: newStats });
     } catch (error) {
       console.error("Failed to refresh stats:", error);
       // The stats keep their last known good state

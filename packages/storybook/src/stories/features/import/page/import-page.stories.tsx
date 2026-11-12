@@ -93,6 +93,7 @@ function buildScenario(stages: Stage[]): { uploads: UploadState; activity: Activ
 
   return {
     uploads: {
+      pendingBatches: [],
       previousBatches: stages.map((_, index) => ({
         importId: `import-${index}`,
         createdAt: new Date().toISOString(),
@@ -139,7 +140,7 @@ function ImportPageStory({ scenario }: ImportPageStoryProps) {
     <ImportProvider onStatsRefresh={async () => LIBRARY}>
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 p-8">
         <ImportFileUpload />
-        <ImportOverview rows={rows} steps={summarizeSteps(activity)} library={LIBRARY} />
+        <ImportOverview rows={rows} steps={summarizeSteps(activity, rows.length)} library={LIBRARY} />
       </div>
     </ImportProvider>
   );

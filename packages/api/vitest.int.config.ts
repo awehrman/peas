@@ -20,7 +20,7 @@ export default defineConfig({
       include: ["src/**/*.ts"],
       exclude: ["src/**/__tests__/**", "src/generated/**"],
       // Ratchet: the floor of the last measured coverage with TEST_DATABASE_URL (12 November 2026); raise it as coverage grows
-      thresholds: { statements: 86, branches: 77, functions: 90, lines: 87 },
+      thresholds: { statements: 90, branches: 80, functions: 94, lines: 91 },
     },
   },
 });

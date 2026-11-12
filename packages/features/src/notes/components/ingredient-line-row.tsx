@@ -7,10 +7,16 @@ import { Check, X } from "lucide-react";
 
 import { ParsedLine } from "../../parsed-line";
 import { type MutationAction, useMutation } from "../../shared";
+import {
+  type MentionCorrectionActions,
+  MentionPanel,
+} from "../../teach/mention-panel";
 import type { LineReviewStatus, NoteIngredientLine } from "../types";
 
-export interface IngredientLineActions {
-  onSetReviewStatus?: MutationAction<[lineId: string, status: LineReviewStatus]>;
+export interface IngredientLineActions extends MentionCorrectionActions {
+  onSetReviewStatus?: MutationAction<
+    [lineId: string, status: LineReviewStatus]
+  >;
 }
 
 interface IngredientLineRowProps extends IngredientLineActions {
@@ -28,6 +34,8 @@ export function IngredientLineRow({
   line,
   getIngredientHref,
   onSetReviewStatus,
+  onCorrectMention,
+  onSearchConcepts,
 }: IngredientLineRowProps): ReactNode {
   const review = useMutation(onSetReviewStatus);
 
@@ -59,7 +67,9 @@ export function IngredientLineRow({
               <Button
                 type="button"
                 size="icon"
-                variant={line.reviewStatus === "CORRECT" ? "secondary" : "ghost"}
+                variant={
+                  line.reviewStatus === "CORRECT" ? "secondary" : "ghost"
+                }
                 aria-label={`Mark "${line.reference}" as parsed correctly`}
                 aria-pressed={line.reviewStatus === "CORRECT"}
                 disabled={review.isPending}
@@ -71,7 +81,9 @@ export function IngredientLineRow({
               <Button
                 type="button"
                 size="icon"
-                variant={line.reviewStatus === "INCORRECT" ? "secondary" : "ghost"}
+                variant={
+                  line.reviewStatus === "INCORRECT" ? "secondary" : "ghost"
+                }
                 aria-label={`Mark "${line.reference}" as parsed incorrectly`}
                 aria-pressed={line.reviewStatus === "INCORRECT"}
                 disabled={review.isPending}
@@ -84,6 +96,14 @@ export function IngredientLineRow({
           ) : null}
         </div>
       </div>
+      {line.mentions?.length ? (
+        <MentionPanel
+          lineText={line.reference}
+          mentions={line.mentions}
+          onCorrectMention={onCorrectMention}
+          onSearchConcepts={onSearchConcepts}
+        />
+      ) : null}
       {review.error ? (
         <p role="alert" className="text-xs text-error-700">
           {review.error}

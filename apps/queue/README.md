@@ -183,6 +183,18 @@ yarn start
 NODE_OPTIONS="--expose-gc" yarn start
 ```
 
+### v2 mention scripts
+
+```bash
+# Resolve every active ingredient line with the v2 parser and write mentions and discoveries (idempotent; resume with --after <lineId>)
+yarn workspace @peas/queue backfill:mentions [--after <parsedLineId>] [--batch 500] [--mode CONSERVATIVE]
+
+# Re-resolve lines whose mentions predate a lexicon revision, e.g. after a Teach Peas decision affected more than 1,000 lines
+yarn workspace @peas/queue reinterpret --revision <r> [--decision <decisionId>] [--batch 500]
+```
+
+Both scripts share `backfillMentions` in `@peas/database`, never write legacy tables, and leave verified mentions alone.
+
 ### API Endpoints
 
 #### File Import

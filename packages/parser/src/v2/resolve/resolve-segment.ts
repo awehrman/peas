@@ -19,6 +19,7 @@ import type {
 } from "../ast/types.js";
 import type { LexiconEntryInput } from "../lexicon/types.js";
 import { normalizeText } from "../normalize/normalize-text.js";
+import { NOISE_VALUE_KEY } from "../ontology/vocabulary.js";
 
 export type MentionStatus = "AUTO_RESOLVED" | "NEEDS_REVIEW" | "UNRESOLVED";
 
@@ -48,7 +49,7 @@ interface ZonedItem {
 }
 
 /** Words that join or introduce phrases; they are neither explained nor unknown. */
-const FUNCTION_WORDS = new Set([
+export const FUNCTION_WORDS: ReadonlySet<string> = new Set([
   "a",
   "an",
   "the",
@@ -357,7 +358,7 @@ function buildCandidate(
               span: TextSpan;
             } | null)
           : null;
-      if (entry?.valueKey) {
+      if (entry?.valueKey && entry.valueKey !== NOISE_VALUE_KEY) {
         modifiers.push({
           role,
           valueKey: entry.valueKey,

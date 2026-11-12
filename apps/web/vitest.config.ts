@@ -16,7 +16,7 @@ export default defineConfig({
       ],
       // Unit coverage only: routes and components are exercised by the Playwright suites instead.
       // Ratchet: the floor of the last measured coverage (12 November 2026); raise it as coverage grows
-      thresholds: { statements: 21, branches: 21, functions: 12, lines: 21 },
+      thresholds: { statements: 21, branches: 24, functions: 15, lines: 21 },
     },
   },
 });

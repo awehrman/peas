@@ -68,6 +68,58 @@ describe("activityBatchReducer", () => {
     expect(state.cardsById["card-1"]?.noteId).toBe("note-1");
   });
 
+  it("never moves a step's progress backwards when events arrive out of order", () => {
+    const update = (statusUpdate: ActivityAction & { type: "UPDATE_CARD_STATUS" }["statusUpdate"]): ActivityAction => ({
+      type: "UPDATE_CARD_STATUS",
+      cardId: "card-1",
+      step: "ingredientProcessing",
+      statusUpdate,
+    });
+
+    const state = activityBatchReducer(createMockActivityState(), [
+      addCard("card-1"),
+      update({ started: true, processedSteps: 8, steps: 14 }),
+      update({ started: true, hasError: true, errorMessage: "Could not parse line" }),
+      update({ started: true, completed: false, hasError: false, processedSteps: 5, steps: 14 }),
+      update({ started: true, completed: true, processedSteps: 14, steps: 14 }),
+      update({ started: true, completed: false, processedSteps: 9, steps: 14 }),
+    ]);
+
+    expect(state.cardsById["card-1"]?.status.ingredientProcessing).toMatchObject({
+      completed: true,
+      hasError: true,
+      errorMessage: "Could not parse line",
+      processedSteps: 14,
+    });
+  });
+
+  it("keeps a finished note finished", () => {
+    const state = activityBatchReducer(createMockActivityState(), [
+      addCard("card-1"),
+      { type: "UPDATE_CARD_DETAILS", cardId: "card-1", details: { isComplete: true } },
+      { type: "UPDATE_CARD_DETAILS", cardId: "card-1", details: { isComplete: false } },
+    ]);
+
+    expect(state.cardsById["card-1"]?.isComplete).toBe(true);
+  });
+
+  it("does not change the input state", () => {
+    const initial = activityReducer(createMockActivityState(), addCard("card-1"));
+    const snapshot = structuredClone(initial);
+
+    activityBatchReducer(initial, [
+      addCard("card-2"),
+      {
+        type: "UPDATE_CARD_STATUS",
+        cardId: "card-1",
+        step: "savedNote",
+        statusUpdate: { started: true, completed: true },
+      },
+    ]);
+
+    expect(initial).toEqual(snapshot);
+  });
+
   it("returns the same state for an empty batch", () => {
     const initial = createMockActivityState();
 

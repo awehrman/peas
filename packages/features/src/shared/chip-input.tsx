@@ -1,9 +1,11 @@
 "use client";
 
-import { type KeyboardEvent, type ReactNode, useState } from "react";
+import { type ChangeEvent, type KeyboardEvent, type ReactNode, useState } from "react";
 
-import { Badge, Input, Label } from "@peas/components";
+import { Badge, Input, Label, UnderlineInput } from "@peas/components";
 import { X } from "lucide-react";
+
+import { RemovableList } from "./removable-list";
 
 interface ChipInputProps {
   id: string;
@@ -12,6 +14,8 @@ interface ChipInputProps {
   onChange: (values: string[]) => void;
   placeholder?: string;
   description?: string;
+  /** `underline` shows entries as a plain list above a borderless input. */
+  variant?: "outlined" | "underline";
 }
 
 /**
@@ -24,9 +28,11 @@ export function ChipInput({
   onChange,
   placeholder,
   description,
+  variant = "outlined",
 }: ChipInputProps): ReactNode {
   const [draft, setDraft] = useState("");
   const descriptionId = description ? `${id}-description` : undefined;
+  const isUnderline = variant === "underline";
 
   function commitDraft() {
     const additions = draft
@@ -51,10 +57,27 @@ export function ChipInput({
     }
   }
 
+  const removeValue = (value: string) => onChange(values.filter((item) => item !== value));
+  const inputProps = {
+    id,
+    value: draft,
+    placeholder,
+    "aria-describedby": descriptionId,
+    onChange: (event: ChangeEvent<HTMLInputElement>) => setDraft(event.target.value),
+    onKeyDown: handleKeyDown,
+    onBlur: commitDraft,
+  };
+
   return (
-    <div className="flex flex-col gap-2">
+    <div className={isUnderline ? "flex flex-col gap-1" : "flex flex-col gap-2"}>
       <Label htmlFor={id}>{label}</Label>
-      {values.length > 0 ? (
+      {isUnderline ? (
+        <RemovableList
+          label={label}
+          items={values.map((value) => ({ key: value, label: value }))}
+          onRemove={removeValue}
+        />
+      ) : values.length > 0 ? (
         <ul className="flex flex-wrap gap-1" aria-label={label}>
           {values.map((value) => (
             <li key={value}>
@@ -62,7 +85,7 @@ export function ChipInput({
                 {value}
                 <button
                   type="button"
-                  onClick={() => onChange(values.filter((item) => item !== value))}
+                  onClick={() => removeValue(value)}
                   aria-label={`Remove ${value}`}
                   className="rounded-sm p-0.5 hover:bg-greyscale-200"
                 >
@@ -73,15 +96,11 @@ export function ChipInput({
           ))}
         </ul>
       ) : null}
-      <Input
-        id={id}
-        value={draft}
-        placeholder={placeholder}
-        aria-describedby={descriptionId}
-        onChange={(event) => setDraft(event.target.value)}
-        onKeyDown={handleKeyDown}
-        onBlur={commitDraft}
-      />
+      {isUnderline ? (
+        <UnderlineInput className="text-sm" {...inputProps} />
+      ) : (
+        <Input {...inputProps} />
+      )}
       {description ? (
         <p id={descriptionId} className="text-xs text-greyscale-600">
           {description}

@@ -300,6 +300,21 @@ Knowledge changes need no grammar change: add the entry "icing sugar" for powder
 
 `yarn evaluate:resolution` writes `fixtures/reports/resolution.md`: coverage by status, the most common unresolved phrases, entry text with several targets, semantic precision (15 of 15 today), and coverage and precision at score thresholds 0.5, 0.7, and 0.9. `yarn workspace @peas/database db:evaluate:resolution` writes the same report for the live database.
 
+## Teaching Peas: discoveries and decisions
+
+Phase 4 adds the pure half of the review loop to `src/v2/knowledge/` and `src/v2/preview/`. The database and the review screens build on these; nothing here touches a database.
+
+| Function | What it does | Example |
+| --- | --- | --- |
+| `discover(result, context)` | Discoveries one processed line suggests: an unknown food phrase, unknown modifiers next to known words (with roles suggested by position and spelling), attributes with several or no applicable meanings, attribute-plus-food identity questions, and ambiguous heads | "2 cups organic milk" gives `UNKNOWN_MODIFIER organic`, suggested role ATTRIBUTE |
+| `suggestRelationships(context, concepts, relationships)` | RELATIONSHIP_SUGGESTION for a concept whose name ends with another concept's name, unless they are already related | "smoked paprika" IS_A "paprika" |
+| `applyDecisionToSnapshot(snapshot, payload)` | The resolver snapshot after a decision, mirroring the database effects, so a preview can resolve lines both ways | adding the alias "icing sugar" makes "2 tbsp icing sugar" resolve to powdered sugar |
+| `decisionScope(payload)` | The phrases, concepts, and mentions a decision can affect, for prefiltering previews and reinterpretation | `{ phrases: ["scallion", "scallions"], conceptIds: [...] }` |
+| `generatePlural(phrase)` | The PLURAL entry a phrase decision adds; null for mass nouns and phrases that already look plural | "cherry tomato" gives "cherry tomatoes"; "flour" gives null |
+| `diffResolution(before, after, ...)` and `summarizeResolution` | How a decision changes one mention (newly resolved, concept or attribute change, ambiguity, lost resolution) in readable form | "unresolved: icing sugar" becomes "powdered sugar" |
+
+Decision payloads are validated by `DecisionPayloadSchema`. Phase 4 added optional fields without changing stored payloads: `exclusive` on MAP_TO_CONCEPT (the phrase stops meaning anything else), `plural` and `attributeValueIds` on CREATE_CONCEPT, `modifierText` on CONCEPT_PLUS_ATTRIBUTE, `applicableConceptIds` on CLASSIFY_MODIFIER and ADD_ATTRIBUTE_VALUE, and `teachPhrase` on CORRECT_MENTION. IGNORE_TOKEN stores an INSTRUCTION entry with the value key `noise`, which the resolver counts as explained and leaves out of its result.
+
 ## Commands
 
 All commands run from the repo root with `yarn workspace @peas/parser <command>`.

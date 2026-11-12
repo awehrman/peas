@@ -29,6 +29,9 @@ export * from "./resolve/report.js";
 export { RESOLVER_VERSION } from "./resolve/version.js";
 export * from "./knowledge/schemas.js";
 export * from "./knowledge/priority.js";
+export * from "./knowledge/plural.js";
+export * from "./knowledge/discover.js";
+export * from "./knowledge/apply-to-snapshot.js";
 export * from "./lexicon/types.js";
 export {
   LexiconEntryInputSchema,
@@ -49,7 +52,7 @@ export {
   parseLineBest,
   type ParseLineOptions,
 } from "./parse-line.js";
-export { diffSyntax, type SyntaxDiff } from "./preview/diff.js";
+export * from "./preview/diff.js";
 export {
   addRational,
   formatRational,

@@ -40,10 +40,11 @@ function renderOverview() {
     ],
   });
 
+  const rows = buildImportRows(uploads, activity);
   return render(
     <ImportOverview
-      rows={buildImportRows(uploads, activity)}
-      steps={summarizeSteps(activity)}
+      rows={rows}
+      steps={summarizeSteps(activity, rows.length)}
       library={createMockImportStatsState({ numberOfNotes: 120 })}
     />
   );
@@ -60,17 +61,18 @@ describe("ImportOverview", () => {
     renderOverview();
 
     const overview = screen.getByRole("region", { name: "Import overview" });
-    expect(within(overview).getByText("Notes in this import").nextSibling).toHaveTextContent("3");
+    expect(within(overview).getByText("Uploaded").nextSibling).toHaveTextContent("3");
+    expect(within(overview).getByText("Needs a look").nextSibling).toHaveTextContent("1");
     expect(within(overview).getByText("Notes in your library").nextSibling).toHaveTextContent(
       "120"
     );
-    expect(screen.getByText("1 note needs a look")).toBeInTheDocument();
+    expect(screen.getByText("1 of 3 imported (33%) · 1 needs a look")).toBeInTheDocument();
   });
 
-  it("lists each note once, problems first, with its source and thumbnail", () => {
+  it("lists each note once in upload order, with its source and thumbnail", () => {
     const { container } = renderOverview();
 
-    expect(noteTitles()).toEqual(["Broken stew", "Waiting soup", "Venison stew"]);
+    expect(noteTitles()).toEqual(["Venison stew", "Broken stew", "Waiting soup"]);
     expect(screen.getByText("Could not parse line")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "seriouseats.com" })).toHaveAttribute(
       "href",

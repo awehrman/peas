@@ -246,3 +246,223 @@ export async function setConceptStatus(
 ): Promise<void> {
   await tx.foodConcept.update({ where: { id }, data: { status } });
 }
+
+export interface ConceptListItem {
+  id: string;
+  canonicalName: string;
+  slug: string;
+  status: ConceptStatus;
+  entryCount: number;
+  mentionCount: number;
+}
+
+/**
+ * One page of concepts for the concepts list, alphabetical, optionally filtered by name or FOOD entry text and status. Deprecated (merged) concepts are hidden unless asked for by status.
+ *
+ * @example
+ * await listConcepts({ query: "sugar", limit: 50 }) // { items: [{ canonicalName: "powdered sugar", entryCount: 3, mentionCount: 12, ... }], total: 4 }
+ */
+export async function listConcepts(
+  {
+    query,
+    status,
+    offset = 0,
+    limit = 50,
+  }: {
+    query?: string;
+    status?: ConceptStatus;
+    offset?: number;
+    limit?: number;
+  } = {},
+  db: DbClient = prisma
+): Promise<{ items: ConceptListItem[]; total: number }> {
+  const trimmed = query?.trim();
+  const where = {
+    ...(status ? { status } : { status: { not: "DEPRECATED" as const } }),
+    ...(trimmed
+      ? {
+          OR: [
+            {
+              canonicalName: {
+                contains: trimmed,
+                mode: "insensitive" as const,
+              },
+            },
+            {
+              entries: {
+                some: {
+                  role: "FOOD" as const,
+                  status: { not: "DEPRECATED" as const },
+                  normalized: {
+                    contains: trimmed,
+                    mode: "insensitive" as const,
+                  },
+                },
+              },
+            },
+          ],
+        }
+      : {}),
+  };
+  const [rows, total] = await Promise.all([
+    db.foodConcept.findMany({
+      where,
+      orderBy: [{ canonicalName: "asc" }, { id: "asc" }],
+      skip: offset,
+      take: limit,
+      select: {
+        id: true,
+        canonicalName: true,
+        slug: true,
+        status: true,
+        _count: {
+          select: {
+            entries: { where: { status: { not: "DEPRECATED" } } },
+            mentions: true,
+          },
+        },
+      },
+    }),
+    db.foodConcept.count({ where }),
+  ]);
+  return {
+    items: rows.map((row) => ({
+      id: row.id,
+      canonicalName: row.canonicalName,
+      slug: row.slug,
+      status: row.status,
+      entryCount: row._count.entries,
+      mentionCount: row._count.mentions,
+    })),
+    total,
+  };
+}
+
+export interface ConceptMentionExample {
+  mentionId: string;
+  rawText: string;
+  lineText: string;
+  noteId: string | null;
+  noteTitle: string | null;
+  verified: boolean;
+}
+
+/**
+ * @example
+ * await getConceptMentions(conceptId, { limit: 10 }) // [{ lineText: "1 lb boneless chicken thighs", noteTitle: "Weeknight Chili", verified: false }]
+ */
+export async function getConceptMentions(
+  conceptId: string,
+  { limit = 10 }: { limit?: number } = {},
+  db: DbClient = prisma
+): Promise<ConceptMentionExample[]> {
+  const rows = await db.ingredientMention.findMany({
+    where: { conceptId },
+    orderBy: { id: "desc" },
+    take: limit,
+    select: {
+      id: true,
+      rawText: true,
+      verifiedAt: true,
+      parsedLine: {
+        select: {
+          reference: true,
+          noteId: true,
+          Note: { select: { title: true } },
+        },
+      },
+    },
+  });
+  return rows.map((row) => ({
+    mentionId: row.id,
+    rawText: row.rawText,
+    lineText: row.parsedLine.reference,
+    noteId: row.parsedLine.noteId,
+    noteTitle: row.parsedLine.Note?.title ?? null,
+    verified: row.verifiedAt !== null,
+  }));
+}
+
+export interface ConceptDecisionRecord {
+  id: string;
+  type: string;
+  revision: number;
+  createdAt: string;
+  username: string;
+  revertedById: string | null;
+  /** True for decisions that a REVERT can undo (not reverts, not already reverted). */
+  canRevert: boolean;
+}
+
+/**
+ * Decisions that touched a concept: created its entries or relationships, merged it, or name it in their payload.
+ *
+ * @example
+ * await getConceptDecisions(conceptId) // [{ type: "MAP_TO_CONCEPT", revision: 14, username: "allie", canRevert: true }]
+ */
+export async function getConceptDecisions(
+  conceptId: string,
+  { limit = 25 }: { limit?: number } = {},
+  db: DbClient = prisma
+): Promise<ConceptDecisionRecord[]> {
+  const rows = await db.lexiconDecision.findMany({
+    where: {
+      OR: [
+        { entries: { some: { conceptId } } },
+        {
+          relationships: {
+            some: { OR: [{ sourceId: conceptId }, { targetId: conceptId }] },
+          },
+        },
+        {
+          merges: {
+            some: { OR: [{ survivorId: conceptId }, { mergedId: conceptId }] },
+          },
+        },
+        { payload: { path: ["conceptId"], equals: conceptId } },
+      ],
+    },
+    orderBy: { revision: "desc" },
+    take: limit,
+    select: {
+      id: true,
+      type: true,
+      revision: true,
+      createdAt: true,
+      revertedById: true,
+      user: { select: { username: true } },
+    },
+  });
+  return rows.map((row) => ({
+    id: row.id,
+    type: row.type,
+    revision: row.revision,
+    createdAt: row.createdAt.toISOString(),
+    username: row.user.username,
+    revertedById: row.revertedById,
+    canRevert: row.type !== "REVERT" && row.revertedById === null,
+  }));
+}
+
+export interface ConceptRefRecord {
+  id: string;
+  canonicalName: string;
+  status: ConceptStatus;
+}
+
+/**
+ * Names and statuses for a set of concept ids (deprecated ones included), for labelling ids in payloads.
+ *
+ * @example
+ * await getConceptRefs([id]) // [{ id, canonicalName: "powdered sugar", status: "VERIFIED" }]
+ */
+export async function getConceptRefs(
+  ids: readonly string[],
+  db: DbClient = prisma
+): Promise<ConceptRefRecord[]> {
+  if (ids.length === 0) return [];
+  return db.foodConcept.findMany({
+    where: { id: { in: [...new Set(ids)] } },
+    select: { id: true, canonicalName: true, status: true },
+  });
+}

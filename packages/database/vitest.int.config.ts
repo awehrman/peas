@@ -21,7 +21,7 @@ export default defineConfig({
       exclude: ["src/**/__tests__/**"],
       // The legacy repositories are exercised through @peas/api's integration tests rather than here.
       // Ratchet: the floor of the last measured coverage (12 November 2026); raise it as coverage grows
-      thresholds: { statements: 42, branches: 43, functions: 37, lines: 43 },
+      thresholds: { statements: 58, branches: 53, functions: 50, lines: 59 },
     },
   },
 });

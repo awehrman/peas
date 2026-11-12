@@ -1,4 +1,7 @@
+export * from "./adjacency.js";
+export * from "./apply-decision.js";
 export * from "./attributes.js";
+export * from "./backfill.js";
 export * from "./classifications.js";
 export * from "./concepts.js";
 export * from "./decisions.js";
@@ -17,6 +20,8 @@ export {
 export * from "./legacy-mapping.js";
 export * from "./lexicon.js";
 export * from "./mentions.js";
+export * from "./merge.js";
+export * from "./preview.js";
 export * from "./relationships.js";
 export * from "./resolver-context.js";
 export * from "./revision.js";

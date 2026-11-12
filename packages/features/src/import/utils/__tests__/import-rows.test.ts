@@ -9,6 +9,7 @@ import type { ImportCard } from "../../types/import-types";
 import { createInitialCard } from "../activity-helpers";
 import {
   buildImportRows,
+  createImportRowBuilder,
   formatSource,
   summarizeImportRows,
   summarizeSteps,
@@ -23,6 +24,16 @@ function activityOf(...cards: ImportCard[]) {
     cardIds: cards.map((c) => c.id),
     cardsById: Object.fromEntries(cards.map((c) => [c.id, c])),
   });
+}
+
+function withError(target: ImportCard): ImportCard {
+  target.status.ingredientProcessing = {
+    started: true,
+    completed: false,
+    hasError: true,
+    errorMessage: "Could not parse line",
+  };
+  return target;
 }
 
 describe("buildImportRows", () => {
@@ -48,53 +59,35 @@ describe("buildImportRows", () => {
       source: "https://example.com/stew",
       thumbnailUrl: "https://cdn.example.com/a.jpg",
       status: "importing",
+      hasIssues: false,
     });
   });
 
-  it("falls back to the uploaded file name until the queue sends a title", () => {
+  it("keeps rows in upload order, including notes not uploaded yet", () => {
     const uploads = createMockUploadState({
-      previousBatches: [createMockUploadBatch({ importId: "a", directoryName: "Venison stew" })],
-    });
-
-    const [row] = buildImportRows(uploads, createMockActivityState());
-
-    expect(row).toMatchObject({ title: "Venison stew", status: "queued" });
-  });
-
-  it("puts problems first, then active, waiting and finished notes", () => {
-    const failingCard = card("failing");
-    failingCard.status.ingredientProcessing = {
-      started: true,
-      completed: false,
-      hasError: true,
-      errorMessage: "Could not parse line",
-    };
-    const uploads = createMockUploadState({
-      currentBatch: createMockUploadBatch({ importId: "uploading" }),
       previousBatches: [
         createMockUploadBatch({ importId: "done" }),
-        createMockUploadBatch({ importId: "queued" }),
         createMockUploadBatch({ importId: "rejected", errorMessage: "Network error" }),
-        createMockUploadBatch({ importId: "active" }),
+        createMockUploadBatch({ importId: "queued" }),
         createMockUploadBatch({ importId: "failing" }),
       ],
+      currentBatch: createMockUploadBatch({ importId: "uploading" }),
+      pendingBatches: [createMockUploadBatch({ importId: "later", directoryName: "Later soup" })],
     });
-    const activity = activityOf(card("done", { isComplete: true }), card("active"), failingCard);
+    const activity = activityOf(card("done", { isComplete: true }), withError(card("failing")));
 
     const rows = buildImportRows(uploads, activity);
 
-    expect(rows.map((row) => [row.id, row.status])).toEqual([
-      ["rejected", "uploadFailed"],
-      ["failing", "needsAttention"],
-      ["active", "importing"],
-      ["uploading", "uploading"],
-      ["queued", "queued"],
-      ["done", "imported"],
+    expect(rows.map((row) => [row.id, row.status, row.hasIssues])).toEqual([
+      ["done", "imported", false],
+      ["rejected", "uploadFailed", false],
+      ["queued", "queued", false],
+      ["failing", "importing", true],
+      ["uploading", "uploading", false],
+      ["later", "notUploaded", false],
     ]);
-    expect(rows[1]).toMatchObject({
-      activity: "Parsing ingredients failed",
-      errorMessage: "Could not parse line",
-    });
+    expect(rows[3]?.errorMessage).toBe("Could not parse line");
+    expect(rows[5]).toMatchObject({ title: "Later soup", activity: "Waiting to upload" });
   });
 
   it("describes the step in progress with its counts", () => {
@@ -114,39 +107,64 @@ describe("buildImportRows", () => {
   });
 });
 
+describe("createImportRowBuilder", () => {
+  it("reuses rows for notes that did not change and rebuilds the ones that did", () => {
+    const uploads = createMockUploadState({
+      previousBatches: [
+        createMockUploadBatch({ importId: "a" }),
+        createMockUploadBatch({ importId: "b" }),
+      ],
+    });
+    const cardA = card("a");
+    const buildRows = createImportRowBuilder();
+
+    const first = buildRows(uploads, activityOf(cardA, card("b")));
+    const second = buildRows(uploads, activityOf(cardA, card("b", { isComplete: true })));
+
+    expect(second[0]).toBe(first[0]);
+    expect(second[1]).not.toBe(first[1]);
+    expect(second[1]?.status).toBe("imported");
+  });
+});
+
 describe("summarizeImportRows", () => {
-  it("counts statuses and averages progress without failed uploads", () => {
+  it("measures progress against every note in the selection", () => {
     const uploads = createMockUploadState({
       previousBatches: [
         createMockUploadBatch({ importId: "done" }),
-        createMockUploadBatch({ importId: "queued" }),
         createMockUploadBatch({ importId: "rejected", errorMessage: "Network error" }),
+      ],
+      pendingBatches: [
+        createMockUploadBatch({ importId: "later-1" }),
+        createMockUploadBatch({ importId: "later-2" }),
       ],
     });
     const rows = buildImportRows(uploads, activityOf(card("done", { isComplete: true })));
 
-    const summary = summarizeImportRows(rows);
-
-    expect(summary.total).toBe(3);
-    expect(summary.counts).toMatchObject({ imported: 1, queued: 1, uploadFailed: 1 });
-    expect(summary.overallProgress).toBe(50);
+    expect(summarizeImportRows(rows)).toMatchObject({
+      total: 4,
+      uploaded: 1,
+      imported: 1,
+      needsAttention: 1,
+      overallProgress: 33,
+    });
   });
 });
 
 describe("summarizeSteps", () => {
-  it("counts finished notes per step, treating completed notes as done", () => {
+  it("counts finished notes per step out of the expected total", () => {
     const partial = card("partial");
     partial.status.cleanedNote = { started: true, completed: true, hasError: false };
 
-    const steps = summarizeSteps(activityOf(partial, card("done", { isComplete: true })));
+    const steps = summarizeSteps(activityOf(partial, card("done", { isComplete: true })), 5);
 
     expect(steps.find((step) => step.key === "cleanedNote")).toMatchObject({
       completed: 2,
-      total: 2,
+      total: 5,
     });
     expect(steps.find((step) => step.key === "addingImages")).toMatchObject({
       completed: 1,
-      total: 2,
+      total: 5,
     });
     expect(steps.some((step) => step.key === "uploaded")).toBe(false);
   });

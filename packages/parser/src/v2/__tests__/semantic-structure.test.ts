@@ -18,15 +18,19 @@ interface SemanticCase {
  * half (quantities) must already hold with the semantic lexicon loaded.
  */
 describe("semantic golden set: structure", () => {
-  const lexicon = buildLexicon(loadFixture<LexiconSnapshot>("lexicon/semantic-cases.json"));
-  const { cases } = loadFixture<{ cases: SemanticCase[] }>("golden/semantic.json");
+  const lexicon = buildLexicon(
+    loadFixture<LexiconSnapshot>("lexicon/semantic-cases.json")
+  );
+  const { cases } = loadFixture<{ cases: SemanticCase[] }>(
+    "golden/semantic.json"
+  );
 
   for (const semanticCase of cases) {
     it(`${semanticCase.id}: ${semanticCase.input}`, () => {
       const [segment] = parseLineBest(semanticCase.input, { lexicon }).segments;
-      expect(segment?.quantity ? describeQuantity(segment.quantity) : undefined).toBe(
-        semanticCase.expected.quantity
-      );
+      expect(
+        segment?.quantity ? describeQuantity(segment.quantity) : undefined
+      ).toBe(semanticCase.expected.quantity);
     });
   }
 });

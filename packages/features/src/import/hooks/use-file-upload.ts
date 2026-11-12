@@ -57,10 +57,7 @@ export function useFileUpload() {
       dispatch({
         type: "ADD_FILES",
         files: fileUploadItems,
-        directoryName: (group.htmlFile.name.split("/").pop() ?? group.htmlFile.name).replace(
-          /\.(html|htm)$/i,
-          ""
-        ),
+        directoryName: getGroupTitle(group),
       });
 
       // Upload the group to the queue
@@ -155,6 +152,19 @@ export function useFileUpload() {
             (skipped > 0 ? ` (skipped ${skipped}: ${groupingResult.ignoredFiles.join(", ")})` : "")
         );
 
+        // Every note gets a row right away, so totals stay fixed while uploads run
+        const createdAt = new Date().toISOString();
+        dispatch({
+          type: "QUEUE_BATCHES",
+          batches: groupingResult.groups.map((group) => ({
+            importId: group.importId,
+            createdAt,
+            numberOfFiles: 1 + group.imageFiles.length,
+            files: [],
+            directoryName: getGroupTitle(group),
+          })),
+        });
+
         // Process each group (HTML file + associated images)
         for (const group of groupingResult.groups) {
           await processFileGroup(group);
@@ -167,7 +177,7 @@ export function useFileUpload() {
         setIsProcessing(false);
       }
     },
-    [processFileGroup]
+    [processFileGroup, dispatch]
   );
 
   return {
@@ -177,4 +187,12 @@ export function useFileUpload() {
     isProcessing,
     handleFilesChange,
   };
+}
+
+type FileGroup = ReturnType<typeof groupFilesByHtmlAndImages>["groups"][number];
+
+/** The note's file name without its folder or extension, used until the queue sends the real title. */
+function getGroupTitle(group: FileGroup): string {
+  const fileName = group.htmlFile.name.split("/").pop() ?? group.htmlFile.name;
+  return fileName.replace(/\.(html|htm)$/i, "");
 }

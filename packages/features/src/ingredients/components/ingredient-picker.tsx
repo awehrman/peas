@@ -8,9 +8,9 @@ import {
   useState,
 } from "react";
 
-import { Badge, Input, Label, cn } from "@peas/components";
-import { X } from "lucide-react";
+import { Label, UnderlineInput, cn } from "@peas/components";
 
+import { RemovableList } from "../../shared";
 import type { IngredientOption } from "../types";
 
 export type SearchIngredients = (
@@ -104,32 +104,17 @@ export function IngredientPicker({
   const showResults = isOpen && results.length > 0;
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-1">
       <Label htmlFor={inputId}>{label}</Label>
-      {selected.length > 0 ? (
-        <ul className="flex flex-wrap gap-1" aria-label={`Selected ${label.toLowerCase()}`}>
-          {selected.map((option) => (
-            <li key={option.id}>
-              <Badge variant="secondary" className="gap-1 pr-1">
-                {option.name}
-                <button
-                  type="button"
-                  aria-label={`Remove ${option.name}`}
-                  className="rounded-sm p-0.5 hover:bg-greyscale-200"
-                  onClick={() =>
-                    onChange(selected.filter((item) => item.id !== option.id))
-                  }
-                >
-                  <X className="h-3 w-3" aria-hidden="true" />
-                </button>
-              </Badge>
-            </li>
-          ))}
-        </ul>
-      ) : null}
+      <RemovableList
+        label={`Selected ${label.toLowerCase()}`}
+        items={selected.map((option) => ({ key: option.id, label: option.name }))}
+        onRemove={(id) => onChange(selected.filter((item) => item.id !== id))}
+      />
       {multiple || selected.length === 0 ? (
         <div className="relative">
-          <Input
+          <UnderlineInput
+            className="text-sm"
             id={inputId}
             role="combobox"
             aria-expanded={showResults}

@@ -1,5 +1,7 @@
 "use client";
 
+import { NoteStatusBadge, getNoteStatusLabel } from "./note-status-badge";
+
 import type { ReactNode } from "react";
 
 import {
@@ -23,8 +25,6 @@ import {
   type NotesFilters,
   type NotesPageData,
 } from "../types";
-
-import { NoteStatusBadge, getNoteStatusLabel } from "./note-status-badge";
 
 const NOTES_PATH = "/notes";
 
@@ -150,11 +150,17 @@ function NotesTable({ notes }: { notes: NoteListItem[] }): ReactNode {
                   className="h-12 w-12 rounded object-cover"
                 />
               ) : (
-                <div className="h-12 w-12 rounded bg-greyscale-100" aria-hidden="true" />
+                <div
+                  className="h-12 w-12 rounded bg-greyscale-100"
+                  aria-hidden="true"
+                />
               )}
             </TableCell>
             <TableCell className="font-medium">
-              <AppLink href={`${NOTES_PATH}/${note.id}`} className="hover:underline">
+              <AppLink
+                href={`${NOTES_PATH}/${note.id}`}
+                className="hover:underline"
+              >
                 {note.title || "Untitled note"}
               </AppLink>
               {note.recipeId ? (
@@ -169,8 +175,12 @@ function NotesTable({ notes }: { notes: NoteListItem[] }): ReactNode {
                 duplicateConfidence={note.duplicateConfidence}
               />
             </TableCell>
-            <TableCell className="text-right">{note.ingredientLineCount}</TableCell>
-            <TableCell className="text-right">{note.instructionLineCount}</TableCell>
+            <TableCell className="text-right">
+              {note.ingredientLineCount}
+            </TableCell>
+            <TableCell className="text-right">
+              {note.instructionLineCount}
+            </TableCell>
             <TableCell
               className={cn(
                 "text-right",

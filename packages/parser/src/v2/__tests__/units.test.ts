@@ -8,7 +8,10 @@ function unitAt(text: string, offset = 0) {
 
 describe("unit matcher", () => {
   it("prefers the longest spelling", () => {
-    expect(unitAt("fluid ounces of milk")).toMatchObject({ id: "fl_oz", length: 12 });
+    expect(unitAt("fluid ounces of milk")).toMatchObject({
+      id: "fl_oz",
+      length: 12,
+    });
     expect(unitAt("fl oz milk")).toMatchObject({ id: "fl_oz" });
     expect(unitAt("tablespoons")).toMatchObject({ id: "tbsp", length: 11 });
   });
@@ -32,7 +35,10 @@ describe("unit matcher", () => {
 
   it("allows a unit glued to a number", () => {
     const text = "250ml stock";
-    expect(createUnitMatcher(text).matchAt(3)).toMatchObject({ id: "ml", length: 2 });
+    expect(createUnitMatcher(text).matchAt(3)).toMatchObject({
+      id: "ml",
+      length: 2,
+    });
   });
 
   it("reports dimensions", () => {
@@ -43,7 +49,14 @@ describe("unit matcher", () => {
 
   it("keeps food parts out of the unit table", () => {
     const ids = new Set(UNIT_TABLE.map((unit) => unit.id));
-    for (const foodPart of ["thigh", "breast", "zest", "juice", "leaf", "seed"]) {
+    for (const foodPart of [
+      "thigh",
+      "breast",
+      "zest",
+      "juice",
+      "leaf",
+      "seed",
+    ]) {
       expect(ids.has(foodPart)).toBe(false);
     }
   });

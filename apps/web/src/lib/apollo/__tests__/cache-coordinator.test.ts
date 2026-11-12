@@ -1,4 +1,5 @@
 import {
+  ImportStatsDocument,
   NoteDetailDocument,
   NotesPageDocument,
   RecipeDetailDocument,
@@ -213,6 +214,53 @@ describe("cache coordinator", () => {
     expect(calls.RecipeDetail).toBe(1);
     list.stop();
     recipe.stop();
+  });
+
+  it("refreshes a domain's active queries while their data stays on screen", async () => {
+    const { client, calls } = createTestClient({
+      ImportStats: (_variables, call) => ({
+        importStats: {
+          __typename: "ImportStats",
+          numberOfNotes: call === 1 ? 10 : 11,
+          numberOfIngredients: 40,
+          numberOfParsingErrors: 0,
+        },
+      }),
+      NotesPage: notesPage,
+    });
+    const coordinator = createCacheCoordinator(client);
+    const emissions: { dataState: string; notes?: number }[] = [];
+    let resolveFirst: () => void = () => undefined;
+    const firstData = new Promise<void>((resolve) => {
+      resolveFirst = resolve;
+    });
+    const subscription = client
+      .watchQuery({ query: ImportStatsDocument })
+      .subscribe((result) => {
+        emissions.push({
+          dataState: result.dataState,
+          notes: result.data?.importStats?.numberOfNotes,
+        });
+        if (result.dataState === "complete") resolveFirst();
+      });
+    await firstData;
+    const list = await watch(client, NotesPageDocument, {
+      status: null,
+      query: null,
+      page: 1,
+    });
+
+    await coordinator.refresh(["IMPORT_STATS"]);
+
+    expect(calls.ImportStats).toBe(2);
+    expect(calls.NotesPage).toBe(1);
+    await eventually(() => expect(emissions.at(-1)?.notes).toBe(11));
+    const afterFirst = emissions.slice(
+      emissions.findIndex((emission) => emission.dataState === "complete")
+    );
+    expect(afterFirst.every((emission) => emission.notes !== undefined)).toBe(true);
+    subscription.unsubscribe();
+    list.stop();
   });
 
   it("refetches every active query when an effect is malformed", async () => {

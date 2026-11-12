@@ -38,11 +38,22 @@ export type DecisionType = (typeof DECISION_TYPES)[number];
 const phrase = z.string().trim().min(1);
 const relationshipType = z.enum(FOOD_RELATIONSHIP_TYPES);
 
+const modifierRoles = LEXICON_ROLES.filter((role) => role !== "FOOD") as [
+  Exclude<(typeof LEXICON_ROLES)[number], "FOOD">,
+  ...Exclude<(typeof LEXICON_ROLES)[number], "FOOD">[],
+];
+
+/** "boneless appears before chicken thigh in 41 notes" (adjacency mining). */
+const adjacentHead = z.object({
+  conceptId: z.uuid(),
+  distinctNotes: z.number().int().nonnegative(),
+});
+
 /**
  * What the review queue found, stored as Discovery.payload. The `type` matches Discovery.type; `key` (the dedup key) lives on the row.
  *
- * @example UNKNOWN_FOOD_PHRASE      { type: "UNKNOWN_FOOD_PHRASE", phrase: "calamansi juice", headToken: "juice" }
- * @example UNKNOWN_MODIFIER         { type: "UNKNOWN_MODIFIER", token: "spatchcocked", position: "PRE_HEAD", neighbors: ["chicken"] }
+ * @example UNKNOWN_FOOD_PHRASE      { type: "UNKNOWN_FOOD_PHRASE", phrase: "calamansi juice", headToken: "juice", suggestedHeadConceptIds: [<juice>] }
+ * @example UNKNOWN_MODIFIER         { type: "UNKNOWN_MODIFIER", token: "spatchcocked", position: "PRE_HEAD", neighbors: ["chicken"], suggestedRoles: ["PREPARATION"], adjacentHeads: [{ conceptId: <chicken>, distinctNotes: 3 }] }
  * @example ATTRIBUTE_INTERPRETATION { type: "ATTRIBUTE_INTERPRETATION", phrase: "green", entryIds: [<color=green>, <ripeness=unripe>], headConceptId: <tomato> }
  * @example IDENTITY_DECISION        { type: "IDENTITY_DECISION", phrase: "smoked paprika", modifierEntryIds: [<smoked>], headConceptId: <paprika>, cooccurrence: 14 }
  * @example AMBIGUOUS_MATCH          { type: "AMBIGUOUS_MATCH", phrase: "cream", entryIds: [<heavy cream>, <sour cream>] }
@@ -55,12 +66,19 @@ export const DiscoveryPayloadSchema = z.discriminatedUnion("type", [
     type: z.literal("UNKNOWN_FOOD_PHRASE"),
     phrase,
     headToken: z.string().min(1).nullable(),
+    /** Lexemes next to the phrase ("chopped" in "1 cup chopped calamansi"). */
+    neighbors: z.array(z.string().min(1)).optional(),
+    /** Concepts named by a word inside the phrase ("juice" in "calamansi juice"): DERIVED_FROM hints. */
+    suggestedHeadConceptIds: z.array(z.uuid()).optional(),
   }),
   z.object({
     type: z.literal("UNKNOWN_MODIFIER"),
     token: phrase,
     position: z.enum([...PREP_POSITIONS, "MEASUREMENT"]),
     neighbors: z.array(z.string().min(1)),
+    /** Roles suggested by position and spelling ("-ly" before a preparation suggests DEGREE). */
+    suggestedRoles: z.array(z.enum(modifierRoles)).optional(),
+    adjacentHeads: z.array(adjacentHead).optional(),
   }),
   z.object({
     type: z.literal("ATTRIBUTE_INTERPRETATION"),
@@ -102,25 +120,22 @@ export const DiscoveryPayloadSchema = z.discriminatedUnion("type", [
   }),
 ]);
 
-const modifierRoles = LEXICON_ROLES.filter((role) => role !== "FOOD") as [
-  Exclude<(typeof LEXICON_ROLES)[number], "FOOD">,
-  ...Exclude<(typeof LEXICON_ROLES)[number], "FOOD">[],
-];
-
 /**
  * What a reviewer decided, stored as LexiconDecision.payload. Phase 4 applies the side effects; Phase 2 only validates and records.
  *
  * @example MAP_TO_CONCEPT         { type: "MAP_TO_CONCEPT", phrase: "spring onions", conceptId: <scallion>, kind: "REGIONAL" }
+ * @example MAP_TO_CONCEPT         { type: "MAP_TO_CONCEPT", phrase: "pepper", conceptId: <black pepper>, kind: "ALIAS", exclusive: true } // "pepper" now only means black pepper
  * @example CREATE_CONCEPT         { type: "CREATE_CONCEPT", canonicalName: "smoked paprika", phrase: "smoked paprika", relationships: [{ targetConceptId: <paprika>, relationshipType: "IS_A" }] }
- * @example CONCEPT_PLUS_ATTRIBUTE { type: "CONCEPT_PLUS_ATTRIBUTE", phrase: "boneless chicken thighs", conceptId: <chicken thigh>, attributeValueIds: [<bone=boneless>] }
+ * @example CONCEPT_PLUS_ATTRIBUTE { type: "CONCEPT_PLUS_ATTRIBUTE", phrase: "whole milk", modifierText: "whole", conceptId: <milk>, attributeValueIds: [<fat_content=whole>] }
  * @example CLASSIFY_MODIFIER      { type: "CLASSIFY_MODIFIER", token: "roughly", role: "DEGREE", valueKey: "rough" }
+ * @example CLASSIFY_MODIFIER      { type: "CLASSIFY_MODIFIER", token: "fresh", role: "ATTRIBUTE", attributeValueId: <freshness=fresh>, applicableConceptIds: [<spinach>] }
  * @example ADD_ATTRIBUTE_VALUE    { type: "ADD_ATTRIBUTE_VALUE", definitionId: <color>, key: "purple", label: "Purple" }
  * @example ADD_RELATIONSHIP       { type: "ADD_RELATIONSHIP", sourceConceptId: <buttermilk>, targetConceptId: <milk>, relationshipType: "DERIVED_FROM" }
  * @example MARK_AMBIGUOUS         { type: "MARK_AMBIGUOUS", phrase: "cream", entryIds: [<heavy cream>, <sour cream>] }
  * @example IGNORE_TOKEN           { type: "IGNORE_TOKEN", token: "good-quality" }
  * @example REJECT                 { type: "REJECT", reason: "Not an ingredient (instruction text)" }
  * @example MERGE_CONCEPTS         { type: "MERGE_CONCEPTS", survivorId: <scallion>, mergedId: <green onion> }
- * @example CORRECT_MENTION        { type: "CORRECT_MENTION", mentionId: <m>, conceptId: <shallot>, attributeValueIds: [] }
+ * @example CORRECT_MENTION        { type: "CORRECT_MENTION", mentionId: <m>, conceptId: <shallot>, attributeValueIds: [], teachPhrase: "echalote" }
  * @example REVERT                 { type: "REVERT", decisionId: <d> }
  */
 export const DecisionPayloadSchema = z.discriminatedUnion("type", [
@@ -129,6 +144,8 @@ export const DecisionPayloadSchema = z.discriminatedUnion("type", [
     phrase,
     conceptId: z.uuid(),
     kind: z.enum(LEXICON_TERM_KINDS),
+    /** Deprecate every other FOOD entry for the phrase, so it stops being ambiguous. */
+    exclusive: z.boolean().optional(),
   }),
   z.object({
     type: z.literal("CREATE_CONCEPT"),
@@ -137,10 +154,16 @@ export const DecisionPayloadSchema = z.discriminatedUnion("type", [
     relationships: z.array(
       z.object({ targetConceptId: z.uuid(), relationshipType })
     ),
+    /** Defaults to a generated English plural of `phrase`. */
+    plural: phrase.optional(),
+    /** Characterizing attributes stored on the concept (whole milk: fat_content=whole). */
+    attributeValueIds: z.array(z.uuid()).optional(),
   }),
   z.object({
     type: z.literal("CONCEPT_PLUS_ATTRIBUTE"),
     phrase,
+    /** The modifier word(s) to store as ATTRIBUTE entries ("whole"); existing entries are activated either way. */
+    modifierText: phrase.optional(),
     conceptId: z.uuid(),
     attributeValueIds: z.array(z.uuid()).min(1),
   }),
@@ -152,6 +175,8 @@ export const DecisionPayloadSchema = z.discriminatedUnion("type", [
       attributeValueId: z.uuid().optional(),
       preparationId: z.uuid().optional(),
       valueKey: z.string().min(1).optional(),
+      /** For ATTRIBUTE: concepts the value's dimension applies to (adds applicability rows). */
+      applicableConceptIds: z.array(z.uuid()).optional(),
     })
     .refine(
       (payload) =>
@@ -175,6 +200,7 @@ export const DecisionPayloadSchema = z.discriminatedUnion("type", [
       .string()
       .regex(/^[a-z][a-z0-9_]*$/, "Use a lowercase snake_case key"),
     label: phrase,
+    applicableConceptIds: z.array(z.uuid()).optional(),
   }),
   z
     .object({
@@ -207,20 +233,34 @@ export const DecisionPayloadSchema = z.discriminatedUnion("type", [
     mentionId: z.uuid(),
     conceptId: z.uuid().nullable(),
     attributeValueIds: z.array(z.uuid()),
+    /** Also teach the phrase as an ALIAS of `conceptId` ("teach from correction"). */
+    teachPhrase: phrase.optional(),
   }),
   z.object({ type: z.literal("REVERT"), decisionId: z.uuid() }),
 ]);
+
+const effectRow = z.object({
+  table: z.string().min(1),
+  id: z.uuid(),
+  /** The row's status before the decision, so REVERT can restore it ("PROPOSED" for an entry the decision activated). */
+  previous: z.string().min(1).optional(),
+});
 
 /**
  * Ids a decision created, changed, or retired, stored as LexiconDecision.effects so REVERT can undo exactly that.
  *
  * @example
- * { created: [{ table: "LexiconEntry", id: <e> }], updated: [], deprecated: [{ table: "FoodConcept", id: <green onion> }] }
+ * { created: [{ table: "LexiconEntry", id: <e> }], updated: [{ table: "LexiconEntry", id: <e2>, previous: "PROPOSED" }], deprecated: [{ table: "FoodConcept", id: <green onion>, previous: "VERIFIED" }],
+ *   applicabilityAdded: [{ definitionId: <bone>, conceptId: <chicken> }] }
  */
 export const DecisionEffectsSchema = z.object({
-  created: z.array(z.object({ table: z.string().min(1), id: z.uuid() })),
-  updated: z.array(z.object({ table: z.string().min(1), id: z.uuid() })),
-  deprecated: z.array(z.object({ table: z.string().min(1), id: z.uuid() })),
+  created: z.array(effectRow),
+  updated: z.array(effectRow),
+  deprecated: z.array(effectRow),
+  /** Applicability rows have a composite key, so they are listed separately. */
+  applicabilityAdded: z
+    .array(z.object({ definitionId: z.uuid(), conceptId: z.uuid() }))
+    .optional(),
 });
 
 export type DiscoveryPayload = z.infer<typeof DiscoveryPayloadSchema>;

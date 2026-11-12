@@ -2,7 +2,12 @@ import { getAttributeVocabulary } from "./attributes.js";
 import type { DbClient } from "./helpers.js";
 import { getCurrentRevision } from "./revision.js";
 
-import { ResolutionSchema, type ResolverSnapshot } from "@peas/parser/v2";
+import {
+  ResolutionSchema,
+  type ResolverContext,
+  type ResolverSnapshot,
+  buildResolverContext,
+} from "@peas/parser/v2";
 
 import { prisma } from "../../client.js";
 
@@ -113,4 +118,14 @@ export async function loadResolverSnapshot(
     conceptAttributes,
     priorVerifiedShare,
   };
+}
+
+/**
+ * `buildResolverContext(await loadResolverSnapshot())` in one call.
+ *
+ * @example
+ * processIngredientLine("2 tbsp icing sugar", await loadResolverContext())
+ */
+export async function loadResolverContext(db: DbClient = prisma): Promise<ResolverContext> {
+  return buildResolverContext(await loadResolverSnapshot(db));
 }

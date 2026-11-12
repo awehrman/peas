@@ -30,7 +30,9 @@ function SidebarNavigationComponent({
     ? NAVIGATION_CONSTANTS.NAV_LIST_TOP +
       NAVIGATION_CONSTANTS.AVATAR_BLOCK_HEIGHT
     : NAVIGATION_CONSTANTS.NAV_LIST_TOP;
-  const restY = getToggleRestY(navigationItems, pathname, listTop);
+  const restY = isExpanded
+    ? getToggleRestY(navigationItems, pathname, listTop)
+    : NAVIGATION_CONSTANTS.HEADER_CENTER_Y;
   const restYRef = useRef(restY);
   restYRef.current = restY;
   const [mouseY, setMouseY] = useState<number>(restY);

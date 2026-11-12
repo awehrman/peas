@@ -1,14 +1,16 @@
+import { NAVIGATION_CONSTANTS } from "./constants";
+
 import {
   Carrot,
   CloudDownload,
   CookingPot,
+  GraduationCap,
   Home,
+  Network,
   StickyNote,
 } from "lucide-react";
 
 import { NavigationItem } from "../types/navigation";
-
-import { NAVIGATION_CONSTANTS } from "./constants";
 
 export const navigationItems: NavigationItem[] = [
   { name: "Dashboard", href: "/", icon: Home },
@@ -16,6 +18,8 @@ export const navigationItems: NavigationItem[] = [
   { name: "Ingredients", href: "/ingredients", icon: Carrot },
   { name: "Recipes", href: "/recipes", icon: CookingPot },
   { name: "Notes", href: "/notes", icon: StickyNote },
+  { name: "Teach", href: "/teach", icon: GraduationCap, adminOnly: true },
+  { name: "Concepts", href: "/concepts", icon: Network, adminOnly: true },
 ];
 
 export function getNavigationItems(isAdmin: boolean): NavigationItem[] {

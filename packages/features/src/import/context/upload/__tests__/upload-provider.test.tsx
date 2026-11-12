@@ -27,6 +27,7 @@ describe("ImportUploadProvider", () => {
       });
 
       expect(result.current.state).toEqual({
+        pendingBatches: [],
         previousBatches: [],
         currentBatch: undefined,
       });

@@ -21,6 +21,7 @@ import {
 import {
   AlertTriangle,
   CheckCircle2,
+  CircleDashed,
   Clock,
   CookingPot,
   Loader2,
@@ -43,12 +44,19 @@ const MAX_LIST_HEIGHT = ROW_HEIGHT * 8;
 
 type FilterKey = "all" | "active" | "attention" | "imported";
 
-const FILTER_STATUSES: Record<FilterKey, readonly ImportRowStatus[] | null> = {
-  all: null,
-  active: ["uploading", "queued", "importing"],
-  attention: ["needsAttention", "uploadFailed"],
-  imported: ["imported"],
+const FILTERS: Record<FilterKey, (row: ImportRow) => boolean> = {
+  all: () => true,
+  active: (row) => ACTIVE_STATUSES.includes(row.status),
+  attention: (row) => row.hasIssues || row.status === "uploadFailed",
+  imported: (row) => row.status === "imported",
 };
+
+const ACTIVE_STATUSES: readonly ImportRowStatus[] = [
+  "notUploaded",
+  "uploading",
+  "queued",
+  "importing",
+];
 
 const FILTER_LABELS: Record<FilterKey, string> = {
   all: "All",
@@ -73,16 +81,16 @@ interface ImportNoteListProps {
 export function ImportNoteList({ rows, summary }: ImportNoteListProps): ReactNode {
   const [filter, setFilter] = useState<FilterKey>("all");
 
-  const visibleRows = useMemo(() => {
-    const statuses = FILTER_STATUSES[filter];
-    return statuses ? rows.filter((row) => statuses.includes(row.status)) : rows;
-  }, [rows, filter]);
+  const visibleRows = useMemo(
+    () => (filter === "all" ? rows : rows.filter(FILTERS[filter])),
+    [rows, filter]
+  );
 
   const filterCounts: Record<FilterKey, number> = {
     all: summary.total,
-    active: summary.counts.uploading + summary.counts.queued + summary.counts.importing,
-    attention: summary.counts.needsAttention + summary.counts.uploadFailed,
-    imported: summary.counts.imported,
+    active: summary.total - summary.imported - summary.counts.uploadFailed,
+    attention: summary.needsAttention,
+    imported: summary.imported,
   };
 
   return (
@@ -91,7 +99,7 @@ export function ImportNoteList({ rows, summary }: ImportNoteListProps): ReactNod
         <CardTitle role="heading" aria-level={2}>
           Notes
         </CardTitle>
-        <CardDescription>Notes that need a look come first, then the ones importing now</CardDescription>
+        <CardDescription>In the order they were added; rows update in place</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         <div
@@ -153,10 +161,19 @@ interface NoteRowProps {
 
 const NoteRow = memo(function NoteRow({ index, style, data }: NoteRowProps): ReactNode {
   const row = data[index];
-  if (!row) return null;
+  return row ? <NoteRowContent row={row} style={style} /> : null;
+}, areEqual);
 
+/** Rows keep their identity until their note changes, so most rows skip rendering on each refresh. */
+const NoteRowContent = memo(function NoteRowContent({
+  row,
+  style,
+}: {
+  row: ImportRow;
+  style: CSSProperties;
+}): ReactNode {
   const source = row.source ? formatSource(row.source) : null;
-  const hasError = row.status === "needsAttention" || row.status === "uploadFailed";
+  const hasError = row.hasIssues || row.status === "uploadFailed";
 
   return (
     <li
@@ -212,10 +229,10 @@ const NoteRow = memo(function NoteRow({ index, style, data }: NoteRowProps): Rea
         </p>
       </div>
 
-      <StatusIndicator status={row.status} progress={row.progress} />
+      <StatusIndicator status={row.status} progress={row.progress} hasIssues={row.hasIssues} />
     </li>
   );
-}, areEqual);
+});
 
 function Thumbnail({ url }: { url?: string }): ReactNode {
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
@@ -261,18 +278,27 @@ function StepStrip({ steps }: { steps: ImportRow["steps"] }): ReactNode {
 function StatusIndicator({
   status,
   progress,
+  hasIssues,
 }: {
   status: ImportRowStatus;
   progress: number;
+  hasIssues: boolean;
 }): ReactNode {
   const iconClassName = "ml-auto h-5 w-5 shrink-0";
 
   switch (status) {
     case "imported":
-      return <CheckCircle2 className={cn(iconClassName, "text-primary-600")} aria-label="Imported" />;
-    case "needsAttention":
+      return hasIssues ? (
+        <AlertTriangle
+          className={cn(iconClassName, "text-warning-600")}
+          aria-label="Imported with problems"
+        />
+      ) : (
+        <CheckCircle2 className={cn(iconClassName, "text-primary-600")} aria-label="Imported" />
+      );
+    case "notUploaded":
       return (
-        <AlertTriangle className={cn(iconClassName, "text-warning-600")} aria-label="Needs a look" />
+        <CircleDashed className={cn(iconClassName, "text-greyscale-300")} aria-label="Waiting to upload" />
       );
     case "uploadFailed":
       return <XCircle className={cn(iconClassName, "text-error-600")} aria-label="Upload failed" />;
@@ -287,7 +313,12 @@ function StatusIndicator({
       return <Clock className={cn(iconClassName, "text-greyscale-400")} aria-label="Waiting" />;
     case "importing":
       return (
-        <span className="ml-auto text-sm font-semibold tabular-nums text-secondary-700">
+        <span
+          className={cn(
+            "ml-auto text-sm font-semibold tabular-nums",
+            hasIssues ? "text-warning-700" : "text-secondary-700"
+          )}
+        >
           {progress}%
         </span>
       );

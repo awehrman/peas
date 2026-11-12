@@ -13,7 +13,9 @@ describe("normalizeText", () => {
   it("maps fraction slashes, dashes, quotes, and odd spaces", () => {
     expect(normalizeText("1⁄2 tsp").text).toBe("1/2 tsp");
     expect(normalizeText("2–3 tbsp").text).toBe("2-3 tbsp");
-    expect(normalizeText("confectioners’ sugar").text).toBe("confectioners' sugar");
+    expect(normalizeText("confectioners’ sugar").text).toBe(
+      "confectioners' sugar"
+    );
     expect(normalizeText("1\u00A0cup  \t milk ").text).toBe("1 cup milk");
     expect(normalizeText("2 × 400g").text).toBe("2 x 400g");
   });
@@ -34,7 +36,9 @@ describe("normalizeText", () => {
     });
     // "1/2" all comes from the single raw "½"
     const fractionStart = normalized.text.indexOf("1/2");
-    expect(normalized.toRawSpan(fractionStart, fractionStart + 3).text).toBe("½");
+    expect(normalized.toRawSpan(fractionStart, fractionStart + 3).text).toBe(
+      "½"
+    );
   });
 
   it("keeps offsets correct around characters outside the Basic Multilingual Plane", () => {
@@ -47,7 +51,9 @@ describe("normalizeText", () => {
 
 describe("tokenize", () => {
   it("splits words, numbers, and punctuation", () => {
-    expect(tokenize("2 cups flat-leaf parsley, chopped").map((t) => [t.text, t.kind])).toEqual([
+    expect(
+      tokenize("2 cups flat-leaf parsley, chopped").map((t) => [t.text, t.kind])
+    ).toEqual([
       ["2", "NUMBER"],
       ["cups", "WORD"],
       ["flat", "WORD"],

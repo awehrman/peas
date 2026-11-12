@@ -1,4 +1,5 @@
 import type { ParsedLineSegment, ParsedLineStatus } from "../parsed-line";
+import type { NoteMention } from "../teach/mention-panel";
 
 export const NOTE_STATUS_OPTIONS = [
   "PENDING",
@@ -48,6 +49,8 @@ export interface NoteIngredientLine {
   isActive: boolean;
   parserVersion: string | null;
   segments: ParsedLineSegment[];
+  /** v2 mentions, once the backfill has run. */
+  mentions?: NoteMention[];
 }
 
 export interface NoteDetail {

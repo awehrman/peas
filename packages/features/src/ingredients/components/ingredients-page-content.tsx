@@ -54,6 +54,23 @@ export function IngredientsPageContent({
   const params = { view: view === "all" ? undefined : view, group: grouping === "name" ? undefined : grouping };
   const getIngredientHref = (id: string) => buildHref(INGREDIENTS_PATH, params, { id });
 
+  const selectedCard = selected ? (
+    <section aria-label="Selected ingredient">
+      <IngredientCard
+        key={selected.id}
+        ingredient={selected}
+        categoryOptions={categoryOptions}
+        isReviewQueue={view === "unreviewed"}
+        onSave={onSave}
+        onSearch={onSearch}
+        onSaved={({ nextId, advanced }) => {
+          if (!advanced) return;
+          push(nextId ? getIngredientHref(nextId) : buildHref(INGREDIENTS_PATH, params));
+        }}
+      />
+    </section>
+  ) : null;
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -88,39 +105,24 @@ export function IngredientsPageContent({
         </div>
       </div>
 
-      <div className={cn("grid gap-6", selected && "lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]")}>
-        <section aria-label="Ingredients">
-          {groups.length === 0 ? (
+      <section aria-label="Ingredients">
+        {groups.length === 0 ? (
+          <div className="flex flex-col gap-6">
             <Placeholder
               label={view === "unreviewed" ? "Every ingredient has been reviewed." : "No ingredients yet. Import some notes to get started."}
               icon={<Carrot />}
             />
-          ) : (
-            <IngredientGroupList
-              groups={groups}
-              selectedId={selected?.id}
-              getIngredientHref={getIngredientHref}
-            />
-          )}
-        </section>
-
-        {selected ? (
-          <section aria-label="Selected ingredient" className="lg:sticky lg:top-0 lg:self-start">
-            <IngredientCard
-              key={`${selected.id}-${selected.reviewedAt ?? ""}`}
-              ingredient={selected}
-              categoryOptions={categoryOptions}
-              isReviewQueue={view === "unreviewed"}
-              onSave={onSave}
-              onSearch={onSearch}
-              onSaved={({ nextId, advanced }) => {
-                if (!advanced) return;
-                push(nextId ? getIngredientHref(nextId) : buildHref(INGREDIENTS_PATH, params));
-              }}
-            />
-          </section>
-        ) : null}
-      </div>
+            {selectedCard}
+          </div>
+        ) : (
+          <IngredientGroupList
+            groups={groups}
+            selectedId={selected?.id}
+            selectedCard={selectedCard}
+            getIngredientHref={getIngredientHref}
+          />
+        )}
+      </section>
     </div>
   );
 }

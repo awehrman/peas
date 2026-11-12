@@ -2,7 +2,11 @@ import { afterAll, describe, expect, it } from "vitest";
 
 import { parseLineBest } from "../parse-line.js";
 
-import { loadGoldenCases, loadStructuralLexicon, toGolden } from "./helpers/golden.js";
+import {
+  loadGoldenCases,
+  loadStructuralLexicon,
+  toGolden,
+} from "./helpers/golden.js";
 
 const lexicon = loadStructuralLexicon();
 
@@ -10,7 +14,9 @@ describe("structural golden set (dev)", () => {
   for (const goldenCase of loadGoldenCases("structural.dev")) {
     const name = `${goldenCase.id}: ${goldenCase.input}`;
     const assertion = () =>
-      expect(toGolden(parseLineBest(goldenCase.input, { lexicon }))).toEqual(goldenCase.expected);
+      expect(toGolden(parseLineBest(goldenCase.input, { lexicon }))).toEqual(
+        goldenCase.expected
+      );
 
     if (goldenCase.knownFailure) {
       // Fails until the grammar learns the structure; then drop the flag.
@@ -28,8 +34,9 @@ describe("structural golden set (held out)", () => {
   for (const goldenCase of cases) {
     it(`${goldenCase.id}: ${goldenCase.input}`, () => {
       const matches =
-        JSON.stringify(toGolden(parseLineBest(goldenCase.input, { lexicon }))) ===
-        JSON.stringify(goldenCase.expected);
+        JSON.stringify(
+          toGolden(parseLineBest(goldenCase.input, { lexicon }))
+        ) === JSON.stringify(goldenCase.expected);
       if (matches) passed += 1;
     });
   }

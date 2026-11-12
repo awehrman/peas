@@ -3,7 +3,11 @@ import { describe, expect, it } from "vitest";
 import { IngredientLineSyntaxSchema } from "../ast/schemas.js";
 import { parseLine } from "../parse-line.js";
 
-import { loadCorpus, loadGoldenCases, loadStructuralLexicon } from "./helpers/golden.js";
+import {
+  loadCorpus,
+  loadGoldenCases,
+  loadStructuralLexicon,
+} from "./helpers/golden.js";
 
 describe("IngredientLineSyntaxSchema", () => {
   const lexicon = loadStructuralLexicon();

@@ -1,5 +1,11 @@
 "use client";
 
+import {
+  type IngredientLineActions,
+  IngredientLineRow,
+} from "./ingredient-line-row";
+import { NoteStatusBadge } from "./note-status-badge";
+
 import type { ReactNode } from "react";
 
 import {
@@ -18,11 +24,13 @@ import { ArrowLeft, CookingPot } from "lucide-react";
 
 import { AppLink, useAppNavigation } from "../../app-navigation";
 import { ParsedLineLegend } from "../../parsed-line";
-import { InlineError, type MutationAction, formatDate, useMutation } from "../../shared";
+import {
+  InlineError,
+  type MutationAction,
+  formatDate,
+  useMutation,
+} from "../../shared";
 import type { NoteDetail } from "../types";
-
-import { type IngredientLineActions, IngredientLineRow } from "./ingredient-line-row";
-import { NoteStatusBadge } from "./note-status-badge";
 
 interface NoteDetailPageContentProps extends IngredientLineActions {
   note: NoteDetail;
@@ -33,6 +41,8 @@ export function NoteDetailPageContent({
   note,
   onSetReviewStatus,
   onPromoteToRecipe,
+  onCorrectMention,
+  onSearchConcepts,
 }: NoteDetailPageContentProps): ReactNode {
   const heroImage = note.images[0];
   const hasIngredients = note.ingredientBlocks.length > 0;
@@ -58,7 +68,9 @@ export function NoteDetailPageContent({
               duplicateConfidence={note.duplicateConfidence}
             />
             <span>Imported {formatDate(note.createdAt)}</span>
-            {note.evernote?.notebook ? <span>Notebook: {note.evernote.notebook}</span> : null}
+            {note.evernote?.notebook ? (
+              <span>Notebook: {note.evernote.notebook}</span>
+            ) : null}
           </div>
         </div>
         <RecipeAction note={note} onPromoteToRecipe={onPromoteToRecipe} />
@@ -76,7 +88,8 @@ export function NoteDetailPageContent({
           <AlertTitle>Parsing errors</AlertTitle>
           <AlertDescription>
             {note.parsingErrorCount} ingredient{" "}
-            {note.parsingErrorCount === 1 ? "line" : "lines"} could not be parsed.
+            {note.parsingErrorCount === 1 ? "line" : "lines"} could not be
+            parsed.
           </AlertDescription>
         </Alert>
       ) : null}
@@ -105,13 +118,17 @@ export function NoteDetailPageContent({
                           line={line}
                           getIngredientHref={(id) => `/ingredients?id=${id}`}
                           onSetReviewStatus={onSetReviewStatus}
+                          onCorrectMention={onCorrectMention}
+                          onSearchConcepts={onSearchConcepts}
                         />
                       ))}
                     </ul>
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-greyscale-600">No ingredient lines were found.</p>
+                <p className="text-sm text-greyscale-600">
+                  No ingredient lines were found.
+                </p>
               )}
             </CardContent>
           </Card>
@@ -132,7 +149,9 @@ export function NoteDetailPageContent({
                     ))}
                 </ol>
               ) : (
-                <p className="text-sm text-greyscale-600">No instructions were found.</p>
+                <p className="text-sm text-greyscale-600">
+                  No instructions were found.
+                </p>
               )}
             </CardContent>
           </Card>
@@ -184,7 +203,11 @@ function RecipeAction({
 
   return (
     <div className="flex flex-col items-end gap-1">
-      <Button type="button" onClick={handlePromote} disabled={promote.isPending}>
+      <Button
+        type="button"
+        onClick={handlePromote}
+        disabled={promote.isPending}
+      >
         <CookingPot aria-hidden="true" />
         {promote.isPending ? "Saving..." : "Save as recipe"}
       </Button>

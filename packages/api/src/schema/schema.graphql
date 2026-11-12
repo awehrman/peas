@@ -122,6 +122,8 @@ type IngredientLine {
   isActive: Boolean!
   parserVersion: String
   segments: [ParsedSegment!]!
+  "v2 mentions, one per segment, once the backfill has run. Empty before that."
+  mentions: [Mention!]!
 }
 
 "An ingredient list within a note, e.g. the main list (blockIndex 0) and a \"For the glaze\" list (blockIndex 1)."
@@ -505,6 +507,432 @@ input IngredientCreateInput {
 }
 
 # ---------------------------------------------------------------------------
+# Teach Peas: mentions, discoveries, decisions, concepts (Phase 4)
+# ---------------------------------------------------------------------------
+
+"Any JSON value. Used for typed payloads validated on the server, e.g. a DecisionPayload from @peas/parser/v2: { \"type\": \"MAP_TO_CONCEPT\", \"phrase\": \"icing sugar\", \"conceptId\": \"0193...\", \"kind\": \"ALIAS\" }."
+scalar JSON
+
+enum DiscoveryType {
+  UNKNOWN_FOOD_PHRASE
+  UNKNOWN_MODIFIER
+  ATTRIBUTE_INTERPRETATION
+  IDENTITY_DECISION
+  AMBIGUOUS_MATCH
+  RELATIONSHIP_SUGGESTION
+  STRUCTURAL_PATTERN
+  VERIFIED_DRIFT
+}
+
+enum DiscoveryStatus {
+  OPEN
+  DEFERRED
+  RESOLVED
+  REJECTED
+}
+
+"How a mention was resolved. VERIFIED means a person checked it; automatic rewrites never touch it."
+enum MentionStatus {
+  UNRESOLVED
+  AUTO_RESOLVED
+  NEEDS_REVIEW
+  VERIFIED
+}
+
+enum ConceptStatus {
+  PROPOSED
+  VERIFIED
+  DEPRECATED
+}
+
+"CONSERVATIVE uses only active lexicon entries (imports); EXPLORATORY also tries proposed ones and alternative segmentations."
+enum ParseMode {
+  CONSERVATIVE
+  EXPLORATORY
+}
+
+"Half-open UTF-16 offsets into the raw line. Example: { \"start\": 14, \"end\": 29, \"text\": \"calamansi juice\" }"
+type TextSpan {
+  start: Int!
+  end: Int!
+  text: String!
+}
+
+"A food concept reference. Example: { \"id\": \"0193...\", \"canonicalName\": \"powdered sugar\", \"status\": \"VERIFIED\" }"
+type ConceptRef {
+  id: ID!
+  canonicalName: String!
+  status: ConceptStatus!
+}
+
+"A lexicon entry named by a discovery, with its target spelled out. Example: { \"id\": \"0193...\", \"text\": \"green\", \"role\": \"ATTRIBUTE\", \"targetLabel\": \"color: green\" }"
+type LexiconEntryRef {
+  id: ID!
+  text: String!
+  "FOOD, ATTRIBUTE, PREPARATION, DEGREE, MEASUREMENT_MODIFIER, or INSTRUCTION."
+  role: String!
+  "Readable target: a concept name, \"definition: value\", a preparation key, or a value key."
+  targetLabel: String!
+  conceptId: ID
+  attributeValueId: ID
+}
+
+"""
+A readable resolution: the concept, attributes, preparations, and the spans that explain them.
+
+Example ("1 lb boneless chicken thighs"): { "status": "AUTO_RESOLVED", "conceptName": "chicken thigh", "attributes": ["bone:boneless"], "preparations": [], "text": "chicken thigh (bone: boneless)", "score": 0.833 }
+"""
+type ResolutionView {
+  status: MentionStatus!
+  conceptId: ID
+  conceptName: String
+  "\"definition:value\" keys, e.g. \"bone:boneless\"."
+  attributes: [String!]!
+  "Preparation keys with degree, e.g. \"chop (fine)\"."
+  preparations: [String!]!
+  candidateCount: Int!
+  score: Float
+  text: String!
+  highlights: [TextSpan!]!
+}
+
+"""
+One word or punctuation mark of a parsed segment, for highlighting by role.
+
+Example: { "span": { "start": 5, "end": 13, "text": "boneless" }, "kind": "LEXEME", "roles": ["ATTRIBUTE"], "zone": "MAIN" }
+"""
+type SyntaxToken {
+  span: TextSpan!
+  "LEXEME (known), UNKNOWN, or PUNCT."
+  kind: String!
+  roles: [String!]!
+  "MEASUREMENT, MAIN, TRAILING, or PAREN."
+  zone: String!
+}
+
+"A ranked reading of a segment. Example: { \"conceptName\": \"chicken thigh\", \"score\": 0.833, \"reasons\": [\"head:chicken thigh(2 tokens)\", \"entry:PLURAL\"], \"attributes\": [\"bone:boneless\"] }"
+type ResolutionCandidateView {
+  conceptId: ID!
+  conceptName: String!
+  score: Float!
+  reasons: [String!]!
+  attributes: [String!]!
+  preparations: [String!]!
+  "\"ROLE:valueKey\", e.g. \"INSTRUCTION:divided\"."
+  modifiers: [String!]!
+}
+
+"""
+A stored v2 mention of one ingredient-line segment (written by the backfill and by reinterpretation).
+
+Example: { "id": "0193...", "segmentIndex": 0, "rawText": "1 lb boneless chicken thighs", "status": "AUTO_RESOLVED", "concept": { "canonicalName": "chicken thigh" }, "quantity": "1 lb" }
+"""
+type Mention {
+  id: ID!
+  segmentIndex: Int!
+  rawText: String!
+  status: MentionStatus!
+  concept: ConceptRef
+  score: Float
+  "Readable quantity, e.g. \"1 lb\" or \"2-3 cups\"."
+  quantity: String
+  verified: Boolean!
+  lexiconRevision: Int!
+  summary: ResolutionView!
+  tokens: [SyntaxToken!]!
+  candidates: [ResolutionCandidateView!]!
+  "Words the resolver could not explain."
+  unresolved: [TextSpan!]!
+}
+
+"A mention that shows a discovery. Example: { \"mentionId\": \"0193...\", \"noteTitle\": \"Lemon Bars\", \"lineText\": \"2 tbsp icing sugar\", \"span\": { \"start\": 7, \"end\": 18, \"text\": \"icing sugar\" } }"
+type DiscoveryExample {
+  mentionId: ID!
+  noteId: ID
+  noteTitle: String
+  lineText: String!
+  span: TextSpan!
+}
+
+"""
+Something the review queue found. `payload` is the typed DiscoveryPayload from @peas/parser/v2; `concepts` and `entries` resolve the ids it names.
+
+Example: { "id": "0193...", "type": "UNKNOWN_FOOD_PHRASE", "key": "calamansi juice", "title": "calamansi juice", "priority": 11.32, "mentionCount": 9, "distinctNoteCount": 7, "payload": { "type": "UNKNOWN_FOOD_PHRASE", "phrase": "calamansi juice", "headToken": "juice" } }
+"""
+type Discovery {
+  id: ID!
+  type: DiscoveryType!
+  key: String!
+  status: DiscoveryStatus!
+  priority: Float!
+  mentionCount: Int!
+  distinctNoteCount: Int!
+  "Short label for lists, e.g. \"calamansi juice\" or \"green with tomato\"."
+  title: String!
+  payload: JSON!
+  concepts: [ConceptRef!]!
+  entries: [LexiconEntryRef!]!
+  "Example mentions, paged. Example: examples(limit: 20, offset: 20)"
+  examples(limit: Int, offset: Int): [DiscoveryExample!]!
+}
+
+"Example: query { discoveryQueue(type: UNKNOWN_FOOD_PHRASE, limit: 25) { items { id title priority } nextCursor } }"
+type DiscoveryPage {
+  items: [Discovery!]!
+  nextCursor: ID
+}
+
+"Example: { \"type\": \"UNKNOWN_MODIFIER\", \"count\": 12 }"
+type DiscoveryTypeCount {
+  type: DiscoveryType!
+  count: Int!
+}
+
+"Example: { \"id\": \"0193...\", \"key\": \"boneless\", \"label\": \"Boneless\", \"definitionId\": \"0193...\", \"definitionKey\": \"bone\", \"definitionName\": \"Bone\" }"
+type AttributeValueOption {
+  id: ID!
+  key: String!
+  label: String!
+  definitionId: ID!
+  definitionKey: String!
+  definitionName: String!
+}
+
+"Example: { \"id\": \"0193...\", \"key\": \"bone\", \"name\": \"Bone\" }"
+type AttributeDefinitionOption {
+  id: ID!
+  key: String!
+  name: String!
+}
+
+"Example: { \"id\": \"0193...\", \"key\": \"chop\", \"label\": \"Chop\" }"
+type PreparationOption {
+  id: ID!
+  key: String!
+  label: String!
+}
+
+"Everything decision forms offer as targets."
+type Vocabulary {
+  definitions: [AttributeDefinitionOption!]!
+  attributeValues: [AttributeValueOption!]!
+  preparations: [PreparationOption!]!
+  "e.g. [\"fine\", \"coarse\", ...]"
+  degreeKeys: [String!]!
+  "e.g. [\"heaping\", \"packed\", ...]"
+  measurementModifierKeys: [String!]!
+  "e.g. [\"divided\", \"optional\", ...]"
+  instructionKeys: [String!]!
+}
+
+"Example: { \"scanned\": 14, \"affected\": 12, \"newlyResolved\": 12, \"conceptChanged\": 12, \"attributesChanged\": 0, \"becameAmbiguous\": 0, \"becameUnresolved\": 0, \"verifiedConflicts\": 0 }"
+type DecisionPreviewCounts {
+  scanned: Int!
+  affected: Int!
+  newlyResolved: Int!
+  conceptChanged: Int!
+  attributesChanged: Int!
+  becameAmbiguous: Int!
+  becameUnresolved: Int!
+  "Verified mentions the decision would read differently. They are never changed automatically."
+  verifiedConflicts: Int!
+}
+
+"Example: { \"lineText\": \"2 tbsp icing sugar\", \"noteTitle\": \"Lemon Bars\", \"before\": { \"text\": \"unresolved: icing sugar\" }, \"after\": { \"text\": \"powdered sugar\" }, \"verifiedConflict\": false }"
+type DecisionPreviewExample {
+  mentionId: ID!
+  noteId: ID
+  noteTitle: String
+  lineText: String!
+  before: ResolutionView!
+  after: ResolutionView!
+  verifiedConflict: Boolean!
+}
+
+"""
+Before/after impact of a decision, computed without changing anything.
+
+Example: query { previewDecision(payload: { type: "MAP_TO_CONCEPT", phrase: "icing sugar", conceptId: "0193...", kind: "ALIAS" }) { counts { affected newlyResolved } examples { lineText after { text } } } }
+"""
+type DecisionPreview {
+  revision: Int!
+  counts: DecisionPreviewCounts!
+  examples: [DecisionPreviewExample!]!
+  "More mentions matched than were scanned."
+  truncated: Boolean!
+}
+
+"One segment as the playground resolves it."
+type PlaygroundMention {
+  segmentIndex: Int!
+  "0 unless \"and\" split the segment into several foods."
+  partIndex: Int!
+  span: TextSpan!
+  status: MentionStatus!
+  quantity: String
+  tokens: [SyntaxToken!]!
+  candidates: [ResolutionCandidateView!]!
+  unresolved: [TextSpan!]!
+  summary: ResolutionView!
+}
+
+"""
+How v2 reads a typed line against the current lexicon revision.
+
+Example: query { playground(line: "1 lb boneless chicken thighs", mode: CONSERVATIVE) { syntax mentions { status summary { text } } } }
+"""
+type PlaygroundResult {
+  line: String!
+  revision: Int!
+  mode: ParseMode!
+  "Compact notation, e.g. \"[1 lb] {boneless:ATTRIBUTE} {chicken thighs:FOOD}\"."
+  syntax: String!
+  mentions: [PlaygroundMention!]!
+  "Other segmentations considered (EXPLORATORY)."
+  alternativeCount: Int!
+}
+
+"Example: { \"id\": \"0193...\", \"slug\": \"powdered-sugar\", \"canonicalName\": \"powdered sugar\", \"status\": \"VERIFIED\", \"entryCount\": 3, \"mentionCount\": 12 }"
+type ConceptSummary {
+  id: ID!
+  slug: String!
+  canonicalName: String!
+  status: ConceptStatus!
+  entryCount: Int!
+  mentionCount: Int!
+}
+
+"Example: query { concepts(query: \"sugar\", page: 1) { total items { canonicalName } } }"
+type ConceptsPage {
+  items: [ConceptSummary!]!
+  total: Int!
+  page: Int!
+  pageSize: Int!
+}
+
+"A way of writing a concept. Example: { \"id\": \"0193...\", \"text\": \"confectioners sugar\", \"kind\": \"ALIAS\", \"status\": \"ACTIVE\" }"
+type ConceptEntry {
+  id: ID!
+  text: String!
+  "CANONICAL, ALIAS, PLURAL, REGIONAL, ABBREVIATION, or VARIANT."
+  kind: String
+  "PROPOSED, ACTIVE, or DEPRECATED."
+  status: String!
+}
+
+"A typed edge. Example on \"chicken thigh\": { \"type\": \"PART_OF\", \"status\": \"ACTIVE\", \"concept\": { \"canonicalName\": \"chicken\" } }"
+type ConceptRelationship {
+  id: ID!
+  "IS_A, PART_OF, DERIVED_FROM, or PROCESSED_FROM."
+  type: String!
+  status: String!
+  concept: ConceptRef!
+}
+
+"Example: { \"attributeValueId\": \"0193...\", \"definitionKey\": \"preservation\", \"valueKey\": \"canned\", \"label\": \"Canned\" }"
+type ConceptAttributeValue {
+  attributeValueId: ID!
+  definitionKey: String!
+  valueKey: String!
+  label: String!
+}
+
+"An effective classification. Example: { \"key\": \"ALLERGEN_MILK\", \"kind\": \"ALLERGEN\", \"value\": \"TRUE\", \"source\": \"INHERITED\", \"inheritedFrom\": { \"canonicalName\": \"milk\" } }"
+type ConceptClassification {
+  key: String!
+  kind: String!
+  "TRUE, FALSE, or UNKNOWN."
+  value: String!
+  "EXPLICIT, INHERITED, or CONFLICT."
+  source: String!
+  inheritedFrom: ConceptRef
+}
+
+"Example: { \"mentionId\": \"0193...\", \"lineText\": \"2 tbsp powdered sugar\", \"noteTitle\": \"Lemon Bars\", \"verified\": false }"
+type ConceptMention {
+  mentionId: ID!
+  rawText: String!
+  lineText: String!
+  noteId: ID
+  noteTitle: String
+  verified: Boolean!
+}
+
+"Example: { \"id\": \"0193...\", \"type\": \"MAP_TO_CONCEPT\", \"revision\": 14, \"username\": \"allie\", \"canRevert\": true }"
+type ConceptDecision {
+  id: ID!
+  type: String!
+  revision: Int!
+  createdAt: String!
+  username: String!
+  reverted: Boolean!
+  canRevert: Boolean!
+}
+
+"""
+Everything shown on the concept page.
+
+Example: query { concept(id: "0193...") { canonicalName entries { text kind } parents { type concept { canonicalName } } classifications { key value source } } }
+"""
+type Concept {
+  id: ID!
+  slug: String!
+  canonicalName: String!
+  status: ConceptStatus!
+  description: String
+  isComposed: Boolean!
+  mergedInto: ConceptRef
+  entries: [ConceptEntry!]!
+  "Edges where this concept is the more specific side, e.g. chicken thigh PART_OF chicken."
+  parents: [ConceptRelationship!]!
+  "Edges where this concept is the more general side."
+  children: [ConceptRelationship!]!
+  attributes: [ConceptAttributeValue!]!
+  classifications: [ConceptClassification!]!
+  mentions: [ConceptMention!]!
+  decisions: [ConceptDecision!]!
+}
+
+"""
+A reviewer's decision. `payload` must match DecisionPayloadSchema in @peas/parser/v2; set discoveryId when the decision answers a discovery.
+
+Example: { "payload": { "type": "MAP_TO_CONCEPT", "phrase": "icing sugar", "conceptId": "0193...", "kind": "ALIAS" }, "discoveryId": "0193..." }
+"""
+input ApplyDecisionInput {
+  payload: JSON!
+  discoveryId: ID
+}
+
+"""
+Example: { "success": true, "summary": "Taught: icing sugar is powdered sugar", "revision": 15, "mentionsUpdated": 12, "needsBackgroundReinterpret": false, "reinterpretCommand": null }
+"""
+type ApplyDecisionPayload implements MutationPayload {
+  success: Boolean!
+  message: String
+  effect: MutationEffect!
+  decisionId: ID
+  revision: Int
+  "What was taught, for the confirmation toast."
+  summary: String
+  "Mentions whose reading changed in this request."
+  mentionsUpdated: Int
+  "True when more lines were affected than one request reinterprets; run reinterpretCommand."
+  needsBackgroundReinterpret: Boolean!
+  "e.g. \"yarn workspace @peas/queue reinterpret --revision 15 --decision 0193...\""
+  reinterpretCommand: String
+}
+
+"Example: { \"success\": true, \"identityUpdated\": 3, \"modifiersUpdated\": 5, \"relationshipSuggestions\": 2 }"
+type RefreshDiscoveriesPayload implements MutationPayload {
+  success: Boolean!
+  message: String
+  effect: MutationEffect!
+  identityUpdated: Int
+  modifiersUpdated: Int
+  relationshipSuggestions: Int
+}
+
+# ---------------------------------------------------------------------------
 # Mutation effects (cache reconciliation contract)
 # ---------------------------------------------------------------------------
 
@@ -523,6 +951,10 @@ enum InvalidationDomain {
   INGREDIENT_DETAIL
   IMPORT_STATS
   DASHBOARD_STATS
+  DISCOVERIES
+  CONCEPTS
+  CONCEPT_DETAIL
+  MENTIONS
 }
 
 "A cache identity: GraphQL type name plus immutable id. Example: { \"typename\": \"Recipe\", \"id\": \"cm3r...\" }"
@@ -546,7 +978,7 @@ type MutationEffect {
   changed: [EntityRef!]!
   evicted: [EntityRef!]!
   invalidatedDomains: [InvalidationDomain!]!
-  "Lexicon revision after the mutation, once the ontology exists. Null until then."
+  "Lexicon revision after the mutation, set by Teach Peas decisions. Null for mutations that do not change knowledge."
   lexiconRevision: Int
   "Queue job reinterpreting affected lines, polled with Query.job."
   reprocessingJobId: ID
@@ -647,6 +1079,25 @@ type Query {
   ingredientCategoryNames: [String!]!
   "Name search for pickers, up to 10 results. Example: searchIngredients(query: \"papr\", excludeId: \"cm3i...\") -> [{ name: \"paprika\" }, { name: \"smoked paprika\" }]"
   searchIngredients(query: String!, excludeId: ID): [IngredientOption!]!
+  "Admin only. The review queue, highest priority first. Example: discoveryQueue(type: AMBIGUOUS_MATCH, cursor: \"0193...\")"
+  discoveryQueue(type: DiscoveryType, cursor: ID, limit: Int): DiscoveryPage!
+  "Admin only. Open discoveries per type, for the queue filters."
+  discoveryCounts: [DiscoveryTypeCount!]!
+  "Admin only."
+  discovery(id: ID!): Discovery
+  "Admin only. Example: concepts(query: \"sugar\", page: 1)"
+  concepts(query: String, page: Int): ConceptsPage!
+  "Admin only."
+  concept(id: ID!): Concept
+  "Admin only. Name and entry search for concept pickers, up to 10 results. Example: searchConcepts(query: \"thigh\")"
+  searchConcepts(query: String!): [ConceptRef!]!
+  "Admin only."
+  vocabulary: Vocabulary!
+  "Admin only. Example: playground(line: \"2 green apples\", mode: EXPLORATORY)"
+  playground(line: String!, mode: ParseMode): PlaygroundResult!
+  "Admin only. Impact of a decision without applying it."
+  previewDecision(payload: JSON!): DecisionPreview!
+  mention(id: ID!): Mention
 }
 
 type Mutation {
@@ -661,4 +1112,10 @@ type Mutation {
   createIngredient(input: IngredientCreateInput!): CreateIngredientPayload!
   "Admin only. Deletes all imported data and R2 objects; users and sessions are kept."
   cleanupAllData: CleanupAllDataPayload!
+  "Admin only. Applies a reviewed decision, bumps the lexicon revision, and reinterprets affected mentions (up to 1,000 lines in this request)."
+  applyDecision(input: ApplyDecisionInput!): ApplyDecisionPayload!
+  "Admin only. Sets an open discovery aside without deciding it."
+  deferDiscovery(id: ID!): BasicPayload!
+  "Admin only. Mines adjacency counts into open discoveries and suggests relationships by name."
+  refreshDiscoveries: RefreshDiscoveriesPayload!
 }

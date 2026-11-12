@@ -54,6 +54,7 @@ export const createMockUploadBatch = (
 export const createMockUploadState = (
   overrides: Partial<UploadState> = {}
 ): UploadState => ({
+  pendingBatches: [],
   previousBatches: [],
   currentBatch: undefined,
   ...overrides,

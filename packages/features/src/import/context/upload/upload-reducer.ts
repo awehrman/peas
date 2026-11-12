@@ -8,13 +8,27 @@ export function uploadReducer(
   action: UploadAction
 ): UploadState {
   switch (action.type) {
-    case "START_BATCH": {
+    case "QUEUE_BATCHES": {
       return {
         ...state,
+        pendingBatches: [...state.pendingBatches, ...action.batches],
+      };
+    }
+
+    case "START_BATCH": {
+      const pending = state.pendingBatches.find(
+        (batch) => batch.importId === action.importId
+      );
+      return {
+        ...state,
+        pendingBatches: pending
+          ? state.pendingBatches.filter((batch) => batch !== pending)
+          : state.pendingBatches,
         currentBatch: {
           importId: action.importId,
           createdAt: action.createdAt,
           numberOfFiles: action.numberOfFiles,
+          directoryName: pending?.directoryName,
           files: [],
         },
       };
@@ -100,6 +114,7 @@ export function uploadReducer(
     case "COMPLETE_BATCH": {
       if (!state.currentBatch) return state;
       return {
+        ...state,
         previousBatches: [
           ...state.previousBatches,
           {
@@ -117,6 +132,7 @@ export function uploadReducer(
     case "FAIL_BATCH": {
       if (!state.currentBatch) return state;
       return {
+        ...state,
         previousBatches: [
           ...state.previousBatches,
           {
@@ -138,6 +154,7 @@ export function uploadReducer(
     case "CLEAR_ALL_BATCHES":
       return {
         ...state,
+        pendingBatches: [],
         currentBatch: undefined,
         previousBatches: [],
       };
@@ -148,5 +165,6 @@ export function uploadReducer(
 }
 
 export const defaultUploadState: UploadState = {
+  pendingBatches: [],
   previousBatches: [],
 };

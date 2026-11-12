@@ -4927,6 +4927,7 @@ __metadata:
     "@oslojs/encoding": "npm:^1.1.0"
     "@peas/database": "npm:*"
     "@peas/eslint-config": "npm:*"
+    "@peas/parser": "npm:*"
     "@peas/pea-svg-generator": "npm:*"
     "@peas/typescript-config": "npm:*"
     "@types/node": "npm:^24.0.13"

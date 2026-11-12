@@ -15,7 +15,7 @@ import type { ImportStatsState, StatusEvent } from "../types/import-types";
 
 interface ImportProviderProps {
   children: ReactNode;
-  onStatsRefresh?: () => Promise<ImportStatsState>;
+  onStatsRefresh?: () => Promise<ImportStatsState | void>;
   getQueueToken?: QueueTokenProvider;
 }
 
@@ -28,7 +28,7 @@ function WebSocketIntegrationWrapper({
   onStatsRefresh,
 }: {
   children: ReactNode;
-  onStatsRefresh?: () => Promise<ImportStatsState>;
+  onStatsRefresh?: () => Promise<ImportStatsState | void>;
 }) {
   const { handleStatusUpdate } = useWebSocketUploadIntegration(onStatsRefresh);
   const { handleActivityStatusUpdate } = useWebSocketActivityIntegration();

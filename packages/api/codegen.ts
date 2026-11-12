@@ -14,6 +14,11 @@ const config: CodegenConfig = {
         useTypeImports: true,
         enumsAsTypes: true,
         contextType: "../context.js#ApiContext",
+        scalars: { JSON: "unknown" },
+        mappers: {
+          Discovery: "./teach-views-types.js#DiscoveryParent",
+          IngredientLine: "./teach-views-types.js#IngredientLineParent",
+        },
       },
     },
   },

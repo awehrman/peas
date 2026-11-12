@@ -20,6 +20,12 @@ const ID_KEYED_TYPES = [
   "IngredientOption",
   "IngredientAlias",
   "IngredientReference",
+  "Discovery",
+  "Mention",
+  "Concept",
+  "ConceptSummary",
+  "ConceptRef",
+  "LexiconEntryRef",
 ] as const;
 
 /** Value objects that must never be normalized. EntityRef's `id` belongs to another type, so normalizing it would merge unrelated entities. */
@@ -35,6 +41,16 @@ const EMBEDDED_TYPES = [
   "TopIngredient",
   "LabelCount",
   "YearCount",
+  "TextSpan",
+  "ResolutionView",
+  "SyntaxToken",
+  "ResolutionCandidateView",
+  "DiscoveryExample",
+  "DecisionPreview",
+  "DecisionPreviewCounts",
+  "DecisionPreviewExample",
+  "PlaygroundResult",
+  "PlaygroundMention",
 ] as const;
 
 interface RedirectOptions {
@@ -75,6 +91,9 @@ export const cacheConfig: InMemoryCacheConfig = {
         note: redirectToEntity("Note"),
         recipe: redirectToEntity("Recipe"),
         ingredient: redirectToEntity("Ingredient"),
+        discovery: redirectToEntity("Discovery"),
+        concept: redirectToEntity("Concept"),
+        mention: redirectToEntity("Mention"),
       },
     },
   },

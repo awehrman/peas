@@ -169,3 +169,58 @@ export async function deprecateLexiconEntries(
   });
   return result.count;
 }
+
+export interface LexiconEntryRefRecord {
+  id: string;
+  text: string;
+  role: LexiconEntryInput["role"];
+  status: EntryStatus;
+  conceptId: string | null;
+  attributeValueId: string | null;
+  /** Readable target: concept name, "definition: value", preparation key, or value key. */
+  targetLabel: string;
+}
+
+/**
+ * Entries with readable targets, for labelling the entry ids a discovery names.
+ *
+ * @example
+ * await getLexiconEntryRefs([greenColor, greenRipeness])
+ * // [{ text: "green", role: "ATTRIBUTE", targetLabel: "color: green" }, { text: "green", role: "ATTRIBUTE", targetLabel: "ripeness: unripe" }]
+ */
+export async function getLexiconEntryRefs(
+  ids: readonly string[],
+  db: DbClient = prisma
+): Promise<LexiconEntryRefRecord[]> {
+  if (ids.length === 0) return [];
+  const rows = await db.lexiconEntry.findMany({
+    where: { id: { in: [...new Set(ids)] } },
+    select: {
+      id: true,
+      text: true,
+      role: true,
+      status: true,
+      conceptId: true,
+      attributeValueId: true,
+      valueKey: true,
+      concept: { select: { canonicalName: true } },
+      attributeValue: {
+        select: { key: true, definition: { select: { key: true } } },
+      },
+      preparation: { select: { key: true } },
+    },
+  });
+  return rows.map((row) => ({
+    id: row.id,
+    text: row.text,
+    role: row.role,
+    status: row.status,
+    conceptId: row.conceptId,
+    attributeValueId: row.attributeValueId,
+    targetLabel:
+      row.concept?.canonicalName ??
+      (row.attributeValue
+        ? `${row.attributeValue.definition.key}: ${row.attributeValue.key}`
+        : (row.preparation?.key ?? row.valueKey ?? "")),
+  }));
+}

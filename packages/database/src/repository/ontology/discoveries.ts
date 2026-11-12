@@ -1,11 +1,12 @@
 import { type DbClient, parseOrThrow, toJson } from "./helpers.js";
 
 import {
+  DEFAULT_DISCOVERY_CONFIG,
   type DiscoveryPayload,
   DiscoveryPayloadSchema,
   priorityForDiscovery,
 } from "@peas/parser/v2";
-import type { DiscoveryStatus, DiscoveryType } from "@prisma/client";
+import type { DiscoveryStatus, DiscoveryType, Prisma } from "@prisma/client";
 
 import { prisma } from "../../client.js";
 
@@ -111,6 +112,25 @@ export interface DiscoveryQueueItem {
 }
 
 /**
+ * IDENTITY_DECISION discoveries wait until enough distinct notes support them; ones seeded without corpus evidence (the legacy seed) show right away.
+ */
+function queueWhere(
+  status: DiscoveryStatus,
+  type: DiscoveryType | undefined,
+  identityMinNotes: number
+): Prisma.DiscoveryWhereInput {
+  return {
+    status,
+    ...(type ? { type } : {}),
+    OR: [
+      { type: { not: "IDENTITY_DECISION" } },
+      { distinctNoteCount: { gte: identityMinNotes } },
+      { mentionCount: 0 },
+    ],
+  };
+}
+
+/**
  * One page of the review queue, highest priority first. Pass `nextCursor` back to get the following page.
  *
  * @example
@@ -123,16 +143,18 @@ export async function getDiscoveryQueue(
     status = "OPEN",
     cursor,
     limit = 25,
+    identityMinNotes = DEFAULT_DISCOVERY_CONFIG.identityMinNotes,
   }: {
     type?: DiscoveryType;
     status?: DiscoveryStatus;
     cursor?: string | null;
     limit?: number;
+    identityMinNotes?: number;
   } = {},
   db: DbClient = prisma
 ): Promise<{ items: DiscoveryQueueItem[]; nextCursor: string | null }> {
   const rows = await db.discovery.findMany({
-    where: { status, ...(type ? { type } : {}) },
+    where: queueWhere(status, type, identityMinNotes),
     orderBy: [{ priority: "desc" }, { id: "asc" }],
     take: limit + 1,
     ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
@@ -163,6 +185,26 @@ export async function getDiscoveryQueue(
   };
 }
 
+/**
+ * Open discoveries per type, with the same identity gate as the queue.
+ *
+ * @example
+ * await getDiscoveryCounts() // { UNKNOWN_FOOD_PHRASE: 31, UNKNOWN_MODIFIER: 12, AMBIGUOUS_MATCH: 2 }
+ */
+export async function getDiscoveryCounts(
+  {
+    identityMinNotes = DEFAULT_DISCOVERY_CONFIG.identityMinNotes,
+  }: { identityMinNotes?: number } = {},
+  db: DbClient = prisma
+): Promise<Partial<Record<DiscoveryType, number>>> {
+  const rows = await db.discovery.groupBy({
+    by: ["type"],
+    where: queueWhere("OPEN", undefined, identityMinNotes),
+    _count: { _all: true },
+  });
+  return Object.fromEntries(rows.map((row) => [row.type, row._count._all]));
+}
+
 export interface DiscoveryDetailRecord extends DiscoveryQueueItem {
   firstSeenRevision: number;
   lastSeenRevision: number;
@@ -170,6 +212,7 @@ export interface DiscoveryDetailRecord extends DiscoveryQueueItem {
   examples: {
     mentionId: string;
     noteId: string | null;
+    noteTitle: string | null;
     rawText: string;
     lineText: string;
     spanStart: number;
@@ -186,7 +229,10 @@ export interface DiscoveryDetailRecord extends DiscoveryQueueItem {
  */
 export async function getDiscoveryDetail(
   id: string,
-  { exampleLimit = 10 }: { exampleLimit?: number } = {},
+  {
+    exampleLimit = 10,
+    exampleOffset = 0,
+  }: { exampleLimit?: number; exampleOffset?: number } = {},
   db: DbClient = prisma
 ): Promise<DiscoveryDetailRecord | null> {
   const row = await db.discovery.findUnique({
@@ -194,12 +240,15 @@ export async function getDiscoveryDetail(
     include: {
       evidence: {
         take: exampleLimit,
+        skip: exampleOffset,
         orderBy: { mentionId: "asc" },
         include: {
           mention: {
             select: {
               rawText: true,
-              parsedLine: { select: { reference: true } },
+              parsedLine: {
+                select: { reference: true, Note: { select: { title: true } } },
+              },
             },
           },
         },
@@ -227,6 +276,7 @@ export async function getDiscoveryDetail(
     examples: row.evidence.map((evidence) => ({
       mentionId: evidence.mentionId,
       noteId: evidence.noteId,
+      noteTitle: evidence.mention.parsedLine.Note?.title ?? null,
       rawText: evidence.mention.rawText,
       lineText: evidence.mention.parsedLine.reference,
       spanStart: evidence.spanStart,

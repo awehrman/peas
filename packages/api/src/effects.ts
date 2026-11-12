@@ -14,6 +14,10 @@ export const INVALIDATION_DOMAINS = [
   "INGREDIENT_DETAIL",
   "IMPORT_STATS",
   "DASHBOARD_STATS",
+  "DISCOVERIES",
+  "CONCEPTS",
+  "CONCEPT_DETAIL",
+  "MENTIONS",
 ] as const;
 
 export type InvalidationDomain = (typeof INVALIDATION_DOMAINS)[number];
@@ -23,6 +27,19 @@ export const REVISION_SENSITIVE_DOMAINS: readonly InvalidationDomain[] = [
   "NOTE_DETAIL",
   "INGREDIENTS",
   "INGREDIENT_DETAIL",
+  "DISCOVERIES",
+  "CONCEPTS",
+  "CONCEPT_DETAIL",
+  "MENTIONS",
+];
+
+/** Everything a Teach Peas decision can make stale. */
+export const KNOWLEDGE_DOMAINS: readonly InvalidationDomain[] = [
+  "DISCOVERIES",
+  "CONCEPTS",
+  "CONCEPT_DETAIL",
+  "MENTIONS",
+  "NOTE_DETAIL",
 ];
 
 /** Domains refreshed when a background reprocessing job finishes. */
@@ -35,6 +52,8 @@ export const JOB_COMPLETION_DOMAINS: readonly InvalidationDomain[] = [
   "INGREDIENT_DETAIL",
   "IMPORT_STATS",
   "DASHBOARD_STATS",
+  "DISCOVERIES",
+  "MENTIONS",
 ];
 
 export const MAX_EFFECT_REFS = 100;
@@ -59,7 +78,7 @@ export const entityRefSchema = z.object({
  *   changed: [{ typename: "Ingredient", id: "cm3i..." }],   // evicted so the open editor refetches
  *   evicted: [],                                             // nothing was deleted or merged away
  *   invalidatedDomains: ["INGREDIENTS", "INGREDIENT_DETAIL"], // the list and other editors show the name
- *   lexiconRevision: null,                                   // set once lexicon edits exist (Phase 3)
+ *   lexiconRevision: null,                                   // set by Teach Peas decisions (Phase 4)
  *   reprocessingJobId: null,                                 // set when lines are re-parsed in the background
  * }
  */

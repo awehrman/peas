@@ -71,17 +71,37 @@ Phase 3 turns syntax into meaning: a pure resolver picks the food concept, attri
 
 What Phase 3 deliberately does not deliver: no Teach Peas screens (Phase 4), no queue integration or mention writes during import (Phase 5), and no storage for coordination parts yet (mentions are keyed by `(parsedLineId, segmentIndex)`; Phase 5 adds `partIndex`). Legacy-seeded concepts for unreviewed ingredients are PROPOSED, so conservative imports ignore them until a reviewer promotes them.
 
-## Where things stand (Phase 3)
+## Phase 4 deliverables
+
+Phase 4 puts the resolver to work on stored lines and lets a person teach Peas. Mentions and discoveries are written by a backfill; a review queue and focused cards turn discoveries into decisions; every decision bumps the lexicon revision, shows its impact before it is applied, and reinterprets the affected mentions. Imports still parse with v1 until Phase 5.
+
+| # | Deliverable | How to see it |
+| --- | --- | --- |
+| 1 | **Every active line has v2 mentions.** The backfill resolves each active `ParsedIngredientLine`, writes one mention per segment and the discoveries it suggests, logs a checkpoint per batch for `--after`, and never writes legacy tables. A second run changes nothing; verified mentions are never touched. On the dev database: 737 lines, 738 mentions, 365 unknown-food discoveries; the second run changed 0 mentions. | `yarn workspace @peas/queue backfill:mentions` (twice) |
+| 2 | **Typed discoveries in priority order.** Unknown food phrases (with words that name existing concepts as hints), unknown modifiers (with roles suggested by position and spelling), attribute meanings, identity questions (shown once two notes support them), ambiguous phrases, and relationship suggestions by name. Adjacency mining adds "appears before chicken thigh in N notes" counts. | `/teach` (admin), `discover()` in `@peas/parser/v2` |
+| 3 | **Decisions with real effects.** All 12 decision types write their effects in one transaction under one revision: entries (with generated plurals), concepts, relationships (cycle-checked), applicability, attribute values, ignored words, merges, mention corrections, and reverts. Every created or changed row is recorded so REVERT puts it back. | Integration tests "writes the same knowledge as the in-memory preview for every decision type" and "reverts a decision" |
+| 4 | **Before/after impact without side effects.** `previewDecision` applies the decision to an in-memory snapshot (`applyDecisionToSnapshot`), re-resolves the affected mentions both ways, and reports counts plus examples. Verified mentions that would read differently are shown as conflicts and never changed. | The impact panel on each review card; `/teach/playground` "Simulate decision" |
+| 5 | **Applying reinterprets right away.** Up to 1,000 affected lines are reinterpreted in the same request, and the confirmation reports how many mentions changed ("Taught: icing sugar is powdered sugar; 1 mention updated"). Larger decisions return a `reinterpret` command. | Scenario A in `apps/web/tests/teach.spec.ts`; `yarn workspace @peas/queue reinterpret --revision <r>` |
+| 6 | **Concept merge that can be undone.** Entries, relationships, classifications, attributes, applicability, mentions (verified too), legacy mappings, products, substitutions, and tags move to the survivor; contradicting classifications abort; a snapshot on `ConceptMergeRecord` lets REVERT restore everything. | Integration tests "moves every reference to the survivor" and "aborts on contradicting classifications" |
+| 7 | **Teach Peas screens.** Review queue with type filters and counts, focused review card (radio-group options per discovery type, examples drawer, live impact preview, keyboard shortcuts `j`/`k`/`1`-`9`/`e`/`Enter`/`d`), playground, concept list and concept page (names by kind, relationships both ways with an add form, inherited classifications marked, example mentions, decisions with revert), and a mention panel with a Correct control on every note line. | `/teach`, `/teach/playground`, `/concepts`, and any note page (admin) |
+| 8 | **Scenarios A, B, C, and E pass end to end**, plus a keyboard-only review, in Chromium and WebKit; axe WCAG 2.1 AA scans of the queue, a review card, and a concept page at desktop and mobile widths report no violations. | `TEST_DATABASE_URL=... yarn workspace @peas/web test:e2e tests/teach.spec.ts tests/teach.a11y.spec.ts` |
+| 9 | **Test suites.** 50 new parser tests, 11 database and 5 API integration tests, 17 API, 18 features, and 7 web unit tests, and 16 end-to-end tests; coverage floors raised in every package. | `yarn test:coverage` with `TEST_DATABASE_URL` |
+
+What Phase 4 deliberately does not deliver: imports still use v1 and mentions are not written during import (Phase 5); coordination splits store their first part only and go to review (Phase 5 adds `partIndex`); reinterpretation above 1,000 lines is a command, not a queue job (Phase 5); structural-pattern discoveries (Phase 6).
+
+## Where things stand (Phase 4)
 
 | Area | State |
 | --- | --- |
 | v2 parser (`packages/parser/src/v2`) | Built: normalizer with raw-offset map, tokenizer, exact rationals, unit table, token trie with conservative and exploratory segmentation, Peggy grammar ported from v1, Zod schemas, `parseLine`. Lexicon entry ids must be UUIDs. |
 | Shared ontology schemas (`@peas/parser/v2`) | Ontology enums, D15 inheritance rules, starting vocabulary, resolution, mention syntax, discovery, and decision payload schemas, D18 priority formula |
 | Resolver (`@peas/parser/v2`, `src/v2/resolve/`) | `buildResolverContext` (snapshot to lexicon plus ontology view), `resolveSegment`, `scoreCandidate`, `processIngredientLine`, `buildResolutionReport`; `RESOLVER_VERSION` 1.0.0. Pure: no database access. |
-| Ontology storage (`packages/database`) | 21 models in `prisma/schemas/ontology.prisma`, migration `20261112190000_add_food_ontology`, repositories in `src/repository/ontology/` (plus `loadResolverSnapshot`), vocabulary, modifier, and legacy seeds |
+| Teaching logic (`@peas/parser/v2`, `src/v2/knowledge/`, `src/v2/preview/`) | `discover`, `suggestRelationships`, `applyDecisionToSnapshot`, `decisionScope`, `generatePlural`, `diffResolution`, `summarizeResolution`. Pure. |
+| Ontology storage (`packages/database`) | 21 models in `prisma/schemas/ontology.prisma`, migration `20261112190000_add_food_ontology`, repositories in `src/repository/ontology/` (plus `loadResolverSnapshot`, `applyDecision`, `mergeConcepts`, `previewDecision`, `backfillMentions`, `computeAdjacency`), vocabulary, modifier, and legacy seeds |
+| Review UI (`apps/web`, `packages/features`, `packages/api`) | GraphQL queries and mutations for discoveries, concepts, mentions, playground, preview, and decisions; routes `/teach`, `/teach/$discoveryId`, `/teach/playground`, `/concepts`, `/concepts/$id` (admin only); mention panel on note pages; invalidation domains `DISCOVERIES`, `CONCEPTS`, `CONCEPT_DETAIL`, `MENTIONS` |
 | Regression fixtures | Corpus (reset to empty on 12 November 2026; refilled from fresh imports with `export:lines`), 182 dev cases (5 known failures), 41 held-out cases, structural, demo, and semantic lexicons (the semantic lexicon now carries a small ontology), `modifiers.seed.json`, v1 descriptor candidates, v1 baseline and snapshot |
-| Reports and tools | `report:compare` (v1 vs v2), `evaluate:resolution` and `db:evaluate:resolution` (resolution report), `preview:lexicon` (before/after preview of a lexicon change), `explain:line`, `extract:descriptors` |
-| Import pipeline | Still parses with v1; v2 is not wired into the queue until Phase 5 |
+| Reports and tools | `report:compare` (v1 vs v2), `evaluate:resolution` and `db:evaluate:resolution` (resolution report), `preview:lexicon` (before/after preview of a lexicon change), `explain:line`, `extract:descriptors`, `backfill:mentions` and `reinterpret` (queue scripts) |
+| Import pipeline | Still parses with v1; mentions come from the backfill. v2 is wired into the queue in Phase 5 |
 | Legacy grammars | The old v2 stub and the runtime-compiled grammar moved to `packages/parser/legacy/` (reference only); database grammars archived and their tables dropped |
 | Database | 42 migrations; `db:verify-migrations` replays them on a scratch database; integration tests run against `TEST_DATABASE_URL` |
 
@@ -169,9 +189,10 @@ Everything up to and including the resolver is pure TypeScript in `packages/pars
 Code that touches ingredient parsing or identity today:
 
 - **Queue:** `parse-ingredient-line`, `save-ingredient-line`, `track-pattern`, `schedule-categorization`, `check-completion`, `parser-resolver.ts`, `cached-ingredient-parser.ts`.
-- **Web:** `/ingredients` (`apps/web/src/lib/ingredients/actions`), `/notes/[id]` (`getNoteDetail`, `setIngredientLineReviewStatus`), `/recipes/[id]`. The `/parser` rule builder was removed in Phase 1.
+- **Web:** `/ingredients`, `/notes/$id` (now with a v2 mention panel per line), `/recipes/$id`, and the Phase 4 review routes `/teach`, `/teach/$discoveryId`, `/teach/playground`, `/concepts`, `/concepts/$id` (`apps/web/src/routes/_authed/`). The `/parser` rule builder was removed in Phase 1.
 - **Features:** `packages/features/src/{ingredients,notes,parsed-line}`.
-- **Database:** `repository/{ingredient,note,parsing-rule,pattern}.ts` (legacy) and `repository/ontology/` (Phase 2: revision, lexicon, concepts, relationships, attributes, classifications, mentions, discoveries, decisions, legacy mapping; Phase 3: resolver snapshot). Seeds in `src/seed/` (vocabulary, modifiers, legacy ingredients).
+- **Database:** `repository/{ingredient,note,parsing-rule,pattern}.ts` (legacy) and `repository/ontology/` (Phase 2: revision, lexicon, concepts, relationships, attributes, classifications, mentions, discoveries, decisions, legacy mapping; Phase 3: resolver snapshot; Phase 4: apply-decision, merge, preview, backfill, adjacency). Seeds in `src/seed/` (vocabulary, modifiers, legacy ingredients).
+- **API:** `packages/api/src/resolvers/teach.ts` and `teach-views.ts` (discoveries, concepts, mentions, playground, preview, decisions).
 
 ## Design decisions
 
@@ -201,6 +222,10 @@ Code that touches ingredient parsing or identity today:
 24. **Auto-resolution needs a single, fully explained reading.** Any unknown word in the main phrase, an attribute that does not apply, an ambiguous lexeme, a second food, or an "or" alternative sends the mention to review. Unknown words in trailing text or parentheses are notes and do not block. A line with no recognized food is UNRESOLVED with its unknown spans recorded.
 25. **Packages can imply a concept.** A quantity in cans or tins picks the head's single canned descendant (through IS_A, PROCESSED_FROM, or DERIVED_FROM with `preservation=canned`), so "2 cans tomatoes" resolves to canned tomatoes.
 26. **Legacy hierarchy is evidence, not truth.** The legacy seed never writes relationships; `parentIngredientId` becomes a RELATIONSHIP_SUGGESTION with a guessed type (PART_OF when the child names a part such as "thigh" or "zest", otherwise IS_A) for a reviewer to accept.
+27. **One decision, one revision, one transaction.** `applyDecision` bumps the revision once, records the LexiconDecision, writes every effect with that revision, and lists created, changed (with their previous status), and retired rows plus added applicability in `effects`, so REVERT undoes exactly what the decision did. Deferring is not a decision: it only sets the discovery to DEFERRED.
+28. **Previews mirror the database in memory.** `applyDecisionToSnapshot` produces the snapshot the resolver will see after a decision; an integration test applies every decision type both ways and compares the results. REVERT is the exception: its preview applies the revert in a transaction and rolls it back.
+29. **Shared backfill code lives in `@peas/database`.** The queue scripts and the API's in-request reinterpretation call the same `processLines`, which writes mentions (skipping rows whose content is unchanged) and upserts the discoveries a batch suggests once per type and key.
+30. **Decisions travel as typed JSON.** GraphQL has no input unions, so `applyDecision` and `previewDecision` take a `JSON` payload that the server validates with `DecisionPayloadSchema`; the review UI builds payloads with the same TypeScript types.
 
 ## Quantity model
 
@@ -233,6 +258,9 @@ yarn workspace @peas/database db:seed:ontology
 yarn workspace @peas/database db:seed:modifiers
 yarn workspace @peas/database db:seed:legacy --dry-run   # then without --dry-run; --batch 200 by default
 yarn workspace @peas/database db:evaluate:resolution     # live-database report, read-only
+yarn workspace @peas/queue backfill:mentions [--after <lineId>] [--batch 500] [--mode CONSERVATIVE]
+yarn workspace @peas/queue reinterpret --revision <r> [--decision <decisionId>]
+TEST_DATABASE_URL=... yarn workspace @peas/web test:e2e tests/teach.spec.ts tests/teach.a11y.spec.ts
 ```
 
 The integration setup wipes and migrates `TEST_DATABASE_URL` before running, and refuses to touch a database whose name lacks "test" or that matches `DATABASE_URL`. Create it once with `createdb peas_test`.
@@ -246,10 +274,11 @@ The v2 phases (1 foundation, 2 ontology schema, 3 lexicon and resolver, 4 Teach 
 3. M2: Prisma migration, before any new ontology repositories (Phase 2). Done in the working tree (Prisma 7.10.1 with the `pg` adapter).
 4. M3: TypeScript and Vite/Vitest upgrades in isolated groups. Done in the working tree (TypeScript 6.0.3, Vitest 5.1, Vite 8.3; see the web modernization record).
 5. M4: Next.js to TanStack Start; GraphQL with Apollo Client 4 (see [web modernization](./web-modernization.md)). Done on 12 November 2026, including cutover: the TanStack Start app is now `apps/web` (port 3100), serving every page through `packages/api`, with Playwright and axe tests; the Next.js app was deleted.
-6. M5: cache architecture (see [cache consistency](./cache-consistency.md)). Done on 12 November 2026 for today's domains; the knowledge domains join when Phases 3 and 4 add their queries.
+6. M5: cache architecture (see [cache consistency](./cache-consistency.md)). Done on 12 November 2026; the knowledge domains joined with Phase 4.
 7. Phase 2 (ontology schema): done on 12 November 2026, ahead of finishing M4 because it only touches `packages/database` and `packages/parser`.
 8. Phase 3 (lexicon-driven resolver and ontology seeding): done on 12 November 2026.
-9. Phases 4-7 continue on the modernized stack.
-10. Deferred: BullMQ 6, Redis client, Storybook 10, virtualization.
+9. Phase 4 (backfill, discoveries, and Teach Peas): done on 12 November 2026.
+10. Phases 5-7 continue on the modernized stack.
+11. Deferred: BullMQ 6, Redis client, Storybook 10, virtualization.
 
 Framework-independent parsing logic stays in `packages/parser` throughout.

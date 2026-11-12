@@ -1,3 +1,5 @@
+import { MAX_SEARCH_QUERY_LENGTH, toFilter, toPage } from "./validation";
+
 import {
   getDashboardStats,
   getImportStats,
@@ -16,7 +18,6 @@ import {
 
 import { requireViewer } from "../context";
 import type { QueryResolvers } from "../generated/resolvers-types";
-import { MAX_SEARCH_QUERY_LENGTH, toFilter, toPage } from "./validation";
 
 export const Query: QueryResolvers = {
   viewer: (_parent, _args, context) => context.viewer,

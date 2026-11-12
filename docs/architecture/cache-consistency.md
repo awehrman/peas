@@ -97,7 +97,7 @@ Background jobs are polled while active. Subscriptions or server-sent events are
 
 ### Today's domains
 
-The design's knowledge domains (`CONCEPT_DETAIL`, `CONCEPT_LIST`, `LEXICON`, `MENTIONS`, `REVIEW_QUEUE`, `CORPUS_HEALTH`) are added when their queries exist. For now:
+The knowledge domains joined with Phase 4. The design named six (`CONCEPT_DETAIL`, `CONCEPT_LIST`, `LEXICON`, `MENTIONS`, `REVIEW_QUEUE`, `CORPUS_HEALTH`); four were needed because the lexicon and corpus health have no query of their own yet (`DISCOVERIES` is the review queue, `CONCEPTS` the concept list).
 
 | Domain | Root fields dropped | Entities evicted |
 | --- | --- | --- |
@@ -110,6 +110,12 @@ The design's knowledge domains (`CONCEPT_DETAIL`, `CONCEPT_LIST`, `LEXICON`, `ME
 | `INGREDIENT_DETAIL` | `ingredient` | `Ingredient` |
 | `IMPORT_STATS` | `importStats` | none |
 | `DASHBOARD_STATS` | `dashboardStats` | none |
+| `DISCOVERIES` | `discoveryQueue`, `discoveryCounts`, `discovery` | `Discovery` |
+| `CONCEPTS` | `concepts`, `searchConcepts` | `ConceptSummary` |
+| `CONCEPT_DETAIL` | `concept` | `Concept` |
+| `MENTIONS` | `mention`, `playground`, `previewDecision` | `Mention` |
+
+Every Teach Peas decision (`applyDecision`) invalidates `DISCOVERIES`, `CONCEPTS`, `CONCEPT_DETAIL`, `MENTIONS`, and `NOTE_DETAIL` (note pages show mentions), changes the decided `Discovery`, evicts a merged concept's `Concept` and `ConceptSummary`, and carries the new `lexiconRevision`. Deferring changes the `Discovery` and invalidates `DISCOVERIES`. Decision previews are queries run with `no-cache`, since each option change asks again.
 
 Detail domains evict their entity type as well as the root field, because the read-through field policies would otherwise keep serving the cached entity.
 
@@ -117,7 +123,7 @@ Detail domains evict their entity type as well as the root field, because the re
 
 1. Validates the effect with Zod. A malformed effect means nobody knows what changed, so every active query refetches.
 2. Inside `client.refetchQueries({ updateCache })`: evicts each `changed` and `evicted` entity, drops the root fields and entity types of each invalidated domain, and garbage-collects. Apollo then refetches exactly the active queries the evictions touched; inactive queries refetch the next time they mount.
-3. Records `lexiconRevision`. A newer revision also invalidates `NOTE_DETAIL`, `INGREDIENTS`, and `INGREDIENT_DETAIL` (parse-dependent views); an older one changes nothing.
+3. Records `lexiconRevision`. A newer revision also invalidates the parse-dependent views (`NOTE_DETAIL`, `INGREDIENTS`, `INGREDIENT_DETAIL`, and the four knowledge domains); an older one changes nothing.
 4. Starts polling `reprocessingJobId`, if any.
 
 Mutations that return the changed entity in their payload (`setLineReviewStatus` returns the refreshed `Note`) update every mounted view straight from Apollo's normalization, with an empty effect and no refetch.
@@ -136,7 +142,7 @@ Two related choices sit outside the coordinator: the default fetch policy is `ca
 - a reprocessing job is polled to completion and then refreshes parse-derived views;
 - a failed job is reported without invalidating anything (retry arrives with the Phase 4 reprocessing UI).
 
-The merge, alias-approval, and reinterpretation scenarios below need the ontology mutations from Phases 3 and 4; they reuse the same coordinator.
+The alias-approval scenario runs end to end in `apps/web/tests/teach.spec.ts` (scenario A: the note shows powdered sugar after the decision). Merge and in-request reinterpretation are covered by the database and API integration tests; background reinterpretation through `reprocessingJobId` arrives with Phase 5.
 
 ## Test scenarios (M5)
 

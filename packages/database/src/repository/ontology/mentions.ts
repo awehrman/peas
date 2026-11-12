@@ -84,6 +84,18 @@ export async function upsertMentionsForLine(
       conceptId: true,
       spanStart: true,
       spanEnd: true,
+      rawText: true,
+      normalizedText: true,
+      syntax: true,
+      quantity: true,
+      resolution: true,
+      resolutionStatus: true,
+      score: true,
+      mode: true,
+      parserVersion: true,
+      normalizerVersion: true,
+      resolverVersion: true,
+      lexiconRevision: true,
     },
   });
   const existingByIndex = new Map(
@@ -123,6 +135,11 @@ export async function upsertMentionsForLine(
           line: input.line,
         });
       }
+      continue;
+    }
+
+    if (previous && isUnchanged(previous, prepared.data)) {
+      result.mentionIds.push(previous.id);
       continue;
     }
 
@@ -187,6 +204,61 @@ export async function upsertMentionsForLine(
   }
 
   return result;
+}
+
+const COMPARED_FIELDS = [
+  "rawText",
+  "normalizedText",
+  "spanStart",
+  "spanEnd",
+  "conceptId",
+  "resolutionStatus",
+  "score",
+  "mode",
+  "parserVersion",
+  "normalizerVersion",
+  "resolverVersion",
+  "lexiconRevision",
+] as const;
+
+/** True when a stored mention already holds exactly what would be written, so a repeated run touches nothing. */
+function isUnchanged(
+  previous: Record<
+    (typeof COMPARED_FIELDS)[number] | "syntax" | "quantity" | "resolution",
+    unknown
+  > & { verifiedAt: Date | null },
+  data: PreparedMention["data"]
+): boolean {
+  if (previous.verifiedAt) return false;
+  return (
+    COMPARED_FIELDS.every(
+      (field) => (previous[field] ?? null) === (data[field] ?? null)
+    ) &&
+    sameJson(previous.syntax, data.syntax) &&
+    sameJson(previous.quantity, data.quantity) &&
+    sameJson(previous.resolution, data.resolution)
+  );
+}
+
+/** Deep equality for JSON values; object key order is ignored (jsonb reorders keys) and undefined equals null. */
+function sameJson(a: unknown, b: unknown): boolean {
+  if (a === undefined || a === null || b === undefined || b === null)
+    return (a ?? null) === (b ?? null);
+  if (Array.isArray(a) || Array.isArray(b)) {
+    return (
+      Array.isArray(a) &&
+      Array.isArray(b) &&
+      a.length === b.length &&
+      a.every((item, index) => sameJson(item, b[index]))
+    );
+  }
+  if (typeof a === "object" && typeof b === "object") {
+    const left = a as Record<string, unknown>;
+    const right = b as Record<string, unknown>;
+    const keys = new Set([...Object.keys(left), ...Object.keys(right)]);
+    return [...keys].every((key) => sameJson(left[key], right[key]));
+  }
+  return a === b;
 }
 
 interface PreparedMention {
@@ -396,30 +468,56 @@ export interface MentionDetailRecord extends MentionRecord {
  * const detail = await getMentionDetail(mentionId);
  * // detail.syntax.segment.quantity, detail.resolution.candidates, detail.attributes -> [{ definitionKey: "bone", valueKey: "boneless", ... }]
  */
+const MENTION_DETAIL_INCLUDE = {
+  concept: { select: { canonicalName: true } },
+  attributes: {
+    include: {
+      attributeValue: {
+        include: { definition: { select: { key: true } } },
+      },
+    },
+  },
+  preparations: {
+    orderBy: { order: "asc" },
+    include: { preparation: { select: { key: true } } },
+  },
+  modifiers: { orderBy: { order: "asc" } },
+} satisfies Prisma.IngredientMentionInclude;
+
 export async function getMentionDetail(
   id: string,
   db: DbClient = prisma
 ): Promise<MentionDetailRecord | null> {
   const row = await db.ingredientMention.findUnique({
     where: { id },
-    include: {
-      concept: { select: { canonicalName: true } },
-      attributes: {
-        include: {
-          attributeValue: {
-            include: { definition: { select: { key: true } } },
-          },
-        },
-      },
-      preparations: {
-        orderBy: { order: "asc" },
-        include: { preparation: { select: { key: true } } },
-      },
-      modifiers: { orderBy: { order: "asc" } },
-    },
+    include: MENTION_DETAIL_INCLUDE,
   });
-  if (!row) return null;
+  return row ? toMentionDetail(row) : null;
+}
 
+/**
+ * Every mention of a line with its detail, in segment order (the note page's mention panel).
+ *
+ * @example
+ * await getMentionDetailsForLine(lineId) // [{ segmentIndex: 0, conceptName: "chicken thigh", attributes: [{ definitionKey: "bone", ... }], ... }]
+ */
+export async function getMentionDetailsForLine(
+  parsedLineId: string,
+  db: DbClient = prisma
+): Promise<MentionDetailRecord[]> {
+  const rows = await db.ingredientMention.findMany({
+    where: { parsedLineId },
+    orderBy: { segmentIndex: "asc" },
+    include: MENTION_DETAIL_INCLUDE,
+  });
+  return rows.map(toMentionDetail);
+}
+
+function toMentionDetail(
+  row: Prisma.IngredientMentionGetPayload<{
+    include: typeof MENTION_DETAIL_INCLUDE;
+  }>
+): MentionDetailRecord {
   return {
     id: row.id,
     parsedLineId: row.parsedLineId,

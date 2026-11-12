@@ -1,0 +1,83 @@
+query ConceptsPage($query: String, $page: Int) {
+  concepts(query: $query, page: $page) {
+    items {
+      id
+      slug
+      canonicalName
+      status
+      entryCount
+      mentionCount
+    }
+    total
+    page
+    pageSize
+  }
+}
+
+query ConceptDetail($id: ID!) {
+  concept(id: $id) {
+    id
+    slug
+    canonicalName
+    status
+    description
+    isComposed
+    mergedInto {
+      ...ConceptRefFields
+    }
+    entries {
+      id
+      text
+      kind
+      status
+    }
+    parents {
+      id
+      type
+      status
+      concept {
+        ...ConceptRefFields
+      }
+    }
+    children {
+      id
+      type
+      status
+      concept {
+        ...ConceptRefFields
+      }
+    }
+    attributes {
+      attributeValueId
+      definitionKey
+      valueKey
+      label
+    }
+    classifications {
+      key
+      kind
+      value
+      source
+      inheritedFrom {
+        ...ConceptRefFields
+      }
+    }
+    mentions {
+      mentionId
+      rawText
+      lineText
+      noteId
+      noteTitle
+      verified
+    }
+    decisions {
+      id
+      type
+      revision
+      createdAt
+      username
+      reverted
+      canRevert
+    }
+  }
+}

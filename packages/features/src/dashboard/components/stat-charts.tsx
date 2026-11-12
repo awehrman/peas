@@ -101,7 +101,7 @@ export function StackedBar({
         {visible.map((segment) => (
           <div
             key={segment.label}
-            className={segment.colorClassName}
+            className={`${segment.colorClassName} transition-[width] duration-500 ease-out`}
             style={{ width: `${(segment.count / total) * 100}%` }}
           />
         ))}

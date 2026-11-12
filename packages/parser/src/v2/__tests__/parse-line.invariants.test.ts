@@ -1,8 +1,12 @@
 import { randomUUID } from "node:crypto";
-
 import { describe, expect, it } from "vitest";
 
-import type { IngredientLineSyntax, PhraseItem, Quantity, TextSpan } from "../ast/types.js";
+import type {
+  IngredientLineSyntax,
+  PhraseItem,
+  Quantity,
+  TextSpan,
+} from "../ast/types.js";
 import { describeSyntax } from "../debug/describe.js";
 import { buildLexicon } from "../lexicon/token-trie.js";
 import { parseLine, parseLineBest } from "../parse-line.js";
@@ -17,7 +21,11 @@ function quantitySpans(quantity: Quantity): TextSpan[] {
     case "RANGE":
       return [quantity.span, ...(quantity.unit ? [quantity.unit.span] : [])];
     case "APPROXIMATE":
-      return [quantity.span, quantity.marker, ...quantitySpans(quantity.quantity)];
+      return [
+        quantity.span,
+        quantity.marker,
+        ...quantitySpans(quantity.quantity),
+      ];
     case "PACKAGE":
       return [
         quantity.span,
@@ -47,7 +55,9 @@ function allSpans(line: IngredientLineSyntax): TextSpan[] {
         ...itemSpans(p.phrase),
         ...(p.quantity ? quantitySpans(p.quantity) : []),
       ]),
-      ...(segment.trailing ? [segment.trailing.span, ...itemSpans(segment.trailing.phrase)] : []),
+      ...(segment.trailing
+        ? [segment.trailing.span, ...itemSpans(segment.trailing.phrase)]
+        : []),
       ...(segment.coordination ? [segment.coordination.conjunction] : []),
     ]),
   ];
@@ -106,7 +116,9 @@ describe("parse invariants", () => {
     });
     for (const input of SAMPLE_LINES) {
       const without = parseLineBest(input).segments.map((s) => s.quantity);
-      const withLexicon = parseLineBest(input, { lexicon }).segments.map((s) => s.quantity);
+      const withLexicon = parseLineBest(input, { lexicon }).segments.map(
+        (s) => s.quantity
+      );
       expect(withLexicon).toEqual(without);
     }
   });
@@ -121,7 +133,10 @@ describe("parse invariants", () => {
       ],
     });
     expect(parseLine("1 cup whole milk", { lexicon })).toHaveLength(1);
-    const explored = parseLine("1 cup whole milk", { lexicon, mode: "EXPLORATORY" });
+    const explored = parseLine("1 cup whole milk", {
+      lexicon,
+      mode: "EXPLORATORY",
+    });
     expect(explored.map(describeSyntax)).toEqual([
       "[1 cup] {whole milk:FOOD}",
       "[1 cup] {whole:ATTRIBUTE} {milk:FOOD}",

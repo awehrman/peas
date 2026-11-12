@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 
 import type { IngredientLineSyntax, ParseStatus } from "../../ast/types.js";
 import { describeQuantity, phraseText } from "../../debug/describe.js";
-import { buildLexicon, type Lexicon } from "../../lexicon/token-trie.js";
+import { type Lexicon, buildLexicon } from "../../lexicon/token-trie.js";
 import type { LexiconSnapshot } from "../../lexicon/types.js";
 
 export interface GoldenSegment {
@@ -34,7 +34,9 @@ export function toGolden(syntax: IngredientLineSyntax): GoldenExpectation {
   return {
     status: syntax.status,
     segments: syntax.segments.map((segment) => ({
-      ...(segment.quantity ? { quantity: describeQuantity(segment.quantity) } : {}),
+      ...(segment.quantity
+        ? { quantity: describeQuantity(segment.quantity) }
+        : {}),
       ...(segment.measurementModifiers.length
         ? { measurementModifiers: phraseText(segment.measurementModifiers) }
         : {}),
@@ -43,7 +45,9 @@ export function toGolden(syntax: IngredientLineSyntax): GoldenExpectation {
         ? {
             parentheticals: segment.parentheticals.map((parenthetical) =>
               [
-                parenthetical.quantity ? `[${describeQuantity(parenthetical.quantity)}]` : "",
+                parenthetical.quantity
+                  ? `[${describeQuantity(parenthetical.quantity)}]`
+                  : "",
                 phraseText(parenthetical.phrase),
               ]
                 .filter(Boolean)
@@ -51,12 +55,16 @@ export function toGolden(syntax: IngredientLineSyntax): GoldenExpectation {
             ),
           }
         : {}),
-      ...(segment.trailing?.phrase.length ? { trailing: phraseText(segment.trailing.phrase) } : {}),
+      ...(segment.trailing?.phrase.length
+        ? { trailing: phraseText(segment.trailing.phrase) }
+        : {}),
     })),
   };
 }
 
-const fixturesDir = fileURLToPath(new URL("../../../../fixtures/", import.meta.url));
+const fixturesDir = fileURLToPath(
+  new URL("../../../../fixtures/", import.meta.url)
+);
 
 export function loadFixture<T>(relativePath: string): T {
   return JSON.parse(readFileSync(`${fixturesDir}${relativePath}`, "utf8")) as T;
@@ -77,7 +85,9 @@ export function loadCorpus(): CorpusLine[] {
     .map((line) => JSON.parse(line) as CorpusLine);
 }
 
-export function loadGoldenCases(name: "structural.dev" | "structural.holdout"): GoldenCase[] {
+export function loadGoldenCases(
+  name: "structural.dev" | "structural.holdout"
+): GoldenCase[] {
   return loadFixture<GoldenCase[]>(`golden/${name}.json`);
 }
 
