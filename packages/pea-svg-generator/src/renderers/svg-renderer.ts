@@ -1,6 +1,7 @@
 import type { PeaConfig, BlobPeaConfig } from "../types.js";
 import { BlobShapeGenerator } from "../shape-generators/blob-shape-generator.js";
 import { darkenHexColor } from "../utils/color-utils.js";
+import { renderContourPea } from "./contour-pea.js";
 
 /**
  * Renders peas to SVG format
@@ -37,42 +38,7 @@ export class SVGRenderer {
    * Renders a blob pea to SVG
    */
   public renderBlobPea(config: BlobPeaConfig): string {
-    let svg = `<g transform="translate(${config.x}, ${config.y})">`;
-
-    // Render main pea
-    svg += this.blobGenerator.generateBlobPea(config);
-
-    // Render highlights
-    config.highlights.forEach((highlight) => {
-      const highlightConfig: BlobPeaConfig = {
-        id: config.id,
-        x: highlight.x,
-        y: highlight.y,
-        width: config.width * highlight.scale,
-        height: config.height * highlight.scale,
-        color: {
-          ...config.color,
-          base: highlight.color ?? config.color.highlight,
-          stroke: "none",
-        },
-        highlights: [],
-        description: `highlight`,
-        blobSeed: highlight.blobSeed,
-      };
-
-      // Position highlights relative to blob center
-      const highlightX = config.width / 2 + highlight.x;
-      const highlightY = config.height / 2 + highlight.y;
-
-      svg += `<g transform="translate(${highlightX}, ${highlightY})">`;
-      svg += this.blobGenerator
-        .generateBlobPea(highlightConfig)
-        .replace('stroke="1"', 'stroke="none"');
-      svg += `</g>`;
-    });
-
-    svg += `</g>\n`;
-    return svg;
+    return renderContourPea(config);
   }
 
   /**

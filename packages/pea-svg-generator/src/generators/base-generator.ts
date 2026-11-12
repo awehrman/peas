@@ -21,6 +21,8 @@ export abstract class BaseGenerator {
       margin: options.margin ?? 140,
       outputPath: options.outputPath ?? "generated-peas.svg",
       useBlobs: options.useBlobs ?? false,
+      count: options.count ?? 200,
+      seed: options.seed ?? 42,
     };
   }
 

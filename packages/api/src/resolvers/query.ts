@@ -1,4 +1,5 @@
 import {
+  getDashboardStats,
   getImportStats,
   getIngredientCategoryNames,
   getIngredientCounts,
@@ -37,6 +38,11 @@ export const Query: QueryResolvers = {
   importStats: (_parent, _args, context) => {
     requireViewer(context);
     return getImportStats();
+  },
+
+  dashboardStats: (_parent, _args, context) => {
+    requireViewer(context);
+    return getDashboardStats();
   },
 
   job: async (_parent, { jobId }, context) => {

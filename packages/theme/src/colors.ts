@@ -155,6 +155,7 @@ const bodyText = "oklch(25.2% 0 0)";
 export const colors: ColorPalette = {
   white,
   black,
+  navy,
   primary: {
     ...primaryColors,
     DEFAULT: primaryColors[600], // Darker than recipes' teal so white text stays readable

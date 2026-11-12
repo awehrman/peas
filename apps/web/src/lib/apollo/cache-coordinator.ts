@@ -35,6 +35,7 @@ export const DOMAIN_CACHE_KEYS: Readonly<
   },
   INGREDIENT_DETAIL: { fields: ["ingredient"], types: ["Ingredient"] },
   IMPORT_STATS: { fields: ["importStats"], types: [] },
+  DASHBOARD_STATS: { fields: ["dashboardStats"], types: [] },
 };
 
 export type JobState = NonNullable<JobStatusQuery["job"]>["status"] | "MISSING";

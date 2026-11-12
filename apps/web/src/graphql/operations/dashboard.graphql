@@ -1,0 +1,46 @@
+query DashboardStats {
+  dashboardStats {
+    noteCount
+    recipeCount
+    notesReadyToPromote
+    ingredientCount
+    reviewedIngredientCount
+    instructionLineCount
+    notesByStatus {
+      pending
+      processing
+      completed
+      failed
+      duplicate
+    }
+    ingredientLines {
+      total
+      parsedSuccessfully
+      parsedWithErrors
+      awaitingParsing
+      markedCorrect
+      markedIncorrect
+    }
+    topIngredients {
+      ingredientId
+      name
+      lineCount
+    }
+    topSources {
+      label
+      count
+    }
+    topCategories {
+      label
+      count
+    }
+    topTags {
+      label
+      count
+    }
+    notesBySavedYear {
+      year
+      count
+    }
+  }
+}

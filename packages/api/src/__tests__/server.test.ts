@@ -5,6 +5,7 @@ const database = vi.hoisted(() => ({
   getNotesPage: vi.fn(),
   getNoteDetail: vi.fn(),
   getImportStats: vi.fn(),
+  getDashboardStats: vi.fn(),
   getQueueJobByJobId: vi.fn(),
   getRecipesPage: vi.fn(),
   getRecipeDetail: vi.fn(),
@@ -97,6 +98,52 @@ describe("GraphQL server", () => {
     const result = await run("{ notes { total } }", null);
     expect(result.errors?.[0]?.extensions?.code).toBe("UNAUTHENTICATED");
     expect(database.getNotesPage).not.toHaveBeenCalled();
+  });
+
+  it("serves dashboard stats only to signed-in viewers", async () => {
+    const signedOut = await run("{ dashboardStats { noteCount } }", null);
+    expect(signedOut.errors?.[0]?.extensions?.code).toBe("UNAUTHENTICATED");
+    expect(database.getDashboardStats).not.toHaveBeenCalled();
+
+    database.getDashboardStats.mockResolvedValue({
+      noteCount: 3,
+      recipeCount: 1,
+      notesReadyToPromote: 1,
+      ingredientCount: 5,
+      reviewedIngredientCount: 2,
+      instructionLineCount: 9,
+      notesByStatus: {
+        pending: 0,
+        processing: 0,
+        completed: 2,
+        failed: 1,
+        duplicate: 0,
+      },
+      ingredientLines: {
+        total: 12,
+        parsedSuccessfully: 11,
+        parsedWithErrors: 1,
+        awaitingParsing: 0,
+        markedCorrect: 4,
+        markedIncorrect: 1,
+      },
+      topIngredients: [{ ingredientId: "i1", name: "garlic", lineCount: 3 }],
+      topSources: [{ label: "Serious Eats", count: 2 }],
+      topCategories: [],
+      topTags: [],
+      notesBySavedYear: [{ year: 2019, count: 3 }],
+    });
+    const result = await run(
+      "{ dashboardStats { noteCount notesByStatus { failed } ingredientLines { parsedWithErrors } topIngredients { name lineCount } notesBySavedYear { year count } } }",
+      user
+    );
+    expect(result.data?.dashboardStats).toEqual({
+      noteCount: 3,
+      notesByStatus: { failed: 1 },
+      ingredientLines: { parsedWithErrors: 1 },
+      topIngredients: [{ name: "garlic", lineCount: 3 }],
+      notesBySavedYear: [{ year: 2019, count: 3 }],
+    });
   });
 
   it("normalizes note filters before calling the repository", async () => {
@@ -245,7 +292,13 @@ describe("GraphQL server", () => {
     expect(result.data?.saveIngredient).toMatchObject({
       success: true,
       nextId: "i2",
-      effect: { invalidatedDomains: ["INGREDIENTS", "INGREDIENT_DETAIL"] },
+      effect: {
+        invalidatedDomains: [
+          "INGREDIENTS",
+          "INGREDIENT_DETAIL",
+          "DASHBOARD_STATS",
+        ],
+      },
     });
   });
 

@@ -66,7 +66,7 @@ export const Mutation: MutationResolvers = {
             { typename: "Note", id: noteId },
             { typename: "NoteSummary", id: noteId },
           ],
-          invalidatedDomains: ["RECIPES", "RECIPE_TAXONOMY"],
+          invalidatedDomains: ["RECIPES", "RECIPE_TAXONOMY", "DASHBOARD_STATS"],
         }),
       };
     } catch (error) {
@@ -91,6 +91,7 @@ export const Mutation: MutationResolvers = {
             "NOTE_DETAIL",
             "RECIPES",
             "RECIPE_TAXONOMY",
+            "DASHBOARD_STATS",
           ],
         }),
       };
@@ -135,7 +136,11 @@ export const Mutation: MutationResolvers = {
         nextId,
         effect: createMutationEffect({
           changed: [{ typename: "Ingredient", id: saved.id }],
-          invalidatedDomains: ["INGREDIENTS", "INGREDIENT_DETAIL"],
+          invalidatedDomains: [
+            "INGREDIENTS",
+            "INGREDIENT_DETAIL",
+            "DASHBOARD_STATS",
+          ],
         }),
       };
     } catch (error) {
@@ -154,7 +159,9 @@ export const Mutation: MutationResolvers = {
         __typename: "CreateIngredientPayload",
         success: true,
         id: created.id,
-        effect: createMutationEffect({ invalidatedDomains: ["INGREDIENTS"] }),
+        effect: createMutationEffect({
+          invalidatedDomains: ["INGREDIENTS", "DASHBOARD_STATS"],
+        }),
       };
     } catch (error) {
       return toFailurePayload(error);

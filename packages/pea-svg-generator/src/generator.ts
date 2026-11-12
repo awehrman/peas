@@ -22,6 +22,8 @@ export class PeaGenerator {
       margin: options.margin ?? 140,
       outputPath: options.outputPath ?? "generated-peas.svg",
       useBlobs: options.useBlobs ?? false,
+      count: options.count ?? 200,
+      seed: options.seed ?? 42,
     };
 
     this.regularGenerator = new RegularPeaGenerator(options);
@@ -54,7 +56,7 @@ export class PeaGenerator {
 
     if (this.options.useBlobs) {
       // Generate 200 random blob peas in a grid
-      const configs = this.generateManyBlobPeaConfigs(200);
+      const configs = this.generateManyBlobPeaConfigs(this.options.count);
       svg += this.svgRenderer.renderManyBlobPeas(configs);
     } else {
       // Handle regular peas

@@ -29,6 +29,12 @@ const EMBEDDED_TYPES = [
   "DeletedCount",
   "ParsedSegment",
   "IngredientBlock",
+  "DashboardStats",
+  "NoteStatusCounts",
+  "IngredientLineStats",
+  "TopIngredient",
+  "LabelCount",
+  "YearCount",
 ] as const;
 
 interface RedirectOptions {

@@ -79,7 +79,7 @@ export function LoginForm({ error }: { error?: string }) {
   const [actionState, action] = useCredentialAction(loginFn);
 
   return (
-    <UnauthenticatedLayout title="Sign in" subtitle="Welcome back to Peas">
+    <UnauthenticatedLayout title="Sign in">
       <Form action={action} actionState={actionState}>
         {error && (
           <div

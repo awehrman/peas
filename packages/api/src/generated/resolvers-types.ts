@@ -36,6 +36,33 @@ export type CreateIngredientPayload = MutationPayload & {
   success: Scalars['Boolean']['output'];
 };
 
+/**
+ * Corpus-wide numbers for the dashboard. Top lists hold up to 8 entries.
+ *
+ * Example: query { dashboardStats { noteCount recipeCount notesByStatus { completed failed } topIngredients { name lineCount } } }
+ */
+export type DashboardStats = {
+  __typename?: 'DashboardStats';
+  ingredientCount: Scalars['Int']['output'];
+  ingredientLines: IngredientLineStats;
+  instructionLineCount: Scalars['Int']['output'];
+  noteCount: Scalars['Int']['output'];
+  /** When notes were first saved in Evernote, ascending by year; empty years are omitted. */
+  notesBySavedYear: Array<YearCount>;
+  notesByStatus: NoteStatusCounts;
+  /** Completed notes that have not been promoted to a recipe yet. */
+  notesReadyToPromote: Scalars['Int']['output'];
+  recipeCount: Scalars['Int']['output'];
+  reviewedIngredientCount: Scalars['Int']['output'];
+  /** Category names by note count. */
+  topCategories: Array<LabelCount>;
+  topIngredients: Array<TopIngredient>;
+  /** Websites with the most saved recipe URLs. */
+  topSources: Array<LabelCount>;
+  /** Tag names by note count. */
+  topTags: Array<LabelCount>;
+};
+
 /** Example: { "key": "notes", "count": 1 } */
 export type DeletedCount = {
   __typename?: 'DeletedCount';
@@ -141,6 +168,21 @@ export type IngredientLine = {
   segments: Array<ParsedSegment>;
 };
 
+/**
+ * Active ingredient lines by parse outcome and by review verdict. Lines not marked correct or incorrect are unreviewed.
+ *
+ * Example: { "total": 5120, "parsedSuccessfully": 4980, "parsedWithErrors": 120, "awaitingParsing": 20, "markedCorrect": 310, "markedIncorrect": 12 }
+ */
+export type IngredientLineStats = {
+  __typename?: 'IngredientLineStats';
+  awaitingParsing: Scalars['Int']['output'];
+  markedCorrect: Scalars['Int']['output'];
+  markedIncorrect: Scalars['Int']['output'];
+  parsedSuccessfully: Scalars['Int']['output'];
+  parsedWithErrors: Scalars['Int']['output'];
+  total: Scalars['Int']['output'];
+};
+
 /** A lightweight ingredient reference for pickers. Example: { "id": "cm3i...", "name": "paprika" } */
 export type IngredientOption = {
   __typename?: 'IngredientOption';
@@ -236,6 +278,7 @@ export type InstructionLine = {
  * Example: renaming an ingredient invalidates INGREDIENTS (the list shows the name) and INGREDIENT_DETAIL (other ingredients show it as a parent or substitution).
  */
 export type InvalidationDomain =
+  | 'DASHBOARD_STATS'
   | 'IMPORT_STATS'
   | 'INGREDIENTS'
   | 'INGREDIENT_DETAIL'
@@ -276,6 +319,13 @@ export type JobType =
   | 'PROCESS_INGREDIENT_LINE'
   | 'PROCESS_INSTRUCTION_LINE'
   | 'PROCESS_NOTE';
+
+/** A ranked name with a count. Example: { "label": "Serious Eats", "count": 57 } */
+export type LabelCount = {
+  __typename?: 'LabelCount';
+  count: Scalars['Int']['output'];
+  label: Scalars['String']['output'];
+};
 
 /** A person's verdict on how an ingredient line was parsed. */
 export type LineReviewStatus =
@@ -406,6 +456,16 @@ export type NoteStatus =
   | 'PENDING'
   | 'PROCESSING';
 
+/** Example: { "pending": 0, "processing": 1, "completed": 412, "failed": 3, "duplicate": 9 } */
+export type NoteStatusCounts = {
+  __typename?: 'NoteStatusCounts';
+  completed: Scalars['Int']['output'];
+  duplicate: Scalars['Int']['output'];
+  failed: Scalars['Int']['output'];
+  pending: Scalars['Int']['output'];
+  processing: Scalars['Int']['output'];
+};
+
 /**
  * One row of the notes list.
  *
@@ -484,6 +544,7 @@ export type PromoteNotePayload = MutationPayload & {
 
 export type Query = {
   __typename?: 'Query';
+  dashboardStats: DashboardStats;
   importStats: ImportStats;
   ingredient?: Maybe<Ingredient>;
   ingredientCategoryNames: Array<Scalars['String']['output']>;
@@ -650,6 +711,15 @@ export type SourceUrl = {
   url: Scalars['String']['output'];
 };
 
+/** Example: { "ingredientId": "cm3i...", "name": "garlic", "lineCount": 214 } */
+export type TopIngredient = {
+  __typename?: 'TopIngredient';
+  ingredientId: Scalars['ID']['output'];
+  /** How many ingredient lines mention it. */
+  lineCount: Scalars['Int']['output'];
+  name: Scalars['String']['output'];
+};
+
 export type UserType =
   | 'ADMIN'
   | 'USER';
@@ -667,6 +737,13 @@ export type Viewer = {
   id: Scalars['ID']['output'];
   userType: UserType;
   username: Scalars['String']['output'];
+};
+
+/** Example: { "year": 2019, "count": 48 } */
+export type YearCount = {
+  __typename?: 'YearCount';
+  count: Scalars['Int']['output'];
+  year: Scalars['Int']['output'];
 };
 
 export type WithIndex<TObject> = TObject & Record<string, any>;
@@ -759,6 +836,7 @@ export type ResolversTypes = ResolversObject<{
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
   CleanupAllDataPayload: ResolverTypeWrapper<CleanupAllDataPayload>;
   CreateIngredientPayload: ResolverTypeWrapper<CreateIngredientPayload>;
+  DashboardStats: ResolverTypeWrapper<DashboardStats>;
   DeletedCount: ResolverTypeWrapper<DeletedCount>;
   EntityRef: ResolverTypeWrapper<EntityRef>;
   EvernoteMetadata: ResolverTypeWrapper<EvernoteMetadata>;
@@ -771,6 +849,7 @@ export type ResolversTypes = ResolversObject<{
   IngredientCounts: ResolverTypeWrapper<IngredientCounts>;
   IngredientCreateInput: IngredientCreateInput;
   IngredientLine: ResolverTypeWrapper<IngredientLine>;
+  IngredientLineStats: ResolverTypeWrapper<IngredientLineStats>;
   IngredientOption: ResolverTypeWrapper<IngredientOption>;
   IngredientProperty: IngredientProperty;
   IngredientReference: ResolverTypeWrapper<IngredientReference>;
@@ -783,6 +862,7 @@ export type ResolversTypes = ResolversObject<{
   Job: ResolverTypeWrapper<Job>;
   JobStatus: JobStatus;
   JobType: JobType;
+  LabelCount: ResolverTypeWrapper<LabelCount>;
   LineReviewStatus: LineReviewStatus;
   Mutation: ResolverTypeWrapper<Record<PropertyKey, never>>;
   MutationEffect: ResolverTypeWrapper<MutationEffect>;
@@ -791,6 +871,7 @@ export type ResolversTypes = ResolversObject<{
   Note: ResolverTypeWrapper<Note>;
   NoteImage: ResolverTypeWrapper<NoteImage>;
   NoteStatus: NoteStatus;
+  NoteStatusCounts: ResolverTypeWrapper<NoteStatusCounts>;
   NoteSummary: ResolverTypeWrapper<NoteSummary>;
   NotesPage: ResolverTypeWrapper<NotesPage>;
   ParseStatus: ParseStatus;
@@ -809,8 +890,10 @@ export type ResolversTypes = ResolversObject<{
   SourceBook: ResolverTypeWrapper<SourceBook>;
   SourceUrl: ResolverTypeWrapper<SourceUrl>;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
+  TopIngredient: ResolverTypeWrapper<TopIngredient>;
   UserType: UserType;
   Viewer: ResolverTypeWrapper<Viewer>;
+  YearCount: ResolverTypeWrapper<YearCount>;
 }>;
 
 /** Mapping between all available schema types and the resolvers parents */
@@ -819,6 +902,7 @@ export type ResolversParentTypes = ResolversObject<{
   Boolean: Scalars['Boolean']['output'];
   CleanupAllDataPayload: CleanupAllDataPayload;
   CreateIngredientPayload: CreateIngredientPayload;
+  DashboardStats: DashboardStats;
   DeletedCount: DeletedCount;
   EntityRef: EntityRef;
   EvernoteMetadata: EvernoteMetadata;
@@ -831,6 +915,7 @@ export type ResolversParentTypes = ResolversObject<{
   IngredientCounts: IngredientCounts;
   IngredientCreateInput: IngredientCreateInput;
   IngredientLine: IngredientLine;
+  IngredientLineStats: IngredientLineStats;
   IngredientOption: IngredientOption;
   IngredientReference: IngredientReference;
   IngredientSaveInput: IngredientSaveInput;
@@ -838,12 +923,14 @@ export type ResolversParentTypes = ResolversObject<{
   InstructionLine: InstructionLine;
   Int: Scalars['Int']['output'];
   Job: Job;
+  LabelCount: LabelCount;
   Mutation: Record<PropertyKey, never>;
   MutationEffect: MutationEffect;
   MutationPayload: ResolversInterfaceTypes<ResolversParentTypes>['MutationPayload'];
   NamedTag: NamedTag;
   Note: Note;
   NoteImage: NoteImage;
+  NoteStatusCounts: NoteStatusCounts;
   NoteSummary: NoteSummary;
   NotesPage: NotesPage;
   ParsedSegment: ParsedSegment;
@@ -861,7 +948,9 @@ export type ResolversParentTypes = ResolversObject<{
   SourceBook: SourceBook;
   SourceUrl: SourceUrl;
   String: Scalars['String']['output'];
+  TopIngredient: TopIngredient;
   Viewer: Viewer;
+  YearCount: YearCount;
 }>;
 
 export type BasicPayloadResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['BasicPayload'] = ResolversParentTypes['BasicPayload']> = ResolversObject<{
@@ -885,6 +974,22 @@ export type CreateIngredientPayloadResolvers<ContextType = ApiContext, ParentTyp
   message?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   success?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type DashboardStatsResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['DashboardStats'] = ResolversParentTypes['DashboardStats']> = ResolversObject<{
+  ingredientCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  ingredientLines?: Resolver<ResolversTypes['IngredientLineStats'], ParentType, ContextType>;
+  instructionLineCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  noteCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  notesBySavedYear?: Resolver<Array<ResolversTypes['YearCount']>, ParentType, ContextType>;
+  notesByStatus?: Resolver<ResolversTypes['NoteStatusCounts'], ParentType, ContextType>;
+  notesReadyToPromote?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  recipeCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  reviewedIngredientCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  topCategories?: Resolver<Array<ResolversTypes['LabelCount']>, ParentType, ContextType>;
+  topIngredients?: Resolver<Array<ResolversTypes['TopIngredient']>, ParentType, ContextType>;
+  topSources?: Resolver<Array<ResolversTypes['LabelCount']>, ParentType, ContextType>;
+  topTags?: Resolver<Array<ResolversTypes['LabelCount']>, ParentType, ContextType>;
 }>;
 
 export type DeletedCountResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['DeletedCount'] = ResolversParentTypes['DeletedCount']> = ResolversObject<{
@@ -955,6 +1060,15 @@ export type IngredientLineResolvers<ContextType = ApiContext, ParentType extends
   segments?: Resolver<Array<ResolversTypes['ParsedSegment']>, ParentType, ContextType>;
 }>;
 
+export type IngredientLineStatsResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['IngredientLineStats'] = ResolversParentTypes['IngredientLineStats']> = ResolversObject<{
+  awaitingParsing?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  markedCorrect?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  markedIncorrect?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  parsedSuccessfully?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  parsedWithErrors?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  total?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+}>;
+
 export type IngredientOptionResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['IngredientOption'] = ResolversParentTypes['IngredientOption']> = ResolversObject<{
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
@@ -993,6 +1107,11 @@ export type JobResolvers<ContextType = ApiContext, ParentType extends ResolversP
   startedAt?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   status?: Resolver<ResolversTypes['JobStatus'], ParentType, ContextType>;
   type?: Resolver<ResolversTypes['JobType'], ParentType, ContextType>;
+}>;
+
+export type LabelCountResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['LabelCount'] = ResolversParentTypes['LabelCount']> = ResolversObject<{
+  count?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  label?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
 }>;
 
 export type MutationResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['Mutation'] = ResolversParentTypes['Mutation']> = ResolversObject<{
@@ -1047,6 +1166,14 @@ export type NoteImageResolvers<ContextType = ApiContext, ParentType extends Reso
   url?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
 }>;
 
+export type NoteStatusCountsResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['NoteStatusCounts'] = ResolversParentTypes['NoteStatusCounts']> = ResolversObject<{
+  completed?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  duplicate?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  failed?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  pending?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  processing?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+}>;
+
 export type NoteSummaryResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['NoteSummary'] = ResolversParentTypes['NoteSummary']> = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   duplicateConfidence?: Resolver<Maybe<ResolversTypes['Float']>, ParentType, ContextType>;
@@ -1093,6 +1220,7 @@ export type PromoteNotePayloadResolvers<ContextType = ApiContext, ParentType ext
 }>;
 
 export type QueryResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = ResolversObject<{
+  dashboardStats?: Resolver<ResolversTypes['DashboardStats'], ParentType, ContextType>;
   importStats?: Resolver<ResolversTypes['ImportStats'], ParentType, ContextType>;
   ingredient?: Resolver<Maybe<ResolversTypes['Ingredient']>, ParentType, ContextType, RequireFields<QueryIngredientArgs, 'id'>>;
   ingredientCategoryNames?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
@@ -1177,6 +1305,12 @@ export type SourceUrlResolvers<ContextType = ApiContext, ParentType extends Reso
   url?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
 }>;
 
+export type TopIngredientResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['TopIngredient'] = ResolversParentTypes['TopIngredient']> = ResolversObject<{
+  ingredientId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  lineCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+}>;
+
 export type ViewerResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['Viewer'] = ResolversParentTypes['Viewer']> = ResolversObject<{
   avatarUrl?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   email?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
@@ -1185,10 +1319,16 @@ export type ViewerResolvers<ContextType = ApiContext, ParentType extends Resolve
   username?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
 }>;
 
+export type YearCountResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['YearCount'] = ResolversParentTypes['YearCount']> = ResolversObject<{
+  count?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  year?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+}>;
+
 export type Resolvers<ContextType = ApiContext> = ResolversObject<{
   BasicPayload?: BasicPayloadResolvers<ContextType>;
   CleanupAllDataPayload?: CleanupAllDataPayloadResolvers<ContextType>;
   CreateIngredientPayload?: CreateIngredientPayloadResolvers<ContextType>;
+  DashboardStats?: DashboardStatsResolvers<ContextType>;
   DeletedCount?: DeletedCountResolvers<ContextType>;
   EntityRef?: EntityRefResolvers<ContextType>;
   EvernoteMetadata?: EvernoteMetadataResolvers<ContextType>;
@@ -1198,17 +1338,20 @@ export type Resolvers<ContextType = ApiContext> = ResolversObject<{
   IngredientBlock?: IngredientBlockResolvers<ContextType>;
   IngredientCounts?: IngredientCountsResolvers<ContextType>;
   IngredientLine?: IngredientLineResolvers<ContextType>;
+  IngredientLineStats?: IngredientLineStatsResolvers<ContextType>;
   IngredientOption?: IngredientOptionResolvers<ContextType>;
   IngredientReference?: IngredientReferenceResolvers<ContextType>;
   IngredientSummary?: IngredientSummaryResolvers<ContextType>;
   InstructionLine?: InstructionLineResolvers<ContextType>;
   Job?: JobResolvers<ContextType>;
+  LabelCount?: LabelCountResolvers<ContextType>;
   Mutation?: MutationResolvers<ContextType>;
   MutationEffect?: MutationEffectResolvers<ContextType>;
   MutationPayload?: MutationPayloadResolvers<ContextType>;
   NamedTag?: NamedTagResolvers<ContextType>;
   Note?: NoteResolvers<ContextType>;
   NoteImage?: NoteImageResolvers<ContextType>;
+  NoteStatusCounts?: NoteStatusCountsResolvers<ContextType>;
   NoteSummary?: NoteSummaryResolvers<ContextType>;
   NotesPage?: NotesPageResolvers<ContextType>;
   ParsedSegment?: ParsedSegmentResolvers<ContextType>;
@@ -1224,6 +1367,8 @@ export type Resolvers<ContextType = ApiContext> = ResolversObject<{
   Source?: SourceResolvers<ContextType>;
   SourceBook?: SourceBookResolvers<ContextType>;
   SourceUrl?: SourceUrlResolvers<ContextType>;
+  TopIngredient?: TopIngredientResolvers<ContextType>;
   Viewer?: ViewerResolvers<ContextType>;
+  YearCount?: YearCountResolvers<ContextType>;
 }>;
 

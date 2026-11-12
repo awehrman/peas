@@ -15,12 +15,12 @@ export function UnauthenticatedLayout({
   subtitle,
 }: UnauthenticatedLayoutProps) {
   return (
-    <div className="min-h-screen bg-greyscale-50 dark:bg-greyscale-900">
+    <div className="min-h-screen bg-navigation dark:bg-primary-950">
       <PhysicsBackground>
         <main className="flex min-h-screen items-center justify-center p-4">
-          <div className="w-full max-w-md">
+          <div className="w-full max-w-md rounded-lg bg-background bg-card/90 p-10 shadow-lg backdrop-blur-sm dark:bg-greyscale-800/90">
             {(title || subtitle) && (
-              <div className="mb-8 bg-background text-center">
+              <div className="mb-8 text-center">
                 {title && (
                   <h1 className="mb-2 text-2xl font-bold text-greyscale-900 dark:text-greyscale-100">
                     {title}
@@ -33,9 +33,7 @@ export function UnauthenticatedLayout({
                 )}
               </div>
             )}
-            <div className="rounded-lg bg-background bg-card/90 p-10 shadow-lg backdrop-blur-sm dark:bg-greyscale-800/90">
-              {children}
-            </div>
+            {children}
           </div>
         </main>
       </PhysicsBackground>

@@ -13,6 +13,7 @@ export const INVALIDATION_DOMAINS = [
   "INGREDIENTS",
   "INGREDIENT_DETAIL",
   "IMPORT_STATS",
+  "DASHBOARD_STATS",
 ] as const;
 
 export type InvalidationDomain = (typeof INVALIDATION_DOMAINS)[number];
@@ -33,6 +34,7 @@ export const JOB_COMPLETION_DOMAINS: readonly InvalidationDomain[] = [
   "INGREDIENTS",
   "INGREDIENT_DETAIL",
   "IMPORT_STATS",
+  "DASHBOARD_STATS",
 ];
 
 export const MAX_EFFECT_REFS = 100;

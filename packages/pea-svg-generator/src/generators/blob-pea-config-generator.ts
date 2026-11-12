@@ -2,7 +2,7 @@ import { BaseGenerator } from "./base-generator.js";
 import { DEFAULT_HIGHLIGHT_CONFIG } from "./constants.js";
 import type { HighlightConfig } from "./types.js";
 
-import { MIXED_COLOR_COMBINATIONS, PEA_COLORS } from "../colors.js";
+import { MIXED_COLOR_COMBINATIONS, PEA_COLORS, GREEN_COLOR_NAMES } from "../colors.js";
 import type {
   BlobPeaConfig,
   BlobPeaHighlight,
@@ -111,39 +111,60 @@ export class BlobPeaConfigGenerator extends BaseGenerator {
    * Generates many random blob pea configurations
    */
   public generateManyBlobPeaConfigs(count: number = 200): BlobPeaConfig[] {
-    const configs: BlobPeaConfig[] = [];
-    const peaWidth = 70;
-    const peaHeight = 64;
-    const cols = Math.ceil(Math.sqrt(count));
-    let id = 1;
+    // Deterministic stream, independent of the original optional showcase layouts.
+    let state = (this.options.seed >>> 0) || 42;
+    const random = () => {
+      state = (Math.imul(1664525, state) + 1013904223) >>> 0;
+      return state / 4294967296;
+    };
+    const result: BlobPeaConfig[] = [];
+    const cols = Math.max(1, this.options.peasPerRow);
+    const rows = Math.ceil(count / cols);
+    const cellWidth = (this.options.width - this.options.margin * 2) / cols;
+    const cellHeight = (this.options.height - this.options.margin * 2) / rows;
+    const maxDiameter = Math.min(cellWidth, cellHeight) * 0.91;
+    const greens = PEA_COLORS.filter(({ name }) => GREEN_COLOR_NAMES.has(name));
+    const accents = PEA_COLORS.filter(({ name }) => !GREEN_COLOR_NAMES.has(name));
 
     for (let i = 0; i < count; i++) {
-      const col = i % cols;
+      const column = i % cols;
       const row = Math.floor(i / cols);
-      const x = this.options.margin + col * (peaWidth + 20);
-      const y = this.options.margin + row * (peaHeight + 20);
-      const color = PEA_COLORS[Math.floor(Math.random() * PEA_COLORS.length)]!;
+      const size = maxDiameter * (0.65 + random() * 0.35);
+      const aspect = 0.86 + random() * 0.28;
+      const width = size * Math.sqrt(aspect);
+      const height = size / Math.sqrt(aspect);
+      const cellX = this.options.margin + column * cellWidth;
+      const cellY = this.options.margin + row * cellHeight;
+      const x = cellX + (cellWidth - width) / 2 + (random() - 0.5) * Math.max(0, cellWidth - width) * 0.8;
+      const y = cellY + (cellHeight - height) / 2 + (random() - 0.5) * Math.max(0, cellHeight - height) * 0.8;
+      // Bias toward greens without removing any user-selected accent swatches.
+      const palette = random() < 0.68 ? greens : accents;
+      const color = palette[Math.floor(random() * palette.length)]!;
 
-      const highlights = this.generateRandomHighlights(
-        color.base,
-        peaWidth,
-        peaHeight
-      );
-
-      configs.push({
-        id: id++,
-        x,
-        y,
-        width: peaWidth,
-        height: peaHeight,
-        color,
-        highlights,
-        description: `${color.name} blob with ${highlights.length} highlights`,
-        blobSeed: Math.random() * 10000,
+      // The original's character comes from translucent, non-white spots.
+      const dotCount = random() < 0.18 ? 1 : random() < 0.64 ? 2 : 3;
+      const highlights: BlobPeaHighlight[] = [];
+      for (let j = 0; j < dotCount; j++) {
+        let dx = 0, dy = 0;
+        const rad = size * (0.07 + random() * 0.065);
+        for (let attempt = 0; attempt < 20; attempt++) {
+          dx = (random() - 0.5) * width * 0.51;
+          dy = (random() - 0.5) * height * 0.51;
+          if (highlights.every(h => Math.hypot(dx - h.x, dy - h.y) > rad + h.rx + size * 0.045)) break;
+        }
+        highlights.push({
+          x: dx, y: dy, rx: rad, ry: rad * (0.9 + random() * 0.2),
+          opacity: 0.30 + random() * 0.28,
+          scale: 0.12, blobSeed: random() * 10000,
+        });
+      }
+      result.push({
+        id: i + 1, x, y, width, height, color, highlights,
+        blobSeed: random() * 100000,
+        description: `${color.name} subtle contour pea with ${dotCount} spots`,
       });
     }
-
-    return configs;
+    return result;
   }
 
   /**

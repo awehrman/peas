@@ -109,6 +109,7 @@ The design's knowledge domains (`CONCEPT_DETAIL`, `CONCEPT_LIST`, `LEXICON`, `ME
 | `INGREDIENTS` | `ingredients`, `ingredientCounts`, `ingredientCategoryNames`, `searchIngredients` | `IngredientSummary` |
 | `INGREDIENT_DETAIL` | `ingredient` | `Ingredient` |
 | `IMPORT_STATS` | `importStats` | none |
+| `DASHBOARD_STATS` | `dashboardStats` | none |
 
 Detail domains evict their entity type as well as the root field, because the read-through field policies would otherwise keep serving the cached entity.
 

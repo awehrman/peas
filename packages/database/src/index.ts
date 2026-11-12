@@ -1,4 +1,5 @@
 // Repository exports
+export * from "./repository/dashboard";
 export * from "./repository/ingredient";
 export * from "./repository/instruction";
 export * from "./repository/note";

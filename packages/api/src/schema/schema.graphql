@@ -246,6 +246,79 @@ type ImportStats {
 }
 
 # ---------------------------------------------------------------------------
+# Dashboard
+# ---------------------------------------------------------------------------
+
+"Example: { \"pending\": 0, \"processing\": 1, \"completed\": 412, \"failed\": 3, \"duplicate\": 9 }"
+type NoteStatusCounts {
+  pending: Int!
+  processing: Int!
+  completed: Int!
+  failed: Int!
+  duplicate: Int!
+}
+
+"""
+Active ingredient lines by parse outcome and by review verdict. Lines not marked correct or incorrect are unreviewed.
+
+Example: { "total": 5120, "parsedSuccessfully": 4980, "parsedWithErrors": 120, "awaitingParsing": 20, "markedCorrect": 310, "markedIncorrect": 12 }
+"""
+type IngredientLineStats {
+  total: Int!
+  parsedSuccessfully: Int!
+  parsedWithErrors: Int!
+  awaitingParsing: Int!
+  markedCorrect: Int!
+  markedIncorrect: Int!
+}
+
+"A ranked name with a count. Example: { \"label\": \"Serious Eats\", \"count\": 57 }"
+type LabelCount {
+  label: String!
+  count: Int!
+}
+
+"Example: { \"ingredientId\": \"cm3i...\", \"name\": \"garlic\", \"lineCount\": 214 }"
+type TopIngredient {
+  ingredientId: ID!
+  name: String!
+  "How many ingredient lines mention it."
+  lineCount: Int!
+}
+
+"Example: { \"year\": 2019, \"count\": 48 }"
+type YearCount {
+  year: Int!
+  count: Int!
+}
+
+"""
+Corpus-wide numbers for the dashboard. Top lists hold up to 8 entries.
+
+Example: query { dashboardStats { noteCount recipeCount notesByStatus { completed failed } topIngredients { name lineCount } } }
+"""
+type DashboardStats {
+  noteCount: Int!
+  recipeCount: Int!
+  "Completed notes that have not been promoted to a recipe yet."
+  notesReadyToPromote: Int!
+  ingredientCount: Int!
+  reviewedIngredientCount: Int!
+  instructionLineCount: Int!
+  notesByStatus: NoteStatusCounts!
+  ingredientLines: IngredientLineStats!
+  topIngredients: [TopIngredient!]!
+  "Websites with the most saved recipe URLs."
+  topSources: [LabelCount!]!
+  "Category names by note count."
+  topCategories: [LabelCount!]!
+  "Tag names by note count."
+  topTags: [LabelCount!]!
+  "When notes were first saved in Evernote, ascending by year; empty years are omitted."
+  notesBySavedYear: [YearCount!]!
+}
+
+# ---------------------------------------------------------------------------
 # Recipes
 # ---------------------------------------------------------------------------
 
@@ -449,6 +522,7 @@ enum InvalidationDomain {
   INGREDIENTS
   INGREDIENT_DETAIL
   IMPORT_STATS
+  DASHBOARD_STATS
 }
 
 "A cache identity: GraphQL type name plus immutable id. Example: { \"typename\": \"Recipe\", \"id\": \"cm3r...\" }"
@@ -561,6 +635,7 @@ type Query {
   notes(status: NoteStatus, query: String, page: Int): NotesPage!
   note(id: ID!): Note
   importStats: ImportStats!
+  dashboardStats: DashboardStats!
   job(jobId: ID!): Job
   "Example: recipes(query: \"chili\", category: \"Dinner\")"
   recipes(query: String, category: String, tag: String, page: Int): RecipesPage!
