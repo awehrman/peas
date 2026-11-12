@@ -36,11 +36,13 @@ export function isNavigationItemActive(
 /**
  * Where the sidebar toggle's center rests when it isn't following the mouse:
  * the middle of the active page's row, or the default spot when no item is
- * active.
+ * active. `listTop` is where the first row starts, which moves down when
+ * something sits above the list.
  */
 export function getToggleRestY(
   navigationItems: NavigationItem[],
-  pathname: string | undefined
+  pathname: string | undefined,
+  listTop: number = NAVIGATION_CONSTANTS.NAV_LIST_TOP
 ): number {
   const activeIndex = navigationItems.findIndex((item) =>
     isNavigationItemActive(pathname, item.href)
@@ -48,7 +50,7 @@ export function getToggleRestY(
   if (activeIndex < 0) return NAVIGATION_CONSTANTS.DEFAULT_MOUSE_Y;
 
   return (
-    NAVIGATION_CONSTANTS.NAV_LIST_TOP +
+    listTop +
     activeIndex * NAVIGATION_CONSTANTS.NAV_ROW_HEIGHT +
     NAVIGATION_CONSTANTS.NAV_ROW_HEIGHT / 2
   );

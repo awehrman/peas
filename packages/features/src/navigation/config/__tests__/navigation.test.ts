@@ -33,6 +33,15 @@ describe("getToggleRestY", () => {
     expect(getToggleRestY(items, "/")).toBe(firstRowCenter);
   });
 
+  it("offsets the rest spot when the list starts lower", () => {
+    const listTop =
+      NAVIGATION_CONSTANTS.NAV_LIST_TOP + NAVIGATION_CONSTANTS.AVATAR_BLOCK_HEIGHT;
+
+    expect(getToggleRestY(items, "/", listTop)).toBe(
+      listTop + NAVIGATION_CONSTANTS.NAV_ROW_HEIGHT / 2
+    );
+  });
+
   it("falls back to the default spot when no page is active", () => {
     expect(getToggleRestY(items, "/design")).toBe(NAVIGATION_CONSTANTS.DEFAULT_MOUSE_Y);
     expect(getToggleRestY(items, undefined)).toBe(NAVIGATION_CONSTANTS.DEFAULT_MOUSE_Y);

@@ -33,12 +33,12 @@ export function ImportPage({
     <div className="grid gap-6">
       <section
         aria-labelledby="import-notes-heading"
-        className="bg-card flex max-h-[32rem] flex-col rounded-lg border p-5 shadow-xs"
+        className="bg-card rounded-lg border p-5 shadow-xs"
       >
         <h2 id="import-notes-heading" className="mb-4 text-base font-semibold">
           Import notes
         </h2>
-        <ImportFileUpload className="flex min-h-0 flex-1 flex-col" />
+        <ImportFileUpload />
       </section>
 
       <ImportActivityList />

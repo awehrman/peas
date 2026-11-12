@@ -83,6 +83,7 @@
 
   // this our hack around the lack of backtracking in PEG
 	// this is particularly a problem for ingredient identification when complex descriptors expressions match and leave a trailing space
+	// BUG: check usage around array returns i don't think its working 
   function lookupDescriptor(value) {
   	// split this on spaces, dashes, slashes, [&+] and check each instance
   	if (value.indexOf(' ') > -1) {
@@ -569,7 +570,7 @@ quantity_ "Quantity with Ending Space" =
 		/ '⁶' { return 6; }
 		/ '⁷' { return 7; }
 		/ '⁸' { return 8; }
-		/ '⁹' { return 0; }
+		/ '⁹' { return 9; }
 		/ '₀' { return 0; }
 		/ '₁' { return 1; }
 		/ '₂' { return 2; }

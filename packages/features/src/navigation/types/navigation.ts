@@ -8,10 +8,16 @@ export interface NavigationItem {
   adminOnly?: boolean;
 }
 
+export interface NavigationUser {
+  username: string;
+  avatarUrl?: string | null;
+}
+
 export interface NavigationProps {
   LinkComponent?: ComponentType<NavigationLinkComponentProps>;
   pathname?: string;
   signOut: () => Promise<void>;
+  user?: NavigationUser;
 }
 
 export interface NavigationLinkComponentProps {

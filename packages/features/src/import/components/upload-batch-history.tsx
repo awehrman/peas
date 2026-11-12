@@ -19,7 +19,7 @@ import type { UploadBatch } from "../types/import-types";
 
 const SINGLE_LINE_ROW_HEIGHT = 32;
 const FAILURE_ROW_HEIGHT = 48;
-const MAX_LIST_HEIGHT = 256;
+const MAX_LIST_HEIGHT = 192;
 
 type RowState = "uploading" | "failed" | "uploaded";
 

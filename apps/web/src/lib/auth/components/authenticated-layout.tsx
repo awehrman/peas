@@ -8,6 +8,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Button, Header, Placeholder, Spinner, cn } from "@peas/components";
 import {
   AppNavigationProvider,
+  type NavigationUser,
   ResponsiveNavigation,
   getNavigationItems,
 } from "@peas/features";
@@ -53,9 +54,11 @@ function getRouteName(pathname: string | null): string {
 export function AuthenticatedLayout({
   children,
   isAdmin,
+  user,
 }: {
   children: React.ReactNode;
   isAdmin: boolean;
+  user: NavigationUser;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -70,6 +73,7 @@ export function AuthenticatedLayout({
           LinkComponent={NextLink}
           pathname={pathname}
           signOut={signOut}
+          user={user}
         />
         <div className={cn("flex-1 flex flex-col h-screen")}>
           <Header routeName={routeName} />

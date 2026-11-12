@@ -2,6 +2,7 @@
 
 import { NavigationItemsList } from "./navigation-items-list";
 import { NavigationToggle } from "./navigation-toggle";
+import { UserAvatar } from "./user-avatar";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -21,9 +22,15 @@ function SidebarNavigationComponent({
   LinkComponent,
   pathname,
   signOut,
+  user,
 }: PureNavigationProps) {
   const { isExpanded, setIsExpanded } = useNavigation();
-  const restY = getToggleRestY(navigationItems, pathname);
+  const isAvatarVisible = isExpanded && !!user;
+  const listTop = isAvatarVisible
+    ? NAVIGATION_CONSTANTS.NAV_LIST_TOP +
+      NAVIGATION_CONSTANTS.AVATAR_BLOCK_HEIGHT
+    : NAVIGATION_CONSTANTS.NAV_LIST_TOP;
+  const restY = getToggleRestY(navigationItems, pathname, listTop);
   const restYRef = useRef(restY);
   restYRef.current = restY;
   const [mouseY, setMouseY] = useState<number>(restY);
@@ -145,6 +152,23 @@ function SidebarNavigationComponent({
       >
         {isExpanded ? (
           <>
+            {isAvatarVisible && (
+              <div
+                className={cn(
+                  "flex-none flex flex-col items-center gap-2 px-5",
+                  NAVIGATION_CONSTANTS.AVATAR_MARGIN
+                )}
+              >
+                <UserAvatar
+                  user={user}
+                  className={NAVIGATION_CONSTANTS.AVATAR_SIZE}
+                />
+                <span className="max-w-full truncate text-sm font-medium text-navigation-foreground">
+                  {user.username}
+                </span>
+              </div>
+            )}
+
             <div className="flex-none">
               <NavigationMenu
                 orientation="vertical"

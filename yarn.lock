@@ -3792,7 +3792,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@peas/pea-svg-generator@npm:*, @peas/pea-svg-generator@workspace:packages/pea-svg-generator":
+"@peas/pea-svg-generator@npm:*, @peas/pea-svg-generator@workspace:^, @peas/pea-svg-generator@workspace:packages/pea-svg-generator":
   version: 0.0.0-use.local
   resolution: "@peas/pea-svg-generator@workspace:packages/pea-svg-generator"
   dependencies:
@@ -3861,6 +3861,7 @@ __metadata:
     "@fontsource/source-sans-3": "npm:^5.2.9"
     "@peas/components": "workspace:^"
     "@peas/features": "workspace:^"
+    "@peas/pea-svg-generator": "workspace:^"
     "@storybook/addon-essentials": "npm:^8.6.12"
     "@storybook/addon-onboarding": "npm:^8.6.12"
     "@storybook/addon-styling": "npm:^1.3.7"
@@ -3952,6 +3953,7 @@ __metadata:
     "@peas/eslint-config": "npm:*"
     "@peas/features": "npm:*"
     "@peas/parser": "npm:*"
+    "@peas/pea-svg-generator": "npm:*"
     "@peas/tailwind": "npm:*"
     "@peas/typescript-config": "npm:*"
     "@playwright/test": "npm:^1.54.1"

@@ -12,6 +12,11 @@ export const NAVIGATION_CONSTANTS = {
   // Sidebar list geometry; keep in sync with TOP_PADDING and the row classes
   NAV_LIST_TOP: 20, // pt-5, so the first row lines up with the page header title
   NAV_ROW_HEIGHT: 32, // py-1.5 + text-sm line height
+  // Expanded sidebar avatar and username above the list; keep in sync with
+  // AVATAR_SIZE, AVATAR_MARGIN, and the gap-2 / text-sm username row
+  AVATAR_BLOCK_HEIGHT: 124, // h-16 + gap-2 + 20px username line + mb-8
+  AVATAR_SIZE: "h-16 w-16",
+  AVATAR_MARGIN: "mb-8",
 
   // Timing
   AUTO_RESET_DELAY: 2000,

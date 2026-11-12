@@ -4,7 +4,7 @@ import { UploadBatchHistory } from "./upload-batch-history";
 
 import React from "react";
 
-import { FileDropZone } from "@peas/components";
+import { FileDropZone, cn } from "@peas/components";
 
 import { useFileUpload } from "../hooks/use-file-upload";
 import {
@@ -33,31 +33,40 @@ export function ImportFileUpload({
   const uploadState = getUploadState(state.currentBatch, isProcessing);
   const description = getUploadDescription(uploadState);
   const error = getUploadError(validationError, state.currentBatch);
+  const hasHistory = state.previousBatches.length > 0 || state.currentBatch !== undefined;
 
   return (
-    <div className={className}>
-      <FileDropZone
-        onFilesChange={handleFilesChange}
-        multiple
-        allowDirectories
-        accept={ACCEPTED_FILES}
-        disabled={disabled || isProcessing}
-        description={description}
-        error={error}
-        isProcessing={isProcessing}
-      />
+    <div className={cn("grid gap-4 md:grid-cols-2", className)}>
+      <div>
+        <FileDropZone
+          onFilesChange={handleFilesChange}
+          multiple
+          allowDirectories
+          accept={ACCEPTED_FILES}
+          disabled={disabled || isProcessing}
+          description={description}
+          error={error}
+          isProcessing={isProcessing}
+        />
 
-      {selectionSummary ? (
-        <p role="status" className="mt-3 text-sm text-greyscale-600">
-          {selectionSummary}
+        {selectionSummary ? (
+          <p role="status" className="mt-3 text-sm text-greyscale-600">
+            {selectionSummary}
+          </p>
+        ) : null}
+      </div>
+
+      {hasHistory ? (
+        <UploadBatchHistory
+          batches={state.previousBatches}
+          currentBatch={state.currentBatch}
+          className="mt-0"
+        />
+      ) : (
+        <p className="hidden items-center justify-center rounded-lg border border-dashed border-greyscale-200 text-sm text-greyscale-500 md:flex">
+          Uploaded notes will appear here
         </p>
-      ) : null}
-
-      <UploadBatchHistory
-        batches={state.previousBatches}
-        currentBatch={state.currentBatch}
-        className="flex-1"
-      />
+      )}
     </div>
   );
 }

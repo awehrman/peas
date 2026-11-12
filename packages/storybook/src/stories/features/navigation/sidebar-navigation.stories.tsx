@@ -1,4 +1,5 @@
 import { Navigation, getNavigationItems } from "@peas/features";
+import { generateRandomBlobPeaDataUrl } from "@peas/pea-svg-generator";
 import type { Meta, StoryObj } from "@storybook/react";
 
 const meta = {
@@ -13,6 +14,10 @@ const meta = {
     pathname: "/notes",
     signOut: async () => {
       console.log("Sign out");
+    },
+    user: {
+      username: "allie",
+      avatarUrl: generateRandomBlobPeaDataUrl(),
     },
   },
   decorators: [
@@ -32,4 +37,8 @@ export const ActiveNotes: Story = {};
 
 export const ActiveDashboard: Story = {
   args: { pathname: "/" },
+};
+
+export const WithoutAvatarImage: Story = {
+  args: { user: { username: "allie", avatarUrl: null } },
 };
