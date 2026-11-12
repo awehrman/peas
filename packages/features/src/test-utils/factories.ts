@@ -71,8 +71,7 @@ export const createMockImportStatsState = (
 export const createMockActivityState = (
   overrides: Partial<ActivityState> = {}
 ): ActivityState => ({
-  currentPageIndex: 0,
-  pageToCardIds: {},
+  cardIds: [],
   cardsById: {},
   ...overrides,
 });

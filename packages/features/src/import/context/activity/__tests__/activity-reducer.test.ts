@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import { createMockActivityState } from "../../../../test-utils/factories";
-import { CARDS_PER_PAGE } from "../../../constants/activity-constants";
 import type { ActivityAction } from "../../../types/import-types";
 import { createInitialCard } from "../../../utils/activity-helpers";
 import { activityBatchReducer, activityReducer } from "../activity-reducer";
@@ -11,16 +10,14 @@ function addCard(id: string): ActivityAction {
 }
 
 describe("activityReducer ADD_IMPORT_CARD", () => {
-  it("fills pages in order, independent of the page being viewed", () => {
-    const actions = Array.from({ length: CARDS_PER_PAGE + 3 }, (_, i) => addCard(`card-${i}`));
-    const state = activityBatchReducer(
-      createMockActivityState({ currentPageIndex: 4 }),
-      actions
-    );
+  it("keeps cards in arrival order", () => {
+    const state = activityBatchReducer(createMockActivityState(), [
+      addCard("card-1"),
+      addCard("card-2"),
+      addCard("card-3"),
+    ]);
 
-    expect(state.pageToCardIds[0]).toHaveLength(CARDS_PER_PAGE);
-    expect(state.pageToCardIds[1]).toEqual(["card-10", "card-11", "card-12"]);
-    expect(state.pageToCardIds[4]).toBeUndefined();
+    expect(state.cardIds).toEqual(["card-1", "card-2", "card-3"]);
   });
 
   it("ignores a card that already exists", () => {
@@ -36,24 +33,26 @@ describe("activityBatchReducer", () => {
       addCard("card-1"),
       {
         type: "UPDATE_CARD_STATUS",
-        pageIndex: 0,
         cardId: "card-1",
         step: "savedNote",
         statusUpdate: { started: true, completed: true },
       },
-      { type: "UPDATE_CARD_TITLE", cardId: "card-1", title: "Venison stew" },
+      {
+        type: "UPDATE_CARD_DETAILS",
+        cardId: "card-1",
+        details: { title: "Venison stew", source: "https://example.com/stew" },
+      },
     ]);
 
     const card = state.cardsById["card-1"];
     expect(card?.status.savedNote).toMatchObject({ started: true, completed: true });
     expect(card?.status.uploaded).toMatchObject({ completed: true });
-    expect(card?.imageThumbnail).toBe("Venison stew");
+    expect(card).toMatchObject({ title: "Venison stew", source: "https://example.com/stew" });
   });
 
   it("records the note id from the first status update that carries it", () => {
     const update = (noteId: string): ActivityAction => ({
       type: "UPDATE_CARD_STATUS",
-      pageIndex: 0,
       cardId: "card-1",
       step: "ingredientProcessing",
       statusUpdate: { started: true },

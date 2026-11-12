@@ -11,7 +11,7 @@ export default defineConfig({
       include: ["src/v2/**/*.ts"],
       exclude: ["src/**/__tests__/**", "src/v2/grammar/generated/**"],
       // Ratchet: the floor of the last measured coverage (12 November 2026); raise it as coverage grows
-      thresholds: { statements: 94, branches: 88, functions: 94, lines: 95 },
+      thresholds: { statements: 96, branches: 88, functions: 95, lines: 97 },
     },
   },
 });

@@ -13,6 +13,14 @@ export interface PeaBody extends Matter.Body {
 }
 
 /**
+ * Horizontal band peas currently fall from
+ */
+interface DropZone {
+  center: number;
+  width: number;
+}
+
+/**
  * Manages the physics engine and pea bodies. All coordinates are CSS pixels.
  *
  * Lifecycle: peas drop in batches until settled peas reach the top of the
@@ -26,8 +34,11 @@ export class PhysicsEngine {
   private walls: Matter.Body[] = [];
   private mouseBody: Matter.Body | null = null;
   private mouseMoveListener?: (e: MouseEvent) => void;
+  private mouseX: number | null = null;
   private isDropping = false;
   private nextDropAt = 0;
+  private dropZone: DropZone = { center: 0, width: 0 };
+  private dropsLeftInZone = 0;
   private width = 0;
   private height = 0;
 
@@ -71,6 +82,7 @@ export class PhysicsEngine {
     this.mouseMoveListener = (e: MouseEvent) => {
       const rect = canvas.getBoundingClientRect();
       const position = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      this.mouseX = position.x;
       if (this.mouseBody) {
         Matter.Body.setPosition(this.mouseBody, position);
       }
@@ -134,6 +146,11 @@ export class PhysicsEngine {
 
     this.isDropping = true;
     this.nextDropAt = this.engine.timing.timestamp;
+    this.dropZone = {
+      center: this.mouseXInViewport() ?? randomBetween(0, this.width),
+      width: randomDropZoneWidth(),
+    };
+    this.dropsLeftInZone = randomDropsPerZone();
     Matter.Events.on(this.engine, "afterUpdate", this.handleAfterUpdate);
   }
 
@@ -179,9 +196,15 @@ export class PhysicsEngine {
   }
 
   /**
-   * Drop a handful of peas at once
+   * Drop a handful of peas at once from the current drop zone, moving the
+   * zone once it has used up its drops
    */
   private dropBatch(): void {
+    if (this.dropsLeftInZone <= 0) {
+      this.shiftDropZone();
+    }
+    this.dropsLeftInZone--;
+
     const batchSize = Math.floor(
       randomBetween(
         PHYSICS_CONFIG.PEAS_PER_DROP_MIN,
@@ -193,6 +216,62 @@ export class PhysicsEngine {
     for (let slot = 0; slot < Math.min(batchSize, remaining); slot++) {
       this.createPea(slot);
     }
+  }
+
+  /**
+   * Re-center the drop zone on the mouse, sampled only when the zone moves so
+   * the stream doesn't chase every mouse movement
+   */
+  private shiftDropZone(): void {
+    this.dropZone = {
+      center: this.mouseXInViewport() ?? this.randomlyShiftedCenter(),
+      width: randomDropZoneWidth(),
+    };
+    this.dropsLeftInZone = randomDropsPerZone();
+  }
+
+  private mouseXInViewport(): number | null {
+    if (this.mouseX === null || this.mouseX < 0 || this.mouseX > this.width) {
+      return null;
+    }
+    return this.mouseX;
+  }
+
+  /**
+   * Fallback for when the mouse isn't over the viewport: move left or right
+   * by a random fraction of the viewport width, reversing direction when the
+   * move would leave the viewport
+   */
+  private randomlyShiftedCenter(): number {
+    const distance =
+      randomBetween(
+        PHYSICS_CONFIG.DROP_ZONE_SHIFT_MIN,
+        PHYSICS_CONFIG.DROP_ZONE_SHIFT_MAX
+      ) * this.width;
+    const direction = Math.random() < 0.5 ? -1 : 1;
+    let center = this.dropZone.center + distance * direction;
+
+    if (center < 0 || center > this.width) {
+      center = this.dropZone.center - distance * direction;
+    }
+
+    return clamp(center, 0, this.width);
+  }
+
+  /**
+   * Random x within the drop zone, kept far enough from the side walls that
+   * peas never spawn inside them
+   */
+  private randomSpawnX(): number {
+    const margin = PHYSICS_CONFIG.PEA_DIAMETER_MAX;
+    const minX = margin;
+    const maxX = Math.max(margin, this.width - margin);
+    const halfZone = this.dropZone.width / 2;
+
+    return randomBetween(
+      clamp(this.dropZone.center - halfZone, minX, maxX),
+      clamp(this.dropZone.center + halfZone, minX, maxX)
+    );
   }
 
   /**
@@ -216,7 +295,7 @@ export class PhysicsEngine {
     const spawnMargin = PHYSICS_CONFIG.PEA_DIAMETER_MAX;
 
     const body = Matter.Bodies.circle(
-      randomBetween(spawnMargin, Math.max(spawnMargin, this.width - spawnMargin)),
+      this.randomSpawnX(),
       -spawnMargin * (slot + 2),
       radius,
       {
@@ -330,6 +409,26 @@ export class PhysicsEngine {
 
 function randomBetween(min: number, max: number): number {
   return Math.random() * (max - min) + min;
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
+
+function randomDropZoneWidth(): number {
+  return randomBetween(
+    PHYSICS_CONFIG.DROP_ZONE_WIDTH_MIN,
+    PHYSICS_CONFIG.DROP_ZONE_WIDTH_MAX
+  );
+}
+
+function randomDropsPerZone(): number {
+  return Math.floor(
+    randomBetween(
+      PHYSICS_CONFIG.DROPS_PER_ZONE_MIN,
+      PHYSICS_CONFIG.DROPS_PER_ZONE_MAX + 1
+    )
+  );
 }
 
 function randomDropInterval(): number {

@@ -36,7 +36,9 @@
     "report:compare": "tsx scripts/compare-v1-v2.ts",
     "preview:lexicon": "tsx scripts/preview-lexicon-change.ts",
     "explain:line": "tsx scripts/explain-line.ts",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "extract:descriptors": "tsx scripts/extract-v1-descriptors.ts",
+    "evaluate:resolution": "tsx scripts/evaluate-resolution.ts"
   },
   "dependencies": {
     "peggy": "^5.1.1",

@@ -15,10 +15,10 @@ export TEST_DATABASE_URL=postgresql://<you>@localhost:5432/peas_test
 | Package | Command | What it covers | Database |
 | --- | --- | --- | --- |
 | `apps/queue` | `test:run` | Workers, services, routes, middleware (repositories mocked) | No |
-| `packages/parser` | `test:run` | v2 normalizer, tokenizer, lexicon, grammar golden sets, invariants, schemas, ontology rules; v1 snapshot | No |
+| `packages/parser` | `test:run` | v2 normalizer, tokenizer, lexicon, grammar golden sets, invariants, schemas, ontology rules, resolver (semantic golden set, metamorphic, coordination, exploratory), resolution report, modifier seed file; v1 snapshot | No |
 | `packages/features` | `test:run` | Shared UI components and utilities (jsdom) | No |
 | `packages/database` | `test:run` | Ontology helpers and Prisma/parser enum parity | No |
-| `packages/database` | `test:int` | Ontology repositories, migrations' constraints, vocabulary seed, every section-32 example | Wiped and migrated |
+| `packages/database` | `test:int` | Ontology repositories, migrations' constraints, vocabulary and modifier seeds, the legacy ontology seed (idempotent, no IS_A edges, dry run), `loadResolverSnapshot`, every section-32 example | Wiped and migrated |
 | `packages/api` | `test:run` | Resolvers with the database mocked, the Fetch adapter and CSRF, the effect contract, auth helpers | No |
 | `packages/api` | `test:int` | Sign-up, sign-in, sessions, and every resolver through the real repositories | Migrated; suites truncate their tables |
 | `apps/web` | `test:run` | The Apollo cache coordinator | No |
@@ -35,9 +35,9 @@ Each config sets a threshold at the floor of the last measurement, so coverage c
 | Package | Statements | Branches | Notes |
 | --- | --- | --- | --- |
 | `apps/queue` | 96% | 95% | |
-| `packages/parser` | 94% | 88% | v2 only; v1 is checked by snapshot |
+| `packages/parser` | 96% | 88% | v2 only; v1 is checked by snapshot |
 | `packages/api` | 86% | 77% | With integration tests; 53% without |
-| `packages/database` | 31% | 37% | The ontology code is 84%; the legacy repositories are exercised through `@peas/api`'s integration tests (recipes 91%, ingredients 53%, notes 19%) and the queue's mocks |
+| `packages/database` | 42% | 43% | The ontology repositories and seeds are 89%; the legacy repositories are exercised through `@peas/api`'s integration tests (recipes 91%, ingredients 53%, notes 19%) and the queue's mocks |
 | `packages/features` | 23% | 22% | Many components are only exercised by the end-to-end tests |
 | `apps/web` | 21% | 21% | Unit coverage only; routes and components are covered by the 38 end-to-end tests, which are not counted |
 

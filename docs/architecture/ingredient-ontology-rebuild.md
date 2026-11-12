@@ -52,15 +52,35 @@ Phase 2 adds the storage the resolver and the review loop will write to. Nothing
 
 What Phase 2 deliberately does not deliver: no resolver (Phase 3), no Teach Peas screens or decision side effects (Phase 4), no lexicon entries yet (the reviewed v1 descriptor seed lands in Phase 3), and no legacy ingredient migration (the mapping table exists; the migration runs later).
 
-## Where things stand (Phase 2)
+## Phase 3 deliverables
+
+Phase 3 turns syntax into meaning: a pure resolver picks the food concept, attributes, preparations, and modifiers for each segment, and two seeds fill the ontology (reviewed modifiers from the v1 descriptor list, and concepts from legacy ingredients). Imports still use v1 until Phase 5.
+
+| # | Deliverable | How to see it |
+| --- | --- | --- |
+| 1 | **Lines resolve to concepts.** `processIngredientLine` parses and resolves a line; each mention gets a status (AUTO_RESOLVED, NEEDS_REVIEW, UNRESOLVED), a score, and reasons such as `head:chicken thigh(2 tokens)`, `entry:PLURAL`, or `package:can->canned tomatoes`. | `packages/parser/src/v2/resolve/`; the parser README walks through examples |
+| 2 | **Every section-32 example resolves as intended.** 15 of 15 semantic cases, including whole milk as its own concept, attributes only when they apply to the head, preparations with degree ("finely chopped"), cans implying canned tomatoes, and calamansi juice staying UNRESOLVED. | `yarn workspace @peas/parser test:run`; "Semantic precision" in `packages/parser/fixtures/reports/resolution.md` |
+| 3 | **Behavior is stable under harmless edits.** Metamorphic tests: case, plurals, an added preparation, trailing notes, and removing an entry each change only what they should. | `src/v2/__tests__/process-line.metamorphic.test.ts` |
+| 4 | **Coordination is handled.** "salt and pepper" splits into two parts (`partIndex`); "macaroni and cheese" stays one food when it is an entry; "milk or cream" becomes alternatives that need review. | `src/v2/__tests__/coordination.test.ts` |
+| 5 | **A verified alias works without touching the grammar.** Adding an entry ("icing sugar", "stinking rose") changes resolution immediately. | Parser exploratory test and database integration test |
+| 6 | **Reviewed modifier seed.** 99 entries (preparations, degrees, measurement modifiers, instructions, attributes) chosen from the 910-word v1 descriptor list; the rest are classified in a candidates file for later review. Idempotent. | `yarn workspace @peas/parser extract:descriptors`; `yarn workspace @peas/database db:seed:modifiers` (twice) |
+| 7 | **Legacy ingredients seed the ontology without inventing hierarchy.** Three resumable passes keyed by `LegacyIngredientMapping`; parents become RELATIONSHIP_SUGGESTION discoveries, never IS_A edges; properties, categories, tags, substitutions, brands, and composed flags carry over. On the dev database: 10 legacy ingredients, 10 concepts, 10 mappings, 0 relationships; a second run changes nothing. | `yarn workspace @peas/database db:seed:legacy --dry-run`, then without `--dry-run` (twice) |
+| 8 | **The database hands the resolver everything it needs.** `loadResolverSnapshot()` returns entries with targets, vocabulary, concepts, relationships, applicability, concept attributes, verified-choice priors, and the revision, as plain JSON for caching. | Integration test "feeds loadResolverSnapshot" |
+| 9 | **Resolution is measured.** Coverage by status, top unresolved phrases, ambiguous lexemes, semantic precision, and coverage and precision at score thresholds 0.5, 0.7, and 0.9, from the fixture snapshot or the live database. | `yarn workspace @peas/parser evaluate:resolution`; `yarn workspace @peas/database db:evaluate:resolution` |
+| 10 | **Test suites.** 49 new parser tests (resolver, metamorphic, coordination, exploratory, branches, report, seed file) and 8 new database integration tests; parser coverage 96.6% statements and 88.3% branches. | `yarn workspace @peas/parser test:coverage`; `TEST_DATABASE_URL=... yarn workspace @peas/database test:coverage` |
+
+What Phase 3 deliberately does not deliver: no Teach Peas screens (Phase 4), no queue integration or mention writes during import (Phase 5), and no storage for coordination parts yet (mentions are keyed by `(parsedLineId, segmentIndex)`; Phase 5 adds `partIndex`). Legacy-seeded concepts for unreviewed ingredients are PROPOSED, so conservative imports ignore them until a reviewer promotes them.
+
+## Where things stand (Phase 3)
 
 | Area | State |
 | --- | --- |
 | v2 parser (`packages/parser/src/v2`) | Built: normalizer with raw-offset map, tokenizer, exact rationals, unit table, token trie with conservative and exploratory segmentation, Peggy grammar ported from v1, Zod schemas, `parseLine`. Lexicon entry ids must be UUIDs. |
 | Shared ontology schemas (`@peas/parser/v2`) | Ontology enums, D15 inheritance rules, starting vocabulary, resolution, mention syntax, discovery, and decision payload schemas, D18 priority formula |
-| Ontology storage (`packages/database`) | 21 models in `prisma/schemas/ontology.prisma`, migration `20261112190000_add_food_ontology`, repositories in `src/repository/ontology/`, vocabulary seed |
-| Regression fixtures | Corpus (reset to empty on 12 November 2026; refilled from fresh imports with `export:lines`), 182 dev cases (5 known failures), 41 held-out cases, structural, demo, and semantic lexicons, v1 baseline and snapshot |
-| Reports and tools | `report:compare` (v1 vs v2), `preview:lexicon` (before/after preview of a lexicon change), `explain:line` |
+| Resolver (`@peas/parser/v2`, `src/v2/resolve/`) | `buildResolverContext` (snapshot to lexicon plus ontology view), `resolveSegment`, `scoreCandidate`, `processIngredientLine`, `buildResolutionReport`; `RESOLVER_VERSION` 1.0.0. Pure: no database access. |
+| Ontology storage (`packages/database`) | 21 models in `prisma/schemas/ontology.prisma`, migration `20261112190000_add_food_ontology`, repositories in `src/repository/ontology/` (plus `loadResolverSnapshot`), vocabulary, modifier, and legacy seeds |
+| Regression fixtures | Corpus (reset to empty on 12 November 2026; refilled from fresh imports with `export:lines`), 182 dev cases (5 known failures), 41 held-out cases, structural, demo, and semantic lexicons (the semantic lexicon now carries a small ontology), `modifiers.seed.json`, v1 descriptor candidates, v1 baseline and snapshot |
+| Reports and tools | `report:compare` (v1 vs v2), `evaluate:resolution` and `db:evaluate:resolution` (resolution report), `preview:lexicon` (before/after preview of a lexicon change), `explain:line`, `extract:descriptors` |
 | Import pipeline | Still parses with v1; v2 is not wired into the queue until Phase 5 |
 | Legacy grammars | The old v2 stub and the runtime-compiled grammar moved to `packages/parser/legacy/` (reference only); database grammars archived and their tables dropped |
 | Database | 42 migrations; `db:verify-migrations` replays them on a scratch database; integration tests run against `TEST_DATABASE_URL` |
@@ -151,7 +171,7 @@ Code that touches ingredient parsing or identity today:
 - **Queue:** `parse-ingredient-line`, `save-ingredient-line`, `track-pattern`, `schedule-categorization`, `check-completion`, `parser-resolver.ts`, `cached-ingredient-parser.ts`.
 - **Web:** `/ingredients` (`apps/web/src/lib/ingredients/actions`), `/notes/[id]` (`getNoteDetail`, `setIngredientLineReviewStatus`), `/recipes/[id]`. The `/parser` rule builder was removed in Phase 1.
 - **Features:** `packages/features/src/{ingredients,notes,parsed-line}`.
-- **Database:** `repository/{ingredient,note,parsing-rule,pattern}.ts` (legacy) and `repository/ontology/` (Phase 2: revision, lexicon, concepts, relationships, attributes, classifications, mentions, discoveries, decisions, legacy mapping).
+- **Database:** `repository/{ingredient,note,parsing-rule,pattern}.ts` (legacy) and `repository/ontology/` (Phase 2: revision, lexicon, concepts, relationships, attributes, classifications, mentions, discoveries, decisions, legacy mapping; Phase 3: resolver snapshot). Seeds in `src/seed/` (vocabulary, modifiers, legacy ingredients).
 
 ## Design decisions
 
@@ -177,6 +197,10 @@ Code that touches ingredient parsing or identity today:
 20. **Scale:** the full lexicon and corpus reinterpretation fit in memory; previews prefilter with a trigram index.
 21. **Ontology ids are UUIDs.** New tables use UUIDv7 (time-ordered, index-friendly) stored as native `uuid`; lexicon entry ids must be UUIDs everywhere, including fixtures (`buildLexicon` rejects anything else). Legacy tables keep their cuid ids.
 22. **Repository code stays portable.** Writes are flat, transaction-scoped statements (no nested `connectOrCreate` or atomic `increment`), unique violations are recognized only in `isUniqueViolation`, and every JSON column is validated with its Zod schema on write and read (`parseOrThrow`).
+23. **The resolver reads one serializable snapshot.** `ResolverSnapshot` (entries with targets, vocabulary, concepts, relationships, applicability, concept attributes, priors, revision) is plain JSON, so the queue can cache it by revision and tests can build it from fixtures. The head is the rightmost FOOD lexeme in the main phrase; other lexemes take a role by priority (an attribute that applies to the head, then preparation, degree, measurement modifier, instruction, then an attribute that does not apply, then an extra food). Attributes apply through the head's own and IS_A/PART_OF ancestors' applicability.
+24. **Auto-resolution needs a single, fully explained reading.** Any unknown word in the main phrase, an attribute that does not apply, an ambiguous lexeme, a second food, or an "or" alternative sends the mention to review. Unknown words in trailing text or parentheses are notes and do not block. A line with no recognized food is UNRESOLVED with its unknown spans recorded.
+25. **Packages can imply a concept.** A quantity in cans or tins picks the head's single canned descendant (through IS_A, PROCESSED_FROM, or DERIVED_FROM with `preservation=canned`), so "2 cans tomatoes" resolves to canned tomatoes.
+26. **Legacy hierarchy is evidence, not truth.** The legacy seed never writes relationships; `parentIngredientId` becomes a RELATIONSHIP_SUGGESTION with a guessed type (PART_OF when the child names a part such as "thigh" or "zest", otherwise IS_A) for a reviewer to accept.
 
 ## Quantity model
 
@@ -186,7 +210,7 @@ Code that touches ingredient parsing or identity today:
 
 Recorded as known failures in `fixtures/golden/structural.dev.json` or observed in the comparison report:
 
-- Size words before a unit ("1 small bunch", "small handful") are not measurement modifiers; resolved once size attributes exist (Phase 3).
+- Size words before a unit ("1 small bunch", "small handful") are not measurement modifiers. Size attributes exist since Phase 3, but this needs a grammar change (Phase 6).
 - Ranges whose ends use different units ("800g–1kg") are not representable.
 - Postfix unspecified quantities with a unit ("rosemary a few sprigs").
 - "recipe", "rack", "slab" are not units.
@@ -198,12 +222,17 @@ yarn workspace @peas/parser test:run          # v2 unit, golden, invariant, sche
 yarn workspace @peas/parser typecheck
 yarn workspace @peas/parser report:compare    # writes fixtures/reports/v1-vs-v2.md
 yarn workspace @peas/parser preview:lexicon --add "olive oil:FOOD"
+yarn workspace @peas/parser evaluate:resolution  # writes fixtures/reports/resolution.md
+yarn workspace @peas/parser extract:descriptors  # writes fixtures/lexicon/v1-descriptors.candidates.json
 yarn workspace @peas/database export:lines --log ../../apps/queue/logs/<file>
 SCRATCH_DATABASE_URL=... yarn workspace @peas/database db:verify-migrations
 yarn workspace @peas/database typecheck
 yarn workspace @peas/database test:run        # ontology helpers and Prisma/parser enum parity
 TEST_DATABASE_URL=postgresql://<you>@localhost:5432/peas_test yarn workspace @peas/database test:int
 yarn workspace @peas/database db:seed:ontology
+yarn workspace @peas/database db:seed:modifiers
+yarn workspace @peas/database db:seed:legacy --dry-run   # then without --dry-run; --batch 200 by default
+yarn workspace @peas/database db:evaluate:resolution     # live-database report, read-only
 ```
 
 The integration setup wipes and migrates `TEST_DATABASE_URL` before running, and refuses to touch a database whose name lacks "test" or that matches `DATABASE_URL`. Create it once with `createdb peas_test`.
@@ -219,7 +248,8 @@ The v2 phases (1 foundation, 2 ontology schema, 3 lexicon and resolver, 4 Teach 
 5. M4: Next.js to TanStack Start; GraphQL with Apollo Client 4 (see [web modernization](./web-modernization.md)). Done on 12 November 2026, including cutover: the TanStack Start app is now `apps/web` (port 3100), serving every page through `packages/api`, with Playwright and axe tests; the Next.js app was deleted.
 6. M5: cache architecture (see [cache consistency](./cache-consistency.md)). Done on 12 November 2026 for today's domains; the knowledge domains join when Phases 3 and 4 add their queries.
 7. Phase 2 (ontology schema): done on 12 November 2026, ahead of finishing M4 because it only touches `packages/database` and `packages/parser`.
-8. Phases 3-7 continue on the modernized stack.
-9. Deferred: BullMQ 6, Redis client, Storybook 10, virtualization.
+8. Phase 3 (lexicon-driven resolver and ontology seeding): done on 12 November 2026.
+9. Phases 4-7 continue on the modernized stack.
+10. Deferred: BullMQ 6, Redis client, Storybook 10, virtualization.
 
 Framework-independent parsing logic stays in `packages/parser` throughout.

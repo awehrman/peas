@@ -27,7 +27,10 @@
     "test:int": "vitest run --config vitest.int.config.ts",
     "db:seed:ontology": "yarn build:schema && dotenv -e ../../.env.local -- tsx scripts/seed-ontology-vocabulary.ts",
     "typecheck": "tsc -p tsconfig.test.json",
-    "test:coverage": "vitest run --config vitest.int.config.ts --coverage"
+    "test:coverage": "vitest run --config vitest.int.config.ts --coverage",
+    "db:seed:modifiers": "dotenv -e ../../.env.local -- tsx scripts/seed-lexicon-modifiers.ts",
+    "db:seed:legacy": "dotenv -e ../../.env.local -- tsx scripts/seed-ontology-from-legacy.ts",
+    "db:evaluate:resolution": "dotenv -e ../../.env.local -- tsx scripts/evaluate-resolution.ts"
   },
   "dependencies": {
     "@peas/parser": "*",

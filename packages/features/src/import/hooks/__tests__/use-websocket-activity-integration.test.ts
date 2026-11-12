@@ -60,9 +60,54 @@ describe("useWebSocketActivityIntegration", () => {
     handle(event({ context: "save_note", metadata: { title: "Venison stew" } }));
 
     expect(dispatch).toHaveBeenCalledWith({
-      type: "UPDATE_CARD_TITLE",
+      type: "UPDATE_CARD_DETAILS",
       cardId: "import-1",
-      title: "Venison stew",
+      details: { title: "Venison stew" },
+    });
+  });
+
+  it("collects the source, thumbnail and final completion", () => {
+    const { result } = renderHook(() => useWebSocketActivityIntegration());
+    const handle = result.current.handleActivityStatusUpdate;
+
+    handle(event({ context: "clean_html_start" }));
+    handle(
+      event({
+        status: "COMPLETED",
+        context: "source_connection",
+        metadata: { source: "https://www.seriouseats.com/stew" },
+      })
+    );
+    handle(
+      event({
+        status: "COMPLETED",
+        context: "image_processing",
+        metadata: { r2ThumbnailUrl: "https://cdn.example.com/stew-thumb.jpg" },
+      })
+    );
+    handle(event({ status: "COMPLETED", context: "note_completion" }));
+
+    const details = dispatch.mock.calls
+      .map(([action]) => action)
+      .filter((action) => action.type === "UPDATE_CARD_DETAILS")
+      .map((action) => action.details);
+    expect(details).toEqual([
+      { source: "https://www.seriouseats.com/stew" },
+      { thumbnailUrl: "https://cdn.example.com/stew-thumb.jpg" },
+      { isComplete: true },
+    ]);
+  });
+
+  it("puts details from the first event straight onto the new card", () => {
+    const { result } = renderHook(() => useWebSocketActivityIntegration());
+
+    result.current.handleActivityStatusUpdate(
+      event({ context: "save_note", metadata: { title: "Venison stew" } })
+    );
+
+    expect(dispatch.mock.calls[0]?.[0]).toMatchObject({
+      type: "ADD_IMPORT_CARD",
+      card: { id: "import-1", title: "Venison stew", isComplete: false },
     });
   });
 });

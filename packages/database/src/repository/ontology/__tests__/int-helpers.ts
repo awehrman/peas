@@ -8,7 +8,8 @@ export async function resetDatabase(): Promise<void> {
     TRUNCATE
       "LexiconRevision", "FoodConcept", "LexiconEntry", "AttributeDefinition", "PreparationOperation",
       "FoodRelationship", "FoodClassification", "Discovery", "LexiconDecision", "LegacyIngredientMapping",
-      "IngredientMention", "ParsedIngredientLine", "Note", "User"
+      "IngredientMention", "ParsedIngredientLine", "Note", "User",
+      "Ingredient", "Alias", "IngredientProperty", "IngredientCategory", "IngredientTag", "Brand"
     RESTART IDENTITY CASCADE
   `);
 }

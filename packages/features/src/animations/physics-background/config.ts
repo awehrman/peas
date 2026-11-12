@@ -7,9 +7,18 @@ export const PHYSICS_CONFIG = {
   // rain), clamped to the min/max, so drops feel sprinkled rather than metered
   DROP_INTERVAL_MEAN: 220, // ms
   DROP_INTERVAL_MIN: 40, // ms
-  DROP_INTERVAL_MAX: 1200, // ms
+  DROP_INTERVAL_MAX: 600, // ms
   PEAS_PER_DROP_MIN: 1,
   PEAS_PER_DROP_MAX: 2,
+
+  // Peas fall from a narrow zone that drops a few batches, then wanders
+  // sideways by a fraction of the viewport width and drops again
+  DROP_ZONE_WIDTH_MIN: 200, // px
+  DROP_ZONE_WIDTH_MAX: 400, // px
+  DROP_ZONE_SHIFT_MIN: 0.05, // fraction of viewport width
+  DROP_ZONE_SHIFT_MAX: 0.25, // fraction of viewport width
+  DROPS_PER_ZONE_MIN: 10,
+  DROPS_PER_ZONE_MAX: 25,
 
   // On-screen pea diameter in CSS pixels
   PEA_DIAMETER_MIN: 20,

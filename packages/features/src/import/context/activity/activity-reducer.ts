@@ -1,4 +1,3 @@
-import { CARDS_PER_PAGE } from "../../constants/activity-constants";
 import type { ActivityAction, ActivityState } from "../../types/import-types";
 
 /**
@@ -14,7 +13,6 @@ export function activityBatchReducer(
 
 /**
  * Activity reducer - handles activity log state
- * Optimized with better array operations for performance
  */
 export function activityReducer(
   state: ActivityState,
@@ -23,31 +21,11 @@ export function activityReducer(
   switch (action.type) {
     case "ADD_IMPORT_CARD": {
       if (state.cardsById[action.card.id]) return state;
-      const pageIndex = Math.floor(
-        Object.keys(state.cardsById).length / CARDS_PER_PAGE
-      );
-      const existingIds = state.pageToCardIds[pageIndex] || [];
       return {
-        ...state,
+        cardIds: [...state.cardIds, action.card.id],
         cardsById: {
           ...state.cardsById,
           [action.card.id]: action.card,
-        },
-        pageToCardIds: {
-          ...state.pageToCardIds,
-          [pageIndex]: [...existingIds, action.card.id],
-        },
-      };
-    }
-
-    case "TOGGLE_CARD_EXPANDED": {
-      const card = state.cardsById[action.cardId];
-      if (!card) return state;
-      return {
-        ...state,
-        cardsById: {
-          ...state.cardsById,
-          [action.cardId]: { ...card, isExpanded: !card.isExpanded },
         },
       };
     }
@@ -74,33 +52,20 @@ export function activityReducer(
       };
     }
 
-    case "UPDATE_CARD_TITLE": {
+    case "UPDATE_CARD_DETAILS": {
       const card = state.cardsById[action.cardId];
       if (!card) return state;
       return {
         ...state,
         cardsById: {
           ...state.cardsById,
-          [action.cardId]: {
-            ...card,
-            imageThumbnail: action.title,
-          },
+          [action.cardId]: { ...card, ...action.details },
         },
       };
     }
 
-    case "SET_PAGE":
-      return {
-        ...state,
-        currentPageIndex: action.pageIndex,
-      };
-
     case "RESET_ACTIVITY":
-      return {
-        currentPageIndex: 0,
-        pageToCardIds: {},
-        cardsById: {},
-      };
+      return defaultActivityState;
 
     default:
       return state;
@@ -108,7 +73,6 @@ export function activityReducer(
 }
 
 export const defaultActivityState: ActivityState = {
-  currentPageIndex: 0,
-  pageToCardIds: {},
+  cardIds: [],
   cardsById: {},
 };

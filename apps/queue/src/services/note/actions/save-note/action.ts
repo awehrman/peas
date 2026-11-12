@@ -37,6 +37,21 @@ export class SaveNoteAction extends BaseAction<
       contextName: "save_note",
       startMessage: "Creating note structure",
       completionMessage: "Created note structure",
+      additionalBroadcasting: async (result) => {
+        /* istanbul ignore next -- @preserve */
+        if (deps.statusBroadcaster) {
+          const title = result?.note?.title;
+          await deps.statusBroadcaster.addStatusEventAndBroadcast({
+            importId: data.importId,
+            noteId: result?.noteId,
+            status: "COMPLETED",
+            message: "Created note structure",
+            context: "save_note",
+            indentLevel: 1,
+            metadata: title ? { title } : undefined,
+          });
+        }
+      },
     });
   }
 }

@@ -15,15 +15,12 @@ export function useActivitySelector<T>(
 
 export function useActivityDerived() {
   return useActivitySelector((state) => {
-    const numPages = Object.keys(state.pageToCardIds).length || 1;
-    // Count only completed cards (cards with savedNote.completed = true)
     const totalImported = Object.values(state.cardsById).filter(
-      (card) => card.status.savedNote.completed
+      (card) => card.isComplete
     ).length;
     return {
-      numPages,
+      totalCards: state.cardIds.length,
       totalImported,
-      currentPageIndex: state.currentPageIndex,
     };
   });
 }

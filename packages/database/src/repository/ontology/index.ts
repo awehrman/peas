@@ -18,4 +18,5 @@ export * from "./legacy-mapping.js";
 export * from "./lexicon.js";
 export * from "./mentions.js";
 export * from "./relationships.js";
+export * from "./resolver-context.js";
 export * from "./revision.js";

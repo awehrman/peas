@@ -23,7 +23,6 @@ const swatches = [
   { name: "Walnut Brown", base: "#5e4017", group: "accent" },
   { name: "Leaf Green", base: "#85b857", group: "green" },
   { name: "Ivory Buff", base: "#ebd999", group: "accent" },
-  { name: "Spring Green", base: "#00d973", group: "accent" },
   { name: "Brick Red", base: "#a32100", group: "accent" },
   { name: "Brown", base: "#6c2b11", group: "accent" },
   { name: "Vandyke Brown", base: "#362304", group: "green" },

@@ -1,0 +1,6385 @@
+{
+  "description": "Machine suggestions for every word in the v1 DESCRIPTORS list (src/v1/parser.peggy). Not loaded anywhere: reviewed choices live in modifiers.seed.json. Regenerate with `yarn workspace @peas/parser extract:descriptors`.",
+  "counts": {
+    "UNSURE": 453,
+    "IGNORE": 92,
+    "PREPARATION": 287,
+    "DEGREE": 45,
+    "ATTRIBUTE": 25,
+    "INSTRUCTION": 3,
+    "MEASUREMENT_MODIFIER": 5
+  },
+  "inSeed": 97,
+  "suggestions": [
+    {
+      "word": "~",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "a",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "about",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "accompaniment",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "accumulated",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "acidulated",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "acting",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "action",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "activated",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "active",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "actually",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "add",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "added",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "additional",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "additive",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "adjust",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "adjusted",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "aged",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "air",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "alcohol",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "all",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "almost",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "aluminium",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "aluminum free",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "always",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "an",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "another",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "any",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "approx",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "approx.",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "approximately",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "aromatic",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "around",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "arranged",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "artisan",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "artisanal",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "as",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "assorted",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "assortment",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "at",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "authentic",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "available",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "average",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "baby",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "baked",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "baking",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "barely",
+      "role": "DEGREE",
+      "target": null,
+      "reason": "ends in -ly; no matching degree key",
+      "inSeed": false
+    },
+    {
+      "word": "barrel",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "baseball size",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "based",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "basic",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "basted",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "beaten",
+      "role": "PREPARATION",
+      "target": "beat",
+      "reason": "matches a preparation operation",
+      "inSeed": true
+    },
+    {
+      "word": "beautiful",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "before",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "berry forward",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "best",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "bi",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "big",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "bigger",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "bite",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "bitter",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "bitter sweet",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": true
+    },
+    {
+      "word": "blanched",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "bland",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "bleached",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "blended",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "blind",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "bloomed",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "bodied",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "boil",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "boiled",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "boiling",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "bone in",
+      "role": "ATTRIBUTE",
+      "target": "bone:bone_in",
+      "reason": "matches an attribute value key",
+      "inSeed": true
+    },
+    {
+      "word": "bone out",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "boned",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "boneless",
+      "role": "ATTRIBUTE",
+      "target": "bone:boneless",
+      "reason": "matches an attribute value key",
+      "inSeed": true
+    },
+    {
+      "word": "bottled",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "bought",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "boxed",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "braised",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "brewed",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "bright",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "brimming",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "broad",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "broiled",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "broken",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "browned",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "bruised",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "brush",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "brushed",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "bulk",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "bunched",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "burger size",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "burning",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "burnt",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "bushy",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "but",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "butcher",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "buttered",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "butterflied",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "buttery",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "cage",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "caged",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "canned",
+      "role": "ATTRIBUTE",
+      "target": "preservation:canned",
+      "reason": "matches an attribute value key",
+      "inSeed": true
+    },
+    {
+      "word": "carb",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "carved",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "casing",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "caught",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "cave",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "center",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "centre",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "certified",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "chalky",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "char",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "charred",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "cheap",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "checked",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "cheesy",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "chewy",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "chilled",
+      "role": "PREPARATION",
+      "target": "chill",
+      "reason": "matches a preparation operation",
+      "inSeed": true
+    },
+    {
+      "word": "choice",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "chopped",
+      "role": "PREPARATION",
+      "target": "chop",
+      "reason": "matches a preparation operation",
+      "inSeed": true
+    },
+    {
+      "word": "chrunchy",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "chubby",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "chunked",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "chunky",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "circular",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "citrusy",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "classic",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "clean",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "cleaned",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "clear",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "coarse",
+      "role": "DEGREE",
+      "target": "coarse",
+      "reason": "matches a degree key",
+      "inSeed": false
+    },
+    {
+      "word": "coarsely",
+      "role": "DEGREE",
+      "target": "coarse",
+      "reason": "matches a degree key",
+      "inSeed": true
+    },
+    {
+      "word": "coarsley",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": true
+    },
+    {
+      "word": "coated",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "cold",
+      "role": "ATTRIBUTE",
+      "target": "temperature:cold",
+      "reason": "matches an attribute value key",
+      "inSeed": true
+    },
+    {
+      "word": "color",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "colored",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "colorful",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "colour",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "coloured",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "combination",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "commercial",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "completely",
+      "role": "DEGREE",
+      "target": null,
+      "reason": "ends in -ly; no matching degree key",
+      "inSeed": false
+    },
+    {
+      "word": "concentrated",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "condensed",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "congealed",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "cook",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "cooked",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "cooking",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "cool",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "cooled",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "cored",
+      "role": "PREPARATION",
+      "target": "core",
+      "reason": "matches a preparation operation",
+      "inSeed": true
+    },
+    {
+      "word": "corn fed",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "country",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "course",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "covered",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "cracked",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "creamy",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "crisp",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "crisped",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "crisply",
+      "role": "DEGREE",
+      "target": null,
+      "reason": "ends in -ly; no matching degree key",
+      "inSeed": false
+    },
+    {
+      "word": "crispy",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "cross",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "crumbled",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "crumbly",
+      "role": "DEGREE",
+      "target": null,
+      "reason": "ends in -ly; no matching degree key",
+      "inSeed": false
+    },
+    {
+      "word": "crumpled",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "crunched",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "crunchy",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "crushed",
+      "role": "PREPARATION",
+      "target": "crush",
+      "reason": "matches a preparation operation",
+      "inSeed": true
+    },
+    {
+      "word": "crust",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "crustless",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "crusty",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "cubed",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "culinary",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "cultured",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "cured",
+      "role": "ATTRIBUTE",
+      "target": "preservation:cured",
+      "reason": "matches an attribute value key",
+      "inSeed": true
+    },
+    {
+      "word": "curly",
+      "role": "DEGREE",
+      "target": null,
+      "reason": "ends in -ly; no matching degree key",
+      "inSeed": false
+    },
+    {
+      "word": "cut",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "cylindar",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "cylindrical",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "dairy",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "dark",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "darker",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "day",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "de stemmed",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "de veined",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "deactivated",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "deboned",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": true
+    },
+    {
+      "word": "decent",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "decorated",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "decorative",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "deep",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "defrosted",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "delicate",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "dense",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "denuded",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "deseeded",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": true
+    },
+    {
+      "word": "desiccated",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "desired",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "dessicated",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "diagonally",
+      "role": "DEGREE",
+      "target": null,
+      "reason": "ends in -ly; no matching degree key",
+      "inSeed": false
+    },
+    {
+      "word": "diastatic",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "dice",
+      "role": "PREPARATION",
+      "target": "dice",
+      "reason": "matches a preparation operation",
+      "inSeed": true
+    },
+    {
+      "word": "diced",
+      "role": "PREPARATION",
+      "target": "dice",
+      "reason": "matches a preparation operation",
+      "inSeed": true
+    },
+    {
+      "word": "different",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "diluted",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "disc shaped",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "discarded",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "dish",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "dissolved",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "distilled",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "divided",
+      "role": "INSTRUCTION",
+      "target": "divided",
+      "reason": "matches an instruction key",
+      "inSeed": true
+    },
+    {
+      "word": "diy",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "double",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "drained",
+      "role": "PREPARATION",
+      "target": "drain",
+      "reason": "matches a preparation operation",
+      "inSeed": true
+    },
+    {
+      "word": "dressed",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "dried",
+      "role": "ATTRIBUTE",
+      "target": "preservation:dried",
+      "reason": "matches an attribute value key",
+      "inSeed": true
+    },
+    {
+      "word": "dry",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "dull",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "dusting",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "dutch",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "dyed",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "e.g.",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "ea",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "each",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "earthy",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "easy",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "eating",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "edible",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "eg",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "either",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "elongated",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "empty",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "english",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "enough",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "enriched",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "equal",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "equivalent",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "european",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "exactly",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "excellent",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "exotic",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "extra",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "extracted",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "extremely",
+      "role": "DEGREE",
+      "target": null,
+      "reason": "ends in -ly; no matching degree key",
+      "inSeed": false
+    },
+    {
+      "word": "fair",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "fairly",
+      "role": "DEGREE",
+      "target": null,
+      "reason": "ends in -ly; no matching degree key",
+      "inSeed": false
+    },
+    {
+      "word": "fancy",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "farmed",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "fashioned",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "fast",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "fat",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "fattier",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "fattiest",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "fatty",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "favorite",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "favourite",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "fed",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "fermented",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "few",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "fiery",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "filtered",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "fine",
+      "role": "DEGREE",
+      "target": "fine",
+      "reason": "matches a degree key",
+      "inSeed": false
+    },
+    {
+      "word": "finely",
+      "role": "DEGREE",
+      "target": "fine",
+      "reason": "matches a degree key",
+      "inSeed": true
+    },
+    {
+      "word": "finest",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "finishing",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "fire",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "firm",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "firmly",
+      "role": "DEGREE",
+      "target": null,
+      "reason": "ends in -ly; no matching degree key",
+      "inSeed": false
+    },
+    {
+      "word": "fishy",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "fizzy",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "flaked",
+      "role": "ATTRIBUTE",
+      "target": "form:flaked",
+      "reason": "matches an attribute value key",
+      "inSeed": true
+    },
+    {
+      "word": "flakey",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "flaky",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "flat",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "flat leaf",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "flattened",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "flavored",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "flavorful",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "flavorless",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "flavoured",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "flavourful",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "flavourless",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "fleshed",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "fleshy",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "floral",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "floury",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "fluffy",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "folded",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "food",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "for",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "forced",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "formed",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "fragrant",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "free",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "freeze",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "freezer",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "frenched",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "fresh",
+      "role": "ATTRIBUTE",
+      "target": "preservation:fresh",
+      "reason": "matches an attribute value key",
+      "inSeed": true
+    },
+    {
+      "word": "freshly",
+      "role": "DEGREE",
+      "target": null,
+      "reason": "ends in -ly; no matching degree key",
+      "inSeed": false
+    },
+    {
+      "word": "fried",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "from",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "frosted",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "frosty",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "frozen",
+      "role": "ATTRIBUTE",
+      "target": "preservation:frozen",
+      "reason": "matches an attribute value key",
+      "inSeed": true
+    },
+    {
+      "word": "fruity",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "frying",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "full",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "full cream",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": true
+    },
+    {
+      "word": "fully",
+      "role": "DEGREE",
+      "target": null,
+      "reason": "ends in -ly; no matching degree key",
+      "inSeed": false
+    },
+    {
+      "word": "garlicky",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "garnish",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": true
+    },
+    {
+      "word": "garnished",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "garnishes",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "gelatinous",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "generally",
+      "role": "DEGREE",
+      "target": null,
+      "reason": "ends in -ly; no matching degree key",
+      "inSeed": false
+    },
+    {
+      "word": "generous",
+      "role": "MEASUREMENT_MODIFIER",
+      "target": "generous",
+      "reason": "matches a measurement modifier key",
+      "inSeed": true
+    },
+    {
+      "word": "generously",
+      "role": "DEGREE",
+      "target": null,
+      "reason": "ends in -ly; no matching degree key",
+      "inSeed": false
+    },
+    {
+      "word": "giant",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "glazed",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "gluten",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "GMO",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "good",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "gourmet",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "grade",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "grade a",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "grade b",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "grain",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "grained",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "grainy",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "grandma",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "granulated",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "grass",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "grated",
+      "role": "PREPARATION",
+      "target": "grate",
+      "reason": "matches a preparation operation",
+      "inSeed": true
+    },
+    {
+      "word": "greasy",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "grilled",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "grind",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "gritty",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "ground",
+      "role": "ATTRIBUTE",
+      "target": "form:ground",
+      "reason": "matches an attribute value key",
+      "inSeed": true
+    },
+    {
+      "word": "grounded",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "halved",
+      "role": "PREPARATION",
+      "target": "halve",
+      "reason": "matches a preparation operation",
+      "inSeed": true
+    },
+    {
+      "word": "hand",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "hard",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "hardy",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "head on",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "headless",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "healthy",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "heaped",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": true
+    },
+    {
+      "word": "heaping",
+      "role": "MEASUREMENT_MODIFIER",
+      "target": "heaping",
+      "reason": "matches a measurement modifier key",
+      "inSeed": true
+    },
+    {
+      "word": "hearty",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "heat",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "heated",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "heavy",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "hefty",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "heirloom",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "heritage",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "high",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "high protein",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "highest",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "home",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "hong kong",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "hot",
+      "role": "ATTRIBUTE",
+      "target": "temperature:hot",
+      "reason": "matches an attribute value key",
+      "inSeed": true
+    },
+    {
+      "word": "house",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "hulled",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "husked",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "hydrated",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "hydrogenated",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "i",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "i.e.",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "ice",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "iced",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "icy",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "ideally",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "ie",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "if",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "imitation",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "immediately",
+      "role": "DEGREE",
+      "target": null,
+      "reason": "ends in -ly; no matching degree key",
+      "inSeed": false
+    },
+    {
+      "word": "imported",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "in",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "individual",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "inner",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "inserted",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "instant",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "instantly",
+      "role": "DEGREE",
+      "target": null,
+      "reason": "ends in -ly; no matching degree key",
+      "inSeed": false
+    },
+    {
+      "word": "into",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "iodized",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "ish",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "jammy",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "jarred",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "juiced",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "juicy",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "julienne",
+      "role": "PREPARATION",
+      "target": "julienne",
+      "reason": "matches a preparation operation",
+      "inSeed": true
+    },
+    {
+      "word": "julienned",
+      "role": "PREPARATION",
+      "target": "julienne",
+      "reason": "matches a preparation operation",
+      "inSeed": true
+    },
+    {
+      "word": "jumbo",
+      "role": "ATTRIBUTE",
+      "target": "size:jumbo",
+      "reason": "matches an attribute value key",
+      "inSeed": true
+    },
+    {
+      "word": "just",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "kind",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "king arthur",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "knead",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "kneaded",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "la style",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "large",
+      "role": "ATTRIBUTE",
+      "target": "size:large",
+      "reason": "matches an attribute value key",
+      "inSeed": true
+    },
+    {
+      "word": "largely",
+      "role": "DEGREE",
+      "target": null,
+      "reason": "ends in -ly; no matching degree key",
+      "inSeed": false
+    },
+    {
+      "word": "larger",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "leafy",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "lean",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "leaner",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "leanest",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "least",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "leave",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "leaved",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "leavened",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "left",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "lengthwise",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "less",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "level",
+      "role": "MEASUREMENT_MODIFIER",
+      "target": "level",
+      "reason": "matches a measurement modifier key",
+      "inSeed": true
+    },
+    {
+      "word": "lg",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": true
+    },
+    {
+      "word": "liberal",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "lighter",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "lightly",
+      "role": "DEGREE",
+      "target": "light",
+      "reason": "matches a degree key",
+      "inSeed": true
+    },
+    {
+      "word": "like",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "liposoluble",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "liquid",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "little",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "live",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "living",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "local",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "long",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "loose",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "loose leaf",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "loosely",
+      "role": "DEGREE",
+      "target": null,
+      "reason": "ends in -ly; no matching degree key",
+      "inSeed": false
+    },
+    {
+      "word": "low",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "low protein",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "low salt",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": true
+    },
+    {
+      "word": "low starch",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "lower",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "lower salt",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": true
+    },
+    {
+      "word": "luke",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "lump",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "macerated",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "made",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "many",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "marbled",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "marinated",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "mashed",
+      "role": "PREPARATION",
+      "target": "mash",
+      "reason": "matches a preparation operation",
+      "inSeed": true
+    },
+    {
+      "word": "massel",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "mature",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "matured",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "md",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": true
+    },
+    {
+      "word": "mealy",
+      "role": "DEGREE",
+      "target": null,
+      "reason": "ends in -ly; no matching degree key",
+      "inSeed": false
+    },
+    {
+      "word": "meat",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "meaty",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "med",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": true
+    },
+    {
+      "word": "medium",
+      "role": "ATTRIBUTE",
+      "target": "size:medium",
+      "reason": "matches an attribute value key",
+      "inSeed": true
+    },
+    {
+      "word": "mellow",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "melted",
+      "role": "PREPARATION",
+      "target": "melt",
+      "reason": "matches a preparation operation",
+      "inSeed": true
+    },
+    {
+      "word": "melting",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "micro",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "mid",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "middle size",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "mild",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "mildly",
+      "role": "DEGREE",
+      "target": null,
+      "reason": "ends in -ly; no matching degree key",
+      "inSeed": false
+    },
+    {
+      "word": "milky",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "milled",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "mince",
+      "role": "PREPARATION",
+      "target": "mince",
+      "reason": "matches a preparation operation",
+      "inSeed": true
+    },
+    {
+      "word": "minced",
+      "role": "PREPARATION",
+      "target": "mince",
+      "reason": "matches a preparation operation",
+      "inSeed": true
+    },
+    {
+      "word": "mini",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "miniature",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "minty",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "minus",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "mix",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "mixed",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "mixture",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "moist",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "moisture",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "moon",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "moons",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "more",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "most",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "msc",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "much",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "multi",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "mushy",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "my",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "narrow",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "native",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "natural",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "naturally",
+      "role": "DEGREE",
+      "target": null,
+      "reason": "ends in -ly; no matching degree key",
+      "inSeed": false
+    },
+    {
+      "word": "navy",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "necessary",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "needed",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "neutral",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "neutrally",
+      "role": "DEGREE",
+      "target": null,
+      "reason": "ends in -ly; no matching degree key",
+      "inSeed": false
+    },
+    {
+      "word": "new",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "nice",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "nitrate",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "nixtamalized",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "no",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "no salt",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "non",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "non stick",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "normal",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "not",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "note",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "nutty",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "of",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "off",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "off the bone",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "oil packed",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "oiled",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "oily",
+      "role": "DEGREE",
+      "target": null,
+      "reason": "ends in -ly; no matching degree key",
+      "inSeed": false
+    },
+    {
+      "word": "old",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "on",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "on the cob",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "opened",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "optional",
+      "role": "INSTRUCTION",
+      "target": "optional",
+      "reason": "matches an instruction key",
+      "inSeed": true
+    },
+    {
+      "word": "or so",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "ordinary",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "organic",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "original",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "other",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "out",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "outer",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "oven",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "over",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "packaged",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "packed",
+      "role": "PREPARATION",
+      "target": "pack",
+      "reason": "matches a preparation operation",
+      "inSeed": true
+    },
+    {
+      "word": "pan",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "paper",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "par",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "pared",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "part",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "pasteurized",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "pasture",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "pastured",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "patted",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "peated",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "peeled",
+      "role": "PREPARATION",
+      "target": "peel",
+      "reason": "matches a preparation operation",
+      "inSeed": true
+    },
+    {
+      "word": "pencil",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "peppery",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "per",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "perfect",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "perfectly",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "person",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "pesticide",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "petite",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "picked",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "pickled",
+      "role": "ATTRIBUTE",
+      "target": "preservation:pickled",
+      "reason": "matches an attribute value key",
+      "inSeed": true
+    },
+    {
+      "word": "pin boned",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "pith",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "pitted",
+      "role": "PREPARATION",
+      "target": "pit",
+      "reason": "matches a preparation operation",
+      "inSeed": true
+    },
+    {
+      "word": "placed",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "plain",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "planed",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "plant",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "plenty",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "plump",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "plus",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "poached",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "podded",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "point",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "postcard",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "pounded",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "poured",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "powdery",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "powedered",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": true
+    },
+    {
+      "word": "pre",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "preferably",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "preferred",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "premium",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "prepared",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "preservative",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "press",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "pressed",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "previously",
+      "role": "DEGREE",
+      "target": null,
+      "reason": "ends in -ly; no matching degree key",
+      "inSeed": false
+    },
+    {
+      "word": "pricked",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "process",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "processed",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "proof",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "proofed",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "pulled",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "pulsed",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "pulverized",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "purchased",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "pure",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "pureed",
+      "role": "PREPARATION",
+      "target": "puree",
+      "reason": "matches a preparation operation",
+      "inSeed": true
+    },
+    {
+      "word": "pureéd",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "puréed",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": true
+    },
+    {
+      "word": "purified",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "quality",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "quarter size",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "quarter sized",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "quartered",
+      "role": "PREPARATION",
+      "target": "quarter",
+      "reason": "matches a preparation operation",
+      "inSeed": true
+    },
+    {
+      "word": "quick",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "raised",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "range",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "rapid",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "rare",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "raw",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "reactivated",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "ready",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "ready to cook",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "ready to eat",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "real",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "really",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "recommended",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "reconstituted",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "rectangular",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "reduced",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "reduced salt",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": true
+    },
+    {
+      "word": "refined",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "refried",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "refrigerated",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "regular",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "rehydrated",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "relatively",
+      "role": "DEGREE",
+      "target": null,
+      "reason": "ends in -ly; no matching degree key",
+      "inSeed": false
+    },
+    {
+      "word": "removed",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "rendered",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "required",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "reserve",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "reserved",
+      "role": "INSTRUCTION",
+      "target": "reserved",
+      "reason": "matches an instruction key",
+      "inSeed": true
+    },
+    {
+      "word": "resized",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "responsibly",
+      "role": "DEGREE",
+      "target": null,
+      "reason": "ends in -ly; no matching degree key",
+      "inSeed": false
+    },
+    {
+      "word": "ribboned",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "riced",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "rich",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "ridged",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "rindless",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "rinsed",
+      "role": "PREPARATION",
+      "target": "rinse",
+      "reason": "matches a preparation operation",
+      "inSeed": true
+    },
+    {
+      "word": "ripe",
+      "role": "ATTRIBUTE",
+      "target": "ripeness:ripe",
+      "reason": "matches an attribute value key",
+      "inSeed": true
+    },
+    {
+      "word": "ripen",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "ripened",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "ripest",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "ripped",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "rise",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "rising",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "roasted",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "robust",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "rolled",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "room",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "rough",
+      "role": "DEGREE",
+      "target": "rough",
+      "reason": "matches a degree key",
+      "inSeed": false
+    },
+    {
+      "word": "roughly",
+      "role": "DEGREE",
+      "target": "rough",
+      "reason": "matches a degree key",
+      "inSeed": true
+    },
+    {
+      "word": "rounded",
+      "role": "MEASUREMENT_MODIFIER",
+      "target": "rounded",
+      "reason": "matches a measurement modifier key",
+      "inSeed": true
+    },
+    {
+      "word": "rubbed",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "runny",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "rustic",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "salt free",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "salt reduced",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "salted",
+      "role": "ATTRIBUTE",
+      "target": "salt_level:salted",
+      "reason": "matches an attribute value key",
+      "inSeed": true
+    },
+    {
+      "word": "salty",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "sandwich",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "sashimi grade",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "sauted",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "sauteed",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "sautéed",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "savoury",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "scaled",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "scant",
+      "role": "MEASUREMENT_MODIFIER",
+      "target": "scant",
+      "reason": "matches a measurement modifier key",
+      "inSeed": true
+    },
+    {
+      "word": "scattered",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "scooped",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "scored",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "scrambled",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "scraped",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "scrapped",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "scrubbed",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "seared",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "season",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "seasonal",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "seasoned",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "see",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "seeded",
+      "role": "PREPARATION",
+      "target": "seed",
+      "reason": "matches a preparation operation",
+      "inSeed": true
+    },
+    {
+      "word": "seedless",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "segmented",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "semi",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "separated",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "serve",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "served",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "shaken",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "shallow",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "shape",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "shaped",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "sharp",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "shaved",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "shell",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "shelled",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "shop",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "short",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "shredded",
+      "role": "PREPARATION",
+      "target": "shred",
+      "reason": "matches a preparation operation",
+      "inSeed": true
+    },
+    {
+      "word": "shucked",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "side",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "sieved",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "sifted",
+      "role": "PREPARATION",
+      "target": "sift",
+      "reason": "matches a preparation operation",
+      "inSeed": true
+    },
+    {
+      "word": "silver",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "similar",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "simmered",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "simple",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "size",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "sized",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "sizzling",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "skim",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": true
+    },
+    {
+      "word": "skimmed",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": true
+    },
+    {
+      "word": "skin",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "skinless",
+      "role": "ATTRIBUTE",
+      "target": "skin:skinless",
+      "reason": "matches an attribute value key",
+      "inSeed": true
+    },
+    {
+      "word": "skinned",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": true
+    },
+    {
+      "word": "skinny",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "skinon",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": true
+    },
+    {
+      "word": "slender",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "sliced",
+      "role": "PREPARATION",
+      "target": "slice",
+      "reason": "matches a preparation operation",
+      "inSeed": true
+    },
+    {
+      "word": "slightly",
+      "role": "DEGREE",
+      "target": null,
+      "reason": "ends in -ly; no matching degree key",
+      "inSeed": false
+    },
+    {
+      "word": "slit",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "slivered",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "slow",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "sm",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": true
+    },
+    {
+      "word": "small",
+      "role": "ATTRIBUTE",
+      "target": "size:small",
+      "reason": "matches an attribute value key",
+      "inSeed": true
+    },
+    {
+      "word": "smaller",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "smallest",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "smallish",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "smashed",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "smeared",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "smoke",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "smoked",
+      "role": "ATTRIBUTE",
+      "target": "preservation:smoked",
+      "reason": "matches an attribute value key",
+      "inSeed": true
+    },
+    {
+      "word": "smokehouse",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "smoking",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "smoky",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "smooth",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "smoothed",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "snipped",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "so",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "soaked",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "sodium",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "soft",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "softened",
+      "role": "PREPARATION",
+      "target": "soften",
+      "reason": "matches a preparation operation",
+      "inSeed": true
+    },
+    {
+      "word": "softly",
+      "role": "DEGREE",
+      "target": null,
+      "reason": "ends in -ly; no matching degree key",
+      "inSeed": false
+    },
+    {
+      "word": "solid",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "solidified",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "soluble",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "sometimes",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "sour",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "sourced",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "soured",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "special",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "spelled",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "spicy",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "spiral",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "spiralised",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "spiralized",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "split",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "spongy",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "sprayed",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "sprinkled",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "squeezed",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "stacked",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "stale",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "standard",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "steamed",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "steeped",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "stem on",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "stemmed",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "stewed",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "sticky",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "stiff",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "still",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "stir",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "stirred",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "stone",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "stoned",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": true
+    },
+    {
+      "word": "store",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "strained",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "streaky",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "strength",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "stripped",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "strong",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "strongly",
+      "role": "DEGREE",
+      "target": null,
+      "reason": "ends in -ly; no matching degree key",
+      "inSeed": false
+    },
+    {
+      "word": "sturdy",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "style",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "such",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "suitable",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "sulfured",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "sunny",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "super",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "sushi grade",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "sustainable",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "sustainably",
+      "role": "DEGREE",
+      "target": null,
+      "reason": "ends in -ly; no matching degree key",
+      "inSeed": false
+    },
+    {
+      "word": "sweet",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "sweetened",
+      "role": "ATTRIBUTE",
+      "target": "sweetness:sweetened",
+      "reason": "matches an attribute value key",
+      "inSeed": true
+    },
+    {
+      "word": "syrupy",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "tangy",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "tart",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "taste",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "tasted",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "tasting",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "tasty",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "temp",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "temperature",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "tempered",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "tender",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "tender stem",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "tepid",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "tex mex",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "texas",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "than",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "that",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "thawed",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "the",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "their",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "then",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "thick",
+      "role": "DEGREE",
+      "target": "thick",
+      "reason": "matches a degree key",
+      "inSeed": false
+    },
+    {
+      "word": "thickened",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "thickly",
+      "role": "DEGREE",
+      "target": "thick",
+      "reason": "matches a degree key",
+      "inSeed": true
+    },
+    {
+      "word": "thickness",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "thin",
+      "role": "DEGREE",
+      "target": "thin",
+      "reason": "matches a degree key",
+      "inSeed": false
+    },
+    {
+      "word": "thinly",
+      "role": "DEGREE",
+      "target": "thin",
+      "reason": "matches a degree key",
+      "inSeed": true
+    },
+    {
+      "word": "thoroughly",
+      "role": "DEGREE",
+      "target": null,
+      "reason": "ends in -ly; no matching degree key",
+      "inSeed": false
+    },
+    {
+      "word": "thumb",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "tied",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "tightly",
+      "role": "DEGREE",
+      "target": null,
+      "reason": "ends in -ly; no matching degree key",
+      "inSeed": false
+    },
+    {
+      "word": "tinned",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": true
+    },
+    {
+      "word": "tiny",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "titanium",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "to",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "to cook",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "to eat",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "toasted",
+      "role": "PREPARATION",
+      "target": "toast",
+      "reason": "matches a preparation operation",
+      "inSeed": true
+    },
+    {
+      "word": "tolerant",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "too",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "top",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "topped",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "topping",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "torn",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "tossed",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "total",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "tough",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "trade",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "traditional",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "traditionally",
+      "role": "DEGREE",
+      "target": null,
+      "reason": "ends in -ly; no matching degree key",
+      "inSeed": false
+    },
+    {
+      "word": "treated",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "tri colored",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "trimmed",
+      "role": "PREPARATION",
+      "target": "trim",
+      "reason": "matches a preparation operation",
+      "inSeed": true
+    },
+    {
+      "word": "trussed",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "turned",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "type",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "ugly",
+      "role": "DEGREE",
+      "target": null,
+      "reason": "ends in -ly; no matching degree key",
+      "inSeed": false
+    },
+    {
+      "word": "unbaked",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "unbleached",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "uncooked",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "under",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "undiluted",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "undrained",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "unflavored",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "unflavoured",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "unpeeled",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "unrefined",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "unripe",
+      "role": "ATTRIBUTE",
+      "target": "ripeness:unripe",
+      "reason": "matches an attribute value key",
+      "inSeed": true
+    },
+    {
+      "word": "unroasted",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "unsalted",
+      "role": "ATTRIBUTE",
+      "target": "salt_level:unsalted",
+      "reason": "matches an attribute value key",
+      "inSeed": true
+    },
+    {
+      "word": "unseasoned",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "unskinned",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "unsweet",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "unsweetened",
+      "role": "ATTRIBUTE",
+      "target": "sweetness:unsweetened",
+      "reason": "matches an attribute value key",
+      "inSeed": true
+    },
+    {
+      "word": "unwaxed",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "up",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "us",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "use",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "used",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "using",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "vacuum",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "variety",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "vegan",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "vegetarian",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "veined",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "very",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "vine",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "vinegary",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "vintage",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "virgin",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "wafer",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "walnut size",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "waltnut sized",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "warm",
+      "role": "PREPARATION",
+      "target": "warm",
+      "reason": "matches a preparation operation",
+      "inSeed": true
+    },
+    {
+      "word": "warmed",
+      "role": "PREPARATION",
+      "target": "warm",
+      "reason": "matches a preparation operation",
+      "inSeed": true
+    },
+    {
+      "word": "washed",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "watery",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "waxed",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "waxy",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "weak",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "well",
+      "role": "DEGREE",
+      "target": "well",
+      "reason": "matches a degree key",
+      "inSeed": true
+    },
+    {
+      "word": "wet",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "whacked",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "whatever",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "whisked",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": true
+    },
+    {
+      "word": "whole",
+      "role": "ATTRIBUTE",
+      "target": "fat_content:whole",
+      "reason": "matches an attribute value key",
+      "inSeed": true
+    },
+    {
+      "word": "wholemeal",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "wide",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "wild",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "wilted",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "wiped",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "with",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "without",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "worth",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "x large",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": true
+    },
+    {
+      "word": "XL",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": true
+    },
+    {
+      "word": "xlarge",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": true
+    },
+    {
+      "word": "you",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "young",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "young leaf",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    },
+    {
+      "word": "your",
+      "role": "IGNORE",
+      "target": null,
+      "reason": "filler word",
+      "inSeed": false
+    },
+    {
+      "word": "zested",
+      "role": "PREPARATION",
+      "target": null,
+      "reason": "ends in -ed/-en; no matching operation",
+      "inSeed": false
+    },
+    {
+      "word": "zesty",
+      "role": "UNSURE",
+      "target": null,
+      "reason": "no heuristic applies",
+      "inSeed": false
+    }
+  ]
+}

@@ -19,6 +19,12 @@ export interface LexiconEntryInput {
   role: LexiconRole;
   /** Defaults to ACTIVE. Conservative parsing only sees ACTIVE entries. */
   status?: LexiconEntryStatus;
+  /** What the entry names; the parser ignores these, the resolver reads them. */
+  conceptId?: string | null;
+  attributeValueId?: string | null;
+  preparationId?: string | null;
+  valueKey?: string | null;
+  kind?: "CANONICAL" | "ALIAS" | "PLURAL" | "REGIONAL" | "ABBREVIATION" | "VARIANT" | null;
 }
 
 /**

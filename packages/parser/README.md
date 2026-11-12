@@ -260,6 +260,46 @@ How the pieces fit, using "1 lb boneless chicken thighs":
 3. The database stores one `IngredientMention` for the segment, with `syntax` (a `MentionSyntax`), `quantity`, and `resolution` validated by these schemas.
 4. If something can't be resolved ("calamansi juice"), the resolver emits a discovery; a reviewer's choice is recorded as a `DecisionPayload` with its own lexicon revision.
 
+## Resolving meaning
+
+The parser says what each word *is* (a quantity, a FOOD lexeme, an unknown word). The resolver (`src/v2/resolve/`) decides what the segment *means*: which food concept, which attributes, which preparations, and how sure it is. It is pure: it reads a `ResolverSnapshot` (plain JSON from `loadResolverSnapshot()` in `@peas/database`, or built from fixtures in tests) and never touches the database.
+
+```ts
+import { buildResolverContext, processIngredientLine } from "@peas/parser/v2";
+
+const context = buildResolverContext(snapshot); // lexicon + ontology view + scoring config
+const { mentions } = processIngredientLine("1 lb boneless chicken thighs", context);
+mentions[0].status; // "AUTO_RESOLVED"
+mentions[0].resolution.candidates[0]; // concept chicken thigh, attribute bone=boneless, score 0.833
+```
+
+How a segment is read:
+
+1. **Find the head.** The rightmost FOOD lexeme in the main phrase that points at a concept. No head means UNRESOLVED, with the unknown words recorded.
+2. **Give every other lexeme a role.** One word can have several entries ("whole" is fat content and form; "crushed" is a preparation and a form). The resolver prefers, in order: an attribute that applies to the head, a preparation, a degree, a measurement modifier, an instruction, an attribute that does not apply, and finally an extra food. Attributes apply when the head, or an IS_A or PART_OF ancestor, has that attribute dimension.
+3. **Bind degrees.** A degree ("finely", "loosely") attaches to the next preparation or measurement modifier; one with nothing to attach to counts as unexplained.
+4. **Apply package rules.** Measured in cans or tins, a head with exactly one canned descendant resolves to it.
+5. **Split and branch.** "and" between two foods splits the segment into parts (`partIndex` 0, 1, ...) unless the whole phrase is an entry ("macaroni and cheese"); "or" keeps alternatives as extra candidates.
+6. **Score and decide.** The score (0 to 1) rewards explained words and longer head matches and penalizes unknown words and ambiguity; verified past choices for the same phrase add a small prior. AUTO_RESOLVED needs exactly one candidate, no unknown words in the main phrase, and nothing ambiguous; everything else with a head is NEEDS_REVIEW.
+
+Each candidate carries `reasons` that explain the decision. Worked examples with the semantic fixture lexicon (`fixtures/lexicon/semantic-cases.json`):
+
+| Line | Status | Concept and details | Reasons |
+| --- | --- | --- | --- |
+| 1 lb boneless chicken thighs | AUTO_RESOLVED (0.833) | chicken thigh; bone=boneless | `head:chicken thigh(2 tokens)`, `entry:PLURAL` |
+| 1 cup finely chopped parsley | AUTO_RESOLVED (0.767) | parsley; chop with degree fine, before the head | `head:parsley(1 token)` |
+| 2 (14 oz) cans tomatoes | AUTO_RESOLVED (0.767) | canned tomatoes (from tomato via the can) | `head:tomato(1 token)`, `entry:PLURAL`, `package:can->canned tomatoes` |
+| 2 green apples | AUTO_RESOLVED (0.767) | apple; color=green ("green" could also mean unripe, but ripeness does not apply to apples) | `head:apple(1 token)`, `entry:PLURAL` |
+| 1 cup whole milk, plus extra for serving | AUTO_RESOLVED (0.833) | whole milk (its own concept, not milk plus an attribute); "plus extra" and "serving" are notes | `head:whole milk(2 tokens)` |
+| 2 cups organic milk | NEEDS_REVIEW (0.417) | milk; "organic" is unknown | `head:milk(1 token)`, `unknown:"organic"` |
+| Salt and parsley, to taste | AUTO_RESOLVED, two parts | part 0 "Salt": salt; part 1 "parsley, to taste": parsley | `split_coordination` |
+| 1 cup milk or salt | NEEDS_REVIEW | two candidates, milk first | `alternative:or` |
+| 3 tablespoons calamansi juice | UNRESOLVED | none; unresolved "calamansi juice" | none |
+
+Knowledge changes need no grammar change: add the entry "icing sugar" for powdered sugar to the snapshot and "2 tbsp icing sugar" resolves on the next context build.
+
+`yarn evaluate:resolution` writes `fixtures/reports/resolution.md`: coverage by status, the most common unresolved phrases, entry text with several targets, semantic precision (15 of 15 today), and coverage and precision at score thresholds 0.5, 0.7, and 0.9. `yarn workspace @peas/database db:evaluate:resolution` writes the same report for the live database.
+
 ## Commands
 
 All commands run from the repo root with `yarn workspace @peas/parser <command>`.
@@ -271,6 +311,8 @@ All commands run from the repo root with `yarn workspace @peas/parser <command>`
 | `test:coverage` | The same tests with the v2 coverage floor (see `docs/testing.md`) |
 | `report:compare` | Compares v1 and v2 over the corpus and golden sets; writes `fixtures/reports/v1-vs-v2.md` |
 | `preview:lexicon` | Before/after preview of a lexicon change across the corpus |
+| `evaluate:resolution` | Resolution report over the corpus and golden inputs with the fixture snapshot (`--snapshot <path>` for any `ResolverSnapshot` JSON); writes `fixtures/reports/resolution.md` |
+| `extract:descriptors` | Classifies the v1 descriptor list into suggested roles and targets; writes `fixtures/lexicon/v1-descriptors.candidates.json` |
 | `corpus:baseline-v1` | Re-snapshots v1 output to `fixtures/baseline/v1.jsonl` |
 | `build` | Builds v1 and v2 into `dist/` |
 
@@ -281,15 +323,19 @@ All commands run from the repo root with `yarn workspace @peas/parser <command>`
 | `fixtures/corpus/lines.jsonl` | Distinct real ingredient lines exported from imported notes by `yarn workspace @peas/database export:lines`. Reset to empty on 12 November 2026 (the earlier 682-line export included instruction text the old HTML parser mistook for ingredients); refill it after a fresh import. |
 | `fixtures/golden/structural.dev.json` | 182 hand-checked expected parses (5 marked as known failures) |
 | `fixtures/golden/structural.holdout.json` | 41 held-out cases used only to measure, never to tune |
-| `fixtures/golden/semantic.json` | Expected meanings for the future resolver |
+| `fixtures/golden/semantic.json` | Expected meanings (concept, attributes, preparations) for the 15 section-32 lines; the resolver must get all of them right |
 | `fixtures/lexicon/structural.json` | Measurement modifiers the structural tests assume |
 | `fixtures/lexicon/demo.json` | Tiny illustrative lexicon for docs and `explain:line` |
-| `fixtures/lexicon/semantic-cases.json` | The lexicon `golden/semantic.json` assumes; the database integration tests load it to prove every target interpretation can be stored |
+| `fixtures/lexicon/semantic-cases.json` | The lexicon and small ontology (concepts, relationships, applicability, concept attributes) `golden/semantic.json` assumes; resolver tests build their snapshot from it, and the database integration tests load it to prove every target interpretation can be stored |
+| `fixtures/lexicon/snapshot.json` | That fixture as a `ResolverSnapshot`, regenerated by `evaluate:resolution` |
+| `fixtures/lexicon/modifiers.seed.json` | 99 reviewed modifier entries (preparations, degrees, measurement modifiers, instructions, attributes) loaded by `db:seed:modifiers` |
+| `fixtures/lexicon/v1-descriptors.candidates.json` | Every v1 descriptor with a suggested role and target, for reviewing what to add to the modifier seed next |
 | `fixtures/baseline/v1.jsonl` | v1 output for every corpus line, for comparison |
 | `fixtures/reports/v1-vs-v2.md` | Latest comparison report |
+| `fixtures/reports/resolution.md` | Latest resolution report (fixture snapshot); `resolution.db.md` is the live-database version |
 
 ## Further reading
 
-- [Ingredient ontology rebuild](../../docs/architecture/ingredient-ontology-rebuild.md): the overall plan, decisions, the ontology data model, and the Phase 1 and Phase 2 deliverables.
+- [Ingredient ontology rebuild](../../docs/architecture/ingredient-ontology-rebuild.md): the overall plan, decisions, the ontology data model, and the Phase 1, 2, and 3 deliverables.
 - [packages/database/README.md](../database/README.md): the ontology tables and repository functions.
 - [legacy/README.md](legacy/README.md): what the reference-only grammars are.

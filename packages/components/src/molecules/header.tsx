@@ -17,7 +17,7 @@ export function Header({
       )}
     >
       <div className="mx-auto flex w-full max-w-7xl items-center justify-between">
-        <h1 className="text-2xl font-light text-header-foreground">
+        <h1 className="text-2xl font-extralight text-header-foreground">
           {routeName}
         </h1>
       </div>

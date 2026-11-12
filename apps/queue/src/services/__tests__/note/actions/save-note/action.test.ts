@@ -203,7 +203,28 @@ describe("SaveNoteAction", () => {
         contextName: "save_note",
         startMessage: "Creating note structure",
         completionMessage: "Created note structure",
+        additionalBroadcasting: expect.any(Function),
       });
+    });
+
+    it("includes the saved note's title in the completion event", async () => {
+      (mockDeps.services.saveNote as any).mockResolvedValue({
+        ...mockData,
+        noteId: "new-note-789",
+        note: { id: "new-note-789", title: "Venison stew" },
+      });
+
+      await action.execute(mockData, mockDeps, mockContext);
+
+      expect(mockDeps.statusBroadcaster?.addStatusEventAndBroadcast).toHaveBeenCalledWith(
+        expect.objectContaining({
+          importId: "test-import-789",
+          noteId: "new-note-789",
+          status: "COMPLETED",
+          context: "save_note",
+          metadata: { title: "Venison stew" },
+        })
+      );
     });
 
     it("should handle service call correctly", async () => {

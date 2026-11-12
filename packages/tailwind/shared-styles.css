@@ -10,7 +10,6 @@
 
     --color-white: #ffffff;
     --color-black: #000000;
-    --color-navy: oklch(35.9% 0.0558 259.66);
     /* Primary Colors */
     --color-primary-50: oklch(98% 0.0128 180.13);
     --color-primary-100: oklch(95% 0.0255 180.13);

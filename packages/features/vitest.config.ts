@@ -32,6 +32,8 @@ export default defineConfig({
   },
   resolve: {
     alias: {
+      // Components source imports its own "@/lib"; features has no src/lib to clash with
+      "@/lib": path.resolve(__dirname, "../components/src/lib"),
       "@": path.resolve(__dirname, "./src"),
       "@peas/components": path.resolve(__dirname, "../components/src"),
       "@peas/theme": path.resolve(__dirname, "../theme/src"),

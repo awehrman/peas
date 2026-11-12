@@ -87,7 +87,30 @@ parseLineBest("1 lb chicken thighs", { lexicon }); // [1 lb] {chicken thighs:FOO
 | `discoveries.ts` | `upsertDiscoveries` (counts and priority from evidence), `getDiscoveryQueue` (cursor paging), `getDiscoveryDetail` |
 | `decisions.ts` | `recordDecision` (own revision; closes the discovery) |
 | `legacy-mapping.ts` | `upsertLegacyMapping`, `getLegacyMapping` |
+| `resolver-context.ts` | `loadResolverSnapshot` (everything the resolver needs as one JSON-safe `ResolverSnapshot`: ACTIVE and PROPOSED entries with targets, vocabulary, concepts, relationships, applicability, concept attributes, verified-choice priors, revision) |
 | `helpers.ts` | `computeTargetKey`, `slugify`, `uuidv7`, `isUniqueViolation`, `OntologyError` |
+
+The resolver runs on a snapshot, so a new verified entry takes effect on the next load with no grammar change:
+
+```ts
+import { loadResolverSnapshot } from "@peas/database";
+import { buildResolverContext, processIngredientLine } from "@peas/parser/v2";
+
+const context = buildResolverContext(await loadResolverSnapshot());
+processIngredientLine("1 lb boneless chicken thighs", context).mentions[0].status; // "AUTO_RESOLVED" once the entries exist
+```
+
+### Seeds
+
+Run in this order; each is idempotent and bumps the lexicon revision only when it writes something.
+
+| Script | What it does |
+| --- | --- |
+| `db:seed:ontology` | Attribute dimensions, values, and preparation operations from `@peas/parser/v2` |
+| `db:seed:modifiers` | The 99 reviewed modifier entries in `packages/parser/fixtures/lexicon/modifiers.seed.json` (ACTIVE), resolved against the vocabulary |
+| `db:seed:legacy [--batch 200] [--dry-run]` | Legacy `Ingredient` rows to concepts in three passes, keyed by `LegacyIngredientMapping` so it resumes where it stopped. Pass 1: one- or two-word or reviewed names become concepts with CANONICAL, PLURAL, and ALIAS entries (ACTIVE if reviewed, else PROPOSED). Pass 2: longer names go through the resolver; modifier-composed names ("finely chopped parsley") map to the head concept for review, attribute-composed names ("boneless skinless chicken thigh") become proposed concepts plus an IDENTITY_DECISION discovery, and anything else becomes a proposed concept. Pass 3: parents become RELATIONSHIP_SUGGESTION discoveries (never relationships), properties become LEGACY classifications through `LEGACY_PROPERTY_CLASSIFICATIONS`, categories become CATEGORY classifications, and tags, substitutions, brands (as products), and composed flags carry over onto concepts created from that ingredient. `--dry-run` runs everything in one transaction and rolls it back. |
+
+`db:evaluate:resolution [--limit 5000] [--export-snapshot path]` writes a read-only resolution report over stored lines to `packages/parser/fixtures/reports/resolution.db.md`.
 
 Every JSON column (`syntax`, `quantity`, `resolution`, discovery and decision payloads, decision effects) is validated with its Zod schema from `@peas/parser/v2` on write and on read.
 
@@ -128,6 +151,9 @@ The `add_food_ontology` migration adds what Prisma cannot model: the `pg_trgm` e
 - `npm run db:verify-migrations` - Replay all migrations on `SCRATCH_DATABASE_URL` and fail if they differ from the schema
 - `npm run db:push` - Build schema and push to database (throwaway databases only)
 - `yarn db:seed:ontology` - Seed attribute dimensions, values, and preparation operations from `@peas/parser/v2` (idempotent; bumps the lexicon revision only when something was added)
+- `yarn db:seed:modifiers` - Seed reviewed modifier lexicon entries (after `db:seed:ontology`)
+- `yarn db:seed:legacy` - Seed the ontology from legacy ingredients (`--dry-run`, `--batch <n>`)
+- `yarn db:evaluate:resolution` - Resolution report against the live database (read-only)
 - `yarn typecheck` - Typecheck sources, tests, and scripts (`tsconfig.test.json`)
 - `yarn test:run` - Unit tests (no database needed)
 - `yarn test:int` - Unit and integration tests against `TEST_DATABASE_URL` (integration suites skip when unset)

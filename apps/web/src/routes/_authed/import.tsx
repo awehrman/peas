@@ -5,8 +5,8 @@ import { useCallback } from "react";
 
 import { useApolloClient, useReadQuery } from "@apollo/client/react";
 import {
-  ImportActivityList,
   ImportFileUpload,
+  ImportProgress,
   ImportProvider,
   type ImportStatsState,
   useInitialization,
@@ -70,17 +70,9 @@ function ImportPage({
   });
 
   return (
-    <div className="grid gap-6">
-      <section
-        aria-labelledby="import-notes-heading"
-        className="rounded-lg border bg-card p-5 shadow-xs"
-      >
-        <h2 id="import-notes-heading" className="mb-4 text-base font-semibold">
-          Import notes
-        </h2>
-        <ImportFileUpload />
-      </section>
-      <ImportActivityList />
+    <div className="flex flex-col gap-6">
+      <ImportFileUpload />
+      <ImportProgress />
     </div>
   );
 }

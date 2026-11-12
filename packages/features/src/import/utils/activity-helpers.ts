@@ -1,13 +1,31 @@
-import type { ImportCard, StepStatus } from "../types/import-types";
+import type {
+  ImportCard,
+  ImportCardDetails,
+  StatusEvent,
+  StepStatus,
+} from "../types/import-types";
+
+export type ImportStepKey = keyof ImportCard["status"];
+
+/** Pipeline steps in the order the queue runs them */
+export const IMPORT_STEP_ORDER: readonly ImportStepKey[] = [
+  "uploaded",
+  "cleanedNote",
+  "savedNote",
+  "ingredientProcessing",
+  "instructionProcessing",
+  "connectingSource",
+  "addingImages",
+  "addingTags",
+  "addingCategories",
+  "checkDuplicates",
+];
 
 /**
  * Maps websocket context strings to ImportCard step keys
  */
-export function mapContextToStep(
-  context: string
-): keyof ImportCard["status"] | null {
-  // Map context strings to step names
-  const contextMap: Record<string, keyof ImportCard["status"]> = {
+export function mapContextToStep(context: string): ImportStepKey | null {
+  const contextMap: Record<string, ImportStepKey> = {
     clean_html_start: "cleanedNote",
     clean_html_end: "cleanedNote",
     save_note: "savedNote",
@@ -28,54 +46,73 @@ export function mapContextToStep(
     categorization_complete: "addingCategories",
     categorization_start: "addingCategories",
     check_duplicates: "checkDuplicates",
-    note_completion: "savedNote", // Final completion maps to savedNote
+    note_completion: "savedNote",
   };
 
   return contextMap[context] || null;
 }
 
 /**
- * Calculates overall progress percentage for a card (0-100)
- * Each step contributes equally to the total progress
+ * Pulls the note's title, thumbnail, source and completion out of a status
+ * event. Each arrives on a different step, so most events carry none.
+ */
+export function getCardDetailsFromEvent(event: StatusEvent): ImportCardDetails {
+  const { metadata, context, status } = event;
+  const details: ImportCardDetails = {};
+
+  if (typeof metadata?.title === "string" && metadata.title.trim()) {
+    details.title = metadata.title.trim();
+  }
+  if (typeof metadata?.r2ThumbnailUrl === "string" && metadata.r2ThumbnailUrl) {
+    details.thumbnailUrl = metadata.r2ThumbnailUrl;
+  }
+  if (typeof metadata?.source === "string" && metadata.source.trim()) {
+    details.source = metadata.source.trim();
+  }
+  if (context === "note_completion" && status === "COMPLETED") {
+    details.isComplete = true;
+  }
+
+  return details;
+}
+
+/**
+ * Overall progress for a card (0-100). Each step contributes equally, and
+ * only the queue's final completion event reaches 100.
  */
 export function calculateCardProgress(card: ImportCard): number {
-  const steps = Object.values(card.status);
-  const totalSteps = steps.length;
+  if (card.isComplete) return 100;
 
-  if (totalSteps === 0) return 0;
+  const steps = Object.values(card.status);
+  if (steps.length === 0) return 0;
 
   let totalProgress = 0;
-
   for (const step of steps) {
     if (step.completed) {
-      // Completed step = 100% of its portion
-      totalProgress += 100 / totalSteps;
+      totalProgress += 100 / steps.length;
     } else if (step.started && step.steps && step.processedSteps) {
-      // In-progress step with counts = partial progress
-      const stepProgress =
-        (step.processedSteps / step.steps) * (100 / totalSteps);
-      totalProgress += stepProgress;
+      totalProgress += (step.processedSteps / step.steps) * (100 / steps.length);
     }
   }
 
-  return Math.round(totalProgress);
+  return Math.min(99, Math.round(totalProgress));
 }
 
 /**
  * Returns human-readable labels for step keys
  */
-export function getStepLabel(step: keyof ImportCard["status"]): string {
-  const labels: Record<keyof ImportCard["status"], string> = {
-    uploaded: "Uploaded",
+export function getStepLabel(step: ImportStepKey): string {
+  const labels: Record<ImportStepKey, string> = {
+    uploaded: "Uploading",
     cleanedNote: "Cleaning HTML",
-    savedNote: "Saving Note",
-    ingredientProcessing: "Processing Ingredients",
-    instructionProcessing: "Processing Instructions",
-    connectingSource: "Connecting Source",
-    addingImages: "Adding Images",
-    addingTags: "Adding Tags",
-    addingCategories: "Adding Categories",
-    checkDuplicates: "Checking Duplicates",
+    savedNote: "Saving note",
+    ingredientProcessing: "Parsing ingredients",
+    instructionProcessing: "Formatting instructions",
+    connectingSource: "Connecting source",
+    addingImages: "Processing images",
+    addingTags: "Adding tags",
+    addingCategories: "Adding categories",
+    checkDuplicates: "Checking for duplicates",
   };
 
   return labels[step] || step;
@@ -99,7 +136,7 @@ export function createInitialCard(
   return {
     id: importId,
     ...(noteId ? { noteId } : {}),
-    isExpanded: false,
+    isComplete: false,
     status: {
       // Cards are created from queue events, so the upload has already landed
       uploaded: { ...initialStepStatus, started: true, completed: true },
