@@ -1,6 +1,6 @@
 # Cache Consistency
 
-Status: design for modernization phase M5. Nothing here is implemented yet; the queue's parse cache and the parser's revision fields are the only pieces that exist today.
+Status (12 November 2026): M5 is implemented for today's domains (notes, recipes, ingredients, import stats) in `apps/web`; see the [M5 record](#m5-record-12-november-2026). The knowledge domains (concepts, lexicon, mentions, review queue) plug into the same coordinator when Phases 3 and 4 add their queries.
 
 Peas is about to have many interconnected entities (concepts, terms, mentions, proposals, decisions, recipes). One ontology decision can change a concept page, alias lists, recipe ingredient lists, search results, review queues, and corpus statistics. The goal is normalized entity caching without spreading invalidation logic across components.
 
@@ -82,6 +82,60 @@ Background jobs are polled while active. Subscriptions or server-sent events are
 
 - Allowed for simple, local edits (renaming a concept, editing a description, deferring a discovery).
 - Not used for merges, decisions with background reprocessing, or anything whose result depends on server-side reinterpretation. Completion of background work is never invented on the client.
+
+## M5 record, 12 November 2026
+
+### What exists
+
+| Piece | Where | Notes |
+| --- | --- | --- |
+| Effect contract | `packages/api/src/effects.ts` and the `MutationEffect` type in `schema.graphql` | `changed` and `evicted` are generic `EntityRef { typename, id }` lists (capped at 100) instead of one id list per type; `invalidatedDomains`, `lexiconRevision`, `reprocessingJobId`. Zod-validated on the server (`createMutationEffect`) and again in the browser. A test keeps the TypeScript domain list and the GraphQL enum identical. |
+| Cache identity | `apps/web/src/lib/apollo/cache-config.ts` | Every entity type is keyed by `id` (`Job` by `jobId`); value objects such as `EntityRef` and `MutationEffect` are never normalized. `note(id)`, `recipe(id)`, and `ingredient(id)` read through to cached entities. `possibleTypes` is generated from the schema. |
+| Coordinator | `apps/web/src/lib/apollo/cache-coordinator.ts` | The only code that evicts or refetches. One per Apollo client (per request on the server, per tab in the browser). |
+| Mutation adapter | `useMutationAction` in `cache-coordinator-provider.tsx` | Runs the mutation, returns `MutationResult` to feature components, and applies the payload's effect. |
+| Job polling | `coordinator.trackJob` / `onJobUpdate` with the `job(jobId)` query | Polls every 2 seconds until COMPLETED, FAILED, CANCELLED, or missing; completion invalidates every parse-derived domain. |
+
+### Today's domains
+
+The design's knowledge domains (`CONCEPT_DETAIL`, `CONCEPT_LIST`, `LEXICON`, `MENTIONS`, `REVIEW_QUEUE`, `CORPUS_HEALTH`) are added when their queries exist. For now:
+
+| Domain | Root fields dropped | Entities evicted |
+| --- | --- | --- |
+| `NOTES` | `notes` | `NoteSummary` |
+| `NOTE_DETAIL` | `note` | `Note` |
+| `RECIPES` | `recipes` | `RecipeSummary` |
+| `RECIPE_DETAIL` | `recipe` | `Recipe` |
+| `RECIPE_TAXONOMY` | `recipeTaxonomy` | none |
+| `INGREDIENTS` | `ingredients`, `ingredientCounts`, `ingredientCategoryNames`, `searchIngredients` | `IngredientSummary` |
+| `INGREDIENT_DETAIL` | `ingredient` | `Ingredient` |
+| `IMPORT_STATS` | `importStats` | none |
+
+Detail domains evict their entity type as well as the root field, because the read-through field policies would otherwise keep serving the cached entity.
+
+### How the coordinator applies an effect
+
+1. Validates the effect with Zod. A malformed effect means nobody knows what changed, so every active query refetches.
+2. Inside `client.refetchQueries({ updateCache })`: evicts each `changed` and `evicted` entity, drops the root fields and entity types of each invalidated domain, and garbage-collects. Apollo then refetches exactly the active queries the evictions touched; inactive queries refetch the next time they mount.
+3. Records `lexiconRevision`. A newer revision also invalidates `NOTE_DETAIL`, `INGREDIENTS`, and `INGREDIENT_DETAIL` (parse-dependent views); an older one changes nothing.
+4. Starts polling `reprocessingJobId`, if any.
+
+Mutations that return the changed entity in their payload (`setLineReviewStatus` returns the refreshed `Note`) update every mounted view straight from Apollo's normalization, with an empty effect and no refetch.
+
+Two related choices sit outside the coordinator: the default fetch policy is `cache-and-network` (imports change data without going through GraphQL mutations, so each navigation refreshes in the background), and optimistic updates are not used yet.
+
+### Test coverage
+
+`apps/web/src/lib/apollo/__tests__/cache-coordinator.test.ts` runs a real Apollo client and cache against a scripted link:
+
+- a changed entity refetches the views showing it (the "renaming updates every mounted view" scenario, with a recipe);
+- invalidated domains refetch active list queries and drop inactive detail data;
+- unrelated queries are not refetched;
+- a malformed effect refetches every active query;
+- only a newer lexicon revision invalidates parse-dependent views (the "older revision does not overwrite newer data" scenario);
+- a reprocessing job is polled to completion and then refreshes parse-derived views;
+- a failed job is reported without invalidating anything (retry arrives with the Phase 4 reprocessing UI).
+
+The merge, alias-approval, and reinterpretation scenarios below need the ontology mutations from Phases 3 and 4; they reuse the same coordinator.
 
 ## Test scenarios (M5)
 

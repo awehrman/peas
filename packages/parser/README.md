@@ -18,7 +18,7 @@ v2 splits the job of understanding an ingredient line into three layers, each wi
 2. **The lexicon names the words.** A list of known expressions, each with a role (`FOOD`, `ATTRIBUTE`, `PREPARATION`, `DEGREE`, `MEASUREMENT_MODIFIER`, `INSTRUCTION`). It is passed in at parse time, so teaching Peas a new word never means editing the grammar.
 3. **The resolver decides meaning** (Phase 3, not built yet). It takes the syntax tree and decides which food is meant, whether "milk or cream" is one food or two, and so on.
 
-Phase 1 delivered layers 1 and 2. Without a lexicon the grammar still parses every line; words it doesn't know are kept as `UNKNOWN` instead of being dropped or guessed.
+Phase 1 delivered layers 1 and 2. Phase 2 added the shared schemas layer 3 will produce (see [Ontology, resolution, and review schemas](#ontology-resolution-and-review-schemas)) and the database tables that store them. Without a lexicon the grammar still parses every line; words it doesn't know are kept as `UNKNOWN` instead of being dropped or guessed.
 
 ## The pipeline
 
@@ -238,6 +238,28 @@ const alternatives = parseLine("3 garlic cloves, minced", { lexicon, mode: "EXPL
 
 Every result records `parserVersion` (grammar and tree shape), `normalizerVersion` (normalization output), and `lexiconRevision` (which lexicon it was parsed with), so stored parses can be compared or re-run when any of them changes.
 
+Lexicon entry ids must be UUIDs (`crypto.randomUUID()` in code; the database generates UUIDv7). `buildLexicon` validates its input with `LexiconSnapshotSchema` and throws on a non-UUID or duplicate id. In the app, the lexicon comes from the database: `buildLexicon(await getLexiconSnapshot())` from `@peas/database`.
+
+## Ontology, resolution, and review schemas
+
+`@peas/parser/v2` is also the single home for the shapes that the database, queue, and web app exchange about food knowledge (decision D19). Everything here is pure TypeScript and Zod, with worked examples in the source comments.
+
+| Module | What it defines | Example |
+| --- | --- | --- |
+| `ontology/types.ts` | Enum value lists mirrored by the Prisma schema: concept and entry statuses, term kinds, relationship types, classification kinds, value sources, resolution statuses, prep positions | `FOOD_RELATIONSHIP_TYPES` = IS_A, PART_OF, DERIVED_FROM, PROCESSED_FROM |
+| `ontology/inheritance.ts` | Which classifications flow across which relationships (D15), and `effectiveClassifications` to compute them at read time | buttermilk DERIVED_FROM milk inherits ALLERGEN_MILK but not DAIRY |
+| `ontology/vocabulary.ts` | The seeded attribute dimensions and preparation operations, plus degree, measurement-modifier, and instruction value keys | bone = bone_in / boneless; prep `mince`; degree `fine` |
+| `resolve/schemas.ts` | `ResolutionSchema` (ranked candidates with attributes, preparations, modifiers, unresolved spans) and `MentionSyntaxSchema` (the segment plus line context stored on each mention) | "1 lb boneless chicken thighs" resolves to chicken thigh with bone=boneless |
+| `knowledge/schemas.ts` | `DiscoveryPayloadSchema` (one variant per discovery type), `DecisionPayloadSchema` (one variant per decision type), `DecisionEffectsSchema` | `{ type: "UNKNOWN_FOOD_PHRASE", phrase: "calamansi juice", headToken: "juice" }` |
+| `knowledge/priority.ts` | The review-queue priority formula (D18) | 7 notes and 9 mentions of an unknown phrase score about 11.3 |
+
+How the pieces fit, using "1 lb boneless chicken thighs":
+
+1. The parser produces the syntax tree: `[1 lb] {boneless:ATTRIBUTE} {chicken thighs:FOOD}`.
+2. The resolver (Phase 3) turns it into a `Resolution`: candidate concept "chicken thigh" via the PLURAL entry "chicken thighs", with the asserted attribute bone=boneless.
+3. The database stores one `IngredientMention` for the segment, with `syntax` (a `MentionSyntax`), `quantity`, and `resolution` validated by these schemas.
+4. If something can't be resolved ("calamansi juice"), the resolver emits a discovery; a reviewer's choice is recorded as a `DecisionPayload` with its own lexicon revision.
+
 ## Commands
 
 All commands run from the repo root with `yarn workspace @peas/parser <command>`.
@@ -245,7 +267,8 @@ All commands run from the repo root with `yarn workspace @peas/parser <command>`
 | Command | What it does |
 | --- | --- |
 | `explain:line "<line>"` | Explains one line step by step. Flags: `--lexicon none\|structural\|demo`, `--exploratory`, `--json` |
-| `test:run` | Unit, golden, invariant, schema, and v1 baseline tests (regenerates the grammar first) |
+| `test:run` | Unit, golden, invariant, schema, ontology, and v1 baseline tests (regenerates the grammar first) |
+| `test:coverage` | The same tests with the v2 coverage floor (see `docs/testing.md`) |
 | `report:compare` | Compares v1 and v2 over the corpus and golden sets; writes `fixtures/reports/v1-vs-v2.md` |
 | `preview:lexicon` | Before/after preview of a lexicon change across the corpus |
 | `corpus:baseline-v1` | Re-snapshots v1 output to `fixtures/baseline/v1.jsonl` |
@@ -261,10 +284,12 @@ All commands run from the repo root with `yarn workspace @peas/parser <command>`
 | `fixtures/golden/semantic.json` | Expected meanings for the future resolver |
 | `fixtures/lexicon/structural.json` | Measurement modifiers the structural tests assume |
 | `fixtures/lexicon/demo.json` | Tiny illustrative lexicon for docs and `explain:line` |
+| `fixtures/lexicon/semantic-cases.json` | The lexicon `golden/semantic.json` assumes; the database integration tests load it to prove every target interpretation can be stored |
 | `fixtures/baseline/v1.jsonl` | v1 output for every corpus line, for comparison |
 | `fixtures/reports/v1-vs-v2.md` | Latest comparison report |
 
 ## Further reading
 
-- [Ingredient ontology rebuild](../../docs/architecture/ingredient-ontology-rebuild.md): the overall plan, decisions, and Phase 1 deliverables.
+- [Ingredient ontology rebuild](../../docs/architecture/ingredient-ontology-rebuild.md): the overall plan, decisions, the ontology data model, and the Phase 1 and Phase 2 deliverables.
+- [packages/database/README.md](../database/README.md): the ontology tables and repository functions.
 - [legacy/README.md](legacy/README.md): what the reference-only grammars are.

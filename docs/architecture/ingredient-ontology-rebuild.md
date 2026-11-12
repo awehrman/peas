@@ -7,6 +7,7 @@ Related documents:
 - [Prisma modernization decision](./prisma-modernization-decision.md)
 - [Web modernization](./web-modernization.md)
 - [Cache consistency](./cache-consistency.md)
+- [Testing and coverage](../testing.md): every suite, how to run it, and the coverage floors
 - [v2 parser guide](../../packages/parser/README.md): how the parser works, with worked example lines
 
 ## Phase 1 deliverables
@@ -30,16 +31,84 @@ Each item below can be seen or checked directly. Commands run from the repo root
 
 What Phase 1 deliberately does not deliver: imports still use v1 (v2 is wired in during Phase 5), no ontology tables exist yet (Phase 2), and nothing resolves a phrase to a food concept (Phase 3).
 
-## Where things stand (Phase 1)
+## Phase 2 deliverables
+
+Phase 2 adds the storage the resolver and the review loop will write to. Nothing in the app reads or writes these tables yet; Phase 3 starts using them.
+
+| # | Deliverable | How to see it |
+| --- | --- | --- |
+| 1 | **Ontology tables exist.** 21 models (concepts, lexicon entries, attributes, preparations, relationships, classifications, substitutions, products, mentions, discoveries, decisions, revisions, merge records, legacy mappings) in one additive migration. | `packages/database/prisma/schemas/ontology.prisma`; `yarn workspace @peas/database db:studio` |
+| 2 | **The migration replays cleanly and matches the schema exactly**, including the pg_trgm extension, CHECK constraints, and the partial review-queue index. | `SCRATCH_DATABASE_URL=... yarn workspace @peas/database db:verify-migrations` |
+| 3 | **Legacy pages are unaffected.** No legacy table or column changed; legacy queries run unchanged on the migrated database. | Start the app and open the notes, recipes, and ingredients pages |
+| 4 | **The vocabulary seed is idempotent.** 11 attribute dimensions, 47 values, and 27 preparations; a second run adds nothing and leaves the revision alone. | `yarn workspace @peas/database db:seed:ontology` (twice) |
+| 5 | **The database hands the parser a lexicon.** `getLexiconSnapshot()` returns UUID-keyed entries that `buildLexicon` accepts, so the parser can run on stored knowledge. | Integration test "builds snapshots the parser accepts" |
+| 6 | **The hierarchy cannot loop.** IS_A and PART_OF edges that would create a cycle are rejected. | Integration test "rejects IS_A and PART_OF cycles" |
+| 7 | **Classifications inherit by relationship type** (decision D15): buttermilk DERIVED_FROM milk inherits the milk allergen but not "dairy"; explicit values win. | `packages/parser/src/v2/ontology/inheritance.ts`; parser and integration tests |
+| 8 | **Re-parsing never clobbers a person's work** (decision D17): mention upserts are idempotent, and verified mentions are protected; disagreements become VERIFIED_DRIFT discoveries. | Integration test "protects verified mentions" |
+| 9 | **The review queue has real counts and priority** (decision D18): evidence across notes, the documented priority formula, cursor paging, and decisions that close discoveries with their own revision. | Integration test "counts evidence across notes" |
+| 10 | **Every section-32 example is representable.** All 15 target interpretations in `golden/semantic.json` are stored as rows and read back unchanged. | `TEST_DATABASE_URL=... yarn workspace @peas/database test:int` |
+| 11 | **Shared, documented payload schemas.** Resolution, discovery, and decision payloads (one variant per type), ontology enums, inheritance rules, vocabulary, and the priority formula, each with worked examples, exported from `@peas/parser/v2`. | `packages/parser/src/v2/{ontology,resolve,knowledge}/` |
+| 12 | **Test suites.** Database unit tests (22, including a check that every Prisma enum matches its parser list) and integration tests (29) against a throwaway database; 16 new parser tests. | `yarn workspace @peas/database test:run`; `test:int` with `TEST_DATABASE_URL` |
+
+What Phase 2 deliberately does not deliver: no resolver (Phase 3), no Teach Peas screens or decision side effects (Phase 4), no lexicon entries yet (the reviewed v1 descriptor seed lands in Phase 3), and no legacy ingredient migration (the mapping table exists; the migration runs later).
+
+## Where things stand (Phase 2)
 
 | Area | State |
 | --- | --- |
-| v2 parser (`packages/parser/src/v2`) | Built: normalizer with raw-offset map, tokenizer, exact rationals, unit table, token trie with conservative and exploratory segmentation, Peggy grammar ported from v1, Zod schemas, `parseLine` |
-| Regression fixtures | Corpus (reset to empty on 12 November 2026; refilled from fresh imports with `export:lines`), 182 dev cases (5 known failures), 41 held-out cases, structural lexicon, v1 baseline and snapshot |
-| Reports and tools | `report:compare` (v1 vs v2), `preview:lexicon` (before/after preview of a lexicon change) |
+| v2 parser (`packages/parser/src/v2`) | Built: normalizer with raw-offset map, tokenizer, exact rationals, unit table, token trie with conservative and exploratory segmentation, Peggy grammar ported from v1, Zod schemas, `parseLine`. Lexicon entry ids must be UUIDs. |
+| Shared ontology schemas (`@peas/parser/v2`) | Ontology enums, D15 inheritance rules, starting vocabulary, resolution, mention syntax, discovery, and decision payload schemas, D18 priority formula |
+| Ontology storage (`packages/database`) | 21 models in `prisma/schemas/ontology.prisma`, migration `20261112190000_add_food_ontology`, repositories in `src/repository/ontology/`, vocabulary seed |
+| Regression fixtures | Corpus (reset to empty on 12 November 2026; refilled from fresh imports with `export:lines`), 182 dev cases (5 known failures), 41 held-out cases, structural, demo, and semantic lexicons, v1 baseline and snapshot |
+| Reports and tools | `report:compare` (v1 vs v2), `preview:lexicon` (before/after preview of a lexicon change), `explain:line` |
 | Import pipeline | Still parses with v1; v2 is not wired into the queue until Phase 5 |
 | Legacy grammars | The old v2 stub and the runtime-compiled grammar moved to `packages/parser/legacy/` (reference only); database grammars archived and their tables dropped |
-| Database | Migration history baselined; `db:verify-migrations` replays migrations on a scratch database |
+| Database | 42 migrations; `db:verify-migrations` replays them on a scratch database; integration tests run against `TEST_DATABASE_URL` |
+
+## Ontology data model
+
+The ontology separates what a food *is* from what it is *called* and from where it *appears*:
+
+```mermaid
+flowchart LR
+  subgraph knowledge [Knowledge: edited through reviewed decisions]
+    concept["FoodConcept<br/>chicken thigh"]
+    entry["LexiconEntry<br/>'chicken thighs' FOOD PLURAL"]
+    attr["AttributeDefinition / AttributeValue<br/>bone = boneless"]
+    prep["PreparationOperation<br/>mince"]
+    rel["FoodRelationship<br/>chicken thigh PART_OF chicken"]
+    cls["FoodClassification<br/>ALLERGEN_MILK TRUE"]
+  end
+  subgraph corpus [Corpus: rewritten by parsing]
+    line["ParsedIngredientLine<br/>raw text (legacy table)"]
+    mention["IngredientMention<br/>one per segment"]
+  end
+  subgraph review [Review loop]
+    discovery["Discovery<br/>calamansi juice: unknown food"]
+    decision["LexiconDecision<br/>CREATE_CONCEPT"]
+    revision["LexiconRevision<br/>monotonic version"]
+  end
+  entry --> concept
+  entry --> attr
+  entry --> prep
+  rel --> concept
+  cls --> concept
+  line --> mention
+  mention --> concept
+  mention --> attr
+  mention --> prep
+  discovery --> mention
+  decision --> discovery
+  decision --> revision
+  entry --> revision
+```
+
+- **Concepts** are identities ("chicken thigh"). They have no name column beyond `canonicalName`; every way of writing them is a `LexiconEntry`.
+- **Lexicon entries** say "this text plays this role and points at this target": a FOOD entry points at a concept, an ATTRIBUTE entry at an attribute value, a PREPARATION entry at an operation, and DEGREE, MEASUREMENT_MODIFIER, and INSTRUCTION entries at a value key such as `fine`. A CHECK constraint enforces that pairing. Entries are unique per `(matchKey, targetKey)`, so "green" can be both color=green and ripeness=unripe but not color=green twice.
+- **Mentions** store one parsed segment each: the syntax tree, the quantity, the chosen concept, attributes, preparations, and modifiers, plus the versions that produced them (parser, normalizer, resolver, lexicon revision).
+- **Discoveries** collect evidence (mentions) for something a reviewer should look at; **decisions** record what the reviewer chose, each with its own **revision**.
+- Columns that point at legacy tables (`Recipe`, `Brand`, `IngredientTag`, `ParsedIngredientLine`, `User`) stay text because those tables use cuid ids. Every new table uses UUIDv7 ids stored as native `uuid` columns.
+- The migration adds constraints Prisma cannot express (CHECK constraints, a partial index, the pg_trgm extension). `prisma db push` would drop them, which is another reason schema changes go through migrations only.
 
 ## Current architecture
 
@@ -82,14 +151,14 @@ Code that touches ingredient parsing or identity today:
 - **Queue:** `parse-ingredient-line`, `save-ingredient-line`, `track-pattern`, `schedule-categorization`, `check-completion`, `parser-resolver.ts`, `cached-ingredient-parser.ts`.
 - **Web:** `/ingredients` (`apps/web/src/lib/ingredients/actions`), `/notes/[id]` (`getNoteDetail`, `setIngredientLineReviewStatus`), `/recipes/[id]`. The `/parser` rule builder was removed in Phase 1.
 - **Features:** `packages/features/src/{ingredients,notes,parsed-line}`.
-- **Database:** `repository/{ingredient,note,parsing-rule,pattern}.ts`.
+- **Database:** `repository/{ingredient,note,parsing-rule,pattern}.ts` (legacy) and `repository/ontology/` (Phase 2: revision, lexicon, concepts, relationships, attributes, classifications, mentions, discoveries, decisions, legacy mapping).
 
 ## Design decisions
 
 1. **v2 is a code-reviewed grammar.** Grammar changes go through pull requests with regression fixtures. Pre-v2 parsing can be retired at any time; old grammar files stay in `packages/parser/legacy/` as reference and are never built, exported, linted, tested, or imported.
 2. **v2 is ported from v1, not rewritten.** Number, fraction, range, unit, and package rules were ported; descriptor and ingredient lists were dropped. The v1 descriptor list becomes the first modifier seed in Phase 3.
 3. **The lexicon is fed into Peggy through parse options.** Matches come from an in-memory token trie keyed by start offset; the grammar consumes them with a predicate plus a function-boundary repetition. No database queries during parsing and no grammar regeneration when knowledge changes.
-4. **One lexicon table with typed roles** (`FOOD`, `ATTRIBUTE`, `PREPARATION`, `DEGREE`, `MEASUREMENT_MODIFIER`, `INSTRUCTION`). One phrase may carry several entries; uniqueness uses a computed `targetKey`.
+4. **One lexicon table with typed roles** (`FOOD`, `ATTRIBUTE`, `PREPARATION`, `DEGREE`, `MEASUREMENT_MODIFIER`, `INSTRUCTION`). One phrase may carry several entries; uniqueness is `(matchKey, targetKey)`, where `targetKey` is `food:<conceptId>`, `attr:<attributeValueId>`, `prep:<preparationId>`, or `<role>:<valueKey>`, and `matchKey` is `entryMatchKey(text)` (lowercased tokens joined by spaces). Phase 2 uses `matchKey` rather than the plan's `normalized` so that "Kosher Salt" and "kosher salt", which the parser matches identically, cannot be stored twice for the same target.
 5. **Units are data in code** (`v2/quantity/units.ts`). Food parts ("thigh", "zest", "leaves") are lexicon entries, never units.
 6. **Two parse modes.** `CONSERVATIVE` (imports) uses only active entries, leftmost-longest. `EXPLORATORY` (curation) also uses proposed entries and returns ranked alternative segmentations; skipping a match is only explored when it frees an overlapping match.
 7. **An unknown food must still parse** ("3 tablespoons calamansi juice" gives `[3 tbsp] calamansi juice` with an empty lexicon). Permanent test.
@@ -106,6 +175,8 @@ Code that touches ingredient parsing or identity today:
 18. **Review priority is a tested formula**; one decision applies to all of a discovery's evidence.
 19. **Shared Zod schemas live in `@peas/parser/v2`.**
 20. **Scale:** the full lexicon and corpus reinterpretation fit in memory; previews prefilter with a trigram index.
+21. **Ontology ids are UUIDs.** New tables use UUIDv7 (time-ordered, index-friendly) stored as native `uuid`; lexicon entry ids must be UUIDs everywhere, including fixtures (`buildLexicon` rejects anything else). Legacy tables keep their cuid ids.
+22. **Repository code stays portable.** Writes are flat, transaction-scoped statements (no nested `connectOrCreate` or atomic `increment`), unique violations are recognized only in `isUniqueViolation`, and every JSON column is validated with its Zod schema on write and read (`parseOrThrow`).
 
 ## Quantity model
 
@@ -129,7 +200,13 @@ yarn workspace @peas/parser report:compare    # writes fixtures/reports/v1-vs-v2
 yarn workspace @peas/parser preview:lexicon --add "olive oil:FOOD"
 yarn workspace @peas/database export:lines --log ../../apps/queue/logs/<file>
 SCRATCH_DATABASE_URL=... yarn workspace @peas/database db:verify-migrations
+yarn workspace @peas/database typecheck
+yarn workspace @peas/database test:run        # ontology helpers and Prisma/parser enum parity
+TEST_DATABASE_URL=postgresql://<you>@localhost:5432/peas_test yarn workspace @peas/database test:int
+yarn workspace @peas/database db:seed:ontology
 ```
+
+The integration setup wipes and migrates `TEST_DATABASE_URL` before running, and refuses to touch a database whose name lacks "test" or that matches `DATABASE_URL`. Create it once with `createdb peas_test`.
 
 ## Roadmap and modernization
 
@@ -139,9 +216,10 @@ The v2 phases (1 foundation, 2 ontology schema, 3 lexicon and resolver, 4 Teach 
 2. M1: Prisma 8 feasibility proof of concept and decision. Done: Prisma 7.
 3. M2: Prisma migration, before any new ontology repositories (Phase 2). Done in the working tree (Prisma 7.10.1 with the `pg` adapter).
 4. M3: TypeScript and Vite/Vitest upgrades in isolated groups. Done in the working tree (TypeScript 6.0.3, Vitest 5.1, Vite 8.3; see the web modernization record).
-5. M4: Next.js to TanStack Start; GraphQL with Apollo Client 4 (see [web modernization](./web-modernization.md) for the open question that GraphQL does not exist in the repo today).
-6. M5: cache architecture (see [cache consistency](./cache-consistency.md)).
-7. Phases 2-7 continue on the modernized stack.
-8. Deferred: BullMQ 6, Redis client, Storybook 10, virtualization.
+5. M4: Next.js to TanStack Start; GraphQL with Apollo Client 4 (see [web modernization](./web-modernization.md)). Done on 12 November 2026, including cutover: the TanStack Start app is now `apps/web` (port 3100), serving every page through `packages/api`, with Playwright and axe tests; the Next.js app was deleted.
+6. M5: cache architecture (see [cache consistency](./cache-consistency.md)). Done on 12 November 2026 for today's domains; the knowledge domains join when Phases 3 and 4 add their queries.
+7. Phase 2 (ontology schema): done on 12 November 2026, ahead of finishing M4 because it only touches `packages/database` and `packages/parser`.
+8. Phases 3-7 continue on the modernized stack.
+9. Deferred: BullMQ 6, Redis client, Storybook 10, virtualization.
 
 Framework-independent parsing logic stays in `packages/parser` throughout.

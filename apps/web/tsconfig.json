@@ -1,33 +1,20 @@
 {
-  "extends": "@peas/typescript-config/nextjs.json",
+  "include": ["src/**/*.ts", "src/**/*.tsx", "tests/**/*.ts", "*.config.ts", "codegen.ts"],
   "compilerOptions": {
-    "jsx": "preserve",
-    "paths": {
-      "@/*": [
-        "./src/app/*"
-      ],
-      "@/components/*": [
-        "./src/app/components/*"
-      ],
-      "@/lib/*": [
-        "./src/app/lib/*"
-      ],
-      "@/paths": [
-        "./src/paths"
-      ],
-      "react": [
-        "./node_modules/@types/react"
-      ]
-    }
-  },
-  "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts",
-    "postcss.config.mjs"
-  ],
-  "exclude": [
-    "node_modules"
-  ]
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "esModuleInterop": true,
+    "jsx": "react-jsx",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["DOM", "DOM.Iterable", "ES2024"],
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "target": "ES2024",
+    "forceConsistentCasingInFileNames": true,
+    "types": ["node", "vite/client"],
+    "paths": { "~/*": ["./src/*"] },
+    "noEmit": true
+  }
 }

@@ -56,19 +56,19 @@ export function IngredientsPageContent({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex flex-wrap items-center gap-6">
-          <FilterLinks
-            label="Ingredient view"
-            options={[
-              { label: `View all (${counts.all})`, isActive: view === "all", href: buildHref(INGREDIENTS_PATH, { ...params, view: undefined }) },
-              {
-                label: `Needs review (${counts.unreviewed})`,
-                isActive: view === "unreviewed",
-                href: buildHref(INGREDIENTS_PATH, { ...params, view: "unreviewed" }),
-              },
-            ]}
-          />
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <FilterLinks
+          label="Ingredient view"
+          options={[
+            { label: `View all (${counts.all})`, isActive: view === "all", href: buildHref(INGREDIENTS_PATH, { ...params, view: undefined }) },
+            {
+              label: `Needs review (${counts.unreviewed})`,
+              isActive: view === "unreviewed",
+              href: buildHref(INGREDIENTS_PATH, { ...params, view: "unreviewed" }),
+            },
+          ]}
+        />
+        <div className="ml-auto flex flex-col items-end gap-3">
           <FilterLinks
             label="Group by"
             showLabel
@@ -81,11 +81,11 @@ export function IngredientsPageContent({
               }),
             }))}
           />
+          <AddIngredientDialog
+            onCreate={onCreate}
+            onCreated={(id) => push(getIngredientHref(id))}
+          />
         </div>
-        <AddIngredientDialog
-          onCreate={onCreate}
-          onCreated={(id) => push(getIngredientHref(id))}
-        />
       </div>
 
       <div className={cn("grid gap-6", selected && "lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]")}>
@@ -135,17 +135,17 @@ function FilterLinks({ label, showLabel = false, options }: FilterLinksProps): R
   return (
     <nav aria-label={label} className="flex items-center gap-2">
       {showLabel ? <span className="text-sm text-greyscale-600">{label}:</span> : null}
-      <ul className="flex flex-wrap gap-2">
+      <ul className="flex flex-wrap gap-4">
         {options.map((option) => (
           <li key={option.label}>
             <AppLink
               href={option.href}
               aria-current={option.isActive ? "page" : undefined}
               className={cn(
-                "rounded-full border px-3 py-1 text-sm transition-colors",
+                "py-1 text-sm underline-offset-4 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                 option.isActive
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "hover:bg-accent"
+                  ? "font-medium text-primary underline decoration-2"
+                  : "text-greyscale-600 hover:text-foreground hover:underline"
               )}
             >
               {option.label}

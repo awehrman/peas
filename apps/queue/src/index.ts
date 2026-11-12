@@ -27,6 +27,10 @@ import {
   requireQueueAuth,
 } from "./middleware/auth";
 import { SecurityMiddleware, parseAllowedOrigins } from "./middleware/security";
+import {
+  LOCAL_IMAGE_ROUTE,
+  getLocalImageRoot,
+} from "./services/image/local-storage";
 import { errorHandler as stdErrorHandler } from "./utils/standardized-error-handler";
 import { LOG_MESSAGES, LoggerFactory } from "./utils/standardized-logger";
 import { startWorkers } from "./workers/startup";
@@ -137,6 +141,9 @@ async function initializeApp() {
   );
   // /upload has its own size and rate limits, mounted with its route
   const isUploadRequest = (req: express.Request) => req.path.startsWith("/upload");
+  // One recipe list page requests dozens of images
+  const isLocalImageRequest = (req: express.Request) =>
+    req.path.startsWith(`${LOCAL_IMAGE_ROUTE}/`);
   app.use(
     SecurityMiddleware.validateRequestSize(
       SECURITY_CONSTANTS.REQUEST_LIMITS.MAX_REQUEST_SIZE_BYTES,
@@ -147,7 +154,7 @@ async function initializeApp() {
     SecurityMiddleware.rateLimit(
       SECURITY_CONSTANTS.RATE_LIMITS.GLOBAL_WINDOW_MS,
       SECURITY_CONSTANTS.RATE_LIMITS.GLOBAL_MAX_REQUESTS,
-      { skip: isUploadRequest }
+      { skip: (req) => isUploadRequest(req) || isLocalImageRequest(req) }
     )
   );
 
@@ -247,6 +254,11 @@ initializeApp()
   .then(({ app, serviceContainer }) => {
     // Routes
     app.use("/health", healthEnhancedRouter); // Public so platform health checks work
+    // Public because <img> tags cannot send the queue auth header
+    app.use(
+      LOCAL_IMAGE_ROUTE,
+      express.static(getLocalImageRoot(), { index: false, maxAge: "1d" })
+    );
     app.use("/import", requireQueueAuth, importRouter);
     app.use(
       "/upload",

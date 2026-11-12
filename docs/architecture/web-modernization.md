@@ -1,6 +1,6 @@
 # Web Modernization (Next.js to TanStack Start, GraphQL with Apollo Client 4)
 
-Status: audit complete (12 November 2026); no framework code changed yet. This covers modernization phases M3 (tooling) and M4 (framework), and feeds M5 ([cache consistency](./cache-consistency.md)).
+Status (12 November 2026): M3, M4, and M5 done. The TanStack Start app replaced the Next.js app the same day: it was built as `apps/web-start`, validated with a real import, and then renamed to `apps/web` (package `@peas/web`) when the Next.js app was deleted (see the [M4 record](#m4-record-12-november-2026)). Cache work is recorded in [cache consistency](./cache-consistency.md). The rest of this document keeps the pre-migration audit for reference.
 
 ## Headline finding: GraphQL does not exist today
 
@@ -48,7 +48,7 @@ Routes to migrate: `/login`, `/invite/:code`, `/password-reset`, and the protect
 ## Migration plan (M4)
 
 1. **GraphQL server and schema.** Host the server in a TanStack Start server route (see decisions) and define the schema over domain services in `packages/database` (later, ontology services). Prisma types never become the GraphQL contract.
-2. **New app.** Scaffold `apps/web-start` (TanStack Start + TanStack Router) alongside `apps/web`, reusing `@peas/features`, `@peas/components`, `@peas/theme`, `@peas/tailwind`. Inject TanStack Router's `Link` and `navigate` through `AppNavigationProvider`.
+2. **New app.** Scaffold `apps/web` (TanStack Start + TanStack Router) alongside `apps/web`, reusing `@peas/features`, `@peas/components`, `@peas/theme`, `@peas/tailwind`. Inject TanStack Router's `Link` and `navigate` through `AppNavigationProvider`.
 3. **Apollo Client 4.** Request-scoped clients on the server, cache restoration on hydration, type policies keyed by immutable ids, and session isolation between users.
 4. **Codegen.** GraphQL Code Generator with stable fragments for FoodConcept, FoodTerm, IngredientMention, KnowledgeProposal, KnowledgeDecision, Recipe, and ImportJob.
 5. **Auth.** Port session validation to TanStack Start server functions or middleware (cookie read/write without `next/headers`); keep the session table, token hashing, and argon2 unchanged. The GraphQL context resolves the user from the same cookie.
@@ -83,6 +83,84 @@ Routes to migrate: `/login`, `/invite/:code`, `/password-reset`, and the protect
 - `@apollo/client-integration-tanstack-start` is still a release candidate (`0.14.5-rc.0`). It is tested by Apollo against Start 1.132 and Vite 7, not 1.169 and Vite 8, and has an open Safari/WebKit hydration crash ([#559](https://github.com/apollographql/apollo-client-integrations/issues/559), fix in unmerged [PR #574](https://github.com/apollographql/apollo-client-integrations/pull/574)). Plan: build the notes slice on it, test Safari first, and apply the PR as a `yarn patch` if it still crashes. If the integration does not work on 1.169, fall back to route loaders that call server functions plus client-only Apollo hydration from the loader data.
 - `ApolloClient` and `InMemoryCache` must be imported from the integration package, created inside `getRouter()` (one per request on the server). During SSR the GraphQL server runs in the same process, so the server branch can use `SchemaLink` with the viewer resolved from the request cookie instead of an HTTP round trip.
 
+## M4 record, 12 November 2026
+
+The app lives in `apps/web` (TanStack Start 1.169.5, TanStack Router 1.170, Vite 8.3, Apollo Client 4.3) and talks to `packages/api` (Apollo Server 5.5, GraphQL 16.15). It runs on port 3100 in development. The Next.js app it replaced was deleted after cutover; the route map below records where each Next.js page went.
+
+### How a request flows
+
+```mermaid
+flowchart LR
+  browser["Browser"] -->|"page request"| ssr["TanStack Start SSR"]
+  ssr -->|"route loader: preloadQuery"| schemaLink["Apollo SchemaLink (in-process)"]
+  browser -->|"client navigation and mutations"| http["POST /api/graphql"]
+  http --> apollo["Apollo Server 5 (Fetch adapter)"]
+  schemaLink --> schema["@peas/api schema and resolvers"]
+  apollo --> schema
+  schema --> db["@peas/database repositories"]
+  browser -->|"sign in, sign up, sign out, queue token"| serverFns["TanStack server functions"]
+  serverFns --> auth["@peas/api/auth (sessions, argon2)"]
+```
+
+- **Server rendering** runs GraphQL in-process through Apollo's `SchemaLink` with the viewer resolved from the request's session cookie, so there is no HTTP hop to itself and no internal URL to configure. The browser uses `HttpLink` to `/api/graphql` with the same cookie.
+- **Route loaders** call `preloadQuery`; components read with `useReadQuery`. The default fetch policy is `cache-and-network`, so every navigation renders cached data at once and refreshes it (imports change data in the background, and the Next app was always fresh).
+- **Mutations** go through `useMutationAction`, which adapts a GraphQL mutation to the `MutationAction` signature the `@peas/features` components already use and hands every `MutationEffect` to the M5 cache coordinator. Feature components did not change, apart from widening `ParsedLineSegment.rule` / `ingredientId` to accept `null`.
+- **Auth** stays the same scheme (hashed session tokens in `Session`, the `session` cookie, argon2, invite codes). The core moved to `@peas/api/auth`; cookies are read and written by TanStack server functions (`apps/web/src/server/auth.functions.ts`). `getViewerFn` also re-sends the cookie so a session extended by `validateSession` keeps its new expiry, which Next could not do from a server component.
+- **Navigation** for feature components comes from `RouterNavigationProvider`: a real anchor that routes plain clicks through TanStack Router (`navigate({ href })`) and preloads on hover.
+
+### Route map
+
+| Next.js (deleted) | TanStack Start (`apps/web`) | Data |
+| --- | --- | --- |
+| `app/(protected)/layout.tsx` | `routes/_authed.tsx` (`beforeLoad` redirects to `/login`) | `getViewerFn` |
+| `app/(protected)/page.tsx` | `routes/_authed/index.tsx` | `CleanupAllData` mutation (admins) |
+| `app/(protected)/notes/page.tsx` | `routes/_authed/notes/index.tsx` | `NotesPage` query |
+| `app/(protected)/notes/[id]/page.tsx` | `routes/_authed/notes/$id.tsx` | `NoteDetail`, `SetLineReviewStatus`, `PromoteNoteToRecipe` |
+| `app/(protected)/recipes/page.tsx` | `routes/_authed/recipes/index.tsx` | `RecipesPage`, `PromoteCompletedNotes` |
+| `app/(protected)/recipes/[id]/page.tsx` | `routes/_authed/recipes/$id.tsx` | `RecipeDetail`, `UpdateRecipe` |
+| `app/(protected)/ingredients/page.tsx` | `routes/_authed/ingredients.tsx` | `IngredientsPage`, `IngredientDetail`, `SearchIngredients`, `SaveIngredient`, `CreateIngredient` |
+| `app/(protected)/import/page.tsx` | `routes/_authed/import.tsx` | `ImportStats`, `getQueueTokenFn` |
+| `app/(protected)/design/page.tsx` | `routes/_authed/design.tsx` | none |
+| `app/login`, `app/invite/[code]`, `app/password-reset` | `routes/login.tsx`, `routes/invite.$code.tsx`, `routes/password-reset.tsx` | `loginFn`, `signUpFn`, `checkInviteFn` |
+| `error.tsx`, `not-found.tsx`, `loading.tsx` | Router `defaultErrorComponent`, `defaultNotFoundComponent`, `defaultPendingComponent` (`components/route-states.tsx`) | none |
+| 14 server actions, 9 `revalidatePath` calls | 9 GraphQL mutations plus 5 server functions; cache updates through mutation effects | none |
+
+### What was verified
+
+- `@peas/api`: 23 tests (server operations through `executeOperation` with the database mocked, the Fetch adapter including CSRF rejection, the effect contract against the schema enum, auth helpers).
+- `apps/web`: typecheck, lint, 7 cache-coordinator tests, and 14 Playwright tests in Chromium and WebKit (sign-in redirect and errors, sign out, notes list filtering, note detail line review surviving a reload, and axe WCAG 2.1 AA scans of the login, notes list, and note detail pages).
+- Production build: `vite build` with Nitro succeeds; the client bundle contains no Prisma, Apollo Server, argon2, schema, or connection-string code; `node .output/server/index.mjs` serves pages and GraphQL, and the Apollo Sandbox is off in production.
+- Manually in the browser: sign in, notes filters, note review, promoting notes to recipes (the list refetches by itself), and renaming a recipe (the open detail refetches by itself).
+
+### Problems found and fixed along the way
+
+- **Interface fragments need `possibleTypes`.** Without them Apollo silently dropped `success` and `effect` from every mutation payload. `possibleTypes` is now generated from the schema (`src/graphql/possible-types.ts`).
+- **`PORT` from `.env.local` (the queue's 4200) overrides Vite's port** under the Start/Nitro plugin. The app's scripts pin `PORT=3100`.
+- **Database error text leaked to the browser** in failure payloads (the Next actions did the same). Prisma errors now map to plain messages and are logged server-side.
+- **The login form never showed "Incorrect email or password"**: the shared `Form` only logs `actionState.message`. The new forms render it as an alert.
+- **Colour contrast:** parsed-line comment, separator, and pending text failed WCAG AA (`greyscale-400/500` on white). They now use `greyscale-600` in the shared components.
+- **Hydration race in tests:** clicks on server-rendered markup before hydration were lost. The root sets `<html data-hydrated>` and tests wait for it.
+
+### Running it
+
+```bash
+yarn workspace @peas/web dev            # http://localhost:3100 (also starts with the root `yarn dev`)
+yarn workspace @peas/web codegen        # after editing src/graphql/operations or the API schema
+yarn workspace @peas/api codegen              # after editing packages/api/src/schema/schema.graphql
+TEST_DATABASE_URL=postgresql://<you>@localhost:5432/peas_test yarn workspace @peas/web test:e2e
+```
+
+The import page talks to the queue from the browser, so the queue must allow the new origin: add `http://localhost:3100` to `CORS_ALLOWED_ORIGINS` in `.env.local` (comma-separated) and restart the queue.
+
+### Cutover, 12 November 2026
+
+- [x] Real import end to end from the new app on port 3100 (with `http://localhost:3100` added to `CORS_ALLOWED_ORIGINS`).
+- [x] Next.js app deleted; `apps/web-start` renamed to `apps/web` and `@peas/web-start` to `@peas/web`. `railway.toml` already starts `@peas/web`; the start script honours the host's `PORT` (Nitro does not read `.env` files in production, so set real environment variables there).
+- [x] `SIGN_UP_CODES.md` moved into `apps/web`; the Tailwind reload hook now touches `apps/web/src/styles/app.css`.
+- [ ] Check desktop Safari once (Playwright's WebKit passed; Apollo's TanStack integration is still a release candidate with an open Safari report, [#559](https://github.com/apollographql/apollo-client-integrations/issues/559)).
+- [x] Rewrote the deleted Next.js Playwright suites for import, ingredients, and recipes against the new app, now with seeded data instead of skips (38 tests across Chromium and WebKit; see [testing](../testing.md)).
+- [ ] Move ESLint to 10 and `eslint-plugin-react-hooks` to 7 (deferred in M3 until Next.js was gone; now unblocked).
+
 ## Tooling (M3) record, 12 November 2026
 
 ### Group A: TypeScript
@@ -115,7 +193,7 @@ Routes to migrate: `/login`, `/invite/:code`, `/password-reset`, and the protect
 | Field | Value |
 | --- | --- |
 | Upgraded | Turbo 2.6.1 → 2.11.11; Prettier 3.6.2 → 3.10.1; lint-staged 16.1.6 → 17.6.0; tsup 8.5.0 → 9.0.0; typescript-eslint → 8.72.2 |
-| Deferred | ESLint 10 and `eslint-plugin-react-hooks` 7: `eslint-config-next` 15 supports ESLint ≤ 9, and react-hooks 7 adds React Compiler rules. Upgrade after the Next.js cutover. |
+| Deferred | ESLint 10 and `eslint-plugin-react-hooks` 7: `eslint-config-next` 15 supports ESLint ≤ 9, and react-hooks 7 adds React Compiler rules. Upgrade after the Next.js cutover (now unblocked). |
 | Breaking changes handled | Root `engines.node` raised to `>=22.22` (lint-staged 17 needs 22.22.1, tsup 9 needs 22.18); queue's tsconfig sets `declaration: false` (tsc only typechecks; tsup emits declarations); features no longer builds or exports its test utilities (nothing consumed `@peas/features/test-utils`); the database package declares its ESLint dependencies so `yarn lint` runs there |
 | Known issue | Prettier's bin file ships without the executable bit; run it as `yarn prettier`, which works |
 
@@ -130,7 +208,7 @@ Peggy 5.0.6 → 5.1.1, Zod 4.1.5 → 4.6.7, React/React DOM 19.1.1 → 19.3.1, `
 | BullMQ, redis | 5.58.4, 5.8.2 | After M4/M5 |
 | Storybook (with its Vitest 3 / Vite 7) | 8.6.14 | Storybook 10 after the framework settles |
 | react-window | 1.8.11 | Evaluate TanStack Virtual first |
-| ESLint, react-hooks plugin | 9.34, 5.2 | After the Next.js cutover |
+| ESLint, react-hooks plugin | 9.34, 5.2 | Unblocked: Next.js was removed on 12 November 2026 |
 
 Runtime: Node 22.23.4, Yarn 4.9.1 (`nodeLinker: node-modules`, `enableScripts: false`), root `engines.node >= 18` (should be raised to match Prisma and TanStack Start requirements).
 
@@ -147,6 +225,6 @@ Runtime: Node 22.23.4, Yarn 4.9.1 (`nodeLinker: node-modules`, `enableScripts: f
 2. **Decided (12 November 2026): Apollo Server 5** as the GraphQL server library, paired with Apollo Client 4 on the frontend.
 3. **Decided: M4 starts after the M1–M3 changes are reviewed and committed**, so the framework migration is reviewed on its own.
 
-Still open:
-
-4. **Scope of the first slice:** confirm notes list + note detail.
+4. **Done (12 November 2026): notes list and note detail were the first slice**, followed by every other route in the same pass.
+5. **Decided (12 November 2026): server rendering runs GraphQL in-process** through Apollo's `SchemaLink` instead of calling `/api/graphql` over HTTP, so SSR needs no internal URL and shares the exact schema and resolvers with the endpoint.
+6. **Decided (12 November 2026): client operation types come from `typescript-operations` plus `typed-document-node`**, not the client preset, following Apollo's recommendation; operations live in `.graphql` files under `apps/web/src/graphql/operations`.

@@ -120,10 +120,12 @@ model IngredientTag {
   id           String       @id @default(cuid())
   name         String       @unique
   ingredients  Ingredient[] // Many-to-many relation
+  concepts     FoodConcept[]
 }
 
 model Brand {
   id          String        @id @default(cuid())
   name        String        @unique
   ingredients Ingredient[] @relation("IngredientBrands")
+  products    FoodProduct[]
 }

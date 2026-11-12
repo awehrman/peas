@@ -10,21 +10,21 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       reporter: ["text", "json", "html"],
+      // Without an include, Vitest only counts files that tests import, hiding untested components
+      include: ["src/**/*.{ts,tsx}"],
       exclude: [
-        "node_modules/",
-        "src/test-utils/",
+        "src/test-utils/**",
+        "src/**/__tests__/**",
         "**/*.d.ts",
         "**/*.test.{ts,tsx}",
         "**/*.spec.{ts,tsx}",
-        "dist/",
       ],
+      // Ratchet: the floor of the last measured coverage (12 November 2026); raise it as coverage grows
       thresholds: {
-        global: {
-          branches: 100,
-          functions: 100,
-          lines: 100,
-          statements: 100,
-        },
+        statements: 23,
+        branches: 22,
+        functions: 20,
+        lines: 23,
       },
     },
     // Mock WebSocket and other browser APIs

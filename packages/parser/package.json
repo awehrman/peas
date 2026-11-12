@@ -35,7 +35,8 @@
     "corpus:baseline-v1": "node scripts/baseline-v1.js",
     "report:compare": "tsx scripts/compare-v1-v2.ts",
     "preview:lexicon": "tsx scripts/preview-lexicon-change.ts",
-    "explain:line": "tsx scripts/explain-line.ts"
+    "explain:line": "tsx scripts/explain-line.ts",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "peggy": "^5.1.1",
@@ -44,6 +45,7 @@
   "devDependencies": {
     "@peas/typescript-config": "*",
     "@types/node": "^24.0.13",
+    "@vitest/coverage-v8": "^5.1.0",
     "terser": "^5.43.1",
     "tsx": "^4.7.0",
     "typescript": "^6.0.3",

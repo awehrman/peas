@@ -4,8 +4,8 @@ export const SEGMENT_TYPE_STYLES: Record<string, string> = {
   unit: "text-indigo-700",
   descriptor: "italic text-amber-800",
   ingredient: "font-semibold text-greyscale-900",
-  comment: "text-greyscale-500",
-  separator: "text-greyscale-400",
+  comment: "text-greyscale-600",
+  separator: "text-greyscale-600 italic",
 };
 
 export const SEGMENT_TYPE_LABELS: Record<string, string> = {

@@ -1,0 +1,60 @@
+query RecipesPage($query: String, $category: String, $tag: String, $page: Int) {
+  recipes(query: $query, category: $category, tag: $tag, page: $page) {
+    items {
+      id
+      title
+      imageUrl
+      categories
+      tags
+      ingredientLineCount
+      createdAt
+    }
+    total
+    page
+    pageSize
+  }
+  recipeTaxonomy {
+    categories
+    tags
+  }
+}
+
+query RecipeDetail($id: ID!) {
+  recipe(id: $id) {
+    id
+    title
+    noteId
+    imageUrl
+    categories {
+      id
+      name
+    }
+    tags {
+      id
+      name
+    }
+    sources {
+      ...SourceFields
+    }
+    ingredientBlocks {
+      ...IngredientBlockFields
+    }
+    instructions {
+      ...InstructionFields
+    }
+    createdAt
+  }
+}
+
+mutation UpdateRecipe($input: RecipeUpdateInput!) {
+  updateRecipe(input: $input) {
+    ...PayloadFields
+  }
+}
+
+mutation PromoteCompletedNotes {
+  promoteCompletedNotes {
+    ...PayloadFields
+    created
+  }
+}

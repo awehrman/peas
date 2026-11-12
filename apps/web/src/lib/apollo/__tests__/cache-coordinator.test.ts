@@ -1,0 +1,345 @@
+import {
+  NoteDetailDocument,
+  NotesPageDocument,
+  RecipeDetailDocument,
+} from "~/graphql/generated";
+
+import {
+  ApolloClient,
+  ApolloLink,
+  InMemoryCache,
+  type TypedDocumentNode,
+} from "@apollo/client";
+import { createMutationEffect } from "@peas/api/effects";
+import { of } from "rxjs";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+import { cacheConfig } from "../cache-config";
+import { type JobUpdate, createCacheCoordinator } from "../cache-coordinator";
+
+type Handler = (
+  variables: Record<string, unknown>,
+  call: number
+) => Record<string, unknown>;
+
+/** A scripted link: answers each operation by name and counts calls per operation. */
+function createTestClient(handlers: Record<string, Handler>) {
+  const calls: Record<string, number> = {};
+  const link = new ApolloLink((operation) => {
+    const name = operation.operationName ?? "anonymous";
+    calls[name] = (calls[name] ?? 0) + 1;
+    const handler = handlers[name];
+    if (!handler) throw new Error(`No handler for ${name}`);
+    return of({ data: handler(operation.variables, calls[name]) });
+  });
+  const client = new ApolloClient({
+    cache: new InMemoryCache(cacheConfig),
+    link,
+  });
+  return { client, calls };
+}
+
+/** Subscribes to a query so it counts as active, resolving once data arrives. */
+async function watch<TData, TVariables extends Record<string, unknown>>(
+  client: ApolloClient,
+  query: TypedDocumentNode<TData, TVariables>,
+  variables: TVariables
+): Promise<{ latest: () => TData | undefined; stop: () => void }> {
+  let latest: TData | undefined;
+  let resolveFirst: () => void = () => undefined;
+  const firstData = new Promise<void>((resolve) => {
+    resolveFirst = resolve;
+  });
+  const subscription = client
+    .watchQuery({ query, variables })
+    .subscribe((result) => {
+      if (result.data && result.dataState === "complete") {
+        latest = result.data as TData;
+        resolveFirst();
+      }
+    });
+  await firstData;
+  return { latest: () => latest, stop: () => subscription.unsubscribe() };
+}
+
+async function eventually(
+  assertion: () => void,
+  timeoutMs = 1000
+): Promise<void> {
+  const started = Date.now();
+  for (;;) {
+    try {
+      assertion();
+      return;
+    } catch (error) {
+      if (Date.now() - started > timeoutMs) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+  }
+}
+
+const notesPage = () => ({
+  notes: {
+    __typename: "NotesPage",
+    items: [
+      {
+        __typename: "NoteSummary",
+        id: "n1",
+        title: "Chili",
+        status: "COMPLETED",
+        duplicateConfidence: null,
+        parsingErrorCount: 0,
+        ingredientLineCount: 3,
+        instructionLineCount: 1,
+        thumbnailUrl: null,
+        notebook: null,
+        recipeId: null,
+        createdAt: "2026-11-12T00:00:00.000Z",
+      },
+    ],
+    total: 1,
+    page: 1,
+    pageSize: 25,
+  },
+});
+
+const noteDetail = (title = "Chili") => ({
+  note: {
+    __typename: "Note",
+    id: "n1",
+    title,
+    status: "COMPLETED",
+    createdAt: "2026-11-12T00:00:00.000Z",
+    errorMessage: null,
+    duplicateConfidence: null,
+    parsingErrorCount: 0,
+    evernote: null,
+    images: [],
+    sources: [],
+    categories: [],
+    tags: [],
+    ingredientBlocks: [],
+    instructions: [],
+    recipeId: null,
+  },
+});
+
+const recipeDetail = (title: string) => ({
+  recipe: {
+    __typename: "Recipe",
+    id: "r1",
+    title,
+    noteId: "n1",
+    imageUrl: null,
+    categories: [],
+    tags: [],
+    sources: [],
+    ingredientBlocks: [],
+    instructions: [],
+    createdAt: "2026-11-12T00:00:00.000Z",
+  },
+});
+
+describe("cache coordinator", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it("evicts changed entities so the views showing them refetch", async () => {
+    const { client, calls } = createTestClient({
+      RecipeDetail: (_variables, call) =>
+        recipeDetail(call === 1 ? "Chili" : "Chili, renamed"),
+    });
+    const coordinator = createCacheCoordinator(client);
+    const view = await watch(client, RecipeDetailDocument, { id: "r1" });
+
+    await coordinator.apply(
+      createMutationEffect({ changed: [{ typename: "Recipe", id: "r1" }] })
+    );
+
+    expect(calls.RecipeDetail).toBe(2);
+    await eventually(() =>
+      expect(view.latest()?.recipe?.title).toBe("Chili, renamed")
+    );
+    view.stop();
+  });
+
+  it("refetches active queries in invalidated domains and drops inactive ones", async () => {
+    const { client, calls } = createTestClient({
+      NotesPage: notesPage,
+      NoteDetail: () => noteDetail(),
+    });
+    const coordinator = createCacheCoordinator(client);
+    const list = await watch(client, NotesPageDocument, {
+      status: null,
+      query: null,
+      page: 1,
+    });
+    await client.query({ query: NoteDetailDocument, variables: { id: "n1" } });
+
+    await coordinator.apply(
+      createMutationEffect({ invalidatedDomains: ["NOTES", "NOTE_DETAIL"] })
+    );
+
+    expect(calls.NotesPage).toBe(2);
+    expect(calls.NoteDetail).toBe(1);
+    expect(
+      client.cache.readQuery({
+        query: NoteDetailDocument,
+        variables: { id: "n1" },
+      })
+    ).toBeNull();
+    list.stop();
+  });
+
+  it("leaves queries outside the invalidated domains alone", async () => {
+    const { client, calls } = createTestClient({
+      NotesPage: notesPage,
+      RecipeDetail: () => recipeDetail("Chili"),
+    });
+    const coordinator = createCacheCoordinator(client);
+    const list = await watch(client, NotesPageDocument, {
+      status: null,
+      query: null,
+      page: 1,
+    });
+    const recipe = await watch(client, RecipeDetailDocument, { id: "r1" });
+
+    await coordinator.apply(
+      createMutationEffect({
+        invalidatedDomains: ["RECIPES", "RECIPE_TAXONOMY"],
+      })
+    );
+
+    expect(calls.NotesPage).toBe(1);
+    expect(calls.RecipeDetail).toBe(1);
+    list.stop();
+    recipe.stop();
+  });
+
+  it("refetches every active query when an effect is malformed", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const { client, calls } = createTestClient({
+      NotesPage: notesPage,
+      RecipeDetail: () => recipeDetail("Chili"),
+    });
+    const coordinator = createCacheCoordinator(client);
+    const list = await watch(client, NotesPageDocument, {
+      status: null,
+      query: null,
+      page: 1,
+    });
+    const recipe = await watch(client, RecipeDetailDocument, { id: "r1" });
+
+    await coordinator.apply({ invalidatedDomains: ["NOT_A_DOMAIN"] });
+
+    expect(calls.NotesPage).toBe(2);
+    expect(calls.RecipeDetail).toBe(2);
+    list.stop();
+    recipe.stop();
+  });
+
+  it("invalidates parser-dependent views only when the lexicon revision moves forward", async () => {
+    const { client, calls } = createTestClient({
+      NoteDetail: () => noteDetail(),
+    });
+    const coordinator = createCacheCoordinator(client);
+    const note = await watch(client, NoteDetailDocument, { id: "n1" });
+
+    await coordinator.apply(createMutationEffect({ lexiconRevision: 3 }));
+    expect(calls.NoteDetail).toBe(1);
+    expect(coordinator.lexiconRevision).toBe(3);
+
+    await coordinator.apply(createMutationEffect({ lexiconRevision: 4 }));
+    expect(calls.NoteDetail).toBe(2);
+
+    await coordinator.apply(createMutationEffect({ lexiconRevision: 2 }));
+    expect(calls.NoteDetail).toBe(2);
+    expect(coordinator.lexiconRevision).toBe(4);
+    note.stop();
+  });
+
+  it("polls a reprocessing job until it completes, then refreshes parse-derived views", async () => {
+    const statuses = ["PROCESSING", "COMPLETED"];
+    const { client, calls } = createTestClient({
+      NotesPage: notesPage,
+      JobStatus: (_variables, call) => ({
+        job: {
+          __typename: "Job",
+          jobId: "job-1",
+          type: "PROCESS_NOTE",
+          status: statuses[Math.min(call - 1, statuses.length - 1)],
+          noteId: "n1",
+          errorMessage: null,
+          retryCount: 0,
+          startedAt: null,
+          completedAt: null,
+        },
+      }),
+    });
+    const coordinator = createCacheCoordinator(client, {
+      jobPollIntervalMs: 5,
+    });
+    const updates: JobUpdate[] = [];
+    coordinator.onJobUpdate((update) => updates.push(update));
+    const list = await watch(client, NotesPageDocument, {
+      status: null,
+      query: null,
+      page: 1,
+    });
+
+    await coordinator.apply(
+      createMutationEffect({ reprocessingJobId: "job-1" })
+    );
+
+    await eventually(() =>
+      expect(updates.map((update) => update.status)).toEqual([
+        "PROCESSING",
+        "COMPLETED",
+      ])
+    );
+    await eventually(() => expect(calls.NotesPage).toBe(2));
+    coordinator.dispose();
+    list.stop();
+  });
+
+  it("reports a failed job without invalidating anything", async () => {
+    const { client, calls } = createTestClient({
+      NotesPage: notesPage,
+      JobStatus: () => ({
+        job: {
+          __typename: "Job",
+          jobId: "job-2",
+          type: "PROCESS_NOTE",
+          status: "FAILED",
+          noteId: "n1",
+          errorMessage: "Parser crashed",
+          retryCount: 3,
+          startedAt: null,
+          completedAt: null,
+        },
+      }),
+    });
+    const coordinator = createCacheCoordinator(client, {
+      jobPollIntervalMs: 5,
+    });
+    const updates: JobUpdate[] = [];
+    coordinator.onJobUpdate((update) => updates.push(update));
+    const list = await watch(client, NotesPageDocument, {
+      status: null,
+      query: null,
+      page: 1,
+    });
+
+    coordinator.trackJob("job-2");
+
+    await eventually(() =>
+      expect(updates).toEqual([
+        { jobId: "job-2", status: "FAILED", errorMessage: "Parser crashed" },
+      ])
+    );
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    expect(calls.JobStatus).toBe(1);
+    expect(calls.NotesPage).toBe(1);
+    coordinator.dispose();
+    list.stop();
+  });
+});

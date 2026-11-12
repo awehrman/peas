@@ -29,6 +29,9 @@ model ParsedIngredientLine {
 
   ingredientReferences IngredientReference[]
 
+  // v2 ingredient mentions (one per parsed segment)
+  mentions IngredientMention[]
+
   // New field to mark lines as active/inactive
   isActive Boolean @default(true)
 

@@ -1,9 +1,13 @@
+import { LexiconSnapshotSchema } from "./schemas.js";
+import type {
+  LexiconEntryInput,
+  LexiconMatch,
+  LexiconSnapshot,
+} from "./types.js";
+
 import type { LexiconRole, ParseMode } from "../ast/types.js";
 import { normalizeText } from "../normalize/normalize-text.js";
 import { type Token, tokenKey, tokenize } from "../normalize/tokenize.js";
-
-import { LexiconSnapshotSchema } from "./schemas.js";
-import type { LexiconEntryInput, LexiconMatch, LexiconSnapshot } from "./types.js";
 
 interface TrieNode {
   children: Map<string, TrieNode>;
@@ -32,6 +36,16 @@ export function entryTokenKeys(text: string): string[] {
   return tokenize(normalizeText(text).text).map(tokenKey);
 }
 
+/**
+ * The comparison key for an entry: its token keys joined by spaces. Two texts with the same key match exactly the same input, so stored entries are unique per (matchKey, target).
+ *
+ * @example
+ * entryMatchKey("Flat-Leaf  Parsley") // "flat - leaf parsley"
+ */
+export function entryMatchKey(text: string): string {
+  return entryTokenKeys(text).join(" ");
+}
+
 export interface Lexicon {
   revision: number | null;
   entries: ReadonlyMap<string, LexiconEntryInput>;
@@ -54,7 +68,8 @@ export function buildLexicon(snapshot: LexiconSnapshot): Lexicon {
   for (const entry of snapshot.entries) {
     const keys = entryTokenKeys(entry.text);
     if (keys.length === 0) continue;
-    if ((entry.status ?? "ACTIVE") === "ACTIVE") insert(conservative, keys, entry.id);
+    if ((entry.status ?? "ACTIVE") === "ACTIVE")
+      insert(conservative, keys, entry.id);
     insert(exploratory, keys, entry.id);
   }
 

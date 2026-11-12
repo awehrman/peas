@@ -68,10 +68,64 @@ describe("cleanupLocalFiles", () => {
         height: 1080,
         format: "jpeg",
       },
+      r2OriginalUrl: "https://r2.example.com/original.jpg",
+      r2ThumbnailUrl: "https://r2.example.com/thumbnail.jpg",
+      r2Crop3x2Url: "https://r2.example.com/crop3x2.jpg",
+      r2Crop4x3Url: "https://r2.example.com/crop4x3.jpg",
+      r2Crop16x9Url: "https://r2.example.com/crop16x9.jpg",
     };
 
     // Setup default mocks
     mockPathResolve.mockReturnValue("/resolved/output/path");
+  });
+
+  describe("local storage fallback", () => {
+    it("should keep processed files that were not uploaded to R2", async () => {
+      const dataWithoutR2 = {
+        ...mockData,
+        r2OriginalUrl: undefined,
+        r2ThumbnailUrl: undefined,
+        r2Crop3x2Url: undefined,
+        r2Crop4x3Url: undefined,
+        r2Crop16x9Url: undefined,
+      };
+      mockFsAccess.mockResolvedValue(undefined);
+      mockFsUnlink.mockResolvedValue(undefined);
+      mockFsStat.mockResolvedValue({ isDirectory: () => true });
+      mockFsReaddir.mockResolvedValue(["original.jpg"]);
+
+      const result = await cleanupLocalFiles(
+        dataWithoutR2,
+        mockServiceContainer,
+        mockLogger
+      );
+
+      expect(mockFsUnlink).toHaveBeenCalledTimes(1);
+      expect(mockFsUnlink).toHaveBeenCalledWith(mockData.imagePath);
+      expect(mockFsRmdir).not.toHaveBeenCalled();
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        "[CLEANUP_LOCAL_FILES] Keeping 5 processed file(s) for local serving"
+      );
+      expect(result).toEqual(dataWithoutR2);
+    });
+
+    it("should only delete the processed sizes that have an R2 copy", async () => {
+      const dataWithPartialR2 = {
+        ...mockData,
+        r2Crop3x2Url: undefined,
+        r2Crop16x9Url: undefined,
+      };
+      mockFsAccess.mockResolvedValue(undefined);
+      mockFsUnlink.mockResolvedValue(undefined);
+      mockFsStat.mockResolvedValue({ isDirectory: () => true });
+      mockFsReaddir.mockResolvedValue(["crop3x2.jpg", "crop16x9.jpg"]);
+
+      await cleanupLocalFiles(dataWithPartialR2, mockServiceContainer, mockLogger);
+
+      expect(mockFsUnlink).toHaveBeenCalledTimes(4);
+      expect(mockFsUnlink).not.toHaveBeenCalledWith(mockData.crop3x2Path);
+      expect(mockFsUnlink).not.toHaveBeenCalledWith(mockData.crop16x9Path);
+    });
   });
 
   describe("successful cleanup scenarios", () => {

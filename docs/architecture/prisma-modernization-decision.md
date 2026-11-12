@@ -144,7 +144,7 @@ Validation:
 Known remaining issues:
 
 - The queue still runs two connection pools (`@peas/database` and `config/database.ts`); consolidating them is a behavior change left for a separate review.
-- Unique-violation checks still mix `instanceof`, duck typing, and message matching; replace them with one helper when Phase 2 adds the ontology repositories.
+- Unique-violation checks still mix `instanceof`, duck typing, and message matching in the legacy repositories. Phase 2 added the helper (`isUniqueViolation` in `packages/database/src/repository/ontology/helpers.ts`) and the ontology repositories use only it; the legacy call sites (for example `parsing-rule.ts`) can switch to it when next touched.
 - `pg` defaults differ from Prisma 6 (no connection timeout; invalid SSL certificates rejected). Check the hosted database's SSL setup before deploying.
 - Nothing in deployment runs `prisma migrate deploy`; migrations are still applied by hand.
 

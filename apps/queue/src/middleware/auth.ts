@@ -20,7 +20,7 @@ export interface QueueTokenPayload {
 
 /**
  * Reads the secret shared with the web app, which signs tokens in
- * apps/web/src/lib/auth/utils/queue-token.ts.
+ * packages/api/src/auth/queue-token.ts.
  */
 export function getQueueAuthSecret(): string {
   const secret = process.env.QUEUE_AUTH_SECRET;

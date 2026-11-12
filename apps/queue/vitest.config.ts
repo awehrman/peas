@@ -11,27 +11,21 @@ export default defineConfig({
     coverage: {
       provider: "istanbul",
       reporter: ["text", "json", "html"],
-      include: [
-        "src/config/**/*.ts",
-        "src/middleware/**/*.ts",
-        "src/monitoring/**/*.ts",
-        "src/parsers/**/*.ts",
-        "src/queues/**/*.ts",
-        "src/routes/**/*.ts",
-        "src/schemas/**/*.ts",
-        "src/services/**/*.ts",
-        "src/test-utils/**/*.ts",
-        "src/utils/**/*.ts",
-        "src/workers/**/*.ts",
-        "src/**/__tests__/**/*.ts",
-      ],
+      // Application source only: tests and test helpers would inflate the numbers
+      include: ["src/**/*.ts"],
       exclude: [
-        "node_modules/",
-        "dist/",
+        "src/**/__tests__/**",
+        "src/test-utils/**",
         "**/*.d.ts",
         "**/*.config.*",
-        "**/coverage/**",
       ],
+      // Ratchet: the floor of the last measured coverage (12 November 2026); raise it as coverage grows
+      thresholds: {
+        statements: 96,
+        branches: 95,
+        functions: 96,
+        lines: 96,
+      },
     },
     // Suppress console output from dotenv
     silent: false,

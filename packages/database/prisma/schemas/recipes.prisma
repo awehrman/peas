@@ -17,6 +17,9 @@ model Recipe {
   tags       Tag[]
   sources    Source[]
 
+  /// Food concepts that this recipe makes, e.g. a "garam masala" recipe (FoodConcept.isComposed).
+  composedConcepts FoodConcept[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

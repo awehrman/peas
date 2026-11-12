@@ -1,0 +1,74 @@
+query IngredientsPage($view: IngredientView!) {
+  ingredients(view: $view) {
+    id
+    name
+    plural
+    isReviewed
+    parentIngredientId
+    properties
+    referenceCount
+  }
+  ingredientCounts {
+    all
+    unreviewed
+  }
+  ingredientCategoryNames
+}
+
+query IngredientDetail($id: ID!) {
+  ingredient(id: $id) {
+    id
+    name
+    plural
+    isReviewed
+    reviewedAt
+    isComposedIngredient
+    properties
+    aliases {
+      id
+      name
+    }
+    substitutions {
+      id
+      name
+    }
+    parent {
+      id
+      name
+    }
+    variants {
+      id
+      name
+    }
+    category
+    tags
+    referenceCount
+    references {
+      id
+      reference
+      noteId
+      noteTitle
+    }
+  }
+}
+
+query SearchIngredients($query: String!, $excludeId: ID) {
+  searchIngredients(query: $query, excludeId: $excludeId) {
+    id
+    name
+  }
+}
+
+mutation SaveIngredient($input: IngredientSaveInput!) {
+  saveIngredient(input: $input) {
+    ...PayloadFields
+    nextId
+  }
+}
+
+mutation CreateIngredient($input: IngredientCreateInput!) {
+  createIngredient(input: $input) {
+    ...PayloadFields
+    id
+  }
+}

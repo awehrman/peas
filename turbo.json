@@ -1,8 +1,14 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "ui": "tui",
-  "globalDependencies": ["**/.env.*local"],
-  "globalEnv": ["NODE_ENV", "SIGN_UP_CODES", "DATABASE_URL"],
+  "globalDependencies": [
+    "**/.env.*local"
+  ],
+  "globalEnv": [
+    "NODE_ENV",
+    "SIGN_UP_CODES",
+    "DATABASE_URL"
+  ],
   "globalPassThroughEnv": [
     "QUEUE_AUTH_SECRET",
     "CORS_ALLOWED_ORIGINS",
@@ -11,7 +17,8 @@
     "R2_ACCOUNT_ID",
     "R2_ACCESS_KEY_ID",
     "R2_SECRET_ACCESS_KEY",
-    "R2_BUCKET_NAME"
+    "R2_BUCKET_NAME",
+    "TEST_DATABASE_URL"
   ],
   "tasks": {
     "db:generate": {
@@ -25,48 +32,76 @@
       "outputs": []
     },
     "build": {
-      "dependsOn": ["^build"],
+      "dependsOn": [
+        "^build"
+      ],
       "outputs": [
-        ".next/**",
-        "!.next/cache/**",
+        ".output/**",
         "dist/**",
         "dist-scripts/**",
         "shared-styles.css"
       ]
     },
     "lint": {
-      "dependsOn": ["^lint"]
+      "dependsOn": [
+        "^lint"
+      ]
     },
     "format": {
       "cache": false
     },
     "test": {
       "cache": false,
-      "outputs": ["coverage/**"]
+      "outputs": [
+        "coverage/**"
+      ]
     },
     "dev": {
-      "dependsOn": ["^build"],
+      "dependsOn": [
+        "^build"
+      ],
       "cache": false,
       "persistent": true
     },
     "storybook": {
-      "dependsOn": ["^build"],
+      "dependsOn": [
+        "^build"
+      ],
       "cache": false,
       "persistent": true,
-      "inputs": ["packages/components/dist/**"]
+      "inputs": [
+        "packages/components/dist/**"
+      ]
     },
     "build-storybook": {
-      "dependsOn": ["^build"],
-      "outputs": ["storybook-static/**"],
-      "inputs": ["packages/components/dist/**"]
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "storybook-static/**"
+      ],
+      "inputs": [
+        "packages/components/dist/**"
+      ]
     },
     "generate": {
-      "dependsOn": ["^build"],
+      "dependsOn": [
+        "^build"
+      ],
       "cache": false
     },
     "watch": {
       "cache": false,
       "persistent": true
+    },
+    "test:coverage": {
+      "dependsOn": [
+        "^build"
+      ],
+      "cache": false,
+      "outputs": [
+        "coverage/**"
+      ]
     }
   }
 }

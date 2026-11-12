@@ -1,13 +1,17 @@
 "use client";
 
+import {
+  KNOWN_SEGMENT_TYPES,
+  SEGMENT_TYPE_LABELS,
+  getSegmentClassName,
+} from "./segment-styles";
+import type { ParsedLineSegment, ParsedLineStatus } from "./types";
+
 import { Fragment, type ReactNode } from "react";
 
 import { cn } from "@peas/components";
 
 import { AppLink } from "../app-navigation";
-
-import { KNOWN_SEGMENT_TYPES, SEGMENT_TYPE_LABELS, getSegmentClassName } from "./segment-styles";
-import type { ParsedLineSegment, ParsedLineStatus } from "./types";
 
 interface ParsedLineProps {
   reference: string;
@@ -36,8 +40,9 @@ export function ParsedLine({
     return (
       <span
         className={cn(
-          hasError && "text-error-700 underline decoration-wavy decoration-error-400",
-          isPending && "text-greyscale-500 italic",
+          hasError &&
+            "text-error-700 underline decoration-wavy decoration-error-400",
+          isPending && "text-greyscale-600 italic",
           className
         )}
         title={hasError ? "This line could not be parsed" : undefined}

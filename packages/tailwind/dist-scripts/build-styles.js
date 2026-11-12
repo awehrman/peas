@@ -267,11 +267,8 @@ async function notifyConsumers() {
       filePath: path.resolve(__dirname, "../../features/src/styles.css")
     },
     {
-      label: "@peas/web/src/app/globals.css",
-      filePath: path.resolve(
-        __dirname,
-        "../../../apps/web/src/app/globals.css"
-      )
+      label: "@peas/web/src/styles/app.css",
+      filePath: path.resolve(__dirname, "../../../apps/web/src/styles/app.css")
     }
   ];
   await Promise.all(

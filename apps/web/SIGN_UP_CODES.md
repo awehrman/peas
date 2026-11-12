@@ -13,7 +13,7 @@ Accounts are created through an invite link. There is no open sign-up: if `SIGN_
 2. Start the app (`yarn dev`) and open the invite link:
 
    ```text
-   http://localhost:3000/invite/my-secret-code
+   http://localhost:3100/invite/my-secret-code
    ```
 
 3. Fill in username, email and password. You're signed in afterwards; later sign-ins use `/login` with your email and password.

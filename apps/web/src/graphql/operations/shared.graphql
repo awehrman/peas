@@ -1,0 +1,91 @@
+# Every mutation payload: success, message, and the cache effect the coordinator applies.
+fragment PayloadFields on MutationPayload {
+  success
+  message
+  effect {
+    changed {
+      typename
+      id
+    }
+    evicted {
+      typename
+      id
+    }
+    invalidatedDomains
+    lexiconRevision
+    reprocessingJobId
+  }
+}
+
+fragment SourceFields on Source {
+  id
+  urls {
+    id
+    url
+    isBrokenLink
+    siteName
+  }
+  book {
+    title
+    author
+  }
+}
+
+fragment IngredientBlockFields on IngredientBlock {
+  blockIndex
+  lines {
+    id
+    blockIndex
+    lineIndex
+    reference
+    parseStatus
+    reviewStatus
+    isActive
+    parserVersion
+    segments {
+      index
+      type
+      value
+      rule
+      ingredientId
+    }
+  }
+}
+
+fragment InstructionFields on InstructionLine {
+  id
+  lineIndex
+  text
+  isActive
+}
+
+query JobStatus($jobId: ID!) {
+  job(jobId: $jobId) {
+    jobId
+    type
+    status
+    noteId
+    errorMessage
+    retryCount
+    startedAt
+    completedAt
+  }
+}
+
+query ImportStats {
+  importStats {
+    numberOfNotes
+    numberOfIngredients
+    numberOfParsingErrors
+  }
+}
+
+mutation CleanupAllData {
+  cleanupAllData {
+    ...PayloadFields
+    deletedCounts {
+      key
+      count
+    }
+  }
+}

@@ -1,0 +1,82 @@
+query NotesPage($status: NoteStatus, $query: String, $page: Int) {
+  notes(status: $status, query: $query, page: $page) {
+    items {
+      id
+      title
+      status
+      duplicateConfidence
+      parsingErrorCount
+      ingredientLineCount
+      instructionLineCount
+      thumbnailUrl
+      notebook
+      recipeId
+      createdAt
+    }
+    total
+    page
+    pageSize
+  }
+}
+
+fragment NoteDetailFields on Note {
+  id
+  title
+  status
+  createdAt
+  errorMessage
+  duplicateConfidence
+  parsingErrorCount
+  evernote {
+    source
+    notebook
+    tags
+    originalCreatedAt
+  }
+  images {
+    id
+    url
+    thumbnailUrl
+    processingStatus
+  }
+  sources {
+    ...SourceFields
+  }
+  categories {
+    id
+    name
+  }
+  tags {
+    id
+    name
+  }
+  ingredientBlocks {
+    ...IngredientBlockFields
+  }
+  instructions {
+    ...InstructionFields
+  }
+  recipeId
+}
+
+query NoteDetail($id: ID!) {
+  note(id: $id) {
+    ...NoteDetailFields
+  }
+}
+
+mutation SetLineReviewStatus($lineId: ID!, $status: LineReviewStatus!) {
+  setLineReviewStatus(lineId: $lineId, status: $status) {
+    ...PayloadFields
+    note {
+      ...NoteDetailFields
+    }
+  }
+}
+
+mutation PromoteNoteToRecipe($noteId: ID!) {
+  promoteNoteToRecipe(noteId: $noteId) {
+    ...PayloadFields
+    recipeId
+  }
+}

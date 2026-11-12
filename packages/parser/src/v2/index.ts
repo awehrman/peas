@@ -7,13 +7,42 @@ export {
   describeSyntax,
   phraseText,
 } from "./debug/describe.js";
-export { DEFAULT_SEGMENTATION_LIMIT, segmentations } from "./lexicon/segment.js";
-export { buildLexicon, entryTokenKeys, type Lexicon } from "./lexicon/token-trie.js";
+export {
+  DEFAULT_SEGMENTATION_LIMIT,
+  segmentations,
+} from "./lexicon/segment.js";
+export {
+  buildLexicon,
+  entryMatchKey,
+  entryTokenKeys,
+  type Lexicon,
+} from "./lexicon/token-trie.js";
+export * from "./ontology/types.js";
+export * from "./ontology/inheritance.js";
+export * from "./ontology/vocabulary.js";
+export * from "./resolve/schemas.js";
+export * from "./knowledge/schemas.js";
+export * from "./knowledge/priority.js";
 export * from "./lexicon/types.js";
-export { LexiconEntryInputSchema, LexiconSnapshotSchema } from "./lexicon/schemas.js";
-export { normalizeText, type NormalizedText } from "./normalize/normalize-text.js";
-export { tokenize, tokenKey, type Token, type TokenKind } from "./normalize/tokenize.js";
-export { parseLine, parseLineBest, type ParseLineOptions } from "./parse-line.js";
+export {
+  LexiconEntryInputSchema,
+  LexiconSnapshotSchema,
+} from "./lexicon/schemas.js";
+export {
+  normalizeText,
+  type NormalizedText,
+} from "./normalize/normalize-text.js";
+export {
+  tokenize,
+  tokenKey,
+  type Token,
+  type TokenKind,
+} from "./normalize/tokenize.js";
+export {
+  parseLine,
+  parseLineBest,
+  type ParseLineOptions,
+} from "./parse-line.js";
 export { diffSyntax, type SyntaxDiff } from "./preview/diff.js";
 export {
   addRational,

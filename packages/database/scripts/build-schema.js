@@ -37,6 +37,7 @@ const schemaFiles = [
   "prisma/schemas/source.prisma",
   "prisma/schemas/ingredients.prisma",
   "prisma/schemas/recipes.prisma",
+  "prisma/schemas/ontology.prisma",
 ];
 
 // Combine all schema files
