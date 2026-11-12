@@ -10,11 +10,7 @@
     "declarationMap": false,
     "sourceMap": false,
     "outDir": "./dist",
-    "rootDir": "./src",
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["./src/*"]
-    }
+    "rootDir": "./src"
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.css"],
   "exclude": ["node_modules", "dist"]

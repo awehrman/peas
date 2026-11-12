@@ -22,8 +22,8 @@
     "clear-imports": "tsx scripts/clear-imports.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.864.0",
-    "@aws-sdk/s3-request-presigner": "^3.864.0",
+    "@aws-sdk/client-s3": "^3.1167.0",
+    "@aws-sdk/s3-request-presigner": "^3.1167.0",
     "@bull-board/api": "^6.11.0",
     "@bull-board/express": "^6.11.0",
     "@peas/database": "*",
@@ -45,7 +45,7 @@
     "simhash-js": "^1.0.0",
     "ts-node": "^10.9.2",
     "ws": "^8.18.0",
-    "zod": "^4.0.5"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@peas/database": "*",
@@ -57,14 +57,15 @@
     "@types/pluralize": "^0.0.33",
     "@types/supertest": "^6.0.3",
     "@types/ws": "^8.5.10",
-    "@vitest/coverage-istanbul": "3.2.4",
-    "@vitest/ui": "^3.2.4",
+    "@vitest/coverage-istanbul": "5.1.0",
+    "@vitest/ui": "^5.1.0",
     "eslint": "^9.0.0",
     "supertest": "^7.1.4",
     "ts-node-dev": "^2.0.0",
-    "tsup": "^8.5.0",
+    "tsup": "^9.0.0",
     "tsx": "^4.7.0",
-    "typescript": "^5.8.3",
-    "vitest": "^3.2.4"
+    "typescript": "^6.0.3",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.0"
   }
 }

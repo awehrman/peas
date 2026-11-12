@@ -9,6 +9,8 @@ export interface CategorizationJobData {
   metadata?: Record<string, unknown>;
 }
 
+let lastJobTimestamp = 0;
+
 /**
  * Factory function to create standardized categorization job data
  */
@@ -17,9 +19,10 @@ export function createCategorizationJobData(
   importId: string,
   originalJobId?: string
 ): CategorizationJobData {
-  // Add a small increment to ensure unique timestamps when called in quick succession
-  const timestamp = Date.now() + Math.floor(Math.random() * 1000);
-  
+  // Strictly increasing, so calls within the same millisecond stay unique
+  const timestamp = Math.max(Date.now(), lastJobTimestamp + 1);
+  lastJobTimestamp = timestamp;
+
   return {
     noteId,
     importId,

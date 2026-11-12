@@ -1,0 +1,17 @@
+{
+  "description": "Measurement modifiers and degrees the structural golden tests assume. Food knowledge does not belong here.",
+  "revision": 0,
+  "entries": [
+    { "id": "mm-heaping", "text": "heaping", "role": "MEASUREMENT_MODIFIER" },
+    { "id": "mm-heaped", "text": "heaped", "role": "MEASUREMENT_MODIFIER" },
+    { "id": "mm-packed", "text": "packed", "role": "MEASUREMENT_MODIFIER" },
+    { "id": "mm-level", "text": "level", "role": "MEASUREMENT_MODIFIER" },
+    { "id": "mm-scant", "text": "scant", "role": "MEASUREMENT_MODIFIER" },
+    { "id": "mm-generous", "text": "generous", "role": "MEASUREMENT_MODIFIER" },
+    { "id": "mm-rounded", "text": "rounded", "role": "MEASUREMENT_MODIFIER" },
+    { "id": "deg-loosely", "text": "loosely", "role": "DEGREE" },
+    { "id": "deg-firmly", "text": "firmly", "role": "DEGREE" },
+    { "id": "deg-lightly", "text": "lightly", "role": "DEGREE" },
+    { "id": "deg-tightly", "text": "tightly", "role": "DEGREE" }
+  ]
+}

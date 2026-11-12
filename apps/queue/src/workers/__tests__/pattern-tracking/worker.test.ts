@@ -237,9 +237,8 @@ describe("PatternTrackingWorker", () => {
           PatternTrackingJobData
         >[];
 
-        const { createPatternTrackingPipeline } = await import(
-          "../../pattern-tracking/pipeline"
-        );
+        const { createPatternTrackingPipeline } =
+          await import("../../pattern-tracking/pipeline");
         vi.mocked(createPatternTrackingPipeline).mockReturnValue(mockPipeline);
 
         // Act
@@ -294,9 +293,8 @@ describe("PatternTrackingWorker", () => {
           PatternTrackingJobData
         >[];
 
-        const { createPatternTrackingPipeline } = await import(
-          "../../pattern-tracking/pipeline"
-        );
+        const { createPatternTrackingPipeline } =
+          await import("../../pattern-tracking/pipeline");
         vi.mocked(createPatternTrackingPipeline).mockReturnValue(mockPipeline);
 
         // Act
@@ -324,9 +322,8 @@ describe("PatternTrackingWorker", () => {
     describe("registerActions", () => {
       it("should register pattern tracking actions", async () => {
         // Arrange
-        const { registerPatternTrackingActions } = await import(
-          "../../../services/pattern-tracking/register"
-        );
+        const { registerPatternTrackingActions } =
+          await import("../../../services/pattern-tracking/register");
 
         // Act
         new PatternTrackingWorker(
@@ -353,9 +350,9 @@ describe("PatternTrackingWorker", () => {
       );
 
       const MockedActionFactory = vi.mocked(ActionFactory);
-      MockedActionFactory.mockImplementation(
-        () => mockActionFactory as ActionFactory<unknown, unknown, unknown>
-      );
+      MockedActionFactory.mockImplementation(function () {
+        return mockActionFactory as ActionFactory<unknown, unknown, unknown>;
+      });
 
       // Act
       const worker = createPatternTrackingWorker(mockQueue, mockContainer);
@@ -374,9 +371,9 @@ describe("PatternTrackingWorker", () => {
       );
 
       const MockedActionFactory = vi.mocked(ActionFactory);
-      MockedActionFactory.mockImplementation(
-        () => mockActionFactory as ActionFactory<unknown, unknown, unknown>
-      );
+      MockedActionFactory.mockImplementation(function () {
+        return mockActionFactory as ActionFactory<unknown, unknown, unknown>;
+      });
 
       // Act
       createPatternTrackingWorker(mockQueue, mockContainer);
@@ -395,9 +392,9 @@ describe("PatternTrackingWorker", () => {
       );
 
       const MockedActionFactory = vi.mocked(ActionFactory);
-      MockedActionFactory.mockImplementation(
-        () => mockActionFactory as ActionFactory<unknown, unknown, unknown>
-      );
+      MockedActionFactory.mockImplementation(function () {
+        return mockActionFactory as ActionFactory<unknown, unknown, unknown>;
+      });
 
       // Act
       createPatternTrackingWorker(mockQueue, mockContainer);
@@ -414,9 +411,9 @@ describe("PatternTrackingWorker", () => {
       );
 
       const MockedActionFactory = vi.mocked(ActionFactory);
-      MockedActionFactory.mockImplementation(
-        () => mockActionFactory as ActionFactory<unknown, unknown, unknown>
-      );
+      MockedActionFactory.mockImplementation(function () {
+        return mockActionFactory as ActionFactory<unknown, unknown, unknown>;
+      });
 
       // We can't easily spy on constructor, so let's verify the worker was created
 
@@ -443,9 +440,9 @@ describe("PatternTrackingWorker", () => {
       );
 
       const MockedActionFactory = vi.mocked(ActionFactory);
-      MockedActionFactory.mockImplementation(
-        () => mockActionFactory as ActionFactory<unknown, unknown, unknown>
-      );
+      MockedActionFactory.mockImplementation(function () {
+        return mockActionFactory as ActionFactory<unknown, unknown, unknown>;
+      });
 
       // Act
       const worker = createPatternTrackingWorker(differentQueue, mockContainer);
@@ -488,9 +485,9 @@ describe("PatternTrackingWorker", () => {
       );
 
       const MockedActionFactory = vi.mocked(ActionFactory);
-      MockedActionFactory.mockImplementation(
-        () => mockActionFactory as ActionFactory<unknown, unknown, unknown>
-      );
+      MockedActionFactory.mockImplementation(function () {
+        return mockActionFactory as ActionFactory<unknown, unknown, unknown>;
+      });
 
       // Act
       const worker = createPatternTrackingWorker(mockQueue, differentContainer);
@@ -511,9 +508,9 @@ describe("PatternTrackingWorker", () => {
       );
 
       const MockedActionFactory = vi.mocked(ActionFactory);
-      MockedActionFactory.mockImplementation(
-        () => mockActionFactory as ActionFactory<unknown, unknown, unknown>
-      );
+      MockedActionFactory.mockImplementation(function () {
+        return mockActionFactory as ActionFactory<unknown, unknown, unknown>;
+      });
 
       // Act
       const worker = createPatternTrackingWorker(mockQueue, mockContainer);

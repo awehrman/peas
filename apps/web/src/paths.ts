@@ -14,4 +14,3 @@ export const notesPath = () => "/notes";
 export const notePath = (id: string) => `/notes/${id}`;
 export const recipesPath = () => "/recipes";
 export const recipePath = (id: string) => `/recipes/${id}`;
-export const parserPath = () => "/parser";

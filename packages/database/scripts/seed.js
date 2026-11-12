@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /* eslint-env node */
 /* global console, process */
-import { PrismaClient } from "@prisma/client";
+import { createScriptClient } from "./prisma-client.js";
 
-const prisma = new PrismaClient();
+const prisma = createScriptClient();
 
 async function main() {
   console.log("🌱 Starting database seed...");

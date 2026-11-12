@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import { ActionName } from "../../../../../types";
 import { BaseAction } from "../../../../../workers/core/base-action";
@@ -19,7 +19,7 @@ describe("TrackPatternAction", () => {
   let mockDependencies: PatternTrackingWorkerDependencies;
   let mockContext: ActionContext;
   let mockData: PatternTrackingJobData;
-  let mockTrackPattern: ReturnType<typeof vi.fn>;
+  let mockTrackPattern: Mock;
 
   beforeEach(async () => {
     vi.clearAllMocks();

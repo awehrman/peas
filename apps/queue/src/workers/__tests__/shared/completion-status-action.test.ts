@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import { ActionName, type BaseJobData } from "../../../types";
 import { ActionContext } from "../../core/types";
@@ -153,7 +153,7 @@ describe("CompletionStatusAction", () => {
         await action.execute(testData, mockDeps, mockContext);
 
         const callArgs = (
-          mockDeps.addStatusEventAndBroadcast as ReturnType<typeof vi.fn>
+          mockDeps.addStatusEventAndBroadcast as Mock
         ).mock.calls[0]![0];
         expect(callArgs.message).toBe("Test completion for job test-job-123");
       });
@@ -162,7 +162,7 @@ describe("CompletionStatusAction", () => {
         await action.execute(testData, mockDeps, mockContext);
 
         const callArgs = (
-          mockDeps.addStatusEventAndBroadcast as ReturnType<typeof vi.fn>
+          mockDeps.addStatusEventAndBroadcast as Mock
         ).mock.calls[0]![0];
         expect(callArgs.context).toBe("test-context");
       });
@@ -171,7 +171,7 @@ describe("CompletionStatusAction", () => {
         await action.execute(testData, mockDeps, mockContext);
 
         const callArgs = (
-          mockDeps.addStatusEventAndBroadcast as ReturnType<typeof vi.fn>
+          mockDeps.addStatusEventAndBroadcast as Mock
         ).mock.calls[0]![0];
         expect(callArgs.importId).toBe("test-import-789");
       });
@@ -180,7 +180,7 @@ describe("CompletionStatusAction", () => {
         await action.execute(testData, mockDeps, mockContext);
 
         const callArgs = (
-          mockDeps.addStatusEventAndBroadcast as ReturnType<typeof vi.fn>
+          mockDeps.addStatusEventAndBroadcast as Mock
         ).mock.calls[0]![0];
         expect(callArgs.noteId).toBe("test-note-456");
       });
@@ -189,7 +189,7 @@ describe("CompletionStatusAction", () => {
         await action.execute(testData, mockDeps, mockContext);
 
         const callArgs = (
-          mockDeps.addStatusEventAndBroadcast as ReturnType<typeof vi.fn>
+          mockDeps.addStatusEventAndBroadcast as Mock
         ).mock.calls[0]![0];
         expect(callArgs.metadata).toEqual({
           jobId: "test-job-123",
@@ -207,7 +207,7 @@ describe("CompletionStatusAction", () => {
         await action.execute(dataWithoutImportId, mockDeps, mockContext);
 
         const callArgs = (
-          mockDeps.addStatusEventAndBroadcast as ReturnType<typeof vi.fn>
+          mockDeps.addStatusEventAndBroadcast as Mock
         ).mock.calls[0]![0];
         expect(callArgs.importId).toBe("default-import-id");
       });
@@ -218,7 +218,7 @@ describe("CompletionStatusAction", () => {
         await action.execute(dataWithoutNoteId, mockDeps, mockContext);
 
         const callArgs = (
-          mockDeps.addStatusEventAndBroadcast as ReturnType<typeof vi.fn>
+          mockDeps.addStatusEventAndBroadcast as Mock
         ).mock.calls[0]![0];
         expect(callArgs.noteId).toBeUndefined();
       });
@@ -229,7 +229,7 @@ describe("CompletionStatusAction", () => {
         await action.execute(dataWithoutMetadata, mockDeps, mockContext);
 
         const callArgs = (
-          mockDeps.addStatusEventAndBroadcast as ReturnType<typeof vi.fn>
+          mockDeps.addStatusEventAndBroadcast as Mock
         ).mock.calls[0]![0];
         expect(callArgs.metadata).toEqual({
           jobId: "test-job-123",
@@ -243,7 +243,7 @@ describe("CompletionStatusAction", () => {
         await action.execute(dataWithEmptyMetadata, mockDeps, mockContext);
 
         const callArgs = (
-          mockDeps.addStatusEventAndBroadcast as ReturnType<typeof vi.fn>
+          mockDeps.addStatusEventAndBroadcast as Mock
         ).mock.calls[0]![0];
         expect(callArgs.metadata).toEqual({
           jobId: "test-job-123",
@@ -296,7 +296,7 @@ describe("CompletionStatusAction", () => {
         await action.execute(dataWithoutNoteId, mockDeps, mockContext);
 
         const callArgs = (
-          mockDeps.addStatusEventAndBroadcast as ReturnType<typeof vi.fn>
+          mockDeps.addStatusEventAndBroadcast as Mock
         ).mock.calls[0]![0];
         expect(callArgs.noteId).toBeUndefined();
         expect(callArgs.metadata.hasNoteId).toBe(false);
@@ -311,7 +311,7 @@ describe("CompletionStatusAction", () => {
         await action.execute(dataWithCustomMessage, mockDeps, mockContext);
 
         const callArgs = (
-          mockDeps.addStatusEventAndBroadcast as ReturnType<typeof vi.fn>
+          mockDeps.addStatusEventAndBroadcast as Mock
         ).mock.calls[0]![0];
         expect(callArgs.message).toBe("Custom completion message");
       });
@@ -322,7 +322,7 @@ describe("CompletionStatusAction", () => {
         await action.execute(dataWithoutMessage, mockDeps, mockContext);
 
         const callArgs = (
-          mockDeps.addStatusEventAndBroadcast as ReturnType<typeof vi.fn>
+          mockDeps.addStatusEventAndBroadcast as Mock
         ).mock.calls[0]![0];
         expect(callArgs.message).toBe("Default message");
       });
@@ -331,7 +331,7 @@ describe("CompletionStatusAction", () => {
         await action.execute(testData, mockDeps, mockContext);
 
         const callArgs = (
-          mockDeps.addStatusEventAndBroadcast as ReturnType<typeof vi.fn>
+          mockDeps.addStatusEventAndBroadcast as Mock
         ).mock.calls[0]![0];
         expect(callArgs.metadata).toEqual({
           hasNoteId: true,
@@ -434,7 +434,7 @@ describe("CompletionStatusAction", () => {
       await action.execute(differentData, mockDeps, mockContext);
 
       const callArgs = (
-        mockDeps.addStatusEventAndBroadcast as ReturnType<typeof vi.fn>
+        mockDeps.addStatusEventAndBroadcast as Mock
       ).mock.calls[0]![0];
       expect(callArgs.importId).toBe("different-import");
       expect(callArgs.noteId).toBe("different-note");
@@ -452,10 +452,10 @@ describe("CompletionStatusAction", () => {
       expect(mockDeps.addStatusEventAndBroadcast).toHaveBeenCalledTimes(2);
 
       const call1 = (
-        mockDeps.addStatusEventAndBroadcast as ReturnType<typeof vi.fn>
+        mockDeps.addStatusEventAndBroadcast as Mock
       ).mock.calls[0]![0];
       const call2 = (
-        mockDeps.addStatusEventAndBroadcast as ReturnType<typeof vi.fn>
+        mockDeps.addStatusEventAndBroadcast as Mock
       ).mock.calls[1]![0];
 
       expect(call1.message).toBe("Test completion for job job-1");
@@ -468,7 +468,7 @@ describe("CompletionStatusAction", () => {
       await action.execute(testData, mockDeps, mockContext);
 
       const callArgs = (
-        mockDeps.addStatusEventAndBroadcast as ReturnType<typeof vi.fn>
+        mockDeps.addStatusEventAndBroadcast as Mock
       ).mock.calls[0]![0];
       expect(callArgs.status).toBe("COMPLETED");
       expect(callArgs.indentLevel).toBe(0);

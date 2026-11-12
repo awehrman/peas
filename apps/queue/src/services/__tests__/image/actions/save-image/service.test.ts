@@ -1,5 +1,5 @@
 import path from "path";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import type { IServiceContainer } from "../../../../../services/container";
 import {
@@ -16,8 +16,8 @@ describe("saveImage", () => {
   let mockLogger: ReturnType<typeof createMockLogger>;
   let mockServiceContainer: IServiceContainer;
   let mockData: ImageJobData;
-  let mockPrisma: { image: { upsert: ReturnType<typeof vi.fn> } };
-  let mockPathBasename: ReturnType<typeof vi.fn>;
+  let mockPrisma: { image: { upsert: Mock } };
+  let mockPathBasename: Mock;
   let originalEnv: Record<string, string | undefined>;
 
   beforeEach(() => {

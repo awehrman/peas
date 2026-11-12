@@ -1,6 +1,6 @@
 import type { PrismaClient } from "@peas/database";
 import type { Queue } from "bullmq";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi, type Mock } from "vitest";
 
 import type {
   IConfigService,
@@ -36,11 +36,11 @@ import {
 // ============================================================================
 
 type MockHealthMonitor = {
-  isHealthy: ReturnType<typeof vi.fn>;
+  isHealthy: Mock;
 };
 
 type MockWebSocketManager = {
-  broadcast: ReturnType<typeof vi.fn>;
+  broadcast: Mock;
 };
 
 // ============================================================================
@@ -627,7 +627,7 @@ describe("Integration Tests", () => {
 
       // Test that mock functions can be called
       (
-        mockInstances.errorHandler.withErrorHandling as ReturnType<typeof vi.fn>
+        mockInstances.errorHandler.withErrorHandling as Mock
       )();
       mockInstances.logger.log("test message");
       (

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import type { StructuredLogger } from "../../../../../types";
 import type { PatternTrackingJobData } from "../../../../../workers/pattern-tracking/dependencies";
@@ -15,8 +15,8 @@ describe("Track Pattern Service", () => {
   let mockLogger: StructuredLogger;
   let mockPrisma: ReturnType<typeof vi.mocked<typeof import("@peas/database").prisma>>;
   let mockTransaction: {
-    uniqueLinePattern: { upsert: ReturnType<typeof vi.fn> };
-    parsedIngredientLine: { update: ReturnType<typeof vi.fn> };
+    uniqueLinePattern: { upsert: Mock };
+    parsedIngredientLine: { update: Mock };
   };
 
   beforeEach(async () => {

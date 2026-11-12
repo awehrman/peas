@@ -61,17 +61,29 @@ prisma/
    npm run db:generate
    ```
 
-4. **Push schema changes**:
+4. **Create a migration** (see below). Schema changes always go through
+   `yarn db:migrate`; `db:push` is only for throwaway databases, because
+   anything pushed without a migration is missing from every other
+   environment.
 
-   ```bash
-   npm run db:push
-   ```
+### Prisma 7 notes
+
+- Connection settings live in `prisma.config.ts` (not in the schema). The CLI
+  reads `DATABASE_URL` from the environment or the root `.env.local`, and
+  `SHADOW_DATABASE_URL` when set.
+- Clients connect through the `pg` driver adapter. Create them with
+  `createPrismaClient()` from `@peas/database` (or `scripts/prisma-client.js`
+  in standalone scripts) rather than `new PrismaClient()`.
+- `prisma migrate dev` and `db push` no longer run `prisma generate`; run
+  `yarn build` (or `prisma generate`) after schema changes.
 
 ### Available Scripts
 
 - `npm run build:schema` - Combine modular schema files
 - `npm run db:generate` - Build schema and generate Prisma client
-- `npm run db:push` - Build schema and push to database
+- `npm run db:migrate` - Build schema, create a migration, and apply it
+- `npm run db:verify-migrations` - Replay all migrations on `SCRATCH_DATABASE_URL` and fail if they differ from the schema
+- `npm run db:push` - Build schema and push to database (throwaway databases only)
 
 ### Adding New Schema Modules
 
@@ -93,11 +105,11 @@ prisma/
 3. **Create a new migration**:
 
    ```bash
-   npx prisma migrate dev --name "your_migration_name"
+   yarn db:migrate --name "your_migration_name"
    ```
 
    This will:
-   - Generate a new migration in `prisma/migrations/`
+   - Generate a new migration in `migrations/` (next to the combined `schema.prisma`)
    - Apply it to your local/dev database
    - Update the Prisma client
 
@@ -146,7 +158,7 @@ The application uses Prisma with PostgreSQL and includes:
 Turbo will re-generate our schema, but you'll want to make sure you deploy your changes with:
 
 ```bash
-npm run db:push
+yarn db:migrate
 ```
 
 Use the prisma studio to view your database:

@@ -10,11 +10,13 @@
     "build": "node scripts/railway-build.js",
     "build:schema": "node scripts/build-schema.js",
     "db:generate": "node scripts/railway-build.js --generate-only",
-    "db:push": "yarn build:schema && dotenv -e ../../.env.local -- prisma db push --skip-generate",
+    "db:push": "yarn build:schema && dotenv -e ../../.env.local -- prisma db push",
     "db:migrate": "yarn build:schema && dotenv -e ../../.env.local -- prisma migrate dev",
+    "db:verify-migrations": "yarn build:schema && dotenv -e ../../.env.local -- node scripts/verify-migrations.js",
     "db:sync": "yarn build:schema && dotenv -e ../../.env.local -- prisma generate && dotenv -e ../../.env.local -- prisma migrate dev",
     "db:studio": "yarn build:schema && dotenv -e ../../.env.local -- prisma studio",
     "db:seed": "yarn build:schema && dotenv -e ../../.env.local -- node scripts/seed.js",
+    "export:lines": "dotenv -e ../../.env.local -- node scripts/export-ingredient-lines.js",
     "user:role": "dotenv -e ../../.env.local -- node scripts/set-user-role.js",
     "lint": "eslint src --ext .ts",
     "lint:prisma": "npm run build:schema && prisma validate",
@@ -22,11 +24,15 @@
     "prisma:generate": "dotenv -e ../../.env.local -- prisma generate"
   },
   "dependencies": {
-    "@prisma/client": "6.11.1",
-    "dotenv": "^17.2.0"
+    "@prisma/adapter-pg": "^7.10.1",
+    "@prisma/client": "^7.10.1",
+    "dotenv": "^17.2.0",
+    "pg": "^8.16.0"
   },
   "devDependencies": {
+    "@peas/eslint-config": "*",
     "dotenv-cli": "^8.0.0",
-    "prisma": "^6.11.0"
+    "eslint": "^9.34.0",
+    "prisma": "^7.10.1"
   }
 }

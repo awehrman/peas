@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import type { StructuredLogger } from "../../../types";
 
@@ -24,10 +24,10 @@ describe("Schedule Categorization Service", () => {
       event: Record<string, unknown>
     ) => Promise<Record<string, unknown>>;
   };
-  let mockAddStatusEventAndBroadcast: ReturnType<typeof vi.fn>;
-  let mockCreateQueue: ReturnType<typeof vi.fn>;
-  let mockCreateCategorizationJobData: ReturnType<typeof vi.fn>;
-  let mockQueue: { add: ReturnType<typeof vi.fn> };
+  let mockAddStatusEventAndBroadcast: Mock;
+  let mockCreateQueue: Mock;
+  let mockCreateCategorizationJobData: Mock;
+  let mockQueue: { add: Mock };
   let scheduleCategorizationJob: (
     noteId: string,
     importId: string,

@@ -58,7 +58,7 @@ export async function saveIngredientLine(
       data.ingredientReference,
       data.parseStatus,
       undefined, // rule
-      0, // blockIndex
+      data.blockIndex ?? 0,
       data.isActive,
       parsedSegments || [],
       parserVersion

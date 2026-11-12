@@ -1,5 +1,13 @@
 import { Queue } from "bullmq";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  type Mock,
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 
 import {
   MOCK_REDIS_CONFIG,
@@ -21,19 +29,25 @@ vi.mock("../../config/redis", () => ({
 
 describe("createQueue", () => {
   let testEnv: ReturnType<typeof createTestEnvironment>;
-  let MockQueue: ReturnType<typeof vi.fn>;
+  let MockQueue: Mock<
+    (name: string, options: QueueOptions) => ReturnType<typeof createMockQueue>
+  >;
 
   beforeEach(() => {
     testEnv = createTestEnvironment();
-    MockQueue = vi.mocked(Queue);
+    // Queue is a class; the tests stub its constructor with a factory
+    MockQueue = vi.mocked(Queue) as unknown as typeof MockQueue;
 
     // Reset mocks
     MockQueue.mockClear();
 
     // Mock Queue constructor to return a mock instance
-    MockQueue.mockImplementation((name: string, options: QueueOptions) =>
-      createMockQueue(name, options)
-    );
+    MockQueue.mockImplementation(function (
+      name: string,
+      options: QueueOptions
+    ) {
+      return createMockQueue(name, options);
+    });
   });
 
   afterEach(() => {

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 import type { Prisma } from "@prisma/client";
 
 import type { StructuredLogger } from "../../../../../types";
@@ -26,7 +26,7 @@ vi.mock("@peas/database", () => ({
 describe("Track Completion Service", () => {
   let mockLogger: StructuredLogger;
   let mockStatusBroadcaster: {
-    addStatusEventAndBroadcast: ReturnType<typeof vi.fn>;
+    addStatusEventAndBroadcast: Mock;
   };
 
   beforeEach(() => {
@@ -515,7 +515,7 @@ describe("Track Completion Service", () => {
         "../../../../cleanup/cleanup-service"
       );
       vi.spyOn(
-        CleanupService.prototype as unknown as { cleanupImportDirectory: ReturnType<typeof vi.fn> },
+        CleanupService.prototype as unknown as { cleanupImportDirectory: Mock },
         "cleanupImportDirectory"
       ).mockRejectedValue(new Error("cleanup failed"));
 
@@ -711,7 +711,7 @@ describe("Track Completion Service", () => {
         "../../../../cleanup/cleanup-service"
       );
       vi.spyOn(
-        CleanupService.prototype as unknown as { cleanupImportDirectory: ReturnType<typeof vi.fn> },
+        CleanupService.prototype as unknown as { cleanupImportDirectory: Mock },
         "cleanupImportDirectory"
       ).mockRejectedValue(new Error("cleanup error"));
 
@@ -1062,7 +1062,7 @@ describe("Track Completion Service", () => {
       "../../../../cleanup/cleanup-service"
     );
     vi.spyOn(
-      CleanupService.prototype as unknown as { cleanupImportDirectory: ReturnType<typeof vi.fn> },
+      CleanupService.prototype as unknown as { cleanupImportDirectory: Mock },
       "cleanupImportDirectory"
     ).mockRejectedValue(new Error("cleanup error"));
 

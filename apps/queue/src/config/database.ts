@@ -1,14 +1,9 @@
-import { PrismaClient } from "@peas/database";
+import { createPrismaClient } from "@peas/database";
 
-// Enhanced Prisma configuration with connection pooling and performance optimizations
+// Queue-specific client: shares connection settings with @peas/database and
+// adds query logging in development.
 /* istanbul ignore next -- @preserve */
-export const prisma = new PrismaClient({
-  datasources: {
-    db: {
-      url: process.env.DATABASE_URL,
-    },
-  },
-  // Connection pooling configuration
+export const prisma = createPrismaClient({
   log:
     process.env.NODE_ENV === "development"
       ? ["query", "error", "warn"]

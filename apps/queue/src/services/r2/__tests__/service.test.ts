@@ -2,7 +2,15 @@ import { S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { promises as fs } from "fs";
 import path from "path";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  type Mock,
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 
 import { R2Service } from "../service";
 
@@ -23,8 +31,8 @@ vi.mock("path", () => ({
 
 describe("R2Service", () => {
   let r2Service: R2Service;
-  let mockS3Client: { send: ReturnType<typeof vi.fn> };
-  let mockGetSignedUrl: ReturnType<typeof vi.fn>;
+  let mockS3Client: { send: Mock };
+  let mockGetSignedUrl: Mock;
 
   const mockConfig = {
     accountId: "test-account",
@@ -49,15 +57,13 @@ describe("R2Service", () => {
     mockS3Client = {
       send: vi.fn(),
     };
-    (S3Client as unknown as ReturnType<typeof vi.fn>).mockImplementation(
-      () => mockS3Client
-    );
+    (S3Client as unknown as Mock).mockImplementation(function () {
+      return mockS3Client;
+    });
 
     // Mock getSignedUrl
     mockGetSignedUrl = vi.fn();
-    (getSignedUrl as unknown as ReturnType<typeof vi.fn>).mockImplementation(
-      mockGetSignedUrl
-    );
+    (getSignedUrl as unknown as Mock).mockImplementation(mockGetSignedUrl);
 
     // Mock fs functions
     vi.mocked(fs.readFile).mockResolvedValue(Buffer.from("test content"));

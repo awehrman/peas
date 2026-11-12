@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import {
   createMockLogger,
@@ -24,7 +24,7 @@ describe("ScheduleImagesAction", () => {
   let mockData: NotePipelineData;
 
   // Import mocked function
-  let processImages: ReturnType<typeof vi.fn>;
+  let processImages: Mock;
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -288,7 +288,7 @@ describe("ScheduleImagesAction", () => {
       processImages.mockResolvedValue(dataWithImages);
       (
         mockDependencies.statusBroadcaster!
-          .addStatusEventAndBroadcast as ReturnType<typeof vi.fn>
+          .addStatusEventAndBroadcast as Mock
       ).mockRejectedValue(new Error("Broadcast error"));
 
       const result = await action.execute(

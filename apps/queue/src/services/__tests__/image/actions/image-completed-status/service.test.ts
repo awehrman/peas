@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import type { IServiceContainer } from "../../../../../services/container";
 import {
@@ -17,11 +17,11 @@ describe("updateImageCompletedStatus", () => {
   let mockLogger: ReturnType<typeof createMockLogger>;
   let mockServiceContainer: IServiceContainer;
   let mockData: ImageJobData;
-  let mockPrisma: { image: { update: ReturnType<typeof vi.fn> } };
+  let mockPrisma: { image: { update: Mock } };
   let mockStatusBroadcaster: {
-    addStatusEventAndBroadcast: ReturnType<typeof vi.fn>;
+    addStatusEventAndBroadcast: Mock;
   };
-  let mockMarkImageJobCompleted: ReturnType<typeof vi.fn>;
+  let mockMarkImageJobCompleted: Mock;
 
   beforeEach(async () => {
     vi.clearAllMocks();

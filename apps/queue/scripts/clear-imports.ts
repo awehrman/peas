@@ -2,7 +2,7 @@
  * Clears everything a (partial) import leaves behind, so an export can be
  * re-imported from scratch:
  *   - imported data in Postgres (notes, ingredients, images, status events,
- *     recipes); users, grammar rules and grammar tests are kept
+ *     recipes); users are kept
  *   - queued and cached work in Redis (bull:*, action:*, tag:*)
  *   - local upload folders
  *

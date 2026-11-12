@@ -92,59 +92,67 @@ export async function saveParsedIngredientLine(
     `[SAVE_PARSED_INGREDIENT_LINE] Saving ingredient line: noteId=${noteId}, lineIndex=${lineIndex}, parseStatus=${parseStatus}`
   );
 
-  const lineRecord = await prisma.parsedIngredientLine.upsert({
-    where: {
-      noteId_blockIndex_lineIndex: {
+  const lineId = await prisma.$transaction(async (tx) => {
+    const lineRecord = await tx.parsedIngredientLine.upsert({
+      where: {
+        noteId_blockIndex_lineIndex: {
+          noteId,
+          blockIndex,
+          lineIndex,
+        },
+      },
+      update: {
+        reference,
+        parseStatus,
+        rule,
+        parsedAt: new Date(),
+        isActive,
+        ...(parserVersion ? { parserVersion } : {}),
+      },
+      create: {
         noteId,
         blockIndex,
         lineIndex,
+        reference,
+        rule,
+        parseStatus,
+        parsedAt: new Date(),
+        isActive,
+        parserVersion: parserVersion ?? null,
       },
-    },
-    update: {
-      reference,
-      parseStatus,
-      rule,
-      parsedAt: new Date(),
-      isActive,
-      ...(parserVersion ? { parserVersion } : {}),
-    },
-    create: {
-      noteId,
-      blockIndex,
-      lineIndex,
-      reference,
-      rule,
-      parseStatus,
-      parsedAt: new Date(),
-      isActive,
-      parserVersion: parserVersion ?? null,
-    },
+    });
+
+    // Segment indexes may change between parses, so references keyed by the
+    // old segments are stale once the segments are replaced.
+    await tx.ingredientReference.deleteMany({
+      where: { parsedLineId: lineRecord.id },
+    });
+    await tx.parsedSegment.deleteMany({
+      where: { ingredientLineId: lineRecord.id },
+    });
+
+    if (parsedSegments.length > 0) {
+      await tx.parsedSegment.createMany({
+        data: parsedSegments.map((seg) => ({
+          ingredientLineId: lineRecord.id,
+          index: seg.index,
+          rule: seg.rule,
+          type: seg.type,
+          value: seg.value,
+          processingTime: seg.processingTime,
+          ruleId: seg.ruleId,
+        })),
+      });
+    }
+
+    return lineRecord.id;
   });
 
   console.log(
-    `[SAVE_PARSED_INGREDIENT_LINE] Saved ingredient line with ID: ${lineRecord.id}`
+    `[SAVE_PARSED_INGREDIENT_LINE] Saved ingredient line with ID: ${lineId}`
   );
 
-  // Replace segments (delete old, insert new)
-  await prisma.parsedSegment.deleteMany({
-    where: { ingredientLineId: lineRecord.id },
-  });
-
-  if (parsedSegments.length > 0) {
-    await prisma.parsedSegment.createMany({
-      data: parsedSegments.map((seg) => ({
-        ingredientLineId: lineRecord.id,
-        index: seg.index,
-        rule: seg.rule,
-        type: seg.type,
-        value: seg.value,
-        processingTime: seg.processingTime,
-        ruleId: seg.ruleId,
-      })),
-    });
-  }
-
-  return { id: lineRecord.id };
+  return { id: lineId };
 }
 
 /**

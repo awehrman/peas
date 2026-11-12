@@ -72,9 +72,8 @@ describe("CachedIngredientParser", () => {
     };
 
     // Get the mocked modules
-    const actionCacheModule = await import(
-      "../../../workers/core/cache/action-cache"
-    );
+    const actionCacheModule =
+      await import("../../../workers/core/cache/action-cache");
     mockActionCache = vi.mocked(actionCacheModule.actionCache);
     mockCacheKeyGenerator = vi.mocked(actionCacheModule.CacheKeyGenerator);
 
@@ -328,19 +327,32 @@ describe("CachedIngredientParser", () => {
           rule: "#1_ingredientLine",
           type: "ingredientLine",
           values: [
-            { rule: "#1_ingredientLine >> #1_amount", type: "amount", value: "2" },
-            { rule: "#1_ingredientLine >> #1_ingredient", type: "ingredient", value: "eggs" },
+            {
+              rule: "#1_ingredientLine >> #1_amount",
+              type: "amount",
+              value: "2",
+            },
+            {
+              rule: "#1_ingredientLine >> #1_ingredient",
+              type: "ingredient",
+              value: "eggs",
+            },
           ],
         }),
       });
 
-      const result = await CachedIngredientParser.parseIngredientLine("2 eggs", {
-        cacheResults: false,
-      });
+      const result = await CachedIngredientParser.parseIngredientLine(
+        "2 eggs",
+        {
+          cacheResults: false,
+        }
+      );
 
       expect(mockV1Parser).not.toHaveBeenCalled();
       expect(result.parserVersion).toBe("grammar:version-1");
-      expect(result.values.map(({ index, type, value }) => ({ index, type, value }))).toEqual([
+      expect(
+        result.values.map(({ index, type, value }) => ({ index, type, value }))
+      ).toEqual([
         { index: 0, type: "amount", value: "2" },
         { index: 1, type: "ingredient", value: "eggs" },
       ]);
@@ -508,7 +520,7 @@ describe("CachedIngredientParser", () => {
         await CachedIngredientParser.invalidateIngredientCache(pattern);
 
       expect(mockActionCache.invalidateByPattern).toHaveBeenCalledWith(
-        "ingredient:flour"
+        "action:parse_ingredient_line:*flour*"
       );
       expect(result).toBe(invalidatedCount);
     });
@@ -521,7 +533,7 @@ describe("CachedIngredientParser", () => {
       const result = await CachedIngredientParser.invalidateIngredientCache();
 
       expect(mockActionCache.invalidateByPattern).toHaveBeenCalledWith(
-        "ingredient:"
+        "action:parse_ingredient_line:*"
       );
       expect(result).toBe(invalidatedCount);
     });
@@ -531,9 +543,9 @@ describe("CachedIngredientParser", () => {
     it("should return cache statistics for ingredient parsing", () => {
       const mockStats = {
         memoryKeys: [
-          "ingredient:line:1 cup flour:abc123",
-          "ingredient:line:2 tbsp butter:def456",
-          "ingredient:pattern:flour:ghi789",
+          "action:parse_ingredient_line:static_v1_1 cup flour_abc123",
+          "action:parse_ingredient_line:static_v1_2 tbsp butter_def456",
+          "action:other_action:value",
           "other:key:value",
         ],
         memorySize: 4,
@@ -544,11 +556,10 @@ describe("CachedIngredientParser", () => {
       const stats = CachedIngredientParser.getCacheStats();
 
       expect(stats).toEqual({
-        totalIngredientKeys: 3,
+        totalIngredientKeys: 2,
         ingredientKeys: [
-          "ingredient:line:1 cup flour:abc123",
-          "ingredient:line:2 tbsp butter:def456",
-          "ingredient:pattern:flour:ghi789",
+          "action:parse_ingredient_line:static_v1_1 cup flour_abc123",
+          "action:parse_ingredient_line:static_v1_2 tbsp butter_def456",
         ],
         totalMemoryKeys: 4,
       });
@@ -573,7 +584,10 @@ describe("CachedIngredientParser", () => {
 
     it("should limit ingredient keys to first 10", () => {
       const mockStats = {
-        memoryKeys: Array.from({ length: 15 }, (_, i) => `ingredient:key:${i}`),
+        memoryKeys: Array.from(
+          { length: 15 },
+          (_, i) => `action:parse_ingredient_line:key_${i}`
+        ),
         memorySize: 15,
         redisStats: {},
       };
@@ -583,8 +597,12 @@ describe("CachedIngredientParser", () => {
 
       expect(stats.totalIngredientKeys).toBe(15);
       expect(stats.ingredientKeys).toHaveLength(10);
-      expect(stats.ingredientKeys[0]).toBe("ingredient:key:0");
-      expect(stats.ingredientKeys[9]).toBe("ingredient:key:9");
+      expect(stats.ingredientKeys[0]).toBe(
+        "action:parse_ingredient_line:key_0"
+      );
+      expect(stats.ingredientKeys[9]).toBe(
+        "action:parse_ingredient_line:key_9"
+      );
     });
   });
 

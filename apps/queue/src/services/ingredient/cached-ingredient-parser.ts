@@ -18,6 +18,10 @@ import {
 // CACHED INGREDIENT PARSER
 // ============================================================================
 
+const INGREDIENT_PARSE_ACTION = "parse_ingredient_line";
+/** Must match the key shape produced by CacheKeyGenerator.actionResult */
+export const INGREDIENT_PARSE_CACHE_PREFIX = `action:${INGREDIENT_PARSE_ACTION}:`;
+
 /**
  * Interface for ingredient parsing result
  * Matches the exact structure returned by v1 parser
@@ -33,7 +37,7 @@ export interface IngredientParseResult {
     processingTime: number;
   }>;
   processingTime: number;
-  /** Which parser produced the result ("static_v1" or "grammar:<versionId>") */
+  /** Which parser produced the result (e.g. "static_v1") */
   parserVersion?: string;
 }
 
@@ -129,10 +133,12 @@ export class CachedIngredientParser {
   }
 
   /**
-   * Invalidate cache for specific ingredient patterns
+   * Invalidate cached parse results, optionally only lines containing `pattern`
    */
   static async invalidateIngredientCache(pattern?: string): Promise<number> {
-    const cachePattern = pattern ? `ingredient:${pattern}` : "ingredient:";
+    const cachePattern = pattern
+      ? `${INGREDIENT_PARSE_CACHE_PREFIX}*${pattern.toLowerCase()}*`
+      : `${INGREDIENT_PARSE_CACHE_PREFIX}*`;
     return actionCache.invalidateByPattern(cachePattern);
   }
 
@@ -142,7 +148,7 @@ export class CachedIngredientParser {
   static getCacheStats() {
     const stats = actionCache.getStats();
     const ingredientKeys = stats.memoryKeys.filter((key) =>
-      key.startsWith("ingredient:")
+      key.startsWith(INGREDIENT_PARSE_CACHE_PREFIX)
     );
 
     return {
@@ -171,14 +177,14 @@ export class CachedIngredientParser {
       .slice(0, 8);
 
     return CacheKeyGenerator.actionResult(
-      "parse_ingredient_line",
+      INGREDIENT_PARSE_ACTION,
       `${parserId}_${normalizedLine}_${optionsHash}`
     );
   }
 
   /**
    * Parse with whichever parser the resolver picked. Static v1 keeps its
-   * existing conversion; database grammars are already normalized.
+   * existing conversion; other parsers return the flat segment shape.
    */
   private static async parseWithResolvedParser(
     line: string,

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import type { StructuredLogger } from "../../../../../types";
 import type { NotePipelineData } from "../../../../../types/notes";
@@ -11,7 +11,7 @@ vi.mock("../../../../../parsers/html", () => ({
 
 describe("Parse HTML Service", () => {
   let mockLogger: StructuredLogger;
-  let mockParseHTMLContent: ReturnType<typeof vi.fn>;
+  let mockParseHTMLContent: Mock;
 
   beforeEach(async () => {
     vi.clearAllMocks();

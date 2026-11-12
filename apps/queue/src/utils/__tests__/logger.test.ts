@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { type Mock, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   EnhancedLoggerService,
@@ -8,6 +8,13 @@ import {
   getLogConfigFromEnv,
   logger,
 } from "../logger";
+
+// readdirSync is overloaded; these tests stub the string[] (file name) form.
+function readdirNames(fs: {
+  readdirSync: unknown;
+}): Mock<(path: string) => string[]> {
+  return fs.readdirSync as Mock<(path: string) => string[]>;
+}
 
 // Mock fs module
 vi.mock("fs", () => {
@@ -638,10 +645,7 @@ describe("EnhancedLoggerService", () => {
       const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
 
       // Mock old backup files - use string array
-      fs.readdirSync.mockReturnValue([
-        "old.log.backup",
-        "recent.log.backup",
-      ] as unknown as ReturnType<typeof fs.readdirSync>);
+      readdirNames(fs).mockReturnValue(["old.log.backup", "recent.log.backup"]);
 
       // Mock different modification times
       fs.statSync.mockImplementation((path) => {
@@ -710,7 +714,7 @@ describe("EnhancedLoggerService", () => {
         .mockImplementation(() => {});
 
       // Mock backup files - use string array
-      fs.readdirSync.mockReturnValue(["test.log.backup"] as unknown as ReturnType<typeof fs.readdirSync>);
+      readdirNames(fs).mockReturnValue(["test.log.backup"]);
 
       // Mock statSync to throw error
       fs.statSync.mockImplementation(() => {
@@ -966,10 +970,10 @@ describe("EnhancedLoggerService", () => {
       const fs = vi.mocked(await import("fs"));
 
       // Mock only 2 backup files
-      fs.readdirSync.mockReturnValue([
+      readdirNames(fs).mockReturnValue([
         "queue-worker.log.2023-01-01.backup",
         "queue-worker.log.2023-01-02.backup",
-      ] as unknown as ReturnType<typeof fs.readdirSync>);
+      ]);
 
       // Mock modification times
       fs.statSync.mockImplementation((path) => {
@@ -1162,13 +1166,13 @@ describe("EnhancedLoggerService", () => {
       const fs = vi.mocked(await import("fs"));
 
       // Mock multiple backup files
-      fs.readdirSync.mockReturnValue([
+      readdirNames(fs).mockReturnValue([
         "queue-worker.log.2023-01-01.backup",
         "queue-worker.log.2023-01-02.backup",
         "queue-worker.log.2023-01-03.backup",
         "queue-worker.log.2023-01-04.backup",
         "queue-worker.log.2023-01-05.backup",
-      ] as unknown as ReturnType<typeof fs.readdirSync>);
+      ]);
 
       // Mock different modification times
       fs.statSync.mockImplementation((path) => {
@@ -1386,6 +1390,4 @@ describe("EnhancedLoggerService", () => {
       );
     });
   });
-
-
 });

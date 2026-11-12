@@ -1,6 +1,6 @@
 import express from "express";
 import request from "supertest";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import { ManagerFactory } from "../../config/factory";
 import { systemMonitor } from "../../monitoring/system-monitor";
@@ -58,10 +58,10 @@ describe("Health Enhanced Router", () => {
 
     // Setup default mock implementations
     (
-      ManagerFactory.createHealthMonitor as ReturnType<typeof vi.fn>
+      ManagerFactory.createHealthMonitor as Mock
     ).mockReturnValue(mockHealthMonitor);
     (
-      ManagerFactory.createCacheManager as ReturnType<typeof vi.fn>
+      ManagerFactory.createCacheManager as Mock
     ).mockReturnValue(mockCacheManager);
   });
 
@@ -90,7 +90,7 @@ describe("Health Enhanced Router", () => {
       };
 
       (
-        systemMonitor.generateHealthReport as ReturnType<typeof vi.fn>
+        systemMonitor.generateHealthReport as Mock
       ).mockResolvedValue(mockHealthReport);
 
       const response = await request(app).get("/health");
@@ -134,7 +134,7 @@ describe("Health Enhanced Router", () => {
       };
 
       (
-        systemMonitor.generateHealthReport as ReturnType<typeof vi.fn>
+        systemMonitor.generateHealthReport as Mock
       ).mockResolvedValue(mockHealthReport);
 
       const response = await request(app).get("/health");
@@ -163,7 +163,7 @@ describe("Health Enhanced Router", () => {
       };
 
       (
-        systemMonitor.generateHealthReport as ReturnType<typeof vi.fn>
+        systemMonitor.generateHealthReport as Mock
       ).mockResolvedValue(mockHealthReport);
 
       const response = await request(app).get("/health");
@@ -178,7 +178,7 @@ describe("Health Enhanced Router", () => {
         .mockImplementation(() => {});
       const error = new Error("Health check failed");
       (
-        systemMonitor.generateHealthReport as ReturnType<typeof vi.fn>
+        systemMonitor.generateHealthReport as Mock
       ).mockRejectedValue(error);
 
       const response = await request(app).get("/health");
@@ -200,7 +200,7 @@ describe("Health Enhanced Router", () => {
         .spyOn(console, "error")
         .mockImplementation(() => {});
       (
-        systemMonitor.generateHealthReport as ReturnType<typeof vi.fn>
+        systemMonitor.generateHealthReport as Mock
       ).mockRejectedValue("String error");
 
       const response = await request(app).get("/health");
@@ -219,9 +219,9 @@ describe("Health Enhanced Router", () => {
   describe("GET /health/ready", () => {
     it("should return ready status when all services are healthy", async () => {
       (
-        mockHealthMonitor.isHealthy as ReturnType<typeof vi.fn>
+        mockHealthMonitor.isHealthy as Mock
       ).mockResolvedValue(true);
-      (mockCacheManager.isReady as ReturnType<typeof vi.fn>).mockReturnValue(
+      (mockCacheManager.isReady as Mock).mockReturnValue(
         true
       );
 
@@ -240,9 +240,9 @@ describe("Health Enhanced Router", () => {
 
     it("should return not_ready status when health check fails", async () => {
       (
-        mockHealthMonitor.isHealthy as ReturnType<typeof vi.fn>
+        mockHealthMonitor.isHealthy as Mock
       ).mockResolvedValue(false);
-      (mockCacheManager.isReady as ReturnType<typeof vi.fn>).mockReturnValue(
+      (mockCacheManager.isReady as Mock).mockReturnValue(
         true
       );
 
@@ -262,9 +262,9 @@ describe("Health Enhanced Router", () => {
 
     it("should return not_ready status when cache is not ready", async () => {
       (
-        mockHealthMonitor.isHealthy as ReturnType<typeof vi.fn>
+        mockHealthMonitor.isHealthy as Mock
       ).mockResolvedValue(true);
-      (mockCacheManager.isReady as ReturnType<typeof vi.fn>).mockReturnValue(
+      (mockCacheManager.isReady as Mock).mockReturnValue(
         false
       );
 
@@ -281,7 +281,7 @@ describe("Health Enhanced Router", () => {
         .mockImplementation(() => {});
       const error = new Error("Readiness check failed");
       (
-        mockHealthMonitor.isHealthy as ReturnType<typeof vi.fn>
+        mockHealthMonitor.isHealthy as Mock
       ).mockRejectedValue(error);
 
       const response = await request(app).get("/health/ready");
@@ -303,7 +303,7 @@ describe("Health Enhanced Router", () => {
         .spyOn(console, "error")
         .mockImplementation(() => {});
       (
-        mockHealthMonitor.isHealthy as ReturnType<typeof vi.fn>
+        mockHealthMonitor.isHealthy as Mock
       ).mockRejectedValue("String error");
 
       const response = await request(app).get("/health/ready");
@@ -442,7 +442,7 @@ describe("Health Enhanced Router", () => {
       };
 
       (
-        mockHealthMonitor.getComponentHealth as ReturnType<typeof vi.fn>
+        mockHealthMonitor.getComponentHealth as Mock
       ).mockResolvedValue(mockComponentHealth);
 
       const response = await request(app).get("/health/components/database");
@@ -464,7 +464,7 @@ describe("Health Enhanced Router", () => {
         .mockImplementation(() => {});
       const error = new Error("Component health check failed");
       (
-        mockHealthMonitor.getComponentHealth as ReturnType<typeof vi.fn>
+        mockHealthMonitor.getComponentHealth as Mock
       ).mockRejectedValue(error);
 
       const response = await request(app).get("/health/components/redis");
@@ -489,7 +489,7 @@ describe("Health Enhanced Router", () => {
         .spyOn(console, "error")
         .mockImplementation(() => {});
       (
-        mockHealthMonitor.getComponentHealth as ReturnType<typeof vi.fn>
+        mockHealthMonitor.getComponentHealth as Mock
       ).mockRejectedValue("String error");
 
       const response = await request(app).get("/health/components/queues");
@@ -531,13 +531,13 @@ describe("Health Enhanced Router", () => {
       ];
 
       (
-        systemMonitor.getSystemMetrics as ReturnType<typeof vi.fn>
+        systemMonitor.getSystemMetrics as Mock
       ).mockReturnValue(mockSystemMetrics);
       (
-        systemMonitor.getAllJobMetrics as ReturnType<typeof vi.fn>
+        systemMonitor.getAllJobMetrics as Mock
       ).mockReturnValue(mockJobMetrics);
       (
-        systemMonitor.getAllQueueMetrics as ReturnType<typeof vi.fn>
+        systemMonitor.getAllQueueMetrics as Mock
       ).mockReturnValue(mockQueueMetrics);
 
       const response = await request(app).get("/health/metrics");
@@ -564,7 +564,7 @@ describe("Health Enhanced Router", () => {
         .mockImplementation(() => {});
       const error = new Error("Metrics collection failed");
       (
-        systemMonitor.getSystemMetrics as ReturnType<typeof vi.fn>
+        systemMonitor.getSystemMetrics as Mock
       ).mockImplementation(() => {
         throw error;
       });
@@ -590,7 +590,7 @@ describe("Health Enhanced Router", () => {
         .spyOn(console, "error")
         .mockImplementation(() => {});
       (
-        systemMonitor.getSystemMetrics as ReturnType<typeof vi.fn>
+        systemMonitor.getSystemMetrics as Mock
       ).mockImplementation(() => {
         throw "String error";
       });
@@ -622,10 +622,10 @@ describe("Health Enhanced Router", () => {
       ];
 
       (
-        systemMonitor.getQueueMetrics as ReturnType<typeof vi.fn>
+        systemMonitor.getQueueMetrics as Mock
       ).mockReturnValue(mockQueueMetrics);
       (
-        systemMonitor.getQueueJobMetrics as ReturnType<typeof vi.fn>
+        systemMonitor.getQueueJobMetrics as Mock
       ).mockReturnValue(mockJobMetrics);
 
       const response = await request(app).get("/health/queues/test-queue");
@@ -652,10 +652,10 @@ describe("Health Enhanced Router", () => {
       };
 
       (
-        systemMonitor.getQueueMetrics as ReturnType<typeof vi.fn>
+        systemMonitor.getQueueMetrics as Mock
       ).mockReturnValue(mockQueueMetrics);
       (
-        systemMonitor.getQueueJobMetrics as ReturnType<typeof vi.fn>
+        systemMonitor.getQueueJobMetrics as Mock
       ).mockReturnValue([]);
 
       const response = await request(app).get("/health/queues/test-queue");
@@ -676,10 +676,10 @@ describe("Health Enhanced Router", () => {
       };
 
       (
-        systemMonitor.getQueueMetrics as ReturnType<typeof vi.fn>
+        systemMonitor.getQueueMetrics as Mock
       ).mockReturnValue(mockQueueMetrics);
       (
-        systemMonitor.getQueueJobMetrics as ReturnType<typeof vi.fn>
+        systemMonitor.getQueueJobMetrics as Mock
       ).mockReturnValue([]);
 
       const response = await request(app).get("/health/queues/test-queue");
@@ -691,7 +691,7 @@ describe("Health Enhanced Router", () => {
 
     it("should return 404 when queue is not found", async () => {
       (
-        systemMonitor.getQueueMetrics as ReturnType<typeof vi.fn>
+        systemMonitor.getQueueMetrics as Mock
       ).mockReturnValue(null);
 
       const response = await request(app).get(
@@ -717,10 +717,10 @@ describe("Health Enhanced Router", () => {
       };
 
       (
-        systemMonitor.getQueueMetrics as ReturnType<typeof vi.fn>
+        systemMonitor.getQueueMetrics as Mock
       ).mockReturnValue(mockQueueMetrics);
       (
-        systemMonitor.getQueueJobMetrics as ReturnType<typeof vi.fn>
+        systemMonitor.getQueueJobMetrics as Mock
       ).mockReturnValue([]);
 
       const response = await request(app).get("/health/queues/test-queue");
@@ -735,7 +735,7 @@ describe("Health Enhanced Router", () => {
         .mockImplementation(() => {});
       const error = new Error("Queue health check failed");
       (
-        systemMonitor.getQueueMetrics as ReturnType<typeof vi.fn>
+        systemMonitor.getQueueMetrics as Mock
       ).mockImplementation(() => {
         throw error;
       });
@@ -762,7 +762,7 @@ describe("Health Enhanced Router", () => {
         .spyOn(console, "error")
         .mockImplementation(() => {});
       (
-        systemMonitor.getQueueMetrics as ReturnType<typeof vi.fn>
+        systemMonitor.getQueueMetrics as Mock
       ).mockImplementation(() => {
         throw "String error";
       });

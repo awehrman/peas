@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import type { StructuredLogger } from "../../../../../types";
 import type { NotePipelineData } from "../../../../../types/notes";
@@ -16,10 +16,10 @@ vi.mock("../../../../../utils/html-cleaner", () => ({
 describe("cleanHtmlFile", () => {
   let mockData: NotePipelineData;
   let mockLogger: StructuredLogger;
-  let mockLogCleaningStats: ReturnType<typeof vi.fn>;
-  let mockRemoveIconsTags: ReturnType<typeof vi.fn>;
-  let mockRemoveStyleTags: ReturnType<typeof vi.fn>;
-  let mockResolveTitle: ReturnType<typeof vi.fn>;
+  let mockLogCleaningStats: Mock;
+  let mockRemoveIconsTags: Mock;
+  let mockRemoveStyleTags: Mock;
+  let mockResolveTitle: Mock;
 
   beforeEach(async () => {
     // Clear all mocks

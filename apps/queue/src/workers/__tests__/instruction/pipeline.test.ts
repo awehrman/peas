@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import { ActionName } from "../../../types";
 import type { ActionContext } from "../../core/types";
@@ -42,8 +42,8 @@ describe("Instruction Pipeline", () => {
         addStatusEventAndBroadcast: vi.fn(),
       },
       services: {
-        formatInstruction: vi.fn() as ReturnType<typeof vi.fn>,
-        saveInstruction: vi.fn() as ReturnType<typeof vi.fn>,
+        formatInstruction: vi.fn() as Mock,
+        saveInstruction: vi.fn() as Mock,
       },
     };
 

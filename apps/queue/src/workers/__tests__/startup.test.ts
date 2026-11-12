@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import type { IServiceContainer } from "../../services/container";
 import {
@@ -64,15 +64,15 @@ vi.mock("../shared/worker-factory", () => ({
 describe("Worker Startup", () => {
   let mockServiceContainer: IServiceContainer;
   let mockQueues: ReturnType<typeof createMockQueueService>;
-  let mockCreateNoteWorker: ReturnType<typeof vi.fn>;
-  let mockCreateInstructionWorker: ReturnType<typeof vi.fn>;
-  let mockCreateIngredientWorker: ReturnType<typeof vi.fn>;
-  let mockCreatePatternTrackingWorker: ReturnType<typeof vi.fn>;
-  let mockCreateCategorizationWorker: ReturnType<typeof vi.fn>;
-  let mockCreateImageWorker: ReturnType<typeof vi.fn>;
-  let mockQueueMonitor: { startMonitoring: ReturnType<typeof vi.fn> };
-  let mockCreateWorkerConfig: ReturnType<typeof vi.fn>;
-  let mockCreateWorkers: ReturnType<typeof vi.fn>;
+  let mockCreateNoteWorker: Mock;
+  let mockCreateInstructionWorker: Mock;
+  let mockCreateIngredientWorker: Mock;
+  let mockCreatePatternTrackingWorker: Mock;
+  let mockCreateCategorizationWorker: Mock;
+  let mockCreateImageWorker: Mock;
+  let mockQueueMonitor: { startMonitoring: Mock };
+  let mockCreateWorkerConfig: Mock;
+  let mockCreateWorkers: Mock;
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -113,7 +113,7 @@ describe("Worker Startup", () => {
     ).createCategorizationWorker;
     mockCreateImageWorker = imageModule.createImageWorker;
     mockQueueMonitor = queueMonitorModule.queueMonitor as unknown as {
-      startMonitoring: ReturnType<typeof vi.fn>;
+      startMonitoring: Mock;
     };
     mockCreateWorkerConfig = workerFactoryModule.createWorkerConfig;
     mockCreateWorkers = workerFactoryModule.createWorkers;
@@ -129,7 +129,7 @@ describe("Worker Startup", () => {
     mockCreateWorkers.mockReturnValue({});
     mockQueueMonitor.startMonitoring.mockImplementation(() => {});
     (
-      mockServiceContainer.logger.log as unknown as ReturnType<typeof vi.fn>
+      mockServiceContainer.logger.log as unknown as Mock
     ).mockImplementation(() => {});
   });
 
@@ -363,7 +363,7 @@ describe("Worker Startup", () => {
       mockCreateNoteWorker.mockReturnValue(mockWorker);
       mockCreateInstructionWorker.mockReturnValue(mockWorker);
       (
-        mockServiceContainer.logger.log as unknown as ReturnType<typeof vi.fn>
+        mockServiceContainer.logger.log as unknown as Mock
       ).mockImplementation(() => {
         throw new Error("Logger failed");
       });

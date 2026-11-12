@@ -1,5 +1,105 @@
 import { expect, vi } from "vitest";
 
+// Module mocks for this helper. Vitest hoists vi.mock to the top of the
+// module regardless of where it is written, so they live at the top level.
+// Mock Prisma client
+vi.mock("@peas/database", () => ({
+  prisma: {
+    $queryRaw: vi.fn(),
+    $executeRaw: vi.fn(),
+    note: {
+      create: vi.fn(),
+      findUnique: vi.fn(),
+      findMany: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+    },
+    ingredient: {
+      create: vi.fn(),
+      findMany: vi.fn(),
+      update: vi.fn(),
+    },
+    status: {
+      create: vi.fn(),
+      findMany: vi.fn(),
+      update: vi.fn(),
+    },
+  },
+}));
+
+// Mock WebSocket server
+/* istanbul ignore next -- @preserve */
+vi.mock("../services/websocket-server", () => ({
+  WebSocketManager: vi.fn().mockImplementation(function () {
+    return {
+      broadcast: vi.fn(),
+      addClient: vi.fn(),
+      removeClient: vi.fn(),
+    };
+  }),
+  initializeWebSocketServer: vi.fn().mockResolvedValue({
+    broadcast: vi.fn(),
+    addClient: vi.fn(),
+    removeClient: vi.fn(),
+  }),
+}));
+
+// Mock file system operations
+vi.mock("fs/promises", () => ({
+  readFile: vi.fn(),
+  writeFile: vi.fn(),
+  unlink: vi.fn(),
+  mkdir: vi.fn(),
+  access: vi.fn(),
+}));
+
+// Mock path operations
+vi.mock("path", () => ({
+  join: vi.fn(function (...args: string[]) {
+    return args.join("/");
+  }),
+  resolve: vi.fn(function (...args: string[]) {
+    return args.join("/");
+  }),
+  extname: vi.fn(function (path: string) {
+    const match = path.match(/\.[^.]*$/);
+    return match ? match[0] : "";
+  }),
+  basename: vi.fn(function (path: string) {
+    const parts = path.split("/");
+    return parts[parts.length - 1];
+  }),
+}));
+
+// Mock crypto operations
+vi.mock("crypto", () => ({
+  randomUUID: vi.fn(function () {
+    return "test-uuid";
+  }),
+  createHash: vi.fn(function () {
+    return {
+      update: vi.fn().mockReturnThis(),
+      digest: vi.fn(function () {
+        return "test-hash";
+      }),
+    };
+  }),
+}));
+
+// Mock date operations
+/* istanbul ignore next -- @preserve */
+vi.mock("date-fns", () => ({
+  format: vi.fn(function (date: Date) {
+    return date.toISOString();
+  }),
+  parseISO: vi.fn(function (dateString: string) {
+    return new Date(dateString);
+  }),
+  isValid: vi.fn(function () {
+    return true;
+  }),
+}));
+
 // ============================================================================
 // TEST CONFIGURATION
 // ============================================================================
@@ -21,86 +121,7 @@ export const TEST_CONFIG = {
  * Enhanced test setup with additional mocks
  */
 export function setupEnhancedTestEnvironment() {
-  // Mock Prisma client
-  vi.mock("@peas/database", () => ({
-    prisma: {
-      $queryRaw: vi.fn(),
-      $executeRaw: vi.fn(),
-      note: {
-        create: vi.fn(),
-        findUnique: vi.fn(),
-        findMany: vi.fn(),
-        update: vi.fn(),
-        delete: vi.fn(),
-      },
-      ingredient: {
-        create: vi.fn(),
-        findMany: vi.fn(),
-        update: vi.fn(),
-      },
-      status: {
-        create: vi.fn(),
-        findMany: vi.fn(),
-        update: vi.fn(),
-      },
-    },
-  }));
-
-  // Mock WebSocket server
-  /* istanbul ignore next -- @preserve */
-  vi.mock("../services/websocket-server", () => ({
-    WebSocketManager: vi.fn().mockImplementation(() => ({
-      broadcast: vi.fn(),
-      addClient: vi.fn(),
-      removeClient: vi.fn(),
-    })),
-    initializeWebSocketServer: vi.fn().mockResolvedValue({
-      broadcast: vi.fn(),
-      addClient: vi.fn(),
-      removeClient: vi.fn(),
-    }),
-  }));
-
-  // Mock file system operations
-  vi.mock("fs/promises", () => ({
-    readFile: vi.fn(),
-    writeFile: vi.fn(),
-    unlink: vi.fn(),
-    mkdir: vi.fn(),
-    access: vi.fn(),
-  }));
-
-  // Mock path operations
-  vi.mock("path", () => ({
-    join: vi.fn((...args: string[]) => args.join("/")),
-    resolve: vi.fn((...args: string[]) => args.join("/")),
-    extname: vi.fn((path: string) => {
-      const match = path.match(/\.[^.]*$/);
-      return match ? match[0] : "";
-    }),
-    basename: vi.fn((path: string) => {
-      const parts = path.split("/");
-      return parts[parts.length - 1];
-    }),
-  }));
-
-  // Mock crypto operations
-  vi.mock("crypto", () => ({
-    randomUUID: vi.fn(() => "test-uuid"),
-    createHash: vi.fn(() => ({
-      update: vi.fn().mockReturnThis(),
-      digest: vi.fn(() => "test-hash"),
-    })),
-  }));
-
-  // Mock date operations
-  /* istanbul ignore next -- @preserve */
-  vi.mock("date-fns", () => ({
-    format: vi.fn((date: Date) => date.toISOString()),
-    parseISO: vi.fn((dateString: string) => new Date(dateString)),
-    isValid: vi.fn(() => true),
-  }));
-
+  // The module mocks are registered when this module loads (top of file).
   return {
     cleanup: () => {
       vi.restoreAllMocks();

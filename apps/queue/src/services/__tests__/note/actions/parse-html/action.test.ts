@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import { ActionName } from "../../../../../types";
 import type {
@@ -24,8 +24,8 @@ describe("ParseHtmlAction", () => {
   let mockDependencies: NoteWorkerDependencies;
   let mockContext: ActionContext;
   let mockData: NotePipelineData;
-  let mockParseHtml: ReturnType<typeof vi.fn>;
-  let mockMarkWorkerCompleted: ReturnType<typeof vi.fn>;
+  let mockParseHtml: Mock;
+  let mockMarkWorkerCompleted: Mock;
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -246,7 +246,7 @@ describe("ParseHtmlAction", () => {
       // Should not broadcast ingredient status when there are no ingredients
       const ingredientBroadcasts = (
         mockDependencies.statusBroadcaster
-          ?.addStatusEventAndBroadcast as ReturnType<typeof vi.fn>
+          ?.addStatusEventAndBroadcast as Mock
       ).mock.calls.filter(
         (call: unknown[]) =>
           (call[0] as { context: string }).context === "ingredient_processing"
@@ -269,7 +269,7 @@ describe("ParseHtmlAction", () => {
       // Should not broadcast instruction status when there are no instructions
       const instructionBroadcasts = (
         mockDependencies.statusBroadcaster
-          ?.addStatusEventAndBroadcast as ReturnType<typeof vi.fn>
+          ?.addStatusEventAndBroadcast as Mock
       ).mock.calls.filter(
         (call: unknown[]) =>
           (call[0] as { context: string }).context === "instruction_processing"
@@ -345,7 +345,7 @@ describe("ParseHtmlAction", () => {
     it("should handle status broadcasting errors gracefully", async () => {
       (
         mockDependencies.statusBroadcaster!
-          .addStatusEventAndBroadcast as ReturnType<typeof vi.fn>
+          .addStatusEventAndBroadcast as Mock
       ).mockRejectedValue(new Error("Broadcast failed"));
 
       await expect(

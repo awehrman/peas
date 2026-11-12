@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { type Mock, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ActionName } from "../../../../../types";
 import type { NotePipelineData } from "../../../../../types/notes";
@@ -6,7 +6,7 @@ import type { BaseWorkerDependencies } from "../../../../../workers/types";
 import { processIngredients } from "../../../../note/actions/schedule-ingredients/service";
 
 describe("Schedule Ingredients Service", () => {
-  let mockLogger: { log: ReturnType<typeof vi.fn> };
+  let mockLogger: { log: Mock };
   let mockQueues: BaseWorkerDependencies["queues"];
   let mockData: NotePipelineData;
 
@@ -79,7 +79,11 @@ describe("Schedule Ingredients Service", () => {
           metadata: {
             clearCache: false,
           },
-        }
+        },
+        expect.objectContaining({
+          jobId: "test-note-id-ingredient-0-0",
+          attempts: 3,
+        })
       );
 
       // Check second ingredient job
@@ -96,7 +100,11 @@ describe("Schedule Ingredients Service", () => {
           metadata: {
             clearCache: false,
           },
-        }
+        },
+        expect.objectContaining({
+          jobId: "test-note-id-ingredient-0-1",
+          attempts: 3,
+        })
       );
 
       // Completion check is now triggered by the last job, not scheduled separately
@@ -257,6 +265,10 @@ describe("Schedule Ingredients Service", () => {
         expect.objectContaining({
           jobId: "test-note-id-ingredient-0-5",
           blockIndex: 0,
+        }),
+        expect.objectContaining({
+          jobId: "test-note-id-ingredient-0-5",
+          attempts: 3,
         })
       );
       expect(mockQueues?.ingredientQueue?.add).toHaveBeenNthCalledWith(
@@ -265,6 +277,10 @@ describe("Schedule Ingredients Service", () => {
         expect.objectContaining({
           jobId: "test-note-id-ingredient-0-10",
           blockIndex: 0,
+        }),
+        expect.objectContaining({
+          jobId: "test-note-id-ingredient-0-10",
+          attempts: 3,
         })
       );
       expect(mockQueues?.ingredientQueue?.add).toHaveBeenNthCalledWith(
@@ -273,6 +289,10 @@ describe("Schedule Ingredients Service", () => {
         expect.objectContaining({
           jobId: "test-note-id-ingredient-0-15",
           blockIndex: 0,
+        }),
+        expect.objectContaining({
+          jobId: "test-note-id-ingredient-0-15",
+          attempts: 3,
         })
       );
       // Completion check is now triggered by the last job, not scheduled separately
@@ -303,6 +323,10 @@ describe("Schedule Ingredients Service", () => {
           metadata: {
             clearCache: false,
           },
+        }),
+        expect.objectContaining({
+          jobId: "test-note-id-ingredient-0-0",
+          attempts: 3,
         })
       );
     });

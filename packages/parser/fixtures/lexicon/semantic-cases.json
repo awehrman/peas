@@ -1,0 +1,51 @@
+{
+  "description": "Lexicon assumed by fixtures/golden/semantic.json, so resolver tests do not depend on global seed data. `concept`, `attribute`, `preparation`, and `valueKey` are fixture keys that Phase 3 maps onto ontology ids.",
+  "revision": 1,
+  "entries": [
+    { "id": "food-milk", "text": "milk", "role": "FOOD", "concept": "milk", "kind": "CANONICAL" },
+    { "id": "food-whole-milk", "text": "whole milk", "role": "FOOD", "concept": "whole-milk", "kind": "CANONICAL" },
+    { "id": "food-apple", "text": "apple", "role": "FOOD", "concept": "apple", "kind": "CANONICAL" },
+    { "id": "food-apples", "text": "apples", "role": "FOOD", "concept": "apple", "kind": "PLURAL" },
+    { "id": "food-granny-smith", "text": "granny smith apple", "role": "FOOD", "concept": "granny-smith-apple", "kind": "CANONICAL" },
+    { "id": "food-granny-smiths", "text": "granny smith apples", "role": "FOOD", "concept": "granny-smith-apple", "kind": "PLURAL" },
+    { "id": "food-chicken", "text": "chicken", "role": "FOOD", "concept": "chicken", "kind": "CANONICAL" },
+    { "id": "food-chicken-thigh", "text": "chicken thigh", "role": "FOOD", "concept": "chicken-thigh", "kind": "CANONICAL" },
+    { "id": "food-chicken-thighs", "text": "chicken thighs", "role": "FOOD", "concept": "chicken-thigh", "kind": "PLURAL" },
+    { "id": "food-parsley", "text": "parsley", "role": "FOOD", "concept": "parsley", "kind": "CANONICAL" },
+    { "id": "food-mozzarella", "text": "mozzarella", "role": "FOOD", "concept": "mozzarella", "kind": "CANONICAL" },
+    { "id": "food-fresh-mozzarella", "text": "fresh mozzarella", "role": "FOOD", "concept": "fresh-mozzarella", "kind": "CANONICAL" },
+    { "id": "food-powdered-sugar", "text": "powdered sugar", "role": "FOOD", "concept": "powdered-sugar", "kind": "CANONICAL" },
+    { "id": "food-confectioners-sugar", "text": "confectioners sugar", "role": "FOOD", "concept": "powdered-sugar", "kind": "ALIAS" },
+    { "id": "food-tomato", "text": "tomato", "role": "FOOD", "concept": "tomato", "kind": "CANONICAL" },
+    { "id": "food-tomatoes", "text": "tomatoes", "role": "FOOD", "concept": "tomato", "kind": "PLURAL" },
+    { "id": "food-salt", "text": "salt", "role": "FOOD", "concept": "salt", "kind": "CANONICAL" },
+    { "id": "attr-whole-fat", "text": "whole", "role": "ATTRIBUTE", "attribute": "fat_content:whole" },
+    { "id": "attr-whole-form", "text": "whole", "role": "ATTRIBUTE", "attribute": "form:whole" },
+    { "id": "attr-green-color", "text": "green", "role": "ATTRIBUTE", "attribute": "color:green" },
+    { "id": "attr-green-unripe", "text": "green", "role": "ATTRIBUTE", "attribute": "ripeness:unripe" },
+    { "id": "attr-boneless", "text": "boneless", "role": "ATTRIBUTE", "attribute": "bone:boneless" },
+    { "id": "attr-skinless", "text": "skinless", "role": "ATTRIBUTE", "attribute": "skin:skinless" },
+    { "id": "attr-fresh", "text": "fresh", "role": "ATTRIBUTE", "attribute": "preservation:fresh" },
+    { "id": "prep-chopped", "text": "chopped", "role": "PREPARATION", "preparation": "chop" },
+    { "id": "prep-peeled", "text": "peeled", "role": "PREPARATION", "preparation": "peel" },
+    { "id": "prep-warmed", "text": "warmed", "role": "PREPARATION", "preparation": "warm" },
+    { "id": "deg-finely", "text": "finely", "role": "DEGREE", "valueKey": "fine" }
+  ],
+  "ontology": {
+    "relationships": [
+      { "source": "whole-milk", "type": "IS_A", "target": "milk" },
+      { "source": "granny-smith-apple", "type": "IS_A", "target": "apple" },
+      { "source": "chicken-thigh", "type": "PART_OF", "target": "chicken" },
+      { "source": "fresh-mozzarella", "type": "IS_A", "target": "mozzarella" },
+      { "source": "canned-tomatoes", "type": "PROCESSED_FROM", "target": "tomato" }
+    ],
+    "applicability": [
+      { "attribute": "color", "concept": "apple" },
+      { "attribute": "ripeness", "concept": "apple" },
+      { "attribute": "bone", "concept": "chicken" },
+      { "attribute": "skin", "concept": "chicken" },
+      { "attribute": "fat_content", "concept": "milk" },
+      { "attribute": "form", "concept": "tomato" }
+    ]
+  }
+}

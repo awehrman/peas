@@ -1,5 +1,5 @@
 import type { Queue } from "bullmq";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { type Mock, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type {
   IConfigService,
@@ -36,7 +36,7 @@ vi.mock("../../core/job-processor/job-processor", () => ({
   processJob: vi
     .fn()
     .mockImplementation(
-      async (actions, data, context, logger, operationName, deps) => {
+      async function (actions, data, context, logger, operationName, deps) {
         // Simulate processing the first action
         if (actions.length > 0) {
           const result = await actions[0].execute(data, deps, context);
@@ -56,9 +56,11 @@ vi.mock("../../../monitoring/system-monitor", () => ({
 }));
 
 vi.mock("bullmq", () => ({
-  Worker: vi.fn().mockImplementation(() => ({
-    isRunning: () => true,
-  })),
+  Worker: vi.fn().mockImplementation(function () {
+    return {
+      isRunning: () => true,
+    };
+  }),
 }));
 
 vi.mock("../../config/redis", () => ({
@@ -196,7 +198,7 @@ class TestWorker extends BaseWorker<BaseJobData, TestDependencies> {
     const capturedJobProcessor = vi.fn();
     const mockWorkerImpl = vi
       .fn()
-      .mockImplementation((_queue, jobProcessor, _concurrency) => {
+      .mockImplementation(function (_queue, jobProcessor, _concurrency) {
         capturedJobProcessor.mockImplementation(jobProcessor);
         return {
           isRunning: () => true,
@@ -259,7 +261,7 @@ class TestWorker extends BaseWorker<BaseJobData, TestDependencies> {
 
 describe("BaseWorker", () => {
   let mockQueue: { name: string };
-  let mockLogger: { log: ReturnType<typeof vi.fn> };
+  let mockLogger: { log: Mock };
   let mockDependencies: TestDependencies;
   let worker: TestWorker;
 
@@ -587,9 +589,8 @@ describe("BaseWorker", () => {
       );
 
       // Verify system monitoring was called
-      const { systemMonitor } = await import(
-        "../../../monitoring/system-monitor"
-      );
+      const { systemMonitor } =
+        await import("../../../monitoring/system-monitor");
       expect(systemMonitor.trackJobMetrics).toHaveBeenCalledWith(
         "test-job-123",
         expect.any(Number),
@@ -669,9 +670,8 @@ describe("BaseWorker", () => {
       );
 
       // Verify error system monitoring was called
-      const { systemMonitor } = await import(
-        "../../../monitoring/system-monitor"
-      );
+      const { systemMonitor } =
+        await import("../../../monitoring/system-monitor");
       expect(systemMonitor.trackJobMetrics).toHaveBeenCalledWith(
         "test-job-456",
         expect.any(Number),

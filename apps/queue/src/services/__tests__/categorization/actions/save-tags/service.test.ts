@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import type { StructuredLogger } from "../../../../../types";
 import type { CategorizationJobData } from "../../../../categorization/types";
@@ -11,7 +11,7 @@ vi.mock("@peas/database", () => ({
 describe("Save Tags Service", () => {
   let mockLogger: StructuredLogger;
   let testData: CategorizationJobData;
-  let mockSaveTagsToNote: ReturnType<typeof vi.fn>;
+  let mockSaveTagsToNote: Mock;
   let saveTags: (
     data: CategorizationJobData,
     logger: StructuredLogger,

@@ -1,4 +1,7 @@
 {
   "extends": "./tsconfig.json",
-  "exclude": ["node_modules", "dist", "src/dynamic/**/__tests__/**"]
+  "compilerOptions": {
+    "types": []
+  },
+  "exclude": ["node_modules", "dist", "legacy", "src/**/__tests__/**"]
 }

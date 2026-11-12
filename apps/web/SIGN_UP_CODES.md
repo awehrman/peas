@@ -23,9 +23,8 @@ Accounts are created through an invite link. There is no open sign-up: if
 
 ## Making a user an admin
 
-New accounts are `USER`. Admins additionally get the `/parser` rule builder,
-grammar tests, the import parser switch, "Delete All Data" on the dashboard
-and "Create recipes from completed notes" on `/recipes`.
+New accounts are `USER`. Admins additionally get "Delete All Data" on the
+dashboard and "Create recipes from completed notes" on `/recipes`.
 
 ```bash
 # list accounts and their roles

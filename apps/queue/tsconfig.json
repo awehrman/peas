@@ -2,6 +2,9 @@
   "extends": "@peas/typescript-config/base.json",
   "compilerOptions": {
     "outDir": "dist",
+    // tsc only typechecks here; tsup emits the published declarations
+    "declaration": false,
+    "declarationMap": false,
     "rootDir": ".",
     "target": "ES6",
     "module": "ESNext",

@@ -144,8 +144,7 @@ export async function markImageJobCompleted(
       if (isComplete) {
         try {
           // Get R2 URLs from the most recent image for this note
-          const { PrismaClient } = await import("@prisma/client");
-          const prisma = new PrismaClient();
+          const { prisma } = await import("@peas/database");
 
           const latestImage = await prisma.image.findFirst({
             where: { noteId: status.noteId },
@@ -165,8 +164,6 @@ export async function markImageJobCompleted(
               r2Crop16x9Url: latestImage.crop16x9ImageUrl,
             };
           }
-
-          await prisma.$disconnect();
         } catch (dbError) {
           logger.log(`[TRACK_COMPLETION] Failed to fetch R2 URLs: ${dbError}`);
         }

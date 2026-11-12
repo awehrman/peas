@@ -1,5 +1,5 @@
 import type { Queue } from "bullmq";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import { testQueueInterface } from "../../test-utils/service";
 import {
@@ -19,7 +19,7 @@ vi.mock("../../queues/create-queue", () => ({
 }));
 
 describe("register-queues.ts", () => {
-  let mockCreateQueue: ReturnType<typeof vi.fn>;
+  let mockCreateQueue: Mock;
 
   beforeEach(async () => {
     vi.clearAllMocks();

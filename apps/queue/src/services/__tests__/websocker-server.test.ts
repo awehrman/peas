@@ -1,6 +1,14 @@
 import type { NoteStatus } from "@peas/database";
 import { createHmac } from "crypto";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  type Mock,
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import { WebSocket, WebSocketServer } from "ws";
 
 import {
@@ -12,14 +20,14 @@ import { WebSocketManager } from "../websocket-server";
 // Type definitions for mocks
 interface MockWebSocket {
   readyState: number;
-  send: ReturnType<typeof vi.fn>;
-  close: ReturnType<typeof vi.fn>;
-  on: ReturnType<typeof vi.fn>;
+  send: Mock;
+  close: Mock;
+  on: Mock;
 }
 
 interface MockWebSocketServer {
-  on: ReturnType<typeof vi.fn>;
-  close: ReturnType<typeof vi.fn>;
+  on: Mock;
+  close: Mock;
 }
 
 // Mock WebSocket dependencies
@@ -66,12 +74,12 @@ describe("websocket-server.ts", () => {
       close: vi.fn(),
     };
 
-    (WebSocketServer as unknown as ReturnType<typeof vi.fn>).mockImplementation(
-      () => mockWebSocketServer
-    );
-    (WebSocket as unknown as ReturnType<typeof vi.fn>).mockImplementation(
-      () => mockWebSocket
-    );
+    (WebSocketServer as unknown as Mock).mockImplementation(function () {
+      return mockWebSocketServer;
+    });
+    (WebSocket as unknown as Mock).mockImplementation(function () {
+      return mockWebSocket;
+    });
   });
 
   afterEach(() => {
@@ -110,7 +118,7 @@ describe("websocket-server.ts", () => {
         vi.stubEnv("QUEUE_AUTH_SECRET", secret);
 
         const [{ verifyClient }] = (
-          WebSocketServer as unknown as ReturnType<typeof vi.fn>
+          WebSocketServer as unknown as Mock
         ).mock.calls.at(-1) as [
           { verifyClient: (info: { req: { url?: string } }) => boolean },
         ];
@@ -389,7 +397,7 @@ describe("websocket-server.ts", () => {
         };
         getClients(wsManager).set("client1", client);
 
-        mockWebSocket.send.mockImplementation(() => {
+        mockWebSocket.send.mockImplementation(function () {
           throw createTestError("Send error");
         });
 
@@ -475,9 +483,8 @@ describe("websocket-server.ts", () => {
 
     describe("initializeWebSocketServer", () => {
       it("should create and return WebSocketManager instance", async () => {
-        const { initializeWebSocketServer } = await import(
-          "../websocket-server"
-        );
+        const { initializeWebSocketServer } =
+          await import("../websocket-server");
         const manager = initializeWebSocketServer(8080);
 
         expect(manager).toBeDefined();
@@ -488,9 +495,8 @@ describe("websocket-server.ts", () => {
       });
 
       it("should return existing instance on subsequent calls", async () => {
-        const { initializeWebSocketServer } = await import(
-          "../websocket-server"
-        );
+        const { initializeWebSocketServer } =
+          await import("../websocket-server");
         const manager1 = initializeWebSocketServer(8080);
         const manager2 = initializeWebSocketServer(9000); // Different port should be ignored
 
@@ -508,9 +514,8 @@ describe("websocket-server.ts", () => {
       });
 
       it("should return manager after initialization", async () => {
-        const { initializeWebSocketServer, getWebSocketManager } = await import(
-          "../websocket-server"
-        );
+        const { initializeWebSocketServer, getWebSocketManager } =
+          await import("../websocket-server");
         const initializedManager = initializeWebSocketServer(8080);
         const retrievedManager = getWebSocketManager();
 
@@ -590,7 +595,7 @@ describe("websocket-server.ts", () => {
       // Create a client with a WebSocket that throws an error on send
       const errorWebSocket = {
         ...mockWebSocket,
-        send: vi.fn().mockImplementation(() => {
+        send: vi.fn().mockImplementation(function () {
           throw new Error("Send failed");
         }),
       };
@@ -625,7 +630,7 @@ describe("websocket-server.ts", () => {
       // Create a client with a WebSocket that throws an error on send
       const errorWebSocket = {
         ...mockWebSocket,
-        send: vi.fn().mockImplementation(() => {
+        send: vi.fn().mockImplementation(function () {
           throw new Error("Broadcast failed");
         }),
       };

@@ -39,7 +39,6 @@ To create an account and make it an admin, see [SIGN_UP_CODES.md](./SIGN_UP_CODE
 - `/notes`, `/notes/[id]` - Imported notes with parsed ingredient lines
 - `/ingredients` - Browse, group, review and edit ingredients
 - `/recipes`, `/recipes/[id]` - Recipes promoted from notes
-- `/parser` - Grammar rule builder, grammar tests and the import parser switch (admins)
 - `/design` - Design system showcase
 - `/login` - Sign in (sign out is in the navigation)
 - `/invite/[code]` - Sign up with a code from `SIGN_UP_CODES`

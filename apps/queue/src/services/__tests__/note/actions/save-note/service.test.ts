@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import type { StructuredLogger } from "../../../../../types";
 import type { NotePipelineData } from "../../../../../types/notes";
@@ -20,9 +20,9 @@ vi.mock("../../../../note/actions/track-completion/service", () => ({
 describe("saveNote", () => {
   let mockData: NotePipelineData;
   let mockLogger: StructuredLogger;
-  let mockCreateNote: ReturnType<typeof vi.fn>;
-  let mockCreateNoteWithEvernoteMetadata: ReturnType<typeof vi.fn>;
-  let mockInitializeNoteCompletion: ReturnType<typeof vi.fn>;
+  let mockCreateNote: Mock;
+  let mockCreateNoteWithEvernoteMetadata: Mock;
+  let mockInitializeNoteCompletion: Mock;
 
   beforeEach(async () => {
     // Clear all mocks

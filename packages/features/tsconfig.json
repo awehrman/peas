@@ -5,7 +5,6 @@
     "sourceMap": false,
     "outDir": "./dist",
     "rootDir": "./src",
-    "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
       "@peas/features/form": ["./src/form/index.ts"],
@@ -13,7 +12,9 @@
     },
     "moduleResolution": "bundler",
     "module": "ESNext",
-    "lib": ["es2022", "DOM", "DOM.Iterable"]
+    "lib": ["es2022", "DOM", "DOM.Iterable"],
+    // process.env.NEXT_PUBLIC_* reads; drop once they move to import.meta.env (M4)
+    "types": ["node"]
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.css"],
   "exclude": [
@@ -24,6 +25,7 @@
     "**/*.js",
     "**/*.js.map",
     "src/**/__tests__/**",
+    "src/test-utils/**",
     "src/**/*.test.ts",
     "src/**/*.test.tsx",
     "src/bak/**/*",

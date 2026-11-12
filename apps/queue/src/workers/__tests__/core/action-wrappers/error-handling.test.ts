@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import {
   createConsoleSpies,
@@ -19,13 +19,13 @@ import type { BaseJobData } from "../../../types";
 // Test action that succeeds
 class SuccessAction extends BaseAction<
   BaseJobData,
-  { logger: { log: ReturnType<typeof vi.fn> } }
+  { logger: { log: Mock } }
 > {
   name = ActionName.NO_OP;
 
   async execute(
     data: BaseJobData,
-    _deps: { logger: { log: ReturnType<typeof vi.fn> } },
+    _deps: { logger: { log: Mock } },
     _context: ActionContext
   ): Promise<BaseJobData> {
     return { ...data, metadata: { ...data.metadata, success: true } };
@@ -39,13 +39,13 @@ class SuccessAction extends BaseAction<
 // Test action that throws an error
 class ErrorAction extends BaseAction<
   BaseJobData,
-  { logger: { log: ReturnType<typeof vi.fn> } }
+  { logger: { log: Mock } }
 > {
   name = ActionName.VALIDATION;
 
   async execute(
     _data: BaseJobData,
-    _deps: { logger: { log: ReturnType<typeof vi.fn> } },
+    _deps: { logger: { log: Mock } },
     _context: ActionContext
   ): Promise<BaseJobData> {
     throw new Error("Test error");
@@ -59,14 +59,14 @@ class ErrorAction extends BaseAction<
 // Test action with custom error handler
 class CustomErrorAction extends BaseAction<
   BaseJobData,
-  { logger: { log: ReturnType<typeof vi.fn> } }
+  { logger: { log: Mock } }
 > {
   name = ActionName.LOGGING;
   public errorHandled = false;
 
   async execute(
     _data: BaseJobData,
-    _deps: { logger: { log: ReturnType<typeof vi.fn> } },
+    _deps: { logger: { log: Mock } },
     _context: ActionContext
   ): Promise<BaseJobData> {
     throw new Error("Custom error");
@@ -75,7 +75,7 @@ class CustomErrorAction extends BaseAction<
   async onError(
     _error: Error,
     _data: BaseJobData,
-    _deps: { logger: { log: ReturnType<typeof vi.fn> } },
+    _deps: { logger: { log: Mock } },
     _context: ActionContext
   ): Promise<void> {
     this.errorHandled = true;
@@ -87,8 +87,8 @@ class CustomErrorAction extends BaseAction<
 }
 
 describe("ErrorHandlingAction", () => {
-  let mockLogger: { log: ReturnType<typeof vi.fn> };
-  let mockDeps: { logger: { log: ReturnType<typeof vi.fn> } };
+  let mockLogger: { log: Mock };
+  let mockDeps: { logger: { log: Mock } };
   let mockContext: ActionContext;
   let mockData: BaseJobData;
   let consoleSpies: ReturnType<typeof createConsoleSpies>;
@@ -177,13 +177,13 @@ describe("ErrorHandlingAction", () => {
     it("should handle non-Error objects thrown by action", async () => {
       const throwingAction = new (class extends BaseAction<
         BaseJobData,
-        { logger: { log: ReturnType<typeof vi.fn> } }
+        { logger: { log: Mock } }
       > {
         name = ActionName.NO_OP;
 
         async execute(
           _data: BaseJobData,
-          _deps: { logger: { log: ReturnType<typeof vi.fn> } },
+          _deps: { logger: { log: Mock } },
           _context: ActionContext
         ): Promise<BaseJobData> {
           throw "String error";
@@ -275,8 +275,8 @@ describe("ErrorHandlingAction", () => {
 });
 
 describe("wrapActionWithErrorHandlingOnly", () => {
-  let mockLogger: { log: ReturnType<typeof vi.fn> };
-  let mockDeps: { logger: { log: ReturnType<typeof vi.fn> } };
+  let mockLogger: { log: Mock };
+  let mockDeps: { logger: { log: Mock } };
   let mockContext: ActionContext;
   let mockData: BaseJobData;
 
@@ -319,8 +319,8 @@ describe("wrapActionWithErrorHandlingOnly", () => {
 });
 
 describe("wrapActionWithErrorHandlingFactory", () => {
-  let mockLogger: { log: ReturnType<typeof vi.fn> };
-  let mockDeps: { logger: { log: ReturnType<typeof vi.fn> } };
+  let mockLogger: { log: Mock };
+  let mockDeps: { logger: { log: Mock } };
   let mockContext: ActionContext;
   let mockData: BaseJobData;
 
@@ -335,7 +335,7 @@ describe("wrapActionWithErrorHandlingFactory", () => {
   it("should create error handling wrapper from factory", () => {
     const actionFactory = new ActionFactory<
       BaseJobData,
-      { logger: { log: ReturnType<typeof vi.fn> } }
+      { logger: { log: Mock } }
     >();
     actionFactory.register(ActionName.NO_OP, () => new SuccessAction());
 
@@ -350,7 +350,7 @@ describe("wrapActionWithErrorHandlingFactory", () => {
   it("should execute wrapped action from factory", async () => {
     const actionFactory = new ActionFactory<
       BaseJobData,
-      { logger: { log: ReturnType<typeof vi.fn> } }
+      { logger: { log: Mock } }
     >();
     actionFactory.register(ActionName.NO_OP, () => new SuccessAction());
 
@@ -370,7 +370,7 @@ describe("wrapActionWithErrorHandlingFactory", () => {
   it("should handle errors from factory-created action", async () => {
     const actionFactory = new ActionFactory<
       BaseJobData,
-      { logger: { log: ReturnType<typeof vi.fn> } }
+      { logger: { log: Mock } }
     >();
     actionFactory.register(ActionName.VALIDATION, () => new ErrorAction());
 

@@ -1,7 +1,10 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { type Mock, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { StructuredLogger } from "../../../types";
 import { CleanupService } from "../../cleanup/cleanup-service";
+
+// Services resolve upload paths from the working directory.
+const QUEUE_ROOT = process.cwd();
 
 // Mock fs/promises
 vi.mock("fs/promises", () => ({
@@ -24,10 +27,10 @@ vi.mock("path", () => ({
 describe("CleanupService", () => {
   let cleanupService: CleanupService;
   let mockLogger: StructuredLogger;
-  let mockStat: ReturnType<typeof vi.fn>;
-  let mockReaddir: ReturnType<typeof vi.fn>;
-  let mockRmdir: ReturnType<typeof vi.fn>;
-  let mockUnlink: ReturnType<typeof vi.fn>;
+  let mockStat: Mock;
+  let mockReaddir: Mock;
+  let mockRmdir: Mock;
+  let mockUnlink: Mock;
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -62,7 +65,7 @@ describe("CleanupService", () => {
         errors: [],
       });
       expect(mockLogger.log).toHaveBeenCalledWith(
-        "[CLEANUP_SERVICE] Uploads images directory does not exist: /Users/awehrman/projects/peas/apps/queue/uploads/images"
+        `[CLEANUP_SERVICE] Uploads images directory does not exist: ${QUEUE_ROOT}/uploads/images`
       );
     });
 
@@ -81,7 +84,7 @@ describe("CleanupService", () => {
         errors: [],
       });
       expect(mockLogger.log).toHaveBeenCalledWith(
-        "[CLEANUP_SERVICE] Uploads images directory does not exist: /Users/awehrman/projects/peas/apps/queue/uploads/images"
+        `[CLEANUP_SERVICE] Uploads images directory does not exist: ${QUEUE_ROOT}/uploads/images`
       );
     });
 
@@ -214,7 +217,7 @@ describe("CleanupService", () => {
         errors: [],
       });
       expect(mockLogger.log).toHaveBeenCalledWith(
-        "[CLEANUP_SERVICE] Failed to remove file /Users/awehrman/projects/peas/apps/queue/uploads/images/import_123_456/file1.jpg: Error: Permission denied"
+        `[CLEANUP_SERVICE] Failed to remove file ${QUEUE_ROOT}/uploads/images/import_123_456/file1.jpg: Error: Permission denied`
       );
     });
 
@@ -320,7 +323,7 @@ describe("CleanupService", () => {
 
       expect(result).toBe(true);
       expect(mockLogger.log).toHaveBeenCalledWith(
-        "[CLEANUP_SERVICE] Import directory does not exist: /Users/awehrman/projects/peas/apps/queue/uploads/images/test-import"
+        `[CLEANUP_SERVICE] Import directory does not exist: ${QUEUE_ROOT}/uploads/images/test-import`
       );
     });
 
@@ -335,7 +338,7 @@ describe("CleanupService", () => {
 
       expect(result).toBe(true);
       expect(mockLogger.log).toHaveBeenCalledWith(
-        "[CLEANUP_SERVICE] Successfully removed empty import directory: /Users/awehrman/projects/peas/apps/queue/uploads/images/test-import"
+        `[CLEANUP_SERVICE] Successfully removed empty import directory: ${QUEUE_ROOT}/uploads/images/test-import`
       );
     });
 
@@ -353,7 +356,7 @@ describe("CleanupService", () => {
       expect(result).toBe(true);
       expect(mockUnlink).toHaveBeenCalledTimes(2);
       expect(mockLogger.log).toHaveBeenCalledWith(
-        "[CLEANUP_SERVICE] Successfully removed import directory after file cleanup: /Users/awehrman/projects/peas/apps/queue/uploads/images/test-import"
+        `[CLEANUP_SERVICE] Successfully removed import directory after file cleanup: ${QUEUE_ROOT}/uploads/images/test-import`
       );
     });
 
@@ -370,7 +373,7 @@ describe("CleanupService", () => {
 
       expect(result).toBe(false);
       expect(mockLogger.log).toHaveBeenCalledWith(
-        "[CLEANUP_SERVICE] Failed to remove file /Users/awehrman/projects/peas/apps/queue/uploads/images/test-import/file1.jpg: Error: Permission denied"
+        `[CLEANUP_SERVICE] Failed to remove file ${QUEUE_ROOT}/uploads/images/test-import/file1.jpg: Error: Permission denied`
       );
     });
 
@@ -387,7 +390,7 @@ describe("CleanupService", () => {
 
       expect(result).toBe(false);
       expect(mockLogger.log).toHaveBeenCalledWith(
-        "[CLEANUP_SERVICE] Import directory still has 1 items after cleanup: /Users/awehrman/projects/peas/apps/queue/uploads/images/test-import"
+        `[CLEANUP_SERVICE] Import directory still has 1 items after cleanup: ${QUEUE_ROOT}/uploads/images/test-import`
       );
     });
 
@@ -410,7 +413,9 @@ describe("CleanupService", () => {
     });
 
     it("should handle ENOENT error (directory already deleted)", async () => {
-      const enoentError = new Error("ENOENT: no such file or directory") as Error & { code?: string };
+      const enoentError = new Error(
+        "ENOENT: no such file or directory"
+      ) as Error & { code?: string };
       enoentError.code = "ENOENT";
       mockStat.mockRejectedValue(enoentError);
 

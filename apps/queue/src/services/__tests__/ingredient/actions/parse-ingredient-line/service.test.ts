@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import type { StructuredLogger } from "../../../../../types";
 import type { IngredientJobData } from "../../../../../workers/ingredient/dependencies";
@@ -60,10 +60,10 @@ vi.mock("../../../../ingredient/parser-resolver", async () => {
 describe("Parse Ingredient Line Service", () => {
   let mockLogger: StructuredLogger;
   let mockCachedIngredientParser: {
-    parseIngredientLine: ReturnType<typeof vi.fn>;
-    invalidateIngredientCache: ReturnType<typeof vi.fn>;
+    parseIngredientLine: Mock;
+    invalidateIngredientCache: Mock;
   };
-  let mockV1Parser: ReturnType<typeof vi.fn>;
+  let mockV1Parser: Mock;
 
   beforeEach(async () => {
     vi.clearAllMocks();

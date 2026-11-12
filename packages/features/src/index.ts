@@ -9,7 +9,6 @@ export * from "./form";
 export * from "./recipes";
 export * from "./notes";
 export * from "./ingredients";
-export * from "./parser";
 
 // Utilities and monitoring
 export * from "./utils";

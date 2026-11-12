@@ -1,5 +1,50 @@
-import { describe, expect, it, vi } from "vitest";
+import { type Mock, describe, expect, it, vi } from "vitest";
 import type { z } from "zod";
+
+// Module mocks for this helper. Vitest hoists vi.mock to the top of the
+// module regardless of where it is written, so they live at the top level.
+// Mock base schemas
+vi.mock("../base", () => ({
+  SourceSchema: vi.fn(),
+  ProcessingOptionsSchema: vi.fn(),
+  JobMetadataSchema: vi.fn(),
+  BaseJobDataSchema: vi.fn(),
+  StatusEventSchema: vi.fn(),
+  ErrorContextSchema: vi.fn(),
+  ParsedSegmentSchema: vi.fn(),
+  ParseResultSchema: vi.fn(),
+  BaseValidation: vi.fn(),
+}));
+
+// Mock note schemas
+vi.mock("../note", () => ({
+  NoteJobDataSchema: vi.fn(),
+  ParseHtmlDataSchema: vi.fn(),
+  ParsedHtmlFileSchema: vi.fn(),
+  SaveNoteDataSchema: vi.fn(),
+  NoteSchema: vi.fn(),
+  ParsedIngredientLineSchema: vi.fn(),
+  ParsedInstructionLineSchema: vi.fn(),
+  ScheduleActionDataSchema: vi.fn(),
+  ScheduleCategorizationDataSchema: vi.fn(),
+  ScheduleImagesDataSchema: vi.fn(),
+  ScheduleIngredientsDataSchema: vi.fn(),
+  ScheduleInstructionsDataSchema: vi.fn(),
+  ScheduleSourceDataSchema: vi.fn(),
+  NoteValidation: vi.fn(),
+}));
+
+// Mock ingredient schemas
+vi.mock("../ingredient", () => ({
+  IngredientJobDataSchema: vi.fn(),
+  ProcessIngredientLineInputSchema: vi.fn(),
+  ProcessIngredientLineOutputSchema: vi.fn(),
+  SaveIngredientLineInputSchema: vi.fn(),
+  SaveIngredientLineOutputSchema: vi.fn(),
+  ScheduleCategorizationInputSchema: vi.fn(),
+  ScheduleCategorizationOutputSchema: vi.fn(),
+  IngredientValidation: vi.fn(),
+}));
 
 // ============================================================================
 // TEST DATA TYPES
@@ -9,27 +54,22 @@ import type { z } from "zod";
  * Type for parsed segment types
  */
 export type ParsedSegmentType =
-  | "amount"
-  | "unit"
-  | "ingredient"
-  | "modifier"
-  | "instruction"
-  | "note";
+  "amount" | "unit" | "ingredient" | "modifier" | "instruction" | "note";
 
 /**
  * Type for parse result status
  */
-export type ParseResultStatus = "AWAITING_PARSING" | "COMPLETED_SUCCESSFULLY" | "COMPLETED_SUCCESSFULLY" | "COMPLETED_WITH_ERROR";
+export type ParseResultStatus =
+  | "AWAITING_PARSING"
+  | "COMPLETED_SUCCESSFULLY"
+  | "COMPLETED_SUCCESSFULLY"
+  | "COMPLETED_WITH_ERROR";
 
 /**
  * Type for status event status
  */
 export type StatusEventStatus =
-  | "AWAITING_PARSING"
-  | "PROCESSING"
-  | "COMPLETED"
-  | "FAILED"
-  | "CANCELLED";
+  "AWAITING_PARSING" | "PROCESSING" | "COMPLETED" | "FAILED" | "CANCELLED";
 
 // ============================================================================
 // SCHEMA MOCK UTILITIES
@@ -39,7 +79,7 @@ export type StatusEventStatus =
  * Create mock schema functions for testing
  */
 export function createMockSchemaFunctions(schemaNames: string[]) {
-  const mocks: Record<string, ReturnType<typeof vi.fn>> = {};
+  const mocks: Record<string, Mock> = {};
 
   schemaNames.forEach((name) => {
     mocks[name] = vi.fn();
@@ -52,48 +92,7 @@ export function createMockSchemaFunctions(schemaNames: string[]) {
  * Setup common schema mocks for testing
  */
 export function setupSchemaMocks() {
-  // Mock base schemas
-  vi.mock("../base", () => ({
-    SourceSchema: vi.fn(),
-    ProcessingOptionsSchema: vi.fn(),
-    JobMetadataSchema: vi.fn(),
-    BaseJobDataSchema: vi.fn(),
-    StatusEventSchema: vi.fn(),
-    ErrorContextSchema: vi.fn(),
-    ParsedSegmentSchema: vi.fn(),
-    ParseResultSchema: vi.fn(),
-    BaseValidation: vi.fn(),
-  }));
-
-  // Mock note schemas
-  vi.mock("../note", () => ({
-    NoteJobDataSchema: vi.fn(),
-    ParseHtmlDataSchema: vi.fn(),
-    ParsedHtmlFileSchema: vi.fn(),
-    SaveNoteDataSchema: vi.fn(),
-    NoteSchema: vi.fn(),
-    ParsedIngredientLineSchema: vi.fn(),
-    ParsedInstructionLineSchema: vi.fn(),
-    ScheduleActionDataSchema: vi.fn(),
-    ScheduleCategorizationDataSchema: vi.fn(),
-    ScheduleImagesDataSchema: vi.fn(),
-    ScheduleIngredientsDataSchema: vi.fn(),
-    ScheduleInstructionsDataSchema: vi.fn(),
-    ScheduleSourceDataSchema: vi.fn(),
-    NoteValidation: vi.fn(),
-  }));
-
-  // Mock ingredient schemas
-  vi.mock("../ingredient", () => ({
-    IngredientJobDataSchema: vi.fn(),
-    ProcessIngredientLineInputSchema: vi.fn(),
-    ProcessIngredientLineOutputSchema: vi.fn(),
-    SaveIngredientLineInputSchema: vi.fn(),
-    SaveIngredientLineOutputSchema: vi.fn(),
-    ScheduleCategorizationInputSchema: vi.fn(),
-    ScheduleCategorizationOutputSchema: vi.fn(),
-    IngredientValidation: vi.fn(),
-  }));
+  // The schema mocks are registered when this module loads (top of file).
 }
 
 /**
@@ -672,14 +671,22 @@ export function createTestParsedHtmlFile(
       reference: string;
       blockIndex: number;
       lineIndex: number;
-      parseStatus?: "AWAITING_PARSING" | "COMPLETED_SUCCESSFULLY" | "COMPLETED_SUCCESSFULLY" | "COMPLETED_WITH_ERROR";
+      parseStatus?:
+        | "AWAITING_PARSING"
+        | "COMPLETED_SUCCESSFULLY"
+        | "COMPLETED_SUCCESSFULLY"
+        | "COMPLETED_WITH_ERROR";
       parsedAt?: Date;
       rule?: string;
     }>;
     instructions: Array<{
       reference: string;
       lineIndex: number;
-      parseStatus?: "AWAITING_PARSING" | "COMPLETED_SUCCESSFULLY" | "COMPLETED_SUCCESSFULLY" | "COMPLETED_WITH_ERROR";
+      parseStatus?:
+        | "AWAITING_PARSING"
+        | "COMPLETED_SUCCESSFULLY"
+        | "COMPLETED_SUCCESSFULLY"
+        | "COMPLETED_WITH_ERROR";
     }>;
     images: Array<{
       id: string;
@@ -722,7 +729,8 @@ export function createTestParsedHtmlFile(
     images: [
       {
         id: "test-image-id",
-        originalImageUrl: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+        originalImageUrl:
+          "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
         processingStatus: "COMPLETED",
       },
     ],
@@ -747,14 +755,22 @@ export function createTestSaveNoteData(
         reference: string;
         blockIndex: number;
         lineIndex: number;
-        parseStatus?: "AWAITING_PARSING" | "COMPLETED_SUCCESSFULLY" | "COMPLETED_SUCCESSFULLY" | "COMPLETED_WITH_ERROR";
+        parseStatus?:
+          | "AWAITING_PARSING"
+          | "COMPLETED_SUCCESSFULLY"
+          | "COMPLETED_SUCCESSFULLY"
+          | "COMPLETED_WITH_ERROR";
         parsedAt?: Date;
         rule?: string;
       }>;
       instructions: Array<{
         reference: string;
         lineIndex: number;
-        parseStatus?: "AWAITING_PARSING" | "COMPLETED_SUCCESSFULLY" | "COMPLETED_SUCCESSFULLY" | "COMPLETED_WITH_ERROR";
+        parseStatus?:
+          | "AWAITING_PARSING"
+          | "COMPLETED_SUCCESSFULLY"
+          | "COMPLETED_SUCCESSFULLY"
+          | "COMPLETED_WITH_ERROR";
       }>;
     };
     importId: string;
@@ -843,7 +859,11 @@ export function createTestScheduleActionData(
       instructions: Array<{
         reference: string;
         lineIndex: number;
-        parseStatus?: "AWAITING_PARSING" | "COMPLETED_SUCCESSFULLY" | "COMPLETED_SUCCESSFULLY" | "COMPLETED_WITH_ERROR";
+        parseStatus?:
+          | "AWAITING_PARSING"
+          | "COMPLETED_SUCCESSFULLY"
+          | "COMPLETED_SUCCESSFULLY"
+          | "COMPLETED_WITH_ERROR";
       }>;
     };
   }> = {}

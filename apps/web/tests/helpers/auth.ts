@@ -2,7 +2,7 @@ import { type Page, expect, test } from "@playwright/test";
 
 /**
  * Pages behind auth need a real account in the dev database. Set
- * E2E_EMAIL / E2E_PASSWORD (an ADMIN account for /parser) to run these specs.
+ * E2E_EMAIL / E2E_PASSWORD to run these specs.
  */
 export const E2E_EMAIL = process.env.E2E_EMAIL;
 export const E2E_PASSWORD = process.env.E2E_PASSWORD;

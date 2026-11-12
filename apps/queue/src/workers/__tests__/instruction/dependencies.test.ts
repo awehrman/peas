@@ -1,5 +1,5 @@
 import { ParseStatus } from "@peas/database";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import type { IServiceContainer } from "../../../services/container";
 import {
@@ -25,9 +25,9 @@ vi.mock(
 
 describe("Instruction Dependencies", () => {
   let mockContainer: IServiceContainer;
-  let mockLogger: { log: ReturnType<typeof vi.fn> };
+  let mockLogger: { log: Mock };
   let mockStatusBroadcaster: {
-    addStatusEventAndBroadcast: ReturnType<typeof vi.fn>;
+    addStatusEventAndBroadcast: Mock;
   };
 
   beforeEach(() => {

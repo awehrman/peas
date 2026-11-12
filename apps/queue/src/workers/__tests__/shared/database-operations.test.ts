@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import { DatabaseOperations } from "../../shared/database-operations";
 
@@ -13,19 +13,19 @@ vi.mock("pluralize", () => ({
 describe("DatabaseOperations", () => {
   let mockPrisma: {
     parsedIngredientLine: {
-      update: ReturnType<typeof vi.fn>;
-      create: ReturnType<typeof vi.fn>;
+      update: Mock;
+      create: Mock;
     };
     parsedSegment: {
-      deleteMany: ReturnType<typeof vi.fn>;
-      createMany: ReturnType<typeof vi.fn>;
+      deleteMany: Mock;
+      createMany: Mock;
     };
     ingredientReference: {
-      create: ReturnType<typeof vi.fn>;
+      create: Mock;
     };
     ingredient: {
-      findFirst: ReturnType<typeof vi.fn>;
-      create: ReturnType<typeof vi.fn>;
+      findFirst: Mock;
+      create: Mock;
     };
   };
   let dbOps: DatabaseOperations;

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import { testLoggerInterface } from "../../test-utils/service";
 import { ILoggerService, registerLogger } from "../register-logger";
@@ -21,7 +21,7 @@ vi.mock("../../utils/logger", () => ({
 }));
 
 describe("register-logger.ts", () => {
-  let mockCreateLogger: ReturnType<typeof vi.fn>;
+  let mockCreateLogger: Mock;
   let loggerService: ILoggerService;
 
   beforeEach(async () => {

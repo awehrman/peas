@@ -1,6 +1,6 @@
 import fs from "fs/promises";
 import path from "path";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import type { IServiceContainer } from "../../../../../services/container";
 import {
@@ -18,12 +18,12 @@ describe("cleanupLocalFiles", () => {
   let mockLogger: ReturnType<typeof createMockLogger>;
   let mockServiceContainer: IServiceContainer;
   let mockData: ImageJobData;
-  let mockFsAccess: ReturnType<typeof vi.fn>;
-  let mockFsUnlink: ReturnType<typeof vi.fn>;
-  let mockFsStat: ReturnType<typeof vi.fn>;
-  let mockFsReaddir: ReturnType<typeof vi.fn>;
-  let mockFsRmdir: ReturnType<typeof vi.fn>;
-  let mockPathResolve: ReturnType<typeof vi.fn>;
+  let mockFsAccess: Mock;
+  let mockFsUnlink: Mock;
+  let mockFsStat: Mock;
+  let mockFsReaddir: Mock;
+  let mockFsRmdir: Mock;
+  let mockPathResolve: Mock;
 
   beforeEach(() => {
     vi.clearAllMocks();

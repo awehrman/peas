@@ -4,7 +4,6 @@ import {
   CookingPot,
   Home,
   StickyNote,
-  Workflow,
 } from "lucide-react";
 
 import { NavigationItem } from "../types/navigation";
@@ -17,7 +16,6 @@ export const navigationItems: NavigationItem[] = [
   { name: "Ingredients", href: "/ingredients", icon: Carrot },
   { name: "Recipes", href: "/recipes", icon: CookingPot },
   { name: "Notes", href: "/notes", icon: StickyNote },
-  { name: "Parser", href: "/parser", icon: Workflow, adminOnly: true },
 ];
 
 export function getNavigationItems(isAdmin: boolean): NavigationItem[] {

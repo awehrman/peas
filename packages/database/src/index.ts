@@ -1,5 +1,4 @@
 // Repository exports
-export * from "./repository/grammar";
 export * from "./repository/ingredient";
 export * from "./repository/instruction";
 export * from "./repository/note";
@@ -9,7 +8,7 @@ export * from "./repository/queueJob";
 export * from "./repository/recipe";
 export * from "./repository/source";
 export * from "./repository/status";
-export { prisma } from "./client";
+export { createPrismaClient, prisma, type CreatePrismaClientOptions } from "./client";
 export * from "@prisma/client";
 export type {
   ParsedIngredientLine,

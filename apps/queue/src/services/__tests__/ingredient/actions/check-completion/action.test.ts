@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import { ActionName } from "../../../../../types";
 import { BaseAction } from "../../../../../workers/core/base-action";
@@ -26,8 +26,8 @@ describe("CheckIngredientCompletionAction", () => {
   let mockDependencies: IngredientWorkerDependencies;
   let mockContext: ActionContext;
   let mockData: IngredientJobData;
-  let mockMarkWorkerCompleted: ReturnType<typeof vi.fn>;
-  let mockGetIngredientCompletionStatus: ReturnType<typeof vi.fn>;
+  let mockMarkWorkerCompleted: Mock;
+  let mockGetIngredientCompletionStatus: Mock;
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -42,8 +42,8 @@ describe("CheckIngredientCompletionAction", () => {
         addStatusEventAndBroadcast: vi.fn(),
       },
       services: {
-        parseIngredient: vi.fn() as ReturnType<typeof vi.fn>,
-        saveIngredient: vi.fn() as ReturnType<typeof vi.fn>,
+        parseIngredient: vi.fn() as Mock,
+        saveIngredient: vi.fn() as Mock,
       },
     };
 

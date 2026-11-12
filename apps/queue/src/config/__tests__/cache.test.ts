@@ -1,4 +1,12 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  type Mock,
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 
 import { setupTestEnvironment } from "../../test-utils/helpers";
 import {
@@ -39,19 +47,19 @@ describe("CacheManager", () => {
   let cacheManager: CacheManager;
   let testEnv: ReturnType<typeof setupTestEnvironment>;
   let mockRedisConnection: {
-    get: ReturnType<typeof vi.fn>;
-    set: ReturnType<typeof vi.fn>;
-    del: ReturnType<typeof vi.fn>;
-    exists: ReturnType<typeof vi.fn>;
-    mGet: ReturnType<typeof vi.fn>;
-    multi: ReturnType<typeof vi.fn>;
-    keys: ReturnType<typeof vi.fn>;
-    sMembers: ReturnType<typeof vi.fn>;
-    sAdd: ReturnType<typeof vi.fn>;
-    quit: ReturnType<typeof vi.fn>;
-    flushDb: ReturnType<typeof vi.fn>;
-    info: ReturnType<typeof vi.fn>;
-    dbSize: ReturnType<typeof vi.fn>;
+    get: Mock;
+    set: Mock;
+    del: Mock;
+    exists: Mock;
+    mGet: Mock;
+    multi: Mock;
+    keys: Mock;
+    sMembers: Mock;
+    sAdd: Mock;
+    quit: Mock;
+    flushDb: Mock;
+    info: Mock;
+    dbSize: Mock;
   };
 
   beforeEach(async () => {
@@ -539,10 +547,10 @@ describe("CacheManager", () => {
 
     it("should cover error handling in delete method", async () => {
       const error = new Error("Simulated delete failure");
-      mockRedisConnection.del.mockImplementationOnce(() => {
+      mockRedisConnection.del.mockImplementationOnce(function () {
         throw error;
       });
-      const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+      const spy = vi.spyOn(console, "error").mockImplementation(function () {});
       await expect(cacheManager.delete("some-key")).resolves.not.toThrow();
       expect(mockRedisConnection.del).toHaveBeenCalledWith("some-key");
       expect(spy).toHaveBeenCalledWith(
@@ -647,6 +655,7 @@ describe("CacheManager", () => {
     });
 
     it("should handle operations when not connected", async () => {
+      mockRedisConnection.quit.mockResolvedValue("OK");
       await cacheManager.disconnect();
 
       const getResult = await cacheManager.get("key");

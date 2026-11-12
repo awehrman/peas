@@ -115,13 +115,18 @@ export class ActionCache {
   }
 
   /**
-   * Invalidate cache by pattern
+   * Invalidate cache by pattern. A pattern containing `*` is a glob; any
+   * other pattern matches keys that contain it.
    */
   public async invalidateByPattern(pattern: string): Promise<number> {
+    const isGlob = pattern.includes("*");
+    const globPattern = isGlob ? pattern : `*${pattern}*`;
+    const matcher = globToRegExp(globPattern);
+
     // Clear memory cache entries that match pattern
     let memoryCleared = 0;
     for (const [key] of this.memoryCache) {
-      if (key.includes(pattern)) {
+      if (matcher.test(key)) {
         this.memoryCache.delete(key);
         memoryCleared++;
       }
@@ -130,7 +135,7 @@ export class ActionCache {
     // Clear Redis cache entries that match pattern
     try {
       const cacheManager = ManagerFactory.createCacheManager();
-      const redisCleared = await cacheManager.invalidateByPattern(pattern);
+      const redisCleared = await cacheManager.invalidateByPattern(globPattern);
       return memoryCleared + redisCleared;
     } catch (error) {
       console.warn(`Cache invalidation failed for pattern ${pattern}:`, error);
@@ -249,6 +254,14 @@ export class ActionCache {
       this.cleanupMemoryCache();
     }, this.MEMORY_CACHE_CLEANUP_INTERVAL);
   }
+}
+
+function globToRegExp(glob: string): RegExp {
+  const escaped = glob
+    .split("*")
+    .map((part) => part.replace(/[.+?^${}()|[\]\\]/g, "\\$&"))
+    .join(".*");
+  return new RegExp(`^${escaped}$`);
 }
 
 // Export singleton instance

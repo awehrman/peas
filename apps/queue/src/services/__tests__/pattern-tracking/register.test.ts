@@ -1,4 +1,12 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  type Mock,
+  type MockedFunction,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 
 import { ActionName } from "../../../types";
 import { ActionFactory } from "../../../workers/core/action-factory";
@@ -25,9 +33,11 @@ describe("Pattern Tracking Register", () => {
     PatternTrackingWorkerDependencies,
     PatternTrackingJobData
   >;
-  let mockCreateActionRegistration: ReturnType<typeof vi.fn>;
-  let mockRegisterActions: ReturnType<typeof vi.fn>;
-  let mockTrackPatternAction: ReturnType<typeof vi.fn>;
+  let mockCreateActionRegistration: Mock;
+  let mockRegisterActions: Mock;
+  let mockTrackPatternAction: MockedFunction<
+    typeof import("../../pattern-tracking/actions/track-pattern/action").TrackPatternAction
+  >;
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -41,15 +51,15 @@ describe("Pattern Tracking Register", () => {
     >;
 
     // Get the mocked functions
-    const actionRegistryModule = await import(
-      "../../../workers/shared/action-registry"
+    const actionRegistryModule =
+      await import("../../../workers/shared/action-registry");
+    mockCreateActionRegistration = vi.mocked(
+      actionRegistryModule.createActionRegistration
     );
-    mockCreateActionRegistration = vi.mocked(actionRegistryModule.createActionRegistration);
     mockRegisterActions = vi.mocked(actionRegistryModule.registerActions);
 
-    const trackPatternModule = await import(
-      "../../pattern-tracking/actions/track-pattern/action"
-    );
+    const trackPatternModule =
+      await import("../../pattern-tracking/actions/track-pattern/action");
     mockTrackPatternAction = vi.mocked(trackPatternModule.TrackPatternAction);
 
     // Setup default mock implementations
@@ -77,53 +87,63 @@ describe("Pattern Tracking Register", () => {
     });
 
     it("should throw error when factory is null", () => {
-      expect(() => registerPatternTrackingActions(null as unknown as ActionFactory<
-        PatternTrackingJobData,
-        PatternTrackingWorkerDependencies,
-        PatternTrackingJobData
-      >)).toThrow(
-        "Invalid factory"
-      );
+      expect(() =>
+        registerPatternTrackingActions(
+          null as unknown as ActionFactory<
+            PatternTrackingJobData,
+            PatternTrackingWorkerDependencies,
+            PatternTrackingJobData
+          >
+        )
+      ).toThrow("Invalid factory");
     });
 
     it("should throw error when factory is undefined", () => {
-      expect(() => registerPatternTrackingActions(undefined as unknown as ActionFactory<
-        PatternTrackingJobData,
-        PatternTrackingWorkerDependencies,
-        PatternTrackingJobData
-      >)).toThrow(
-        "Invalid factory"
-      );
+      expect(() =>
+        registerPatternTrackingActions(
+          undefined as unknown as ActionFactory<
+            PatternTrackingJobData,
+            PatternTrackingWorkerDependencies,
+            PatternTrackingJobData
+          >
+        )
+      ).toThrow("Invalid factory");
     });
 
     it("should throw error when factory is not an object", () => {
-      expect(() => registerPatternTrackingActions("not-an-object" as unknown as ActionFactory<
-        PatternTrackingJobData,
-        PatternTrackingWorkerDependencies,
-        PatternTrackingJobData
-      >)).toThrow(
-        "Invalid factory"
-      );
+      expect(() =>
+        registerPatternTrackingActions(
+          "not-an-object" as unknown as ActionFactory<
+            PatternTrackingJobData,
+            PatternTrackingWorkerDependencies,
+            PatternTrackingJobData
+          >
+        )
+      ).toThrow("Invalid factory");
     });
 
     it("should throw error when factory is a number", () => {
-      expect(() => registerPatternTrackingActions(123 as unknown as ActionFactory<
-        PatternTrackingJobData,
-        PatternTrackingWorkerDependencies,
-        PatternTrackingJobData
-      >)).toThrow(
-        "Invalid factory"
-      );
+      expect(() =>
+        registerPatternTrackingActions(
+          123 as unknown as ActionFactory<
+            PatternTrackingJobData,
+            PatternTrackingWorkerDependencies,
+            PatternTrackingJobData
+          >
+        )
+      ).toThrow("Invalid factory");
     });
 
     it("should throw error when factory is a boolean", () => {
-      expect(() => registerPatternTrackingActions(true as unknown as ActionFactory<
-        PatternTrackingJobData,
-        PatternTrackingWorkerDependencies,
-        PatternTrackingJobData
-      >)).toThrow(
-        "Invalid factory"
-      );
+      expect(() =>
+        registerPatternTrackingActions(
+          true as unknown as ActionFactory<
+            PatternTrackingJobData,
+            PatternTrackingWorkerDependencies,
+            PatternTrackingJobData
+          >
+        )
+      ).toThrow("Invalid factory");
     });
 
     it("should accept valid factory object", () => {

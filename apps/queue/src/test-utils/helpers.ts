@@ -5,7 +5,7 @@ import express from "express";
 // ============================================================================
 
 import type { NextFunction, Request, Response } from "express";
-import { expect, vi } from "vitest";
+import { type Mock, expect, vi } from "vitest";
 
 import type { NotePipelineData } from "../types/notes";
 import type { ActionContext } from "../workers/core/types";
@@ -51,10 +51,12 @@ export function createTestEnvironment() {
  * Create console spies for testing console output
  */
 export function createConsoleSpies() {
-  const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-  const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-  const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-  const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+  const logSpy = vi.spyOn(console, "log").mockImplementation(function () {});
+  const warnSpy = vi.spyOn(console, "warn").mockImplementation(function () {});
+  const errorSpy = vi
+    .spyOn(console, "error")
+    .mockImplementation(function () {});
+  const infoSpy = vi.spyOn(console, "info").mockImplementation(function () {});
 
   return {
     logSpy,
@@ -346,9 +348,9 @@ export function setupTestEnvironment() {
   process.env.WS_PORT = "8080";
 
   // Mock console methods to reduce noise in tests
-  vi.spyOn(console, "log").mockImplementation(() => {});
-  vi.spyOn(console, "error").mockImplementation(() => {});
-  vi.spyOn(console, "warn").mockImplementation(() => {});
+  vi.spyOn(console, "log").mockImplementation(function () {});
+  vi.spyOn(console, "error").mockImplementation(function () {});
+  vi.spyOn(console, "warn").mockImplementation(function () {});
 
   return {
     cleanup: () => {
@@ -389,10 +391,10 @@ export function createMockResponse(): Response {
   } as unknown as Response;
 
   // Chain the methods properly
-  (res.status as ReturnType<typeof vi.fn>).mockReturnValue(res);
-  (res.json as ReturnType<typeof vi.fn>).mockReturnValue(res);
-  (res.set as ReturnType<typeof vi.fn>).mockReturnValue(res);
-  (res.end as ReturnType<typeof vi.fn>).mockReturnValue(res);
+  (res.status as Mock).mockReturnValue(res);
+  (res.json as Mock).mockReturnValue(res);
+  (res.set as Mock).mockReturnValue(res);
+  (res.end as Mock).mockReturnValue(res);
 
   return res;
 }
@@ -579,26 +581,26 @@ export function createMockRedisStats(
  * Mock types for ManagerFactory
  */
 export interface MockManagerFactory {
-  createCacheManager: ReturnType<typeof vi.fn>;
+  createCacheManager: Mock;
 }
 
 /**
  * Mock types for CachedIngredientParser
  */
 export interface MockCachedIngredientParser {
-  parseIngredientLines: ReturnType<typeof vi.fn>;
-  getCacheStats: ReturnType<typeof vi.fn>;
-  invalidateIngredientCache: ReturnType<typeof vi.fn>;
+  parseIngredientLines: Mock;
+  getCacheStats: Mock;
+  invalidateIngredientCache: Mock;
 }
 
 /**
  * Mock types for actionCache
  */
 export interface MockActionCache {
-  getStats: ReturnType<typeof vi.fn>;
-  clearAll: ReturnType<typeof vi.fn>;
-  invalidateByPattern: ReturnType<typeof vi.fn>;
-  delete: ReturnType<typeof vi.fn>;
+  getStats: Mock;
+  clearAll: Mock;
+  invalidateByPattern: Mock;
+  delete: Mock;
 }
 
 /**
@@ -607,13 +609,13 @@ export interface MockActionCache {
 export interface MockQueue {
   name: string;
   options?: QueueOptions;
-  add: ReturnType<typeof vi.fn>;
-  close: ReturnType<typeof vi.fn>;
-  getJob: ReturnType<typeof vi.fn>;
-  getJobs: ReturnType<typeof vi.fn>;
-  getJobCounts: ReturnType<typeof vi.fn>;
-  getWaiting: ReturnType<typeof vi.fn>;
-  getActive: ReturnType<typeof vi.fn>;
-  getCompleted: ReturnType<typeof vi.fn>;
-  getFailed: ReturnType<typeof vi.fn>;
+  add: Mock;
+  close: Mock;
+  getJob: Mock;
+  getJobs: Mock;
+  getJobCounts: Mock;
+  getWaiting: Mock;
+  getActive: Mock;
+  getCompleted: Mock;
+  getFailed: Mock;
 }

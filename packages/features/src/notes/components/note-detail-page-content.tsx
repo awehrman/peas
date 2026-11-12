@@ -32,7 +32,6 @@ interface NoteDetailPageContentProps extends IngredientLineActions {
 export function NoteDetailPageContent({
   note,
   onSetReviewStatus,
-  onCreateGrammarTest,
   onPromoteToRecipe,
 }: NoteDetailPageContentProps): ReactNode {
   const heroImage = note.images[0];
@@ -106,7 +105,6 @@ export function NoteDetailPageContent({
                           line={line}
                           getIngredientHref={(id) => `/ingredients?id=${id}`}
                           onSetReviewStatus={onSetReviewStatus}
-                          onCreateGrammarTest={onCreateGrammarTest}
                         />
                       ))}
                     </ul>

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import { ActionName } from "../../../types";
 import { ActionFactory } from "../../../workers/core/action-factory";
@@ -37,8 +37,8 @@ describe("Ingredient Service Register", () => {
     IngredientWorkerDependencies,
     IngredientJobData
   >;
-  let mockCreateActionRegistration: ReturnType<typeof vi.fn>;
-  let mockRegisterActions: ReturnType<typeof vi.fn>;
+  let mockCreateActionRegistration: Mock;
+  let mockRegisterActions: Mock;
 
   beforeEach(() => {
     vi.clearAllMocks();

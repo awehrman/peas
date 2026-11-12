@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import { createMockLogger, createMockActionContext } from "../../../../../test-utils/helpers";
 import type { ActionContext } from "../../../../../workers/core/types";
@@ -16,8 +16,8 @@ describe("ImageCompletedStatusAction", () => {
   let mockDependencies: ImageWorkerDependencies;
   let mockContext: ActionContext;
   let mockData: ImageJobData;
-  let mockUpdateImageCompletedStatus: ReturnType<typeof vi.fn>;
-  let mockStatusBroadcaster: { addStatusEventAndBroadcast: ReturnType<typeof vi.fn> };
+  let mockUpdateImageCompletedStatus: Mock;
+  let mockStatusBroadcaster: { addStatusEventAndBroadcast: Mock };
 
   beforeEach(async () => {
     vi.clearAllMocks();

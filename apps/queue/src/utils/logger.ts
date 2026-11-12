@@ -424,7 +424,7 @@ const LOG_LEVELS = ["debug", "info", "warn", "error", "fatal"] as const;
  * environment. Large imports log ~900 info lines per note, so LOG_LEVEL=warn
  * noticeably reduces queue overhead.
  */
-export function getLogConfigFromEnv(env: NodeJS.ProcessEnv = process.env): LogConfig {
+export function getLogConfigFromEnv(env: typeof process.env = process.env): LogConfig {
   const config: LogConfig = {};
   const level = LOG_LEVELS.find((candidate) => candidate === env.LOG_LEVEL?.toLowerCase());
   if (level) config.logLevel = level;

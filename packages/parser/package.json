@@ -18,43 +18,35 @@
       "types": "./types/index.d.ts",
       "default": "./dist/v1/index.min.js"
     },
-    "./v2": {
-      "types": "./types/index.d.ts",
-      "default": "./dist/v2/index.js"
-    },
-    "./v2/minified": {
-      "types": "./types/index.d.ts",
-      "default": "./dist/v2/index.min.js"
-    },
-    "./dynamic": {
-      "types": "./dist/dynamic/index.d.ts",
-      "default": "./dist/dynamic/index.js"
-    },
-    "./dynamic/compile": {
-      "types": "./dist/dynamic/compile-grammar.d.ts",
-      "default": "./dist/dynamic/compile-grammar.js"
+    "./v3": {
+      "types": "./dist/v3/index.d.ts",
+      "default": "./dist/v3/index.js"
     }
   },
   "scripts": {
     "build": "node scripts/build.js",
     "build:v1": "peggy -o dist/v1/parser.js --format es src/v1/parser.peggy && node -e \"require('fs').writeFileSync('dist/v1/index.js', 'export { parse } from \\'./parser.js\\';')\"",
-    "build:v2": "peggy -o dist/v2/grammar.js --format es src/v2/grammar.peggy && node -e \"require('fs').writeFileSync('dist/v2/index.js', 'export { parse } from \\'./grammar.js\\';')\"",
-    "build:dynamic": "tsc -p tsconfig.build.json",
-    "build:minified": "yarn build && yarn minify:v1 && yarn minify:v2",
-    "minify:v1": "npx terser dist/v1/index.js --compress --mangle -o dist/v1/index.min.js",
-    "minify:v2": "npx terser dist/v2/index.js --compress --mangle -o dist/v2/index.min.js",
+    "generate:v3": "node scripts/generate-v3.js",
+    "build:v3": "yarn generate:v3 && tsc -p tsconfig.build.json",
+    "typecheck": "yarn generate:v3 && tsc -p tsconfig.json --noEmit",
     "clean": "rm -rf dist",
-    "prebuild": "yarn clean && mkdir -p dist/v1 dist/v2",
     "test": "vitest",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "corpus:baseline-v1": "node scripts/baseline-v1.js",
+    "report:compare": "tsx scripts/compare-v1-v3.ts",
+    "preview:lexicon": "tsx scripts/preview-lexicon-change.ts"
   },
   "dependencies": {
-    "peggy": "^5.0.5"
+    "peggy": "^5.1.1",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@peas/typescript-config": "*",
+    "@types/node": "^24.0.13",
     "terser": "^5.43.1",
-    "typescript": "^5.8.3",
-    "vitest": "^3.2.4"
+    "tsx": "^4.7.0",
+    "typescript": "^6.0.3",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.0"
   }
 }

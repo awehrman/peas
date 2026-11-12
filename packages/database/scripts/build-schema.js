@@ -16,13 +16,12 @@ const coreSchema = `// This is your Prisma schema file,
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["fullTextSearchPostgres"]
+  provider = "prisma-client-js"
 }
 
+// The connection URL lives in prisma.config.ts (Prisma 7)
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 `;
@@ -38,7 +37,6 @@ const schemaFiles = [
   "prisma/schemas/source.prisma",
   "prisma/schemas/ingredients.prisma",
   "prisma/schemas/recipes.prisma",
-  "prisma/schemas/settings.prisma",
 ];
 
 // Combine all schema files

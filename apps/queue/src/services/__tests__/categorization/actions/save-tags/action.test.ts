@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import { ActionName } from "../../../../../types";
 import type {
@@ -19,8 +19,8 @@ describe("SaveTagsAction", () => {
   let mockDeps: CategorizationWorkerDependencies;
   let mockContext: ActionContext;
   let testData: CategorizationJobData;
-  let mockSaveTags: ReturnType<typeof vi.fn>;
-  let mockAddStatusEventAndBroadcast: ReturnType<typeof vi.fn>;
+  let mockSaveTags: Mock;
+  let mockAddStatusEventAndBroadcast: Mock;
 
   beforeEach(async () => {
     vi.clearAllMocks();

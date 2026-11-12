@@ -1,9 +1,9 @@
 "use client";
 
-import { type ReactNode, useState } from "react";
+import type { ReactNode } from "react";
 
 import { Button, cn } from "@peas/components";
-import { Check, FlaskConical, X } from "lucide-react";
+import { Check, X } from "lucide-react";
 
 import { ParsedLine } from "../../parsed-line";
 import { type MutationAction, useMutation } from "../../shared";
@@ -11,7 +11,6 @@ import type { LineReviewStatus, NoteIngredientLine } from "../types";
 
 export interface IngredientLineActions {
   onSetReviewStatus?: MutationAction<[lineId: string, status: LineReviewStatus]>;
-  onCreateGrammarTest?: MutationAction<[lineId: string]>;
 }
 
 interface IngredientLineRowProps extends IngredientLineActions {
@@ -29,18 +28,8 @@ export function IngredientLineRow({
   line,
   getIngredientHref,
   onSetReviewStatus,
-  onCreateGrammarTest,
 }: IngredientLineRowProps): ReactNode {
   const review = useMutation(onSetReviewStatus);
-  const grammarTest = useMutation(onCreateGrammarTest);
-  const [testMessage, setTestMessage] = useState<string | null>(null);
-  const error = review.error ?? grammarTest.error;
-
-  async function addGrammarTest() {
-    setTestMessage(null);
-    const result = await grammarTest.run(line.id);
-    if (result.success) setTestMessage(result.message ?? "Added to grammar tests");
-  }
 
   function toggleReview(status: LineReviewStatus) {
     const next = line.reviewStatus === status ? "UNREVIEWED" : status;
@@ -93,29 +82,11 @@ export function IngredientLineRow({
               </Button>
             </>
           ) : null}
-          {onCreateGrammarTest ? (
-            <Button
-              type="button"
-              size="icon"
-              variant="ghost"
-              aria-label={`Add "${line.reference}" as a grammar test`}
-              disabled={grammarTest.isPending}
-              onClick={addGrammarTest}
-              className="h-7 w-7"
-            >
-              <FlaskConical aria-hidden="true" />
-            </Button>
-          ) : null}
         </div>
       </div>
-      {error ? (
+      {review.error ? (
         <p role="alert" className="text-xs text-error-700">
-          {error}
-        </p>
-      ) : null}
-      {testMessage ? (
-        <p role="status" className="text-xs text-greyscale-600">
-          {testMessage}
+          {review.error}
         </p>
       ) : null}
     </li>

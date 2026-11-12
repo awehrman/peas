@@ -5,9 +5,9 @@
 //   yarn workspace @peas/database user:role you@example.com          # ADMIN
 //   yarn workspace @peas/database user:role you@example.com USER
 //   yarn workspace @peas/database user:role --list
-import { PrismaClient } from "@prisma/client";
+import { createScriptClient } from "./prisma-client.js";
 
-const prisma = new PrismaClient();
+const prisma = createScriptClient();
 const ROLES = ["ADMIN", "USER"];
 
 async function listUsers() {

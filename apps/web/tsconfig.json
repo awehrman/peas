@@ -1,7 +1,6 @@
 {
   "extends": "@peas/typescript-config/nextjs.json",
   "compilerOptions": {
-    "baseUrl": ".",
     "jsx": "preserve",
     "paths": {
       "@/*": [

@@ -15,10 +15,11 @@ vi.mock("../../services/websocket-server", () => ({
 
 describe("addStatusEventAndBroadcast", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    vi.spyOn(console, "log").mockImplementation(() => {});
-    vi.spyOn(console, "error").mockImplementation(() => {});
-    
+    // Reset implementations too: some tests make broadcastStatusEvent throw
+    vi.resetAllMocks();
+    vi.spyOn(console, "log").mockImplementation(function () {});
+    vi.spyOn(console, "error").mockImplementation(function () {});
+
     // Clear the event cache between tests to prevent deduplication
     // We'll use unique importIds in each test instead
   });
@@ -188,7 +189,7 @@ describe("addStatusEventAndBroadcast", () => {
     mockAddStatusEvent.mockResolvedValue(mockDbEvent);
 
     const broadcastError = new Error("WebSocket connection failed");
-    mockBroadcastStatusEvent.mockImplementation(() => {
+    mockBroadcastStatusEvent.mockImplementation(function () {
       throw broadcastError;
     });
 

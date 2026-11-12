@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import { ActionName } from "../../../../../types";
 import type { NotePipelineData } from "../../../../../types/notes";
@@ -17,7 +17,7 @@ describe("CleanHtmlAction", () => {
   let mockData: NotePipelineData;
   let mockDeps: NoteWorkerDependencies;
   let mockContext: ActionContext;
-  let mockCalculateRemovedSize: ReturnType<typeof vi.fn>;
+  let mockCalculateRemovedSize: Mock;
 
   beforeEach(async () => {
     // Clear all mocks

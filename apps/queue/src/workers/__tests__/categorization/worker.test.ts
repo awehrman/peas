@@ -1,6 +1,6 @@
 import type { QueueJob } from "@prisma/client";
 import { Queue } from "bullmq";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import type { IServiceContainer } from "../../../services/container";
 import { ActionName } from "../../../types";
@@ -219,7 +219,7 @@ describe("CategorizationWorker", () => {
 
       const logger = (
         worker as unknown as {
-          dependencies: { logger: { log: ReturnType<typeof vi.fn> } };
+          dependencies: { logger: { log: Mock } };
         }
       ).dependencies.logger;
       const onBeforeJob = worker as unknown as {
@@ -250,7 +250,7 @@ describe("CategorizationWorker", () => {
 
       const logger = (
         worker as unknown as {
-          dependencies: { logger: { log: ReturnType<typeof vi.fn> } };
+          dependencies: { logger: { log: Mock } };
         }
       ).dependencies.logger;
       const onAfterJob = worker as unknown as {
@@ -283,7 +283,7 @@ describe("CategorizationWorker", () => {
 
       const logger = (
         worker as unknown as {
-          dependencies: { logger: { log: ReturnType<typeof vi.fn> } };
+          dependencies: { logger: { log: Mock } };
         }
       ).dependencies.logger;
       const onJobError = worker as unknown as {

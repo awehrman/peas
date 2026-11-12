@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { type Mock, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { StructuredLogger } from "../../../../../types";
 import type { IngredientJobData } from "../../../../../workers/ingredient/dependencies";
@@ -21,16 +21,16 @@ vi.mock("../../../../../queues/create-queue", () => ({
 describe("Save Ingredient Line Service", () => {
   let mockLogger: StructuredLogger;
   let mockStatusBroadcaster: {
-    addStatusEventAndBroadcast: ReturnType<typeof vi.fn>;
+    addStatusEventAndBroadcast: Mock;
   };
   let mockDatabase: {
-    createIngredientReference: ReturnType<typeof vi.fn>;
-    findOrCreateIngredient: ReturnType<typeof vi.fn>;
-    getIngredientCompletionStatus: ReturnType<typeof vi.fn>;
-    saveParsedIngredientLine: ReturnType<typeof vi.fn>;
-    findOrCreateParsingRule: ReturnType<typeof vi.fn>;
+    createIngredientReference: Mock;
+    findOrCreateIngredient: Mock;
+    getIngredientCompletionStatus: Mock;
+    saveParsedIngredientLine: Mock;
+    findOrCreateParsingRule: Mock;
   };
-  let mockCreateQueue: ReturnType<typeof vi.fn>;
+  let mockCreateQueue: Mock;
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -207,6 +207,33 @@ describe("Save Ingredient Line Service", () => {
       expect(mockDatabase.findOrCreateIngredient).not.toHaveBeenCalled();
 
       expect(result).toEqual(mockData);
+    });
+
+    it("should save lines from later ingredient blocks under their own block index", async () => {
+      const mockData: IngredientJobData = {
+        jobId: "test-job-456",
+        noteId: "test-note-123",
+        ingredientReference: "2 eggs",
+        blockIndex: 1,
+        lineIndex: 0,
+        parseStatus: "COMPLETED_SUCCESSFULLY",
+        isActive: true,
+        importId: "test-import-123",
+      };
+
+      await saveIngredientLine(mockData, mockLogger, mockStatusBroadcaster);
+
+      expect(mockDatabase.saveParsedIngredientLine).toHaveBeenCalledWith(
+        "test-note-123",
+        0,
+        "2 eggs",
+        "COMPLETED_SUCCESSFULLY",
+        undefined,
+        1,
+        true,
+        [],
+        undefined
+      );
     });
 
     it("should queue pattern tracking when pattern rules exist", async () => {

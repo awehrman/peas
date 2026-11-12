@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import { ActionName } from "../../../../../types";
 import type { NotePipelineData } from "../../../../../types/notes";
@@ -24,7 +24,7 @@ describe("SaveNoteAction", () => {
   let mockData: NotePipelineData;
   let mockDeps: NoteWorkerDependencies;
   let mockContext: ActionContext;
-  let mockSaveNoteDataSchema: ReturnType<typeof vi.fn>;
+  let mockSaveNoteDataSchema: Mock;
 
   beforeEach(async () => {
     // Clear all mocks

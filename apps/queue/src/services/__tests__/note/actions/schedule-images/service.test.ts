@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import {
   createMockLogger,
@@ -47,13 +47,13 @@ describe("Schedule Images Service", () => {
   let mockData: NotePipelineData;
 
   // Import mocked functions
-  let findImageDirectoryForHtmlFile: ReturnType<typeof vi.fn>;
-  let getImageFilesWithMetadata: ReturnType<typeof vi.fn>;
-  let findImagesForImport: ReturnType<typeof vi.fn>;
-  let setTotalImageJobs: ReturnType<typeof vi.fn>;
-  let markNoteAsFailed: ReturnType<typeof vi.fn>;
-  let access: ReturnType<typeof vi.fn>;
-  let readdir: ReturnType<typeof vi.fn>;
+  let findImageDirectoryForHtmlFile: Mock;
+  let getImageFilesWithMetadata: Mock;
+  let findImagesForImport: Mock;
+  let setTotalImageJobs: Mock;
+  let markNoteAsFailed: Mock;
+  let access: Mock;
+  let readdir: Mock;
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -397,7 +397,7 @@ describe("Schedule Images Service", () => {
           },
         ];
         findImagesForImport.mockResolvedValue(mockImageFiles);
-        (mockImageQueue.add as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error("Queue add failed"));
+        (mockImageQueue.add as Mock).mockRejectedValueOnce(new Error("Queue add failed"));
 
         await expect(
           processImages(mockData, mockLogger, mockQueues)

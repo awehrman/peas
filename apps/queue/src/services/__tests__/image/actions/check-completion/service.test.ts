@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import {
   createMockLogger,
@@ -20,7 +20,7 @@ describe("Check Image Completion Service", () => {
   let mockStatusBroadcaster: ReturnType<typeof createMockStatusBroadcaster>;
   let mockDependencies: ImageWorkerDependencies;
   let mockData: ImageJobData;
-  let mockMarkImageJobCompleted: ReturnType<typeof vi.fn>;
+  let mockMarkImageJobCompleted: Mock;
 
   beforeEach(async () => {
     vi.clearAllMocks();

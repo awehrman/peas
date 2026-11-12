@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { type Mock, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ActionName } from "../../../types";
 import { ActionFactory } from "../../core/action-factory";
@@ -21,13 +21,15 @@ vi.mock("../../core/action-factory", () => {
   const MockActionFactory = vi.fn();
 
   // Create a simple mock that doesn't cause circular references
-  MockActionFactory.mockImplementation(() => ({
-    register: vi.fn(),
-    has: vi.fn(),
-    create: vi.fn(),
-    getRegisteredActions: vi.fn(),
-    clear: vi.fn(),
-  }));
+  MockActionFactory.mockImplementation(function () {
+    return {
+      register: vi.fn(),
+      has: vi.fn(),
+      create: vi.fn(),
+      getRegisteredActions: vi.fn(),
+      clear: vi.fn(),
+    };
+  });
 
   return { ActionFactory: MockActionFactory };
 });
@@ -290,8 +292,7 @@ describe("ActionRegistry", () => {
       expect(mockFactory.register).toHaveBeenCalledTimes(3);
 
       // Verify all actions were registered
-      const registeredCalls = (mockFactory.register as ReturnType<typeof vi.fn>)
-        .mock.calls;
+      const registeredCalls = (mockFactory.register as Mock).mock.calls;
       expect(registeredCalls).toHaveLength(3);
 
       // Verify action names

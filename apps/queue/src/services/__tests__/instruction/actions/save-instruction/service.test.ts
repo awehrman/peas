@@ -2,7 +2,7 @@ import {
   getInstructionCompletionStatus,
   updateInstructionLine,
 } from "@peas/database";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import type { StructuredLogger } from "../../../../../types";
 import type { InstructionJobData } from "../../../../../workers/instruction/dependencies";
@@ -288,7 +288,7 @@ describe("saveInstruction", () => {
       });
 
       const broadcastError = new Error("Broadcast failed");
-      (mockStatusBroadcaster.addStatusEventAndBroadcast as ReturnType<typeof vi.fn>).mockRejectedValue(broadcastError);
+      (mockStatusBroadcaster.addStatusEventAndBroadcast as Mock).mockRejectedValue(broadcastError);
 
       await expect(
         saveInstruction(mockData, mockLogger, mockStatusBroadcaster)
