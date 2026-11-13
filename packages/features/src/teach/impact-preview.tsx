@@ -1,7 +1,7 @@
 import { HighlightedLine } from "./highlighted-line";
 import type { DecisionPreview } from "./types";
 
-import type { ReactNode } from "react";
+import { type ReactNode, useId } from "react";
 
 import { cn } from "@peas/components";
 
@@ -26,15 +26,13 @@ export function ImpactPreview({
   isLoading: boolean;
   error: string | null;
 }): ReactNode {
+  const headingId = useId();
   return (
     <section
-      aria-labelledby="impact-heading"
+      aria-labelledby={headingId}
       className="flex flex-col gap-3 rounded-lg border border-greyscale-200 p-4"
     >
-      <h3
-        id="impact-heading"
-        className="text-base font-semibold text-greyscale-900"
-      >
+      <h3 id={headingId} className="text-base font-semibold text-greyscale-900">
         Impact
       </h3>
       <div

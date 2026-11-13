@@ -19,7 +19,14 @@ function quantitySpans(quantity: Quantity): TextSpan[] {
   switch (quantity.kind) {
     case "EXACT":
     case "RANGE":
+    case "UNSPECIFIED":
       return [quantity.span, ...(quantity.unit ? [quantity.unit.span] : [])];
+    case "MEASURE_RANGE":
+      return [
+        quantity.span,
+        ...quantitySpans(quantity.from),
+        ...quantitySpans(quantity.to),
+      ];
     case "APPROXIMATE":
       return [
         quantity.span,
@@ -36,8 +43,6 @@ function quantitySpans(quantity: Quantity): TextSpan[] {
       return [quantity.span, ...quantity.options.flatMap(quantitySpans)];
     case "SUM":
       return [quantity.span, ...quantity.parts.flatMap(quantitySpans)];
-    case "UNSPECIFIED":
-      return [quantity.span];
   }
 }
 
@@ -71,6 +76,8 @@ const SAMPLE_LINES = [
   "1 tbsp butter and 2 tbsp olive oil",
   "  ¼ cup, plus 1 tablespoon extra-virgin olive oil ",
   "🍋 zest of 1 lemon",
+  "800g–1kg (1lb 12oz–2lb 4oz) bone-in venison shoulder",
+  "rosemary a few sprigs",
 ];
 
 describe("parse invariants", () => {

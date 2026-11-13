@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { LEXICON_ROLES } from "../ast/types.js";
 import {
+  ENTRY_STATUSES,
   FOOD_RELATIONSHIP_TYPES,
   LEXICON_TERM_KINDS,
   PREP_POSITIONS,
@@ -33,6 +34,7 @@ export const DECISION_TYPES = [
   "CORRECT_MENTION",
   "APPROVE_CONCEPT",
   "EDIT_CONCEPT",
+  "EDIT_ENTRY",
   "REVERT",
 ] as const;
 export type DecisionType = (typeof DECISION_TYPES)[number];
@@ -156,6 +158,8 @@ export const DiscoveryPayloadSchema = z.discriminatedUnion("type", [
  * @example REJECT                 { type: "REJECT", reason: "Not an ingredient (instruction text)" }
  * @example MERGE_CONCEPTS         { type: "MERGE_CONCEPTS", survivorId: <scallion>, mergedId: <green onion> }
  * @example CORRECT_MENTION        { type: "CORRECT_MENTION", mentionId: <m>, conceptId: <shallot>, attributeValueIds: [], teachPhrase: "echalote" }
+ * @example EDIT_ENTRY             { type: "EDIT_ENTRY", entryId: <"finely">, text: "finely", role: "DEGREE", valueKey: "fine", status: "DEPRECATED" } // retire "finely"
+ * @example EDIT_ENTRY             { type: "EDIT_ENTRY", entryId: <"green" color=green>, text: "green", role: "ATTRIBUTE", attributeValueId: <ripeness=unripe>, status: "ACTIVE" } // repoint "green"
  * @example REVERT                 { type: "REVERT", decisionId: <d> }
  */
 export const DecisionPayloadSchema = z.discriminatedUnion("type", [
@@ -277,6 +281,37 @@ export const DecisionPayloadSchema = z.discriminatedUnion("type", [
       .array(z.object({ targetConceptId: z.uuid(), relationshipType }))
       .optional(),
   }),
+  /** One lexicon entry as it should read after the edit (the lexicon page). Changing the text's match key, the role, or the target retires the entry and adds its replacement; changing only the status, a food name's kind, or the spelling updates it in place. */
+  z
+    .object({
+      type: z.literal("EDIT_ENTRY"),
+      entryId: z.uuid(),
+      text: phrase,
+      role: z.enum(LEXICON_ROLES),
+      /** FOOD entries only. */
+      kind: z.enum(LEXICON_TERM_KINDS).optional(),
+      conceptId: z.uuid().optional(),
+      attributeValueId: z.uuid().optional(),
+      preparationId: z.uuid().optional(),
+      valueKey: z.string().min(1).optional(),
+      status: z.enum(ENTRY_STATUSES),
+    })
+    .refine(
+      (payload) =>
+        (payload.role === "FOOD" && payload.conceptId !== undefined) ||
+        (payload.role === "ATTRIBUTE" &&
+          payload.attributeValueId !== undefined) ||
+        (payload.role === "PREPARATION" &&
+          payload.preparationId !== undefined) ||
+        (["DEGREE", "MEASUREMENT_MODIFIER", "INSTRUCTION"].includes(
+          payload.role
+        ) &&
+          payload.valueKey !== undefined),
+      {
+        message:
+          "The target must match the role (conceptId, attributeValueId, preparationId, or valueKey)",
+      }
+    ),
   z.object({ type: z.literal("REVERT"), decisionId: z.uuid() }),
 ]);
 
@@ -289,6 +324,8 @@ const effectRow = z.object({
   previousKind: z.string().min(1).optional(),
   /** A concept's canonical name before EDIT_CONCEPT renamed it. */
   previousName: z.string().min(1).optional(),
+  /** A lexicon entry's spelling before EDIT_ENTRY respelled it ("Kosher Salt" for "kosher salt"). */
+  previousText: z.string().min(1).optional(),
 });
 
 /**

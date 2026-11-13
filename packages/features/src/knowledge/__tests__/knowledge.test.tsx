@@ -44,6 +44,7 @@ describe("knowledgeSectionFor", () => {
     expect(knowledgeSectionFor("/concepts/abc")).toBe("concepts");
     expect(knowledgeSectionFor("/lexicon")).toBe("lexicon");
     expect(knowledgeSectionFor("/teach/health")).toBe("health");
+    expect(knowledgeSectionFor("/teach/glossary")).toBe("glossary");
   });
 });
 

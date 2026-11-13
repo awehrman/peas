@@ -344,6 +344,10 @@ export async function describeDecision(
       return `Approved ${name(payload.conceptId)}`;
     case "EDIT_CONCEPT":
       return `Updated ${payload.canonicalName ?? name(payload.conceptId)}`;
+    case "EDIT_ENTRY":
+      return payload.status === "DEPRECATED"
+        ? `Retired “${payload.text}”`
+        : `Updated “${payload.text}”`;
     case "REVERT":
       return "Reverted the decision";
   }

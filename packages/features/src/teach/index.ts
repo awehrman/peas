@@ -6,6 +6,7 @@ export * from "./discovery-review";
 export * from "./examples-drawer";
 export * from "./health";
 export * from "./highlighted-line";
+export * from "./impact-confirmation";
 export * from "./impact-preview";
 export * from "./mention-details";
 export * from "./mention-panel";

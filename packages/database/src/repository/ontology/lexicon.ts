@@ -183,6 +183,9 @@ export interface LexiconEntryRefRecord {
   status: EntryStatus;
   conceptId: string | null;
   attributeValueId: string | null;
+  preparationId: string | null;
+  /** DEGREE, MEASUREMENT_MODIFIER, and INSTRUCTION targets, e.g. "fine". */
+  valueKey: string | null;
   /** Readable target: concept name, "definition: value", preparation key, or value key. */
   targetLabel: string;
 }
@@ -202,6 +205,7 @@ const ENTRY_REF_SELECT = {
   status: true,
   conceptId: true,
   attributeValueId: true,
+  preparationId: true,
   valueKey: true,
   concept: { select: { canonicalName: true } },
   attributeValue: {
@@ -221,6 +225,8 @@ function toEntryRef(row: EntryRefRow): LexiconEntryRefRecord {
     status: row.status,
     conceptId: row.conceptId,
     attributeValueId: row.attributeValueId,
+    preparationId: row.preparationId,
+    valueKey: row.valueKey,
     targetLabel:
       row.concept?.canonicalName ??
       (row.attributeValue
@@ -242,7 +248,7 @@ export async function getLexiconEntryRefs(
 }
 
 /**
- * One page of the lexicon for the Knowledge section: every name and modifier Peas knows, alphabetical, filtered by text and role. Retired (DEPRECATED) entries are hidden.
+ * One page of the lexicon for the Knowledge section: every name and modifier Peas knows, alphabetical, filtered by text and role. Retired (DEPRECATED) entries are hidden unless `includeRetired` asks for them, so they can be restored.
  *
  * @example
  * await listLexiconEntries({ query: "chicken", role: "FOOD" }) // { items: [{ text: "chicken thighs", kind: "PLURAL", targetLabel: "chicken thigh" }, ...], total: 9 }
@@ -251,14 +257,21 @@ export async function listLexiconEntries(
   {
     query,
     role,
+    includeRetired = false,
     offset = 0,
     limit = 50,
-  }: { query?: string; role?: LexiconRole; offset?: number; limit?: number } = {},
+  }: {
+    query?: string;
+    role?: LexiconRole;
+    includeRetired?: boolean;
+    offset?: number;
+    limit?: number;
+  } = {},
   db: DbClient = prisma
 ): Promise<{ items: LexiconEntryRefRecord[]; total: number }> {
   const trimmed = query?.trim();
   const where: Prisma.LexiconEntryWhereInput = {
-    status: { not: "DEPRECATED" },
+    ...(includeRetired ? {} : { status: { not: "DEPRECATED" } }),
     ...(role ? { role } : {}),
     ...(trimmed ? { normalized: { contains: trimmed, mode: "insensitive" } } : {}),
   };

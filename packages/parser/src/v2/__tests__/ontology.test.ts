@@ -34,8 +34,14 @@ describe("inheritableKinds", () => {
       "CATEGORY",
     ]);
     expect(inheritableKinds(["PART_OF"])).toEqual(["FOOD_GROUP", "ALLERGEN"]);
-    expect(inheritableKinds(["DERIVED_FROM"])).toEqual(["FOOD_GROUP", "ALLERGEN"]);
-    expect(inheritableKinds(["PROCESSED_FROM"])).toEqual(["FOOD_GROUP", "ALLERGEN"]);
+    expect(inheritableKinds(["DERIVED_FROM"])).toEqual([
+      "FOOD_GROUP",
+      "ALLERGEN",
+    ]);
+    expect(inheritableKinds(["PROCESSED_FROM"])).toEqual([
+      "FOOD_GROUP",
+      "ALLERGEN",
+    ]);
   });
 
   it("intersects the rules along a path and never inherits certifications", () => {
@@ -43,7 +49,10 @@ describe("inheritableKinds", () => {
       "FOOD_GROUP",
       "ALLERGEN",
     ]);
-    expect(inheritableKinds(["PROCESSED_FROM", "IS_A"])).toEqual(["FOOD_GROUP", "ALLERGEN"]);
+    expect(inheritableKinds(["PROCESSED_FROM", "IS_A"])).toEqual([
+      "FOOD_GROUP",
+      "ALLERGEN",
+    ]);
     expect(inheritableKinds([])).toEqual([]);
     expect(inheritableKinds(["IS_A"])).not.toContain("CERTIFICATION");
   });
@@ -246,6 +255,30 @@ describe("knowledge payload schemas", () => {
         role: "ATTRIBUTE",
         valueKey: "rough",
       }).success
+    ).toBe(false);
+  });
+
+  it("requires an EDIT_ENTRY target that matches its role", () => {
+    const base = {
+      type: "EDIT_ENTRY",
+      entryId: randomUUID(),
+      text: "green",
+      status: "ACTIVE",
+    };
+    const accepted = (payload: Record<string, unknown>) =>
+      DecisionPayloadSchema.safeParse({ ...base, ...payload }).success;
+    expect(accepted({ role: "FOOD", conceptId: randomUUID() })).toBe(true);
+    expect(
+      accepted({ role: "ATTRIBUTE", attributeValueId: randomUUID() })
+    ).toBe(true);
+    expect(accepted({ role: "PREPARATION", preparationId: randomUUID() })).toBe(
+      true
+    );
+    expect(accepted({ role: "INSTRUCTION", valueKey: "divided" })).toBe(true);
+    for (const role of ["FOOD", "ATTRIBUTE", "PREPARATION", "DEGREE"])
+      expect(accepted({ role })).toBe(false);
+    expect(
+      accepted({ role: "FOOD", conceptId: randomUUID(), status: "GONE" })
     ).toBe(false);
   });
 

@@ -856,10 +856,17 @@ type LexiconEntryRow {
   role: String!
   "CANONICAL, PLURAL, ALIAS, ... for FOOD entries."
   kind: String
-  "ACTIVE or PROPOSED (proposed entries are only used when curating)."
+  "ACTIVE, PROPOSED (only used when curating), or DEPRECATED (retired; listed only with includeRetired)."
   status: String!
   targetLabel: String!
+  "FOOD entries' concept."
   conceptId: ID
+  "ATTRIBUTE entries' value."
+  attributeValueId: ID
+  "PREPARATION entries' operation."
+  preparationId: ID
+  "DEGREE, MEASUREMENT_MODIFIER, and INSTRUCTION entries' value key, e.g. \"fine\"."
+  valueKey: String
 }
 
 type LexiconPage {
@@ -1347,8 +1354,8 @@ type Query {
   concepts(query: String, page: Int): ConceptsPage!
   "Concept.decisions is empty for non-admins."
   concept(id: ID!): Concept
-  "Admin only. Every name and modifier Peas knows, alphabetical. Example: lexicon(query: \"chick\", role: \"FOOD\", page: 1)"
-  lexicon(query: String, role: String, page: Int): LexiconPage!
+  "Admin only. Every name and modifier Peas knows, alphabetical; retired entries only with includeRetired. Example: lexicon(query: \"chick\", role: \"FOOD\", page: 1)"
+  lexicon(query: String, role: String, page: Int, includeRetired: Boolean): LexiconPage!
   "Name and entry search for concept pickers, up to 10 results. Example: searchConcepts(query: \"thigh\")"
   searchConcepts(query: String!): [ConceptRef!]!
   "Admin only."

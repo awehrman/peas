@@ -23,6 +23,17 @@ export const optionalPage = z.coerce
   .optional()
   .catch(undefined);
 
+/** A switch such as "?retired=1": TanStack Router hands it over as the number 1 or `true`, so both count, as do their string forms. Off is `undefined`, so the param stays out of the URL. */
+export const optionalFlag = z
+  .preprocess(
+    (value) =>
+      value === true || value === 1 || value === "1" || value === "true"
+        ? true
+        : undefined,
+    z.literal(true).optional()
+  )
+  .catch(undefined);
+
 export function optionalEnum<const T extends readonly [string, ...string[]]>(
   values: T
 ) {

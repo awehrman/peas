@@ -394,6 +394,47 @@ describe.skipIf(!hasTestDatabase)("teaching Peas (integration)", () => {
           select: { id: true },
         })
       ).map((entry) => entry.id);
+      const entryId = async (text: string, targetKey: string) =>
+        (
+          await prisma.lexiconEntry.findFirstOrThrow({
+            where: { text, targetKey },
+            select: { id: true },
+          })
+        ).id;
+      const unripe = ontology.attributes["ripeness:unripe"] ?? "";
+      const chop = await prisma.preparationOperation.findUniqueOrThrow({
+        where: { key: "chop" },
+        select: { id: true },
+      });
+      const editedEntries: DecisionPayload[] = [
+        {
+          type: "EDIT_ENTRY",
+          entryId: await entryId("finely", "degree:fine"),
+          text: "finely",
+          role: "DEGREE",
+          valueKey: "fine",
+          status: "DEPRECATED",
+        },
+        {
+          type: "EDIT_ENTRY",
+          entryId: await entryId(
+            "green",
+            `attr:${ontology.attributes["color:green"] ?? ""}`
+          ),
+          text: "green",
+          role: "ATTRIBUTE",
+          attributeValueId: unripe,
+          status: "ACTIVE",
+        },
+        {
+          type: "EDIT_ENTRY",
+          entryId: await entryId("chopped", `prep:${chop.id}`),
+          text: "Chopped",
+          role: "PREPARATION",
+          preparationId: chop.id,
+          status: "PROPOSED",
+        },
+      ];
       const decisions: DecisionPayload[] = [
         {
           type: "MAP_TO_CONCEPT",
@@ -465,6 +506,7 @@ describe.skipIf(!hasTestDatabase)("teaching Peas (integration)", () => {
         },
         { type: "MARK_AMBIGUOUS", phrase: "pepper", entryIds: pepperEntryIds },
         { type: "REJECT", reason: "Not an ingredient" },
+        ...editedEntries,
       ];
 
       for (const payload of decisions) {
@@ -488,6 +530,78 @@ describe.skipIf(!hasTestDatabase)("teaching Peas (integration)", () => {
           where: { sourceId: id("fresh-mozzarella") },
         })
       ).toBe(0);
+    });
+
+    it("edits a lexicon entry with a preview of the lines it changes, and reverts it, spelling included", async () => {
+      await addLines(["1 cup finely chopped parsley"]);
+      await backfillMentions(await context());
+      const finely = await prisma.lexiconEntry.findFirstOrThrow({
+        where: { text: "finely", targetKey: "degree:fine" },
+        select: { id: true },
+      });
+      const retire: DecisionPayload = {
+        type: "EDIT_ENTRY",
+        entryId: finely.id,
+        text: "finely",
+        role: "DEGREE",
+        valueKey: "fine",
+        status: "DEPRECATED",
+      };
+      const preview = await previewDecision(retire);
+      expect(preview.counts.affected).toBe(1);
+      expect(preview.examples[0]).toMatchObject({
+        lineText: "1 cup finely chopped parsley",
+      });
+
+      const entry = () =>
+        prisma.lexiconEntry.findUniqueOrThrow({
+          where: { id: finely.id },
+          select: { text: true, status: true, revisionRetired: true },
+        });
+      const retired = await applyDecision({ payload: retire, userId });
+      expect(await entry()).toMatchObject({
+        status: "DEPRECATED",
+        revisionRetired: retired.revision,
+      });
+      await applyDecision({
+        payload: { type: "REVERT", decisionId: retired.decisionId },
+        userId,
+      });
+      expect(await entry()).toMatchObject({
+        status: "ACTIVE",
+        revisionRetired: null,
+      });
+
+      const respelled = await applyDecision({
+        payload: { ...retire, text: "Finely", status: "ACTIVE" },
+        userId,
+      });
+      expect(respelled.effects.updated).toEqual([
+        expect.objectContaining({ id: finely.id, previousText: "finely" }),
+      ]);
+      expect((await entry()).text).toBe("Finely");
+      await applyDecision({
+        payload: { type: "REVERT", decisionId: respelled.decisionId },
+        userId,
+      });
+      expect((await entry()).text).toBe("finely");
+
+      await expect(
+        applyDecision({ payload: { ...retire, status: "ACTIVE" }, userId })
+      ).rejects.toThrow("Nothing changed");
+      await expect(
+        applyDecision({
+          payload: {
+            type: "EDIT_ENTRY",
+            entryId: finely.id,
+            text: "finely",
+            role: "FOOD",
+            conceptId: "00000000-0000-7000-8000-000000000000",
+            status: "ACTIVE",
+          },
+          userId,
+        })
+      ).rejects.toThrow("existing, non-merged concept");
     });
 
     it("reverts a decision's entries, deprecations, and applicability, and reopens its discovery", async () => {

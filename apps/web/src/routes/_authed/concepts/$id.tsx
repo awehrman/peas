@@ -21,7 +21,8 @@ function ConceptPage() {
   const { queryRef } = Route.useLoaderData();
   const { data } = useReadQuery(queryRef);
   const { id } = Route.useParams();
-  const { onApplyDecision, onSearchConcepts } = useTeachActions();
+  const { onApplyDecision, onPreviewDecision, onSearchConcepts } =
+    useTeachActions();
   const editActions = useConceptEditActions(id);
   if (!data.concept) return <NotFoundState />;
 
@@ -32,6 +33,7 @@ function ConceptPage() {
       recipesHref={recipesHref}
       onApplyDecision={onApplyDecision}
       onSearchConcepts={onSearchConcepts}
+      onPreview={onPreviewDecision}
       {...editActions}
     />
   );

@@ -216,6 +216,19 @@ yarn workspace @peas/queue reparse
 - **Jobs on the reinterpret queue:** `CORPUS_HEALTH_SNAPSHOT` (aggregate SQL only; one per finished run, keyed by the run id) and `EXPLORATORY_SWEEP` (discoveries only, never mentions). `scheduleMaintenanceJobs` registers a daily snapshot (`0 3 * * *`) and a weekly sweep (`0 4 * * 0`) on start. Logs `[HEALTH_SNAPSHOT]`, `[EXPLORATORY_SWEEP]`, `[MAINTENANCE]`.
 - Background batches add the mentions they change to the decision that produced the revision (`LexiconDecision.mentionsChanged`), so the health page's "taught to fixed" counts them.
 
+### Clearing imports
+
+```bash
+# Stop yarn dev first. Deletes imported notes, lines, mentions, recipes, sources, queued jobs, Redis work, and local uploads; keeps users and food knowledge
+yarn workspace @peas/queue clear-imports --yes
+
+# Also deletes food knowledge (concepts, lexicon, attributes, preparations, decisions, review cards, products, brands, ingredient tags, legacy mappings, health snapshots) and cached lexicon snapshots; reseed afterwards
+yarn workspace @peas/queue clear-imports --yes --include-ontology
+yarn workspace @peas/database db:seed:ontology && yarn workspace @peas/database db:seed:modifiers && yarn workspace @peas/database db:seed:foods
+```
+
+Without `--yes` the script only prints what it would delete. R2 isn't touched; the dashboard's Delete All Data (admins) cleans R2 too and always keeps food knowledge.
+
 ### API Endpoints
 
 #### File Import

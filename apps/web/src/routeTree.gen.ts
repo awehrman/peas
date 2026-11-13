@@ -30,6 +30,7 @@ import { Route as AuthedRecipesIndexRouteImport } from './routes/_authed/recipes
 import { Route as AuthedRecipesIdRouteImport } from './routes/_authed/recipes/$id'
 import { Route as AuthedTeachIndexRouteImport } from './routes/_authed/teach/index'
 import { Route as AuthedTeachDiscoveryIdRouteImport } from './routes/_authed/teach/$discoveryId'
+import { Route as AuthedTeachGlossaryRouteImport } from './routes/_authed/teach/glossary'
 import { Route as AuthedTeachHealthRouteImport } from './routes/_authed/teach/health'
 import { Route as AuthedTeachPlaygroundRouteImport } from './routes/_authed/teach/playground'
 
@@ -137,6 +138,11 @@ const AuthedTeachDiscoveryIdRoute = AuthedTeachDiscoveryIdRouteImport.update({
   path: '/$discoveryId',
   getParentRoute: () => AuthedTeachRouteRoute,
 } as any)
+const AuthedTeachGlossaryRoute = AuthedTeachGlossaryRouteImport.update({
+  id: '/glossary',
+  path: '/glossary',
+  getParentRoute: () => AuthedTeachRouteRoute,
+} as any)
 const AuthedTeachHealthRoute = AuthedTeachHealthRouteImport.update({
   id: '/health',
   path: '/health',
@@ -164,6 +170,7 @@ export interface FileRoutesByFullPath {
   '/notes/$id': typeof AuthedNotesIdRoute
   '/recipes/$id': typeof AuthedRecipesIdRoute
   '/teach/$discoveryId': typeof AuthedTeachDiscoveryIdRoute
+  '/teach/glossary': typeof AuthedTeachGlossaryRoute
   '/teach/health': typeof AuthedTeachHealthRoute
   '/teach/playground': typeof AuthedTeachPlaygroundRoute
   '/concepts/': typeof AuthedConceptsIndexRoute
@@ -185,6 +192,7 @@ export interface FileRoutesByTo {
   '/notes/$id': typeof AuthedNotesIdRoute
   '/recipes/$id': typeof AuthedRecipesIdRoute
   '/teach/$discoveryId': typeof AuthedTeachDiscoveryIdRoute
+  '/teach/glossary': typeof AuthedTeachGlossaryRoute
   '/teach/health': typeof AuthedTeachHealthRoute
   '/teach/playground': typeof AuthedTeachPlaygroundRoute
   '/concepts': typeof AuthedConceptsIndexRoute
@@ -211,6 +219,7 @@ export interface FileRoutesById {
   '/_authed/notes/$id': typeof AuthedNotesIdRoute
   '/_authed/recipes/$id': typeof AuthedRecipesIdRoute
   '/_authed/teach/$discoveryId': typeof AuthedTeachDiscoveryIdRoute
+  '/_authed/teach/glossary': typeof AuthedTeachGlossaryRoute
   '/_authed/teach/health': typeof AuthedTeachHealthRoute
   '/_authed/teach/playground': typeof AuthedTeachPlaygroundRoute
   '/_authed/concepts/': typeof AuthedConceptsIndexRoute
@@ -237,6 +246,7 @@ export interface FileRouteTypes {
     | '/notes/$id'
     | '/recipes/$id'
     | '/teach/$discoveryId'
+    | '/teach/glossary'
     | '/teach/health'
     | '/teach/playground'
     | '/concepts/'
@@ -258,6 +268,7 @@ export interface FileRouteTypes {
     | '/notes/$id'
     | '/recipes/$id'
     | '/teach/$discoveryId'
+    | '/teach/glossary'
     | '/teach/health'
     | '/teach/playground'
     | '/concepts'
@@ -283,6 +294,7 @@ export interface FileRouteTypes {
     | '/_authed/notes/$id'
     | '/_authed/recipes/$id'
     | '/_authed/teach/$discoveryId'
+    | '/_authed/teach/glossary'
     | '/_authed/teach/health'
     | '/_authed/teach/playground'
     | '/_authed/concepts/'
@@ -449,6 +461,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedTeachDiscoveryIdRouteImport
       parentRoute: typeof AuthedTeachRouteRoute
     }
+    '/_authed/teach/glossary': {
+      id: '/_authed/teach/glossary'
+      path: '/glossary'
+      fullPath: '/teach/glossary'
+      preLoaderRoute: typeof AuthedTeachGlossaryRouteImport
+      parentRoute: typeof AuthedTeachRouteRoute
+    }
     '/_authed/teach/health': {
       id: '/_authed/teach/health'
       path: '/health'
@@ -492,6 +511,7 @@ const AuthedLexiconRouteRouteWithChildren =
 
 interface AuthedTeachRouteRouteChildren {
   AuthedTeachDiscoveryIdRoute: typeof AuthedTeachDiscoveryIdRoute
+  AuthedTeachGlossaryRoute: typeof AuthedTeachGlossaryRoute
   AuthedTeachHealthRoute: typeof AuthedTeachHealthRoute
   AuthedTeachPlaygroundRoute: typeof AuthedTeachPlaygroundRoute
   AuthedTeachIndexRoute: typeof AuthedTeachIndexRoute
@@ -499,6 +519,7 @@ interface AuthedTeachRouteRouteChildren {
 
 const AuthedTeachRouteRouteChildren: AuthedTeachRouteRouteChildren = {
   AuthedTeachDiscoveryIdRoute: AuthedTeachDiscoveryIdRoute,
+  AuthedTeachGlossaryRoute: AuthedTeachGlossaryRoute,
   AuthedTeachHealthRoute: AuthedTeachHealthRoute,
   AuthedTeachPlaygroundRoute: AuthedTeachPlaygroundRoute,
   AuthedTeachIndexRoute: AuthedTeachIndexRoute,

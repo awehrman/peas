@@ -58,15 +58,7 @@ export async function getNoteWithIngredients(noteId: string) {
     const note = await prisma.note.findUnique({
       where: { id: noteId },
       include: {
-        parsedIngredientLines: {
-          include: {
-            ingredientReferences: {
-              include: {
-                ingredient: true, // Include the actual ingredients
-              },
-            },
-          },
-        },
+        parsedIngredientLines: true,
         parsedInstructionLines: true,
       },
     });
@@ -780,8 +772,8 @@ export async function getImportStats(): Promise<{
 }> {
   try {
     const [ingredientCount, noteCount, parsingErrorCount] = await Promise.all([
-      // Count total ingredients
-      prisma.ingredient.count(),
+      // Distinct foods the imported lines mention
+      prisma.foodConcept.count({ where: { mentions: { some: {} } } }),
 
       // Count total notes
       prisma.note.count(),

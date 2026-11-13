@@ -71,11 +71,7 @@ export interface ConceptDetail {
 }
 
 export type ClassificationKind =
-  | "FOOD_GROUP"
-  | "DIETARY"
-  | "ALLERGEN"
-  | "CATEGORY"
-  | "CERTIFICATION";
+  "FOOD_GROUP" | "DIETARY" | "ALLERGEN" | "CATEGORY" | "CERTIFICATION";
 
 export type ClassificationValue = "TRUE" | "FALSE" | "UNKNOWN";
 

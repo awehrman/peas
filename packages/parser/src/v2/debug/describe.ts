@@ -22,6 +22,8 @@ export function describeQuantity(quantity: Quantity): string {
       ]
         .filter(Boolean)
         .join(" ");
+    case "MEASURE_RANGE":
+      return `${describeRangeEnd(quantity.from)}-${describeRangeEnd(quantity.to)}`;
     case "APPROXIMATE":
       return `~${describeQuantity(quantity.quantity)}`;
     case "PACKAGE": {
@@ -33,8 +35,14 @@ export function describeQuantity(quantity: Quantity): string {
     case "SUM":
       return quantity.parts.map(describeQuantity).join(" + ");
     case "UNSPECIFIED":
-      return quantity.expression;
+      return [quantity.expression, quantity.unit?.id].filter(Boolean).join(" ");
   }
+}
+
+/** A compound end is parenthesized so "(1 lb + 12 oz)-(2 lb + 4 oz)" can't be misread. */
+function describeRangeEnd(quantity: Quantity): string {
+  const text = describeQuantity(quantity);
+  return quantity.kind === "SUM" ? `(${text})` : text;
 }
 
 export function describeItem(item: PhraseItem): string {

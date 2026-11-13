@@ -730,6 +730,153 @@
     }
   },
   {
+    "id": "coverage-046",
+    "input": "800g-1kg beef brisket",
+    "tags": [
+      "measure-range"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "800 g-1 kg",
+          "phrase": "beef brisket"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-047",
+    "input": "2 tbsp to 1/4 cup sugar",
+    "tags": [
+      "measure-range"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "2 tbsp-1/4 cup",
+          "phrase": "sugar"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-048",
+    "input": "2 lb to 3 lb beef chuck",
+    "tags": [
+      "range"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "2-3 lb",
+          "phrase": "beef chuck"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-049",
+    "input": "1 lb 12 oz pork shoulder",
+    "tags": [
+      "compound"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 lb + 12 oz",
+          "phrase": "pork shoulder"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-050",
+    "input": "1 cup 250 ml milk",
+    "tags": [
+      "compound"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 cup",
+          "phrase": "250 ml milk"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-051",
+    "input": "several cloves garlic, minced",
+    "tags": [
+      "unspecified"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "SEVERAL clove",
+          "phrase": "garlic",
+          "trailing": "minced"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-052",
+    "input": "thyme a few sprigs, leaves picked",
+    "tags": [
+      "postfix-quantity",
+      "unspecified"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "FEW sprig",
+          "phrase": "thyme",
+          "trailing": "leaves picked"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-053",
+    "input": "1 rack baby back ribs",
+    "tags": [
+      "count-unit"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 rack",
+          "phrase": "baby back ribs"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-054",
+    "input": "1/2 recipe pie dough",
+    "tags": [
+      "count-unit"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1/2 recipe",
+          "phrase": "pie dough"
+        }
+      ]
+    }
+  },
+  {
     "id": "corpus-001",
     "input": "1 knob of butter",
     "tags": [
@@ -1139,8 +1286,8 @@
       "status": "PARSED",
       "segments": [
         {
-          "quantity": "1",
-          "phrase": "recipe BBQ Rub",
+          "quantity": "1 recipe",
+          "phrase": "BBQ Rub",
           "parentheticals": [
             "below"
           ],
@@ -2677,13 +2824,11 @@
           "quantity": "800 g-1 kg",
           "phrase": "bone-in venison shoulder",
           "parentheticals": [
-            "[1 lb 12 oz-2 lb 4 oz]"
+            "[(1 lb + 12 oz)-(2 lb + 4 oz)]"
           ]
         }
       ]
-    },
-    "knownFailure": true,
-    "note": "A range whose ends use different units is not representable yet."
+    }
   },
   {
     "id": "corpus-119",
@@ -2695,8 +2840,8 @@
       "status": "PARSED",
       "segments": [
         {
-          "quantity": "FEW",
-          "phrase": "sprigs of rosemary",
+          "quantity": "FEW sprig",
+          "phrase": "rosemary",
           "trailing": "needles picked"
         }
       ]
@@ -2911,13 +3056,11 @@
       "status": "PARSED",
       "segments": [
         {
-          "quantity": "FEW",
+          "quantity": "FEW sprig",
           "phrase": "rosemary"
         }
       ]
-    },
-    "knownFailure": true,
-    "note": "Postfix unspecified quantity with a unit."
+    }
   },
   {
     "id": "corpus-133",

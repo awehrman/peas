@@ -145,14 +145,21 @@ describe("ConceptDetailPageContent", () => {
       "boneless thigh is a kind of chicken thigh(proposed)"
     );
     expect(screen.getByText("bone: Bone-in")).toBeInTheDocument();
-    expect(screen.getByText("poultry", { selector: "span" }).closest("li")).toHaveTextContent(
-      "poultry(food group): yes(inherited from chicken)"
+    expect(
+      screen.getByText("poultry", { selector: "span" }).closest("li")
+    ).toHaveTextContent("poultry (food group): yes (inherited from chicken)");
+    expect(screen.getByRole("list", { name: "Tags" })).toHaveTextContent(
+      "poultry"
     );
-    expect(screen.getByRole("list", { name: "Tags" })).toHaveTextContent("poultry");
     expect(
       screen.getByRole("list", { name: "Substitutions" })
-    ).toHaveTextContent("chicken(1:1): any cut");
-    expect(screen.queryByRole("button", { name: /Remove/ })).not.toBeInTheDocument();
+    ).toHaveTextContent("chicken (1:1): any cut");
+    expect(
+      screen.queryByRole("button", { name: /Remove/ })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Edit chicken thigh" })
+    ).not.toBeInTheDocument();
     expect(screen.getByText("(conflicting parents)")).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "1 lb chicken thighs" })
@@ -160,34 +167,36 @@ describe("ConceptDetailPageContent", () => {
     expect(
       screen.getByRole("link", { name: "1 lb chicken thighs" }).closest("li")
     ).toHaveTextContent("1 lb chicken thighs (Stew) verified");
-    expect(
-      screen.getByText("map to concept").closest("li")
-    ).toHaveTextContent("reverted");
+    expect(screen.getByText("map to concept").closest("li")).toHaveTextContent(
+      "reverted"
+    );
     expect(
       screen.queryByRole("button", { name: "Revert" })
     ).not.toBeInTheDocument();
   });
 
-  it("reverts a decision after confirming and adds relationships through decisions", async () => {
+  it("reverts a decision after confirming", async () => {
     const onApplyDecision = vi.fn(async () => ({
       success: true as const,
       data: {
-        summary: "Taught: chicken thigh PART_OF chicken",
+        summary: "Reverted the decision",
         mentionsUpdated: 0,
         needsBackgroundReinterpret: false,
         reinterpretCommand: null,
       },
     }));
-    const onSearchConcepts = vi.fn(async () => [CHICKEN]);
     render(
       withNavigation(
         <ConceptDetailPageContent
           concept={concept}
           onApplyDecision={onApplyDecision}
-          onSearchConcepts={onSearchConcepts}
+          onSearchConcepts={vi.fn(async () => [CHICKEN])}
         />
       )
     );
+    expect(
+      screen.getByRole("button", { name: "Edit chicken thigh" })
+    ).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Revert" }));
     const dialog = await screen.findByRole("dialog", {
@@ -200,32 +209,6 @@ describe("ConceptDetailPageContent", () => {
         null
       )
     );
-
-    fireEvent.change(screen.getByLabelText("chicken thigh…"), {
-      target: { value: "PART_OF" },
-    });
-    fireEvent.change(
-      screen.getByRole("combobox", { name: "Related concept" }),
-      { target: { value: "chick" } }
-    );
-    fireEvent.mouseDown(
-      await screen.findByRole("option", { name: "chicken" }, { timeout: 2000 })
-    );
-    fireEvent.click(screen.getByRole("button", { name: "Add relationship" }));
-    await waitFor(() =>
-      expect(onApplyDecision).toHaveBeenCalledWith(
-        {
-          type: "ADD_RELATIONSHIP",
-          sourceConceptId: THIGH.id,
-          targetConceptId: CHICKEN.id,
-          relationshipType: "PART_OF",
-        },
-        null
-      )
-    );
-    expect(
-      await screen.findByText("Taught: chicken thigh PART_OF chicken")
-    ).toBeInTheDocument();
   });
 
   it("shows merged and empty concepts", () => {

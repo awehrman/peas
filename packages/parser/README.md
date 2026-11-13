@@ -1,14 +1,8 @@
 # @peas/parser
 
-Ingredient-line parsers for Peas.
+The ingredient-line parser, resolver, and food-knowledge schemas for Peas (v2). The queue parses and resolves every imported line with `processIngredientLine`; the database, API, and web app share its Zod schemas.
 
-| Parser | Where | Status |
-| --- | --- | --- |
-| v1 | `src/v1/parser.peggy` | No longer used by imports since Phase 5; kept for the v1 baseline and snapshot until Phase 7. |
-| v2 | `src/v2/` | The import parser since Phase 5: the queue parses and resolves every imported line with `processIngredientLine`. |
-| Legacy | `legacy/` | Old grammar work kept for reference only. Nothing builds or imports it. |
-
-Most of this README is about v2: how it thinks, what it produces, and how to try it.
+`@peas/parser` and `@peas/parser/v2` export the same module. Earlier grammars (v1, an early v2 stub, and the runtime-compiled database grammar) are kept under [`legacy/`](legacy/README.md) for reference; nothing builds, tests, or imports them.
 
 ## v2 in one minute
 
@@ -16,9 +10,9 @@ v2 splits the job of understanding an ingredient line into three layers, each wi
 
 1. **The grammar finds the shape.** It knows what amounts, ranges, units, packages, parentheses, commas, and "and"/"or" look like. It contains no food words at all.
 2. **The lexicon names the words.** A list of known expressions, each with a role (`FOOD`, `ATTRIBUTE`, `PREPARATION`, `DEGREE`, `MEASUREMENT_MODIFIER`, `INSTRUCTION`). It is passed in at parse time, so teaching Peas a new word never means editing the grammar.
-3. **The resolver decides meaning** (Phase 3, not built yet). It takes the syntax tree and decides which food is meant, whether "milk or cream" is one food or two, and so on.
+3. **The resolver decides meaning.** It takes the syntax tree and decides which food is meant, whether "milk or cream" is one food or two, and so on (see [Resolving meaning](#resolving-meaning)).
 
-Phase 1 delivered layers 1 and 2. Phase 2 added the shared schemas layer 3 will produce (see [Ontology, resolution, and review schemas](#ontology-resolution-and-review-schemas)) and the database tables that store them. Without a lexicon the grammar still parses every line; words it doesn't know are kept as `UNKNOWN` instead of being dropped or guessed.
+Without a lexicon the grammar still parses every line; words it doesn't know are kept as `UNKNOWN` instead of being dropped or guessed.
 
 ## The pipeline
 
@@ -60,18 +54,21 @@ Each line becomes one or more **segments** (one ingredient mention each). A segm
 | `trailing` | Everything after the first comma | `sifted` |
 | `coordination` | An unresolved "and"/"or" inside the phrase | (none) |
 
-Quantities come in seven kinds:
+Quantities come in eight kinds:
 
 | Kind | Example | Read as |
 | --- | --- | --- |
 | `EXACT` | "1 ½ tbsp." | 3/2 tbsp |
 | `EXACT` (implied) | "pinch of salt" | (1) pinch |
-| `RANGE` | "2 to 3 lbs" | 2-3 lb |
+| `RANGE` | "2 to 3 lbs", "2 lb to 3 lb" | 2-3 lb |
+| `MEASURE_RANGE` | "800g–1kg", "2 tbsp to 1/4 cup" | 800 g-1 kg (each end keeps its own unit) |
 | `APPROXIMATE` | "about 1 cup" | ~1 cup |
 | `PACKAGE` | "1 (14-ounce) can" | 1 can, each 14 oz |
 | `ALTERNATIVE` | "1 tbsp or 15 ml" | 1 tbsp, or equivalently 15 ml |
-| `SUM` | "1 cup plus 2 tablespoons" | 1 cup + 2 tbsp |
-| `UNSPECIFIED` | "to taste" | TO_TASTE |
+| `SUM` | "1 cup plus 2 tablespoons", "1lb 12oz" | 1 cup + 2 tbsp; 1 lb + 12 oz |
+| `UNSPECIFIED` | "to taste", "a few sprigs" | TO_TASTE; FEW sprig |
+
+A measure written in a larger and a smaller unit ("1lb 12oz", "1 cup 2 tbsp") is a `SUM` only for the pairs in the grammar's `COMPOUND_UNITS` (lb and oz, kg and g, l and ml or cl, gal and qt, qt and cup, cup and tbsp or tsp, tbsp and tsp), so "1 cup 250 ml milk" keeps "250 ml" in the phrase. A range of compound measures parenthesizes its ends: "1lb 12oz–2lb 4oz" reads `(1 lb + 12 oz)-(2 lb + 4 oz)`. "recipe", "rack", and "slab" are count units ("1/2 recipe pie dough", "1 rack baby back ribs").
 
 Amounts are stored as exact rationals (`{ numerator: 3, denominator: 2 }`), never floats, so "1/3 cup" stays exactly one third.
 
@@ -198,7 +195,7 @@ Segmentation 0: [1 tbsp] {virgin olive oil:FOOD}     <- uses the PROPOSED entry
 Segmentation 1: [1 tbsp] virgin {olive oil:FOOD}     <- ACTIVE entries only
 ```
 
-"virgin olive oil" is a `PROPOSED` entry in the demo lexicon. Conservative mode ignores it and returns only segmentation 1. Exploratory mode returns both, which is what the future "Teach Peas" review screen uses to preview the effect of accepting a proposal.
+"virgin olive oil" is a `PROPOSED` entry in the demo lexicon. Conservative mode ignores it and returns only segmentation 1. Exploratory mode returns both, which is what the Teach Peas review screens use to preview the effect of accepting a proposal.
 
 ### Known limitation: "2 to 3 lbs boneless, skinless chicken thighs"
 
@@ -206,7 +203,7 @@ Segmentation 1: [1 tbsp] virgin {olive oil:FOOD}     <- ACTIVE entries only
 Summary     [2-3 lb] {boneless:ATTRIBUTE} , {skinless:ATTRIBUTE} {chicken thighs:FOOD}
 ```
 
-The grammar treats the first comma as the start of the trailing part, so "skinless chicken thighs" ends up in `trailing`. The lexicon roles make the mistake detectable (the food is in the trailing part, and the phrase holds only an attribute), and the Phase 3 resolver is responsible for reading phrase and trailing together. Cases like this, and the five known failures in `fixtures/golden/structural.dev.json`, are tracked in `fixtures/reports/v1-vs-v2.md`.
+The grammar treats the first comma as the start of the trailing part, so "skinless chicken thighs" ends up in `trailing`. The lexicon roles make the mistake detectable (the food is in the trailing part, and the phrase holds only an attribute), and the resolver is responsible for reading phrase and trailing together. Cases like this are tracked in `fixtures/reports/v1-vs-v2.md`.
 
 ## Using v2 in code
 
@@ -256,7 +253,7 @@ Lexicon entry ids must be UUIDs (`crypto.randomUUID()` in code; the database gen
 How the pieces fit, using "1 lb boneless chicken thighs":
 
 1. The parser produces the syntax tree: `[1 lb] {boneless:ATTRIBUTE} {chicken thighs:FOOD}`.
-2. The resolver (Phase 3) turns it into a `Resolution`: candidate concept "chicken thigh" via the PLURAL entry "chicken thighs", with the asserted attribute bone=boneless.
+2. The resolver turns it into a `Resolution`: candidate concept "chicken thigh" via the PLURAL entry "chicken thighs", with the asserted attribute bone=boneless.
 3. The database stores one `IngredientMention` for the segment, with `syntax` (a `MentionSyntax`), `quantity`, and `resolution` validated by these schemas.
 4. If something can't be resolved ("calamansi juice"), the resolver emits a discovery; a reviewer's choice is recorded as a `DecisionPayload` with its own lexicon revision.
 
@@ -312,12 +309,12 @@ Phase 4 adds the pure half of the review loop to `src/v2/knowledge/` and `src/v2
 | `decisionScope(payload)` | The phrases, concepts, and mentions a decision can affect, for prefiltering previews and reinterpretation | `{ phrases: ["scallion", "scallions"], conceptIds: [...] }` |
 | `generatePlural(phrase)` | The PLURAL entry a phrase decision adds; null for mass nouns and phrases that already look plural | "cherry tomato" gives "cherry tomatoes"; "flour" gives null |
 | `diffResolution(before, after, ...)` and `summarizeResolution` | How a decision changes one mention (newly resolved, concept or attribute change, ambiguity, lost resolution) in readable form | "unresolved: icing sugar" becomes "powdered sugar" |
-| `structureSignature(syntax)` and `structuralIssue(syntax)` | Phase 6: a line's shape as token classes (`N` number, `F` fraction, `U` unit, `W` unknown word, `L` lexeme, punctuation kept) and why it needs the grammar (`UNPARSED`, `QUANTITY_IN_PHRASE`, `HEADING`); `discover` emits STRUCTURAL_PATTERN keyed by the signature | "rosemary a few sprigs" is `W U` (QUANTITY_IN_PHRASE); "For the glaze:" is `W :` (HEADING) |
+| `structureSignature(syntax)` and `structuralIssue(syntax)` | Phase 6: a line's shape as token classes (`N` number, `F` fraction, `U` unit, `W` unknown word, `L` lexeme, punctuation kept) and why it needs the grammar (`UNPARSED`, `QUANTITY_IN_PHRASE`, `HEADING`); `discover` emits STRUCTURAL_PATTERN keyed by the signature | "thyme 4 sprigs fresh" is `W N U W` (QUANTITY_IN_PHRASE); "For the glaze:" is `W :` (HEADING) |
 | `draftGoldenCases(signature, lines)` | Pending golden cases for a structural pattern's lines, with v2's current reading and an empty expected value | `pending-w-u-1`, `pending-w-u-2` |
 | `upgradeStoredSyntax(syntax, parserVersion)` | Carries stored syntax across a major parser version through `SYNTAX_UPGRADES` (empty until the syntax tree changes shape) | a 2.x mention reads unchanged |
 | `calibrateThresholds(groups)` | Precision and coverage of automatic resolution over a grid of `minMargin` and `maxUnknownForAuto`, with a recommendation at the target precision | keeps 0.15 / 0 on the semantic set |
 
-Decision payloads are validated by `DecisionPayloadSchema`. Phase 4 added optional fields without changing stored payloads: `exclusive` on MAP_TO_CONCEPT (the phrase stops meaning anything else), `plural` and `attributeValueIds` on CREATE_CONCEPT, `modifierText` on CONCEPT_PLUS_ATTRIBUTE, `applicableConceptIds` on CLASSIFY_MODIFIER and ADD_ATTRIBUTE_VALUE, and `teachPhrase` on CORRECT_MENTION. IGNORE_TOKEN stores an INSTRUCTION entry with the value key `noise`, which the resolver counts as explained and leaves out of its result.
+Decision payloads are validated by `DecisionPayloadSchema`. Phase 4 added optional fields without changing stored payloads: `exclusive` on MAP_TO_CONCEPT (the phrase stops meaning anything else), `plural` and `attributeValueIds` on CREATE_CONCEPT, `modifierText` on CONCEPT_PLUS_ATTRIBUTE, `applicableConceptIds` on CLASSIFY_MODIFIER and ADD_ATTRIBUTE_VALUE, and `teachPhrase` on CORRECT_MENTION. IGNORE_TOKEN stores an INSTRUCTION entry with the value key `noise`, which the resolver counts as explained and leaves out of its result. EDIT_ENTRY (the lexicon page) states one entry as it should read, with the target field its role uses and a status (`editedEntryFor` builds the replacement entry; `applyDecisionToSnapshot` drops the old entry and makes the replacement match the status, so restoring a retired entry adds it back).
 
 ## Commands
 
@@ -326,23 +323,22 @@ All commands run from the repo root with `yarn workspace @peas/parser <command>`
 | Command | What it does |
 | --- | --- |
 | `explain:line "<line>"` | Explains one line step by step. Flags: `--lexicon none\|structural\|demo`, `--exploratory`, `--json` |
-| `test:run` | Unit, golden, invariant, schema, ontology, and v1 baseline tests (regenerates the grammar first) |
+| `test:run` | Unit, golden, invariant, schema, and ontology tests (regenerates the grammar first) |
 | `test:coverage` | The same tests with the v2 coverage floor (see `docs/testing.md`) |
-| `report:compare` | Compares v1 and v2 over the corpus and golden sets; writes `fixtures/reports/v1-vs-v2.md` |
+| `report:compare` | Compares the frozen v1 baseline with v2 over the corpus and golden sets; writes `fixtures/reports/v1-vs-v2.md` |
 | `preview:lexicon` | Before/after preview of a lexicon change across the corpus |
 | `evaluate:resolution` | Resolution report over the corpus and golden inputs with the fixture snapshot (`--snapshot <path>` for any `ResolverSnapshot` JSON); writes `fixtures/reports/resolution.md` |
-| `extract:descriptors` | Classifies the v1 descriptor list into suggested roles and targets; writes `fixtures/lexicon/v1-descriptors.candidates.json` |
-| `corpus:baseline-v1` | Re-snapshots v1 output to `fixtures/baseline/v1.jsonl` |
+| `extract:descriptors` | Classifies the v1 grammar's descriptor list (`legacy/v1/parser.peggy`) into suggested roles and targets; writes `fixtures/lexicon/v1-descriptors.candidates.json` |
 | `pull:fixtures --discovery <id>` | Writes a structural pattern's example lines to `fixtures/golden/pending/<slug>.json` as pending cases (runs in `@peas/database`; `--signature "W U"` and `--limit` also work) |
 | `calibrate:thresholds` | Calibrates automatic resolution; writes `fixtures/reports/calibration.md`. `--labels <file>` adds verified mentions exported by `yarn workspace @peas/database export:calibration-labels`; `--target 0.98` sets the precision target |
-| `build` | Builds v1 and v2 into `dist/` |
+| `build` | Generates the grammar and compiles v2 into `dist/v2` |
 
 ## Fixtures
 
 | Path | Contents |
 | --- | --- |
 | `fixtures/corpus/lines.jsonl` | Distinct real ingredient lines exported from imported notes by `yarn workspace @peas/database export:lines`. Reset to empty on 12 November 2026 (the earlier 682-line export included instruction text the old HTML parser mistook for ingredients); refill it after a fresh import. |
-| `fixtures/golden/structural.dev.json` | 182 hand-checked expected parses (5 marked as known failures) |
+| `fixtures/golden/structural.dev.json` | 191 hand-checked expected parses, none marked as known failures since `PARSER_VERSION` 2.2.0 |
 | `fixtures/golden/structural.holdout.json` | 41 held-out cases used only to measure, never to tune |
 | `fixtures/golden/semantic.json` | Expected meanings (concept, attributes, preparations) for the 15 section-32 lines; the resolver must get all of them right |
 | `fixtures/lexicon/structural.json` | Measurement modifiers the structural tests assume |
@@ -350,14 +346,14 @@ All commands run from the repo root with `yarn workspace @peas/parser <command>`
 | `fixtures/lexicon/semantic-cases.json` | The lexicon and small ontology (concepts, relationships, applicability, concept attributes) `golden/semantic.json` assumes; resolver tests build their snapshot from it, and the database integration tests load it to prove every target interpretation can be stored |
 | `fixtures/lexicon/snapshot.json` | That fixture as a `ResolverSnapshot`, regenerated by `evaluate:resolution` |
 | `fixtures/lexicon/modifiers.seed.json` | 99 reviewed modifier entries (preparations, degrees, measurement modifiers, instructions, attributes) loaded by `db:seed:modifiers` |
-| `fixtures/lexicon/starter-foods.seed.json` | 28 starter foods (chicken and its parts, dairy, pantry, produce, oils) with names, relationships, characterizing attributes, and attribute applicability, loaded by `db:seed:foods` |
+| `fixtures/lexicon/starter-foods.seed.json` | 33 starter foods (chicken and its parts, dairy, pantry, produce, oils, and the base foods they come from) with names, relationships, properties, characterizing attributes, and attribute applicability, loaded by `db:seed:foods`. Every food is seeded approved. |
 | `fixtures/lexicon/v1-descriptors.candidates.json` | Every v1 descriptor with a suggested role and target, for reviewing what to add to the modifier seed next |
-| `fixtures/baseline/v1.jsonl` | v1 output for every corpus line, for comparison |
+| `fixtures/baseline/v1.jsonl` | v1 output for every corpus line, frozen when v1 was retired; `node legacy/v1/scripts/baseline-v1.js` regenerates it by hand |
 | `fixtures/reports/v1-vs-v2.md` | Latest comparison report |
 | `fixtures/reports/resolution.md` | Latest resolution report (fixture snapshot); `resolution.db.md` is the live-database version |
 
 ## Further reading
 
-- [Ingredient ontology rebuild](../../docs/architecture/ingredient-ontology-rebuild.md): the overall plan, decisions, the ontology data model, and the Phase 1, 2, and 3 deliverables.
+- [Ingredient ontology rebuild](../../docs/architecture/ingredient-ontology-rebuild.md): the architecture, decisions, ontology data model, and what each phase delivered.
 - [packages/database/README.md](../database/README.md): the ontology tables and repository functions.
 - [legacy/README.md](legacy/README.md): what the reference-only grammars are.

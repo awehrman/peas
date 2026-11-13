@@ -1,12 +1,12 @@
 {
-  "description": "Starter foods for a fresh database: a few families with their names, hierarchy, and attribute applicability. Every derived food leads back to a base food (canned tomatoes to tomato, heavy cream to cream to milk), and properties are set on the bases (tomato is a vegetable, wheat a grain with gluten) so variants inherit them. Loaded by `yarn workspace @peas/database db:seed:foods`. Every food starts PROPOSED (in the review queue on the ingredients page) with PROPOSED names, so imports don't resolve to it until someone approves it; a food's own status field overrides that.",
-  "status": "PROPOSED",
+  "description": "Starter foods for a fresh database: a few families with their names, hierarchy, and attribute applicability. Every derived food leads back to a base food (canned tomatoes to tomato, heavy cream to cream to milk), and properties are set on the bases (tomato is a vegetable, wheat a grain with gluten) so variants inherit them. Loaded by `yarn workspace @peas/database db:seed:foods`. Every food starts approved (VERIFIED, with ACTIVE names), so imports resolve to it right away; set status to PROPOSED, here or on a food, to put foods in the review queue on the ingredients page instead.",
+  "status": "VERIFIED",
   "concepts": [
     { "key": "chicken", "name": "chicken", "properties": ["MEAT"] },
     { "key": "chicken-thigh", "name": "chicken thigh", "plural": "chicken thighs", "relationships": [["PART_OF", "chicken"]] },
     { "key": "chicken-breast", "name": "chicken breast", "plural": "chicken breasts", "relationships": [["PART_OF", "chicken"]] },
     { "key": "chicken-wing", "name": "chicken wing", "plural": "chicken wings", "relationships": [["PART_OF", "chicken"]] },
-    { "key": "chicken-drumstick", "name": "chicken drumstick", "plural": "chicken drumsticks", "aliases": ["drumsticks"], "relationships": [["PART_OF", "chicken"]], "status": "PROPOSED" },
+    { "key": "chicken-drumstick", "name": "chicken drumstick", "plural": "chicken drumsticks", "aliases": ["drumsticks", "chicken leg", "chicken legs"], "relationships": [["PART_OF", "chicken"]] },
     { "key": "ground-chicken", "name": "ground chicken", "relationships": [["PROCESSED_FROM", "chicken"]], "attributes": ["form:ground"] },
 
     { "key": "milk", "name": "milk", "properties": ["DAIRY"] },
@@ -29,7 +29,7 @@
     { "key": "yellow-onion", "name": "yellow onion", "plural": "yellow onions", "relationships": [["IS_A", "onion"]] },
     { "key": "lemon", "name": "lemon", "plural": "lemons", "properties": ["FRUIT"] },
     { "key": "lemon-juice", "name": "lemon juice", "relationships": [["DERIVED_FROM", "lemon"]] },
-    { "key": "lemon-zest", "name": "lemon zest", "relationships": [["PART_OF", "lemon"]], "status": "PROPOSED" },
+    { "key": "lemon-zest", "name": "lemon zest", "relationships": [["PART_OF", "lemon"]] },
     { "key": "tomato", "name": "tomato", "plural": "tomatoes", "properties": ["VEGETABLE"] },
     { "key": "canned-tomatoes", "name": "canned tomatoes", "relationships": [["PROCESSED_FROM", "tomato"]], "attributes": ["preservation:canned"] },
     { "key": "parsley", "name": "parsley", "properties": ["HERB"] },

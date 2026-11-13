@@ -3,6 +3,7 @@ import {
   createUser,
   hasTestDatabase,
   resetDatabase,
+  withReviewQueue,
 } from "./int-helpers.js";
 
 import { buildResolverContext, processIngredientLine } from "@peas/parser/v2";
@@ -97,10 +98,9 @@ describe.skipIf(!hasTestDatabase)("ingredient cards (integration)", () => {
     await seedLexiconModifiers(
       fixture<{ entries: ModifierSeedEntry[] }>("modifiers.seed.json").entries
     );
-    await seedStarterFoods({
-      ...fixture<StarterFoodsSeed>("starter-foods.seed.json"),
-      status: "VERIFIED",
-    });
+    await seedStarterFoods(
+      withReviewQueue(fixture<StarterFoodsSeed>("starter-foods.seed.json"))
+    );
     userId = await createUser();
   });
 
@@ -190,7 +190,11 @@ describe.skipIf(!hasTestDatabase)("ingredient cards (integration)", () => {
     expect(drumstick).toMatchObject({
       isReviewed: false,
       plural: "chicken drumsticks",
-      aliases: [{ name: "drumsticks" }],
+      aliases: [
+        { name: "chicken leg" },
+        { name: "chicken legs" },
+        { name: "drumsticks" },
+      ],
     });
     expect(
       await planIngredientEdit(await cardInput("chicken drumstick"))

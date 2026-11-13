@@ -19,38 +19,29 @@ model ParsedIngredientLine {
   blockIndex Int
   lineIndex  Int
   reference  String
-  rule       String?
 
   parseStatus ParseStatus @default(AWAITING_PARSING)
   reviewStatus ReviewStatus @default(UNREVIEWED)
   parsedAt              DateTime?
-  parsed                ParsedSegment[]
   queueJobs QueueJob[]
 
-  ingredientReferences IngredientReference[]
-
-  // v2 ingredient mentions (one per parsed segment)
+  // Ingredient mentions (one per parsed segment, or per part of a segment split on "and")
   mentions IngredientMention[]
 
   // New field to mark lines as active/inactive
   isActive Boolean @default(true)
 
-  // Which parser produced the segments: "static_v1" or "grammar:<versionId>"
+  // The parser that produced the mentions, e.g. "v2:2.3.0"
   parserVersion String?
 
   Note   Note?   @relation(fields: [noteId], references: [id], onDelete: Cascade)
   noteId String?
-
-  // Link to the unique line pattern
-  uniqueLinePattern   UniqueLinePattern? @relation(fields: [uniqueLinePatternId], references: [id])
-  uniqueLinePatternId String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([noteId])
   @@index([isActive])
-  @@index([uniqueLinePatternId])
   @@unique([noteId, blockIndex, lineIndex])
 }
 
@@ -76,63 +67,3 @@ model ParsedInstructionLine {
   @@index([noteId])
   @@index([isActive])
 }
-
-model ParsingRule {
-  id String @id @default(cuid())
-
-  // "#1_ingredientLine >> #3_ingredients >> #2_ingredientExpression >> #2_ingredient"
-  name String @unique
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Related parsed segments
-  parsedSegments ParsedSegment[]
-
-  @@index([name])
-}
-
-model ParsedSegment {
-  id String @id @default(cuid())
-
-  index Int
-  rule  String
-  type  String
-  value String
-  processingTime Int? // Processing time in milliseconds
-
-  ingredientLine   ParsedIngredientLine @relation(fields: [ingredientLineId], references: [id], onDelete: Cascade)
-  ingredientLineId String
-
-  // Reference to the parsing rule
-  parsingRule   ParsingRule? @relation(fields: [ruleId], references: [id])
-  ruleId        String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([ingredientLineId])
-  @@index([ruleId])
-}
-
-model UniqueLinePattern {
-  id String @id @default(cuid())
-
-  // Array of parsing rule IDs in order
-  ruleIds String[]
-
-  // Example line that matches this pattern
-  exampleLine String?
-
-  // Count of times this pattern has been seen
-  occurrenceCount Int @default(1)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Related parsed ingredient lines
-  parsedIngredientLines ParsedIngredientLine[]
-
-  @@unique([ruleIds])
-  @@index([occurrenceCount])
-} 

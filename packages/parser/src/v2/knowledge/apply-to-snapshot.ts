@@ -113,6 +113,34 @@ export function modifierEntryFor(
   };
 }
 
+/**
+ * The entry EDIT_ENTRY leaves in place of the edited one, with only the target field its role uses.
+ *
+ * @example
+ * editedEntryFor({ type: "EDIT_ENTRY", entryId, text: "finely", role: "DEGREE", valueKey: "fine", status: "ACTIVE" })
+ * // { text: "finely", role: "DEGREE", kind: null, conceptId: null, attributeValueId: null, preparationId: null, valueKey: "fine" }
+ */
+export function editedEntryFor(
+  payload: Extract<DecisionPayload, { type: "EDIT_ENTRY" }>
+): SnapshotEntryInput {
+  return {
+    text: payload.text,
+    role: payload.role,
+    kind: payload.role === "FOOD" ? (payload.kind ?? "ALIAS") : null,
+    conceptId: payload.role === "FOOD" ? (payload.conceptId ?? null) : null,
+    attributeValueId:
+      payload.role === "ATTRIBUTE" ? (payload.attributeValueId ?? null) : null,
+    preparationId:
+      payload.role === "PREPARATION" ? (payload.preparationId ?? null) : null,
+    valueKey:
+      payload.role === "FOOD" ||
+      payload.role === "ATTRIBUTE" ||
+      payload.role === "PREPARATION"
+        ? null
+        : (payload.valueKey ?? null),
+  };
+}
+
 /** A random UUID for rows that exist only in a preview snapshot. */
 function randomUuid(): string {
   const crypto = (globalThis as { crypto?: { randomUUID?: () => string } })
@@ -150,7 +178,8 @@ export function applyDecisionToSnapshot(
     revision: snapshot.revision + 1,
   };
 
-  const ensureEntry = (input: SnapshotEntryInput) => {
+  /** Makes the entry ACTIVE, adding it when missing, and returns it. */
+  const ensureEntry = (input: SnapshotEntryInput): SnapshotEntry => {
     const matchKey = entryMatchKey(input.text);
     const targetKey = entryTargetKey(input);
     const existing = next.entries.find(
@@ -160,7 +189,7 @@ export function applyDecisionToSnapshot(
     );
     if (existing) {
       existing.status = "ACTIVE";
-      return;
+      return existing;
     }
     const entry: SnapshotEntry = {
       id: newId(),
@@ -174,6 +203,7 @@ export function applyDecisionToSnapshot(
       valueKey: input.valueKey ?? null,
     };
     next.entries.push(entry);
+    return entry;
   };
 
   const definitionOf = (attributeValueId: string) =>
@@ -321,9 +351,7 @@ export function applyDecisionToSnapshot(
       break;
 
     case "APPROVE_CONCEPT": {
-      const concept = next.concepts.find(
-        (row) => row.id === payload.conceptId
-      );
+      const concept = next.concepts.find((row) => row.id === payload.conceptId);
       if (concept?.status === "PROPOSED") concept.status = "VERIFIED";
       for (const entry of next.entries)
         if (
@@ -337,9 +365,15 @@ export function applyDecisionToSnapshot(
 
     case "EDIT_CONCEPT": {
       const concept = next.concepts.find((row) => row.id === payload.conceptId);
-      if (concept && payload.canonicalName) concept.canonicalName = payload.canonicalName;
+      if (concept && payload.canonicalName)
+        concept.canonicalName = payload.canonicalName;
       for (const name of payload.addNames ?? []) {
-        ensureEntry({ text: name.text, role: "FOOD", kind: name.kind, conceptId: payload.conceptId });
+        ensureEntry({
+          text: name.text,
+          role: "FOOD",
+          kind: name.kind,
+          conceptId: payload.conceptId,
+        });
         const added = next.entries.find(
           (entry) =>
             entry.conceptId === payload.conceptId &&
@@ -357,7 +391,11 @@ export function applyDecisionToSnapshot(
       const retired = new Set(payload.retireEntryIds ?? []);
       next.entries = next.entries.filter((entry) => !retired.has(entry.id));
       for (const relationship of payload.addRelationships ?? [])
-        addRelationship(payload.conceptId, relationship.targetConceptId, relationship.relationshipType);
+        addRelationship(
+          payload.conceptId,
+          relationship.targetConceptId,
+          relationship.relationshipType
+        );
       for (const relationship of payload.retireRelationships ?? [])
         next.relationships = next.relationships.filter(
           (edge) =>
@@ -367,6 +405,19 @@ export function applyDecisionToSnapshot(
               edge.type === relationship.relationshipType
             )
         );
+      break;
+    }
+
+    case "EDIT_ENTRY": {
+      const replacement = editedEntryFor(payload);
+      // Retired entries are not in a resolver snapshot, so restoring one adds it back
+      next.entries = next.entries.filter(
+        (entry) => entry.id !== payload.entryId
+      );
+      if (payload.status === "DEPRECATED") break;
+      const kept = ensureEntry(replacement);
+      kept.status = payload.status;
+      kept.kind = replacement.kind ?? null;
       break;
     }
 
@@ -532,6 +583,19 @@ export function decisionScope(
         if (entry.role === "FOOD" && entry.conceptId === payload.conceptId)
           phrases.add(entry.text);
       break;
+    case "EDIT_ENTRY": {
+      phrases.add(payload.text);
+      if (payload.role === "FOOD" && payload.conceptId)
+        conceptIds.add(payload.conceptId);
+      const edited = snapshot?.entries.find(
+        (entry) => entry.id === payload.entryId
+      );
+      if (edited) {
+        phrases.add(edited.text);
+        if (edited.conceptId) conceptIds.add(edited.conceptId);
+      }
+      break;
+    }
     case "REJECT":
     case "REVERT":
       break;

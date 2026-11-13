@@ -124,8 +124,18 @@ mutation RemoveConceptSubstitution($conceptId: ID!, $substituteId: ID!) {
   }
 }
 
-query LexiconPage($query: String, $role: String, $page: Int) {
-  lexicon(query: $query, role: $role, page: $page) {
+query LexiconPage(
+  $query: String
+  $role: String
+  $page: Int
+  $includeRetired: Boolean
+) {
+  lexicon(
+    query: $query
+    role: $role
+    page: $page
+    includeRetired: $includeRetired
+  ) {
     items {
       id
       text
@@ -134,9 +144,35 @@ query LexiconPage($query: String, $role: String, $page: Int) {
       status
       targetLabel
       conceptId
+      attributeValueId
+      preparationId
+      valueKey
     }
     total
     page
     pageSize
+  }
+  vocabulary {
+    definitions {
+      id
+      key
+      name
+    }
+    attributeValues {
+      id
+      key
+      label
+      definitionId
+      definitionKey
+      definitionName
+    }
+    preparations {
+      id
+      key
+      label
+    }
+    degreeKeys
+    measurementModifierKeys
+    instructionKeys
   }
 }

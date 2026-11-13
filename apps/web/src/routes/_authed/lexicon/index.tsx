@@ -1,5 +1,11 @@
 import { LexiconPageDocument } from "~/graphql/generated";
-import { optionalEnum, optionalPage, optionalText } from "~/lib/search";
+import {
+  optionalEnum,
+  optionalFlag,
+  optionalPage,
+  optionalText,
+} from "~/lib/search";
+import { useTeachActions } from "~/lib/teach";
 
 import { useReadQuery } from "@apollo/client/react";
 import {
@@ -18,6 +24,7 @@ const searchSchema = z.object({
   query: optionalText,
   role: optionalEnum(ROLES),
   page: optionalPage,
+  retired: optionalFlag,
 });
 
 export const Route = createFileRoute("/_authed/lexicon/")({
@@ -29,6 +36,7 @@ export const Route = createFileRoute("/_authed/lexicon/")({
         query: deps.query ?? null,
         role: deps.role ?? null,
         page: deps.page ?? 1,
+        includeRetired: deps.retired ?? false,
       },
     }),
   }),
@@ -40,11 +48,20 @@ function LexiconPage() {
   const { queryRef } = Route.useLoaderData();
   const { data } = useReadQuery(queryRef);
   const search = Route.useSearch();
+  const { onApplyDecision, onPreviewDecision, onSearchConcepts } =
+    useTeachActions();
   return (
     <LexiconPageContent
       data={data.lexicon}
       query={search.query}
       role={search.role ?? null}
+      includeRetired={search.retired ?? false}
+      editing={{
+        vocabulary: data.vocabulary,
+        onApplyDecision,
+        onPreview: onPreviewDecision,
+        onSearchConcepts,
+      }}
     />
   );
 }

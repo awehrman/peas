@@ -1,7 +1,8 @@
 /**
- * Compares the v1 baseline (fixtures/baseline/v1.jsonl, from
- * `yarn corpus:baseline-v1`) with v2 over the corpus and the held-out golden
- * set, and writes fixtures/reports/v1-vs-v2.md.
+ * Compares the v1 baseline (fixtures/baseline/v1.jsonl, a snapshot of the
+ * retired v1 parser; regenerate it by hand with
+ * `node legacy/v1/scripts/baseline-v1.js`) with v2 over the corpus and the
+ * held-out golden set, and writes fixtures/reports/v1-vs-v2.md.
  *
  * Usage: yarn report:compare
  */
@@ -74,6 +75,8 @@ function v2FirstQuantity(syntax: IngredientLineSyntax): { amount?: string; unit?
         return { amount: q.implied ? undefined : formatRational(q.value), unit: q.unit?.id };
       case "RANGE":
         return { amount: formatRational(q.minimum), unit: q.unit?.id };
+      case "MEASURE_RANGE":
+        return simple(q.from);
       case "APPROXIMATE":
         return simple(q.quantity);
       case "PACKAGE":

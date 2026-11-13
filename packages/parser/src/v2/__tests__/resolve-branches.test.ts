@@ -157,12 +157,27 @@ describe("resolveSegment branches", () => {
     expect(attribute.mention.status).toBe("NEEDS_REVIEW");
   });
 
-  it("applies the package rule through approximate and range quantities, but not to a canned head", () => {
+  it("applies the package rule through approximate, range, measure-range, and counted unspecified quantities, but not to a canned head", () => {
     expect(resolve("about 2 cans tomatoes").described?.concept).toBe(
       "canned-tomatoes"
     );
     expect(resolve("2-3 cans tomatoes").described?.concept).toBe(
       "canned-tomatoes"
+    );
+    expect(resolve("a few cans tomatoes").described?.concept).toBe(
+      "canned-tomatoes"
+    );
+    expect(resolve("1 can to 800 g tomatoes").described?.concept).toBe(
+      "canned-tomatoes"
+    );
+    expect(resolve("400 g to 2 cans tomatoes").described?.concept).toBe(
+      "canned-tomatoes"
+    );
+    expect(resolve("400 g or 1 can tomatoes").described?.concept).toBe(
+      "canned-tomatoes"
+    );
+    expect(resolve("1 cup plus 2 tbsp tomatoes").described?.concept).toBe(
+      "tomato"
     );
 
     const canned = resolve("1 can canned tomatoes");

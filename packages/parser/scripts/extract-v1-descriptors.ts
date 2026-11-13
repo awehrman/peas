@@ -16,7 +16,7 @@ import {
 } from "../src/v2/ontology/vocabulary.js";
 
 const packageDir = join(dirname(fileURLToPath(import.meta.url)), "..");
-const grammarPath = join(packageDir, "src/v1/parser.peggy");
+const grammarPath = join(packageDir, "legacy/v1/parser.peggy");
 const seedPath = join(packageDir, "fixtures/lexicon/modifiers.seed.json");
 const outputPath = join(
   packageDir,
@@ -185,7 +185,7 @@ function main(): void {
     JSON.stringify(
       {
         description:
-          "Machine suggestions for every word in the v1 DESCRIPTORS list (src/v1/parser.peggy). Not loaded anywhere: reviewed choices live in modifiers.seed.json. Regenerate with `yarn workspace @peas/parser extract:descriptors`.",
+          "Machine suggestions for every word in the v1 DESCRIPTORS list (legacy/v1/parser.peggy). Not loaded anywhere: reviewed choices live in modifiers.seed.json. Regenerate with `yarn workspace @peas/parser extract:descriptors`.",
         counts,
         inSeed: suggestions.filter((suggestion) => suggestion.inSeed).length,
         suggestions,

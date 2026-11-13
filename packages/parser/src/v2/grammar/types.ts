@@ -20,6 +20,7 @@ export type GrammarQuantity = GrammarSpan &
   (
     | { kind: "EXACT"; value: Rational; unit: GrammarUnit | null; implied?: boolean }
     | { kind: "RANGE"; minimum: Rational; maximum: Rational; unit: GrammarUnit | null }
+    | { kind: "MEASURE_RANGE"; from: GrammarQuantity; to: GrammarQuantity }
     | { kind: "APPROXIMATE"; quantity: GrammarQuantity; marker: GrammarSpan }
     | {
         kind: "PACKAGE";
@@ -29,7 +30,7 @@ export type GrammarQuantity = GrammarSpan &
       }
     | { kind: "ALTERNATIVE"; options: GrammarQuantity[] }
     | { kind: "SUM"; parts: GrammarQuantity[] }
-    | { kind: "UNSPECIFIED"; expression: UnspecifiedExpression }
+    | { kind: "UNSPECIFIED"; expression: UnspecifiedExpression; unit?: GrammarUnit }
   );
 
 export type GrammarItem = GrammarSpan &

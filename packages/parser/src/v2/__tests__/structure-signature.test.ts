@@ -53,11 +53,11 @@ describe("structureSignature", () => {
 
 describe("structuralIssue", () => {
   it("finds numbers and units stranded in the food phrase", () => {
-    expect(structuralIssue(parse("rosemary a few sprigs"))).toMatchObject({
+    expect(structuralIssue(parse("thyme 4 sprigs fresh"))).toMatchObject({
       reason: "QUANTITY_IN_PHRASE",
-      signature: "W U",
+      signature: "W N U W",
       segmentIndex: 0,
-      span: { text: "sprigs" },
+      span: { text: "4" },
     });
     expect(structuralIssue(parse("11-x-17-inch baking sheet"))).toMatchObject({
       reason: "QUANTITY_IN_PHRASE",
@@ -71,6 +71,19 @@ describe("structuralIssue", () => {
       "Small handful of whole black peppercorns",
       "garlic 1 small clove, crushed",
       "1 large can tomatoes",
+    ])
+      expect(structuralIssue(parse(line))).toBeNull();
+  });
+
+  it("no longer flags the measure ranges, compound measures, counted unspecified amounts, and units parser 2.2.0 learned", () => {
+    for (const line of [
+      "800g–1kg (1lb 12oz–2lb 4oz) bone-in venison shoulder",
+      "1 lb 12 oz pork shoulder",
+      "rosemary a few sprigs",
+      "a few sprigs of thyme",
+      "1 recipe BBQ Rub",
+      "1 rack baby back ribs",
+      "1 slab bacon",
     ])
       expect(structuralIssue(parse(line))).toBeNull();
   });
@@ -117,19 +130,19 @@ describe("structural discoveries", () => {
       applicability: [],
       conceptAttributes: [],
     });
-    const result = processIngredientLine("rosemary a few sprigs", context);
+    const result = processIngredientLine("thyme 4 sprigs fresh", context);
     const structural = discover(result, context).filter(
       (discovery) => discovery.payload.type === "STRUCTURAL_PATTERN"
     );
     expect(structural).toEqual([
       {
-        key: "W U",
+        key: "W N U W",
         segmentIndex: 0,
-        span: expect.objectContaining({ text: "sprigs" }),
+        span: expect.objectContaining({ text: "4" }),
         payload: {
           type: "STRUCTURAL_PATTERN",
-          signature: "W U",
-          example: "rosemary a few sprigs",
+          signature: "W N U W",
+          example: "thyme 4 sprigs fresh",
           reason: "QUANTITY_IN_PHRASE",
           parserVersion: result.line.parserVersion,
         },

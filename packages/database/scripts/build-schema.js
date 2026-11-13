@@ -35,7 +35,7 @@ const schemaFiles = [
   "prisma/schemas/parsing.prisma",
   "prisma/schemas/meta.prisma",
   "prisma/schemas/source.prisma",
-  "prisma/schemas/ingredients.prisma",
+  "prisma/schemas/tags-and-brands.prisma",
   "prisma/schemas/recipes.prisma",
   "prisma/schemas/ontology.prisma",
 ];

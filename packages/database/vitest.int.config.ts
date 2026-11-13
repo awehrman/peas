@@ -18,15 +18,9 @@ export default defineConfig({
       provider: "v8",
       reporter: ["text-summary", "html"],
       include: ["src/**/*.ts"],
-      // parsing-rule.ts and pattern.ts have no callers since the Phase 5 cutover and are deleted in Phase 7
-      exclude: [
-        "src/**/__tests__/**",
-        "src/repository/parsing-rule.ts",
-        "src/repository/pattern.ts",
-      ],
-      // The legacy repositories are exercised through @peas/api's integration tests rather than here.
-      // Ratchet: the floor of the last measured coverage (12 November 2026); raise it as coverage grows
-      thresholds: { statements: 63, branches: 58, functions: 59, lines: 64 },
+      exclude: ["src/**/__tests__/**"],
+      // Ratchet: the floor of the last measured coverage (13 November 2026); raise it as coverage grows
+      thresholds: { statements: 77, branches: 67, functions: 75, lines: 79 },
     },
   },
 });

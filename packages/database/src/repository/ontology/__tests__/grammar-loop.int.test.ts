@@ -78,19 +78,19 @@ describe.skipIf(!hasTestDatabase)("grammar evolution loop (integration)", () => 
 
   it("records structural patterns on import and marks noise lines inactive", async () => {
     const { lineIds } = await importLines([
-      "rosemary a few sprigs",
-      "thyme a few sprigs",
+      "rosemary 2 sprigs fresh",
+      "thyme 4 sprigs fresh",
       "For the glaze:",
       "1 cup milk",
     ]);
 
-    const sprigs = await structural("W U");
+    const sprigs = await structural("W N U W");
     expect(sprigs).toMatchObject({
       status: "OPEN",
       mentionCount: 2,
       payload: {
         type: "STRUCTURAL_PATTERN",
-        signature: "W U",
+        signature: "W N U W",
         reason: "QUANTITY_IN_PHRASE",
       },
     });
@@ -99,7 +99,7 @@ describe.skipIf(!hasTestDatabase)("grammar evolution loop (integration)", () => 
 
     expect(
       (await pendingFixtureLines({ discoveryId: sprigs.id })).map((row) => row.input).sort()
-    ).toEqual(["rosemary a few sprigs", "thyme a few sprigs"]);
+    ).toEqual(["rosemary 2 sprigs fresh", "thyme 4 sprigs fresh"]);
     expect(
       (await pendingFixtureLines({ signature: "W :" })).map((row) => row.input)
     ).toEqual(["For the glaze:"]);

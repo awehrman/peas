@@ -121,19 +121,25 @@ function mergeSpans(spans: TextSpan[], raw: string): TextSpan[] {
   return merged;
 }
 
-function packageUnit(quantity: Quantity | undefined): string | undefined {
+/** The can or tin a quantity is measured in, anywhere in it: "2 cans", "about 2 cans", "400 g to 2 cans", "1 can or 400 g". */
+function cannedUnit(quantity: Quantity | undefined): string | undefined {
   if (!quantity) return undefined;
+  const canned = (unitId: string | undefined) =>
+    unitId !== undefined && CANNED_UNITS.has(unitId) ? unitId : undefined;
   switch (quantity.kind) {
     case "PACKAGE":
-      return quantity.packageType?.id;
+      return canned(quantity.packageType?.id);
     case "EXACT":
     case "RANGE":
-      return quantity.unit?.id;
+    case "UNSPECIFIED":
+      return canned(quantity.unit?.id);
+    case "MEASURE_RANGE":
+      return cannedUnit(quantity.from) ?? cannedUnit(quantity.to);
     case "APPROXIMATE":
-      return packageUnit(quantity.quantity);
+      return cannedUnit(quantity.quantity);
     case "ALTERNATIVE":
       return quantity.options
-        .map(packageUnit)
+        .map(cannedUnit)
         .find((unit) => unit !== undefined);
     default:
       return undefined;
@@ -146,8 +152,7 @@ function cannedVariant(
   segment: IngredientSegmentSyntax,
   context: ResolverContext
 ): string | undefined {
-  const unit = packageUnit(segment.quantity);
-  if (!unit || !CANNED_UNITS.has(unit)) return undefined;
+  if (!cannedUnit(segment.quantity)) return undefined;
   const isCanned = (id: string) =>
     [...context.ontology.conceptAttributes(id)].some((valueId) => {
       const value = context.attributeValues.get(valueId);
@@ -235,7 +240,7 @@ function buildCandidate(
   if (headEntry?.kind && headEntry.kind !== "CANONICAL")
     reasons.push(`entry:${headEntry.kind}`);
   if (canned)
-    reasons.push(`package:${packageUnit(segment.quantity)}->${conceptName}`);
+    reasons.push(`package:${cannedUnit(segment.quantity)}->${conceptName}`);
 
   const applicable = context.ontology.applicableDefinitions(conceptId);
   const attributes = new Map<string, ResolvedAttribute>();

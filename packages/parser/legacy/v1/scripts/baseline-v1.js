@@ -1,8 +1,6 @@
 #!/usr/bin/env node
 /**
- * Runs the v1 parser (dist/v1, see `yarn build`) over the corpus and writes
- * fixtures/baseline/v1.jsonl. The baseline is a reference for comparison
- * reports, not ground truth.
+ * Reference only: runs the retired v1 parser over the corpus and writes fixtures/baseline/v1.jsonl, the snapshot `yarn report:compare` reads. Run it by hand from the package root (`node legacy/v1/scripts/baseline-v1.js`); nothing builds or calls it.
  */
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -10,7 +8,7 @@ import { fileURLToPath } from "node:url";
 
 import { ensureV1Parser } from "./ensure-v1.js";
 
-const packageDir = join(dirname(fileURLToPath(import.meta.url)), "..");
+const packageDir = join(dirname(fileURLToPath(import.meta.url)), "../../..");
 const corpusPath = join(packageDir, "fixtures/corpus/lines.jsonl");
 const outputPath = join(packageDir, "fixtures/baseline/v1.jsonl");
 

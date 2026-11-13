@@ -1,0 +1,13 @@
+// Ingredient tags and brands, linked to food concepts and products (ontology.prisma).
+
+model IngredientTag {
+  id       String        @id @default(cuid())
+  name     String        @unique
+  concepts FoodConcept[]
+}
+
+model Brand {
+  id       String        @id @default(cuid())
+  name     String        @unique
+  products FoodProduct[]
+}

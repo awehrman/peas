@@ -65,7 +65,7 @@ function toSnapshot(record: CorpusHealthSnapshotRecord): CorpusHealthSnapshot {
  * A structural pattern's example lines as pending golden cases (Phase 6a "Export as fixtures"), the same JSON `pull:fixtures` writes. Null for other discovery types or when no line shows the pattern any more.
  *
  * @example
- * await fixtureBlockFor({ id, type: "STRUCTURAL_PATTERN", key: "W U" }) // '[\n  {\n    "id": "pending-w-u-1", ...'
+ * await fixtureBlockFor({ id, type: "STRUCTURAL_PATTERN", key: "W N U W" }) // '[\n  {\n    "id": "pending-w-n-u-w-1", ...'
  */
 export async function fixtureBlockFor(
   discovery: Pick<DiscoveryParent, "id" | "type" | "key">

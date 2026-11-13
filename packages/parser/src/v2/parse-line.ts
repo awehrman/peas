@@ -157,6 +157,13 @@ function toQuantity(quantity: GrammarQuantity, toSpan: ToSpan): Quantity {
         ...(quantity.unit ? { unit: toUnit(quantity.unit, toSpan) } : {}),
         span,
       };
+    case "MEASURE_RANGE":
+      return {
+        kind: "MEASURE_RANGE",
+        from: toQuantity(quantity.from, toSpan),
+        to: toQuantity(quantity.to, toSpan),
+        span,
+      };
     case "APPROXIMATE":
       return {
         kind: "APPROXIMATE",
@@ -187,7 +194,12 @@ function toQuantity(quantity: GrammarQuantity, toSpan: ToSpan): Quantity {
         span,
       };
     case "UNSPECIFIED":
-      return { kind: "UNSPECIFIED", expression: quantity.expression, span };
+      return {
+        kind: "UNSPECIFIED",
+        expression: quantity.expression,
+        ...(quantity.unit ? { unit: toUnit(quantity.unit, toSpan) } : {}),
+        span,
+      };
   }
 }
 

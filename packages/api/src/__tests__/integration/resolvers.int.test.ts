@@ -372,10 +372,12 @@ describe.skipIf(!hasTestDatabase)(
           };
         }>(server, admin, query);
         expect(result.data?.cleanupAllData.success).toBe(true);
-        expect(result.data?.cleanupAllData.deletedCounts).toContainEqual({
-          key: "notes",
-          count: 1,
-        });
+        expect(result.data?.cleanupAllData.deletedCounts).toEqual(
+          expect.arrayContaining([
+            { key: "notes", count: 1 },
+            { key: "ingredientLines", count: 1 },
+          ])
+        );
         expect(await prisma.note.count()).toBe(0);
         expect(await prisma.user.count()).toBe(2);
       });

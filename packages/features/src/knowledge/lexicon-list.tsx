@@ -1,8 +1,17 @@
 "use client";
 
-import type { ReactNode } from "react";
+import {
+  ENTRY_ROLES,
+  type EntryDraft,
+  EntryEditor,
+  type EntryRole,
+  type LexiconEditing,
+} from "./entry-editor";
 
-import { Badge, cn } from "@peas/components";
+import { type ReactNode, useState } from "react";
+
+import { Badge, Button, cn } from "@peas/components";
+import { Pencil, Plus } from "lucide-react";
 
 import { AppLink, useAppNavigation } from "../app-navigation";
 import { PageLinks, SearchForm } from "../shared";
@@ -30,6 +39,9 @@ export interface LexiconEntryRow {
   status: string;
   targetLabel: string;
   conceptId: string | null;
+  attributeValueId?: string | null;
+  preparationId?: string | null;
+  valueKey?: string | null;
 }
 
 export interface LexiconPageData {
@@ -42,34 +54,85 @@ export interface LexiconPageData {
 function lexiconHref(
   query: string | undefined,
   role: LexiconRoleFilter | null,
-  page: number
+  page: number,
+  includeRetired = false
 ): string {
   const params = new URLSearchParams();
   if (query) params.set("query", query);
   if (role) params.set("role", role);
   if (page > 1) params.set("page", String(page));
+  if (includeRetired) params.set("retired", "1");
   const search = params.toString();
   return search ? `/lexicon?${search}` : "/lexicon";
 }
 
 const lower = (value: string) => value.replace(/_/g, " ").toLowerCase();
 
+function isEntryRole(role: string): role is EntryRole {
+  return (ENTRY_ROLES as readonly string[]).includes(role);
+}
+
+/** A row as the editor starts from. */
+function draftOf(entry: LexiconEntryRow): EntryDraft {
+  const role = isEntryRole(entry.role) ? entry.role : "INSTRUCTION";
+  const target =
+    role === "FOOD"
+      ? (entry.conceptId ?? "")
+      : role === "ATTRIBUTE"
+        ? (entry.attributeValueId ?? "")
+        : role === "PREPARATION"
+          ? (entry.preparationId ?? "")
+          : (entry.valueKey ?? "");
+  return {
+    text: entry.text,
+    role,
+    target,
+    targetLabel: role === "FOOD" ? entry.targetLabel : "",
+    kind: (entry.kind as EntryDraft["kind"] | null) ?? "ALIAS",
+    status: entry.status as EntryDraft["status"],
+  };
+}
+
+function newDraft(role: LexiconRoleFilter | null): EntryDraft {
+  return {
+    text: "",
+    role: role ?? "FOOD",
+    target: "",
+    targetLabel: "",
+    kind: "ALIAS",
+    status: "ACTIVE",
+  };
+}
+
 /**
- * Every name and modifier Peas knows, with what each one means: foods point at a concept, attributes at a value ("color: green"), preparations at an operation. Searchable and filterable by role.
+ * Every name and modifier Peas knows, with what each one means: foods point at a concept, attributes at a value ("color: green"), preparations at an operation. Searchable and filterable by role. With `editing`, each row has an edit button that turns it into an editable sentence, and new entries can be added; saving checks first whether stored mentions would read differently.
  *
  * @example
- * <LexiconPageContent data={data.lexicon} query="chick" role="FOOD" />
+ * <LexiconPageContent data={data.lexicon} query="chick" role="FOOD" editing={{ vocabulary, onApplyDecision, onPreview, onSearchConcepts }} />
  */
 export function LexiconPageContent({
   data,
   query,
   role,
+  includeRetired = false,
+  editing,
 }: {
   data: LexiconPageData;
   query?: string;
   role: LexiconRoleFilter | null;
+  /** Lists retired entries too, so they can be restored. */
+  includeRetired?: boolean;
+  editing?: LexiconEditing;
 }): ReactNode {
   const { push } = useAppNavigation();
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [isAdding, setIsAdding] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const finish = (result: string | null) => {
+    setEditingId(null);
+    setIsAdding(false);
+    if (result) setMessage(result);
+  };
   return (
     <div className="flex max-w-5xl flex-col gap-6">
       <header className="flex flex-col gap-1">
@@ -85,14 +148,16 @@ export function LexiconPageContent({
           label="Search the lexicon"
           defaultValue={query}
           placeholder="chicken"
-          onSearch={(value) => push(lexiconHref(value || undefined, role, 1))}
+          onSearch={(value) =>
+            push(lexiconHref(value || undefined, role, 1, includeRetired))
+          }
         />
         <nav aria-label="Lexicon role">
           <ul className="flex flex-wrap gap-3">
             {LEXICON_ROLE_FILTERS.map((filter) => (
               <li key={filter.label}>
                 <AppLink
-                  href={lexiconHref(query, filter.role, 1)}
+                  href={lexiconHref(query, filter.role, 1, includeRetired)}
                   aria-current={filter.role === role ? "page" : undefined}
                   className={cn(
                     "text-sm underline-offset-4",
@@ -107,7 +172,42 @@ export function LexiconPageContent({
             ))}
           </ul>
         </nav>
+        <AppLink
+          href={lexiconHref(query, role, 1, !includeRetired)}
+          className="text-sm text-greyscale-600 underline-offset-4 hover:underline"
+        >
+          {includeRetired ? "Hide retired" : "Show retired"}
+        </AppLink>
+        {editing && !isAdding ? (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="ml-auto"
+            onClick={() => {
+              setEditingId(null);
+              setMessage(null);
+              setIsAdding(true);
+            }}
+          >
+            <Plus className="h-4 w-4" aria-hidden="true" />
+            Add entry
+          </Button>
+        ) : null}
       </div>
+      {message ? (
+        <p role="status" className="text-sm text-success-900">
+          {message}
+        </p>
+      ) : null}
+      {editing && isAdding ? (
+        <EntryEditor
+          entryId={null}
+          initial={newDraft(role)}
+          editing={editing}
+          onDone={finish}
+        />
+      ) : null}
       {data.items.length === 0 ? (
         <p className="text-sm text-greyscale-700">No entries found.</p>
       ) : (
@@ -127,44 +227,84 @@ export function LexiconPageContent({
               <th scope="col" className="py-2 font-medium">
                 Status
               </th>
+              {editing ? (
+                <th scope="col" className="py-2 font-medium">
+                  <span className="sr-only">Edit</span>
+                </th>
+              ) : null}
             </tr>
           </thead>
           <tbody className="divide-y divide-greyscale-100">
-            {data.items.map((entry) => (
-              <tr key={entry.id}>
-                <td className="py-2 pr-4 font-medium text-greyscale-900">
-                  {entry.text}
-                </td>
-                <td className="py-2 pr-4 text-greyscale-700">
-                  {lower(entry.role)}
-                  {entry.kind ? (
-                    <span className="text-greyscale-600">
-                      {" "}
-                      ({lower(entry.kind)})
-                    </span>
+            {data.items.map((entry) =>
+              editing && editingId === entry.id ? (
+                <tr key={entry.id}>
+                  <td colSpan={5} className="py-2">
+                    <EntryEditor
+                      entryId={entry.id}
+                      initial={draftOf(entry)}
+                      editing={editing}
+                      onDone={finish}
+                    />
+                  </td>
+                </tr>
+              ) : (
+                <tr key={entry.id}>
+                  <td className="py-2 pr-4 font-medium text-greyscale-900">
+                    {entry.text}
+                  </td>
+                  <td className="py-2 pr-4 text-greyscale-700">
+                    {lower(entry.role)}
+                    {entry.kind ? (
+                      <span className="text-greyscale-600">
+                        {" "}
+                        ({lower(entry.kind)})
+                      </span>
+                    ) : null}
+                  </td>
+                  <td className="py-2 pr-4">
+                    {entry.conceptId ? (
+                      <AppLink
+                        href={`/concepts/${entry.conceptId}`}
+                        className="text-primary underline underline-offset-2"
+                      >
+                        {entry.targetLabel}
+                      </AppLink>
+                    ) : (
+                      entry.targetLabel
+                    )}
+                  </td>
+                  <td className="py-2">
+                    {entry.status === "ACTIVE" ? (
+                      <span className="text-greyscale-700">active</span>
+                    ) : (
+                      <Badge variant="outline">
+                        {entry.status === "DEPRECATED"
+                          ? "retired"
+                          : lower(entry.status)}
+                      </Badge>
+                    )}
+                  </td>
+                  {editing ? (
+                    <td className="py-2 text-right">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 w-7 p-0"
+                        aria-label={`Edit ${entry.text} (${lower(entry.role)})`}
+                        onClick={() => {
+                          setIsAdding(false);
+                          setMessage(null);
+                          setEditingId(entry.id);
+                        }}
+                      >
+                        <Pencil className="h-4 w-4" aria-hidden="true" />
+                      </Button>
+                    </td>
                   ) : null}
-                </td>
-                <td className="py-2 pr-4">
-                  {entry.conceptId ? (
-                    <AppLink
-                      href={`/concepts/${entry.conceptId}`}
-                      className="text-primary underline underline-offset-2"
-                    >
-                      {entry.targetLabel}
-                    </AppLink>
-                  ) : (
-                    entry.targetLabel
-                  )}
-                </td>
-                <td className="py-2">
-                  {entry.status === "ACTIVE" ? (
-                    <span className="text-greyscale-700">active</span>
-                  ) : (
-                    <Badge variant="outline">{lower(entry.status)}</Badge>
-                  )}
-                </td>
-              </tr>
-            ))}
+                </tr>
+              )
+            )}
           </tbody>
         </table>
       )}
@@ -172,7 +312,7 @@ export function LexiconPageContent({
         page={data.page}
         pageSize={data.pageSize}
         total={data.total}
-        getHref={(page) => lexiconHref(query, role, page)}
+        getHref={(page) => lexiconHref(query, role, page, includeRetired)}
         label="Lexicon pages"
       />
     </div>

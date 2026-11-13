@@ -13,6 +13,7 @@ import {
   createUser,
   hasTestDatabase,
   resetDatabase,
+  withReviewQueue,
 } from "../../repository/ontology/__tests__/int-helpers.js";
 import { applyDecision } from "../../repository/ontology/apply-decision.js";
 import { saveImportedLine } from "../../repository/ontology/backfill.js";
@@ -49,8 +50,8 @@ const modifiers = fixture<{ entries: ModifierSeedEntry[] }>(
 ).entries;
 
 const fileSeed = fixture<StarterFoodsSeed>("starter-foods.seed.json");
-/** The file proposes every food; most tests need them approved, keeping the two the file marks proposed on their own. */
-const seed: StarterFoodsSeed = { ...fileSeed, status: "VERIFIED" };
+/** Most tests need a review queue: chicken drumstick and lemon zest stay proposed. */
+const seed: StarterFoodsSeed = withReviewQueue(fileSeed);
 
 async function context() {
   return buildResolverContext(await loadResolverSnapshot());
@@ -153,30 +154,28 @@ describe.skipIf(!hasTestDatabase)(
       );
     });
 
-    it("puts every starter food in the review queue by default, with names imports don't use yet", async () => {
+    it("approves every starter food by default, so imports resolve to them and their alternate names right away", async () => {
       await seedStarterFoods(fileSeed);
       expect(
         await prisma.foodConcept.count({ where: { status: "VERIFIED" } })
-      ).toBe(0);
-      expect(
-        await prisma.foodConcept.count({ where: { status: "PROPOSED" } })
       ).toBe(fileSeed.concepts.length);
       expect(
         await prisma.lexiconEntry.count({
-          where: { role: "FOOD", status: "ACTIVE" },
+          where: { role: "FOOD", status: "PROPOSED" },
         })
       ).toBe(0);
-      expect(
-        (await listIngredientSummaries("unreviewed")).map((item) => item.name)
-      ).toContain("chicken thigh");
+      expect(await listIngredientSummaries("unreviewed")).toEqual([]);
       const ctx = await context();
-      const [mention] = processIngredientLine(
-        "1 lb chicken thighs",
-        ctx
-      ).mentions;
-      expect(mention ? summarizeResolution(mention, ctx).status : null).toBe(
-        "UNRESOLVED"
-      );
+      const read = (line: string) => {
+        const [mention] = processIngredientLine(line, ctx).mentions;
+        return mention ? summarizeResolution(mention, ctx) : null;
+      };
+      expect(read("1 lb chicken thighs")).toMatchObject({
+        status: "AUTO_RESOLVED",
+        conceptName: "chicken thigh",
+      });
+      expect(read("4 chicken legs")?.conceptName).toBe("chicken drumstick");
+      expect(read("1 chicken leg")?.conceptName).toBe("chicken drumstick");
     });
 
     it("lists approved and proposed foods separately on the ingredients page, with usage and base ingredients", async () => {

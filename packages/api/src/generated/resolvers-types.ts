@@ -816,16 +816,23 @@ export type LexiconEntryRef = {
 /** A name or modifier in the lexicon. Example: { "text": "chicken thighs", "role": "FOOD", "kind": "PLURAL", "status": "ACTIVE", "targetLabel": "chicken thigh" } */
 export type LexiconEntryRow = {
   __typename?: 'LexiconEntryRow';
+  /** ATTRIBUTE entries' value. */
+  attributeValueId?: Maybe<Scalars['ID']['output']>;
+  /** FOOD entries' concept. */
   conceptId?: Maybe<Scalars['ID']['output']>;
   id: Scalars['ID']['output'];
   /** CANONICAL, PLURAL, ALIAS, ... for FOOD entries. */
   kind?: Maybe<Scalars['String']['output']>;
+  /** PREPARATION entries' operation. */
+  preparationId?: Maybe<Scalars['ID']['output']>;
   /** FOOD, ATTRIBUTE, PREPARATION, DEGREE, MEASUREMENT_MODIFIER, or INSTRUCTION. */
   role: Scalars['String']['output'];
-  /** ACTIVE or PROPOSED (proposed entries are only used when curating). */
+  /** ACTIVE, PROPOSED (only used when curating), or DEPRECATED (retired; listed only with includeRetired). */
   status: Scalars['String']['output'];
   targetLabel: Scalars['String']['output'];
   text: Scalars['String']['output'];
+  /** DEGREE, MEASUREMENT_MODIFIER, and INSTRUCTION entries' value key, e.g. "fine". */
+  valueKey?: Maybe<Scalars['String']['output']>;
 };
 
 export type LexiconPage = {
@@ -1242,7 +1249,7 @@ export type Query = {
   /** The ingredients page: approved foods (view: all) or proposed ones (view: unreviewed), alphabetical. */
   ingredients: Array<IngredientSummary>;
   job?: Maybe<Job>;
-  /** Admin only. Every name and modifier Peas knows, alphabetical. Example: lexicon(query: "chick", role: "FOOD", page: 1) */
+  /** Admin only. Every name and modifier Peas knows, alphabetical; retired entries only with includeRetired. Example: lexicon(query: "chick", role: "FOOD", page: 1) */
   lexicon: LexiconPage;
   mention?: Maybe<Mention>;
   note?: Maybe<Note>;
@@ -1316,6 +1323,7 @@ export type QueryJobArgs = {
 
 
 export type QueryLexiconArgs = {
+  includeRetired?: InputMaybe<Scalars['Boolean']['input']>;
   page?: InputMaybe<Scalars['Int']['input']>;
   query?: InputMaybe<Scalars['String']['input']>;
   role?: InputMaybe<Scalars['String']['input']>;
@@ -2385,13 +2393,16 @@ export type LexiconEntryRefResolvers<ContextType = ApiContext, ParentType extend
 }>;
 
 export type LexiconEntryRowResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['LexiconEntryRow'] = ResolversParentTypes['LexiconEntryRow']> = ResolversObject<{
+  attributeValueId?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
   conceptId?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   kind?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  preparationId?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
   role?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   status?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   targetLabel?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   text?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  valueKey?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
 }>;
 
 export type LexiconPageResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['LexiconPage'] = ResolversParentTypes['LexiconPage']> = ResolversObject<{

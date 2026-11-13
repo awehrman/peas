@@ -82,12 +82,23 @@ export interface SumQuantity {
 export interface UnspecifiedQuantity {
   kind: "UNSPECIFIED";
   expression: UnspecifiedExpression;
+  /** The unit an unspecified amount counts in ("a few sprigs"). */
+  unit?: UnitRef;
+  span: TextSpan;
+}
+
+/** A range whose ends are separate measures ("800g–1kg", "1lb 12oz–2lb 4oz"); ends sharing one unit are a RANGE instead. */
+export interface MeasureRangeQuantity {
+  kind: "MEASURE_RANGE";
+  from: Quantity;
+  to: Quantity;
   span: TextSpan;
 }
 
 export type Quantity =
   | ExactQuantity
   | RangeQuantity
+  | MeasureRangeQuantity
   | ApproximateQuantity
   | PackageQuantity
   | AlternativeQuantity

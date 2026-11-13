@@ -11,6 +11,7 @@ export const KNOWLEDGE_SECTIONS = [
   { key: "concepts", label: "Concepts", href: "/concepts" },
   { key: "lexicon", label: "Lexicon", href: "/lexicon" },
   { key: "health", label: "Health", href: "/teach/health" },
+  { key: "glossary", label: "Glossary", href: "/teach/glossary" },
 ] as const;
 
 export type KnowledgeSection = (typeof KNOWLEDGE_SECTIONS)[number]["key"];
@@ -26,11 +27,12 @@ export function knowledgeSectionFor(pathname: string): KnowledgeSection {
   if (pathname.startsWith("/concepts")) return "concepts";
   if (pathname.startsWith("/lexicon")) return "lexicon";
   if (pathname.startsWith("/teach/health")) return "health";
+  if (pathname.startsWith("/teach/glossary")) return "glossary";
   return "queue";
 }
 
 /**
- * The admin Knowledge section's tabs: the review queue (Teach Peas), the concepts workbench, the lexicon, and corpus health.
+ * The Knowledge section's tabs: the review queue (Teach Peas), the concepts workbench, the lexicon, corpus health, and the glossary.
  *
  * @example
  * <KnowledgeTabs active="lexicon" />

@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   applyDecisionToSnapshot,
   decisionScope,
+  editedEntryFor,
   entryTargetKey,
 } from "../knowledge/apply-to-snapshot.js";
 import { generatePlural } from "../knowledge/plural.js";
@@ -414,9 +415,9 @@ describe("applyDecisionToSnapshot", () => {
     expect(
       decisionScope({ type: "APPROVE_CONCEPT", conceptId: salt }, before)
     ).toEqual({ phrases: ["salt"], conceptIds: [salt], mentionIds: [] });
-    expect(
-      decisionScope({ type: "APPROVE_CONCEPT", conceptId: salt })
-    ).toEqual({ phrases: [], conceptIds: [salt], mentionIds: [] });
+    expect(decisionScope({ type: "APPROVE_CONCEPT", conceptId: salt })).toEqual(
+      { phrases: [], conceptIds: [salt], mentionIds: [] }
+    );
   });
 
   it("edits a concept's names and parents in one decision", () => {
@@ -438,39 +439,199 @@ describe("applyDecisionToSnapshot", () => {
       addNames: [{ text: "icing sugar", kind: "CANONICAL" as const }],
       setNameKinds: [{ entryId: canonical.id, kind: "ALIAS" as const }],
       retireEntryIds: [saltEntry.id],
-      addRelationships: [{ targetConceptId: tomato, relationshipType: "IS_A" as const }],
+      addRelationships: [
+        { targetConceptId: tomato, relationshipType: "IS_A" as const },
+      ],
     };
     const after = apply(before, payload);
 
-    expect(after.concepts.find((concept) => concept.id === powdered)?.canonicalName).toBe(
-      "icing sugar"
-    );
+    expect(
+      after.concepts.find((concept) => concept.id === powdered)?.canonicalName
+    ).toBe("icing sugar");
     expect(
       after.entries
         .filter((entry) => entry.conceptId === powdered)
         .map((entry) => [entry.text, entry.kind])
-    ).toEqual(expect.arrayContaining([["icing sugar", "CANONICAL"], ["powdered sugar", "ALIAS"]]));
-    expect(after.entries.some((entry) => entry.id === saltEntry.id)).toBe(false);
-    expect(after.relationships).toContainEqual({ sourceId: powdered, targetId: tomato, type: "IS_A" });
+    ).toEqual(
+      expect.arrayContaining([
+        ["icing sugar", "CANONICAL"],
+        ["powdered sugar", "ALIAS"],
+      ])
+    );
+    expect(after.entries.some((entry) => entry.id === saltEntry.id)).toBe(
+      false
+    );
+    expect(after.relationships).toContainEqual({
+      sourceId: powdered,
+      targetId: tomato,
+      type: "IS_A",
+    });
     expect(resolve(after, "2 tbsp icing sugar").described).toMatchObject({
       concept: "icing-sugar",
     });
-    expect(resolve(after, "2 tbsp powdered sugar").mention?.resolution.candidates[0]?.conceptId).toBe(
-      powdered
-    );
+    expect(
+      resolve(after, "2 tbsp powdered sugar").mention?.resolution.candidates[0]
+        ?.conceptId
+    ).toBe(powdered);
 
     const undone = apply(after, {
       type: "EDIT_CONCEPT",
       conceptId: powdered,
-      retireRelationships: [{ targetConceptId: tomato, relationshipType: "IS_A" }],
+      retireRelationships: [
+        { targetConceptId: tomato, relationshipType: "IS_A" },
+      ],
     });
-    expect(undone.relationships).not.toContainEqual({ sourceId: powdered, targetId: tomato, type: "IS_A" });
+    expect(undone.relationships).not.toContainEqual({
+      sourceId: powdered,
+      targetId: tomato,
+      type: "IS_A",
+    });
 
     const scope = decisionScope(payload, before);
     expect(scope.conceptIds).toEqual([powdered, tomato]);
     expect(scope.phrases).toEqual(
       expect.arrayContaining(["icing sugar", "powdered sugar", saltEntry.text])
     );
+  });
+
+  it("edits one lexicon entry: retires, repoints, re-kinds, and restores", () => {
+    const before = snapshotWith();
+    const entryNamed = (text: string, targetKey: string) => {
+      const entry = before.entries.find(
+        (row) => row.text === text && entryTargetKey(row) === targetKey
+      );
+      if (!entry) throw new Error(`fixture lacks ${text}`);
+      return entry;
+    };
+    const finely = entryNamed("finely", "degree:fine");
+    const retired = apply(before, {
+      type: "EDIT_ENTRY",
+      entryId: finely.id,
+      text: "finely",
+      role: "DEGREE",
+      valueKey: "fine",
+      status: "DEPRECATED",
+    });
+    expect(retired.entries.some((entry) => entry.id === finely.id)).toBe(false);
+
+    const unripe = attributeId("ripeness:unripe");
+    const green = entryNamed("green", `attr:${attributeId("color:green")}`);
+    const repointed = apply(before, {
+      type: "EDIT_ENTRY",
+      entryId: green.id,
+      text: "green",
+      role: "ATTRIBUTE",
+      attributeValueId: unripe,
+      status: "ACTIVE",
+    });
+    expect(
+      repointed.entries
+        .filter((entry) => entry.text === "green")
+        .map((entry) => entry.attributeValueId)
+    ).toEqual([unripe]);
+
+    const salt = conceptId("salt");
+    const saltEntry = entryNamed("salt", `food:${salt}`);
+    const rekinded = apply(before, {
+      type: "EDIT_ENTRY",
+      entryId: saltEntry.id,
+      text: "salt",
+      role: "FOOD",
+      conceptId: salt,
+      kind: "ALIAS",
+      status: "PROPOSED",
+    });
+    expect(
+      rekinded.entries.find(
+        (entry) => entry.text === "salt" && entry.conceptId === salt
+      )
+    ).toMatchObject({ kind: "ALIAS", status: "PROPOSED" });
+
+    const restored = apply(before, {
+      type: "EDIT_ENTRY",
+      entryId: fixtureId("entry:retired-kosher-salt"),
+      text: "kosher salt",
+      role: "FOOD",
+      conceptId: salt,
+      status: "ACTIVE",
+    });
+    expect(resolve(restored, "1 tsp kosher salt").described?.concept).toBe(
+      "salt"
+    );
+
+    expect(
+      decisionScope(
+        {
+          type: "EDIT_ENTRY",
+          entryId: saltEntry.id,
+          text: "sea salt",
+          role: "FOOD",
+          conceptId: conceptId("parsley"),
+          status: "ACTIVE",
+        },
+        before
+      )
+    ).toEqual({
+      phrases: ["sea salt", "salt"],
+      conceptIds: [conceptId("parsley"), salt],
+      mentionIds: [],
+    });
+  });
+
+  it("keeps only the edited entry's role target, and scopes an edit without a snapshot", () => {
+    const base = {
+      type: "EDIT_ENTRY" as const,
+      entryId: fixtureId("entry:edited"),
+      text: "fresh",
+      status: "ACTIVE" as const,
+      conceptId: conceptId("salt"),
+      attributeValueId: attributeId("color:green"),
+      preparationId: fixtureId("prep"),
+      valueKey: "fine",
+    };
+    expect(editedEntryFor({ ...base, role: "FOOD" })).toMatchObject({
+      kind: "ALIAS",
+      conceptId: conceptId("salt"),
+      attributeValueId: null,
+      valueKey: null,
+    });
+    expect(editedEntryFor({ ...base, role: "ATTRIBUTE" })).toMatchObject({
+      kind: null,
+      conceptId: null,
+      attributeValueId: attributeId("color:green"),
+      preparationId: null,
+    });
+    expect(editedEntryFor({ ...base, role: "PREPARATION" })).toMatchObject({
+      preparationId: fixtureId("prep"),
+      valueKey: null,
+    });
+    expect(editedEntryFor({ ...base, role: "INSTRUCTION" })).toMatchObject({
+      valueKey: "fine",
+      preparationId: null,
+    });
+    expect(
+      editedEntryFor({
+        type: "EDIT_ENTRY",
+        entryId: base.entryId,
+        text: "x",
+        role: "DEGREE",
+        status: "ACTIVE",
+      })
+    ).toMatchObject({ valueKey: null });
+
+    expect(decisionScope({ ...base, role: "DEGREE" })).toEqual({
+      phrases: ["fresh"],
+      conceptIds: [],
+      mentionIds: [],
+    });
+    const before = snapshotWith();
+    const finely = before.entries.find((entry) => entry.text === "finely");
+    expect(
+      decisionScope(
+        { ...base, role: "DEGREE", entryId: finely?.id ?? "" },
+        before
+      )
+    ).toEqual({ phrases: ["fresh", "finely"], conceptIds: [], mentionIds: [] });
   });
 
   it("teaches from a correction, and leaves the snapshot alone for review-only decisions", () => {

@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 
-import { optionalEnum, optionalPage, optionalText } from "../search";
+import {
+  optionalEnum,
+  optionalFlag,
+  optionalPage,
+  optionalText,
+} from "../search";
 
 const schema = z.object({
   q: optionalText,
@@ -27,5 +32,12 @@ describe("search params", () => {
       page: undefined,
       type: undefined,
     });
+  });
+
+  it("reads a flag from the number or boolean the router hands over, and anything else as off", () => {
+    for (const on of [1, true, "1", "true"])
+      expect(optionalFlag.parse(on)).toBe(true);
+    for (const off of [undefined, 0, false, "no", null])
+      expect(optionalFlag.parse(off)).toBeUndefined();
   });
 });

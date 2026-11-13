@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 import { prisma } from "../../../client.js";
+import type { StarterFoodsSeed } from "../../../seed/starter-foods.js";
 import { getAttributeVocabulary, setApplicability } from "../attributes.js";
 import { createConcept } from "../concepts.js";
 import {
@@ -14,6 +15,17 @@ import { bumpRevision } from "../revision.js";
 
 export const hasTestDatabase = Boolean(process.env.TEST_DATABASE_URL);
 
+/** The starter foods with chicken drumstick and lemon zest left PROPOSED, so tests have a review queue to work through. */
+export function withReviewQueue(seed: StarterFoodsSeed): StarterFoodsSeed {
+  const proposed = new Set(["chicken-drumstick", "lemon-zest"]);
+  return {
+    ...seed,
+    concepts: seed.concepts.map((food) =>
+      proposed.has(food.key) ? { ...food, status: "PROPOSED" as const } : food
+    ),
+  };
+}
+
 /** Empties every ontology table plus the notes, lines, and users the tests create. Revision ids restart at 1. */
 export async function resetDatabase(): Promise<void> {
   await prisma.$executeRawUnsafe(`
@@ -21,7 +33,7 @@ export async function resetDatabase(): Promise<void> {
       "LexiconRevision", "FoodConcept", "LexiconEntry", "AttributeDefinition", "PreparationOperation",
       "FoodRelationship", "FoodClassification", "Discovery", "LexiconDecision", "LegacyIngredientMapping",
       "IngredientMention", "ParsedIngredientLine", "Note", "User", "ConceptMergeRecord", "FoodSubstitution", "FoodProduct",
-      "Ingredient", "Alias", "IngredientProperty", "IngredientCategory", "IngredientTag", "Brand",
+      "IngredientTag", "Brand",
       "ReinterpretRun", "Recipe", "CorpusHealthSnapshot"
     RESTART IDENTITY CASCADE
   `);

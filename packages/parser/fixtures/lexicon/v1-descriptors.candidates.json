@@ -1,5 +1,5 @@
 {
-  "description": "Machine suggestions for every word in the v1 DESCRIPTORS list (src/v1/parser.peggy). Not loaded anywhere: reviewed choices live in modifiers.seed.json. Regenerate with `yarn workspace @peas/parser extract:descriptors`.",
+  "description": "Machine suggestions for every word in the v1 DESCRIPTORS list (legacy/v1/parser.peggy). Not loaded anywhere: reviewed choices live in modifiers.seed.json. Regenerate with `yarn workspace @peas/parser extract:descriptors`.",
   "counts": {
     "UNSURE": 453,
     "IGNORE": 92,

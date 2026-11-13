@@ -1,11 +1,9 @@
 // Repository exports
+export * from "./repository/cleanup";
 export * from "./repository/dashboard";
-export * from "./repository/ingredient";
 export * from "./repository/instruction";
 export * from "./repository/note";
 export * from "./repository/ontology/index.js";
-export * from "./repository/parsing-rule";
-export * from "./repository/pattern";
 export * from "./repository/queueJob";
 export * from "./repository/recipe";
 export * from "./repository/source";

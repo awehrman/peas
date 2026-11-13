@@ -96,7 +96,7 @@ describe.skipIf(!hasTestDatabase)("v2 cutover (integration)", () => {
   });
 
   describe("saveImportedLine", () => {
-    it("stores one mention per coordinated part, is idempotent, and never writes legacy tables", async () => {
+    it("stores one mention per coordinated part and is idempotent", async () => {
       const ctx = await context();
       const noteId = await createNote();
       const input = importedLine(noteId, "Salt and parsley", ctx);
@@ -128,10 +128,6 @@ describe.skipIf(!hasTestDatabase)("v2 cutover (integration)", () => {
       expect(second.lineId).toBe(first.lineId);
       expect(await counts()).toEqual(before);
 
-      expect(await prisma.parsedSegment.count()).toBe(0);
-      expect(await prisma.ingredientReference.count()).toBe(0);
-      expect(await prisma.ingredient.count()).toBe(0);
-
       const line = await prisma.parsedIngredientLine.findUniqueOrThrow({
         where: { id: first.lineId },
       });
@@ -142,7 +138,7 @@ describe.skipIf(!hasTestDatabase)("v2 cutover (integration)", () => {
       expect(line.parsedAt).not.toBeNull();
     });
 
-    it("returns note lines without legacy segments; mentions are read separately", async () => {
+    it("returns note lines without segments; mentions are read separately", async () => {
       const { noteId } = await importNote(["1 lb boneless chicken thighs"]);
       const detail = await getNoteDetail(noteId);
       const line = detail?.ingredientBlocks[0]?.lines[0];

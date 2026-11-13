@@ -12,7 +12,7 @@ export const hasTestDatabase = Boolean(process.env.TEST_DATABASE_URL);
 export async function resetDatabase(): Promise<void> {
   await prisma.$executeRawUnsafe(`
     TRUNCATE
-      "Note", "Recipe", "Ingredient", "IngredientCategory", "IngredientTag", "Category", "Tag",
+      "Note", "Recipe", "IngredientTag", "Category", "Tag",
       "QueueJob", "Session", "User", "FoodConcept", "ReinterpretRun"
     RESTART IDENTITY CASCADE
   `);
@@ -71,12 +71,7 @@ export async function createNote(
         lineIndex,
         reference,
         parseStatus: "COMPLETED_SUCCESSFULLY",
-        parserVersion: "static_v1",
-        parsed: {
-          create: [
-            { index: 0, rule: "test", type: "ingredient", value: reference },
-          ],
-        },
+        parserVersion: "v2:test",
       },
       select: { id: true },
     });

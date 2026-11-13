@@ -104,6 +104,18 @@ export function structureSignature(syntax: IngredientLineSyntax): string {
   return collapsed.slice(0, MAX_SYMBOLS).join(" ");
 }
 
+const QUANTITY_WORDS = new Set(["a", "an", "few", "some", "several"]);
+
+/**
+ * A unit word in the phrase is a stranded measure when it follows a quantity word ("a few sprigs" left in the phrase) or more of the phrase follows it ("small handful coriander"). A unit word ending a food name ("baby back ribs") or hyphen-joined to a word ("bone-in") is part of the name. Numbers before it are reported on their own.
+ */
+function isStrayUnit(items: PhraseItem[], index: number, raw: string): boolean {
+  const start = items[index]?.span.start ?? 0;
+  if (/\p{L}-$/u.test(raw.slice(0, start))) return false;
+  const previous = items[index - 1]?.span.text.toLowerCase() ?? "";
+  return QUANTITY_WORDS.has(previous) || index < items.length - 1;
+}
+
 function strayQuantity(syntax: IngredientLineSyntax): {
   segmentIndex: number;
   span: TextSpan;
@@ -116,11 +128,14 @@ function strayQuantity(syntax: IngredientLineSyntax): {
         .filter((parenthetical) => !parenthetical.quantity)
         .flatMap((parenthetical) => parenthetical.phrase),
     ];
-    for (const item of items) {
+    for (const [index, item] of items.entries()) {
       if (item.kind !== "UNKNOWN") continue;
       const isNumber = /^\p{N}/u.test(item.span.text);
       const unit = units.matchAt(item.span.start);
-      const isUnit = unit !== null && unit.length >= item.span.text.length;
+      const isUnit =
+        unit !== null &&
+        unit.length >= item.span.text.length &&
+        isStrayUnit(items, index, syntax.raw);
       if (isNumber || isUnit)
         return { segmentIndex: segment.index, span: item.span };
     }

@@ -16,7 +16,7 @@ prisma/schemas/
 ├── parsing.prisma         # Parsed ingredient and instruction lines
 ├── meta.prisma            # Categories and tags
 ├── source.prisma          # Sources, URLs, and books
-├── ingredients.prisma     # Legacy ingredient identity (replaced by the ontology)
+├── tags-and-brands.prisma # Ingredient tags and brands (linked to concepts and products)
 ├── recipes.prisma         # Recipes promoted from notes
 └── ontology.prisma        # Food ontology, lexicon, mentions, review loop (v2 parser)
 migrations/                # One folder per migration
@@ -38,7 +38,7 @@ scripts/                   # build-schema, verify-migrations, seeds, exports
   - `QueueJobStatus`, `QueueJobType` enums
 
 - **`parsing.prisma`**: Parsed content from recipe notes
-  - `ParsedIngredientLine`, `ParsedInstructionLine`, `ParsedSegment`
+  - `ParsedIngredientLine`, `ParsedInstructionLine` (an ingredient line's meaning lives in its `IngredientMention` rows)
 
 - **`meta.prisma`**: Categorization and tagging
   - `Category`, `Tag`
@@ -47,7 +47,7 @@ scripts/                   # build-schema, verify-migrations, seeds, exports
   - `Source`, `URL`, `Book`
   - `SourceType` enum
 
-- **`ingredients.prisma`** (legacy): `Ingredient`, `Alias`, `IngredientReference`, `IngredientCategory`, `IngredientTag`, `Brand`. Nothing writes or reads them since Phase 5 except `IngredientTag` (concept tags); retired in Phase 7 of the ingredient rebuild. The legacy-ingredient seed was replaced by `db:seed:foods`.
+- **`tags-and-brands.prisma`**: `IngredientTag` (concept tags) and `Brand` (product brands). The legacy ingredient tables (`Ingredient`, `Alias`, `IngredientProperty`, `IngredientReference`, `IngredientCategory`) and the v1 parsing tables (`ParsedSegment`, `ParsingRule`, `UniqueLinePattern`) were dropped in Phase 7 of the ingredient rebuild; `LegacyIngredientMapping` keeps the old ingredient ids as plain text.
 
 - **`recipes.prisma`**: `Recipe`, a curated note that reuses the note's parsed lines.
 
@@ -114,7 +114,7 @@ Run in this order; each is idempotent and bumps the lexicon revision only when i
 | --- | --- |
 | `db:seed:ontology` | Attribute dimensions, values, and preparation operations from `@peas/parser/v2` |
 | `db:seed:modifiers` | The 99 reviewed modifier entries in `packages/parser/fixtures/lexicon/modifiers.seed.json` (ACTIVE), resolved against the vocabulary |
-| `db:seed:foods` | The starter foods in `packages/parser/fixtures/lexicon/starter-foods.seed.json`: chicken and its parts, dairy, pantry staples, produce, and oils, with canonical, plural, and alias names, relationships (chicken thigh PART_OF chicken, kosher salt IS_A salt, ...), characterizing attributes, and attribute applicability (bone and skin apply to chicken, so "boneless skinless chicken thighs" keeps both). Concepts are matched by canonical name. Two stay PROPOSED (chicken drumstick, lemon zest) so the Approve button has something to approve. |
+| `db:seed:foods` | The starter foods in `packages/parser/fixtures/lexicon/starter-foods.seed.json`: chicken and its parts, dairy, pantry staples, produce, and oils, with canonical, plural, and alias names, relationships (chicken thigh PART_OF chicken, kosher salt IS_A salt, ...), characterizing attributes, and attribute applicability (bone and skin apply to chicken, so "boneless skinless chicken thighs" keeps both). Concepts are matched by canonical name. Every food is seeded approved (VERIFIED, with ACTIVE names); set `status: "PROPOSED"` on the file or on a food to put foods in the review queue instead. |
 
 `db:evaluate:resolution [--limit 5000] [--export-snapshot path]` writes a read-only resolution report over stored lines to `packages/parser/fixtures/reports/resolution.db.md`.
 
@@ -140,6 +140,7 @@ Every JSON column (`syntax`, `quantity`, `resolution`, discovery and decision pa
 - `markDiscoveryAsNoise(id)` sets a structural pattern's lines inactive and rejects the discovery; `pendingFixtureLines({ discoveryId | signature })` returns its example lines, which `yarn workspace @peas/database pull:fixtures` (aliased as `@peas/parser pull:fixtures`) writes as pending golden cases.
 - `exploratorySweep(context)` records discoveries from an EXPLORATORY re-read of unresolved and needs-review mentions without writing mentions; `dryRunReparse(context)` and `formatReparseReport` build the reparse report.
 - `takeCorpusHealthSnapshot(trigger)` stores one `CorpusHealthSnapshot`; `getHealthTrends({ weeks })` returns snapshots, unresolved share by parser version, weekly decisions and mentions changed, and the top open phrases; `addDecisionMentionsChanged` feeds "taught to fixed".
+- `apply-decision.ts` also handles `EDIT_ENTRY`, the lexicon page's edit of one entry: the same match key and target update the status, kind, or spelling in place; anything else retires the entry and creates (or reactivates) the replacement. Effects record previous statuses, kinds, and spellings, so REVERT restores them. `listLexiconEntries({ includeRetired })` lists retired entries for restoring.
 - `ingredient-card.ts` maps the ingredients page's card to concepts: `saveIngredientCard` turns name, alias, and parent edits into one `EDIT_CONCEPT` decision (plus `APPROVE_CONCEPT` for a proposed food) and writes properties, category, tags, and substitutions directly.
 
 ### Constraints outside the Prisma schema
@@ -266,7 +267,6 @@ The application uses Prisma with PostgreSQL and includes:
 - `ParsedIngredientLine`: Extracted ingredient information
 - `ParsedInstructionLine`: Processed instruction text
 - `QueueJob`: Background job management
-- `ParsedSegment`: Structured ingredient data (legacy v1 output)
 - `FoodConcept`, `LexiconEntry`, `IngredientMention`: the v2 ontology (see above)
 
 ## 🔧 Development

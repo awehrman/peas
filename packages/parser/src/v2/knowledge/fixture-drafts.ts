@@ -2,7 +2,7 @@
  * A structural golden case waiting for its expected values, in the shape of `fixtures/golden/structural.dev.json`.
  *
  * @example
- * { id: "pending-w-u-1", input: "rosemary a few sprigs", tags: ["pending"], current: "rosemary a few sprigs", expected: { status: "PARSED", segments: [] } }
+ * { id: "pending-w-n-u-w-1", input: "thyme 4 sprigs fresh", tags: ["pending"], current: "thyme 4 sprigs fresh", expected: { status: "PARSED", segments: [] } }
  */
 export interface GoldenCaseDraft {
   id: string;
@@ -38,8 +38,8 @@ export function fixtureSlug(signature: string): string {
  * Golden cases for a structural pattern's example lines, with empty expected values for the developer to fill in (Phase 6b). Duplicate lines are dropped.
  *
  * @example
- * draftGoldenCases("W U", [{ input: "rosemary a few sprigs" }, { input: "thyme a few sprigs" }])
- * // [{ id: "pending-w-u-1", input: "rosemary a few sprigs", ... }, { id: "pending-w-u-2", ... }]
+ * draftGoldenCases("W N U W", [{ input: "thyme 4 sprigs fresh" }, { input: "rosemary 2 sprigs fresh" }])
+ * // [{ id: "pending-w-n-u-w-1", input: "thyme 4 sprigs fresh", ... }, { id: "pending-w-n-u-w-2", ... }]
  */
 export function draftGoldenCases(
   signature: string,

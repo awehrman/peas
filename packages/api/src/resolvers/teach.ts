@@ -166,6 +166,7 @@ export const TeachQuery: Pick<
     const { items, total } = await listLexiconEntries({
       query: toFilter(args.query),
       role,
+      includeRetired: args.includeRetired ?? false,
       offset: (page - 1) * CONCEPTS_PAGE_SIZE,
       limit: CONCEPTS_PAGE_SIZE,
     });

@@ -3,20 +3,12 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "main": "dist/index.js",
-  "types": "types/index.d.ts",
+  "main": "dist/v2/index.js",
+  "types": "dist/v2/index.d.ts",
   "exports": {
     ".": {
-      "types": "./types/index.d.ts",
-      "default": "./dist/index.js"
-    },
-    "./v1": {
-      "types": "./types/index.d.ts",
-      "default": "./dist/v1/index.js"
-    },
-    "./v1/minified": {
-      "types": "./types/index.d.ts",
-      "default": "./dist/v1/index.min.js"
+      "types": "./dist/v2/index.d.ts",
+      "default": "./dist/v2/index.js"
     },
     "./v2": {
       "types": "./dist/v2/index.d.ts",
@@ -25,7 +17,6 @@
   },
   "scripts": {
     "build": "node scripts/build.js",
-    "build:v1": "peggy -o dist/v1/parser.js --format es src/v1/parser.peggy && node -e \"require('fs').writeFileSync('dist/v1/index.js', 'export { parse } from \\'./parser.js\\';')\"",
     "generate:v2": "node scripts/generate-v2.js",
     "pull:fixtures": "yarn workspace @peas/database pull:fixtures",
     "calibrate:thresholds": "tsx scripts/calibrate-thresholds.ts",
@@ -34,7 +25,6 @@
     "clean": "rm -rf dist",
     "test": "vitest",
     "test:run": "vitest run",
-    "corpus:baseline-v1": "node scripts/baseline-v1.js",
     "report:compare": "tsx scripts/compare-v1-v2.ts",
     "preview:lexicon": "tsx scripts/preview-lexicon-change.ts",
     "explain:line": "tsx scripts/explain-line.ts",
@@ -50,7 +40,6 @@
     "@peas/typescript-config": "*",
     "@types/node": "^24.0.13",
     "@vitest/coverage-v8": "^5.1.0",
-    "terser": "^5.43.1",
     "tsx": "^4.7.0",
     "typescript": "^6.0.3",
     "vite": "^8.3.8",

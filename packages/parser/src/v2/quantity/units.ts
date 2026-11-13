@@ -167,6 +167,10 @@ export const UNIT_TABLE: UnitDefinition[] = [
   { id: "knob", dimension: "COUNT", aliases: withPlural("knob") },
   { id: "dollop", dimension: "COUNT", aliases: withPlural("dollop") },
   { id: "dozen", dimension: "COUNT", aliases: withPlural("dozen") },
+  { id: "rack", dimension: "COUNT", aliases: withPlural("rack") },
+  { id: "slab", dimension: "COUNT", aliases: withPlural("slab") },
+  // A batch of another recipe ("1 recipe pie dough", "1/2 recipe frosting")
+  { id: "recipe", dimension: "COUNT", aliases: withPlural("recipe") },
 
   // Packages
   { id: "can", dimension: "PACKAGE", aliases: withPlural("can") },
@@ -271,7 +275,8 @@ export interface UnitMatcher {
  * Finds the longest unit spelled at `offset` in normalized text. A unit must
  * start a word (it may follow a digit, as in "250ml") and end at a word
  * boundary; single-letter units also may not be followed by "-" or "'"
- * so "t-bone" is not a teaspoon (the inch mark in `2"-piece` still is a unit).
+ * so "t-bone" is not a teaspoon (the inch mark in `2"-piece` still is a unit),
+ * unless the hyphen starts the other end of a range ("800g-1kg").
  */
 export function createUnitMatcher(text: string): UnitMatcher {
   const lower = text.toLowerCase();
@@ -295,7 +300,12 @@ export function createUnitMatcher(text: string): UnitMatcher {
 
         const next = text[end];
         if (isLetterOrDigit(next)) continue;
-        if (alias.text.length === 1 && isLetter(alias.text) && (next === "-" || next === "'")) {
+        const hyphenStartsRange = next === "-" && /[0-9]/.test(text[end + 1] ?? "");
+        if (
+          alias.text.length === 1 &&
+          isLetter(alias.text) &&
+          ((next === "-" && !hyphenStartsRange) || next === "'")
+        ) {
           continue;
         }
 

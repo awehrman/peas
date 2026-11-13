@@ -4,22 +4,28 @@
  *   - imported data in Postgres (notes, ingredient lines and mentions, images,
  *     status events, recipes, open review cards with no lines left); users,
  *     food knowledge, decisions, and health snapshots are kept
- *   - queued and cached work in Redis (bull:*, action:*, tag:*)
+ *   - queued and cached work in Redis (bull:*, action:*, tag:*, and with
+ *     --include-ontology the cached lexicon snapshots, lexicon:snapshot:*)
  *   - local upload folders
  *
+ * With --include-ontology, food knowledge goes too: concepts, the lexicon,
+ * attributes, preparations, decisions, every review card, products, brands,
+ * ingredient tags, legacy ingredient mappings, and health snapshots. Reseed
+ * afterwards (db:seed:ontology, db:seed:modifiers, db:seed:foods).
+ *
  * Stop `yarn dev` first, then:
- *   yarn workspace @peas/queue clear-imports --yes
+ *   yarn workspace @peas/queue clear-imports --yes [--include-ontology]
  */
-import "../src/config/load-env";
-
+import { cleanupAllData } from "@peas/database";
 import { readdirSync, rmSync } from "fs";
 import { createConnection } from "net";
 import { join } from "path";
-
-import { cleanupAllData } from "@peas/database";
 import { createClient } from "redis";
 
+import "../src/config/load-env";
+
 const REDIS_PATTERNS = ["bull:*", "action:*", "tag:*"];
+const LEXICON_SNAPSHOT_PATTERN = "lexicon:snapshot:*";
 const UPLOAD_DIRECTORIES = ["uploads/images", "uploads/temp"];
 const QUEUE_PORT = Number(process.env.PORT ?? 4200);
 
@@ -34,7 +40,7 @@ function isPortInUse(port: number): Promise<boolean> {
   });
 }
 
-async function clearRedis(): Promise<number> {
+async function clearRedis(patterns: string[]): Promise<number> {
   const client = createClient({
     socket: {
       host: process.env.REDISHOST || "127.0.0.1",
@@ -46,9 +52,12 @@ async function clearRedis(): Promise<number> {
   await client.connect();
 
   let deleted = 0;
-  for (const pattern of REDIS_PATTERNS) {
+  for (const pattern of patterns) {
     const keys: string[] = [];
-    for await (const batch of client.scanIterator({ MATCH: pattern, COUNT: 500 })) {
+    for await (const batch of client.scanIterator({
+      MATCH: pattern,
+      COUNT: 500,
+    })) {
       keys.push(...(Array.isArray(batch) ? batch : [batch]));
     }
     if (keys.length > 0) deleted += await client.del(keys);
@@ -77,13 +86,19 @@ function clearUploads(): number {
 }
 
 async function main() {
+  const includeOntology = process.argv.includes("--include-ontology");
   if (!process.argv.includes("--yes")) {
     console.log(
       "This deletes all imported notes, ingredient lines and their mentions, images, recipes, sources,\n" +
-        "note categories and tags, queued jobs, reinterpretation runs, the legacy v1 parsing rules,\n" +
-        "and open review cards left with no example lines.\n" +
-        "Kept: users, food knowledge (concepts, lexicon, attributes, relationships), decisions,\n" +
-        "resolved and rejected review cards, and corpus health snapshots.\n" +
+        "note categories and tags, queued jobs, reinterpretation runs, and open review cards left with\n" +
+        "no example lines.\n" +
+        (includeOntology
+          ? "--include-ontology also deletes food knowledge: concepts, the lexicon, attributes, preparations,\n" +
+            "decisions, every review card, products, brands, ingredient tags, legacy ingredient mappings,\n" +
+            "and corpus health snapshots. Only users are kept.\n"
+          : "Kept: users, food knowledge (concepts, lexicon, attributes, relationships), decisions,\n" +
+            "resolved and rejected review cards, and corpus health snapshots (add --include-ontology to\n" +
+            "delete those too).\n") +
         "Re-run with --yes to continue."
     );
     process.exit(1);
@@ -96,12 +111,21 @@ async function main() {
     process.exit(1);
   }
 
-  const { deletedCounts } = await cleanupAllData();
+  const { deletedCounts } = await cleanupAllData({ includeOntology });
   console.log("Database:", deletedCounts);
 
-  console.log(`Redis: deleted ${await clearRedis()} keys`);
+  const redisPatterns = includeOntology
+    ? [...REDIS_PATTERNS, LEXICON_SNAPSHOT_PATTERN]
+    : REDIS_PATTERNS;
+  console.log(`Redis: deleted ${await clearRedis(redisPatterns)} keys`);
   console.log(`Uploads: removed ${clearUploads()} entries`);
-  console.log("Done. R2 isn't touched; use Delete All Data on the dashboard for that.");
+  if (includeOntology)
+    console.log(
+      "Food knowledge cleared. Reseed with: yarn workspace @peas/database db:seed:ontology && yarn workspace @peas/database db:seed:modifiers && yarn workspace @peas/database db:seed:foods"
+    );
+  console.log(
+    "Done. R2 isn't touched; use Delete All Data on the dashboard for that."
+  );
   process.exit(0);
 }
 

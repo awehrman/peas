@@ -15,7 +15,7 @@ export TEST_DATABASE_URL=postgresql://<you>@localhost:5432/peas_test
 | Package | Command | What it covers | Database |
 | --- | --- | --- | --- |
 | `apps/queue` | `test:run` | Workers, services, routes, middleware (repositories mocked), including the v2 parse and save steps, the lexicon cache, background reinterpretation, reparses, health snapshots, exploratory sweeps, maintenance schedules, and ingredient metrics | No |
-| `packages/parser` | `test:run` | v2 normalizer, tokenizer, lexicon, grammar golden sets, invariants, schemas, ontology rules, resolver (semantic golden set, metamorphic, coordination, exploratory), resolution report, modifier seed file, discovery generation, the in-memory decision mirror, resolution diffs, structure signatures, fixture drafts, stored-syntax upgrades, threshold calibration; v1 snapshot | No |
+| `packages/parser` | `test:run` | v2 normalizer, tokenizer, lexicon, grammar golden sets, invariants, schemas, ontology rules, resolver (semantic golden set, metamorphic, coordination, exploratory), resolution report, modifier seed file, discovery generation, the in-memory decision mirror, resolution diffs, structure signatures, fixture drafts, stored-syntax upgrades, threshold calibration | No |
 | `packages/features` | `test:run` | Shared UI components and utilities, including the Teach Peas screens (with the structural card and the Health tab), concept pages, ingredient cards, and the Knowledge tabs and lexicon (jsdom) | No |
 | `packages/database` | `test:run` | Ontology helpers and Prisma/parser enum parity | No |
 | `packages/database` | `test:int` | Ontology repositories, migrations' constraints, vocabulary and modifier seeds, `loadResolverSnapshot`, the backfill (idempotent, resumable), every decision type against the in-memory mirror, revert, merge and its undo, previews, the review queue, adjacency mining, every section-32 example, the v2 import save (one mention per coordinated part, idempotent, no legacy writes), reinterpretation runs, concept editing, the recipe concept filter, top concepts, corpus health, the starter-foods seed (idempotent, real lines resolve), ingredient cards (save, approve by saving, revert), approving a proposed food (preview, reinterpretation, revert), structural discoveries, mark as noise, pending fixtures, exploratory sweeps, the dry-run reparse, and health snapshots and trends | Wiped and migrated |
@@ -35,11 +35,11 @@ Each config sets a threshold at the floor of the last measurement, so coverage c
 | Package | Statements | Branches | Notes |
 | --- | --- | --- | --- |
 | `apps/queue` | 96% | 95% | |
-| `packages/parser` | 96% | 89% | v2 only; v1 is checked by snapshot |
+| `packages/parser` | 96% | 89% | |
 | `packages/api` | 90% | 80% | With integration tests |
-| `packages/database` | 63% | 58% | The legacy repositories (retired in Phase 7) pull the total down; the ontology repositories and seeds are exercised directly |
+| `packages/database` | 77% | 67% | The ontology repositories, cleanup, and seeds are exercised directly; note, recipe, and queue-job repositories are covered mostly through `@peas/api` |
 | `packages/features` | 47% | 52% | Many older components are only exercised by the end-to-end tests |
-| `apps/web` | 21% | 24% | Unit coverage only; routes and components are covered by the 62 end-to-end tests (31 per browser), which are not counted |
+| `apps/web` | 21% | 24% | Unit coverage only; routes and components are covered by the 80 end-to-end tests (40 per browser), which are not counted |
 
 Coverage HTML reports land in each package's `coverage/` folder (git-ignored).
 

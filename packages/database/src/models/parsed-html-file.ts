@@ -4,7 +4,6 @@ export type ParsedIngredientLine = {
   parseStatus?: "AWAITING_PARSING" | "COMPLETED_SUCCESSFULLY" | "COMPLETED_WITH_ERROR";
   parsedAt?: Date;
   reference: string;
-  rule?: string;
 };
 
 export type ParsedInstructionLine = {

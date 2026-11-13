@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  ClassificationEditor,
-  SubstitutionEditor,
-  TagEditor,
-} from "./concept-editors";
-import { EntryList } from "./entry-list";
-import { RelationshipEditor } from "./relationship-editor";
+import { ConceptCard } from "./concept-card";
 import type { ConceptDetail, ConceptEditActions } from "./types";
 
 import { type ReactNode, useState } from "react";
@@ -26,6 +20,7 @@ import { ConfirmDialog, type MutationAction, formatDate } from "../shared";
 import type {
   ApplyDecisionResult,
   DecisionPayload,
+  PreviewDecision,
   SearchConcepts,
 } from "../teach/types";
 
@@ -40,6 +35,8 @@ export interface ConceptDetailProps extends ConceptEditActions {
     ApplyDecisionResult
   >;
   onSearchConcepts?: SearchConcepts;
+  /** Checks what an edit would do to stored mentions before it is saved. */
+  onPreview?: PreviewDecision;
 }
 
 function Section({
@@ -62,7 +59,7 @@ function Section({
 }
 
 /**
- * The concept page: names, relationships, attributes, effective classifications (inherited ones marked), tags, substitutions, example mentions, and the decisions behind it, each revertible. Editing controls appear only for the actions passed in, so viewers who aren't admins get a read-only page.
+ * The concept page: the concept card (names, relationships, attributes, effective classifications with inherited ones marked, tags, substitutions; read-only with an edit button, like the ingredient card), example mentions, and the decisions behind it, each revertible. Editing appears only for the actions passed in, so viewers who can't curate get a read-only page.
  */
 export function ConceptDetailPageContent({
   concept,
@@ -70,18 +67,10 @@ export function ConceptDetailPageContent({
   backLink = { href: "/concepts", label: "All concepts" },
   onApplyDecision,
   onSearchConcepts,
-  onSetClassification,
-  onRemoveClassification,
-  onSetTags,
-  onSetSubstitution,
-  onRemoveSubstitution,
+  onPreview,
+  ...editActions
 }: ConceptDetailProps): ReactNode {
   const [approvedMessage, setApprovedMessage] = useState<string | null>(null);
-  const ref = {
-    id: concept.id,
-    canonicalName: concept.canonicalName,
-    status: concept.status,
-  };
   return (
     <article className="flex max-w-5xl flex-col gap-6">
       <AppLink
@@ -142,54 +131,15 @@ export function ConceptDetailPageContent({
         ) : null}
       </header>
 
+      <ConceptCard
+        concept={concept}
+        onApplyDecision={onApplyDecision}
+        onPreview={onPreview}
+        onSearchConcepts={onSearchConcepts}
+        {...editActions}
+      />
+
       <div className="grid gap-6 md:grid-cols-2">
-        <Section title="Names">
-          <EntryList entries={concept.entries} />
-        </Section>
-        <Section title="Relationships">
-          <RelationshipEditor
-            concept={ref}
-            parents={concept.parents}
-            children={concept.children}
-            onApplyDecision={onApplyDecision}
-            onSearchConcepts={onSearchConcepts}
-          />
-        </Section>
-        <Section title="Attributes">
-          {concept.attributes.length === 0 ? (
-            <p className="text-sm text-greyscale-600">
-              No characterizing attributes.
-            </p>
-          ) : (
-            <ul className="flex flex-wrap gap-1">
-              {concept.attributes.map((attribute) => (
-                <li key={attribute.attributeValueId}>
-                  <Badge variant="secondary">
-                    {attribute.definitionKey}: {attribute.label}
-                  </Badge>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Section>
-        <Section title="Classifications">
-          <ClassificationEditor
-            classifications={concept.classifications}
-            onSetClassification={onSetClassification}
-            onRemoveClassification={onRemoveClassification}
-          />
-        </Section>
-        <Section title="Tags">
-          <TagEditor tags={concept.tags} onSetTags={onSetTags} />
-        </Section>
-        <Section title="Substitutions">
-          <SubstitutionEditor
-            substitutions={concept.substitutions}
-            onSetSubstitution={onSetSubstitution}
-            onRemoveSubstitution={onRemoveSubstitution}
-            onSearchConcepts={onSearchConcepts}
-          />
-        </Section>
         <Section title="Example mentions">
           {concept.mentions.length === 0 ? (
             <p className="text-sm text-greyscale-600">

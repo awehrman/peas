@@ -66,10 +66,19 @@ export const E2E_STRUCTURAL: Record<
   { line: string; signature: string }
 > = {
   chromium: { line: "For the glaze:", signature: "W :" },
-  webkit: { line: "rosemary a few sprigs", signature: "W U" },
+  webkit: { line: "thyme 4 sprigs fresh", signature: "W N U W" },
 };
 
 export const E2E_STRUCTURE_NOTE = "E2E Structure";
+
+/** One unresolved line per browser project; the lexicon test teaches its phrase as a name for milk, then retires it, and both changes reread the line. */
+export const E2E_LEXICON: Record<E2eProject, { phrase: string; line: string }> =
+  {
+    chromium: { phrase: "moo juice", line: "1 cup moo juice" },
+    webkit: { phrase: "cow juice", line: "1 cup cow juice" },
+  };
+
+export const E2E_LEXICON_NOTE = "E2E Lexicon";
 
 /** The teach note's lines: the shared ones plus each project's alias, modifier, and correction lines. */
 export function teachLines(): string[] {
@@ -100,7 +109,7 @@ export async function seedE2eDatabase(): Promise<{
   const { hashPassword } = await import("@peas/api/auth");
 
   await prisma.$executeRawUnsafe(
-    `TRUNCATE "Note", "Recipe", "Ingredient", "IngredientCategory", "IngredientTag", "Category", "Tag", "Session", "User",
+    `TRUNCATE "Note", "Recipe", "IngredientTag", "Category", "Tag", "Session", "User",
       "LexiconRevision", "FoodConcept", "LexiconEntry", "AttributeDefinition", "PreparationOperation", "Discovery", "LexiconDecision",
       "ReinterpretRun"
      RESTART IDENTITY CASCADE`
@@ -350,6 +359,27 @@ async function seedTeachData(): Promise<void> {
       totalIngredientLines: structural.length,
       parsedIngredientLines: {
         create: structural.map((reference, lineIndex) => ({
+          blockIndex: 0,
+          lineIndex,
+          reference,
+          parseStatus: "COMPLETED_SUCCESSFULLY" as const,
+          parserVersion: "static_v1",
+        })),
+      },
+    },
+  });
+
+  const lexiconLines = Object.values(E2E_LEXICON).map(
+    (fixture) => fixture.line
+  );
+  await prisma.note.create({
+    data: {
+      title: E2E_LEXICON_NOTE,
+      html: "<p></p>",
+      status: "COMPLETED",
+      totalIngredientLines: lexiconLines.length,
+      parsedIngredientLines: {
+        create: lexiconLines.map((reference, lineIndex) => ({
           blockIndex: 0,
           lineIndex,
           reference,

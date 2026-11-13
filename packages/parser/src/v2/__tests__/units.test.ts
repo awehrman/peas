@@ -41,10 +41,24 @@ describe("unit matcher", () => {
     });
   });
 
+  it("lets a single-letter unit end one side of a range", () => {
+    expect(createUnitMatcher("800g-1kg").matchAt(3)).toMatchObject({
+      id: "g",
+      length: 1,
+    });
+    expect(createUnitMatcher("2 t-bone steaks").matchAt(2)).toBeNull();
+  });
+
   it("reports dimensions", () => {
     expect(unitAt("cans")).toMatchObject({ id: "can", dimension: "PACKAGE" });
     expect(unitAt("cloves")).toMatchObject({ id: "clove", dimension: "COUNT" });
     expect(unitAt("kg")).toMatchObject({ id: "kg", dimension: "MASS" });
+    expect(unitAt("racks")).toMatchObject({ id: "rack", dimension: "COUNT" });
+    expect(unitAt("slab")).toMatchObject({ id: "slab", dimension: "COUNT" });
+    expect(unitAt("recipe")).toMatchObject({
+      id: "recipe",
+      dimension: "COUNT",
+    });
   });
 
   it("keeps food parts out of the unit table", () => {

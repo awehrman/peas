@@ -21,9 +21,11 @@ import {
   DecisionPayloadSchema,
   type SnapshotEntryInput,
   createConceptEntries,
+  editedEntryFor,
   entryMatchKey,
   foodEntriesFor,
   modifierEntryFor,
+  normalizeText,
 } from "@peas/parser/v2";
 import type {
   ConceptStatus,
@@ -509,6 +511,10 @@ async function applyEffects(
       await editConcept(context, payload);
       return;
 
+    case "EDIT_ENTRY":
+      await editEntry(context, payload);
+      return;
+
     case "REVERT":
       await revertDecision(context, payload.decisionId);
       return;
@@ -651,6 +657,108 @@ async function editConcept(
   }
 }
 
+/** Checks that the edited entry's new target exists (and, for a food, isn't merged away). */
+async function assertEntryTarget(
+  tx: DbClient,
+  payload: Extract<DecisionPayload, { type: "EDIT_ENTRY" }>
+): Promise<void> {
+  if (payload.role === "FOOD" && payload.conceptId) {
+    const concept = await tx.foodConcept.findUnique({
+      where: { id: payload.conceptId },
+      select: { status: true },
+    });
+    if (!concept || concept.status === "DEPRECATED")
+      throw new OntologyError("Point food names at an existing, non-merged concept");
+  }
+  if (payload.role === "ATTRIBUTE" && payload.attributeValueId)
+    await definitionOf(tx, payload.attributeValueId);
+  if (payload.role === "PREPARATION" && payload.preparationId) {
+    const preparation = await tx.preparationOperation.findUnique({
+      where: { id: payload.preparationId },
+      select: { id: true },
+    });
+    if (!preparation) throw new OntologyError("That preparation does not exist");
+  }
+}
+
+/**
+ * One lexicon entry edited on the lexicon page. Same match key and target: the status, kind, and spelling change in place. Otherwise the entry is retired and its replacement is created, or an existing entry with that text and target takes the new status. Every row is recorded with what it was, so REVERT puts it back.
+ */
+async function editEntry(
+  context: EffectContext,
+  payload: Extract<DecisionPayload, { type: "EDIT_ENTRY" }>
+): Promise<void> {
+  const { tx, effects } = context;
+  const entry = await tx.lexiconEntry.findUnique({
+    where: { id: payload.entryId },
+    select: { text: true, kind: true, status: true, matchKey: true, targetKey: true },
+  });
+  if (!entry) throw new OntologyError("That lexicon entry does not exist");
+  await assertEntryTarget(tx, payload);
+
+  const replacement = editedEntryFor(payload);
+  const matchKey = entryMatchKey(payload.text);
+  const targetKey = computeTargetKey(replacement);
+  const kind = (replacement.kind ?? null) as LexiconTermKind | null;
+  const status = payload.status as EntryStatus;
+
+  const updateInPlace = async (
+    id: string,
+    current: { text: string; kind: LexiconTermKind | null; status: EntryStatus }
+  ) => {
+    const changed =
+      current.status !== status || current.kind !== kind || current.text !== payload.text;
+    if (!changed) return false;
+    await tx.lexiconEntry.update({
+      where: { id },
+      data: {
+        status,
+        kind,
+        text: payload.text,
+        normalized: normalizeText(payload.text).text,
+        revisionRetired: status === "DEPRECATED" ? context.revision : null,
+      },
+    });
+    const row = {
+      table: "LexiconEntry",
+      id,
+      previous: current.status,
+      ...(current.kind ? { previousKind: current.kind } : {}),
+      ...(current.text !== payload.text ? { previousText: current.text } : {}),
+    };
+    if (status === "DEPRECATED") effects.deprecated.push(row);
+    else effects.updated.push(row);
+    return true;
+  };
+
+  if (matchKey === entry.matchKey && targetKey === entry.targetKey) {
+    if (!(await updateInPlace(payload.entryId, entry)))
+      throw new OntologyError("Nothing changed on that entry");
+    return;
+  }
+
+  if (entry.status !== "DEPRECATED") {
+    await deprecateLexiconEntries(tx, [payload.entryId], context.revision);
+    effects.deprecated.push({ table: "LexiconEntry", id: payload.entryId, previous: entry.status });
+  }
+  if (status === "DEPRECATED") return;
+
+  const existing = await tx.lexiconEntry.findUnique({
+    where: { matchKey_targetKey: { matchKey, targetKey } },
+    select: { id: true, text: true, kind: true, status: true },
+  });
+  if (existing) {
+    await updateInPlace(existing.id, existing);
+    return;
+  }
+  const [created] = await createLexiconEntries(
+    tx,
+    [{ ...replacement, kind, status, decisionId: context.decisionId }],
+    context.revision
+  );
+  if (created) effects.created.push({ table: "LexiconEntry", id: created.id });
+}
+
 /**
  * Undoes a decision's recorded effects: created entries, relationships, and concepts are retired, activated or deprecated rows get their previous status back, added applicability is removed, and merges are undone from their snapshot. Mention corrections and new attribute values stay (they are harmless to keep). Reopens the decision's discovery.
  */
@@ -720,6 +828,12 @@ async function revertDecision(
               previous === "DEPRECATED" ? context.revision : null,
             ...(row.previousKind
               ? { kind: row.previousKind as LexiconTermKind }
+              : {}),
+            ...(row.previousText
+              ? {
+                  text: row.previousText,
+                  normalized: normalizeText(row.previousText).text,
+                }
               : {}),
           },
         });

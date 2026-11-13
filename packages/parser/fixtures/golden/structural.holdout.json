@@ -124,8 +124,8 @@
       "status": "PARSED",
       "segments": [
         {
-          "quantity": "1",
-          "phrase": "recipe quantity pickling liquid",
+          "quantity": "1 recipe",
+          "phrase": "quantity pickling liquid",
           "parentheticals": [
             "see recipe, below"
           ]

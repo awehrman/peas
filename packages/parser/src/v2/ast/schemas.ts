@@ -54,11 +54,14 @@ export const UnitRefSchema = z.object({
  * // EXACT        "2 cups"                -> { kind: "EXACT", value: 2/1, unit: cup }
  * // EXACT        "pinch of"              -> { kind: "EXACT", value: 1/1, unit: pinch, implied: true }
  * // RANGE        "2 to 3 lbs"            -> { kind: "RANGE", minimum: 2/1, maximum: 3/1, unit: lb }
+ * // MEASURE_RANGE "800g–1kg"             -> { kind: "MEASURE_RANGE", from: EXACT 800 g, to: EXACT 1 kg }
  * // APPROXIMATE  "about 1 cup"           -> { kind: "APPROXIMATE", marker: "about", quantity: EXACT 1 cup }
  * // PACKAGE      "1 (14-ounce) can"      -> { kind: "PACKAGE", count: 1/1, packageType: can, packageSize: EXACT 14 oz }
  * // ALTERNATIVE  "1 tbsp or 15 ml"       -> { kind: "ALTERNATIVE", options: [EXACT 1 tbsp, EXACT 15 ml] }
  * // SUM          "1 cup plus 2 tbsp"     -> { kind: "SUM", parts: [EXACT 1 cup, EXACT 2 tbsp] }
+ * // SUM          "1lb 12oz"              -> { kind: "SUM", parts: [EXACT 1 lb, EXACT 12 oz] }
  * // UNSPECIFIED  "to taste"              -> { kind: "UNSPECIFIED", expression: "TO_TASTE" }
+ * // UNSPECIFIED  "a few sprigs"          -> { kind: "UNSPECIFIED", expression: "FEW", unit: sprig }
  */
 export const QuantitySchema: z.ZodType<Quantity> = z.lazy(() =>
   z.discriminatedUnion("kind", [
@@ -74,6 +77,12 @@ export const QuantitySchema: z.ZodType<Quantity> = z.lazy(() =>
       minimum: RationalSchema,
       maximum: RationalSchema,
       unit: UnitRefSchema.optional(),
+      span: TextSpanSchema,
+    }),
+    z.object({
+      kind: z.literal("MEASURE_RANGE"),
+      from: QuantitySchema,
+      to: QuantitySchema,
       span: TextSpanSchema,
     }),
     z.object({
@@ -102,6 +111,7 @@ export const QuantitySchema: z.ZodType<Quantity> = z.lazy(() =>
     z.object({
       kind: z.literal("UNSPECIFIED"),
       expression: z.enum(UNSPECIFIED_EXPRESSIONS),
+      unit: UnitRefSchema.optional(),
       span: TextSpanSchema,
     }),
   ])

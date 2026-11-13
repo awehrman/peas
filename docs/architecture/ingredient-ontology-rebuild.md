@@ -19,7 +19,7 @@ Each item below can be seen or checked directly. Commands run from the repo root
 | 1 | **v2 parser explains any line.** Normalization, tokens, lexicon matches, and the syntax tree for one line. | `yarn workspace @peas/parser explain:line --lexicon demo "2 heaping cups all-purpose flour, sifted"` |
 | 2 | **Unknown foods still parse.** Structure without any food knowledge. | `yarn workspace @peas/parser explain:line "3 tablespoons calamansi juice"` gives `[3 tbsp] calamansi juice` |
 | 3 | **Exploratory mode previews proposed knowledge.** Two segmentations, with and without a proposed entry. | `yarn workspace @peas/parser explain:line --lexicon demo --exploratory "1 tbsp virgin olive oil"` |
-| 4 | **The whole corpus parses.** At Phase 1 close, 682 of 682 exported lines parsed fully (v1: 681), in about 130 ms total versus about 70 ms per line for v1. The corpus was reset to empty on 12 November 2026 because that export included instruction text; after a fresh import, refill it and rerun the report. | `yarn workspace @peas/database export:lines`, then `yarn workspace @peas/parser corpus:baseline-v1` and `report:compare`; open `packages/parser/fixtures/reports/v1-vs-v2.md` |
+| 4 | **The whole corpus parses.** At Phase 1 close, 682 of 682 exported lines parsed fully (v1: 681), in about 130 ms total versus about 70 ms per line for v1. The corpus was reset to empty on 12 November 2026 because that export included instruction text; after a fresh import, refill it and rerun the report. | `yarn workspace @peas/database export:lines`, then `node legacy/v1/scripts/baseline-v1.js` (from `packages/parser`; v1 is retired) and `yarn workspace @peas/parser report:compare`; open `packages/parser/fixtures/reports/v1-vs-v2.md` |
 | 5 | **Golden accuracy is measured, not guessed.** 182 dev cases (177 exact on quantity and phrase; 5 known failures documented) and 41 held-out cases. | Same report, "Golden sets" table |
 | 6 | **Regression suite.** 272 tests: unit, golden, invariants (spans always point at raw text, parsing never throws), Zod schema round-trips, and a v1 snapshot. | `yarn workspace @peas/parser test:run` |
 | 7 | **Lexicon change previews.** What changes across the corpus if an entry is added, before anyone accepts it. | `yarn workspace @peas/parser preview:lexicon --add "olive oil:FOOD"` |
@@ -95,13 +95,13 @@ Phase 5 is the cutover: imports parse and resolve with v2 only, nothing is writt
 
 | # | Deliverable | How to see it |
 | --- | --- | --- |
-| 1 | **Imports run on v2 only.** The parse step runs `processIngredientLine` in CONSERVATIVE mode with the queue's cached resolver context and stores the Zod-validated result on the job; the parse status reflects syntax only (PARSED succeeds, PARTIAL and FAILED are errors) and resolution never fails a job. The save step calls `saveImportedLine`, one transaction that upserts the line by `(noteId, blockIndex, lineIndex)`, its mentions (verified ones protected), and its discoveries. No `ParsedSegment`, `IngredientReference`, `Ingredient`, `ParsingRule`, or `UniqueLinePattern` writes remain, and saving the same line twice adds nothing. | Import a note and open it; integration test "stores one mention per coordinated part, is idempotent, and never writes legacy tables" |
+| 1 | **Imports run on v2 only.** The parse step runs `processIngredientLine` in CONSERVATIVE mode with the queue's cached resolver context and stores the Zod-validated result on the job; the parse status reflects syntax only (PARSED succeeds, PARTIAL and FAILED are errors) and resolution never fails a job. The save step calls `saveImportedLine`, one transaction that upserts the line by `(noteId, blockIndex, lineIndex)`, its mentions (verified ones protected), and its discoveries. No `ParsedSegment`, `IngredientReference`, `Ingredient`, `ParsingRule`, or `UniqueLinePattern` writes remain, and saving the same line twice adds nothing. | Import a note and open it; integration test "stores one mention per coordinated part and is idempotent" |
 | 2 | **Every coordinated part is stored.** `IngredientMention.partIndex` joins the unique key `(parsedLineId, segmentIndex, partIndex)`, so "Salt and parsley" stores salt as part 0 and parsley as part 1, each resolved; the Phase 4 `parts_not_stored` workaround is gone. | Migration `20261113000000_mention_parts_and_reinterpret_runs`; the same integration test |
 | 3 | **The queue caches knowledge by revision.** `lexicon-cache.ts` keeps one resolver context per process: within 15 seconds it is reused; after that the revision is read and only a changed revision loads a snapshot (Redis `lexicon:snapshot:<revision>` first, then the database, which fills Redis). Every decision announces its revision on the `lexicon:revision` channel so all queue processes recheck right away. Parse-cache keys include the parser version and the revision (`action:parse_ingredient_line:v2:<version>:<revision>:<line>`). Logs: `[LEXICON_CACHE]`, `[V2_PARSE]`, `[V2_SAVE]`. | `apps/queue/src/services/ingredient/lexicon-cache.ts` and its tests |
 | 4 | **Large decisions reinterpret in the background.** When a decision affects more than 1,000 lines, the API posts to the queue's `POST /reinterpret`; the run (`reinterpret-<revision>`, one per revision, so repeats are no-ops) selects the stale lines, splits them into batches of 200 with deterministic ids (`reinterpret-<revision>-<n>`, 3 attempts with backoff), and skips lines that are already fresh, so retries and overlapping runs are safe. Progress lives in `ReinterpretRun`, `Query.job` reports it, `effect.reprocessingJobId` hands it to the cache coordinator, and a banner on the Teach Peas pages shows "Updating mentions in the background: 400 of 1,200 lines" until it finishes. The `reinterpret` CLI remains, and the API returns it as a fallback when the queue is unreachable. | `apps/web/tests/reinterpret.spec.ts`; integration test "selects stale lines, batches them deterministically, closes the run, and skips fresh lines on a retry" |
 | 5 | **Read paths use mentions and concepts.** Note and recipe lines render the v2 highlighted line (words styled by role) with the mention panel; recipe lines link their concepts. `/ingredients` lists approved foods for everyone and links to concept pages, which everyone can read; admins edit classifications (dietary properties, food groups, allergens, `CATEGORY:<name>`), tags, and substitutions on the concept page. Recipes filter by concept, including IS_A and PART_OF descendants ("chicken" finds chicken thighs), from a "Recipes with …" link on each concept. The dashboard counts concepts and ranks concepts by the lines that mention them. Navigation shows Ingredients for everyone and, after the ingredient card restore, a single Knowledge entry for admins. | `apps/web/tests/ingredients.spec.ts`, `concepts.spec.ts`, and `notes.spec.ts` |
 | 6 | **Import health is measured.** `GET /metrics/ingredients` on the queue returns the last hour of parses (lines per second, share of structurally parsed lines, resolution coverage, candidates per part, unknown words) plus corpus counts; ingredient job metrics carry `parseStatus`, `resolutionStatuses`, `unknownTokens`, `candidateCount`, and `lexiconRevision`. A Corpus health card on `/teach` shows lines with mentions, resolved and verified mentions, open discoveries, the most frequent unknown phrases, the reinterpretation backlog, and the live numbers when the queue answers. | `/teach` (admin); `apps/queue/src/routes/metrics.ts` |
-| 7 | **The legacy paths are gone from the code.** The pattern-tracking queue, worker, and `/patterns` route; `parser-resolver.ts` and the v1 parse cache; the unused `DatabaseOperations` legacy writer; the GraphQL ingredient queries and mutations and their `INGREDIENTS`/`INGREDIENT_DETAIL` domains; `packages/features/src/{ingredients,parsed-line}` and their stories. The legacy tables themselves remain until Phase 7. | `git status` |
+| 7 | **The legacy paths are gone from the code.** The pattern-tracking queue, worker, and `/patterns` route; `parser-resolver.ts` and the v1 parse cache; the unused `DatabaseOperations` legacy writer; the GraphQL ingredient queries and mutations and their `INGREDIENTS`/`INGREDIENT_DETAIL` domains; `packages/features/src/{ingredients,parsed-line}` and their stories. The legacy tables themselves were dropped in Phase 7. | `git status` |
 | 8 | **Job polling survives effect re-runs.** The cache coordinator was disposed when React cleaned up and re-ran the provider's effect on the same instance, which silently stopped every job poll in development; it now resumes. | Web unit test "tracks jobs again after an effect disposes and resumes the same coordinator" |
 | 9 | **Test suites.** New queue tests (lexicon cache, processor, v2 parse and save, reinterpret services, actions, worker, and routes, ingredient metrics), database integration tests (cutover, starter foods, approval, the ingredients list), API integration tests, API, features, and web unit tests, and end-to-end tests for ingredients, concepts, note mentions, and reinterpretation progress (31 per browser, all passing in Chromium and WebKit). Coverage floors hold or rose everywhere. | `yarn test:coverage` with `TEST_DATABASE_URL`; `yarn workspace @peas/web test:e2e` |
 | 10 | **A small, realistic starter ontology.** `db:seed:foods` loads 28 everyday foods from `starter-foods.seed.json` (chicken with its thighs, breasts, wings, drumsticks, and ground chicken; milk, whole milk, butter, heavy cream; salt, kosher salt, sugar, powdered sugar, flour; garlic and cloves, onions, lemons with juice and zest, tomatoes and canned tomatoes, parsley; olive oil, extra-virgin olive oil, vegetable oil) with plural and alias names, 14 relationships, characterizing attributes, and attribute applicability, so "1 lb boneless skinless chicken thighs" resolves to chicken thigh with both attributes. Chicken drumstick and lemon zest stay proposed. Idempotent. It replaced the legacy-ingredient seed. | `yarn workspace @peas/database db:seed:foods` (twice) |
@@ -145,21 +145,41 @@ Deviations from the plan, and why:
 
 What Phase 6 deliberately does not deliver: the dev database has no imported lines yet, so the loop has been exercised on fixtures and the test database rather than on real reparsed data; calibration labels are the semantic golden set until there are verified mentions; ranges with mixed units ("800g–1kg") and postfix quantities ("rosemary a few sprigs") remain open structural patterns.
 
-## Where things stand (Phase 6)
+## Phase 7 deliverables
+
+Status (13 November 2026): implemented in the working tree; migrations `20261113040000_drop_pattern_tables`, `20261113050000_drop_parsed_segments`, and `20261113060000_drop_legacy_ingredients` are applied to dev (backup in `~/peas-backups/peas-dev-before-phase7-drops-20261113-1259.dump`). Phase 7 removes the code and tables the v2 cutover left unused.
+
+| # | Deliverable | Evidence |
+| --- | --- | --- |
+| 1 | **v2 is the only parser.** `@peas/parser` and `@peas/parser/v2` export the same module; the v1 entry points, the 11 MB v1 bundle, `types/index.d.ts`, `peggy.config.mjs`, and the v1 snapshot test are gone, and `yarn build` generates the grammar and compiles v2 only. | `packages/parser/package.json`; `packages/parser/scripts/build.js` |
+| 2 | **v1 kept as reference.** `legacy/v1/parser.peggy`, with the baseline scripts that regenerate `fixtures/baseline/v1.jsonl` by hand; `report:compare` and `extract:descriptors` still read the frozen baseline and the grammar's descriptor list. | `packages/parser/legacy/README.md` |
+| 3 | **Legacy repositories removed.** `repository/ingredient.ts` (segment saving, `findOrCreateIngredient`, ingredient references, parsing-rule statistics, and the old ingredient card functions), `parsing-rule.ts`, and `pattern.ts` are deleted; the import cleanup moved to `repository/cleanup.ts`. The last two readers moved: the import page's ingredient count is now distinct concepts with mentions, and duplicate detection compares line text without the legacy references. | `packages/database/src/index.ts` |
+| 4 | **Three destructive migrations**, each separate so a failure stays isolated: the pattern tables (`UniqueLinePattern`, `ParsingRule`, `ParsedSegment.ruleId`, `ParsedIngredientLine.uniqueLinePatternId`), the parsed segments (`ParsedSegment`, `ParsedIngredientLine.rule`), and the legacy ingredient tables (`Ingredient`, `Alias`, `IngredientProperty`, `IngredientReference`, `IngredientCategory`, `_Substitutions`, `_IngredientBrands`, `_IngredientToIngredientTag`, and the `PropertyType` enum). `IngredientTag` and `Brand` stay in `tags-and-brands.prisma`. | `yarn workspace @peas/database db:verify-migrations` with `SCRATCH_DATABASE_URL` |
+| 5 | **Clearing imports, and optionally food knowledge.** `cleanupAllData()` (the dashboard's Delete All Data and `clear-imports`) deletes imported data and keeps food knowledge. `clear-imports --yes --include-ontology` also deletes concepts, the lexicon, attributes, preparations, decisions, every review card, products, brands, ingredient tags, legacy mappings, and health snapshots in one transaction, keeps users and lexicon revisions, records a `reset:ontology` revision so cached lexicons reload, and clears cached lexicon snapshots in Redis; reseed afterwards. | Database integration test `cleanup.int.test.ts` |
+| 6 | **Provenance intact.** `LegacyIngredientMapping.legacyIngredientId` is plain text and survives the drop; decisions, merge records, and verified mentions are untouched; the archived database grammars stay in `packages/parser/legacy/dynamic-archive/`. | `packages/database/prisma/schemas/ontology.prisma` |
+
+Deviations from the plan, and why:
+- `examples/usage.js` stays in `examples/`: it was rewritten for v2 earlier, so it isn't legacy.
+- The dev database had no legacy rows (it was reset and reseeded on 13 November 2026), so the mapping-status precondition held trivially.
+- `--include-ontology` exists only on the script, not on the dashboard's mutation.
+
+Rollback: revert the working-tree change and restore the backup into a new database (`createdb peas_restore && pg_restore -d peas_restore <dump>`), then point `DATABASE_URL` at it. Keep the dump for at least 30 days.
+
+## Where things stand (Phase 7)
 
 | Area | State |
 | --- | --- |
 | v2 parser (`packages/parser/src/v2`) | Built: normalizer with raw-offset map, tokenizer, exact rationals, unit table, token trie with conservative and exploratory segmentation, Peggy grammar ported from v1, Zod schemas, `parseLine`. Lexicon entry ids must be UUIDs. |
 | Shared ontology schemas (`@peas/parser/v2`) | Ontology enums, D15 inheritance rules, starting vocabulary, resolution, mention syntax, discovery, and decision payload schemas, D18 priority formula |
 | Resolver (`@peas/parser/v2`, `src/v2/resolve/`) | `buildResolverContext` (snapshot to lexicon plus ontology view), `resolveSegment`, `scoreCandidate`, `processIngredientLine`, `buildResolutionReport`; `RESOLVER_VERSION` 1.0.0. Pure: no database access. |
-| Teaching logic (`@peas/parser/v2`, `src/v2/knowledge/`, `src/v2/preview/`) | `discover`, `suggestRelationships`, `applyDecisionToSnapshot`, `decisionScope`, `generatePlural`, `diffResolution`, `summarizeResolution`, `structureSignature`, `draftGoldenCases`, `calibrateThresholds`, `upgradeStoredSyntax`. Pure. `PARSER_VERSION` 2.1.0. |
+| Teaching logic (`@peas/parser/v2`, `src/v2/knowledge/`, `src/v2/preview/`) | `discover`, `suggestRelationships`, `applyDecisionToSnapshot`, `decisionScope`, `generatePlural`, `diffResolution`, `summarizeResolution`, `structureSignature`, `draftGoldenCases`, `calibrateThresholds`, `upgradeStoredSyntax`. Pure. `PARSER_VERSION` 2.2.0. |
 | Ontology storage (`packages/database`) | 23 models in `prisma/schemas/ontology.prisma` (Phase 5 adds `ReinterpretRun` and `IngredientMention.partIndex`; Phase 6 adds `CorpusHealthSnapshot` and `LexiconDecision.mentionsChanged`), repositories in `src/repository/ontology/` (plus `loadResolverSnapshot`, `applyDecision`, `mergeConcepts`, `previewDecision`, `backfillMentions`, `saveImportedLine`, reinterpretation runs, concept editing, ingredient cards, `getCorpusHealth`, health trends, and the grammar loop), vocabulary, modifier, and starter-food seeds |
-| Review UI (`apps/web`, `packages/features`, `packages/api`) | GraphQL queries and mutations for ingredient cards (concept-backed; everyone), discoveries, concepts, the lexicon, mentions, playground, preview, decisions (14 types, including `APPROVE_CONCEPT` and `EDIT_CONCEPT`), and corpus health; routes `/ingredients`, and the admin Knowledge section `/teach`, `/teach/$discoveryId`, `/teach/playground`, `/concepts`, `/concepts/$id`, `/lexicon`; `/teach/health`; the structural review card; highlighted lines and the mention panel on note and recipe pages; invalidation domains `DISCOVERIES`, `CONCEPTS`, `CONCEPT_DETAIL`, `MENTIONS`, `CORPUS_HEALTH` |
-| Regression fixtures | Corpus (reset to empty on 12 November 2026; refilled from fresh imports with `export:lines`), 182 dev cases (5 known failures), 41 held-out cases, structural, demo, and semantic lexicons (the semantic lexicon now carries a small ontology), `modifiers.seed.json`, v1 descriptor candidates, v1 baseline and snapshot |
+| Review UI (`apps/web`, `packages/features`, `packages/api`) | GraphQL queries and mutations for ingredient cards (concept-backed; everyone), discoveries, concepts, the lexicon, mentions, playground, preview, decisions (15 types, including `APPROVE_CONCEPT`, `EDIT_CONCEPT`, and `EDIT_ENTRY`), and corpus health; routes `/ingredients`, and the admin Knowledge section `/teach`, `/teach/$discoveryId`, `/teach/playground`, `/concepts`, `/concepts/$id` (the concept card's view and edit modes), `/lexicon` (row editing and Add entry), `/teach/glossary`; `/teach/health`; the structural review card; highlighted lines and the mention panel on note and recipe pages; invalidation domains `DISCOVERIES`, `CONCEPTS`, `CONCEPT_DETAIL`, `MENTIONS`, `CORPUS_HEALTH` |
+| Regression fixtures | Corpus (reset to empty on 12 November 2026; refilled from fresh imports with `export:lines`), 191 dev cases (no known failures), 41 held-out cases, structural, demo, and semantic lexicons (the semantic lexicon now carries a small ontology), `modifiers.seed.json`, `starter-foods.seed.json` (33 foods, seeded approved), v1 descriptor candidates, and the frozen v1 baseline |
 | Reports and tools | `report:compare` (v1 vs v2), `evaluate:resolution` and `db:evaluate:resolution` (resolution report), `preview:lexicon` (before/after preview of a lexicon change), `explain:line`, `extract:descriptors`, `backfill:mentions` and `reinterpret` (queue scripts) |
 | Import pipeline | v2 only: parse with the cached resolver context, save mentions and discoveries with `saveImportedLine`; background reinterpretation and reparses, health snapshots (daily and after runs), and weekly exploratory sweeps on the `reinterpret` queue; `GET /metrics/ingredients` |
-| Legacy grammars | The old v2 stub and the runtime-compiled grammar moved to `packages/parser/legacy/` (reference only); database grammars archived and their tables dropped |
-| Database | 47 migrations, all applied to dev; `db:verify-migrations` replays them on a scratch database; integration tests run against `TEST_DATABASE_URL` |
+| Legacy | v1, the old v2 stub, and the runtime-compiled grammar live in `packages/parser/legacy/` (reference only); database grammars archived; the legacy ingredient, segment, and pattern tables and their repositories are gone, with `LegacyIngredientMapping` keeping the old ingredient ids |
+| Database | 49 migrations, all applied to dev; `db:verify-migrations` replays them on a scratch database; integration tests run against `TEST_DATABASE_URL` |
 
 ## Ontology data model
 
@@ -176,7 +196,7 @@ flowchart LR
     cls["FoodClassification<br/>ALLERGEN_MILK TRUE"]
   end
   subgraph corpus [Corpus: rewritten by parsing]
-    line["ParsedIngredientLine<br/>raw text (legacy table)"]
+    line["ParsedIngredientLine<br/>raw text"]
     mention["IngredientMention<br/>one per segment part"]
   end
   subgraph review [Review loop]
@@ -221,7 +241,7 @@ flowchart TD
 ```
 
 - Raw lines are stored in `ParsedIngredientLine.reference`, keyed by `(noteId, blockIndex, lineIndex)`, so the corpus can always be reparsed.
-- Identity lives in the ontology (`FoodConcept`, `LexiconEntry`, `IngredientMention`). The legacy `Ingredient` / `Alias` tables are no longer read or written by the app and are dropped in Phase 7.
+- Identity lives in the ontology (`FoodConcept`, `LexiconEntry`, `IngredientMention`). The legacy `Ingredient` / `Alias` tables were dropped in Phase 7.
 
 ## Target architecture
 
@@ -243,12 +263,12 @@ Everything up to and including the resolver is pure TypeScript in `packages/pars
 
 ## Dependency map
 
-Code that touches ingredient parsing or identity after Phase 5:
+Code that touches ingredient parsing or identity:
 
 - **Queue:** `parse-ingredient-line`, `save-ingredient-line`, `schedule-categorization`, `check-completion`, `lexicon-cache.ts`, `ingredient-processor.ts`, `cached-ingredient-parser.ts`, `ingredient-metrics.ts`, the `reinterpret` services, worker, and routes, and `routes/metrics.ts`.
 - **Web:** `/notes/$id` and `/recipes/$id` (highlighted v2 lines and the mention panel), `/recipes?concept=`, `/concepts`, `/concepts/$id`, `/lexicon`, `/ingredients`, and the review routes `/teach`, `/teach/$discoveryId`, `/teach/playground` (`apps/web/src/routes/_authed/`); `lib/concepts.ts` and `lib/apollo/use-reinterpret-progress.ts`.
-- **Features:** `packages/features/src/{notes,ingredients,concepts,knowledge,teach}` (`IngredientLineText`, `IngredientsPageContent` and `IngredientCard`, concept editors and the Approve button, `KnowledgeTabs`, `LexiconPageContent`, `CorpusHealthCard`, `ReinterpretProgressBanner`).
-- **Database:** `repository/ontology/` (Phase 2: revision, lexicon, concepts, relationships, attributes, classifications, mentions, discoveries, decisions, legacy mapping; Phase 3: resolver snapshot; Phase 4: apply-decision, merge, preview, backfill, adjacency; Phase 5: `saveImportedLine`, reinterpret runs, concept editing, corpus health), plus `note.ts`, `recipe.ts` (concept filter), and `dashboard.ts` (top concepts). The legacy `repository/{ingredient,parsing-rule,pattern}.ts` remain only until Phase 7. Seeds in `src/seed/` (vocabulary, modifiers, starter foods).
+- **Features:** `packages/features/src/{notes,ingredients,concepts,knowledge,teach}` (`IngredientLineText`, `IngredientsPageContent` and `IngredientCard`, `ConceptCard` and the Approve button, `KnowledgeTabs`, `LexiconPageContent` and `EntryEditor`, `GlossaryPageContent`, `useImpactConfirmation`, `CorpusHealthCard`, `ReinterpretProgressBanner`).
+- **Database:** `repository/ontology/` (Phase 2: revision, lexicon, concepts, relationships, attributes, classifications, mentions, discoveries, decisions, legacy mapping; Phase 3: resolver snapshot; Phase 4: apply-decision, merge, preview, backfill, adjacency; Phase 5: `saveImportedLine`, reinterpret runs, concept editing, corpus health), plus `note.ts`, `recipe.ts` (concept filter), and `dashboard.ts` (top concepts). `repository/cleanup.ts` clears imports (and, on request, food knowledge). Seeds in `src/seed/` (vocabulary, modifiers, starter foods).
 - **API:** `packages/api/src/resolvers/teach.ts`, `teach-views.ts`, `concept-editing.ts`, `corpus-health.ts`, and `queue-client.ts` (background reinterpretation, revision announcements, live metrics).
 
 ## Design decisions
@@ -283,23 +303,20 @@ Code that touches ingredient parsing or identity after Phase 5:
 28. **Previews mirror the database in memory.** `applyDecisionToSnapshot` produces the snapshot the resolver will see after a decision; an integration test applies every decision type both ways and compares the results. REVERT is the exception: its preview applies the revert in a transaction and rolls it back.
 29. **Shared backfill code lives in `@peas/database`.** The queue scripts and the API's in-request reinterpretation call the same `processLines`, which writes mentions (skipping rows whose content is unchanged) and upserts the discoveries a batch suggests once per type and key.
 30. **Decisions travel as typed JSON.** GraphQL has no input unions, so `applyDecision` and `previewDecision` take a `JSON` payload that the server validates with `DecisionPayloadSchema`; the review UI builds payloads with the same TypeScript types.
+31. **Every knowledge edit is a reviewed decision, previewed first.** The concept card and the lexicon page save names, relationships, and entries through `EDIT_CONCEPT` and `EDIT_ENTRY` (one entry as it should read; changing its text's match key, role, or target retires it and adds the replacement, while status, kind, and spelling change in place, with the previous values kept for REVERT; migration `20261113070000_edit_entry_decision`). Before saving, `previewDecision` counts the stored mentions that would read differently; when any would, the curator confirms in a dialog with before/after examples. Classifications, tags, and substitutions don't change how lines read, so they are written directly.
 
 ## Quantity model
 
-`Quantity` is a discriminated union: `EXACT` (optionally `implied`, as in "pinch of salt"), `RANGE`, `APPROXIMATE`, `PACKAGE` (count, optional package type, optional package size), `ALTERNATIVE`, `SUM`, and `UNSPECIFIED` ("to taste", "as needed", "some", "a few", "several"). Values are reduced rationals, never floats.
+`Quantity` is a discriminated union: `EXACT` (optionally `implied`, as in "pinch of salt"), `RANGE`, `MEASURE_RANGE` (ends in different units or compound measures, "800g–1kg"), `APPROXIMATE`, `PACKAGE` (count, optional package type, optional package size), `ALTERNATIVE`, `SUM` (including compound measures, "1lb 12oz"), and `UNSPECIFIED` ("to taste", "as needed", "some", "a few", "several", with an optional unit as in "a few sprigs"). Values are reduced rationals, never floats.
 
 ## Known structural gaps
 
-Recorded as known failures in `fixtures/golden/structural.dev.json` or observed in the comparison report:
-
-- Ranges whose ends use different units ("800g–1kg") are not representable.
-- Postfix unspecified quantities with a unit ("rosemary a few sprigs"); imports record it as the structural pattern `W U`.
-- "recipe", "rack", "slab" are not units.
+None are recorded as known failures since `PARSER_VERSION` 2.2.0 (13 November 2026), which added `MEASURE_RANGE` ("800g–1kg (1lb 12oz–2lb 4oz)"), compound measures as `SUM`, units on unspecified amounts ("rosemary a few sprigs", "a few sprigs of thyme"), and the count units recipe, rack, and slab. The additions only add structure, so stored 2.1.0 syntax reads unchanged and no `SYNTAX_UPGRADES` entry was needed; lines written by 2.1.0 are picked up by the next `REPARSE_BY_VERSION` run (`yarn workspace @peas/queue reparse:dry-run`, then `reparse`). The stray-unit check also stopped flagging unit words that end a food name ("baby back ribs") or are hyphen-joined ("bone-in"). New structural patterns surface in the review queue as STRUCTURAL_PATTERN discoveries.
 
 ## Verification commands
 
 ```bash
-yarn workspace @peas/parser test:run          # v2 unit, golden, invariant, schema, v1 baseline tests
+yarn workspace @peas/parser test:run          # v2 unit, golden, invariant, schema tests
 yarn workspace @peas/parser typecheck
 yarn workspace @peas/parser report:compare    # writes fixtures/reports/v1-vs-v2.md
 yarn workspace @peas/parser preview:lexicon --add "olive oil:FOOD"
@@ -340,7 +357,7 @@ The v2 phases (1 foundation, 2 ontology schema, 3 lexicon and resolver, 4 Teach 
 9. Phase 4 (backfill, discoveries, and Teach Peas): done on 12 November 2026.
 10. Phase 5 (cutover to v2): done on 12 November 2026.
 11. Phase 6 (grammar evolution, health trends, calibration): done on 13 November 2026.
-12. Phase 7 (legacy cleanup) continues on the modernized stack.
+12. Phase 7 (legacy cleanup): done on 13 November 2026.
 13. Deferred: BullMQ 6, Redis client, Storybook 10, virtualization.
 
 Framework-independent parsing logic stays in `packages/parser` throughout.

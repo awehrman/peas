@@ -4,7 +4,7 @@
 // parentheticals, trailing comments, multi-ingredient lines) and leaves food
 // identity to the lexicon and resolver. It contains no ingredient or
 // descriptor lists. Number, fraction, range, and package handling are ported
-// from the v1 grammar (packages/parser/src/v1/parser.peggy).
+// from the v1 grammar (packages/parser/legacy/v1/parser.peggy).
 //
 // Runs on normalized text (see src/v2/normalize) and reads three parse
 // options supplied by parse-line.ts:
@@ -22,6 +22,16 @@
   // Size words that describe the measure rather than the food when a unit follows ("small handful", "1 large clove")
   const SIZE_WORDS = new Set(["small", "large", "big", "generous", "medium"]);
   const PACKAGE_DIMENSIONS = ["PACKAGE", "COUNT"];
+  // Larger unit -> the smaller units written after it in one measure ("1lb 12oz", "1 cup 2 tbsp")
+  const COMPOUND_UNITS = {
+    lb: ["oz"],
+    kg: ["g"],
+    l: ["ml", "cl"],
+    gal: ["qt"],
+    qt: ["cup"],
+    cup: ["tbsp", "tsp"],
+    tbsp: ["tsp"],
+  };
 
   function here() {
     const l = location();
@@ -50,6 +60,19 @@
     return amount.range
       ? { kind: "RANGE", minimum: amount.minimum, maximum: amount.maximum, unit, ...span }
       : { kind: "EXACT", value: amount.value, unit, ...span };
+  }
+
+  function isCompound(larger, smaller) {
+    return larger.kind === "EXACT" && smaller.kind === "EXACT" && larger.unit !== null && smaller.unit !== null
+      && (COMPOUND_UNITS[larger.unit.id] ?? []).includes(smaller.unit.id);
+  }
+
+  // "2 lb to 3 lb" is the RANGE 2-3 lb; ends in different units stay a MEASURE_RANGE
+  function measureRange(from, to, span) {
+    if (from.kind === "EXACT" && to.kind === "EXACT" && from.unit && to.unit && from.unit.id === to.unit.id) {
+      return { kind: "RANGE", minimum: from.value, maximum: to.value, unit: to.unit, ...span };
+    }
+    return { kind: "MEASURE_RANGE", from, to, ...span };
   }
 }
 
@@ -207,6 +230,7 @@ LeadingQuantity
       };
     }
   / QuantityCore
+  / UnspecifiedUnitQuantity
   / quantity:Unspecified { return { quantity, modifiers: [] }; }
   / core:ImpliedUnitQuantity _ &Of { return core; }
   // "small handful coriander": a size word before the unit implies one even without "of"
@@ -216,7 +240,9 @@ LeadingQuantity
 
 QuantityCore
   = quantity:PackageQuantity { return { quantity, modifiers: [] }; }
+  / MeasureRangeQuantity
   / SumQuantity
+  / CompoundQuantity
   / AlternativeQuantity
   / UnitQuantity
 
@@ -245,6 +271,30 @@ SumQuantity
       };
     }
 
+// "1lb 12oz", "2 kg 300 g": a measure written in a larger and a smaller unit
+CompoundQuantity
+  = a:UnitQuantity _ b:UnitQuantity &{ return isCompound(a.quantity, b.quantity); }
+    {
+      return {
+        quantity: { kind: "SUM", parts: [a.quantity, b.quantity], ...here() },
+        modifiers: [...a.modifiers, ...b.modifiers],
+      };
+    }
+
+// "800g-1kg", "1lb 12oz-2lb 4oz", "2 tbsp to 1/4 cup": a range whose ends carry their own units
+MeasureRangeQuantity
+  = from:MeasureRangeEnd _ ("-" / "to"i End) _ to:MeasureRangeEnd
+    {
+      return {
+        quantity: measureRange(from.quantity, to.quantity, here()),
+        modifiers: [...from.modifiers, ...to.modifiers],
+      };
+    }
+
+MeasureRangeEnd
+  = CompoundQuantity
+  / end:UnitQuantity &{ return end.quantity.kind === "EXACT"; } { return end; }
+
 // "2 cups or 500 ml", "1 cup/250 ml", "1 cup (250 ml)"
 AlternativeQuantity
   = a:UnitQuantity _ ("/" / "or"i End) _ b:UnitQuantity
@@ -272,7 +322,9 @@ ParenQuantity
   / core:ParenQuantityCore Each? { return core; }
 
 ParenQuantityCore
-  = sum:SumQuantity { return sum.quantity; }
+  = range:MeasureRangeQuantity { return range.quantity; }
+  / sum:SumQuantity { return sum.quantity; }
+  / compound:CompoundQuantity { return compound.quantity; }
   / alternative:AlternativeQuantity { return alternative.quantity; }
   / unit:UnitQuantity { return unit.quantity; }
 
@@ -334,6 +386,13 @@ ImpliedUnitQuantity
 
 Unspecified
   = expression:UnspecifiedExpression { return { kind: "UNSPECIFIED", expression, ...here() }; }
+
+// "a few sprigs", "several cloves": an unspecified amount counted in a unit
+UnspecifiedUnitQuantity
+  = expression:UnspecifiedExpression _ modifiers:(@MeasureModifier _)* unit:Unit
+    {
+      return { quantity: { kind: "UNSPECIFIED", expression, unit, ...here() }, modifiers };
+    }
 
 UnspecifiedExpression
   = "some"i End { return "SOME"; }
