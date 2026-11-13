@@ -1,0 +1,58 @@
+{
+  "description": "Starter foods for a fresh database: a few families with their names, hierarchy, and attribute applicability. Every derived food leads back to a base food (canned tomatoes to tomato, heavy cream to cream to milk), and properties are set on the bases (tomato is a vegetable, wheat a grain with gluten) so variants inherit them. Loaded by `yarn workspace @peas/database db:seed:foods`. Every food starts PROPOSED (in the review queue on the ingredients page) with PROPOSED names, so imports don't resolve to it until someone approves it; a food's own status field overrides that.",
+  "status": "PROPOSED",
+  "concepts": [
+    { "key": "chicken", "name": "chicken", "properties": ["MEAT"] },
+    { "key": "chicken-thigh", "name": "chicken thigh", "plural": "chicken thighs", "relationships": [["PART_OF", "chicken"]] },
+    { "key": "chicken-breast", "name": "chicken breast", "plural": "chicken breasts", "relationships": [["PART_OF", "chicken"]] },
+    { "key": "chicken-wing", "name": "chicken wing", "plural": "chicken wings", "relationships": [["PART_OF", "chicken"]] },
+    { "key": "chicken-drumstick", "name": "chicken drumstick", "plural": "chicken drumsticks", "aliases": ["drumsticks"], "relationships": [["PART_OF", "chicken"]], "status": "PROPOSED" },
+    { "key": "ground-chicken", "name": "ground chicken", "relationships": [["PROCESSED_FROM", "chicken"]], "attributes": ["form:ground"] },
+
+    { "key": "milk", "name": "milk", "properties": ["DAIRY"] },
+    { "key": "whole-milk", "name": "whole milk", "relationships": [["IS_A", "milk"]], "attributes": ["fat_content:whole"] },
+    { "key": "cream", "name": "cream", "relationships": [["DERIVED_FROM", "milk"]] },
+    { "key": "heavy-cream", "name": "heavy cream", "aliases": ["heavy whipping cream"], "relationships": [["IS_A", "cream"]] },
+    { "key": "butter", "name": "butter", "relationships": [["DERIVED_FROM", "cream"]] },
+
+    { "key": "salt", "name": "salt", "properties": ["SEASONING"] },
+    { "key": "kosher-salt", "name": "kosher salt", "aliases": ["coarse salt"], "relationships": [["IS_A", "salt"]] },
+    { "key": "sugar", "name": "sugar", "properties": ["SWEETENER"] },
+    { "key": "powdered-sugar", "name": "powdered sugar", "aliases": ["confectioners sugar", "confectioners' sugar"], "relationships": [["IS_A", "sugar"]] },
+    { "key": "wheat", "name": "wheat", "properties": ["GRAIN", "GLUTEN"] },
+    { "key": "flour", "name": "flour", "relationships": [["DERIVED_FROM", "wheat"]] },
+    { "key": "all-purpose-flour", "name": "all-purpose flour", "aliases": ["all purpose flour", "AP flour"], "relationships": [["IS_A", "flour"]] },
+
+    { "key": "garlic", "name": "garlic", "properties": ["VEGETABLE"] },
+    { "key": "garlic-clove", "name": "garlic clove", "plural": "garlic cloves", "relationships": [["PART_OF", "garlic"]] },
+    { "key": "onion", "name": "onion", "plural": "onions", "properties": ["VEGETABLE"] },
+    { "key": "yellow-onion", "name": "yellow onion", "plural": "yellow onions", "relationships": [["IS_A", "onion"]] },
+    { "key": "lemon", "name": "lemon", "plural": "lemons", "properties": ["FRUIT"] },
+    { "key": "lemon-juice", "name": "lemon juice", "relationships": [["DERIVED_FROM", "lemon"]] },
+    { "key": "lemon-zest", "name": "lemon zest", "relationships": [["PART_OF", "lemon"]], "status": "PROPOSED" },
+    { "key": "tomato", "name": "tomato", "plural": "tomatoes", "properties": ["VEGETABLE"] },
+    { "key": "canned-tomatoes", "name": "canned tomatoes", "relationships": [["PROCESSED_FROM", "tomato"]], "attributes": ["preservation:canned"] },
+    { "key": "parsley", "name": "parsley", "properties": ["HERB"] },
+
+    { "key": "oil", "name": "oil", "properties": ["FAT"] },
+    { "key": "olive", "name": "olive", "plural": "olives", "properties": ["FRUIT"] },
+    { "key": "olive-oil", "name": "olive oil", "relationships": [["DERIVED_FROM", "olive"], ["IS_A", "oil"]] },
+    { "key": "extra-virgin-olive-oil", "name": "extra-virgin olive oil", "aliases": ["extra virgin olive oil", "EVOO"], "relationships": [["IS_A", "olive-oil"]] },
+    { "key": "vegetable-oil", "name": "vegetable oil", "relationships": [["IS_A", "oil"]] }
+  ],
+  "applicability": [
+    ["bone", "chicken"],
+    ["skin", "chicken"],
+    ["fat_content", "milk"],
+    ["fat_content", "cream"],
+    ["temperature", "milk"],
+    ["salt_level", "butter"],
+    ["temperature", "butter"],
+    ["size", "onion"],
+    ["color", "onion"],
+    ["size", "lemon"],
+    ["size", "tomato"],
+    ["preservation", "tomato"],
+    ["preservation", "parsley"]
+  ]
+}

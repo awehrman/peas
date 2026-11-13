@@ -9,14 +9,14 @@ import type { InstructionWorker } from "../instruction/worker";
 import type { NoteWorker } from "../note/worker";
 import type { BaseJobData, BaseWorkerDependencies } from "../types";
 import type { ImageWorker } from "../image/worker";
-import type { PatternTrackingWorker } from "../pattern-tracking/worker";
+import type { ReinterpretWorker } from "../reinterpret/worker";
 import type { CategorizationWorker } from "../categorization/worker";
 
 /**
  * Union type of all concrete worker types in the system.
  * Extend this as you add more workers.
  */
-export type AllWorkers = NoteWorker | InstructionWorker | IngredientWorker | ImageWorker | PatternTrackingWorker | CategorizationWorker;
+export type AllWorkers = NoteWorker | InstructionWorker | IngredientWorker | ImageWorker | ReinterpretWorker | CategorizationWorker;
 
 /**
  * Worker factory function type

@@ -52,7 +52,7 @@ describe("Ingredient Worker", () => {
         instructionQueue: {} as Queue,
         categorizationQueue: {} as Queue,
         sourceQueue: {} as Queue,
-        patternTrackingQueue: {} as Queue,
+        reinterpretQueue: {} as Queue,
       },
       database: {
         prisma: {} as Partial<PrismaClient> as PrismaClient,
@@ -138,6 +138,42 @@ describe("Ingredient Worker", () => {
         worker as unknown as { getOperationName(): string }
       ).getOperationName();
       expect(operationName).toBe("ingredient-worker");
+    });
+
+    it("reports how a parsed line resolved as job metrics metadata", () => {
+      const worker = new IngredientWorker(
+        mockQueue,
+        mockDependencies,
+        mockActionFactory,
+        mockServiceContainer
+      );
+      const metadataOf = (result: unknown) =>
+        (
+          worker as unknown as {
+            getJobMetricsMetadata(result: unknown): unknown;
+          }
+        ).getJobMetricsMetadata(result);
+
+      expect(
+        metadataOf({
+          parseStatus: "COMPLETED_SUCCESSFULLY",
+          metadata: {
+            lexiconRevision: 7,
+            resolutionStatuses: ["AUTO_RESOLVED"],
+            unknownTokens: 0,
+            candidateCount: 2,
+            v2Result: {},
+          },
+        })
+      ).toEqual({
+        parseStatus: "COMPLETED_SUCCESSFULLY",
+        resolutionStatuses: ["AUTO_RESOLVED"],
+        unknownTokens: 0,
+        candidateCount: 2,
+        lexiconRevision: 7,
+      });
+      expect(metadataOf({ parseStatus: "AWAITING_PARSING" })).toBeUndefined();
+      expect(metadataOf({ metadata: {} })).toBeUndefined();
     });
 
     it("should create action pipeline with correct parameters", () => {

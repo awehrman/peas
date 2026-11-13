@@ -32,10 +32,6 @@ describe("Shared Worker Index", () => {
     expect(shared).toHaveProperty("CompletionStatusAction");
   });
 
-  it("should export database operations", () => {
-    expect(shared).toHaveProperty("DatabaseOperations");
-  });
-
   it("should export worker factory functions", () => {
     expect(shared).toHaveProperty("createWorkers");
     expect(shared).toHaveProperty("closeWorkers");

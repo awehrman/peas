@@ -2,6 +2,9 @@ import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
+import { getCorpusHealth } from "@peas/database";
+
+import { ingredientMetrics } from "../../services/ingredient/ingredient-metrics";
 import { createTestApp } from "../../test-utils/helpers";
 import { HttpStatus } from "../../types";
 import { ErrorHandler } from "../../utils/error-handler";
@@ -20,6 +23,14 @@ vi.mock("../../utils/metrics", () => ({
   getPrometheusMetrics: vi.fn(),
 }));
 
+vi.mock("@peas/database", () => ({
+  getCorpusHealth: vi.fn(),
+}));
+
+vi.mock("../../services/ingredient/ingredient-metrics", () => ({
+  ingredientMetrics: { summary: vi.fn() },
+}));
+
 // Mock the error handler before importing the router
 vi.mock("../../utils/error-handler", () => ({
   ErrorHandler: {
@@ -34,6 +45,39 @@ describe("Metrics Router", () => {
     vi.clearAllMocks();
     app = createTestApp();
     app.use("/metrics", metricsRouter);
+  });
+
+  describe("GET /metrics/ingredients", () => {
+    it("returns live parse metrics with corpus counts", async () => {
+      const live = { lineCount: 3, structuralSuccessShare: 1 };
+      const corpus = { lineCount: 10, openDiscoveryCount: 2 };
+      (ingredientMetrics.summary as Mock).mockReturnValue(live);
+      (getCorpusHealth as Mock).mockResolvedValue(corpus);
+
+      const response = await request(app).get("/metrics/ingredients");
+
+      expect(response.status).toBe(HttpStatus.OK);
+      expect(response.body).toMatchObject({
+        success: true,
+        data: { live, corpus },
+      });
+    });
+
+    it("reports database failures through the error handler", async () => {
+      (getCorpusHealth as Mock).mockRejectedValue(new Error("db down"));
+      (ErrorHandler.handleRouteError as Mock).mockReturnValue({
+        success: false,
+        error: "db down",
+      });
+
+      const response = await request(app).get("/metrics/ingredients");
+
+      expect(response.status).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
+      expect(ErrorHandler.handleRouteError).toHaveBeenCalledWith(
+        expect.any(Error),
+        "get_ingredient_metrics"
+      );
+    });
   });
 
   describe("GET /metrics/prometheus", () => {
@@ -456,6 +500,7 @@ describe("Metrics Router", () => {
       expect(routes).toEqual([
         { path: "/prometheus", method: "get" },
         { path: "/snapshot", method: "get" },
+        { path: "/ingredients", method: "get" },
         { path: "/performance", method: "get" },
         { path: "/health", method: "get" },
       ]);

@@ -66,7 +66,8 @@ export class SystemMonitor extends EventEmitter {
     success: boolean,
     queueName?: string,
     workerName?: string,
-    error?: string
+    error?: string,
+    metadata?: Record<string, unknown>
   ): void {
     const jobMetric: JobMetrics = {
       jobId,
@@ -75,6 +76,7 @@ export class SystemMonitor extends EventEmitter {
       queueName,
       workerName,
       error,
+      ...(metadata ? { metadata } : {}),
       timestamp: new Date(),
     };
 

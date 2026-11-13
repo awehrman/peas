@@ -5,6 +5,7 @@ import {
   SetLineReviewStatusDocument,
 } from "~/graphql/generated";
 import { useMutationAction } from "~/lib/apollo/cache-coordinator-provider";
+import { canCurateKnowledge } from "~/lib/permissions";
 import { useTeachActions } from "~/lib/teach";
 
 import { useReadQuery } from "@apollo/client/react";
@@ -50,8 +51,8 @@ function NoteDetailPage() {
       note={data.note}
       onSetReviewStatus={onSetReviewStatus}
       onPromoteToRecipe={onPromoteToRecipe}
-      onCorrectMention={viewer.isAdmin ? onApplyDecision : undefined}
-      onSearchConcepts={viewer.isAdmin ? onSearchConcepts : undefined}
+      onCorrectMention={canCurateKnowledge(viewer) ? onApplyDecision : undefined}
+      onSearchConcepts={canCurateKnowledge(viewer) ? onSearchConcepts : undefined}
     />
   );
 }

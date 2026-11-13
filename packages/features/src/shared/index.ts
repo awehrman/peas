@@ -1,3 +1,4 @@
+export * from "./addable-label";
 export * from "./chip-input";
 export * from "./confirm-dialog";
 export * from "./format-date";

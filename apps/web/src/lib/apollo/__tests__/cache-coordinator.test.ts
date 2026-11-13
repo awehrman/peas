@@ -316,6 +316,8 @@ describe("cache coordinator", () => {
           type: "PROCESS_NOTE",
           status: statuses[Math.min(call - 1, statuses.length - 1)],
           noteId: "n1",
+          processedCount: null,
+          totalCount: null,
           errorMessage: null,
           retryCount: 0,
           startedAt: null,
@@ -359,6 +361,8 @@ describe("cache coordinator", () => {
           type: "PROCESS_NOTE",
           status: "FAILED",
           noteId: "n1",
+          processedCount: null,
+          totalCount: null,
           errorMessage: "Parser crashed",
           retryCount: 3,
           startedAt: null,
@@ -381,7 +385,13 @@ describe("cache coordinator", () => {
 
     await eventually(() =>
       expect(updates).toEqual([
-        { jobId: "job-2", status: "FAILED", errorMessage: "Parser crashed" },
+        {
+          jobId: "job-2",
+          status: "FAILED",
+          errorMessage: "Parser crashed",
+          processedCount: null,
+          totalCount: null,
+        },
       ])
     );
     await new Promise((resolve) => setTimeout(resolve, 30));
@@ -389,5 +399,87 @@ describe("cache coordinator", () => {
     expect(calls.NotesPage).toBe(1);
     coordinator.dispose();
     list.stop();
+  });
+
+  it("tracks jobs again after an effect disposes and resumes the same coordinator", async () => {
+    const { client, calls } = createTestClient({
+      JobStatus: () => ({
+        job: {
+          __typename: "Job",
+          jobId: "reinterpret-16",
+          type: "REINTERPRET",
+          status: "COMPLETED",
+          noteId: null,
+          processedCount: 10,
+          totalCount: 10,
+          errorMessage: null,
+          retryCount: 0,
+          startedAt: null,
+          completedAt: null,
+        },
+      }),
+    });
+    const coordinator = createCacheCoordinator(client, {
+      jobPollIntervalMs: 5,
+    });
+    coordinator.dispose();
+    coordinator.trackJob("reinterpret-16");
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(calls.JobStatus ?? 0).toBe(0);
+
+    coordinator.resume();
+    const updates: JobUpdate[] = [];
+    coordinator.onJobUpdate((update) => updates.push(update));
+    await coordinator.apply(
+      createMutationEffect({ reprocessingJobId: "reinterpret-16" })
+    );
+    await eventually(() =>
+      expect(updates.map((update) => update.status)).toEqual(["COMPLETED"])
+    );
+    coordinator.dispose();
+  });
+
+  it("passes on reinterpretation progress counts", async () => {
+    const counts = [400, 1200];
+    const { client } = createTestClient({
+      JobStatus: (_variables, call) => ({
+        job: {
+          __typename: "Job",
+          jobId: "reinterpret-15",
+          type: "REINTERPRET",
+          status: call === 1 ? "PROCESSING" : "COMPLETED",
+          noteId: null,
+          processedCount: counts[Math.min(call - 1, 1)],
+          totalCount: 1200,
+          errorMessage: null,
+          retryCount: 0,
+          startedAt: null,
+          completedAt: null,
+        },
+      }),
+    });
+    const coordinator = createCacheCoordinator(client, {
+      jobPollIntervalMs: 5,
+    });
+    const updates: JobUpdate[] = [];
+    coordinator.onJobUpdate((update) => updates.push(update));
+
+    await coordinator.apply(
+      createMutationEffect({ reprocessingJobId: "reinterpret-15" })
+    );
+
+    await eventually(() =>
+      expect(
+        updates.map(({ status, processedCount, totalCount }) => [
+          status,
+          processedCount,
+          totalCount,
+        ])
+      ).toEqual([
+        ["PROCESSING", 400, 1200],
+        ["COMPLETED", 1200, 1200],
+      ])
+    );
+    coordinator.dispose();
   });
 });

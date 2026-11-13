@@ -31,8 +31,8 @@ export {
   type ModifierSeedSummary,
 } from "./seed/lexicon-modifiers.js";
 export {
-  seedOntologyFromLegacy,
-  LEGACY_PROPERTY_CLASSIFICATIONS,
-  type LegacySeedOptions,
-  type LegacySeedSummary,
-} from "./seed/ontology-from-legacy.js";
+  seedStarterFoods,
+  type StarterFood,
+  type StarterFoodsSeed,
+  type StarterFoodsSummary,
+} from "./seed/starter-foods.js";

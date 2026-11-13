@@ -90,25 +90,9 @@ type NotesPage {
 }
 
 """
-One piece of a parsed ingredient line as stored by the import pipeline (v1 parser today).
-
-Example for "2 cups flour": [{ "index": 0, "type": "amount", "value": "2" }, { "index": 1, "type": "unit", "value": "cups" }, { "index": 2, "type": "ingredient", "value": "flour", "ingredientId": "cm3i..." }]
-"""
-type ParsedSegment {
-  index: Int!
-  "Segment role from the parser, e.g. amount, unit, ingredient, description."
-  type: String!
-  value: String!
-  "Grammar rule that produced the segment, when recorded."
-  rule: String
-  "Linked ingredient for ingredient segments."
-  ingredientId: ID
-}
-
-"""
 One raw ingredient line from a note, with its parse and review state.
 
-Example: { "id": "cm3l...", "blockIndex": 0, "lineIndex": 2, "reference": "2 cups flour", "parseStatus": "COMPLETED_SUCCESSFULLY", "reviewStatus": "UNREVIEWED", "parserVersion": "v1" }
+Example: { "id": "cm3l...", "blockIndex": 0, "lineIndex": 2, "reference": "2 cups flour", "parseStatus": "COMPLETED_SUCCESSFULLY", "reviewStatus": "UNREVIEWED", "parserVersion": "v2:2.0.0" }
 """
 type IngredientLine {
   id: ID!
@@ -121,8 +105,7 @@ type IngredientLine {
   reviewStatus: LineReviewStatus!
   isActive: Boolean!
   parserVersion: String
-  segments: [ParsedSegment!]!
-  "v2 mentions, one per segment, once the backfill has run. Empty before that."
+  "v2 mentions, one per segment part (\"salt and pepper\" gives two). Empty until the line is parsed."
   mentions: [Mention!]!
 }
 
@@ -221,6 +204,8 @@ enum JobType {
   PROCESS_INGREDIENT_LINE
   PROCESS_INSTRUCTION_LINE
   PROCESS_CATEGORIZATION
+  "Background reinterpretation of mentions after a Teach Peas decision (Phase 5)."
+  REINTERPRET
 }
 
 """
@@ -233,7 +218,12 @@ type Job {
   jobId: ID!
   type: JobType!
   status: JobStatus!
-  noteId: ID!
+  "Set for import jobs; null for reinterpretation runs."
+  noteId: ID
+  "Lines done so far, for reinterpretation runs."
+  processedCount: Int
+  "Lines in the run, for reinterpretation runs."
+  totalCount: Int
   errorMessage: String
   retryCount: Int!
   startedAt: String
@@ -280,11 +270,11 @@ type LabelCount {
   count: Int!
 }
 
-"Example: { \"ingredientId\": \"cm3i...\", \"name\": \"garlic\", \"lineCount\": 214 }"
-type TopIngredient {
-  ingredientId: ID!
+"Example: { \"conceptId\": \"0193...\", \"name\": \"garlic\", \"lineCount\": 214 }"
+type TopConcept {
+  conceptId: ID!
   name: String!
-  "How many ingredient lines mention it."
+  "How many active ingredient lines mention it."
   lineCount: Int!
 }
 
@@ -297,19 +287,21 @@ type YearCount {
 """
 Corpus-wide numbers for the dashboard. Top lists hold up to 8 entries.
 
-Example: query { dashboardStats { noteCount recipeCount notesByStatus { completed failed } topIngredients { name lineCount } } }
+Example: query { dashboardStats { noteCount recipeCount notesByStatus { completed failed } topConcepts { name lineCount } } }
 """
 type DashboardStats {
   noteCount: Int!
   recipeCount: Int!
   "Completed notes that have not been promoted to a recipe yet."
   notesReadyToPromote: Int!
-  ingredientCount: Int!
-  reviewedIngredientCount: Int!
+  "Concepts that have not been merged away."
+  conceptCount: Int!
+  verifiedConceptCount: Int!
   instructionLineCount: Int!
   notesByStatus: NoteStatusCounts!
   ingredientLines: IngredientLineStats!
-  topIngredients: [TopIngredient!]!
+  "Concepts mentioned by the most active ingredient lines."
+  topConcepts: [TopConcept!]!
   "Websites with the most saved recipe URLs."
   topSources: [LabelCount!]!
   "Category names by note count."
@@ -345,6 +337,8 @@ type RecipesPage {
   total: Int!
   page: Int!
   pageSize: Int!
+  "The concept filter, when recipes(conceptId:) was given and the concept exists."
+  concept: ConceptRef
 }
 
 "Every category and tag name in use, for filter menus. Example: { \"categories\": [\"Dessert\", \"Dinner\"], \"tags\": [\"spicy\", \"weeknight\"] }"
@@ -380,15 +374,24 @@ input RecipeUpdateInput {
 }
 
 # ---------------------------------------------------------------------------
-# Ingredients
+# Ingredients (the ingredient card view, backed by food concepts)
 # ---------------------------------------------------------------------------
 
-"Which ingredients the ingredients page lists. Lowercase to match the page's ?view= search param."
+"How a food relates to its parent: chicken thigh PART_OF chicken, kosher salt IS_A salt."
+enum FoodRelationshipType {
+  IS_A
+  PART_OF
+  DERIVED_FROM
+  PROCESSED_FROM
+}
+
+"Which foods the ingredients page lists: all approved foods, or the proposed ones waiting for review. Lowercase to match the page's ?view= search param."
 enum IngredientView {
   all
   unreviewed
 }
 
+"Ingredient card properties. VEGAN, VEGETARIAN, and GLUTEN_FREE are automatic tags computed from the food's properties (vegetarian: no meat or fish; vegan: also no dairy or egg; gluten-free: no gluten; none without a core type) and are ignored on save; the rest are stored as classifications, core types and allergens inheriting across every relationship."
 enum IngredientProperty {
   VEGAN
   VEGETARIAN
@@ -403,6 +406,10 @@ enum IngredientProperty {
   VEGETABLE
   HERB
   SPICE
+  FAT
+  SWEETENER
+  SEASONING
+  GLUTEN
   NUTS
   SHELLFISH
   SOY
@@ -412,7 +419,7 @@ enum IngredientProperty {
 }
 
 """
-One row of the ingredients list.
+One food on the ingredients list (an approved or proposed food concept). `isReviewed` means approved; `properties` are the ones in effect (set here or inherited) plus the automatic VEGAN, VEGETARIAN, and GLUTEN_FREE tags.
 
 Example: { "id": "cm3i...", "name": "garlic", "plural": null, "isReviewed": true, "parentIngredientId": null, "properties": ["VEGAN", "VEGETARIAN", "VEGETABLE"], "referenceCount": 42 }
 """
@@ -424,7 +431,7 @@ type IngredientSummary {
   "Set for variants, e.g. \"smoked paprika\" points at \"paprika\"."
   parentIngredientId: ID
   properties: [IngredientProperty!]!
-  "How many ingredient lines mention this ingredient."
+  "How many active ingredient lines mention this food."
   referenceCount: Int!
 }
 
@@ -467,13 +474,18 @@ type Ingredient {
   reviewedAt: String
   "True for ingredients made of other ingredients, e.g. \"garam masala\"."
   isComposedIngredient: Boolean!
-  properties: [IngredientProperty!]!
+  "Properties set here or inherited, in card order."
+  propertyStates: [IngredientPropertyState!]!
+  "Automatic tags (VEGAN, VEGETARIAN, GLUTEN_FREE) computed from the food's properties, explicit or inherited; empty when the food has no core type."
+  dietaryTags: [IngredientProperty!]!
   aliases: [IngredientAlias!]!
   substitutions: [IngredientOption!]!
-  parent: IngredientOption
-  variants: [IngredientOption!]!
-  "e.g. \"Spices\"."
-  category: String
+  "Foods this one comes from or belongs to, oldest first. Example: canned tomatoes -> [{ relationshipType: PROCESSED_FROM, ingredient: { name: \"tomato\" } }]"
+  relationships: [IngredientRelation!]!
+  "Foods that relate to this one. Example: tomato -> [{ relationshipType: PROCESSED_FROM, ingredient: { name: \"canned tomatoes\" } }]"
+  variants: [IngredientRelation!]!
+  "Category names, alphabetical, e.g. [\"Produce\", \"Spices\"]."
+  categories: [String!]!
   tags: [String!]!
   referenceCount: Int!
   "The most recent references (capped at 50)."
@@ -481,20 +493,49 @@ type Ingredient {
 }
 
 """
+One property on the ingredient card: what this food says, what it would inherit, and from which food. A FALSE `explicit` is a "does not contain" that overrides an inherited TRUE.
+
+Example: { "property": "GLUTEN", "explicit": null, "inherited": "TRUE", "inheritedFrom": { "name": "wheat" } }
+"""
+type IngredientPropertyState {
+  property: IngredientProperty!
+  explicit: ClassificationValue
+  inherited: ClassificationValue
+  inheritedFrom: IngredientOption
+}
+
+"One relationship between two foods, seen from the card's food. Example: { \"relationshipType\": \"PART_OF\", \"ingredient\": { \"name\": \"chicken\" } }"
+type IngredientRelation {
+  relationshipType: FoodRelationshipType!
+  ingredient: IngredientOption!
+}
+
+"Example: { \"ingredientId\": \"0193...\", \"relationshipType\": \"PROCESSED_FROM\" }"
+input IngredientRelationInput {
+  ingredientId: ID!
+  relationshipType: FoodRelationshipType!
+}
+
+"""
 Saves the ingredient editor form. Set advanceToNext to get the next unreviewed ingredient's id back.
 
-Example: { "id": "cm3i...", "name": "smoked paprika", "plural": null, "properties": ["VEGAN", "SPICE"], "isComposedIngredient": false, "parentIngredientId": "cm3p...", "substitutionIds": [], "aliases": ["pimentón"], "category": "Spices", "tags": [], "markReviewed": true, "advanceToNext": true }
+Example: { "id": "cm3i...", "name": "smoked paprika", "plural": null, "properties": ["SPICE"], "excludedProperties": [], "isComposedIngredient": false, "relationships": [{ "ingredientId": "cm3p...", "relationshipType": "IS_A" }], "substitutionIds": [], "aliases": ["pimentón"], "categories": ["Spices"], "tags": [], "markReviewed": true, "advanceToNext": true }
 """
 input IngredientSaveInput {
   id: ID!
   name: String!
   plural: String
+  "Properties set to \"contains\" on this food (VEGAN and VEGETARIAN are ignored)."
   properties: [IngredientProperty!]!
+  "Properties set to \"does not contain\", overriding what the food would inherit."
+  excludedProperties: [IngredientProperty!]
   isComposedIngredient: Boolean!
-  parentIngredientId: ID
+  "The complete set of foods this one relates to; relationships left out are removed."
+  relationships: [IngredientRelationInput!]!
   substitutionIds: [ID!]!
   aliases: [String!]!
-  category: String
+  "The complete set of category names; ones left out are removed."
+  categories: [String!]!
   tags: [String!]!
   markReviewed: Boolean!
   advanceToNext: Boolean!
@@ -623,13 +664,16 @@ type ResolutionCandidateView {
 }
 
 """
-A stored v2 mention of one ingredient-line segment (written by the backfill and by reinterpretation).
+A stored v2 mention of one part of an ingredient-line segment (written on import, by the backfill, and by reinterpretation). "salt and pepper" is one segment with two parts.
 
-Example: { "id": "0193...", "segmentIndex": 0, "rawText": "1 lb boneless chicken thighs", "status": "AUTO_RESOLVED", "concept": { "canonicalName": "chicken thigh" }, "quantity": "1 lb" }
+Example: { "id": "0193...", "segmentIndex": 0, "partIndex": 0, "span": { "start": 0, "end": 28, "text": "1 lb boneless chicken thighs" }, "rawText": "1 lb boneless chicken thighs", "status": "AUTO_RESOLVED", "concept": { "canonicalName": "chicken thigh" }, "quantity": "1 lb" }
 """
 type Mention {
   id: ID!
   segmentIndex: Int!
+  partIndex: Int!
+  "Where this part sits in the line."
+  span: TextSpan!
   rawText: String!
   status: MentionStatus!
   concept: ConceptRef
@@ -674,6 +718,8 @@ type Discovery {
   entries: [LexiconEntryRef!]!
   "Example mentions, paged. Example: examples(limit: 20, offset: 20)"
   examples(limit: Int, offset: Int): [DiscoveryExample!]!
+  "STRUCTURAL_PATTERN only (null otherwise): up to 10 example lines as pending golden cases (JSON) for packages/parser/fixtures/golden/structural.dev.json, each with v2's current reading and an empty expected value to fill in."
+  fixtureBlock: String
 }
 
 "Example: query { discoveryQueue(type: UNKNOWN_FOOD_PHRASE, limit: 25) { items { id title priority } nextCursor } }"
@@ -802,6 +848,27 @@ type ConceptSummary {
   mentionCount: Int!
 }
 
+"A name or modifier in the lexicon. Example: { \"text\": \"chicken thighs\", \"role\": \"FOOD\", \"kind\": \"PLURAL\", \"status\": \"ACTIVE\", \"targetLabel\": \"chicken thigh\" }"
+type LexiconEntryRow {
+  id: ID!
+  text: String!
+  "FOOD, ATTRIBUTE, PREPARATION, DEGREE, MEASUREMENT_MODIFIER, or INSTRUCTION."
+  role: String!
+  "CANONICAL, PLURAL, ALIAS, ... for FOOD entries."
+  kind: String
+  "ACTIVE or PROPOSED (proposed entries are only used when curating)."
+  status: String!
+  targetLabel: String!
+  conceptId: ID
+}
+
+type LexiconPage {
+  items: [LexiconEntryRow!]!
+  total: Int!
+  page: Int!
+  pageSize: Int!
+}
+
 "Example: query { concepts(query: \"sugar\", page: 1) { total items { canonicalName } } }"
 type ConceptsPage {
   items: [ConceptSummary!]!
@@ -846,6 +913,47 @@ type ConceptClassification {
   "EXPLICIT, INHERITED, or CONFLICT."
   source: String!
   inheritedFrom: ConceptRef
+  "True when this concept stores the value itself, so it can be removed here."
+  isExplicit: Boolean!
+}
+
+"Example: { \"concept\": { \"canonicalName\": \"plain yogurt\" }, \"ratio\": \"3/4 cup per cup\", \"note\": \"thin with milk\" }"
+type ConceptSubstitution {
+  concept: ConceptRef!
+  ratio: String
+  note: String
+}
+
+enum ClassificationKind {
+  FOOD_GROUP
+  DIETARY
+  ALLERGEN
+  CATEGORY
+  CERTIFICATION
+}
+
+enum ClassificationValue {
+  TRUE
+  FALSE
+  UNKNOWN
+}
+
+"Example: { \"conceptId\": \"0193...\", \"kind\": \"CATEGORY\", \"key\": \"CATEGORY:Spices\", \"value\": \"TRUE\", \"note\": null }"
+input ConceptClassificationInput {
+  conceptId: ID!
+  kind: ClassificationKind!
+  "e.g. VEGAN, DAIRY, ALLERGEN_PEANUT, CATEGORY:Spices"
+  key: String!
+  value: ClassificationValue!
+  note: String
+}
+
+"Example: { \"conceptId\": \"<buttermilk>\", \"substituteId\": \"<plain yogurt>\", \"ratio\": \"3/4 cup per cup\", \"note\": null }"
+input ConceptSubstitutionInput {
+  conceptId: ID!
+  substituteId: ID!
+  ratio: String
+  note: String
 }
 
 "Example: { \"mentionId\": \"0193...\", \"lineText\": \"2 tbsp powdered sugar\", \"noteTitle\": \"Lemon Bars\", \"verified\": false }"
@@ -889,6 +997,9 @@ type Concept {
   children: [ConceptRelationship!]!
   attributes: [ConceptAttributeValue!]!
   classifications: [ConceptClassification!]!
+  tags: [String!]!
+  "Concepts that can stand in for this one."
+  substitutions: [ConceptSubstitution!]!
   mentions: [ConceptMention!]!
   decisions: [ConceptDecision!]!
 }
@@ -916,9 +1027,9 @@ type ApplyDecisionPayload implements MutationPayload {
   summary: String
   "Mentions whose reading changed in this request."
   mentionsUpdated: Int
-  "True when more lines were affected than one request reinterprets; run reinterpretCommand."
+  "True when more lines were affected than one request reinterprets; the queue picks them up and effect.reprocessingJobId tracks the run."
   needsBackgroundReinterpret: Boolean!
-  "e.g. \"yarn workspace @peas/queue reinterpret --revision 15 --decision 0193...\""
+  "Fallback when the queue could not be reached, e.g. \"yarn workspace @peas/queue reinterpret --revision 15 --decision 0193...\""
   reinterpretCommand: String
 }
 
@@ -932,6 +1043,144 @@ type RefreshDiscoveriesPayload implements MutationPayload {
   relationshipSuggestions: Int
 }
 
+"Example: { \"total\": 5402, \"autoResolved\": 4100, \"needsReview\": 610, \"unresolved\": 540, \"verified\": 152 }"
+type CorpusMentionCounts {
+  total: Int!
+  autoResolved: Int!
+  needsReview: Int!
+  unresolved: Int!
+  verified: Int!
+}
+
+"An open unknown-food discovery. Example: { \"discoveryId\": \"0193...\", \"phrase\": \"gochugaru\", \"mentionCount\": 14 }"
+type UnknownPhrase {
+  discoveryId: ID!
+  phrase: String!
+  mentionCount: Int!
+}
+
+"Background reinterpretation runs by state."
+type ReinterpretBacklog {
+  pending: Int!
+  processing: Int!
+  failed: Int!
+  "Batches that failed after every retry, across all runs."
+  failedBatches: Int!
+}
+
+"""
+The queue's last hour of parses (in memory per queue process).
+
+Example: { "windowSeconds": 3600, "lineCount": 1200, "linesPerSecond": 0.33, "structuralSuccessShare": 0.97, "averageCandidatesPerSegment": 1.4, "unknownTokens": 85, "lexiconRevision": 15 }
+"""
+type LiveParseMetrics {
+  windowSeconds: Int!
+  lineCount: Int!
+  linesPerSecond: Float!
+  "0..1; null before any line."
+  structuralSuccessShare: Float
+  averageCandidatesPerSegment: Float
+  unknownTokens: Int!
+  lexiconRevision: Int
+}
+
+"""
+How well the corpus is understood, for the Corpus health card on /teach.
+
+Example: query { corpusHealth { lineCount mentions { total unresolved } openDiscoveryCount topUnknownPhrases { phrase mentionCount } live { linesPerSecond } } }
+"""
+type CorpusHealth {
+  "Active ingredient lines."
+  lineCount: Int!
+  linesWithMentions: Int!
+  parsedSuccessfully: Int!
+  parsedWithErrors: Int!
+  awaitingParsing: Int!
+  mentions: CorpusMentionCounts!
+  openDiscoveryCount: Int!
+  topUnknownPhrases: [UnknownPhrase!]!
+  reinterpretBacklog: ReinterpretBacklog!
+  lexiconRevision: Int!
+  "Null when the queue cannot be reached."
+  live: LiveParseMetrics
+}
+
+"One stored corpus health snapshot. Example: { \"takenAt\": \"2026-11-13T03:00:00.000Z\", \"trigger\": \"SCHEDULED\", \"parserVersion\": \"2.1.0\", \"totalMentions\": 5402, \"unresolvedMentions\": 540 }"
+type CorpusHealthSnapshot {
+  id: ID!
+  takenAt: String!
+  "SCHEDULED, REINTERPRET, REPARSE, or MANUAL."
+  trigger: String!
+  parserVersion: String!
+  lexiconRevision: Int!
+  totalLines: Int!
+  totalMentions: Int!
+  autoResolvedMentions: Int!
+  needsReviewMentions: Int!
+  unresolvedMentions: Int!
+  verifiedMentions: Int!
+  "Average resolution candidates per mention."
+  avgCandidates: Float!
+  openDiscoveries: Int!
+}
+
+"Mentions on active lines written by one parser version. Example: { \"parserVersion\": \"2.0.0\", \"total\": 1200, \"unresolved\": 310 }"
+type ParserVersionHealth {
+  parserVersion: String!
+  total: Int!
+  unresolved: Int!
+}
+
+"Review throughput for one week (reverts excluded). Example: { \"weekStart\": \"2026-11-09\", \"decisions\": 14, \"mentionsChanged\": 212 }"
+type WeeklyReview {
+  "Monday of the week, as an ISO date."
+  weekStart: String!
+  decisions: Int!
+  "Mentions the week's decisions changed, including background reinterpretation."
+  mentionsChanged: Int!
+}
+
+"An open discovery's phrase, for the health page's top lists. Example: { \"discoveryId\": \"0193...\", \"type\": \"UNKNOWN_FOOD_PHRASE\", \"phrase\": \"gochugaru\", \"mentionCount\": 14 }"
+type HealthPhrase {
+  discoveryId: ID!
+  type: DiscoveryType!
+  phrase: String!
+  mentionCount: Int!
+}
+
+"""
+Everything /teach/health charts.
+
+Example: query { corpusHealthTrends(weeks: 12) { parserVersion snapshots { takenAt totalMentions unresolvedMentions } byParserVersion { parserVersion unresolved } reviewByWeek { weekStart decisions } } }
+"""
+type CorpusHealthTrends {
+  "The running parser's version; lines written by another version are reparsed by startReparse."
+  parserVersion: String!
+  "Oldest first."
+  snapshots: [CorpusHealthSnapshot!]!
+  byParserVersion: [ParserVersionHealth!]!
+  "Oldest first; weeks without decisions are omitted."
+  reviewByWeek: [WeeklyReview!]!
+  topUnknownPhrases: [HealthPhrase!]!
+  mostAmbiguousPhrases: [HealthPhrase!]!
+}
+
+"Example: { \"success\": true, \"linesDeactivated\": 3 }"
+type MarkNoisePayload implements MutationPayload {
+  success: Boolean!
+  message: String
+  effect: MutationEffect!
+  linesDeactivated: Int
+}
+
+"A background job the queue accepted. Example: { \"success\": true, \"jobId\": \"reparse-2.1.0\" }"
+type StartJobPayload implements MutationPayload {
+  success: Boolean!
+  message: String
+  effect: MutationEffect!
+  jobId: ID
+}
+
 # ---------------------------------------------------------------------------
 # Mutation effects (cache reconciliation contract)
 # ---------------------------------------------------------------------------
@@ -939,7 +1188,7 @@ type RefreshDiscoveriesPayload implements MutationPayload {
 """
 Query areas whose cached results a mutation may have made stale. The client's cache coordinator refetches active queries registered for each domain.
 
-Example: renaming an ingredient invalidates INGREDIENTS (the list shows the name) and INGREDIENT_DETAIL (other ingredients show it as a parent or substitution).
+Example: merging two concepts invalidates CONCEPTS (the list shows both) and CONCEPT_DETAIL (other concepts show them as parents or substitutions).
 """
 enum InvalidationDomain {
   NOTES
@@ -947,14 +1196,13 @@ enum InvalidationDomain {
   RECIPES
   RECIPE_DETAIL
   RECIPE_TAXONOMY
-  INGREDIENTS
-  INGREDIENT_DETAIL
   IMPORT_STATS
   DASHBOARD_STATS
   DISCOVERIES
   CONCEPTS
   CONCEPT_DETAIL
   MENTIONS
+  CORPUS_HEALTH
 }
 
 "A cache identity: GraphQL type name plus immutable id. Example: { \"typename\": \"Recipe\", \"id\": \"cm3r...\" }"
@@ -1069,27 +1317,39 @@ type Query {
   importStats: ImportStats!
   dashboardStats: DashboardStats!
   job(jobId: ID!): Job
-  "Example: recipes(query: \"chili\", category: \"Dinner\")"
-  recipes(query: String, category: String, tag: String, page: Int): RecipesPage!
+  "Example: recipes(query: \"chili\", category: \"Dinner\"). conceptId finds recipes that mention the concept or a more specific one (IS_A, PART_OF) unless exactConcept is true."
+  recipes(
+    query: String
+    category: String
+    tag: String
+    conceptId: ID
+    exactConcept: Boolean
+    page: Int
+  ): RecipesPage!
   recipe(id: ID!): Recipe
   recipeTaxonomy: RecipeTaxonomy!
+  "The ingredients page: approved foods (view: all) or proposed ones (view: unreviewed), alphabetical."
   ingredients(view: IngredientView!): [IngredientSummary!]!
   ingredientCounts: IngredientCounts!
   ingredient(id: ID!): Ingredient
   ingredientCategoryNames: [String!]!
-  "Name search for pickers, up to 10 results. Example: searchIngredients(query: \"papr\", excludeId: \"cm3i...\") -> [{ name: \"paprika\" }, { name: \"smoked paprika\" }]"
+  "Name search for the card's pickers, up to 10 results. Example: searchIngredients(query: \"papr\", excludeId: \"0193...\") -> [{ name: \"paprika\" }, { name: \"smoked paprika\" }]"
   searchIngredients(query: String!, excludeId: ID): [IngredientOption!]!
+  "The food that already answers to a name (its name, plural, or an alternate name), other than excludeId; null when the name is free. Example: ingredientNameOwner(name: \"scallion\", excludeId: \"0193...\") -> { name: \"green onion\" }"
+  ingredientNameOwner(name: String!, excludeId: ID): IngredientOption
   "Admin only. The review queue, highest priority first. Example: discoveryQueue(type: AMBIGUOUS_MATCH, cursor: \"0193...\")"
   discoveryQueue(type: DiscoveryType, cursor: ID, limit: Int): DiscoveryPage!
   "Admin only. Open discoveries per type, for the queue filters."
   discoveryCounts: [DiscoveryTypeCount!]!
   "Admin only."
   discovery(id: ID!): Discovery
-  "Admin only. Example: concepts(query: \"sugar\", page: 1)"
+  "Admin only. Every concept that has not been merged away, approved or not. Example: concepts(query: \"sugar\", page: 1)"
   concepts(query: String, page: Int): ConceptsPage!
-  "Admin only."
+  "Concept.decisions is empty for non-admins."
   concept(id: ID!): Concept
-  "Admin only. Name and entry search for concept pickers, up to 10 results. Example: searchConcepts(query: \"thigh\")"
+  "Admin only. Every name and modifier Peas knows, alphabetical. Example: lexicon(query: \"chick\", role: \"FOOD\", page: 1)"
+  lexicon(query: String, role: String, page: Int): LexiconPage!
+  "Name and entry search for concept pickers, up to 10 results. Example: searchConcepts(query: \"thigh\")"
   searchConcepts(query: String!): [ConceptRef!]!
   "Admin only."
   vocabulary: Vocabulary!
@@ -1098,6 +1358,10 @@ type Query {
   "Admin only. Impact of a decision without applying it."
   previewDecision(payload: JSON!): DecisionPreview!
   mention(id: ID!): Mention
+  "Admin only."
+  corpusHealth: CorpusHealth!
+  "Admin only. Snapshots (newest 90), unresolved share by parser version, weekly review throughput, and the top open phrases. Example: corpusHealthTrends(weeks: 12)"
+  corpusHealthTrends(weeks: Int): CorpusHealthTrends!
 }
 
 type Mutation {
@@ -1108,7 +1372,9 @@ type Mutation {
   "Admin only. Promotes every COMPLETED note that has no recipe yet."
   promoteCompletedNotes: PromoteCompletedNotesPayload!
   updateRecipe(input: RecipeUpdateInput!): BasicPayload!
+  "Saves the ingredient card. Name, plural, alternate names, and parent go through one EDIT_CONCEPT decision (revertible; affected lines are reinterpreted); the other fields are written directly; saving a proposed food approves it."
   saveIngredient(input: IngredientSaveInput!): SaveIngredientPayload!
+  "Adds an approved food through a CREATE_CONCEPT decision."
   createIngredient(input: IngredientCreateInput!): CreateIngredientPayload!
   "Admin only. Deletes all imported data and R2 objects; users and sessions are kept."
   cleanupAllData: CleanupAllDataPayload!
@@ -1118,4 +1384,22 @@ type Mutation {
   deferDiscovery(id: ID!): BasicPayload!
   "Admin only. Mines adjacency counts into open discoveries and suggests relationships by name."
   refreshDiscoveries: RefreshDiscoveriesPayload!
+  "Admin only. A structural pattern's lines are not ingredient lines (headers, OCR artifacts): deactivates them, drops their mentions from every count, and resolves the discovery."
+  markDiscoveryAsNoise(id: ID!): MarkNoisePayload!
+  "Admin only. Reparses every line written by another parser version, after a grammar change ships. The run's id (\"reparse-<version>\") comes back as effect.reprocessingJobId and reports progress through Query.job."
+  startReparse: StartJobPayload!
+  "Admin only. Re-reads unresolved and needs-review mentions in exploratory mode now, instead of waiting for the weekly sweep; only discoveries are written."
+  runExploratorySweep: StartJobPayload!
+  "Admin only. Stores a corpus health snapshot now."
+  takeHealthSnapshot: BasicPayload!
+  "Admin only. Sets an explicit classification (a dietary property, food group, allergen, or CATEGORY:<name>). Example: setConceptClassification(input: { conceptId: \"0193...\", kind: DIETARY, key: \"VEGAN\", value: TRUE })"
+  setConceptClassification(input: ConceptClassificationInput!): BasicPayload!
+  "Admin only. Removes an explicit classification; inherited values still apply."
+  removeConceptClassification(conceptId: ID!, key: String!): BasicPayload!
+  "Admin only. Replaces the concept's tags. Example: setConceptTags(conceptId: \"0193...\", tags: [\"pantry\", \"baking\"])"
+  setConceptTags(conceptId: ID!, tags: [String!]!): BasicPayload!
+  "Admin only. Records that substituteId can stand in for conceptId."
+  setConceptSubstitution(input: ConceptSubstitutionInput!): BasicPayload!
+  "Admin only."
+  removeConceptSubstitution(conceptId: ID!, substituteId: ID!): BasicPayload!
 }

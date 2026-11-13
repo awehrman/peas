@@ -82,7 +82,7 @@ describe("Images Router", () => {
         instructionQueue: {} as any,
         categorizationQueue: {} as any,
         sourceQueue: {} as any,
-        patternTrackingQueue: {} as any,
+        reinterpretQueue: {} as any,
       },
       database: {} as any,
       errorHandler: {} as any,

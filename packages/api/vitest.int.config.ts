@@ -14,13 +14,15 @@ export default defineConfig({
     fileParallelism: false,
     testTimeout: 30_000,
     hookTimeout: 120_000,
+    // A queue running on the developer's machine works against the dev database; tests must never reach it
+    env: { QUEUE_INTERNAL_URL: "http://127.0.0.1:9" },
     coverage: {
       provider: "v8",
       reporter: ["text-summary", "html"],
       include: ["src/**/*.ts"],
       exclude: ["src/**/__tests__/**", "src/generated/**"],
       // Ratchet: the floor of the last measured coverage with TEST_DATABASE_URL (12 November 2026); raise it as coverage grows
-      thresholds: { statements: 90, branches: 80, functions: 94, lines: 91 },
+      thresholds: { statements: 90, branches: 80, functions: 95, lines: 91 },
     },
   },
 });

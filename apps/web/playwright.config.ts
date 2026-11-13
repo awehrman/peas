@@ -37,6 +37,8 @@ export default defineConfig({
       DATABASE_URL: testDatabaseUrl,
       PORT: String(E2E_PORT),
       SIGN_UP_CODES: "e2e-invite",
+      // A queue running on the developer's machine works against the dev database; the e2e server must never reach it
+      QUEUE_INTERNAL_URL: "http://127.0.0.1:9",
     },
   },
 });

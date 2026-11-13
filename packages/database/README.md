@@ -47,14 +47,15 @@ scripts/                   # build-schema, verify-migrations, seeds, exports
   - `Source`, `URL`, `Book`
   - `SourceType` enum
 
-- **`ingredients.prisma`** (legacy): `Ingredient`, `Alias`, `IngredientReference`, `IngredientCategory`, `IngredientTag`, `Brand`. Retired in Phase 7 of the ingredient rebuild.
+- **`ingredients.prisma`** (legacy): `Ingredient`, `Alias`, `IngredientReference`, `IngredientCategory`, `IngredientTag`, `Brand`. Nothing writes or reads them since Phase 5 except `IngredientTag` (concept tags); retired in Phase 7 of the ingredient rebuild. The legacy-ingredient seed was replaced by `db:seed:foods`.
 
 - **`recipes.prisma`**: `Recipe`, a curated note that reuses the note's parsed lines.
 
 - **`ontology.prisma`**: the v2 food ontology (Phase 2 of the [ingredient rebuild](../../docs/architecture/ingredient-ontology-rebuild.md#ontology-data-model)).
   - Knowledge: `FoodConcept`, `LexiconEntry`, `AttributeDefinition`, `AttributeValue`, `AttributeApplicability`, `ConceptAttribute`, `PreparationOperation`, `FoodRelationship`, `FoodClassification`, `FoodSubstitution`, `FoodProduct`
-  - Corpus: `IngredientMention` with `MentionAttribute`, `MentionPreparation`, `MentionModifier`
+  - Corpus: `IngredientMention` (one per segment part, unique by `(parsedLineId, segmentIndex, partIndex)`) with `MentionAttribute`, `MentionPreparation`, `MentionModifier`
   - Review loop: `Discovery`, `DiscoveryEvidence`, `LexiconDecision`, `LexiconRevision`, `ConceptMergeRecord`, `LegacyIngredientMapping`
+  - Background work: `ReinterpretRun` (one per lexicon revision or parser version, with batch progress)
   - Ids are UUIDv7 stored as native `uuid`. Enum value lists are mirrored in `@peas/parser/v2`, and `src/repository/ontology/__tests__/helpers.test.ts` fails if they drift.
 
 ## 🧠 Ontology repositories
@@ -113,7 +114,7 @@ Run in this order; each is idempotent and bumps the lexicon revision only when i
 | --- | --- |
 | `db:seed:ontology` | Attribute dimensions, values, and preparation operations from `@peas/parser/v2` |
 | `db:seed:modifiers` | The 99 reviewed modifier entries in `packages/parser/fixtures/lexicon/modifiers.seed.json` (ACTIVE), resolved against the vocabulary |
-| `db:seed:legacy [--batch 200] [--dry-run]` | Legacy `Ingredient` rows to concepts in three passes, keyed by `LegacyIngredientMapping` so it resumes where it stopped. Pass 1: one- or two-word or reviewed names become concepts with CANONICAL, PLURAL, and ALIAS entries (ACTIVE if reviewed, else PROPOSED). Pass 2: longer names go through the resolver; modifier-composed names ("finely chopped parsley") map to the head concept for review, attribute-composed names ("boneless skinless chicken thigh") become proposed concepts plus an IDENTITY_DECISION discovery, and anything else becomes a proposed concept. Pass 3: parents become RELATIONSHIP_SUGGESTION discoveries (never relationships), properties become LEGACY classifications through `LEGACY_PROPERTY_CLASSIFICATIONS`, categories become CATEGORY classifications, and tags, substitutions, brands (as products), and composed flags carry over onto concepts created from that ingredient. `--dry-run` runs everything in one transaction and rolls it back. |
+| `db:seed:foods` | The starter foods in `packages/parser/fixtures/lexicon/starter-foods.seed.json`: chicken and its parts, dairy, pantry staples, produce, and oils, with canonical, plural, and alias names, relationships (chicken thigh PART_OF chicken, kosher salt IS_A salt, ...), characterizing attributes, and attribute applicability (bone and skin apply to chicken, so "boneless skinless chicken thighs" keeps both). Concepts are matched by canonical name. Two stay PROPOSED (chicken drumstick, lemon zest) so the Approve button has something to approve. |
 
 `db:evaluate:resolution [--limit 5000] [--export-snapshot path]` writes a read-only resolution report over stored lines to `packages/parser/fixtures/reports/resolution.db.md`.
 
@@ -133,6 +134,13 @@ await reinterpretAffected(applied.payload); // { linesReprocessed: 12, mentionsC
 The queue scripts `backfill:mentions` and `reinterpret` page through lines with `backfillMentions`; upserting a mention whose stored content is unchanged writes nothing, so repeated runs are no-ops.
 
 Every JSON column (`syntax`, `quantity`, `resolution`, discovery and decision payloads, decision effects) is validated with its Zod schema from `@peas/parser/v2` on write and on read.
+
+### Grammar loop and health trends (Phase 6)
+
+- `markDiscoveryAsNoise(id)` sets a structural pattern's lines inactive and rejects the discovery; `pendingFixtureLines({ discoveryId | signature })` returns its example lines, which `yarn workspace @peas/database pull:fixtures` (aliased as `@peas/parser pull:fixtures`) writes as pending golden cases.
+- `exploratorySweep(context)` records discoveries from an EXPLORATORY re-read of unresolved and needs-review mentions without writing mentions; `dryRunReparse(context)` and `formatReparseReport` build the reparse report.
+- `takeCorpusHealthSnapshot(trigger)` stores one `CorpusHealthSnapshot`; `getHealthTrends({ weeks })` returns snapshots, unresolved share by parser version, weekly decisions and mentions changed, and the top open phrases; `addDecisionMentionsChanged` feeds "taught to fixed".
+- `ingredient-card.ts` maps the ingredients page's card to concepts: `saveIngredientCard` turns name, alias, and parent edits into one `EDIT_CONCEPT` decision (plus `APPROVE_CONCEPT` for a proposed food) and writes properties, category, tags, and substitutions directly.
 
 ### Constraints outside the Prisma schema
 
@@ -172,8 +180,10 @@ The `add_food_ontology` migration adds what Prisma cannot model: the `pg_trgm` e
 - `npm run db:push` - Build schema and push to database (throwaway databases only)
 - `yarn db:seed:ontology` - Seed attribute dimensions, values, and preparation operations from `@peas/parser/v2` (idempotent; bumps the lexicon revision only when something was added)
 - `yarn db:seed:modifiers` - Seed reviewed modifier lexicon entries (after `db:seed:ontology`)
-- `yarn db:seed:legacy` - Seed the ontology from legacy ingredients (`--dry-run`, `--batch <n>`)
+- `yarn db:seed:foods` - Seed the starter foods with their names and hierarchy (after `db:seed:modifiers`)
 - `yarn db:evaluate:resolution` - Resolution report against the live database (read-only)
+- `yarn pull:fixtures --discovery <id>` - A structural pattern's lines as pending golden cases in `packages/parser/fixtures/golden/pending/` (read-only)
+- `yarn export:calibration-labels [--out path]` - Verified mentions and the resolver snapshot as labels for `calibrate:thresholds --labels` (read-only)
 - `yarn typecheck` - Typecheck sources, tests, and scripts (`tsconfig.test.json`)
 - `yarn test:run` - Unit tests (no database needed)
 - `yarn test:int` - Unit and integration tests against `TEST_DATABASE_URL` (integration suites skip when unset)

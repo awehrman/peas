@@ -7,6 +7,7 @@ import {
   imagesRouter,
   importRouter,
   metricsRouter,
+  reinterpretRouter,
   notesRouter,
   performanceRouter,
   uploadRouter,
@@ -33,6 +34,8 @@ import {
 } from "./services/image/local-storage";
 import { errorHandler as stdErrorHandler } from "./utils/standardized-error-handler";
 import { LOG_MESSAGES, LoggerFactory } from "./utils/standardized-logger";
+import { subscribeToLexiconRevisions } from "./services/ingredient/lexicon-cache";
+import { scheduleMaintenanceJobs } from "./services/reinterpret/schedules";
 import { startWorkers } from "./workers/startup";
 
 // Type guard to check if value is an Error
@@ -275,6 +278,7 @@ initializeApp()
     app.use("/notes", requireQueueAuth, notesRouter);
     app.use("/images", requireQueueAuth, imagesRouter);
     app.use("/metrics", requireQueueAuth, metricsRouter);
+    app.use("/reinterpret", requireQueueAuth, reinterpretRouter);
     app.use("/cache", requireQueueAuth, cacheRouter); // Cache management endpoints
     app.use("/performance", requireQueueAuth, performanceRouter); // Performance monitoring endpoints
 
@@ -377,6 +381,20 @@ initializeApp()
 
     // Start workers
     startWorkers(serviceContainer.queues, serviceContainer);
+
+    // Daily corpus health snapshots and weekly exploratory sweeps
+    scheduleMaintenanceJobs(serviceContainer.queues.reinterpretQueue, serviceContainer.logger).catch(
+      (error: unknown) =>
+        serviceContainer.logger.log(`[MAINTENANCE] scheduling failed: ${error}`, "warn")
+    );
+
+    // Reload the resolver context as soon as a Teach Peas decision changes the lexicon
+    subscribeToLexiconRevisions(serviceContainer.logger).catch((error: unknown) =>
+      serviceContainer.logger.log(
+        `[LEXICON_CACHE] subscription failed, falling back to the TTL: ${error}`,
+        "warn"
+      )
+    );
 
     // Handle server errors
     server.on("error", (error) => {

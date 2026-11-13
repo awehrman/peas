@@ -19,6 +19,8 @@
   let pendingToken = null;
 
   const NON_PACKAGE_DIMENSIONS = ["MASS", "VOLUME", "LENGTH"];
+  // Size words that describe the measure rather than the food when a unit follows ("small handful", "1 large clove")
+  const SIZE_WORDS = new Set(["small", "large", "big", "generous", "medium"]);
   const PACKAGE_DIMENSIONS = ["PACKAGE", "COUNT"];
 
   function here() {
@@ -207,6 +209,10 @@ LeadingQuantity
   / QuantityCore
   / quantity:Unspecified { return { quantity, modifiers: [] }; }
   / core:ImpliedUnitQuantity _ &Of { return core; }
+  // "small handful coriander": a size word before the unit implies one even without "of"
+  / core:ImpliedUnitQuantity
+    &{ return core.modifiers.some((modifier) => SIZE_WORDS.has(input.slice(modifier.start, modifier.end).toLowerCase())); }
+    { return core; }
 
 QuantityCore
   = quantity:PackageQuantity { return { quantity, modifiers: [] }; }
@@ -345,6 +351,23 @@ MeasureModifier
     $(. .|{ return pendingLexeme.end - pendingLexeme.start - 1; }|)
     {
       return { kind: "LEXEME", ...here(), entryIds: pendingLexeme.entryIds, roles: pendingLexeme.roles };
+    }
+  / SizeWord
+
+// "small", "large", ... only when a unit follows, so "2 large eggs" keeps "large" with the food
+SizeWord
+  = &{
+      pendingToken = options.tokens.get(offset()) ?? null;
+      return pendingToken !== null && SIZE_WORDS.has(pendingToken.text.toLowerCase());
+    }
+    $(. .|{ return pendingToken.end - pendingToken.start - 1; }|)
+    &(_ (MeasureModifier _)* Unit)
+    {
+      const span = here();
+      const match = lexemeAt(span.start);
+      return match && match.end === span.end
+        ? { kind: "LEXEME", ...span, entryIds: match.entryIds, roles: match.roles }
+        : { kind: "UNKNOWN", ...span };
     }
 
 /*----------  Units  ----------*/

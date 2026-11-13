@@ -37,8 +37,9 @@ export function IngredientGroupList({
 }: IngredientGroupListProps): ReactNode {
   const startExpanded = groups.length < AUTO_EXPAND_GROUP_LIMIT;
   const selectedGroupKey = selectedId
-    ? groups.find((group) => group.ingredients.some((ingredient) => ingredient.id === selectedId))
-        ?.key
+    ? groups.find((group) =>
+        group.ingredients.some((ingredient) => ingredient.id === selectedId)
+      )?.key
     : undefined;
 
   return (
@@ -78,7 +79,9 @@ function IngredientGroupSection({
 }): ReactNode {
   const hasCard = selectedCard != null;
   const [isOpen, setIsOpen] = useState(defaultOpen);
-  const [openedForId, setOpenedForId] = useState(hasCard ? selectedId : undefined);
+  const [openedForId, setOpenedForId] = useState(
+    hasCard ? selectedId : undefined
+  );
 
   // Reopen when a newly selected ingredient lands in this group
   if (hasCard && selectedId !== openedForId) {
@@ -95,15 +98,20 @@ function IngredientGroupSection({
         <span className="flex items-center gap-2">
           <ChevronRight
             aria-hidden="true"
-            className={cn("h-4 w-4 text-greyscale-500 transition-transform", isOpen && "rotate-90")}
+            className={cn(
+              "h-4 w-4 text-greyscale-500 transition-transform",
+              isOpen && "rotate-90"
+            )}
           />
           {group.label}
         </span>
-        <span className="tabular-nums text-greyscale-600">{group.ingredients.length}</span>
+        <span className="tabular-nums text-greyscale-600">
+          {group.ingredients.length}
+        </span>
       </CollapsibleTrigger>
       <CollapsibleContent>
         {hasCard ? (
-          <div className="grid border-b border-greyscale-200 lg:grid-cols-[13rem_minmax(0,1fr)]">
+          <div className="grid border-b border-greyscale-200 lg:grid-cols-[16rem_minmax(0,1fr)]">
             <div className="order-2 py-2 lg:order-1">
               <VirtualIngredientList
                 label={listLabel}
@@ -162,10 +170,13 @@ function VirtualIngredientList({
   getIngredientHref: (id: string) => string;
 }): ReactNode {
   const listRef = useRef<FixedSizeList<IngredientSummary[]>>(null);
-  const selectedIndex = ingredients.findIndex((ingredient) => ingredient.id === selectedId);
+  const selectedIndex = ingredients.findIndex(
+    (ingredient) => ingredient.id === selectedId
+  );
 
   useEffect(() => {
-    if (selectedIndex >= 0) listRef.current?.scrollToItem(selectedIndex, "smart");
+    if (selectedIndex >= 0)
+      listRef.current?.scrollToItem(selectedIndex, "smart");
   }, [selectedIndex]);
 
   return (
@@ -216,15 +227,22 @@ function IngredientLink({
         !ingredient.isReviewed && "text-greyscale-600"
       )}
     >
-      <span className="truncate">
+      <span className="min-w-0 flex-1 truncate pr-1" title={ingredient.name}>
         {ingredient.name}
-        {!ingredient.isReviewed ? <span className="sr-only"> (needs review)</span> : null}
+        {!ingredient.isReviewed ? (
+          <span className="sr-only"> (needs review)</span>
+        ) : null}
       </span>
       <span className="flex shrink-0 items-center gap-2">
         {!ingredient.isReviewed ? (
-          <span aria-hidden="true" className="h-2 w-2 rounded-full bg-amber-500" />
+          <span
+            aria-hidden="true"
+            className="h-2 w-2 rounded-full bg-amber-500"
+          />
         ) : null}
-        <span className="text-xs text-greyscale-500">{ingredient.referenceCount}</span>
+        <span className="text-xs text-greyscale-500">
+          {ingredient.referenceCount}
+        </span>
       </span>
     </AppLink>
   );

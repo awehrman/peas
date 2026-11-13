@@ -23,7 +23,16 @@ query IngredientDetail($id: ID!) {
     isReviewed
     reviewedAt
     isComposedIngredient
-    properties
+    propertyStates {
+      property
+      explicit
+      inherited
+      inheritedFrom {
+        id
+        name
+      }
+    }
+    dietaryTags
     aliases {
       id
       name
@@ -32,15 +41,21 @@ query IngredientDetail($id: ID!) {
       id
       name
     }
-    parent {
-      id
-      name
+    relationships {
+      relationshipType
+      ingredient {
+        id
+        name
+      }
     }
     variants {
-      id
-      name
+      relationshipType
+      ingredient {
+        id
+        name
+      }
     }
-    category
+    categories
     tags
     referenceCount
     references {
@@ -70,5 +85,12 @@ mutation CreateIngredient($input: IngredientCreateInput!) {
   createIngredient(input: $input) {
     ...PayloadFields
     id
+  }
+}
+
+query IngredientNameOwner($name: String!, $excludeId: ID) {
+  ingredientNameOwner(name: $name, excludeId: $excludeId) {
+    id
+    name
   }
 }

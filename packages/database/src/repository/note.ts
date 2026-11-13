@@ -847,14 +847,6 @@ export interface NotesPageResult {
   pageSize: number;
 }
 
-export interface NoteSegmentRecord {
-  index: number;
-  type: string;
-  value: string;
-  rule: string;
-  ingredientId?: string;
-}
-
 export interface NoteIngredientLineRecord {
   id: string;
   blockIndex: number;
@@ -867,7 +859,6 @@ export interface NoteIngredientLineRecord {
   reviewStatus: "UNREVIEWED" | "CORRECT" | "INCORRECT";
   isActive: boolean;
   parserVersion: string | null;
-  segments: NoteSegmentRecord[];
 }
 
 export interface NoteDetailRecord {
@@ -996,12 +987,6 @@ export async function getNoteDetail(
       tags: { select: { id: true, name: true } },
       parsedIngredientLines: {
         orderBy: [{ blockIndex: "asc" }, { lineIndex: "asc" }],
-        include: {
-          parsed: { orderBy: { index: "asc" } },
-          ingredientReferences: {
-            select: { ingredientId: true, segmentIndex: true },
-          },
-        },
       },
       parsedInstructionLines: { orderBy: { lineIndex: "asc" } },
       recipe: { select: { id: true } },
@@ -1012,9 +997,6 @@ export async function getNoteDetail(
 
   const blocks = new Map<number, NoteIngredientLineRecord[]>();
   for (const line of note.parsedIngredientLines) {
-    const ingredientBySegment = new Map(
-      line.ingredientReferences.map((ref) => [ref.segmentIndex, ref.ingredientId])
-    );
     const record: NoteIngredientLineRecord = {
       id: line.id,
       blockIndex: line.blockIndex,
@@ -1024,13 +1006,6 @@ export async function getNoteDetail(
       reviewStatus: line.reviewStatus,
       isActive: line.isActive,
       parserVersion: line.parserVersion,
-      segments: line.parsed.map((segment) => ({
-        index: segment.index,
-        type: segment.type,
-        value: segment.value,
-        rule: segment.rule,
-        ingredientId: ingredientBySegment.get(segment.index),
-      })),
     };
     const block = blocks.get(line.blockIndex) ?? [];
     block.push(record);

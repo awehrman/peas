@@ -1,140 +1,70 @@
-import { createHash } from "crypto";
+import { PARSER_VERSION } from "@peas/parser/v2";
 
 import type { StructuredLogger } from "../../types";
 import { LogLevel } from "../../types";
 import {
   CACHE_OPTIONS,
-  CacheKeyGenerator,
   actionCache,
 } from "../../workers/core/cache/action-cache";
 
-import {
-  type ResolvedIngredientParser,
-  STATIC_V1_PARSER_ID,
-  resolveIngredientParser,
-} from "./parser-resolver";
-
-// ============================================================================
-// CACHED INGREDIENT PARSER
-// ============================================================================
+import { type ProcessedIngredientLine, processLine } from "./ingredient-processor";
+import { getResolverContext } from "./lexicon-cache";
 
 const INGREDIENT_PARSE_ACTION = "parse_ingredient_line";
-/** Must match the key shape produced by CacheKeyGenerator.actionResult */
+/** Must match the key shape produced by `cacheKey`. */
 export const INGREDIENT_PARSE_CACHE_PREFIX = `action:${INGREDIENT_PARSE_ACTION}:`;
 
-/**
- * Interface for ingredient parsing result
- * Matches the exact structure returned by v1 parser
- */
-export interface IngredientParseResult {
-  rule: string;
-  type: string;
-  values: Array<{
-    index: number;
-    rule: string;
-    type: string;
-    value: string;
-    processingTime: number;
-  }>;
-  processingTime: number;
-  /** Which parser produced the result (e.g. "static_v1") */
-  parserVersion?: string;
-}
-
-/**
- * Interface for ingredient parsing options
- */
 export interface IngredientParsingOptions {
-  strictMode?: boolean;
-  allowPartial?: boolean;
   cacheResults?: boolean;
 }
 
 /**
- * Cached ingredient line parser
- * Caches parsing results for common ingredient lines like "1 tbsp butter", "2 cups flour"
+ * The cache key for one line: parser version and lexicon revision are part of it, so results are never reused after a grammar or knowledge change.
+ *
+ * @example
+ * cacheKey("1 Tbsp Butter", 15) // "action:parse_ingredient_line:v2:2.0.0:15:1 tbsp butter"
+ */
+export function cacheKey(line: string, revision: number): string {
+  return `${INGREDIENT_PARSE_CACHE_PREFIX}v2:${PARSER_VERSION}:${revision}:${line.toLowerCase().trim()}`;
+}
+
+/**
+ * v2 parse results cached per line, parser version, and lexicon revision ("1 tbsp butter" is parsed once per revision across every import).
  */
 export class CachedIngredientParser {
-  /**
-   * Parse an ingredient line with caching
-   */
-  /* istanbul ignore next -- @preserve */
   static async parseIngredientLine(
     line: string,
-    options: IngredientParsingOptions = {},
+    { cacheResults = true }: IngredientParsingOptions = {},
     logger?: StructuredLogger
-  ): Promise<IngredientParseResult> {
-    const { cacheResults = true } = options;
-    const parser = await resolveIngredientParser(logger);
-
-    if (!cacheResults) {
-      return this.parseWithResolvedParser(line, parser, logger);
-    }
-
-    // Cache per parser so switching grammars never serves stale results
-    const cacheKey = this.generateCacheKey(line, options, parser.id);
-
-    return actionCache
-      .getOrSet(
-        cacheKey,
-        async () => {
-          if (logger) {
-            logger.log(
-              `[CACHED_INGREDIENT_PARSER] Cache miss for line: "${line}"`,
-              LogLevel.INFO,
-              { line, cacheKey }
-            );
-          } else {
-            console.log(
-              `[CACHED_INGREDIENT_PARSER] Cache miss for line: "${line}"`
-            );
-          }
-          return this.parseWithResolvedParser(line, parser, logger);
-        },
-        CACHE_OPTIONS.INGREDIENT_PARSING
-      )
-      .then((result) => {
-        // Log cache hit if we have a logger
-        if (logger) {
-          logger.log(
-            `[CACHED_INGREDIENT_PARSER] Cache hit for line: "${line}"`,
-            LogLevel.INFO,
-            {
-              line,
-              cacheKey,
-              rule: result.rule,
-              type: result.type,
-              valuesCount: result.values.length,
-              processingTime: result.processingTime,
-            }
-          );
-        }
-        return result;
-      });
+  ): Promise<ProcessedIngredientLine> {
+    if (!cacheResults) return processLine(line, logger);
+    const context = await getResolverContext(logger);
+    const key = cacheKey(line, context.revision);
+    return actionCache.getOrSet(
+      key,
+      async () => {
+        logger?.log(
+          `[V2_PARSE] cache miss for "${line}" at revision ${context.revision}`,
+          LogLevel.DEBUG
+        );
+        return processLine(line, logger, async () => context);
+      },
+      CACHE_OPTIONS.INGREDIENT_PARSING
+    );
   }
 
-  /**
-   * Parse multiple ingredient lines with caching
-   */
-  /* istanbul ignore next -- @preserve */
   static async parseIngredientLines(
     lines: string[],
     options: IngredientParsingOptions = {},
     logger?: StructuredLogger
-  ): Promise<IngredientParseResult[]> {
-    const results: IngredientParseResult[] = [];
-
-    for (const line of lines) {
-      const result = await this.parseIngredientLine(line, options, logger);
-      results.push(result);
-    }
-
+  ): Promise<ProcessedIngredientLine[]> {
+    const results: ProcessedIngredientLine[] = [];
+    for (const line of lines)
+      results.push(await this.parseIngredientLine(line, options, logger));
     return results;
   }
 
-  /**
-   * Invalidate cached parse results, optionally only lines containing `pattern`
-   */
+  /** Invalidate cached parse results, optionally only lines containing `pattern`. */
   static async invalidateIngredientCache(pattern?: string): Promise<number> {
     const cachePattern = pattern
       ? `${INGREDIENT_PARSE_CACHE_PREFIX}*${pattern.toLowerCase()}*`
@@ -142,228 +72,15 @@ export class CachedIngredientParser {
     return actionCache.invalidateByPattern(cachePattern);
   }
 
-  /**
-   * Get cache statistics for ingredient parsing
-   */
   static getCacheStats() {
     const stats = actionCache.getStats();
     const ingredientKeys = stats.memoryKeys.filter((key) =>
       key.startsWith(INGREDIENT_PARSE_CACHE_PREFIX)
     );
-
     return {
       totalIngredientKeys: ingredientKeys.length,
-      ingredientKeys: ingredientKeys.slice(0, 10), // Show first 10
+      ingredientKeys: ingredientKeys.slice(0, 10),
       totalMemoryKeys: stats.memorySize,
     };
   }
-
-  // ============================================================================
-  // PRIVATE METHODS
-  // ============================================================================
-
-  /**
-   * Generate cache key for ingredient line parsing
-   */
-  private static generateCacheKey(
-    line: string,
-    options: IngredientParsingOptions,
-    parserId: string = STATIC_V1_PARSER_ID
-  ): string {
-    const normalizedLine = line.toLowerCase().trim();
-    const optionsHash = createHash("sha256")
-      .update(JSON.stringify(options))
-      .digest("hex")
-      .slice(0, 8);
-
-    return CacheKeyGenerator.actionResult(
-      INGREDIENT_PARSE_ACTION,
-      `${parserId}_${normalizedLine}_${optionsHash}`
-    );
-  }
-
-  /**
-   * Parse with whichever parser the resolver picked. Static v1 keeps its
-   * existing conversion; other parsers return the flat segment shape.
-   */
-  private static async parseWithResolvedParser(
-    line: string,
-    parser: ResolvedIngredientParser,
-    logger?: StructuredLogger
-  ): Promise<IngredientParseResult> {
-    if (parser.id === STATIC_V1_PARSER_ID) {
-      const result = await this.parseWithV1Parser(line, logger);
-      return { ...result, parserVersion: parser.id };
-    }
-
-    const startTime = Date.now();
-    try {
-      const parseResult = parser.parse(line);
-      const processingTime = Date.now() - startTime;
-      return {
-        rule: parseResult.rule,
-        type: parseResult.type,
-        values: parseResult.values.map((segment, index) => ({
-          index,
-          rule: segment.rule,
-          type: segment.type,
-          value: segment.value,
-          processingTime,
-        })),
-        processingTime,
-        parserVersion: parser.id,
-      };
-    } catch (error) {
-      logger?.log(
-        `[CACHED_INGREDIENT_PARSER] ${parser.id} failed for "${line}": ${error}`,
-        LogLevel.ERROR
-      );
-      return {
-        rule: "error",
-        type: "error",
-        values: [],
-        processingTime: Date.now() - startTime,
-        parserVersion: parser.id,
-      };
-    }
-  }
-
-  /**
-   * Parse ingredient line using v1 parser
-   */
-  private static async parseWithV1Parser(
-    line: string,
-    logger?: StructuredLogger
-  ): Promise<IngredientParseResult> {
-    const startTime = Date.now();
-
-    try {
-      // Import and use v1 parser
-      const v1Module = await import("@peas/parser/v1/minified");
-      const parse = v1Module.parse;
-
-      if (logger) {
-        logger.log(
-          `[CACHED_INGREDIENT_PARSER] Using v1 parser for: "${line}"`,
-          LogLevel.INFO
-        );
-      }
-
-      // Parse with v1 parser
-      const parseResult = parse(line);
-      logger?.log(
-        `[CACHED_INGREDIENT_PARSER] v1 parser result: ${JSON.stringify(
-          parseResult,
-          null,
-          2
-        )}`,
-        LogLevel.INFO
-      );
-
-      // Convert v1 parser result to match the exact structure from logs
-      const result: IngredientParseResult = {
-        rule: parseResult.rule,
-        type: parseResult.type,
-        values: parseResult.values.map(
-          (
-            segment: { type: string; value: unknown; rule: string },
-            index: number
-          ) => ({
-            index,
-            rule: segment.rule,
-            type: segment.type,
-            value: String(segment.value),
-            processingTime: Date.now() - startTime,
-          })
-        ),
-        processingTime: Date.now() - startTime,
-      };
-
-      if (logger) {
-        logger.log(
-          `[CACHED_INGREDIENT_PARSER] Converted result: ${JSON.stringify(result, null, 2)}`,
-          LogLevel.INFO
-        );
-      }
-
-      return result;
-    } catch (error) {
-      const processingTime = Date.now() - startTime;
-
-      if (logger) {
-        logger.log(
-          `[CACHED_INGREDIENT_PARSER] v1 parser failed for "${line}": ${error}`,
-          LogLevel.ERROR
-        );
-      } else {
-        console.warn(
-          `[CACHED_INGREDIENT_PARSER] v1 parser failed for "${line}":`,
-          error
-        );
-      }
-
-      // Fallback: return empty result structure
-      return {
-        rule: "error",
-        type: "error",
-        values: [],
-        processingTime,
-      };
-    }
-  }
 }
-
-// ============================================================================
-// CACHE KEY GENERATORS FOR INGREDIENT PARSING
-// ============================================================================
-
-/**
- * Extend CacheKeyGenerator with ingredient-specific keys
- */
-export class IngredientCacheKeyGenerator {
-  /**
-   * Generate key for ingredient line parsing
-   */
-  static ingredientLineParsing(line: string, optionsHash: string): string {
-    return `ingredient:line:${line}:${optionsHash}`;
-  }
-
-  /**
-   * Generate key for ingredient pattern matching
-   */
-  static ingredientPattern(pattern: string): string {
-    return `ingredient:pattern:${pattern}`;
-  }
-
-  /**
-   * Generate key for ingredient lookup
-   */
-  static ingredientLookup(ingredientName: string): string {
-    return `ingredient:lookup:${ingredientName}`;
-  }
-}
-
-// ============================================================================
-// CACHE OPTIONS FOR INGREDIENT PARSING
-// ============================================================================
-
-/**
- * Cache options specific to ingredient parsing
- */
-export const INGREDIENT_CACHE_OPTIONS = {
-  LINE_PARSING: {
-    ttl: 3600, // 1 hour
-    memoryTtl: 300000, // 5 minutes in memory
-    tags: ["ingredient", "parsing"],
-  },
-  PATTERN_MATCHING: {
-    ttl: 7200, // 2 hours
-    memoryTtl: 600000, // 10 minutes in memory
-    tags: ["ingredient", "pattern"],
-  },
-  LOOKUP: {
-    ttl: 1800, // 30 minutes
-    memoryTtl: 120000, // 2 minutes in memory
-    tags: ["ingredient", "lookup"],
-  },
-} as const;

@@ -32,8 +32,13 @@ function DiscoveryReviewPage() {
   const { data } = useReadQuery(queryRef);
   const search = Route.useSearch();
   const client = useApolloClient();
-  const { onApplyDecision, onDefer, onPreviewDecision, onSearchConcepts } =
-    useTeachActions();
+  const {
+    onApplyDecision,
+    onDefer,
+    onMarkNoise,
+    onPreviewDecision,
+    onSearchConcepts,
+  } = useTeachActions();
   const discoveryId = data.discovery?.id ?? "";
 
   const onLoadExamples = useCallback(
@@ -65,6 +70,7 @@ function DiscoveryReviewPage() {
       taughtMessage={search.taught ?? null}
       onApplyDecision={onApplyDecision}
       onDefer={onDefer}
+      onMarkNoise={onMarkNoise}
       onPreviewDecision={onPreviewDecision}
       onSearchConcepts={onSearchConcepts}
       onLoadExamples={onLoadExamples}

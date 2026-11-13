@@ -3,7 +3,7 @@ import type { ComponentType } from "react";
 import type { NavigationItem, NavigationLinkComponentProps } from "../types/navigation";
 import { NavigationMenuItem, cn } from "@peas/components";
 
-import { isNavigationItemActive } from "../config/navigation";
+import { isNavigationEntryActive } from "../config/navigation";
 
 import { NavItem } from "./nav-item";
 
@@ -19,7 +19,7 @@ export function NavigationItemsList({
   pathname,
 }: NavigationItemsListProps) {
   return navigationItems.map((item) => {
-    const isActive = isNavigationItemActive(pathname, item.href);
+    const isActive = isNavigationEntryActive(pathname, item);
     return (
       <NavigationMenuItem key={item.href} className="w-full">
         <NavItem

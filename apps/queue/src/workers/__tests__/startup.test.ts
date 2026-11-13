@@ -20,8 +20,8 @@ vi.mock("../ingredient", () => ({
   createIngredientWorker: vi.fn(),
 }));
 
-vi.mock("../pattern-tracking", () => ({
-  createPatternTrackingWorker: vi.fn(),
+vi.mock("../reinterpret", () => ({
+  createReinterpretWorker: vi.fn(),
 }));
 
 vi.mock("../categorization", () => ({
@@ -50,7 +50,7 @@ vi.mock("../../config/constants", () => ({
       INSTRUCTION: "instruction_processing",
       INGREDIENT: "ingredient_processing",
       IMAGE: "image_processing",
-      PATTERN_TRACKING: "pattern_tracking",
+      PATTERN_TRACKING: "reinterpret_processing",
       CATEGORIZATION: "categorization_processing",
     },
   },
@@ -67,7 +67,7 @@ describe("Worker Startup", () => {
   let mockCreateNoteWorker: Mock;
   let mockCreateInstructionWorker: Mock;
   let mockCreateIngredientWorker: Mock;
-  let mockCreatePatternTrackingWorker: Mock;
+  let mockCreateReinterpretWorker: Mock;
   let mockCreateCategorizationWorker: Mock;
   let mockCreateImageWorker: Mock;
   let mockQueueMonitor: { startMonitoring: Mock };
@@ -92,8 +92,8 @@ describe("Worker Startup", () => {
     const noteModule = vi.mocked(await import("../note"));
     const instructionModule = vi.mocked(await import("../instruction"));
     const ingredientModule = vi.mocked(await import("../ingredient"));
-    const patternTrackingModule = vi.mocked(
-      await import("../pattern-tracking")
+    const reinterpretModule = vi.mocked(
+      await import("../reinterpret")
     );
     const imageModule = vi.mocked(await import("../image/factory"));
     const queueMonitorModule = vi.mocked(
@@ -106,8 +106,8 @@ describe("Worker Startup", () => {
     mockCreateNoteWorker = noteModule.createNoteWorker;
     mockCreateInstructionWorker = instructionModule.createInstructionWorker;
     mockCreateIngredientWorker = ingredientModule.createIngredientWorker;
-    mockCreatePatternTrackingWorker =
-      patternTrackingModule.createPatternTrackingWorker;
+    mockCreateReinterpretWorker =
+      reinterpretModule.createReinterpretWorker;
     mockCreateCategorizationWorker = vi.mocked(
       await import("../categorization")
     ).createCategorizationWorker;
@@ -122,7 +122,7 @@ describe("Worker Startup", () => {
     mockCreateNoteWorker.mockReturnValue({});
     mockCreateInstructionWorker.mockReturnValue({});
     mockCreateIngredientWorker.mockReturnValue({});
-    mockCreatePatternTrackingWorker.mockReturnValue({});
+    mockCreateReinterpretWorker.mockReturnValue({});
     mockCreateCategorizationWorker.mockReturnValue({});
     mockCreateImageWorker.mockReturnValue({});
     mockCreateWorkerConfig.mockReturnValue({ name: "test-config" });
@@ -146,7 +146,7 @@ describe("Worker Startup", () => {
         [vi.mocked(await import("../../config/constants")).WORKER_CONSTANTS
           .NAMES.IMAGE]: mockWorker,
         [vi.mocked(await import("../../config/constants")).WORKER_CONSTANTS
-          .NAMES.PATTERN_TRACKING]: mockWorker,
+          .NAMES.REINTERPRET]: mockWorker,
         [vi.mocked(await import("../../config/constants")).WORKER_CONSTANTS
           .NAMES.CATEGORIZATION]: mockWorker,
       };
@@ -157,7 +157,7 @@ describe("Worker Startup", () => {
       mockCreateInstructionWorker.mockReturnValue(mockWorker);
       mockCreateIngredientWorker.mockReturnValue(mockWorker);
       mockCreateImageWorker.mockReturnValue(mockWorker);
-      mockCreatePatternTrackingWorker.mockReturnValue(mockWorker);
+      mockCreateReinterpretWorker.mockReturnValue(mockWorker);
 
       const { startWorkers } = await import("../startup");
       const result = startWorkers(mockQueues, mockServiceContainer);
@@ -187,7 +187,7 @@ describe("Worker Startup", () => {
         instructionWorker: mockWorker,
         ingredientWorker: mockWorker,
         imageWorker: mockWorker,
-        patternTrackingWorker: mockWorker,
+        reinterpretWorker: mockWorker,
         categorizationWorker: mockWorker,
       });
       expect(mockServiceContainer.logger.log).toHaveBeenCalledWith(
@@ -209,7 +209,7 @@ describe("Worker Startup", () => {
         [vi.mocked(await import("../../config/constants")).WORKER_CONSTANTS
           .NAMES.IMAGE]: mockWorker,
         [vi.mocked(await import("../../config/constants")).WORKER_CONSTANTS
-          .NAMES.PATTERN_TRACKING]: mockWorker,
+          .NAMES.REINTERPRET]: mockWorker,
         [vi.mocked(await import("../../config/constants")).WORKER_CONSTANTS
           .NAMES.CATEGORIZATION]: mockWorker,
       };
@@ -220,7 +220,7 @@ describe("Worker Startup", () => {
       mockCreateInstructionWorker.mockReturnValue(mockWorker);
       mockCreateIngredientWorker.mockReturnValue(mockWorker);
       mockCreateImageWorker.mockReturnValue(mockWorker);
-      mockCreatePatternTrackingWorker.mockReturnValue(mockWorker);
+      mockCreateReinterpretWorker.mockReturnValue(mockWorker);
       mockCreateCategorizationWorker.mockReturnValue(mockWorker);
 
       const { startWorkers } = await import("../startup");
@@ -243,7 +243,7 @@ describe("Worker Startup", () => {
         [vi.mocked(await import("../../config/constants")).WORKER_CONSTANTS
           .NAMES.IMAGE]: mockWorker,
         [vi.mocked(await import("../../config/constants")).WORKER_CONSTANTS
-          .NAMES.PATTERN_TRACKING]: mockWorker,
+          .NAMES.REINTERPRET]: mockWorker,
       };
 
       mockCreateWorkerConfig.mockReturnValue({ name: "test-config" });
@@ -252,7 +252,7 @@ describe("Worker Startup", () => {
       mockCreateInstructionWorker.mockReturnValue(mockWorker);
       mockCreateIngredientWorker.mockReturnValue(mockWorker);
       mockCreateImageWorker.mockReturnValue(mockWorker);
-      mockCreatePatternTrackingWorker.mockReturnValue(mockWorker);
+      mockCreateReinterpretWorker.mockReturnValue(mockWorker);
 
       const { startWorkers } = await import("../startup");
       startWorkers(mockQueues, mockServiceContainer);
@@ -262,7 +262,7 @@ describe("Worker Startup", () => {
         instructionWorker: mockWorker,
         ingredientWorker: mockWorker,
         imageWorker: mockWorker,
-        patternTrackingWorker: mockWorker,
+        reinterpretWorker: mockWorker,
       });
     });
 
@@ -439,7 +439,7 @@ describe("Worker Startup", () => {
         instructionWorker: undefined,
         ingredientWorker: undefined,
         imageWorker: undefined,
-        patternTrackingWorker: undefined,
+        reinterpretWorker: undefined,
       });
     });
 
@@ -481,7 +481,7 @@ describe("Worker Startup", () => {
         instructionWorker: mockWorker,
         ingredientWorker: undefined,
         imageWorker: undefined,
-        patternTrackingWorker: undefined,
+        reinterpretWorker: undefined,
       });
     });
   });

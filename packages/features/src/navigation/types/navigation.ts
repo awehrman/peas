@@ -6,6 +6,10 @@ export interface NavigationItem {
   href: string;
   icon: LucideIcon;
   adminOnly?: boolean;
+  /** Shown to whoever may curate food knowledge (see `canCurateKnowledge` in the web app). */
+  curatorOnly?: boolean;
+  /** Other sections that light this item up, e.g. Knowledge for /concepts and /lexicon. */
+  activePaths?: string[];
 }
 
 export interface NavigationUser {

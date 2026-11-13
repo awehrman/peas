@@ -13,7 +13,7 @@ export async function resetDatabase(): Promise<void> {
   await prisma.$executeRawUnsafe(`
     TRUNCATE
       "Note", "Recipe", "Ingredient", "IngredientCategory", "IngredientTag", "Category", "Tag",
-      "QueueJob", "Session", "User"
+      "QueueJob", "Session", "User", "FoodConcept", "ReinterpretRun"
     RESTART IDENTITY CASCADE
   `);
 }

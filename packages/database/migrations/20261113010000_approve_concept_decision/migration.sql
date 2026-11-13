@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "DecisionType" ADD VALUE 'APPROVE_CONCEPT' BEFORE 'REVERT';

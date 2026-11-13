@@ -10,7 +10,10 @@ interface ElementSize {
 /**
  * Tracks an element's rendered size with a ResizeObserver.
  */
-export function useElementSize<T extends HTMLElement>(): [RefObject<T | null>, ElementSize] {
+export function useElementSize<T extends HTMLElement>(): [
+  RefObject<T | null>,
+  ElementSize,
+] {
   const ref = useRef<T>(null);
   const [size, setSize] = useState<ElementSize>({ width: 0, height: 0 });
 

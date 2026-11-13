@@ -1,3 +1,4 @@
+import { parseLineBest } from "@peas/parser/v2";
 import type { Application } from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -324,20 +325,12 @@ describe("Cache Routes", () => {
       const { CachedIngredientParser } = await import(
         "../../services/ingredient/cached-ingredient-parser"
       );
-      const mockResults = [
-        {
-          rule: "ingredient",
-          type: "ingredient",
-          values: [],
-          processingTime: 10,
-        },
-        {
-          rule: "ingredient",
-          type: "ingredient",
-          values: [],
-          processingTime: 10,
-        },
-      ];
+      const mockResult = (raw: string) => ({
+        result: { line: parseLineBest(raw), mentions: [] },
+        revision: 1,
+        parserVersion: "v2:2.0.0",
+      });
+      const mockResults = [mockResult("1 cup flour"), mockResult("2 tbsp butter")];
       vi.mocked(CachedIngredientParser.parseIngredientLines).mockResolvedValue(
         mockResults
       );

@@ -320,6 +320,56 @@ export function applyDecisionToSnapshot(
         mapPhrase(payload.teachPhrase, payload.conceptId, "ALIAS", false);
       break;
 
+    case "APPROVE_CONCEPT": {
+      const concept = next.concepts.find(
+        (row) => row.id === payload.conceptId
+      );
+      if (concept?.status === "PROPOSED") concept.status = "VERIFIED";
+      for (const entry of next.entries)
+        if (
+          entry.role === "FOOD" &&
+          entry.conceptId === payload.conceptId &&
+          entry.status === "PROPOSED"
+        )
+          entry.status = "ACTIVE";
+      break;
+    }
+
+    case "EDIT_CONCEPT": {
+      const concept = next.concepts.find((row) => row.id === payload.conceptId);
+      if (concept && payload.canonicalName) concept.canonicalName = payload.canonicalName;
+      for (const name of payload.addNames ?? []) {
+        ensureEntry({ text: name.text, role: "FOOD", kind: name.kind, conceptId: payload.conceptId });
+        const added = next.entries.find(
+          (entry) =>
+            entry.conceptId === payload.conceptId &&
+            entryMatchKey(entry.text) === entryMatchKey(name.text)
+        );
+        if (added) {
+          added.kind = name.kind;
+          if (concept?.status === "PROPOSED") added.status = "PROPOSED";
+        }
+      }
+      for (const change of payload.setNameKinds ?? []) {
+        const entry = next.entries.find((row) => row.id === change.entryId);
+        if (entry) entry.kind = change.kind;
+      }
+      const retired = new Set(payload.retireEntryIds ?? []);
+      next.entries = next.entries.filter((entry) => !retired.has(entry.id));
+      for (const relationship of payload.addRelationships ?? [])
+        addRelationship(payload.conceptId, relationship.targetConceptId, relationship.relationshipType);
+      for (const relationship of payload.retireRelationships ?? [])
+        next.relationships = next.relationships.filter(
+          (edge) =>
+            !(
+              edge.sourceId === payload.conceptId &&
+              edge.targetId === relationship.targetConceptId &&
+              edge.type === relationship.relationshipType
+            )
+        );
+      break;
+    }
+
     case "MARK_AMBIGUOUS":
     case "REJECT":
     case "REVERT":
@@ -393,13 +443,18 @@ function mergeIntoSnapshot(
 }
 
 /**
- * Which mentions a decision can change: lines containing one of `phrases`, mentions of one of `conceptIds` (callers add hierarchy descendants), and specific `mentionIds`. Previews and reinterpretation prefilter with it (decision D20).
+ * Which mentions a decision can change: lines containing one of `phrases`, mentions of one of `conceptIds` (callers add hierarchy descendants), and specific `mentionIds`. Previews and reinterpretation prefilter with it (decision D20). APPROVE_CONCEPT names only the concept, so pass the snapshot to include the concept's FOOD entry texts.
  *
  * @example
  * decisionScope({ type: "MAP_TO_CONCEPT", phrase: "scallion", conceptId, kind: "ALIAS" })
  * // { phrases: ["scallion", "scallions"], conceptIds: [conceptId], mentionIds: [] }
+ * decisionScope({ type: "APPROVE_CONCEPT", conceptId: drumstickId }, snapshot)
+ * // { phrases: ["chicken drumstick", "chicken drumsticks", "drumsticks"], conceptIds: [drumstickId], mentionIds: [] }
  */
-export function decisionScope(payload: DecisionPayload): {
+export function decisionScope(
+  payload: DecisionPayload,
+  snapshot?: Pick<ResolverSnapshot, "entries">
+): {
   phrases: string[];
   conceptIds: string[];
   mentionIds: string[];
@@ -453,6 +508,29 @@ export function decisionScope(payload: DecisionPayload): {
         addEntries(
           foodEntriesFor(payload.teachPhrase, payload.conceptId, "ALIAS")
         );
+      break;
+    case "EDIT_CONCEPT": {
+      conceptIds.add(payload.conceptId);
+      if (payload.canonicalName) phrases.add(payload.canonicalName);
+      for (const name of payload.addNames ?? []) phrases.add(name.text);
+      const touched = new Set([
+        ...(payload.retireEntryIds ?? []),
+        ...(payload.setNameKinds ?? []).map((change) => change.entryId),
+      ]);
+      for (const entry of snapshot?.entries ?? [])
+        if (touched.has(entry.id)) phrases.add(entry.text);
+      for (const relationship of [
+        ...(payload.addRelationships ?? []),
+        ...(payload.retireRelationships ?? []),
+      ])
+        conceptIds.add(relationship.targetConceptId);
+      break;
+    }
+    case "APPROVE_CONCEPT":
+      conceptIds.add(payload.conceptId);
+      for (const entry of snapshot?.entries ?? [])
+        if (entry.role === "FOOD" && entry.conceptId === payload.conceptId)
+          phrases.add(entry.text);
       break;
     case "REJECT":
     case "REVERT":

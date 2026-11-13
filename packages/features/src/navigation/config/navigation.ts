@@ -6,7 +6,6 @@ import {
   CookingPot,
   GraduationCap,
   Home,
-  Network,
   StickyNote,
 } from "lucide-react";
 
@@ -18,12 +17,39 @@ export const navigationItems: NavigationItem[] = [
   { name: "Ingredients", href: "/ingredients", icon: Carrot },
   { name: "Recipes", href: "/recipes", icon: CookingPot },
   { name: "Notes", href: "/notes", icon: StickyNote },
-  { name: "Teach", href: "/teach", icon: GraduationCap, adminOnly: true },
-  { name: "Concepts", href: "/concepts", icon: Network, adminOnly: true },
+  {
+    name: "Knowledge",
+    href: "/teach",
+    icon: GraduationCap,
+    curatorOnly: true,
+    activePaths: ["/concepts", "/lexicon"],
+  },
 ];
 
-export function getNavigationItems(isAdmin: boolean): NavigationItem[] {
-  return navigationItems.filter((item) => isAdmin || !item.adminOnly);
+/**
+ * The entries a viewer sees: admin-only ones for admins, curator-only ones (Knowledge) for whoever may curate food knowledge.
+ *
+ * @example
+ * getNavigationItems({ isAdmin: false, canCurate: true }) // Dashboard, Import, Ingredients, Recipes, Notes, Knowledge
+ */
+export function getNavigationItems(access: {
+  isAdmin: boolean;
+  canCurate: boolean;
+}): NavigationItem[] {
+  return navigationItems.filter(
+    (item) =>
+      (access.isAdmin || !item.adminOnly) && (access.canCurate || !item.curatorOnly)
+  );
+}
+
+/** Whether the item's own section or one of its `activePaths` contains the page. */
+export function isNavigationEntryActive(
+  pathname: string | undefined,
+  item: Pick<NavigationItem, "href" | "activePaths">
+): boolean {
+  return [item.href, ...(item.activePaths ?? [])].some((href) =>
+    isNavigationItemActive(pathname, href)
+  );
 }
 
 export function isNavigationItemActive(
@@ -47,7 +73,7 @@ export function getToggleRestY(
   listTop: number = NAVIGATION_CONSTANTS.NAV_LIST_TOP
 ): number {
   const activeIndex = navigationItems.findIndex((item) =>
-    isNavigationItemActive(pathname, item.href)
+    isNavigationEntryActive(pathname, item)
   );
   if (activeIndex < 0) return NAVIGATION_CONSTANTS.DEFAULT_MOUSE_Y;
 

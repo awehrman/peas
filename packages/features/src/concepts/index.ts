@@ -1,4 +1,5 @@
 export * from "./concept-detail";
+export * from "./concept-editors";
 export * from "./concept-list";
 export * from "./entry-list";
 export * from "./relationship-editor";

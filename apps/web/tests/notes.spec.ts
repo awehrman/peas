@@ -48,7 +48,14 @@ test.describe("Notes slice", () => {
 
     // Each browser project reviews its own line; the database is reseeded once per run.
     const line = E2E_NOTE.lines[test.info().project.name === "webkit" ? 1 : 0];
-    const row = page.getByRole("listitem").filter({ hasText: line });
+    // Highlighted lines add screen-reader role labels between words, so find the row by its review button
+    const rowOf = () =>
+      page.getByRole("listitem").filter({
+        has: page.getByRole("button", {
+          name: `Mark "${line}" as parsed correctly`,
+        }),
+      });
+    const row = rowOf();
     await expect(row).toContainText("Not reviewed");
 
     await page
@@ -59,9 +66,22 @@ test.describe("Notes slice", () => {
 
     await page.reload();
     await waitForHydration(page);
+    await expect(rowOf()).toContainText("Marked correct");
+  });
+
+  test("an imported line shows its resolved concept from v2 mentions", async ({
+    page,
+  }) => {
+    await visit(page, "/notes");
+    await page.getByRole("link", { name: E2E_NOTE.title }).click();
+    const reading = page.getByRole("list", {
+      name: 'Peas reading of "1 cup milk"',
+    });
+    await expect(reading).toContainText("milk");
+    await expect(reading).toContainText("Resolved");
     await expect(
-      page.getByRole("listitem").filter({ hasText: line })
-    ).toContainText("Marked correct");
+      page.getByRole("listitem").filter({ hasText: "1 cup milk" }).first()
+    ).toContainText("milk (food)");
   });
 
   test("notes list and note detail have no WCAG 2.1 AA violations", async ({

@@ -3,13 +3,32 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "../client.js";
 
 import { type NoteDetailRecord, getNoteDetail } from "./note.js";
+import { getDescendants } from "./ontology/relationships.js";
 
 export interface RecipesPageQuery {
   query?: string;
   category?: string;
   tag?: string;
+  /** Recipes with an active line that mentions this concept or, unless `exactConcept`, a more specific one (IS_A or PART_OF: "chicken" also finds "chicken thigh"). */
+  conceptId?: string;
+  exactConcept?: boolean;
   page?: number;
   pageSize?: number;
+}
+
+/**
+ * The concept plus its IS_A and PART_OF descendants, so a search for "chicken" also finds "chicken thighs".
+ *
+ * @example
+ * await conceptIdsForSearch(chickenId) // [chickenId, chickenThighId, chickenBreastId]
+ */
+export async function conceptIdsForSearch(
+  conceptId: string,
+  exact = false
+): Promise<string[]> {
+  if (exact) return [conceptId];
+  const descendants = await getDescendants(conceptId, ["IS_A", "PART_OF"]);
+  return [conceptId, ...descendants.map((related) => related.conceptId)];
 }
 
 export interface RecipeListItemRecord {
@@ -108,11 +127,16 @@ export async function getRecipesPage({
   query,
   category,
   tag,
+  conceptId,
+  exactConcept = false,
   page = 1,
   pageSize = DEFAULT_RECIPES_PAGE_SIZE,
 }: RecipesPageQuery = {}): Promise<RecipesPageResult> {
   const currentPage = Math.max(1, Math.floor(page));
   const trimmedQuery = query?.trim();
+  const conceptIds = conceptId
+    ? await conceptIdsForSearch(conceptId, exactConcept)
+    : null;
 
   const where: Prisma.RecipeWhereInput = {
     ...(trimmedQuery
@@ -122,6 +146,18 @@ export async function getRecipesPage({
       ? { categories: { some: { name: { equals: category, mode: "insensitive" } } } }
       : {}),
     ...(tag ? { tags: { some: { name: { equals: tag, mode: "insensitive" } } } } : {}),
+    ...(conceptIds
+      ? {
+          note: {
+            parsedIngredientLines: {
+              some: {
+                isActive: true,
+                mentions: { some: { conceptId: { in: conceptIds } } },
+              },
+            },
+          },
+        }
+      : {}),
   };
 
   const [total, recipes] = await Promise.all([

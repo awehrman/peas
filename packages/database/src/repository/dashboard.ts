@@ -7,9 +7,10 @@ export interface LabelCountRecord {
   count: number;
 }
 
-export interface TopIngredientRecord {
-  ingredientId: string;
+export interface TopConceptRecord {
+  conceptId: string;
   name: string;
+  /** Active ingredient lines that mention the concept. */
   lineCount: number;
 }
 
@@ -17,8 +18,9 @@ export interface DashboardStatsRecord {
   noteCount: number;
   recipeCount: number;
   notesReadyToPromote: number;
-  ingredientCount: number;
-  reviewedIngredientCount: number;
+  /** Concepts that are not merged away (DEPRECATED). */
+  conceptCount: number;
+  verifiedConceptCount: number;
   instructionLineCount: number;
   notesByStatus: {
     pending: number;
@@ -35,7 +37,7 @@ export interface DashboardStatsRecord {
     markedCorrect: number;
     markedIncorrect: number;
   };
-  topIngredients: TopIngredientRecord[];
+  topConcepts: TopConceptRecord[];
   topSources: LabelCountRecord[];
   topCategories: LabelCountRecord[];
   topTags: LabelCountRecord[];
@@ -54,13 +56,13 @@ export async function getDashboardStats(): Promise<DashboardStatsRecord> {
     noteCount,
     recipeCount,
     notesReadyToPromote,
-    ingredientCount,
-    reviewedIngredientCount,
+    conceptCount,
+    verifiedConceptCount,
     instructionLineCount,
     notesByStatus,
     linesByParseStatus,
     linesByReviewStatus,
-    topIngredients,
+    topConcepts,
     topSources,
     topCategories,
     topTags,
@@ -69,8 +71,8 @@ export async function getDashboardStats(): Promise<DashboardStatsRecord> {
     prisma.note.count(),
     prisma.recipe.count(),
     prisma.note.count({ where: { status: "COMPLETED", recipe: null } }),
-    prisma.ingredient.count(),
-    prisma.ingredient.count({ where: { isReviewed: true } }),
+    prisma.foodConcept.count({ where: { status: { not: "DEPRECATED" } } }),
+    prisma.foodConcept.count({ where: { status: "VERIFIED" } }),
     prisma.parsedInstructionLine.count({ where: { isActive: true } }),
     prisma.note.groupBy({ by: ["status"], _count: { _all: true } }),
     prisma.parsedIngredientLine.groupBy({
@@ -83,7 +85,7 @@ export async function getDashboardStats(): Promise<DashboardStatsRecord> {
       where: activeLines,
       _count: { _all: true },
     }),
-    getTopIngredients(),
+    getTopConcepts(),
     getTopSources(),
     getTopTaxonomy("category"),
     getTopTaxonomy("tag"),
@@ -103,8 +105,8 @@ export async function getDashboardStats(): Promise<DashboardStatsRecord> {
     noteCount,
     recipeCount,
     notesReadyToPromote,
-    ingredientCount,
-    reviewedIngredientCount,
+    conceptCount,
+    verifiedConceptCount,
     instructionLineCount,
     notesByStatus: {
       pending: countNotes("PENDING"),
@@ -124,7 +126,7 @@ export async function getDashboardStats(): Promise<DashboardStatsRecord> {
       markedCorrect: countReviewed("CORRECT"),
       markedIncorrect: countReviewed("INCORRECT"),
     },
-    topIngredients,
+    topConcepts,
     topSources,
     topCategories,
     topTags,
@@ -132,36 +134,26 @@ export async function getDashboardStats(): Promise<DashboardStatsRecord> {
   };
 }
 
-/** Ingredients mentioned by the most ingredient lines. */
-async function getTopIngredients(): Promise<TopIngredientRecord[]> {
-  const groups = await prisma.ingredientReference.groupBy({
-    by: ["ingredientId"],
-    _count: { ingredientId: true },
-    orderBy: { _count: { ingredientId: "desc" } },
-    take: TOP_LIST_LIMIT,
-  });
-  if (groups.length === 0) return [];
-
-  const ingredients = await prisma.ingredient.findMany({
-    where: { id: { in: groups.map((group) => group.ingredientId) } },
-    select: { id: true, name: true },
-  });
-  const nameById = new Map(
-    ingredients.map((ingredient) => [ingredient.id, ingredient.name])
-  );
-
-  return groups.flatMap((group) => {
-    const name = nameById.get(group.ingredientId);
-    return name
-      ? [
-          {
-            ingredientId: group.ingredientId,
-            name,
-            lineCount: group._count.ingredientId,
-          },
-        ]
-      : [];
-  });
+/** Concepts mentioned by the most active ingredient lines. */
+async function getTopConcepts(): Promise<TopConceptRecord[]> {
+  const rows = await prisma.$queryRaw<
+    { conceptId: string; name: string; lineCount: bigint }[]
+  >`
+    SELECT c.id::text AS "conceptId", c."canonicalName" AS name,
+           COUNT(DISTINCT m."parsedLineId") AS "lineCount"
+    FROM "IngredientMention" m
+    JOIN "FoodConcept" c ON c.id = m."conceptId"
+    JOIN "ParsedIngredientLine" l ON l.id = m."parsedLineId"
+    WHERE l."isActive" = true
+    GROUP BY c.id, c."canonicalName"
+    ORDER BY "lineCount" DESC, c."canonicalName" ASC
+    LIMIT ${TOP_LIST_LIMIT}
+  `;
+  return rows.map((row) => ({
+    conceptId: row.conceptId,
+    name: row.name,
+    lineCount: Number(row.lineCount),
+  }));
 }
 
 /** Websites with the most saved recipe URLs. */

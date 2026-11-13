@@ -1,5 +1,6 @@
 export * from "./ast/types.js";
 export * from "./ast/schemas.js";
+export * from "./ast/upgrade.js";
 export {
   describePhrase,
   describeQuantity,
@@ -26,11 +27,14 @@ export * from "./resolve/scoring.js";
 export * from "./resolve/resolve-segment.js";
 export * from "./resolve/process-line.js";
 export * from "./resolve/report.js";
+export * from "./resolve/calibration.js";
 export { RESOLVER_VERSION } from "./resolve/version.js";
 export * from "./knowledge/schemas.js";
 export * from "./knowledge/priority.js";
 export * from "./knowledge/plural.js";
 export * from "./knowledge/discover.js";
+export * from "./knowledge/structure-signature.js";
+export * from "./knowledge/fixture-drafts.js";
 export * from "./knowledge/apply-to-snapshot.js";
 export * from "./lexicon/types.js";
 export {

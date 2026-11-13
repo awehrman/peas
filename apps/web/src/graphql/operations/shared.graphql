@@ -42,13 +42,6 @@ fragment IngredientBlockFields on IngredientBlock {
     reviewStatus
     isActive
     parserVersion
-    segments {
-      index
-      type
-      value
-      rule
-      ingredientId
-    }
     mentions {
       ...MentionFields
     }
@@ -68,6 +61,8 @@ query JobStatus($jobId: ID!) {
     type
     status
     noteId
+    processedCount
+    totalCount
     errorMessage
     retryCount
     startedAt

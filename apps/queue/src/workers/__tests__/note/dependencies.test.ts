@@ -80,7 +80,7 @@ describe("buildNoteWorkerDependencies", () => {
         instructionQueue: { name: "instruction" } as any,
         categorizationQueue: { name: "categorization" } as any,
         sourceQueue: { name: "source" } as any,
-        patternTrackingQueue: { name: "patternTracking" } as any,
+        reinterpretQueue: { name: "reinterpret" } as any,
       },
       cache: {} as any,
       database: {} as any,

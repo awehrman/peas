@@ -6,11 +6,38 @@ vi.mock("@peas/database", () => ({
   Prisma: { PrismaClientKnownRequestError: class extends Error {} },
 }));
 
-const { readCookie } = await import("../auth/session-cookie.js");
+const { expiredSessionCookieOptions, readCookie, sessionCookieOptions } =
+  await import("../auth/session-cookie.js");
 const { getSignUpCodes, validateSignUpCode } =
   await import("../auth/sign-up-codes.js");
 const { createQueueToken } = await import("../auth/queue-token.js");
 const { hashToken, generateRandomToken } = await import("../auth/crypto.js");
+
+describe("session cookie options", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("sets an http-only cookie that is secure in production and expires with the session", () => {
+    const expiresAt = new Date("2026-12-01T00:00:00.000Z");
+    vi.stubEnv("NODE_ENV", "production");
+    expect(sessionCookieOptions(expiresAt)).toEqual({
+      httpOnly: true,
+      sameSite: "lax",
+      secure: true,
+      path: "/",
+      expires: expiresAt,
+    });
+    vi.stubEnv("NODE_ENV", "development");
+    expect(expiredSessionCookieOptions()).toEqual({
+      httpOnly: true,
+      sameSite: "lax",
+      secure: false,
+      path: "/",
+      maxAge: 0,
+    });
+  });
+});
 
 describe("readCookie", () => {
   it("finds one cookie in a header and decodes it", () => {

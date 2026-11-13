@@ -92,6 +92,8 @@ export interface TeachDiscovery {
   payload: unknown;
   concepts: ConceptRef[];
   entries: LexiconEntryRef[];
+  /** STRUCTURAL_PATTERN only: example lines as pending golden cases (JSON). */
+  fixtureBlock?: string | null;
 }
 
 export interface DiscoveryTypeCount {
@@ -145,7 +147,18 @@ export interface ApplyDecisionResult {
   summary: string;
   mentionsUpdated: number;
   needsBackgroundReinterpret: boolean;
+  /** Set only when the queue could not take the background reinterpretation. */
   reinterpretCommand: string | null;
+}
+
+/** A background reinterpretation run as the job poller reports it. */
+export interface ReinterpretProgress {
+  jobId: string;
+  status:
+    "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED" | "CANCELLED" | "MISSING";
+  processedCount: number | null;
+  totalCount: number | null;
+  errorMessage: string | null;
 }
 
 export type PreviewDecision = (
@@ -192,3 +205,41 @@ export const MENTION_STATUS_LABELS: Record<MentionStatus, string> = {
   UNRESOLVED: "Unresolved",
   VERIFIED: "Verified",
 };
+
+/** Mirrors the `corpusHealth` GraphQL query. */
+export interface CorpusHealth {
+  lineCount: number;
+  linesWithMentions: number;
+  parsedSuccessfully: number;
+  parsedWithErrors: number;
+  awaitingParsing: number;
+  mentions: {
+    total: number;
+    autoResolved: number;
+    needsReview: number;
+    unresolved: number;
+    verified: number;
+  };
+  openDiscoveryCount: number;
+  topUnknownPhrases: {
+    discoveryId: string;
+    phrase: string;
+    mentionCount: number;
+  }[];
+  reinterpretBacklog: {
+    pending: number;
+    processing: number;
+    failed: number;
+    failedBatches: number;
+  };
+  lexiconRevision: number;
+  live: {
+    windowSeconds: number;
+    lineCount: number;
+    linesPerSecond: number;
+    structuralSuccessShare: number | null;
+    averageCandidatesPerSegment: number | null;
+    unknownTokens: number;
+    lexiconRevision: number | null;
+  } | null;
+}

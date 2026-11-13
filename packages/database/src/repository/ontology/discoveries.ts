@@ -40,7 +40,13 @@ export interface DiscoveryCandidate {
 export async function upsertDiscoveries(
   tx: DbClient,
   candidates: readonly DiscoveryCandidate[],
-  revision: number
+  revision: number,
+  {
+    keepExistingPayload = false,
+  }: {
+    /** Exploratory sweeps add evidence to an existing discovery without replacing what imports found. */
+    keepExistingPayload?: boolean;
+  } = {}
 ): Promise<string[]> {
   const ids: string[] = [];
 
@@ -59,7 +65,9 @@ export async function upsertDiscoveries(
         firstSeenRevision: revision,
         lastSeenRevision: revision,
       },
-      update: { payload: toJson(payload), lastSeenRevision: revision },
+      update: keepExistingPayload
+        ? { lastSeenRevision: revision }
+        : { payload: toJson(payload), lastSeenRevision: revision },
       select: { id: true, type: true },
     });
 
@@ -73,31 +81,45 @@ export async function upsertDiscoveries(
       });
     }
 
-    const [mentionCount, notes] = await Promise.all([
-      tx.discoveryEvidence.count({ where: { discoveryId: discovery.id } }),
-      tx.discoveryEvidence.findMany({
-        where: { discoveryId: discovery.id, noteId: { not: null } },
-        distinct: ["noteId"],
-        select: { noteId: true },
-      }),
-    ]);
-    const distinctNoteCount = notes.length;
-
-    await tx.discovery.update({
-      where: { id: discovery.id },
-      data: {
-        mentionCount,
-        distinctNoteCount,
-        priority: priorityForDiscovery(discovery.type, {
-          distinctNotes: distinctNoteCount,
-          mentions: mentionCount,
-        }),
-      },
-    });
+    await refreshDiscoveryCounts(tx, discovery.id, discovery.type);
     ids.push(discovery.id);
   }
 
   return ids;
+}
+
+/**
+ * Recomputes a discovery's mention and distinct-note counts and its priority from its evidence. Returns the mention count.
+ *
+ * @example
+ * await refreshDiscoveryCounts(tx, discoveryId, "STRUCTURAL_PATTERN") // 3
+ */
+export async function refreshDiscoveryCounts(
+  tx: DbClient,
+  discoveryId: string,
+  type: DiscoveryType
+): Promise<number> {
+  const [mentionCount, notes] = await Promise.all([
+    tx.discoveryEvidence.count({ where: { discoveryId } }),
+    tx.discoveryEvidence.findMany({
+      where: { discoveryId, noteId: { not: null } },
+      distinct: ["noteId"],
+      select: { noteId: true },
+    }),
+  ]);
+  const distinctNoteCount = notes.length;
+  await tx.discovery.update({
+    where: { id: discoveryId },
+    data: {
+      mentionCount,
+      distinctNoteCount,
+      priority: priorityForDiscovery(type, {
+        distinctNotes: distinctNoteCount,
+        mentions: mentionCount,
+      }),
+    },
+  });
+  return mentionCount;
 }
 
 export interface DiscoveryQueueItem {

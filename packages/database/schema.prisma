@@ -791,6 +791,8 @@ enum DecisionType {
   REJECT
   MERGE_CONCEPTS
   CORRECT_MENTION
+  APPROVE_CONCEPT
+  EDIT_CONCEPT
   REVERT
 }
 
@@ -1003,7 +1005,9 @@ model IngredientMention {
   parsedLine        ParsedIngredientLine @relation(fields: [parsedLineId], references: [id], onDelete: Cascade)
   parsedLineId      String
   segmentIndex      Int
-  /// Segment text from the raw line.
+  /// 0 unless "and" split the segment into several foods ("salt and pepper": salt is part 0, pepper part 1).
+  partIndex         Int                  @default(0)
+  /// Segment (or part) text from the raw line.
   rawText           String
   normalizedText    String
   spanStart         Int
@@ -1035,7 +1039,7 @@ model IngredientMention {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([parsedLineId, segmentIndex])
+  @@unique([parsedLineId, segmentIndex, partIndex])
   /// Trigram index for preview prefiltering (decision D20); needs the pg_trgm extension created in the migration.
   @@index([normalizedText(ops: raw("gin_trgm_ops"))], type: Gin, map: "ingredient_mention_normalized_trgm")
   @@index([conceptId])
@@ -1148,6 +1152,8 @@ model LexiconDecision {
   relationships       FoodRelationship[]
   resolvedDiscoveries Discovery[]          @relation("DiscoveryResolvedBy")
   merges              ConceptMergeRecord[]
+  /// Mentions whose reading this decision changed, in the request and in background reinterpretation; the health page's "taught to fixed".
+  mentionsChanged     Int                  @default(0)
 
   createdAt DateTime @default(now())
 }
@@ -1185,5 +1191,61 @@ model LegacyIngredientMapping {
   status             LegacyMappingStatus @default(PENDING)
   note               String?
   migratedAt         DateTime?
+}
+
+enum ReinterpretKind {
+  /// Lines a lexicon decision can affect, re-resolved at a newer revision.
+  REINTERPRET_BY_REVISION
+  /// Lines parsed by another parser version (Phase 6 grammar changes).
+  REPARSE_BY_VERSION
+}
+
+/// One background reinterpretation (Phase 5). The reinterpret worker fans it out into batch jobs and counts progress here; the web app polls it through Query.job.
+model ReinterpretRun {
+  id             String          @id @default(uuid(7)) @db.Uuid
+  /// Shared with the BullMQ jobs, e.g. "reinterpret-15" (batches are "reinterpret-15-3").
+  jobId          String          @unique
+  kind           ReinterpretKind
+  revision       Int?
+  parserVersion  String?
+  /// { phrases: string[], conceptIds: string[] } for REINTERPRET_BY_REVISION.
+  scope          Json?
+  status         QueueJobStatus  @default(PENDING)
+  totalLines     Int             @default(0)
+  processedLines Int             @default(0)
+  batchCount     Int             @default(0)
+  completedBatches Int           @default(0)
+  failedBatches  Int             @default(0)
+  errorMessage   String?
+  startedAt      DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@index([status])
+}
+
+/// A point-in-time copy of the corpus health numbers, for trends on /teach/health. Written by the daily snapshot job and after every reinterpretation or reparse run.
+model CorpusHealthSnapshot {
+  id                    String   @id @default(uuid(7)) @db.Uuid
+  takenAt               DateTime @default(now())
+  /// SCHEDULED, REINTERPRET, REPARSE, or MANUAL.
+  trigger               String
+  parserVersion         String
+  lexiconRevision       Int
+  totalLines            Int
+  totalMentions         Int
+  /// { AUTO_RESOLVED: n, NEEDS_REVIEW: n, UNRESOLVED: n, VERIFIED: n }
+  byResolutionStatus    Json
+  /// { COMPLETED_SUCCESSFULLY: n, COMPLETED_WITH_ERROR: n, AWAITING_PARSING: n }
+  byParseStatus         Json
+  /// { "2.1.0": { total: n, unresolved: n } }
+  byParserVersion       Json
+  /// { UNKNOWN_FOOD_PHRASE: n, STRUCTURAL_PATTERN: n, ... }
+  openDiscoveriesByType Json
+  verifiedCount         Int
+  avgCandidates         Float
+
+  @@index([takenAt])
 }
 

@@ -1,8 +1,9 @@
 /**
  * Clears everything a (partial) import leaves behind, so an export can be
  * re-imported from scratch:
- *   - imported data in Postgres (notes, ingredients, images, status events,
- *     recipes); users are kept
+ *   - imported data in Postgres (notes, ingredient lines and mentions, images,
+ *     status events, recipes, open review cards with no lines left); users,
+ *     food knowledge, decisions, and health snapshots are kept
  *   - queued and cached work in Redis (bull:*, action:*, tag:*)
  *   - local upload folders
  *
@@ -78,8 +79,12 @@ function clearUploads(): number {
 async function main() {
   if (!process.argv.includes("--yes")) {
     console.log(
-      "This deletes all imported notes, ingredients, images and recipes, plus queued jobs.\n" +
-        "Users and grammar rules are kept. Re-run with --yes to continue."
+      "This deletes all imported notes, ingredient lines and their mentions, images, recipes, sources,\n" +
+        "note categories and tags, queued jobs, reinterpretation runs, the legacy v1 parsing rules,\n" +
+        "and open review cards left with no example lines.\n" +
+        "Kept: users, food knowledge (concepts, lexicon, attributes, relationships), decisions,\n" +
+        "resolved and rejected review cards, and corpus health snapshots.\n" +
+        "Re-run with --yes to continue."
     );
     process.exit(1);
   }

@@ -25,6 +25,7 @@ export interface AffectedMention {
   mentionId: string;
   parsedLineId: string;
   segmentIndex: number;
+  partIndex: number;
   lineText: string;
   noteId: string | null;
   noteTitle: string | null;
@@ -81,7 +82,7 @@ export async function findAffectedMentions(
   if (conditions.length === 0) return [];
 
   return db.$queryRaw<AffectedMention[]>`
-    SELECT m.id::text AS "mentionId", m."parsedLineId", m."segmentIndex", l.reference AS "lineText",
+    SELECT m.id::text AS "mentionId", m."parsedLineId", m."segmentIndex", m."partIndex", l.reference AS "lineText",
            l."noteId", n.title AS "noteTitle", m."conceptId"::text AS "conceptId", m."verifiedAt"
     FROM "IngredientMention" m
     JOIN "ParsedIngredientLine" l ON l.id = m."parsedLineId"
@@ -182,7 +183,7 @@ export async function previewDecision(
       mentions.find(
         (candidate) =>
           candidate.segmentIndex === mention.segmentIndex &&
-          candidate.partIndex === 0
+          candidate.partIndex === mention.partIndex
       );
     const diff = diffResolution(
       pick(resolved.before),
@@ -233,7 +234,7 @@ async function snapshotAfter(
   if (payload.type !== "REVERT")
     return {
       after: applyDecisionToSnapshot(snapshot, payload),
-      scope: decisionScope(payload),
+      scope: decisionScope(payload, snapshot),
     };
 
   if (!userId)
@@ -248,7 +249,8 @@ async function snapshotAfter(
       DecisionPayloadSchema,
       target.payload,
       "LexiconDecision.payload"
-    )
+    ),
+    snapshot
   );
 
   let after: ResolverSnapshot | undefined;
@@ -269,6 +271,8 @@ async function snapshotAfter(
 }
 
 export interface ReinterpretResult {
+  /** What the decision can affect, for handing a large reinterpretation to the queue. */
+  scope: DecisionScope;
   /** Lines whose mentions were rewritten in this request. */
   linesReprocessed: number;
   mentionsChanged: number;
@@ -290,8 +294,9 @@ export async function reinterpretAffected(
     extraScope,
   }: { limit?: number; extraScope?: DecisionScope } = {}
 ): Promise<ReinterpretResult> {
-  const context = buildResolverContext(await loadResolverSnapshot());
-  let scope = decisionScope(payload);
+  const snapshot = await loadResolverSnapshot();
+  const context = buildResolverContext(snapshot);
+  let scope = decisionScope(payload, snapshot);
   if (payload.type === "REVERT") {
     const target = await prisma.lexiconDecision.findUnique({
       where: { id: payload.decisionId },
@@ -303,7 +308,8 @@ export async function reinterpretAffected(
           DecisionPayloadSchema,
           target.payload,
           "LexiconDecision.payload"
-        )
+        ),
+        snapshot
       );
   }
   if (extraScope) {
@@ -320,12 +326,14 @@ export async function reinterpretAffected(
   const lineIds = [...new Set(affected.map((mention) => mention.parsedLineId))];
   if (lineIds.length > limit)
     return {
+      scope,
       linesReprocessed: 0,
       mentionsChanged: 0,
       needsBackgroundReinterpret: true,
     };
   if (lineIds.length === 0)
     return {
+      scope,
       linesReprocessed: 0,
       mentionsChanged: 0,
       needsBackgroundReinterpret: false,
@@ -340,6 +348,7 @@ export async function reinterpretAffected(
     { timeout: 120_000, maxWait: 10_000 }
   );
   return {
+    scope,
     linesReprocessed: result.lines,
     mentionsChanged: result.mentionsChanged,
     needsBackgroundReinterpret: false,

@@ -2,6 +2,7 @@ import {
   CreateIngredientDocument,
   IngredientDetailDocument,
   type IngredientDetailQuery,
+  IngredientNameOwnerDocument,
   IngredientsPageDocument,
   SaveIngredientDocument,
   SearchIngredientsDocument,
@@ -9,19 +10,31 @@ import {
 import { useMutationAction } from "~/lib/apollo/cache-coordinator-provider";
 import { optionalEnum, optionalText } from "~/lib/search";
 
-import { useCallback } from "react";
+import {
+  type ComponentProps,
+  type RefObject,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import type { QueryRef } from "@apollo/client/react";
 import { useApolloClient, useReadQuery } from "@apollo/client/react";
+import { Spinner } from "@peas/components";
 import {
   INGREDIENT_GROUPINGS,
   INGREDIENT_VIEWS,
   type IngredientCreateInput,
   type IngredientDetail,
+  type IngredientGroup,
   type IngredientOption,
   type IngredientSaveInput,
   IngredientsPageContent,
   groupIngredients,
+  isIngredientStoredProperty,
 } from "@peas/features";
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
@@ -47,26 +60,91 @@ export const Route = createFileRoute("/_authed/ingredients")({
   component: IngredientsPage,
 });
 
+type IngredientsPageProps = ComponentProps<typeof IngredientsPageContent>;
+type RememberPage = (props: IngredientsPageProps) => void;
+
 function IngredientsPage() {
   const { detailRef } = Route.useLoaderData();
-  return detailRef ? (
-    <WithSelectedIngredient detailRef={detailRef} />
-  ) : (
-    <IngredientsView selected={null} />
+  const lastPage = useRef<IngredientsPageProps | null>(null);
+  const remember = useCallback<RememberPage>((props) => {
+    lastPage.current = props;
+  }, []);
+
+  return (
+    <Suspense fallback={<PreviousIngredientsPage lastPage={lastPage} />}>
+      {detailRef ? (
+        <WithSelectedIngredient detailRef={detailRef} onRender={remember} />
+      ) : (
+        <IngredientsView selected={null} onRender={remember} />
+      )}
+    </Suspense>
+  );
+}
+
+/**
+ * Suspense-read queries suspend again whenever they refetch, which after a save (or on "Save and next") would swap the whole page for the layout's spinner. This keeps the last page on screen, dimmed and inert, until the fresh data arrives; the real page keeps its state while it waits.
+ */
+function PreviousIngredientsPage({
+  lastPage,
+}: {
+  lastPage: RefObject<IngredientsPageProps | null>;
+}) {
+  const props = lastPage.current;
+  if (!props)
+    return (
+      <div
+        role="status"
+        aria-label="Loading"
+        className="flex h-full items-center justify-center"
+      >
+        <Spinner />
+      </div>
+    );
+  return (
+    <div inert aria-busy="true" className="opacity-70 transition-opacity">
+      <IngredientsPageContent {...props} />
+    </div>
   );
 }
 
 /** Reads the selected ingredient's preloaded detail; split out because hooks cannot be called conditionally. */
 function WithSelectedIngredient({
   detailRef,
+  onRender,
 }: {
   detailRef: QueryRef<IngredientDetailQuery>;
+  onRender: RememberPage;
 }) {
   const { data } = useReadQuery(detailRef);
-  return <IngredientsView selected={data.ingredient ?? null} />;
+  return (
+    <IngredientsView
+      selected={toIngredientDetail(data.ingredient)}
+      onRender={onRender}
+    />
+  );
 }
 
-function IngredientsView({ selected }: { selected: IngredientDetail | null }) {
+/** The card's detail, with property states narrowed to stored properties (the API's enum also carries the computed dietary tags). */
+function toIngredientDetail(
+  ingredient: IngredientDetailQuery["ingredient"]
+): IngredientDetail | null {
+  if (!ingredient) return null;
+  return {
+    ...ingredient,
+    propertyStates: ingredient.propertyStates.flatMap(
+      ({ property, ...state }) =>
+        isIngredientStoredProperty(property) ? [{ ...state, property }] : []
+    ),
+  };
+}
+
+function IngredientsView({
+  selected,
+  onRender,
+}: {
+  selected: IngredientDetail | null;
+  onRender: RememberPage;
+}) {
   const { listRef } = Route.useLoaderData();
   const { data } = useReadQuery(listRef);
   const search = Route.useSearch();
@@ -97,17 +175,86 @@ function IngredientsView({ selected }: { selected: IngredientDetail | null }) {
     [client]
   );
 
-  return (
-    <IngredientsPageContent
-      view={view}
-      grouping={grouping}
-      groups={groupIngredients(data.ingredients, grouping, view)}
-      counts={data.ingredientCounts}
-      selected={selected}
-      categoryOptions={data.ingredientCategoryNames}
-      onSave={onSave}
-      onCreate={onCreate}
-      onSearch={onSearch}
-    />
+  const onCheckName = useCallback(
+    async (
+      name: string,
+      excludeId: string
+    ): Promise<IngredientOption | null> => {
+      const { data: found } = await client.query({
+        query: IngredientNameOwnerDocument,
+        variables: { name, excludeId },
+        fetchPolicy: "network-only",
+      });
+      return found?.ingredientNameOwner ?? null;
+    },
+    [client]
   );
+
+  const groups = useMemo(
+    () => groupIngredients(data.ingredients, grouping, view),
+    [data.ingredients, grouping, view]
+  );
+  const shownGroups = useGroupsKeepingSelected(
+    groups,
+    selected?.id,
+    `${view}:${grouping}`
+  );
+
+  const page: IngredientsPageProps = {
+    view,
+    grouping,
+    groups: shownGroups,
+    counts: data.ingredientCounts,
+    selected,
+    categoryOptions: data.ingredientCategoryNames,
+    onSave,
+    onCreate,
+    onSearch,
+    onCheckName,
+  };
+  useEffect(() => onRender(page));
+
+  return <IngredientsPageContent {...page} />;
+}
+
+interface KeptGroups {
+  groups: IngredientGroup[];
+  selectedId: string;
+  listKey: string;
+}
+
+/**
+ * Saving a food can drop it from the list it's selected in (approving it leaves "Needs review"), and the list refreshes before "Save and next" opens the next card. Without its row the card would jump above the group header, so this keeps showing the list the selected food was last listed in until the selection, view or grouping changes.
+ *
+ * @example
+ * useGroupsKeepingSelected(groupsWithoutWheat, wheatId, "unreviewed:name") // the previous groups, wheat's row included
+ */
+function useGroupsKeepingSelected(
+  groups: IngredientGroup[],
+  selectedId: string | undefined,
+  listKey: string
+): IngredientGroup[] {
+  const [kept, setKept] = useState<KeptGroups | null>(null);
+  const isListed =
+    selectedId !== undefined &&
+    groups.some((group) =>
+      group.ingredients.some((item) => item.id === selectedId)
+    );
+
+  if (
+    isListed &&
+    (kept?.groups !== groups ||
+      kept.selectedId !== selectedId ||
+      kept.listKey !== listKey)
+  )
+    setKept({ groups, selectedId, listKey });
+
+  if (
+    !isListed &&
+    kept &&
+    kept.selectedId === selectedId &&
+    kept.listKey === listKey
+  )
+    return kept.groups;
+  return groups;
 }

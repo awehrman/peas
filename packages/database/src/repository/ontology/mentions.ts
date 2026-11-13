@@ -10,11 +10,13 @@ import {
   type IngredientLineSyntax,
   type MentionSyntax,
   MentionSyntaxSchema,
+  upgradeStoredSyntax,
   type Quantity,
   QuantitySchema,
   type Resolution,
   type ResolutionCandidate,
   ResolutionSchema,
+  type TextSpan,
   normalizeText,
 } from "@peas/parser/v2";
 import type {
@@ -40,6 +42,10 @@ import { prisma } from "../../client.js";
 export interface MentionInput {
   line: IngredientLineSyntax;
   segmentIndex: number;
+  /** 0 unless a coordination split the segment ("salt and pepper": pepper is part 1). */
+  partIndex?: number;
+  /** The part's own span when the segment was split; defaults to the segment span. */
+  span?: TextSpan;
   resolution: Resolution;
   resolutionStatus: Exclude<ResolutionStatus, "VERIFIED">;
 }
@@ -56,7 +62,7 @@ export interface UpsertMentionsResult {
 }
 
 /**
- * Writes the mentions for one parsed line in the caller's transaction, keyed by (parsedLineId, segmentIndex). Idempotent: the same input produces the same rows. With `protectVerified` (the default), verified mentions are never overwritten or deleted; when the new parse disagrees, a VERIFIED_DRIFT discovery records it (decision D17).
+ * Writes the mentions for one parsed line in the caller's transaction, keyed by (parsedLineId, segmentIndex, partIndex). Idempotent: the same input produces the same rows. With `protectVerified` (the default), verified mentions are never overwritten or deleted; when the new parse disagrees, a VERIFIED_DRIFT discovery records it (decision D17).
  *
  * @example
  * await prisma.$transaction((tx) => upsertMentionsForLine(tx, line.id, [mentionInput]))
@@ -80,6 +86,7 @@ export async function upsertMentionsForLine(
     select: {
       id: true,
       segmentIndex: true,
+      partIndex: true,
       verifiedAt: true,
       conceptId: true,
       spanStart: true,
@@ -98,8 +105,13 @@ export async function upsertMentionsForLine(
       lexiconRevision: true,
     },
   });
+  const keyOf = (segmentIndex: number, partIndex = 0) =>
+    `${segmentIndex}:${partIndex}`;
   const existingByIndex = new Map(
-    existing.map((mention) => [mention.segmentIndex, mention])
+    existing.map((mention) => [
+      keyOf(mention.segmentIndex, mention.partIndex),
+      mention,
+    ])
   );
 
   const result: UpsertMentionsResult = {
@@ -116,12 +128,13 @@ export async function upsertMentionsForLine(
     spanEnd: number;
     line: IngredientLineSyntax;
   }[] = [];
-  const seenIndexes = new Set<number>();
+  const seenIndexes = new Set<string>();
 
   for (const input of inputs) {
     const prepared = prepareMention(input);
-    seenIndexes.add(input.segmentIndex);
-    const previous = existingByIndex.get(input.segmentIndex);
+    const key = keyOf(input.segmentIndex, input.partIndex);
+    seenIndexes.add(key);
+    const previous = existingByIndex.get(key);
 
     if (previous?.verifiedAt && protectVerified) {
       result.protectedIds.push(previous.id);
@@ -168,7 +181,8 @@ export async function upsertMentionsForLine(
   }
 
   for (const mention of existing) {
-    if (seenIndexes.has(mention.segmentIndex)) continue;
+    if (seenIndexes.has(keyOf(mention.segmentIndex, mention.partIndex)))
+      continue;
     if (mention.verifiedAt && protectVerified) {
       result.protectedIds.push(mention.id);
       continue;
@@ -301,16 +315,18 @@ function prepareMention(input: MentionInput): PreparedMention {
       ? (candidate?.conceptId ?? null)
       : null;
   const mode: ParseMode = input.line.mode;
+  const span = input.span ?? segment.span;
 
   return {
     conceptId,
     candidate,
     data: {
       segmentIndex: input.segmentIndex,
-      rawText: segment.span.text,
-      normalizedText: normalizeText(segment.span.text).text.toLowerCase(),
-      spanStart: segment.span.start,
-      spanEnd: segment.span.end,
+      partIndex: input.partIndex ?? 0,
+      rawText: span.text,
+      normalizedText: normalizeText(span.text).text.toLowerCase(),
+      spanStart: span.start,
+      spanEnd: span.end,
       syntax: toJson(syntax),
       quantity: segment.quantity ? toJson(segment.quantity) : undefined,
       conceptId,
@@ -381,6 +397,7 @@ async function writeChildRows(
 export interface MentionRecord {
   id: string;
   segmentIndex: number;
+  partIndex: number;
   rawText: string;
   conceptId: string | null;
   conceptName: string | null;
@@ -403,12 +420,13 @@ export async function getMentionsForLine(
 ): Promise<MentionRecord[]> {
   const rows = await db.ingredientMention.findMany({
     where: { parsedLineId },
-    orderBy: { segmentIndex: "asc" },
+    orderBy: [{ segmentIndex: "asc" }, { partIndex: "asc" }],
     include: { concept: { select: { canonicalName: true } } },
   });
   return rows.map((row) => ({
     id: row.id,
     segmentIndex: row.segmentIndex,
+    partIndex: row.partIndex,
     rawText: row.rawText,
     conceptId: row.conceptId,
     conceptName: row.concept?.canonicalName ?? null,
@@ -428,6 +446,8 @@ export async function getMentionsForLine(
 
 export interface MentionDetailRecord extends MentionRecord {
   parsedLineId: string;
+  spanStart: number;
+  spanEnd: number;
   syntax: MentionSyntax;
   resolution: Resolution;
   mode: ParseMode;
@@ -507,7 +527,7 @@ export async function getMentionDetailsForLine(
 ): Promise<MentionDetailRecord[]> {
   const rows = await db.ingredientMention.findMany({
     where: { parsedLineId },
-    orderBy: { segmentIndex: "asc" },
+    orderBy: [{ segmentIndex: "asc" }, { partIndex: "asc" }],
     include: MENTION_DETAIL_INCLUDE,
   });
   return rows.map(toMentionDetail);
@@ -522,6 +542,9 @@ function toMentionDetail(
     id: row.id,
     parsedLineId: row.parsedLineId,
     segmentIndex: row.segmentIndex,
+    partIndex: row.partIndex,
+    spanStart: row.spanStart,
+    spanEnd: row.spanEnd,
     rawText: row.rawText,
     conceptId: row.conceptId,
     conceptName: row.concept?.canonicalName ?? null,
@@ -538,7 +561,7 @@ function toMentionDetail(
     verifiedAt: row.verifiedAt?.toISOString() ?? null,
     syntax: parseOrThrow(
       MentionSyntaxSchema,
-      row.syntax,
+      upgradeStoredSyntax(row.syntax, row.parserVersion),
       "IngredientMention.syntax"
     ),
     resolution: parseOrThrow(

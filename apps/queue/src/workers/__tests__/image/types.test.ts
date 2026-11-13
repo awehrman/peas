@@ -407,7 +407,6 @@ describe("Image Worker Types", () => {
       expect(ActionName.SAVE_CATEGORY).toBe("save_category");
       expect(ActionName.DETERMINE_TAGS).toBe("determine_tags");
       expect(ActionName.SAVE_TAGS).toBe("save_tags");
-      expect(ActionName.TRACK_PATTERN).toBe("track_pattern");
       expect(ActionName.COMPLETION_STATUS).toBe("completion_status");
     });
 

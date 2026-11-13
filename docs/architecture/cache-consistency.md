@@ -1,6 +1,6 @@
 # Cache Consistency
 
-Status (12 November 2026): M5 is implemented for today's domains (notes, recipes, ingredients, import stats) in `apps/web`; see the [M5 record](#m5-record-12-november-2026). The knowledge domains (concepts, lexicon, mentions, review queue) plug into the same coordinator when Phases 3 and 4 add their queries.
+Status (12 November 2026): M5 is implemented in `apps/web` for every domain (notes, recipes, import stats, dashboard, review queue, concepts, mentions, corpus health); see the [M5 record](#m5-record-12-november-2026). Phase 5 removed the legacy ingredient domains and added background reinterpretation through `reprocessingJobId`.
 
 Peas is about to have many interconnected entities (concepts, terms, mentions, proposals, decisions, recipes). One ontology decision can change a concept page, alias lists, recipe ingredient lists, search results, review queues, and corpus statistics. The goal is normalized entity caching without spreading invalidation logic across components.
 
@@ -10,14 +10,14 @@ Peas is about to have many interconnected entities (concepts, terms, mentions, p
 | --- | --- | --- | --- |
 | Apollo normalized cache (browser) | Web app | `__typename:id` (immutable database ids) | Mutation results, mutation effects, revision change, job completion |
 | GraphQL request-level caching (server) | GraphQL server | Per request only | End of request; never shared across users |
-| Lexicon snapshots | Queue and GraphQL server processes | `LexiconRevision` | Revision bump (Redis publish plus a 15-second time limit) |
+| Lexicon snapshots | Queue and GraphQL server processes | `LexiconRevision` | Revision bump (the API asks the queue to publish `lexicon:revision` on Redis; a 15-second time limit is the fallback) |
 | Database | PostgreSQL via Prisma | n/a | Transactions; no ORM-level cache is assumed |
-| Derived corpus aggregates | Database rows (e.g. corpus health snapshots) | Revision and parser version | Snapshot jobs after reinterpretation |
+| Derived corpus aggregates | Computed on request (`corpusHealth`, `GET /metrics/ingredients`) | n/a | The `CORPUS_HEALTH` domain after decisions and job completion |
 | Job state | BullMQ / Redis | Job id | Worker progress; surfaced through polling |
 
 These must not be conflated: a fresh Apollo cache does not imply fresh mentions, and a bumped revision does not imply reinterpretation has finished.
 
-The queue already follows two of these rules: parse-cache keys include the parser id, and Phase 5 adds the lexicon revision to them.
+The queue follows two of these rules: parse-cache keys include the parser version and the lexicon revision, and its resolver context is cached per revision (`apps/queue/src/services/ingredient/lexicon-cache.ts`).
 
 ## Cache identity
 
@@ -93,11 +93,11 @@ Background jobs are polled while active. Subscriptions or server-sent events are
 | Cache identity | `apps/web/src/lib/apollo/cache-config.ts` | Every entity type is keyed by `id` (`Job` by `jobId`); value objects such as `EntityRef` and `MutationEffect` are never normalized. `note(id)`, `recipe(id)`, and `ingredient(id)` read through to cached entities. `possibleTypes` is generated from the schema. |
 | Coordinator | `apps/web/src/lib/apollo/cache-coordinator.ts` | The only code that evicts or refetches. One per Apollo client (per request on the server, per tab in the browser). |
 | Mutation adapter | `useMutationAction` in `cache-coordinator-provider.tsx` | Runs the mutation, returns `MutationResult` to feature components, and applies the payload's effect. |
-| Job polling | `coordinator.trackJob` / `onJobUpdate` with the `job(jobId)` query | Polls every 2 seconds until COMPLETED, FAILED, CANCELLED, or missing; completion invalidates every parse-derived domain. |
+| Job polling | `coordinator.trackJob` / `onJobUpdate` with the `job(jobId)` query | Polls every 2 seconds until COMPLETED, FAILED, CANCELLED, or missing; completion invalidates every parse-derived domain. Reinterpretation runs report `processedCount` and `totalCount`, which `useReinterpretProgress` turns into the banner on the Teach Peas pages. The provider resumes the coordinator when React re-runs its effect on the same instance; before that fix a cleanup left it disposed and job polls never started. |
 
 ### Today's domains
 
-The knowledge domains joined with Phase 4. The design named six (`CONCEPT_DETAIL`, `CONCEPT_LIST`, `LEXICON`, `MENTIONS`, `REVIEW_QUEUE`, `CORPUS_HEALTH`); four were needed because the lexicon and corpus health have no query of their own yet (`DISCOVERIES` is the review queue, `CONCEPTS` the concept list).
+The knowledge domains joined with Phase 4 and `CORPUS_HEALTH` with Phase 5. The design named six (`CONCEPT_DETAIL`, `CONCEPT_LIST`, `LEXICON`, `MENTIONS`, `REVIEW_QUEUE`, `CORPUS_HEALTH`); five are needed (`DISCOVERIES` is the review queue, `CONCEPTS` the concept list). Phase 5 removed `INGREDIENTS` and `INGREDIENT_DETAIL` with the legacy ingredient queries; the concept-backed ingredient cards that replaced them, and the admin lexicon list, live in the existing domains: `CONCEPTS` covers `lexicon`, `ingredients`, `ingredientCounts`, `ingredientCategoryNames`, and `searchIngredients`, and `CONCEPT_DETAIL` covers `ingredient` (an `Ingredient` and a `Concept` share an id, and saving a card reports both as changed).
 
 | Domain | Root fields dropped | Entities evicted |
 | --- | --- | --- |
@@ -106,16 +106,15 @@ The knowledge domains joined with Phase 4. The design named six (`CONCEPT_DETAIL
 | `RECIPES` | `recipes` | `RecipeSummary` |
 | `RECIPE_DETAIL` | `recipe` | `Recipe` |
 | `RECIPE_TAXONOMY` | `recipeTaxonomy` | none |
-| `INGREDIENTS` | `ingredients`, `ingredientCounts`, `ingredientCategoryNames`, `searchIngredients` | `IngredientSummary` |
-| `INGREDIENT_DETAIL` | `ingredient` | `Ingredient` |
 | `IMPORT_STATS` | `importStats` | none |
 | `DASHBOARD_STATS` | `dashboardStats` | none |
 | `DISCOVERIES` | `discoveryQueue`, `discoveryCounts`, `discovery` | `Discovery` |
-| `CONCEPTS` | `concepts`, `searchConcepts` | `ConceptSummary` |
+| `CONCEPTS` | `concepts`, `searchConcepts`, `ingredients` | `ConceptSummary`, `IngredientSummary` |
 | `CONCEPT_DETAIL` | `concept` | `Concept` |
 | `MENTIONS` | `mention`, `playground`, `previewDecision` | `Mention` |
+| `CORPUS_HEALTH` | `corpusHealth` | none |
 
-Every Teach Peas decision (`applyDecision`) invalidates `DISCOVERIES`, `CONCEPTS`, `CONCEPT_DETAIL`, `MENTIONS`, and `NOTE_DETAIL` (note pages show mentions), changes the decided `Discovery`, evicts a merged concept's `Concept` and `ConceptSummary`, and carries the new `lexiconRevision`. Deferring changes the `Discovery` and invalidates `DISCOVERIES`. Decision previews are queries run with `no-cache`, since each option change asks again.
+Every Teach Peas decision (`applyDecision`) invalidates `DISCOVERIES`, `CONCEPTS`, `CONCEPT_DETAIL`, `MENTIONS`, `NOTE_DETAIL` and `RECIPE_DETAIL` (note and recipe pages show mentions), `RECIPES` (the concept filter), `DASHBOARD_STATS` (top concepts), and `CORPUS_HEALTH`; changes the decided `Discovery`; evicts a merged concept's `Concept` and `ConceptSummary`; carries the new `lexiconRevision`; and, when more than 1,000 lines are affected, sets `reprocessingJobId` to the background run. Concept editing (classifications, tags, substitutions) changes the `Concept` and invalidates `CONCEPT_DETAIL`, since other concepts inherit classifications and list substitutions. Deferring changes the `Discovery` and invalidates `DISCOVERIES`. Decision previews are queries run with `no-cache`, since each option change asks again.
 
 Detail domains evict their entity type as well as the root field, because the read-through field policies would otherwise keep serving the cached entity.
 
@@ -123,7 +122,7 @@ Detail domains evict their entity type as well as the root field, because the re
 
 1. Validates the effect with Zod. A malformed effect means nobody knows what changed, so every active query refetches.
 2. Inside `client.refetchQueries({ updateCache })`: evicts each `changed` and `evicted` entity, drops the root fields and entity types of each invalidated domain, and garbage-collects. Apollo then refetches exactly the active queries the evictions touched; inactive queries refetch the next time they mount.
-3. Records `lexiconRevision`. A newer revision also invalidates the parse-dependent views (`NOTE_DETAIL`, `INGREDIENTS`, `INGREDIENT_DETAIL`, and the four knowledge domains); an older one changes nothing.
+3. Records `lexiconRevision`. A newer revision also invalidates the parse-dependent views (`NOTE_DETAIL`, `RECIPE_DETAIL`, `DASHBOARD_STATS`, and the five knowledge domains); an older one changes nothing.
 4. Starts polling `reprocessingJobId`, if any.
 
 Mutations that return the changed entity in their payload (`setLineReviewStatus` returns the refreshed `Note`) update every mounted view straight from Apollo's normalization, with an empty effect and no refetch.
@@ -140,9 +139,11 @@ Two related choices sit outside the coordinator: the default fetch policy is `ca
 - a malformed effect refetches every active query;
 - only a newer lexicon revision invalidates parse-dependent views (the "older revision does not overwrite newer data" scenario);
 - a reprocessing job is polled to completion and then refreshes parse-derived views;
-- a failed job is reported without invalidating anything (retry arrives with the Phase 4 reprocessing UI).
+- a failed job is reported without invalidating anything (batches retry in the queue; a run with a failed batch ends FAILED);
+- reinterpretation runs pass on their progress counts;
+- a coordinator that was disposed and resumed tracks jobs again.
 
-The alias-approval scenario runs end to end in `apps/web/tests/teach.spec.ts` (scenario A: the note shows powdered sugar after the decision). Merge and in-request reinterpretation are covered by the database and API integration tests; background reinterpretation through `reprocessingJobId` arrives with Phase 5.
+The alias-approval scenario runs end to end in `apps/web/tests/teach.spec.ts` (scenario A: the note shows powdered sugar after the decision). Merge and in-request reinterpretation are covered by the database and API integration tests. Background reinterpretation runs end to end in `apps/web/tests/reinterpret.spec.ts`: the decision and job responses are stubbed with `page.route`, and the banner moves from "400 of 1,200 lines" to "up to date".
 
 ## Test scenarios (M5)
 

@@ -52,6 +52,23 @@ export class IngredientWorker extends BaseWorker<
   }
 
   /**
+   * How the line parsed and resolved, for systemMonitor (Phase 5g)
+   */
+  protected getJobMetricsMetadata(
+    result: IngredientJobData
+  ): Record<string, unknown> | undefined {
+    const metadata = result?.metadata;
+    if (!metadata || metadata.lexiconRevision === undefined) return undefined;
+    return {
+      parseStatus: result.parseStatus,
+      resolutionStatuses: metadata.resolutionStatuses,
+      unknownTokens: metadata.unknownTokens,
+      candidateCount: metadata.candidateCount,
+      lexiconRevision: metadata.lexiconRevision,
+    };
+  }
+
+  /**
    * Get the operation name for this worker
    */
   protected getOperationName(): string {

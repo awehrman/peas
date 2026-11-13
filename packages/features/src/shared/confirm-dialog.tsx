@@ -1,5 +1,8 @@
 "use client";
 
+import { InlineError } from "./inline-error";
+import type { MutationResult } from "./mutation-result";
+
 import { type ReactElement, type ReactNode, useState } from "react";
 
 import {
@@ -12,9 +15,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@peas/components";
-
-import { InlineError } from "./inline-error";
-import type { MutationResult } from "./mutation-result";
 
 interface ConfirmDialogProps {
   trigger: ReactElement;
@@ -65,7 +65,11 @@ export function ConfirmDialog({
         </DialogHeader>
         <InlineError message={error} />
         <DialogFooter>
-          <Button type="button" variant="ghost" onClick={() => setIsOpen(false)}>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => setIsOpen(false)}
+          >
             Cancel
           </Button>
           <Button

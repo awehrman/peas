@@ -34,9 +34,9 @@ export type ApplyDecisionPayload = MutationPayload & {
   /** Mentions whose reading changed in this request. */
   mentionsUpdated?: Maybe<Scalars['Int']['output']>;
   message?: Maybe<Scalars['String']['output']>;
-  /** True when more lines were affected than one request reinterprets; run reinterpretCommand. */
+  /** True when more lines were affected than one request reinterprets; the queue picks them up and effect.reprocessingJobId tracks the run. */
   needsBackgroundReinterpret: Scalars['Boolean']['output'];
-  /** e.g. "yarn workspace @peas/queue reinterpret --revision 15 --decision 0193..." */
+  /** Fallback when the queue could not be reached, e.g. "yarn workspace @peas/queue reinterpret --revision 15 --decision 0193..." */
   reinterpretCommand?: Maybe<Scalars['String']['output']>;
   revision?: Maybe<Scalars['Int']['output']>;
   success: Scalars['Boolean']['output'];
@@ -70,6 +70,18 @@ export type BasicPayload = MutationPayload & {
   success: Scalars['Boolean']['output'];
 };
 
+export type ClassificationKind =
+  | 'ALLERGEN'
+  | 'CATEGORY'
+  | 'CERTIFICATION'
+  | 'DIETARY'
+  | 'FOOD_GROUP';
+
+export type ClassificationValue =
+  | 'FALSE'
+  | 'TRUE'
+  | 'UNKNOWN';
+
 export type CleanupAllDataPayload = MutationPayload & {
   __typename?: 'CleanupAllDataPayload';
   deletedCounts?: Maybe<Array<DeletedCount>>;
@@ -101,6 +113,9 @@ export type Concept = {
   parents: Array<ConceptRelationship>;
   slug: Scalars['String']['output'];
   status: ConceptStatus;
+  /** Concepts that can stand in for this one. */
+  substitutions: Array<ConceptSubstitution>;
+  tags: Array<Scalars['String']['output']>;
 };
 
 /** Example: { "attributeValueId": "0193...", "definitionKey": "preservation", "valueKey": "canned", "label": "Canned" } */
@@ -116,12 +131,24 @@ export type ConceptAttributeValue = {
 export type ConceptClassification = {
   __typename?: 'ConceptClassification';
   inheritedFrom?: Maybe<ConceptRef>;
+  /** True when this concept stores the value itself, so it can be removed here. */
+  isExplicit: Scalars['Boolean']['output'];
   key: Scalars['String']['output'];
   kind: Scalars['String']['output'];
   /** EXPLICIT, INHERITED, or CONFLICT. */
   source: Scalars['String']['output'];
   /** TRUE, FALSE, or UNKNOWN. */
   value: Scalars['String']['output'];
+};
+
+/** Example: { "conceptId": "0193...", "kind": "CATEGORY", "key": "CATEGORY:Spices", "value": "TRUE", "note": null } */
+export type ConceptClassificationInput = {
+  conceptId: Scalars['ID']['input'];
+  /** e.g. VEGAN, DAIRY, ALLERGEN_PEANUT, CATEGORY:Spices */
+  key: Scalars['String']['input'];
+  kind: ClassificationKind;
+  note?: InputMaybe<Scalars['String']['input']>;
+  value: ClassificationValue;
 };
 
 /** Example: { "id": "0193...", "type": "MAP_TO_CONCEPT", "revision": 14, "username": "allie", "canRevert": true } */
@@ -181,6 +208,22 @@ export type ConceptStatus =
   | 'PROPOSED'
   | 'VERIFIED';
 
+/** Example: { "concept": { "canonicalName": "plain yogurt" }, "ratio": "3/4 cup per cup", "note": "thin with milk" } */
+export type ConceptSubstitution = {
+  __typename?: 'ConceptSubstitution';
+  concept: ConceptRef;
+  note?: Maybe<Scalars['String']['output']>;
+  ratio?: Maybe<Scalars['String']['output']>;
+};
+
+/** Example: { "conceptId": "<buttermilk>", "substituteId": "<plain yogurt>", "ratio": "3/4 cup per cup", "note": null } */
+export type ConceptSubstitutionInput = {
+  conceptId: Scalars['ID']['input'];
+  note?: InputMaybe<Scalars['String']['input']>;
+  ratio?: InputMaybe<Scalars['String']['input']>;
+  substituteId: Scalars['ID']['input'];
+};
+
 /** Example: { "id": "0193...", "slug": "powdered-sugar", "canonicalName": "powdered sugar", "status": "VERIFIED", "entryCount": 3, "mentionCount": 12 } */
 export type ConceptSummary = {
   __typename?: 'ConceptSummary';
@@ -201,6 +244,76 @@ export type ConceptsPage = {
   total: Scalars['Int']['output'];
 };
 
+/**
+ * How well the corpus is understood, for the Corpus health card on /teach.
+ *
+ * Example: query { corpusHealth { lineCount mentions { total unresolved } openDiscoveryCount topUnknownPhrases { phrase mentionCount } live { linesPerSecond } } }
+ */
+export type CorpusHealth = {
+  __typename?: 'CorpusHealth';
+  awaitingParsing: Scalars['Int']['output'];
+  lexiconRevision: Scalars['Int']['output'];
+  /** Active ingredient lines. */
+  lineCount: Scalars['Int']['output'];
+  linesWithMentions: Scalars['Int']['output'];
+  /** Null when the queue cannot be reached. */
+  live?: Maybe<LiveParseMetrics>;
+  mentions: CorpusMentionCounts;
+  openDiscoveryCount: Scalars['Int']['output'];
+  parsedSuccessfully: Scalars['Int']['output'];
+  parsedWithErrors: Scalars['Int']['output'];
+  reinterpretBacklog: ReinterpretBacklog;
+  topUnknownPhrases: Array<UnknownPhrase>;
+};
+
+/** One stored corpus health snapshot. Example: { "takenAt": "2026-11-13T03:00:00.000Z", "trigger": "SCHEDULED", "parserVersion": "2.1.0", "totalMentions": 5402, "unresolvedMentions": 540 } */
+export type CorpusHealthSnapshot = {
+  __typename?: 'CorpusHealthSnapshot';
+  autoResolvedMentions: Scalars['Int']['output'];
+  /** Average resolution candidates per mention. */
+  avgCandidates: Scalars['Float']['output'];
+  id: Scalars['ID']['output'];
+  lexiconRevision: Scalars['Int']['output'];
+  needsReviewMentions: Scalars['Int']['output'];
+  openDiscoveries: Scalars['Int']['output'];
+  parserVersion: Scalars['String']['output'];
+  takenAt: Scalars['String']['output'];
+  totalLines: Scalars['Int']['output'];
+  totalMentions: Scalars['Int']['output'];
+  /** SCHEDULED, REINTERPRET, REPARSE, or MANUAL. */
+  trigger: Scalars['String']['output'];
+  unresolvedMentions: Scalars['Int']['output'];
+  verifiedMentions: Scalars['Int']['output'];
+};
+
+/**
+ * Everything /teach/health charts.
+ *
+ * Example: query { corpusHealthTrends(weeks: 12) { parserVersion snapshots { takenAt totalMentions unresolvedMentions } byParserVersion { parserVersion unresolved } reviewByWeek { weekStart decisions } } }
+ */
+export type CorpusHealthTrends = {
+  __typename?: 'CorpusHealthTrends';
+  byParserVersion: Array<ParserVersionHealth>;
+  mostAmbiguousPhrases: Array<HealthPhrase>;
+  /** The running parser's version; lines written by another version are reparsed by startReparse. */
+  parserVersion: Scalars['String']['output'];
+  /** Oldest first; weeks without decisions are omitted. */
+  reviewByWeek: Array<WeeklyReview>;
+  /** Oldest first. */
+  snapshots: Array<CorpusHealthSnapshot>;
+  topUnknownPhrases: Array<HealthPhrase>;
+};
+
+/** Example: { "total": 5402, "autoResolved": 4100, "needsReview": 610, "unresolved": 540, "verified": 152 } */
+export type CorpusMentionCounts = {
+  __typename?: 'CorpusMentionCounts';
+  autoResolved: Scalars['Int']['output'];
+  needsReview: Scalars['Int']['output'];
+  total: Scalars['Int']['output'];
+  unresolved: Scalars['Int']['output'];
+  verified: Scalars['Int']['output'];
+};
+
 /** Example: { "success": true, "id": "cm3k..." } */
 export type CreateIngredientPayload = MutationPayload & {
   __typename?: 'CreateIngredientPayload';
@@ -213,11 +326,12 @@ export type CreateIngredientPayload = MutationPayload & {
 /**
  * Corpus-wide numbers for the dashboard. Top lists hold up to 8 entries.
  *
- * Example: query { dashboardStats { noteCount recipeCount notesByStatus { completed failed } topIngredients { name lineCount } } }
+ * Example: query { dashboardStats { noteCount recipeCount notesByStatus { completed failed } topConcepts { name lineCount } } }
  */
 export type DashboardStats = {
   __typename?: 'DashboardStats';
-  ingredientCount: Scalars['Int']['output'];
+  /** Concepts that have not been merged away. */
+  conceptCount: Scalars['Int']['output'];
   ingredientLines: IngredientLineStats;
   instructionLineCount: Scalars['Int']['output'];
   noteCount: Scalars['Int']['output'];
@@ -227,14 +341,15 @@ export type DashboardStats = {
   /** Completed notes that have not been promoted to a recipe yet. */
   notesReadyToPromote: Scalars['Int']['output'];
   recipeCount: Scalars['Int']['output'];
-  reviewedIngredientCount: Scalars['Int']['output'];
   /** Category names by note count. */
   topCategories: Array<LabelCount>;
-  topIngredients: Array<TopIngredient>;
+  /** Concepts mentioned by the most active ingredient lines. */
+  topConcepts: Array<TopConcept>;
   /** Websites with the most saved recipe URLs. */
   topSources: Array<LabelCount>;
   /** Tag names by note count. */
   topTags: Array<LabelCount>;
+  verifiedConceptCount: Scalars['Int']['output'];
 };
 
 /**
@@ -296,6 +411,8 @@ export type Discovery = {
   entries: Array<LexiconEntryRef>;
   /** Example mentions, paged. Example: examples(limit: 20, offset: 20) */
   examples: Array<DiscoveryExample>;
+  /** STRUCTURAL_PATTERN only (null otherwise): up to 10 example lines as pending golden cases (JSON) for packages/parser/fixtures/golden/structural.dev.json, each with v2's current reading and an empty expected value to fill in. */
+  fixtureBlock?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   key: Scalars['String']['output'];
   mentionCount: Scalars['Int']['output'];
@@ -374,6 +491,22 @@ export type EvernoteMetadata = {
   tags: Array<Scalars['String']['output']>;
 };
 
+/** How a food relates to its parent: chicken thigh PART_OF chicken, kosher salt IS_A salt. */
+export type FoodRelationshipType =
+  | 'DERIVED_FROM'
+  | 'IS_A'
+  | 'PART_OF'
+  | 'PROCESSED_FROM';
+
+/** An open discovery's phrase, for the health page's top lists. Example: { "discoveryId": "0193...", "type": "UNKNOWN_FOOD_PHRASE", "phrase": "gochugaru", "mentionCount": 14 } */
+export type HealthPhrase = {
+  __typename?: 'HealthPhrase';
+  discoveryId: Scalars['ID']['output'];
+  mentionCount: Scalars['Int']['output'];
+  phrase: Scalars['String']['output'];
+  type: DiscoveryType;
+};
+
 /** Counts for the import page. Example: { "numberOfNotes": 1, "numberOfIngredients": 10, "numberOfParsingErrors": 0 } */
 export type ImportStats = {
   __typename?: 'ImportStats';
@@ -390,23 +523,28 @@ export type ImportStats = {
 export type Ingredient = {
   __typename?: 'Ingredient';
   aliases: Array<IngredientAlias>;
-  /** e.g. "Spices". */
-  category?: Maybe<Scalars['String']['output']>;
+  /** Category names, alphabetical, e.g. ["Produce", "Spices"]. */
+  categories: Array<Scalars['String']['output']>;
+  /** Automatic tags (VEGAN, VEGETARIAN, GLUTEN_FREE) computed from the food's properties, explicit or inherited; empty when the food has no core type. */
+  dietaryTags: Array<IngredientProperty>;
   id: Scalars['ID']['output'];
   /** True for ingredients made of other ingredients, e.g. "garam masala". */
   isComposedIngredient: Scalars['Boolean']['output'];
   isReviewed: Scalars['Boolean']['output'];
   name: Scalars['String']['output'];
-  parent?: Maybe<IngredientOption>;
   plural?: Maybe<Scalars['String']['output']>;
-  properties: Array<IngredientProperty>;
+  /** Properties set here or inherited, in card order. */
+  propertyStates: Array<IngredientPropertyState>;
   referenceCount: Scalars['Int']['output'];
   /** The most recent references (capped at 50). */
   references: Array<IngredientReference>;
+  /** Foods this one comes from or belongs to, oldest first. Example: canned tomatoes -> [{ relationshipType: PROCESSED_FROM, ingredient: { name: "tomato" } }] */
+  relationships: Array<IngredientRelation>;
   reviewedAt?: Maybe<Scalars['String']['output']>;
   substitutions: Array<IngredientOption>;
   tags: Array<Scalars['String']['output']>;
-  variants: Array<IngredientOption>;
+  /** Foods that relate to this one. Example: tomato -> [{ relationshipType: PROCESSED_FROM, ingredient: { name: "canned tomatoes" } }] */
+  variants: Array<IngredientRelation>;
 };
 
 /** Another name for an ingredient. Example: { "id": "cm3a...", "name": "scallion" } on "green onion". */
@@ -439,7 +577,7 @@ export type IngredientCreateInput = {
 /**
  * One raw ingredient line from a note, with its parse and review state.
  *
- * Example: { "id": "cm3l...", "blockIndex": 0, "lineIndex": 2, "reference": "2 cups flour", "parseStatus": "COMPLETED_SUCCESSFULLY", "reviewStatus": "UNREVIEWED", "parserVersion": "v1" }
+ * Example: { "id": "cm3l...", "blockIndex": 0, "lineIndex": 2, "reference": "2 cups flour", "parseStatus": "COMPLETED_SUCCESSFULLY", "reviewStatus": "UNREVIEWED", "parserVersion": "v2:2.0.0" }
  */
 export type IngredientLine = {
   __typename?: 'IngredientLine';
@@ -448,14 +586,13 @@ export type IngredientLine = {
   id: Scalars['ID']['output'];
   isActive: Scalars['Boolean']['output'];
   lineIndex: Scalars['Int']['output'];
-  /** v2 mentions, one per segment, once the backfill has run. Empty before that. */
+  /** v2 mentions, one per segment part ("salt and pepper" gives two). Empty until the line is parsed. */
   mentions: Array<Mention>;
   parseStatus: ParseStatus;
   parserVersion?: Maybe<Scalars['String']['output']>;
   /** The line exactly as written in the note. */
   reference: Scalars['String']['output'];
   reviewStatus: LineReviewStatus;
-  segments: Array<ParsedSegment>;
 };
 
 /**
@@ -480,26 +617,44 @@ export type IngredientOption = {
   name: Scalars['String']['output'];
 };
 
+/** Ingredient card properties. VEGAN, VEGETARIAN, and GLUTEN_FREE are automatic tags computed from the food's properties (vegetarian: no meat or fish; vegan: also no dairy or egg; gluten-free: no gluten; none without a core type) and are ignored on save; the rest are stored as classifications, core types and allergens inheriting across every relationship. */
 export type IngredientProperty =
   | 'ALCOHOL'
   | 'CORN'
   | 'DAIRY'
   | 'EGG'
+  | 'FAT'
   | 'FISH'
   | 'FRUIT'
+  | 'GLUTEN'
   | 'GLUTEN_FREE'
   | 'GRAIN'
   | 'HERB'
   | 'LEGUME'
   | 'MEAT'
   | 'NUTS'
+  | 'SEASONING'
   | 'SESAME'
   | 'SHELLFISH'
   | 'SOY'
   | 'SPICE'
+  | 'SWEETENER'
   | 'VEGAN'
   | 'VEGETABLE'
   | 'VEGETARIAN';
+
+/**
+ * One property on the ingredient card: what this food says, what it would inherit, and from which food. A FALSE `explicit` is a "does not contain" that overrides an inherited TRUE.
+ *
+ * Example: { "property": "GLUTEN", "explicit": null, "inherited": "TRUE", "inheritedFrom": { "name": "wheat" } }
+ */
+export type IngredientPropertyState = {
+  __typename?: 'IngredientPropertyState';
+  explicit?: Maybe<ClassificationValue>;
+  inherited?: Maybe<ClassificationValue>;
+  inheritedFrom?: Maybe<IngredientOption>;
+  property: IngredientProperty;
+};
 
 /** A line that mentions the ingredient. Example: { "id": "cm3f...", "reference": "3 garlic cloves, minced", "noteId": "cm3n...", "noteTitle": "Weeknight Chili" } */
 export type IngredientReference = {
@@ -510,28 +665,46 @@ export type IngredientReference = {
   reference: Scalars['String']['output'];
 };
 
+/** One relationship between two foods, seen from the card's food. Example: { "relationshipType": "PART_OF", "ingredient": { "name": "chicken" } } */
+export type IngredientRelation = {
+  __typename?: 'IngredientRelation';
+  ingredient: IngredientOption;
+  relationshipType: FoodRelationshipType;
+};
+
+/** Example: { "ingredientId": "0193...", "relationshipType": "PROCESSED_FROM" } */
+export type IngredientRelationInput = {
+  ingredientId: Scalars['ID']['input'];
+  relationshipType: FoodRelationshipType;
+};
+
 /**
  * Saves the ingredient editor form. Set advanceToNext to get the next unreviewed ingredient's id back.
  *
- * Example: { "id": "cm3i...", "name": "smoked paprika", "plural": null, "properties": ["VEGAN", "SPICE"], "isComposedIngredient": false, "parentIngredientId": "cm3p...", "substitutionIds": [], "aliases": ["pimentón"], "category": "Spices", "tags": [], "markReviewed": true, "advanceToNext": true }
+ * Example: { "id": "cm3i...", "name": "smoked paprika", "plural": null, "properties": ["SPICE"], "excludedProperties": [], "isComposedIngredient": false, "relationships": [{ "ingredientId": "cm3p...", "relationshipType": "IS_A" }], "substitutionIds": [], "aliases": ["pimentón"], "categories": ["Spices"], "tags": [], "markReviewed": true, "advanceToNext": true }
  */
 export type IngredientSaveInput = {
   advanceToNext: Scalars['Boolean']['input'];
   aliases: Array<Scalars['String']['input']>;
-  category?: InputMaybe<Scalars['String']['input']>;
+  /** The complete set of category names; ones left out are removed. */
+  categories: Array<Scalars['String']['input']>;
+  /** Properties set to "does not contain", overriding what the food would inherit. */
+  excludedProperties?: InputMaybe<Array<IngredientProperty>>;
   id: Scalars['ID']['input'];
   isComposedIngredient: Scalars['Boolean']['input'];
   markReviewed: Scalars['Boolean']['input'];
   name: Scalars['String']['input'];
-  parentIngredientId?: InputMaybe<Scalars['ID']['input']>;
   plural?: InputMaybe<Scalars['String']['input']>;
+  /** Properties set to "contains" on this food (VEGAN and VEGETARIAN are ignored). */
   properties: Array<IngredientProperty>;
+  /** The complete set of foods this one relates to; relationships left out are removed. */
+  relationships: Array<IngredientRelationInput>;
   substitutionIds: Array<Scalars['ID']['input']>;
   tags: Array<Scalars['String']['input']>;
 };
 
 /**
- * One row of the ingredients list.
+ * One food on the ingredients list (an approved or proposed food concept). `isReviewed` means approved; `properties` are the ones in effect (set here or inherited) plus the automatic VEGAN, VEGETARIAN, and GLUTEN_FREE tags.
  *
  * Example: { "id": "cm3i...", "name": "garlic", "plural": null, "isReviewed": true, "parentIngredientId": null, "properties": ["VEGAN", "VEGETARIAN", "VEGETABLE"], "referenceCount": 42 }
  */
@@ -544,11 +717,11 @@ export type IngredientSummary = {
   parentIngredientId?: Maybe<Scalars['ID']['output']>;
   plural?: Maybe<Scalars['String']['output']>;
   properties: Array<IngredientProperty>;
-  /** How many ingredient lines mention this ingredient. */
+  /** How many active ingredient lines mention this food. */
   referenceCount: Scalars['Int']['output'];
 };
 
-/** Which ingredients the ingredients page lists. Lowercase to match the page's ?view= search param. */
+/** Which foods the ingredients page lists: all approved foods, or the proposed ones waiting for review. Lowercase to match the page's ?view= search param. */
 export type IngredientView =
   | 'all'
   | 'unreviewed';
@@ -565,16 +738,15 @@ export type InstructionLine = {
 /**
  * Query areas whose cached results a mutation may have made stale. The client's cache coordinator refetches active queries registered for each domain.
  *
- * Example: renaming an ingredient invalidates INGREDIENTS (the list shows the name) and INGREDIENT_DETAIL (other ingredients show it as a parent or substitution).
+ * Example: merging two concepts invalidates CONCEPTS (the list shows both) and CONCEPT_DETAIL (other concepts show them as parents or substitutions).
  */
 export type InvalidationDomain =
   | 'CONCEPTS'
   | 'CONCEPT_DETAIL'
+  | 'CORPUS_HEALTH'
   | 'DASHBOARD_STATS'
   | 'DISCOVERIES'
   | 'IMPORT_STATS'
-  | 'INGREDIENTS'
-  | 'INGREDIENT_DETAIL'
   | 'MENTIONS'
   | 'NOTES'
   | 'NOTE_DETAIL'
@@ -593,10 +765,15 @@ export type Job = {
   errorMessage?: Maybe<Scalars['String']['output']>;
   /** BullMQ job id, e.g. "cm3n...-ingredient-0-2" (note, block 0, line 2). */
   jobId: Scalars['ID']['output'];
-  noteId: Scalars['ID']['output'];
+  /** Set for import jobs; null for reinterpretation runs. */
+  noteId?: Maybe<Scalars['ID']['output']>;
+  /** Lines done so far, for reinterpretation runs. */
+  processedCount?: Maybe<Scalars['Int']['output']>;
   retryCount: Scalars['Int']['output'];
   startedAt?: Maybe<Scalars['String']['output']>;
   status: JobStatus;
+  /** Lines in the run, for reinterpretation runs. */
+  totalCount?: Maybe<Scalars['Int']['output']>;
   type: JobType;
 };
 
@@ -612,7 +789,9 @@ export type JobType =
   | 'PROCESS_CATEGORIZATION'
   | 'PROCESS_INGREDIENT_LINE'
   | 'PROCESS_INSTRUCTION_LINE'
-  | 'PROCESS_NOTE';
+  | 'PROCESS_NOTE'
+  /** Background reinterpretation of mentions after a Teach Peas decision (Phase 5). */
+  | 'REINTERPRET';
 
 /** A ranked name with a count. Example: { "label": "Serious Eats", "count": 57 } */
 export type LabelCount = {
@@ -634,6 +813,29 @@ export type LexiconEntryRef = {
   text: Scalars['String']['output'];
 };
 
+/** A name or modifier in the lexicon. Example: { "text": "chicken thighs", "role": "FOOD", "kind": "PLURAL", "status": "ACTIVE", "targetLabel": "chicken thigh" } */
+export type LexiconEntryRow = {
+  __typename?: 'LexiconEntryRow';
+  conceptId?: Maybe<Scalars['ID']['output']>;
+  id: Scalars['ID']['output'];
+  /** CANONICAL, PLURAL, ALIAS, ... for FOOD entries. */
+  kind?: Maybe<Scalars['String']['output']>;
+  /** FOOD, ATTRIBUTE, PREPARATION, DEGREE, MEASUREMENT_MODIFIER, or INSTRUCTION. */
+  role: Scalars['String']['output'];
+  /** ACTIVE or PROPOSED (proposed entries are only used when curating). */
+  status: Scalars['String']['output'];
+  targetLabel: Scalars['String']['output'];
+  text: Scalars['String']['output'];
+};
+
+export type LexiconPage = {
+  __typename?: 'LexiconPage';
+  items: Array<LexiconEntryRow>;
+  page: Scalars['Int']['output'];
+  pageSize: Scalars['Int']['output'];
+  total: Scalars['Int']['output'];
+};
+
 /** A person's verdict on how an ingredient line was parsed. */
 export type LineReviewStatus =
   | 'CORRECT'
@@ -641,9 +843,35 @@ export type LineReviewStatus =
   | 'UNREVIEWED';
 
 /**
- * A stored v2 mention of one ingredient-line segment (written by the backfill and by reinterpretation).
+ * The queue's last hour of parses (in memory per queue process).
  *
- * Example: { "id": "0193...", "segmentIndex": 0, "rawText": "1 lb boneless chicken thighs", "status": "AUTO_RESOLVED", "concept": { "canonicalName": "chicken thigh" }, "quantity": "1 lb" }
+ * Example: { "windowSeconds": 3600, "lineCount": 1200, "linesPerSecond": 0.33, "structuralSuccessShare": 0.97, "averageCandidatesPerSegment": 1.4, "unknownTokens": 85, "lexiconRevision": 15 }
+ */
+export type LiveParseMetrics = {
+  __typename?: 'LiveParseMetrics';
+  averageCandidatesPerSegment?: Maybe<Scalars['Float']['output']>;
+  lexiconRevision?: Maybe<Scalars['Int']['output']>;
+  lineCount: Scalars['Int']['output'];
+  linesPerSecond: Scalars['Float']['output'];
+  /** 0..1; null before any line. */
+  structuralSuccessShare?: Maybe<Scalars['Float']['output']>;
+  unknownTokens: Scalars['Int']['output'];
+  windowSeconds: Scalars['Int']['output'];
+};
+
+/** Example: { "success": true, "linesDeactivated": 3 } */
+export type MarkNoisePayload = MutationPayload & {
+  __typename?: 'MarkNoisePayload';
+  effect: MutationEffect;
+  linesDeactivated?: Maybe<Scalars['Int']['output']>;
+  message?: Maybe<Scalars['String']['output']>;
+  success: Scalars['Boolean']['output'];
+};
+
+/**
+ * A stored v2 mention of one part of an ingredient-line segment (written on import, by the backfill, and by reinterpretation). "salt and pepper" is one segment with two parts.
+ *
+ * Example: { "id": "0193...", "segmentIndex": 0, "partIndex": 0, "span": { "start": 0, "end": 28, "text": "1 lb boneless chicken thighs" }, "rawText": "1 lb boneless chicken thighs", "status": "AUTO_RESOLVED", "concept": { "canonicalName": "chicken thigh" }, "quantity": "1 lb" }
  */
 export type Mention = {
   __typename?: 'Mention';
@@ -651,11 +879,14 @@ export type Mention = {
   concept?: Maybe<ConceptRef>;
   id: Scalars['ID']['output'];
   lexiconRevision: Scalars['Int']['output'];
+  partIndex: Scalars['Int']['output'];
   /** Readable quantity, e.g. "1 lb" or "2-3 cups". */
   quantity?: Maybe<Scalars['String']['output']>;
   rawText: Scalars['String']['output'];
   score?: Maybe<Scalars['Float']['output']>;
   segmentIndex: Scalars['Int']['output'];
+  /** Where this part sits in the line. */
+  span: TextSpan;
   status: MentionStatus;
   summary: ResolutionView;
   tokens: Array<SyntaxToken>;
@@ -677,18 +908,38 @@ export type Mutation = {
   applyDecision: ApplyDecisionPayload;
   /** Admin only. Deletes all imported data and R2 objects; users and sessions are kept. */
   cleanupAllData: CleanupAllDataPayload;
+  /** Adds an approved food through a CREATE_CONCEPT decision. */
   createIngredient: CreateIngredientPayload;
   /** Admin only. Sets an open discovery aside without deciding it. */
   deferDiscovery: BasicPayload;
+  /** Admin only. A structural pattern's lines are not ingredient lines (headers, OCR artifacts): deactivates them, drops their mentions from every count, and resolves the discovery. */
+  markDiscoveryAsNoise: MarkNoisePayload;
   /** Admin only. Promotes every COMPLETED note that has no recipe yet. */
   promoteCompletedNotes: PromoteCompletedNotesPayload;
   /** Creates a recipe from a note (or returns the existing one). Example: promoteNoteToRecipe(noteId: "cm3n...") */
   promoteNoteToRecipe: PromoteNotePayload;
   /** Admin only. Mines adjacency counts into open discoveries and suggests relationships by name. */
   refreshDiscoveries: RefreshDiscoveriesPayload;
+  /** Admin only. Removes an explicit classification; inherited values still apply. */
+  removeConceptClassification: BasicPayload;
+  /** Admin only. */
+  removeConceptSubstitution: BasicPayload;
+  /** Admin only. Re-reads unresolved and needs-review mentions in exploratory mode now, instead of waiting for the weekly sweep; only discoveries are written. */
+  runExploratorySweep: StartJobPayload;
+  /** Saves the ingredient card. Name, plural, alternate names, and parent go through one EDIT_CONCEPT decision (revertible; affected lines are reinterpreted); the other fields are written directly; saving a proposed food approves it. */
   saveIngredient: SaveIngredientPayload;
+  /** Admin only. Sets an explicit classification (a dietary property, food group, allergen, or CATEGORY:<name>). Example: setConceptClassification(input: { conceptId: "0193...", kind: DIETARY, key: "VEGAN", value: TRUE }) */
+  setConceptClassification: BasicPayload;
+  /** Admin only. Records that substituteId can stand in for conceptId. */
+  setConceptSubstitution: BasicPayload;
+  /** Admin only. Replaces the concept's tags. Example: setConceptTags(conceptId: "0193...", tags: ["pantry", "baking"]) */
+  setConceptTags: BasicPayload;
   /** Marks how well a line was parsed. Example: setLineReviewStatus(lineId: "cm3l...", status: INCORRECT) */
   setLineReviewStatus: SetLineReviewStatusPayload;
+  /** Admin only. Reparses every line written by another parser version, after a grammar change ships. The run's id ("reparse-<version>") comes back as effect.reprocessingJobId and reports progress through Query.job. */
+  startReparse: StartJobPayload;
+  /** Admin only. Stores a corpus health snapshot now. */
+  takeHealthSnapshot: BasicPayload;
   updateRecipe: BasicPayload;
 };
 
@@ -708,13 +959,46 @@ export type MutationDeferDiscoveryArgs = {
 };
 
 
+export type MutationMarkDiscoveryAsNoiseArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
 export type MutationPromoteNoteToRecipeArgs = {
   noteId: Scalars['ID']['input'];
 };
 
 
+export type MutationRemoveConceptClassificationArgs = {
+  conceptId: Scalars['ID']['input'];
+  key: Scalars['String']['input'];
+};
+
+
+export type MutationRemoveConceptSubstitutionArgs = {
+  conceptId: Scalars['ID']['input'];
+  substituteId: Scalars['ID']['input'];
+};
+
+
 export type MutationSaveIngredientArgs = {
   input: IngredientSaveInput;
+};
+
+
+export type MutationSetConceptClassificationArgs = {
+  input: ConceptClassificationInput;
+};
+
+
+export type MutationSetConceptSubstitutionArgs = {
+  input: ConceptSubstitutionInput;
+};
+
+
+export type MutationSetConceptTagsArgs = {
+  conceptId: Scalars['ID']['input'];
+  tags: Array<Scalars['String']['input']>;
 };
 
 
@@ -866,21 +1150,12 @@ export type ParseStatus =
   | 'COMPLETED_SUCCESSFULLY'
   | 'COMPLETED_WITH_ERROR';
 
-/**
- * One piece of a parsed ingredient line as stored by the import pipeline (v1 parser today).
- *
- * Example for "2 cups flour": [{ "index": 0, "type": "amount", "value": "2" }, { "index": 1, "type": "unit", "value": "cups" }, { "index": 2, "type": "ingredient", "value": "flour", "ingredientId": "cm3i..." }]
- */
-export type ParsedSegment = {
-  __typename?: 'ParsedSegment';
-  index: Scalars['Int']['output'];
-  /** Linked ingredient for ingredient segments. */
-  ingredientId?: Maybe<Scalars['ID']['output']>;
-  /** Grammar rule that produced the segment, when recorded. */
-  rule?: Maybe<Scalars['String']['output']>;
-  /** Segment role from the parser, e.g. amount, unit, ingredient, description. */
-  type: Scalars['String']['output'];
-  value: Scalars['String']['output'];
+/** Mentions on active lines written by one parser version. Example: { "parserVersion": "2.0.0", "total": 1200, "unresolved": 310 } */
+export type ParserVersionHealth = {
+  __typename?: 'ParserVersionHealth';
+  parserVersion: Scalars['String']['output'];
+  total: Scalars['Int']['output'];
+  unresolved: Scalars['Int']['output'];
 };
 
 /** One segment as the playground resolves it. */
@@ -943,10 +1218,14 @@ export type PromoteNotePayload = MutationPayload & {
 
 export type Query = {
   __typename?: 'Query';
-  /** Admin only. */
+  /** Concept.decisions is empty for non-admins. */
   concept?: Maybe<Concept>;
-  /** Admin only. Example: concepts(query: "sugar", page: 1) */
+  /** Admin only. Every concept that has not been merged away, approved or not. Example: concepts(query: "sugar", page: 1) */
   concepts: ConceptsPage;
+  /** Admin only. */
+  corpusHealth: CorpusHealth;
+  /** Admin only. Snapshots (newest 90), unresolved share by parser version, weekly review throughput, and the top open phrases. Example: corpusHealthTrends(weeks: 12) */
+  corpusHealthTrends: CorpusHealthTrends;
   dashboardStats: DashboardStats;
   /** Admin only. */
   discovery?: Maybe<Discovery>;
@@ -958,8 +1237,13 @@ export type Query = {
   ingredient?: Maybe<Ingredient>;
   ingredientCategoryNames: Array<Scalars['String']['output']>;
   ingredientCounts: IngredientCounts;
+  /** The food that already answers to a name (its name, plural, or an alternate name), other than excludeId; null when the name is free. Example: ingredientNameOwner(name: "scallion", excludeId: "0193...") -> { name: "green onion" } */
+  ingredientNameOwner?: Maybe<IngredientOption>;
+  /** The ingredients page: approved foods (view: all) or proposed ones (view: unreviewed), alphabetical. */
   ingredients: Array<IngredientSummary>;
   job?: Maybe<Job>;
+  /** Admin only. Every name and modifier Peas knows, alphabetical. Example: lexicon(query: "chick", role: "FOOD", page: 1) */
+  lexicon: LexiconPage;
   mention?: Maybe<Mention>;
   note?: Maybe<Note>;
   /** Filters are optional; blank strings are ignored. Example: notes(status: FAILED, page: 1) */
@@ -970,11 +1254,11 @@ export type Query = {
   previewDecision: DecisionPreview;
   recipe?: Maybe<Recipe>;
   recipeTaxonomy: RecipeTaxonomy;
-  /** Example: recipes(query: "chili", category: "Dinner") */
+  /** Example: recipes(query: "chili", category: "Dinner"). conceptId finds recipes that mention the concept or a more specific one (IS_A, PART_OF) unless exactConcept is true. */
   recipes: RecipesPage;
-  /** Admin only. Name and entry search for concept pickers, up to 10 results. Example: searchConcepts(query: "thigh") */
+  /** Name and entry search for concept pickers, up to 10 results. Example: searchConcepts(query: "thigh") */
   searchConcepts: Array<ConceptRef>;
-  /** Name search for pickers, up to 10 results. Example: searchIngredients(query: "papr", excludeId: "cm3i...") -> [{ name: "paprika" }, { name: "smoked paprika" }] */
+  /** Name search for the card's pickers, up to 10 results. Example: searchIngredients(query: "papr", excludeId: "0193...") -> [{ name: "paprika" }, { name: "smoked paprika" }] */
   searchIngredients: Array<IngredientOption>;
   viewer?: Maybe<Viewer>;
   /** Admin only. */
@@ -990,6 +1274,11 @@ export type QueryConceptArgs = {
 export type QueryConceptsArgs = {
   page?: InputMaybe<Scalars['Int']['input']>;
   query?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type QueryCorpusHealthTrendsArgs = {
+  weeks?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
@@ -1010,6 +1299,12 @@ export type QueryIngredientArgs = {
 };
 
 
+export type QueryIngredientNameOwnerArgs = {
+  excludeId?: InputMaybe<Scalars['ID']['input']>;
+  name: Scalars['String']['input'];
+};
+
+
 export type QueryIngredientsArgs = {
   view: IngredientView;
 };
@@ -1017,6 +1312,13 @@ export type QueryIngredientsArgs = {
 
 export type QueryJobArgs = {
   jobId: Scalars['ID']['input'];
+};
+
+
+export type QueryLexiconArgs = {
+  page?: InputMaybe<Scalars['Int']['input']>;
+  query?: InputMaybe<Scalars['String']['input']>;
+  role?: InputMaybe<Scalars['String']['input']>;
 };
 
 
@@ -1055,6 +1357,8 @@ export type QueryRecipeArgs = {
 
 export type QueryRecipesArgs = {
   category?: InputMaybe<Scalars['String']['input']>;
+  conceptId?: InputMaybe<Scalars['ID']['input']>;
+  exactConcept?: InputMaybe<Scalars['Boolean']['input']>;
   page?: InputMaybe<Scalars['Int']['input']>;
   query?: InputMaybe<Scalars['String']['input']>;
   tag?: InputMaybe<Scalars['String']['input']>;
@@ -1124,6 +1428,8 @@ export type RecipeUpdateInput = {
 /** Example: query { recipes(category: "Dinner", tag: "spicy", page: 1) { total items { id title } } } */
 export type RecipesPage = {
   __typename?: 'RecipesPage';
+  /** The concept filter, when recipes(conceptId:) was given and the concept exists. */
+  concept?: Maybe<ConceptRef>;
   items: Array<RecipeSummary>;
   page: Scalars['Int']['output'];
   pageSize: Scalars['Int']['output'];
@@ -1139,6 +1445,16 @@ export type RefreshDiscoveriesPayload = MutationPayload & {
   modifiersUpdated?: Maybe<Scalars['Int']['output']>;
   relationshipSuggestions?: Maybe<Scalars['Int']['output']>;
   success: Scalars['Boolean']['output'];
+};
+
+/** Background reinterpretation runs by state. */
+export type ReinterpretBacklog = {
+  __typename?: 'ReinterpretBacklog';
+  failed: Scalars['Int']['output'];
+  /** Batches that failed after every retry, across all runs. */
+  failedBatches: Scalars['Int']['output'];
+  pending: Scalars['Int']['output'];
+  processing: Scalars['Int']['output'];
 };
 
 /** A ranked reading of a segment. Example: { "conceptName": "chicken thigh", "score": 0.833, "reasons": ["head:chicken thigh(2 tokens)", "entry:PLURAL"], "attributes": ["bone:boneless"] } */
@@ -1217,6 +1533,15 @@ export type SourceUrl = {
   url: Scalars['String']['output'];
 };
 
+/** A background job the queue accepted. Example: { "success": true, "jobId": "reparse-2.1.0" } */
+export type StartJobPayload = MutationPayload & {
+  __typename?: 'StartJobPayload';
+  effect: MutationEffect;
+  jobId?: Maybe<Scalars['ID']['output']>;
+  message?: Maybe<Scalars['String']['output']>;
+  success: Scalars['Boolean']['output'];
+};
+
 /**
  * One word or punctuation mark of a parsed segment, for highlighting by role.
  *
@@ -1240,13 +1565,21 @@ export type TextSpan = {
   text: Scalars['String']['output'];
 };
 
-/** Example: { "ingredientId": "cm3i...", "name": "garlic", "lineCount": 214 } */
-export type TopIngredient = {
-  __typename?: 'TopIngredient';
-  ingredientId: Scalars['ID']['output'];
-  /** How many ingredient lines mention it. */
+/** Example: { "conceptId": "0193...", "name": "garlic", "lineCount": 214 } */
+export type TopConcept = {
+  __typename?: 'TopConcept';
+  conceptId: Scalars['ID']['output'];
+  /** How many active ingredient lines mention it. */
   lineCount: Scalars['Int']['output'];
   name: Scalars['String']['output'];
+};
+
+/** An open unknown-food discovery. Example: { "discoveryId": "0193...", "phrase": "gochugaru", "mentionCount": 14 } */
+export type UnknownPhrase = {
+  __typename?: 'UnknownPhrase';
+  discoveryId: Scalars['ID']['output'];
+  mentionCount: Scalars['Int']['output'];
+  phrase: Scalars['String']['output'];
 };
 
 export type UserType =
@@ -1280,6 +1613,16 @@ export type Vocabulary = {
   /** e.g. ["heaping", "packed", ...] */
   measurementModifierKeys: Array<Scalars['String']['output']>;
   preparations: Array<PreparationOption>;
+};
+
+/** Review throughput for one week (reverts excluded). Example: { "weekStart": "2026-11-09", "decisions": 14, "mentionsChanged": 212 } */
+export type WeeklyReview = {
+  __typename?: 'WeeklyReview';
+  decisions: Scalars['Int']['output'];
+  /** Mentions the week's decisions changed, including background reinterpretation. */
+  mentionsChanged: Scalars['Int']['output'];
+  /** Monday of the week, as an ISO date. */
+  weekStart: Scalars['String']['output'];
 };
 
 /** Example: { "year": 2019, "count": 48 } */
@@ -1367,11 +1710,13 @@ export type ResolversInterfaceTypes<_RefType extends Record<string, unknown>> = 
     | ( BasicPayload )
     | ( CleanupAllDataPayload )
     | ( CreateIngredientPayload )
+    | ( MarkNoisePayload )
     | ( PromoteCompletedNotesPayload )
     | ( PromoteNotePayload )
     | ( RefreshDiscoveriesPayload )
     | ( SaveIngredientPayload )
     | ( Omit<SetLineReviewStatusPayload, 'note'> & { note?: Maybe<_RefType['Note']> } )
+    | ( StartJobPayload )
   ;
 }>;
 
@@ -1383,18 +1728,27 @@ export type ResolversTypes = ResolversObject<{
   AttributeValueOption: ResolverTypeWrapper<AttributeValueOption>;
   BasicPayload: ResolverTypeWrapper<BasicPayload>;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
+  ClassificationKind: ClassificationKind;
+  ClassificationValue: ClassificationValue;
   CleanupAllDataPayload: ResolverTypeWrapper<CleanupAllDataPayload>;
   Concept: ResolverTypeWrapper<Concept>;
   ConceptAttributeValue: ResolverTypeWrapper<ConceptAttributeValue>;
   ConceptClassification: ResolverTypeWrapper<ConceptClassification>;
+  ConceptClassificationInput: ConceptClassificationInput;
   ConceptDecision: ResolverTypeWrapper<ConceptDecision>;
   ConceptEntry: ResolverTypeWrapper<ConceptEntry>;
   ConceptMention: ResolverTypeWrapper<ConceptMention>;
   ConceptRef: ResolverTypeWrapper<ConceptRef>;
   ConceptRelationship: ResolverTypeWrapper<ConceptRelationship>;
   ConceptStatus: ConceptStatus;
+  ConceptSubstitution: ResolverTypeWrapper<ConceptSubstitution>;
+  ConceptSubstitutionInput: ConceptSubstitutionInput;
   ConceptSummary: ResolverTypeWrapper<ConceptSummary>;
   ConceptsPage: ResolverTypeWrapper<ConceptsPage>;
+  CorpusHealth: ResolverTypeWrapper<CorpusHealth>;
+  CorpusHealthSnapshot: ResolverTypeWrapper<CorpusHealthSnapshot>;
+  CorpusHealthTrends: ResolverTypeWrapper<CorpusHealthTrends>;
+  CorpusMentionCounts: ResolverTypeWrapper<CorpusMentionCounts>;
   CreateIngredientPayload: ResolverTypeWrapper<CreateIngredientPayload>;
   DashboardStats: ResolverTypeWrapper<DashboardStats>;
   DecisionPreview: ResolverTypeWrapper<DecisionPreview>;
@@ -1410,6 +1764,8 @@ export type ResolversTypes = ResolversObject<{
   EntityRef: ResolverTypeWrapper<EntityRef>;
   EvernoteMetadata: ResolverTypeWrapper<EvernoteMetadata>;
   Float: ResolverTypeWrapper<Scalars['Float']['output']>;
+  FoodRelationshipType: FoodRelationshipType;
+  HealthPhrase: ResolverTypeWrapper<HealthPhrase>;
   ID: ResolverTypeWrapper<Scalars['ID']['output']>;
   ImportStats: ResolverTypeWrapper<ImportStats>;
   Ingredient: ResolverTypeWrapper<Ingredient>;
@@ -1421,7 +1777,10 @@ export type ResolversTypes = ResolversObject<{
   IngredientLineStats: ResolverTypeWrapper<IngredientLineStats>;
   IngredientOption: ResolverTypeWrapper<IngredientOption>;
   IngredientProperty: IngredientProperty;
+  IngredientPropertyState: ResolverTypeWrapper<IngredientPropertyState>;
   IngredientReference: ResolverTypeWrapper<IngredientReference>;
+  IngredientRelation: ResolverTypeWrapper<IngredientRelation>;
+  IngredientRelationInput: IngredientRelationInput;
   IngredientSaveInput: IngredientSaveInput;
   IngredientSummary: ResolverTypeWrapper<IngredientSummary>;
   IngredientView: IngredientView;
@@ -1434,7 +1793,11 @@ export type ResolversTypes = ResolversObject<{
   JobType: JobType;
   LabelCount: ResolverTypeWrapper<LabelCount>;
   LexiconEntryRef: ResolverTypeWrapper<LexiconEntryRef>;
+  LexiconEntryRow: ResolverTypeWrapper<LexiconEntryRow>;
+  LexiconPage: ResolverTypeWrapper<LexiconPage>;
   LineReviewStatus: LineReviewStatus;
+  LiveParseMetrics: ResolverTypeWrapper<LiveParseMetrics>;
+  MarkNoisePayload: ResolverTypeWrapper<MarkNoisePayload>;
   Mention: ResolverTypeWrapper<Mention>;
   MentionStatus: MentionStatus;
   Mutation: ResolverTypeWrapper<Record<PropertyKey, never>>;
@@ -1449,7 +1812,7 @@ export type ResolversTypes = ResolversObject<{
   NotesPage: ResolverTypeWrapper<NotesPage>;
   ParseMode: ParseMode;
   ParseStatus: ParseStatus;
-  ParsedSegment: ResolverTypeWrapper<ParsedSegment>;
+  ParserVersionHealth: ResolverTypeWrapper<ParserVersionHealth>;
   PlaygroundMention: ResolverTypeWrapper<PlaygroundMention>;
   PlaygroundResult: ResolverTypeWrapper<PlaygroundResult>;
   PreparationOption: ResolverTypeWrapper<PreparationOption>;
@@ -1462,6 +1825,7 @@ export type ResolversTypes = ResolversObject<{
   RecipeUpdateInput: RecipeUpdateInput;
   RecipesPage: ResolverTypeWrapper<RecipesPage>;
   RefreshDiscoveriesPayload: ResolverTypeWrapper<RefreshDiscoveriesPayload>;
+  ReinterpretBacklog: ResolverTypeWrapper<ReinterpretBacklog>;
   ResolutionCandidateView: ResolverTypeWrapper<ResolutionCandidateView>;
   ResolutionView: ResolverTypeWrapper<ResolutionView>;
   SaveIngredientPayload: ResolverTypeWrapper<SaveIngredientPayload>;
@@ -1469,13 +1833,16 @@ export type ResolversTypes = ResolversObject<{
   Source: ResolverTypeWrapper<Source>;
   SourceBook: ResolverTypeWrapper<SourceBook>;
   SourceUrl: ResolverTypeWrapper<SourceUrl>;
+  StartJobPayload: ResolverTypeWrapper<StartJobPayload>;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
   SyntaxToken: ResolverTypeWrapper<SyntaxToken>;
   TextSpan: ResolverTypeWrapper<TextSpan>;
-  TopIngredient: ResolverTypeWrapper<TopIngredient>;
+  TopConcept: ResolverTypeWrapper<TopConcept>;
+  UnknownPhrase: ResolverTypeWrapper<UnknownPhrase>;
   UserType: UserType;
   Viewer: ResolverTypeWrapper<Viewer>;
   Vocabulary: ResolverTypeWrapper<Vocabulary>;
+  WeeklyReview: ResolverTypeWrapper<WeeklyReview>;
   YearCount: ResolverTypeWrapper<YearCount>;
 }>;
 
@@ -1491,13 +1858,20 @@ export type ResolversParentTypes = ResolversObject<{
   Concept: Concept;
   ConceptAttributeValue: ConceptAttributeValue;
   ConceptClassification: ConceptClassification;
+  ConceptClassificationInput: ConceptClassificationInput;
   ConceptDecision: ConceptDecision;
   ConceptEntry: ConceptEntry;
   ConceptMention: ConceptMention;
   ConceptRef: ConceptRef;
   ConceptRelationship: ConceptRelationship;
+  ConceptSubstitution: ConceptSubstitution;
+  ConceptSubstitutionInput: ConceptSubstitutionInput;
   ConceptSummary: ConceptSummary;
   ConceptsPage: ConceptsPage;
+  CorpusHealth: CorpusHealth;
+  CorpusHealthSnapshot: CorpusHealthSnapshot;
+  CorpusHealthTrends: CorpusHealthTrends;
+  CorpusMentionCounts: CorpusMentionCounts;
   CreateIngredientPayload: CreateIngredientPayload;
   DashboardStats: DashboardStats;
   DecisionPreview: DecisionPreview;
@@ -1511,6 +1885,7 @@ export type ResolversParentTypes = ResolversObject<{
   EntityRef: EntityRef;
   EvernoteMetadata: EvernoteMetadata;
   Float: Scalars['Float']['output'];
+  HealthPhrase: HealthPhrase;
   ID: Scalars['ID']['output'];
   ImportStats: ImportStats;
   Ingredient: Ingredient;
@@ -1521,7 +1896,10 @@ export type ResolversParentTypes = ResolversObject<{
   IngredientLine: IngredientLineParent;
   IngredientLineStats: IngredientLineStats;
   IngredientOption: IngredientOption;
+  IngredientPropertyState: IngredientPropertyState;
   IngredientReference: IngredientReference;
+  IngredientRelation: IngredientRelation;
+  IngredientRelationInput: IngredientRelationInput;
   IngredientSaveInput: IngredientSaveInput;
   IngredientSummary: IngredientSummary;
   InstructionLine: InstructionLine;
@@ -1530,6 +1908,10 @@ export type ResolversParentTypes = ResolversObject<{
   Job: Job;
   LabelCount: LabelCount;
   LexiconEntryRef: LexiconEntryRef;
+  LexiconEntryRow: LexiconEntryRow;
+  LexiconPage: LexiconPage;
+  LiveParseMetrics: LiveParseMetrics;
+  MarkNoisePayload: MarkNoisePayload;
   Mention: Mention;
   Mutation: Record<PropertyKey, never>;
   MutationEffect: MutationEffect;
@@ -1540,7 +1922,7 @@ export type ResolversParentTypes = ResolversObject<{
   NoteStatusCounts: NoteStatusCounts;
   NoteSummary: NoteSummary;
   NotesPage: NotesPage;
-  ParsedSegment: ParsedSegment;
+  ParserVersionHealth: ParserVersionHealth;
   PlaygroundMention: PlaygroundMention;
   PlaygroundResult: PlaygroundResult;
   PreparationOption: PreparationOption;
@@ -1553,6 +1935,7 @@ export type ResolversParentTypes = ResolversObject<{
   RecipeUpdateInput: RecipeUpdateInput;
   RecipesPage: RecipesPage;
   RefreshDiscoveriesPayload: RefreshDiscoveriesPayload;
+  ReinterpretBacklog: ReinterpretBacklog;
   ResolutionCandidateView: ResolutionCandidateView;
   ResolutionView: ResolutionView;
   SaveIngredientPayload: SaveIngredientPayload;
@@ -1560,12 +1943,15 @@ export type ResolversParentTypes = ResolversObject<{
   Source: Source;
   SourceBook: SourceBook;
   SourceUrl: SourceUrl;
+  StartJobPayload: StartJobPayload;
   String: Scalars['String']['output'];
   SyntaxToken: SyntaxToken;
   TextSpan: TextSpan;
-  TopIngredient: TopIngredient;
+  TopConcept: TopConcept;
+  UnknownPhrase: UnknownPhrase;
   Viewer: Viewer;
   Vocabulary: Vocabulary;
+  WeeklyReview: WeeklyReview;
   YearCount: YearCount;
 }>;
 
@@ -1627,6 +2013,8 @@ export type ConceptResolvers<ContextType = ApiContext, ParentType extends Resolv
   parents?: Resolver<Array<ResolversTypes['ConceptRelationship']>, ParentType, ContextType>;
   slug?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   status?: Resolver<ResolversTypes['ConceptStatus'], ParentType, ContextType>;
+  substitutions?: Resolver<Array<ResolversTypes['ConceptSubstitution']>, ParentType, ContextType>;
+  tags?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
 }>;
 
 export type ConceptAttributeValueResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['ConceptAttributeValue'] = ResolversParentTypes['ConceptAttributeValue']> = ResolversObject<{
@@ -1638,6 +2026,7 @@ export type ConceptAttributeValueResolvers<ContextType = ApiContext, ParentType 
 
 export type ConceptClassificationResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['ConceptClassification'] = ResolversParentTypes['ConceptClassification']> = ResolversObject<{
   inheritedFrom?: Resolver<Maybe<ResolversTypes['ConceptRef']>, ParentType, ContextType>;
+  isExplicit?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   key?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   kind?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   source?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
@@ -1683,6 +2072,12 @@ export type ConceptRelationshipResolvers<ContextType = ApiContext, ParentType ex
   type?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
 }>;
 
+export type ConceptSubstitutionResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['ConceptSubstitution'] = ResolversParentTypes['ConceptSubstitution']> = ResolversObject<{
+  concept?: Resolver<ResolversTypes['ConceptRef'], ParentType, ContextType>;
+  note?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  ratio?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+}>;
+
 export type ConceptSummaryResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['ConceptSummary'] = ResolversParentTypes['ConceptSummary']> = ResolversObject<{
   canonicalName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   entryCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
@@ -1699,6 +2094,53 @@ export type ConceptsPageResolvers<ContextType = ApiContext, ParentType extends R
   total?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
 }>;
 
+export type CorpusHealthResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['CorpusHealth'] = ResolversParentTypes['CorpusHealth']> = ResolversObject<{
+  awaitingParsing?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  lexiconRevision?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  lineCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  linesWithMentions?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  live?: Resolver<Maybe<ResolversTypes['LiveParseMetrics']>, ParentType, ContextType>;
+  mentions?: Resolver<ResolversTypes['CorpusMentionCounts'], ParentType, ContextType>;
+  openDiscoveryCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  parsedSuccessfully?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  parsedWithErrors?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  reinterpretBacklog?: Resolver<ResolversTypes['ReinterpretBacklog'], ParentType, ContextType>;
+  topUnknownPhrases?: Resolver<Array<ResolversTypes['UnknownPhrase']>, ParentType, ContextType>;
+}>;
+
+export type CorpusHealthSnapshotResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['CorpusHealthSnapshot'] = ResolversParentTypes['CorpusHealthSnapshot']> = ResolversObject<{
+  autoResolvedMentions?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  avgCandidates?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  lexiconRevision?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  needsReviewMentions?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  openDiscoveries?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  parserVersion?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  takenAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  totalLines?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  totalMentions?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  trigger?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  unresolvedMentions?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  verifiedMentions?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+}>;
+
+export type CorpusHealthTrendsResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['CorpusHealthTrends'] = ResolversParentTypes['CorpusHealthTrends']> = ResolversObject<{
+  byParserVersion?: Resolver<Array<ResolversTypes['ParserVersionHealth']>, ParentType, ContextType>;
+  mostAmbiguousPhrases?: Resolver<Array<ResolversTypes['HealthPhrase']>, ParentType, ContextType>;
+  parserVersion?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  reviewByWeek?: Resolver<Array<ResolversTypes['WeeklyReview']>, ParentType, ContextType>;
+  snapshots?: Resolver<Array<ResolversTypes['CorpusHealthSnapshot']>, ParentType, ContextType>;
+  topUnknownPhrases?: Resolver<Array<ResolversTypes['HealthPhrase']>, ParentType, ContextType>;
+}>;
+
+export type CorpusMentionCountsResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['CorpusMentionCounts'] = ResolversParentTypes['CorpusMentionCounts']> = ResolversObject<{
+  autoResolved?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  needsReview?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  total?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  unresolved?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  verified?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+}>;
+
 export type CreateIngredientPayloadResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['CreateIngredientPayload'] = ResolversParentTypes['CreateIngredientPayload']> = ResolversObject<{
   effect?: Resolver<ResolversTypes['MutationEffect'], ParentType, ContextType>;
   id?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
@@ -1708,7 +2150,7 @@ export type CreateIngredientPayloadResolvers<ContextType = ApiContext, ParentTyp
 }>;
 
 export type DashboardStatsResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['DashboardStats'] = ResolversParentTypes['DashboardStats']> = ResolversObject<{
-  ingredientCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  conceptCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   ingredientLines?: Resolver<ResolversTypes['IngredientLineStats'], ParentType, ContextType>;
   instructionLineCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   noteCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
@@ -1716,11 +2158,11 @@ export type DashboardStatsResolvers<ContextType = ApiContext, ParentType extends
   notesByStatus?: Resolver<ResolversTypes['NoteStatusCounts'], ParentType, ContextType>;
   notesReadyToPromote?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   recipeCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
-  reviewedIngredientCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   topCategories?: Resolver<Array<ResolversTypes['LabelCount']>, ParentType, ContextType>;
-  topIngredients?: Resolver<Array<ResolversTypes['TopIngredient']>, ParentType, ContextType>;
+  topConcepts?: Resolver<Array<ResolversTypes['TopConcept']>, ParentType, ContextType>;
   topSources?: Resolver<Array<ResolversTypes['LabelCount']>, ParentType, ContextType>;
   topTags?: Resolver<Array<ResolversTypes['LabelCount']>, ParentType, ContextType>;
+  verifiedConceptCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
 }>;
 
 export type DecisionPreviewResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['DecisionPreview'] = ResolversParentTypes['DecisionPreview']> = ResolversObject<{
@@ -1761,6 +2203,7 @@ export type DiscoveryResolvers<ContextType = ApiContext, ParentType extends Reso
   distinctNoteCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   entries?: Resolver<Array<ResolversTypes['LexiconEntryRef']>, ParentType, ContextType>;
   examples?: Resolver<Array<ResolversTypes['DiscoveryExample']>, ParentType, ContextType, Partial<DiscoveryExamplesArgs>>;
+  fixtureBlock?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   key?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   mentionCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
@@ -1801,6 +2244,13 @@ export type EvernoteMetadataResolvers<ContextType = ApiContext, ParentType exten
   tags?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
 }>;
 
+export type HealthPhraseResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['HealthPhrase'] = ResolversParentTypes['HealthPhrase']> = ResolversObject<{
+  discoveryId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  mentionCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  phrase?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  type?: Resolver<ResolversTypes['DiscoveryType'], ParentType, ContextType>;
+}>;
+
 export type ImportStatsResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['ImportStats'] = ResolversParentTypes['ImportStats']> = ResolversObject<{
   numberOfIngredients?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   numberOfNotes?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
@@ -1809,20 +2259,21 @@ export type ImportStatsResolvers<ContextType = ApiContext, ParentType extends Re
 
 export type IngredientResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['Ingredient'] = ResolversParentTypes['Ingredient']> = ResolversObject<{
   aliases?: Resolver<Array<ResolversTypes['IngredientAlias']>, ParentType, ContextType>;
-  category?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  categories?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
+  dietaryTags?: Resolver<Array<ResolversTypes['IngredientProperty']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   isComposedIngredient?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   isReviewed?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  parent?: Resolver<Maybe<ResolversTypes['IngredientOption']>, ParentType, ContextType>;
   plural?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  properties?: Resolver<Array<ResolversTypes['IngredientProperty']>, ParentType, ContextType>;
+  propertyStates?: Resolver<Array<ResolversTypes['IngredientPropertyState']>, ParentType, ContextType>;
   referenceCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   references?: Resolver<Array<ResolversTypes['IngredientReference']>, ParentType, ContextType>;
+  relationships?: Resolver<Array<ResolversTypes['IngredientRelation']>, ParentType, ContextType>;
   reviewedAt?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   substitutions?: Resolver<Array<ResolversTypes['IngredientOption']>, ParentType, ContextType>;
   tags?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
-  variants?: Resolver<Array<ResolversTypes['IngredientOption']>, ParentType, ContextType>;
+  variants?: Resolver<Array<ResolversTypes['IngredientRelation']>, ParentType, ContextType>;
 }>;
 
 export type IngredientAliasResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['IngredientAlias'] = ResolversParentTypes['IngredientAlias']> = ResolversObject<{
@@ -1850,7 +2301,6 @@ export type IngredientLineResolvers<ContextType = ApiContext, ParentType extends
   parserVersion?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   reference?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   reviewStatus?: Resolver<ResolversTypes['LineReviewStatus'], ParentType, ContextType>;
-  segments?: Resolver<Array<ResolversTypes['ParsedSegment']>, ParentType, ContextType>;
 }>;
 
 export type IngredientLineStatsResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['IngredientLineStats'] = ResolversParentTypes['IngredientLineStats']> = ResolversObject<{
@@ -1867,11 +2317,23 @@ export type IngredientOptionResolvers<ContextType = ApiContext, ParentType exten
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
 }>;
 
+export type IngredientPropertyStateResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['IngredientPropertyState'] = ResolversParentTypes['IngredientPropertyState']> = ResolversObject<{
+  explicit?: Resolver<Maybe<ResolversTypes['ClassificationValue']>, ParentType, ContextType>;
+  inherited?: Resolver<Maybe<ResolversTypes['ClassificationValue']>, ParentType, ContextType>;
+  inheritedFrom?: Resolver<Maybe<ResolversTypes['IngredientOption']>, ParentType, ContextType>;
+  property?: Resolver<ResolversTypes['IngredientProperty'], ParentType, ContextType>;
+}>;
+
 export type IngredientReferenceResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['IngredientReference'] = ResolversParentTypes['IngredientReference']> = ResolversObject<{
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   noteId?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
   noteTitle?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   reference?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+}>;
+
+export type IngredientRelationResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['IngredientRelation'] = ResolversParentTypes['IngredientRelation']> = ResolversObject<{
+  ingredient?: Resolver<ResolversTypes['IngredientOption'], ParentType, ContextType>;
+  relationshipType?: Resolver<ResolversTypes['FoodRelationshipType'], ParentType, ContextType>;
 }>;
 
 export type IngredientSummaryResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['IngredientSummary'] = ResolversParentTypes['IngredientSummary']> = ResolversObject<{
@@ -1899,10 +2361,12 @@ export type JobResolvers<ContextType = ApiContext, ParentType extends ResolversP
   completedAt?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   errorMessage?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   jobId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  noteId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  noteId?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
+  processedCount?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
   retryCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   startedAt?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   status?: Resolver<ResolversTypes['JobStatus'], ParentType, ContextType>;
+  totalCount?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
   type?: Resolver<ResolversTypes['JobType'], ParentType, ContextType>;
 }>;
 
@@ -1920,15 +2384,52 @@ export type LexiconEntryRefResolvers<ContextType = ApiContext, ParentType extend
   text?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
 }>;
 
+export type LexiconEntryRowResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['LexiconEntryRow'] = ResolversParentTypes['LexiconEntryRow']> = ResolversObject<{
+  conceptId?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  kind?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  role?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  status?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  targetLabel?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  text?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+}>;
+
+export type LexiconPageResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['LexiconPage'] = ResolversParentTypes['LexiconPage']> = ResolversObject<{
+  items?: Resolver<Array<ResolversTypes['LexiconEntryRow']>, ParentType, ContextType>;
+  page?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  pageSize?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  total?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+}>;
+
+export type LiveParseMetricsResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['LiveParseMetrics'] = ResolversParentTypes['LiveParseMetrics']> = ResolversObject<{
+  averageCandidatesPerSegment?: Resolver<Maybe<ResolversTypes['Float']>, ParentType, ContextType>;
+  lexiconRevision?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  lineCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  linesPerSecond?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+  structuralSuccessShare?: Resolver<Maybe<ResolversTypes['Float']>, ParentType, ContextType>;
+  unknownTokens?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  windowSeconds?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+}>;
+
+export type MarkNoisePayloadResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['MarkNoisePayload'] = ResolversParentTypes['MarkNoisePayload']> = ResolversObject<{
+  effect?: Resolver<ResolversTypes['MutationEffect'], ParentType, ContextType>;
+  linesDeactivated?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  message?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  success?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
 export type MentionResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['Mention'] = ResolversParentTypes['Mention']> = ResolversObject<{
   candidates?: Resolver<Array<ResolversTypes['ResolutionCandidateView']>, ParentType, ContextType>;
   concept?: Resolver<Maybe<ResolversTypes['ConceptRef']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   lexiconRevision?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  partIndex?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   quantity?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   rawText?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   score?: Resolver<Maybe<ResolversTypes['Float']>, ParentType, ContextType>;
   segmentIndex?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  span?: Resolver<ResolversTypes['TextSpan'], ParentType, ContextType>;
   status?: Resolver<ResolversTypes['MentionStatus'], ParentType, ContextType>;
   summary?: Resolver<ResolversTypes['ResolutionView'], ParentType, ContextType>;
   tokens?: Resolver<Array<ResolversTypes['SyntaxToken']>, ParentType, ContextType>;
@@ -1941,11 +2442,20 @@ export type MutationResolvers<ContextType = ApiContext, ParentType extends Resol
   cleanupAllData?: Resolver<ResolversTypes['CleanupAllDataPayload'], ParentType, ContextType>;
   createIngredient?: Resolver<ResolversTypes['CreateIngredientPayload'], ParentType, ContextType, RequireFields<MutationCreateIngredientArgs, 'input'>>;
   deferDiscovery?: Resolver<ResolversTypes['BasicPayload'], ParentType, ContextType, RequireFields<MutationDeferDiscoveryArgs, 'id'>>;
+  markDiscoveryAsNoise?: Resolver<ResolversTypes['MarkNoisePayload'], ParentType, ContextType, RequireFields<MutationMarkDiscoveryAsNoiseArgs, 'id'>>;
   promoteCompletedNotes?: Resolver<ResolversTypes['PromoteCompletedNotesPayload'], ParentType, ContextType>;
   promoteNoteToRecipe?: Resolver<ResolversTypes['PromoteNotePayload'], ParentType, ContextType, RequireFields<MutationPromoteNoteToRecipeArgs, 'noteId'>>;
   refreshDiscoveries?: Resolver<ResolversTypes['RefreshDiscoveriesPayload'], ParentType, ContextType>;
+  removeConceptClassification?: Resolver<ResolversTypes['BasicPayload'], ParentType, ContextType, RequireFields<MutationRemoveConceptClassificationArgs, 'conceptId' | 'key'>>;
+  removeConceptSubstitution?: Resolver<ResolversTypes['BasicPayload'], ParentType, ContextType, RequireFields<MutationRemoveConceptSubstitutionArgs, 'conceptId' | 'substituteId'>>;
+  runExploratorySweep?: Resolver<ResolversTypes['StartJobPayload'], ParentType, ContextType>;
   saveIngredient?: Resolver<ResolversTypes['SaveIngredientPayload'], ParentType, ContextType, RequireFields<MutationSaveIngredientArgs, 'input'>>;
+  setConceptClassification?: Resolver<ResolversTypes['BasicPayload'], ParentType, ContextType, RequireFields<MutationSetConceptClassificationArgs, 'input'>>;
+  setConceptSubstitution?: Resolver<ResolversTypes['BasicPayload'], ParentType, ContextType, RequireFields<MutationSetConceptSubstitutionArgs, 'input'>>;
+  setConceptTags?: Resolver<ResolversTypes['BasicPayload'], ParentType, ContextType, RequireFields<MutationSetConceptTagsArgs, 'conceptId' | 'tags'>>;
   setLineReviewStatus?: Resolver<ResolversTypes['SetLineReviewStatusPayload'], ParentType, ContextType, RequireFields<MutationSetLineReviewStatusArgs, 'lineId' | 'status'>>;
+  startReparse?: Resolver<ResolversTypes['StartJobPayload'], ParentType, ContextType>;
+  takeHealthSnapshot?: Resolver<ResolversTypes['BasicPayload'], ParentType, ContextType>;
   updateRecipe?: Resolver<ResolversTypes['BasicPayload'], ParentType, ContextType, RequireFields<MutationUpdateRecipeArgs, 'input'>>;
 }>;
 
@@ -1958,7 +2468,7 @@ export type MutationEffectResolvers<ContextType = ApiContext, ParentType extends
 }>;
 
 export type MutationPayloadResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['MutationPayload'] = ResolversParentTypes['MutationPayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'ApplyDecisionPayload' | 'BasicPayload' | 'CleanupAllDataPayload' | 'CreateIngredientPayload' | 'PromoteCompletedNotesPayload' | 'PromoteNotePayload' | 'RefreshDiscoveriesPayload' | 'SaveIngredientPayload' | 'SetLineReviewStatusPayload', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'ApplyDecisionPayload' | 'BasicPayload' | 'CleanupAllDataPayload' | 'CreateIngredientPayload' | 'MarkNoisePayload' | 'PromoteCompletedNotesPayload' | 'PromoteNotePayload' | 'RefreshDiscoveriesPayload' | 'SaveIngredientPayload' | 'SetLineReviewStatusPayload' | 'StartJobPayload', ParentType, ContextType>;
 }>;
 
 export type NamedTagResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['NamedTag'] = ResolversParentTypes['NamedTag']> = ResolversObject<{
@@ -2020,12 +2530,10 @@ export type NotesPageResolvers<ContextType = ApiContext, ParentType extends Reso
   total?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
 }>;
 
-export type ParsedSegmentResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['ParsedSegment'] = ResolversParentTypes['ParsedSegment']> = ResolversObject<{
-  index?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
-  ingredientId?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
-  rule?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  type?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  value?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+export type ParserVersionHealthResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['ParserVersionHealth'] = ResolversParentTypes['ParserVersionHealth']> = ResolversObject<{
+  parserVersion?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  total?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  unresolved?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
 }>;
 
 export type PlaygroundMentionResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['PlaygroundMention'] = ResolversParentTypes['PlaygroundMention']> = ResolversObject<{
@@ -2074,6 +2582,8 @@ export type PromoteNotePayloadResolvers<ContextType = ApiContext, ParentType ext
 export type QueryResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = ResolversObject<{
   concept?: Resolver<Maybe<ResolversTypes['Concept']>, ParentType, ContextType, RequireFields<QueryConceptArgs, 'id'>>;
   concepts?: Resolver<ResolversTypes['ConceptsPage'], ParentType, ContextType, Partial<QueryConceptsArgs>>;
+  corpusHealth?: Resolver<ResolversTypes['CorpusHealth'], ParentType, ContextType>;
+  corpusHealthTrends?: Resolver<ResolversTypes['CorpusHealthTrends'], ParentType, ContextType, Partial<QueryCorpusHealthTrendsArgs>>;
   dashboardStats?: Resolver<ResolversTypes['DashboardStats'], ParentType, ContextType>;
   discovery?: Resolver<Maybe<ResolversTypes['Discovery']>, ParentType, ContextType, RequireFields<QueryDiscoveryArgs, 'id'>>;
   discoveryCounts?: Resolver<Array<ResolversTypes['DiscoveryTypeCount']>, ParentType, ContextType>;
@@ -2082,8 +2592,10 @@ export type QueryResolvers<ContextType = ApiContext, ParentType extends Resolver
   ingredient?: Resolver<Maybe<ResolversTypes['Ingredient']>, ParentType, ContextType, RequireFields<QueryIngredientArgs, 'id'>>;
   ingredientCategoryNames?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
   ingredientCounts?: Resolver<ResolversTypes['IngredientCounts'], ParentType, ContextType>;
+  ingredientNameOwner?: Resolver<Maybe<ResolversTypes['IngredientOption']>, ParentType, ContextType, RequireFields<QueryIngredientNameOwnerArgs, 'name'>>;
   ingredients?: Resolver<Array<ResolversTypes['IngredientSummary']>, ParentType, ContextType, RequireFields<QueryIngredientsArgs, 'view'>>;
   job?: Resolver<Maybe<ResolversTypes['Job']>, ParentType, ContextType, RequireFields<QueryJobArgs, 'jobId'>>;
+  lexicon?: Resolver<ResolversTypes['LexiconPage'], ParentType, ContextType, Partial<QueryLexiconArgs>>;
   mention?: Resolver<Maybe<ResolversTypes['Mention']>, ParentType, ContextType, RequireFields<QueryMentionArgs, 'id'>>;
   note?: Resolver<Maybe<ResolversTypes['Note']>, ParentType, ContextType, RequireFields<QueryNoteArgs, 'id'>>;
   notes?: Resolver<ResolversTypes['NotesPage'], ParentType, ContextType, Partial<QueryNotesArgs>>;
@@ -2127,6 +2639,7 @@ export type RecipeTaxonomyResolvers<ContextType = ApiContext, ParentType extends
 }>;
 
 export type RecipesPageResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['RecipesPage'] = ResolversParentTypes['RecipesPage']> = ResolversObject<{
+  concept?: Resolver<Maybe<ResolversTypes['ConceptRef']>, ParentType, ContextType>;
   items?: Resolver<Array<ResolversTypes['RecipeSummary']>, ParentType, ContextType>;
   page?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   pageSize?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
@@ -2141,6 +2654,13 @@ export type RefreshDiscoveriesPayloadResolvers<ContextType = ApiContext, ParentT
   relationshipSuggestions?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
   success?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type ReinterpretBacklogResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['ReinterpretBacklog'] = ResolversParentTypes['ReinterpretBacklog']> = ResolversObject<{
+  failed?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  failedBatches?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  pending?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  processing?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
 }>;
 
 export type ResolutionCandidateViewResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['ResolutionCandidateView'] = ResolversParentTypes['ResolutionCandidateView']> = ResolversObject<{
@@ -2199,6 +2719,14 @@ export type SourceUrlResolvers<ContextType = ApiContext, ParentType extends Reso
   url?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
 }>;
 
+export type StartJobPayloadResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['StartJobPayload'] = ResolversParentTypes['StartJobPayload']> = ResolversObject<{
+  effect?: Resolver<ResolversTypes['MutationEffect'], ParentType, ContextType>;
+  jobId?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
+  message?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  success?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
 export type SyntaxTokenResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['SyntaxToken'] = ResolversParentTypes['SyntaxToken']> = ResolversObject<{
   kind?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   roles?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
@@ -2212,10 +2740,16 @@ export type TextSpanResolvers<ContextType = ApiContext, ParentType extends Resol
   text?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
 }>;
 
-export type TopIngredientResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['TopIngredient'] = ResolversParentTypes['TopIngredient']> = ResolversObject<{
-  ingredientId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+export type TopConceptResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['TopConcept'] = ResolversParentTypes['TopConcept']> = ResolversObject<{
+  conceptId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   lineCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+}>;
+
+export type UnknownPhraseResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['UnknownPhrase'] = ResolversParentTypes['UnknownPhrase']> = ResolversObject<{
+  discoveryId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  mentionCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  phrase?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
 }>;
 
 export type ViewerResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['Viewer'] = ResolversParentTypes['Viewer']> = ResolversObject<{
@@ -2233,6 +2767,12 @@ export type VocabularyResolvers<ContextType = ApiContext, ParentType extends Res
   instructionKeys?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
   measurementModifierKeys?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
   preparations?: Resolver<Array<ResolversTypes['PreparationOption']>, ParentType, ContextType>;
+}>;
+
+export type WeeklyReviewResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['WeeklyReview'] = ResolversParentTypes['WeeklyReview']> = ResolversObject<{
+  decisions?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  mentionsChanged?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  weekStart?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
 }>;
 
 export type YearCountResolvers<ContextType = ApiContext, ParentType extends ResolversParentTypes['YearCount'] = ResolversParentTypes['YearCount']> = ResolversObject<{
@@ -2254,8 +2794,13 @@ export type Resolvers<ContextType = ApiContext> = ResolversObject<{
   ConceptMention?: ConceptMentionResolvers<ContextType>;
   ConceptRef?: ConceptRefResolvers<ContextType>;
   ConceptRelationship?: ConceptRelationshipResolvers<ContextType>;
+  ConceptSubstitution?: ConceptSubstitutionResolvers<ContextType>;
   ConceptSummary?: ConceptSummaryResolvers<ContextType>;
   ConceptsPage?: ConceptsPageResolvers<ContextType>;
+  CorpusHealth?: CorpusHealthResolvers<ContextType>;
+  CorpusHealthSnapshot?: CorpusHealthSnapshotResolvers<ContextType>;
+  CorpusHealthTrends?: CorpusHealthTrendsResolvers<ContextType>;
+  CorpusMentionCounts?: CorpusMentionCountsResolvers<ContextType>;
   CreateIngredientPayload?: CreateIngredientPayloadResolvers<ContextType>;
   DashboardStats?: DashboardStatsResolvers<ContextType>;
   DecisionPreview?: DecisionPreviewResolvers<ContextType>;
@@ -2268,6 +2813,7 @@ export type Resolvers<ContextType = ApiContext> = ResolversObject<{
   DiscoveryTypeCount?: DiscoveryTypeCountResolvers<ContextType>;
   EntityRef?: EntityRefResolvers<ContextType>;
   EvernoteMetadata?: EvernoteMetadataResolvers<ContextType>;
+  HealthPhrase?: HealthPhraseResolvers<ContextType>;
   ImportStats?: ImportStatsResolvers<ContextType>;
   Ingredient?: IngredientResolvers<ContextType>;
   IngredientAlias?: IngredientAliasResolvers<ContextType>;
@@ -2276,13 +2822,19 @@ export type Resolvers<ContextType = ApiContext> = ResolversObject<{
   IngredientLine?: IngredientLineResolvers<ContextType>;
   IngredientLineStats?: IngredientLineStatsResolvers<ContextType>;
   IngredientOption?: IngredientOptionResolvers<ContextType>;
+  IngredientPropertyState?: IngredientPropertyStateResolvers<ContextType>;
   IngredientReference?: IngredientReferenceResolvers<ContextType>;
+  IngredientRelation?: IngredientRelationResolvers<ContextType>;
   IngredientSummary?: IngredientSummaryResolvers<ContextType>;
   InstructionLine?: InstructionLineResolvers<ContextType>;
   JSON?: GraphQLScalarType;
   Job?: JobResolvers<ContextType>;
   LabelCount?: LabelCountResolvers<ContextType>;
   LexiconEntryRef?: LexiconEntryRefResolvers<ContextType>;
+  LexiconEntryRow?: LexiconEntryRowResolvers<ContextType>;
+  LexiconPage?: LexiconPageResolvers<ContextType>;
+  LiveParseMetrics?: LiveParseMetricsResolvers<ContextType>;
+  MarkNoisePayload?: MarkNoisePayloadResolvers<ContextType>;
   Mention?: MentionResolvers<ContextType>;
   Mutation?: MutationResolvers<ContextType>;
   MutationEffect?: MutationEffectResolvers<ContextType>;
@@ -2293,7 +2845,7 @@ export type Resolvers<ContextType = ApiContext> = ResolversObject<{
   NoteStatusCounts?: NoteStatusCountsResolvers<ContextType>;
   NoteSummary?: NoteSummaryResolvers<ContextType>;
   NotesPage?: NotesPageResolvers<ContextType>;
-  ParsedSegment?: ParsedSegmentResolvers<ContextType>;
+  ParserVersionHealth?: ParserVersionHealthResolvers<ContextType>;
   PlaygroundMention?: PlaygroundMentionResolvers<ContextType>;
   PlaygroundResult?: PlaygroundResultResolvers<ContextType>;
   PreparationOption?: PreparationOptionResolvers<ContextType>;
@@ -2305,6 +2857,7 @@ export type Resolvers<ContextType = ApiContext> = ResolversObject<{
   RecipeTaxonomy?: RecipeTaxonomyResolvers<ContextType>;
   RecipesPage?: RecipesPageResolvers<ContextType>;
   RefreshDiscoveriesPayload?: RefreshDiscoveriesPayloadResolvers<ContextType>;
+  ReinterpretBacklog?: ReinterpretBacklogResolvers<ContextType>;
   ResolutionCandidateView?: ResolutionCandidateViewResolvers<ContextType>;
   ResolutionView?: ResolutionViewResolvers<ContextType>;
   SaveIngredientPayload?: SaveIngredientPayloadResolvers<ContextType>;
@@ -2312,11 +2865,14 @@ export type Resolvers<ContextType = ApiContext> = ResolversObject<{
   Source?: SourceResolvers<ContextType>;
   SourceBook?: SourceBookResolvers<ContextType>;
   SourceUrl?: SourceUrlResolvers<ContextType>;
+  StartJobPayload?: StartJobPayloadResolvers<ContextType>;
   SyntaxToken?: SyntaxTokenResolvers<ContextType>;
   TextSpan?: TextSpanResolvers<ContextType>;
-  TopIngredient?: TopIngredientResolvers<ContextType>;
+  TopConcept?: TopConceptResolvers<ContextType>;
+  UnknownPhrase?: UnknownPhraseResolvers<ContextType>;
   Viewer?: ViewerResolvers<ContextType>;
   Vocabulary?: VocabularyResolvers<ContextType>;
+  WeeklyReview?: WeeklyReviewResolvers<ContextType>;
   YearCount?: YearCountResolvers<ContextType>;
 }>;
 

@@ -3,8 +3,8 @@ export interface LabelCount {
   count: number;
 }
 
-export interface TopIngredient {
-  ingredientId: string;
+export interface TopConcept {
+  conceptId: string;
   name: string;
   lineCount: number;
 }
@@ -36,12 +36,12 @@ export interface DashboardStats {
   noteCount: number;
   recipeCount: number;
   notesReadyToPromote: number;
-  ingredientCount: number;
-  reviewedIngredientCount: number;
+  conceptCount: number;
+  verifiedConceptCount: number;
   instructionLineCount: number;
   notesByStatus: NoteStatusCounts;
   ingredientLines: IngredientLineStats;
-  topIngredients: TopIngredient[];
+  topConcepts: TopConcept[];
   topSources: LabelCount[];
   topCategories: LabelCount[];
   topTags: LabelCount[];

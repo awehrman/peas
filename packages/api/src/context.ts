@@ -21,3 +21,8 @@ export function requireViewer(context: ApiContext): AuthUser {
 export function isAdmin(viewer: AuthUser): boolean {
   return viewer.userType === "ADMIN";
 }
+
+/** Who may curate food knowledge: Teach Peas, concepts, the lexicon, corpus health, and the grammar loop. Open to every signed-in user for now; return `isAdmin(viewer)` to restrict it again. */
+export function canCurateKnowledge(_viewer: AuthUser): boolean {
+  return true;
+}

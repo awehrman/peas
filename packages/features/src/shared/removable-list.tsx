@@ -18,11 +18,18 @@ interface RemovableListProps {
 /**
  * Plain stacked list of entries, each with a small remove button.
  */
-export function RemovableList({ label, items, onRemove }: RemovableListProps): ReactNode {
+export function RemovableList({
+  label,
+  items,
+  onRemove,
+}: RemovableListProps): ReactNode {
   if (items.length === 0) return null;
 
   return (
-    <ul className="flex flex-col text-sm" aria-label={label}>
+    <ul
+      className="flex max-h-32 flex-col overflow-y-auto text-sm"
+      aria-label={label}
+    >
       {items.map((item) => (
         <li key={item.key} className="flex items-center gap-1 py-0.5">
           <span className="min-w-0 truncate">{item.label}</span>

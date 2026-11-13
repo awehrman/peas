@@ -32,7 +32,8 @@ test.describe("Teach Peas", () => {
   }) => {
     const { alias } = fixture();
     await visit(page, "/teach");
-    await page.getByRole("link", { name: new RegExp(`^${alias}`) }).click();
+    // The queue row's name is the phrase plus its type; the corpus health card links the bare phrase too
+    await page.getByRole("link", { name: new RegExp(`^${alias}\\s`) }).click();
     await expect(
       page.getByRole("heading", { name: alias, level: 1 })
     ).toBeFocused();
@@ -115,7 +116,7 @@ test.describe("Teach Peas", () => {
   test("the whole review works from the keyboard", async ({ page }) => {
     const { modifier } = fixture();
     await visit(page, "/teach");
-    await page.getByRole("link", { name: new RegExp(`^${modifier}`) }).focus();
+    await page.getByRole("link", { name: new RegExp(`^${modifier}\\s`) }).focus();
     await page.keyboard.press("Enter");
     await expect(
       page.getByRole("heading", { name: modifier, level: 1 })

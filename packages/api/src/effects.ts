@@ -10,14 +10,13 @@ export const INVALIDATION_DOMAINS = [
   "RECIPES",
   "RECIPE_DETAIL",
   "RECIPE_TAXONOMY",
-  "INGREDIENTS",
-  "INGREDIENT_DETAIL",
   "IMPORT_STATS",
   "DASHBOARD_STATS",
   "DISCOVERIES",
   "CONCEPTS",
   "CONCEPT_DETAIL",
   "MENTIONS",
+  "CORPUS_HEALTH",
 ] as const;
 
 export type InvalidationDomain = (typeof INVALIDATION_DOMAINS)[number];
@@ -25,12 +24,13 @@ export type InvalidationDomain = (typeof INVALIDATION_DOMAINS)[number];
 /** Domains whose results depend on parser output and therefore on the lexicon. */
 export const REVISION_SENSITIVE_DOMAINS: readonly InvalidationDomain[] = [
   "NOTE_DETAIL",
-  "INGREDIENTS",
-  "INGREDIENT_DETAIL",
+  "RECIPE_DETAIL",
+  "DASHBOARD_STATS",
   "DISCOVERIES",
   "CONCEPTS",
   "CONCEPT_DETAIL",
   "MENTIONS",
+  "CORPUS_HEALTH",
 ];
 
 /** Everything a Teach Peas decision can make stale. */
@@ -40,6 +40,10 @@ export const KNOWLEDGE_DOMAINS: readonly InvalidationDomain[] = [
   "CONCEPT_DETAIL",
   "MENTIONS",
   "NOTE_DETAIL",
+  "RECIPES",
+  "RECIPE_DETAIL",
+  "DASHBOARD_STATS",
+  "CORPUS_HEALTH",
 ];
 
 /** Domains refreshed when a background reprocessing job finishes. */
@@ -48,12 +52,13 @@ export const JOB_COMPLETION_DOMAINS: readonly InvalidationDomain[] = [
   "NOTE_DETAIL",
   "RECIPES",
   "RECIPE_DETAIL",
-  "INGREDIENTS",
-  "INGREDIENT_DETAIL",
   "IMPORT_STATS",
   "DASHBOARD_STATS",
   "DISCOVERIES",
+  "CONCEPTS",
+  "CONCEPT_DETAIL",
   "MENTIONS",
+  "CORPUS_HEALTH",
 ];
 
 export const MAX_EFFECT_REFS = 100;
@@ -62,7 +67,7 @@ export const MAX_EFFECT_REFS = 100;
  * A normalized-cache identity.
  *
  * @example
- * { typename: "Ingredient", id: "cm3i..." } // Apollo cache id "Ingredient:cm3i..."
+ * { typename: "Recipe", id: "cm3r..." } // Apollo cache id "Recipe:cm3r..."
  */
 export const entityRefSchema = z.object({
   typename: z.string().min(1),
@@ -73,11 +78,11 @@ export const entityRefSchema = z.object({
  * What a mutation changed beyond the entities in its payload.
  *
  * @example
- * // saveIngredient renamed "garlic clove" to "garlic"
+ * // updateRecipe renamed "Chili" to "Weeknight Chili"
  * {
- *   changed: [{ typename: "Ingredient", id: "cm3i..." }],   // evicted so the open editor refetches
+ *   changed: [{ typename: "Recipe", id: "cm3r..." }],          // evicted so the open recipe refetches
  *   evicted: [],                                             // nothing was deleted or merged away
- *   invalidatedDomains: ["INGREDIENTS", "INGREDIENT_DETAIL"], // the list and other editors show the name
+ *   invalidatedDomains: ["RECIPES", "RECIPE_TAXONOMY"],       // the list and filter menus show it
  *   lexiconRevision: null,                                   // set by Teach Peas decisions (Phase 4)
  *   reprocessingJobId: null,                                 // set when lines are re-parsed in the background
  * }

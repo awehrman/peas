@@ -1,4 +1,3 @@
-import type { ParsedLineSegment, ParsedLineStatus } from "../parsed-line";
 import type { NoteMention } from "../teach/mention-panel";
 
 export const NOTE_STATUS_OPTIONS = [
@@ -12,6 +11,11 @@ export const NOTE_STATUS_OPTIONS = [
 export type NoteStatus = (typeof NOTE_STATUS_OPTIONS)[number];
 
 export type LineReviewStatus = "UNREVIEWED" | "CORRECT" | "INCORRECT";
+
+export type IngredientLineParseStatus =
+  | "AWAITING_PARSING"
+  | "COMPLETED_WITH_ERROR"
+  | "COMPLETED_SUCCESSFULLY";
 
 export interface NoteListItem {
   id: string;
@@ -44,13 +48,12 @@ export interface NoteIngredientLine {
   blockIndex: number;
   lineIndex: number;
   reference: string;
-  parseStatus: ParsedLineStatus;
+  parseStatus: IngredientLineParseStatus;
   reviewStatus: LineReviewStatus;
   isActive: boolean;
   parserVersion: string | null;
-  segments: ParsedLineSegment[];
-  /** v2 mentions, once the backfill has run. */
-  mentions?: NoteMention[];
+  /** v2 mentions, one per segment part; empty until the line is parsed. */
+  mentions: NoteMention[];
 }
 
 export interface NoteDetail {

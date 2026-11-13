@@ -1,7 +1,7 @@
 import { createIngredientWorker } from "./ingredient";
 import { createInstructionWorker } from "./instruction";
 import { createNoteWorker } from "./note";
-import { createPatternTrackingWorker } from "./pattern-tracking";
+import { createReinterpretWorker } from "./reinterpret";
 import { createCategorizationWorker } from "./categorization";
 
 import { Queue } from "bullmq";
@@ -29,7 +29,7 @@ export function startWorkers(
     instructionQueue: Queue;
     ingredientQueue: Queue;
     imageQueue: Queue;
-    patternTrackingQueue: Queue;
+    reinterpretQueue: Queue;
     categorizationQueue: Queue;
     // TODO more queues here
   },
@@ -62,9 +62,9 @@ export function startWorkers(
       queues.imageQueue
     ),
     createWorkerConfig(
-      WORKER_CONSTANTS.NAMES.PATTERN_TRACKING,
-      createPatternTrackingWorker,
-      queues.patternTrackingQueue
+      WORKER_CONSTANTS.NAMES.REINTERPRET,
+      createReinterpretWorker,
+      queues.reinterpretQueue
     ),
     createWorkerConfig(
       WORKER_CONSTANTS.NAMES.CATEGORIZATION,
@@ -85,7 +85,7 @@ export function startWorkers(
   queueMonitor.startMonitoring(queues.instructionQueue);
   queueMonitor.startMonitoring(queues.ingredientQueue);
   queueMonitor.startMonitoring(queues.imageQueue);
-  queueMonitor.startMonitoring(queues.patternTrackingQueue);
+  queueMonitor.startMonitoring(queues.reinterpretQueue);
   queueMonitor.startMonitoring(queues.categorizationQueue);
   // TODO: Add monitoring for additional queues as they're implemented
 
@@ -97,7 +97,7 @@ export function startWorkers(
     instructionWorker: workers[WORKER_CONSTANTS.NAMES.INSTRUCTION],
     ingredientWorker: workers[WORKER_CONSTANTS.NAMES.INGREDIENT],
     imageWorker: workers[WORKER_CONSTANTS.NAMES.IMAGE],
-    patternTrackingWorker: workers[WORKER_CONSTANTS.NAMES.PATTERN_TRACKING],
+    reinterpretWorker: workers[WORKER_CONSTANTS.NAMES.REINTERPRET],
     categorizationWorker: workers[WORKER_CONSTANTS.NAMES.CATEGORIZATION],
     // TODO more workers here
   } as WorkerRegistry<FlexibleWorker>;

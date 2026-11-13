@@ -1,10 +1,38 @@
 import { describe, expect, it } from "vitest";
 
 import { NAVIGATION_CONSTANTS } from "../constants";
-import { getNavigationItems, getToggleRestY, isNavigationItemActive } from "../navigation";
+import {
+  getNavigationItems,
+  getToggleRestY,
+  isNavigationEntryActive,
+  isNavigationItemActive,
+} from "../navigation";
 
-const items = getNavigationItems(true);
+const items = getNavigationItems({ isAdmin: true, canCurate: true });
 
+
+describe("getNavigationItems", () => {
+  it("shows Ingredients to everyone and the Knowledge section to curators", () => {
+    const names = (canCurate: boolean) =>
+      getNavigationItems({ isAdmin: false, canCurate }).map((item) => item.name);
+    expect(names(false)).toEqual([
+      "Dashboard",
+      "Import",
+      "Ingredients",
+      "Recipes",
+      "Notes",
+    ]);
+    expect(names(true)).toEqual([...names(false), "Knowledge"]);
+  });
+
+  it("lights Knowledge up on the review queue, concepts, and lexicon pages", () => {
+    const knowledge = items.find((item) => item.name === "Knowledge");
+    if (!knowledge) throw new Error("no Knowledge item");
+    for (const path of ["/teach", "/teach/playground", "/concepts/abc", "/lexicon"])
+      expect(isNavigationEntryActive(path, knowledge)).toBe(true);
+    expect(isNavigationEntryActive("/ingredients", knowledge)).toBe(false);
+  });
+});
 
 describe("isNavigationItemActive", () => {
   it("matches nested routes but only an exact match for the dashboard", () => {

@@ -119,6 +119,7 @@ query DiscoveryQueue($type: DiscoveryType, $cursor: ID) {
 query DiscoveryReview($id: ID!) {
   discovery(id: $id) {
     ...DiscoveryFields
+    fixtureBlock
     examples(limit: 5) {
       ...DiscoveryExampleFields
     }
@@ -253,5 +254,114 @@ mutation RefreshDiscoveries {
     identityUpdated
     modifiersUpdated
     relationshipSuggestions
+  }
+}
+
+query CorpusHealth {
+  corpusHealth {
+    lineCount
+    linesWithMentions
+    parsedSuccessfully
+    parsedWithErrors
+    awaitingParsing
+    mentions {
+      total
+      autoResolved
+      needsReview
+      unresolved
+      verified
+    }
+    openDiscoveryCount
+    topUnknownPhrases {
+      discoveryId
+      phrase
+      mentionCount
+    }
+    reinterpretBacklog {
+      pending
+      processing
+      failed
+      failedBatches
+    }
+    lexiconRevision
+    live {
+      windowSeconds
+      lineCount
+      linesPerSecond
+      structuralSuccessShare
+      averageCandidatesPerSegment
+      unknownTokens
+      lexiconRevision
+    }
+  }
+}
+
+mutation MarkDiscoveryAsNoise($id: ID!) {
+  markDiscoveryAsNoise(id: $id) {
+    ...PayloadFields
+    linesDeactivated
+  }
+}
+
+query CorpusHealthTrends($weeks: Int) {
+  corpusHealthTrends(weeks: $weeks) {
+    parserVersion
+    snapshots {
+      id
+      takenAt
+      trigger
+      parserVersion
+      lexiconRevision
+      totalLines
+      totalMentions
+      autoResolvedMentions
+      needsReviewMentions
+      unresolvedMentions
+      verifiedMentions
+      avgCandidates
+      openDiscoveries
+    }
+    byParserVersion {
+      parserVersion
+      total
+      unresolved
+    }
+    reviewByWeek {
+      weekStart
+      decisions
+      mentionsChanged
+    }
+    topUnknownPhrases {
+      discoveryId
+      type
+      phrase
+      mentionCount
+    }
+    mostAmbiguousPhrases {
+      discoveryId
+      type
+      phrase
+      mentionCount
+    }
+  }
+}
+
+mutation StartReparse {
+  startReparse {
+    ...PayloadFields
+    jobId
+  }
+}
+
+mutation RunExploratorySweep {
+  runExploratorySweep {
+    ...PayloadFields
+    jobId
+  }
+}
+
+mutation TakeHealthSnapshot {
+  takeHealthSnapshot {
+    ...PayloadFields
   }
 }

@@ -31,7 +31,11 @@ export function SearchForm({
   }
 
   return (
-    <form role="search" onSubmit={handleSubmit} className="flex items-end gap-2">
+    <form
+      role="search"
+      onSubmit={handleSubmit}
+      className="flex items-end gap-2"
+    >
       <div className="flex flex-col gap-1">
         <Label htmlFor={id}>{label}</Label>
         <Input

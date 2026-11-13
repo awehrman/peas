@@ -15,7 +15,10 @@ export function validateIngredientNames(
   const trimmedPlural = plural?.trim() ?? "";
 
   if (!trimmedName) errors.name = "Name is required";
-  if (trimmedPlural && trimmedPlural.toLowerCase() === trimmedName.toLowerCase()) {
+  if (
+    trimmedPlural &&
+    trimmedPlural.toLowerCase() === trimmedName.toLowerCase()
+  ) {
     errors.plural = "Plural must be different from the name";
   }
 

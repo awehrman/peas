@@ -596,7 +596,9 @@ describe("BaseWorker", () => {
         expect.any(Number),
         true,
         "test-queue",
-        "test-worker"
+        "test-worker",
+        undefined,
+        undefined
       );
 
       expect(result).toBeDefined();

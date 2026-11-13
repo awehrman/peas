@@ -29,7 +29,9 @@
     "typecheck": "tsc -p tsconfig.test.json",
     "test:coverage": "vitest run --config vitest.int.config.ts --coverage",
     "db:seed:modifiers": "dotenv -e ../../.env.local -- tsx scripts/seed-lexicon-modifiers.ts",
-    "db:seed:legacy": "dotenv -e ../../.env.local -- tsx scripts/seed-ontology-from-legacy.ts",
+    "db:seed:foods": "dotenv -e ../../.env.local -- tsx scripts/seed-starter-foods.ts",
+    "pull:fixtures": "dotenv -e ../../.env.local -- tsx scripts/pull-fixtures.ts",
+    "export:calibration-labels": "dotenv -e ../../.env.local -- tsx scripts/export-calibration-labels.ts",
     "db:evaluate:resolution": "dotenv -e ../../.env.local -- tsx scripts/evaluate-resolution.ts"
   },
   "dependencies": {

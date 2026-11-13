@@ -330,7 +330,7 @@ export async function getParsingRuleStatistics(): Promise<{
 }
 
 /**
- * Clean up all data from the database (DANGEROUS - deletes everything)
+ * Deletes everything an import created (DANGEROUS): notes, recipes, ingredient lines and their mentions, sources, note categories and tags, queue jobs, reinterpretation runs, the legacy v1 parsing tables, and open or deferred discoveries left with no example lines. Users, food knowledge (concepts, lexicon, attributes, relationships), decisions, resolved and rejected discoveries, and corpus health snapshots are kept.
  */
 export async function cleanupAllData(): Promise<{
   deletedCounts: {
@@ -349,6 +349,8 @@ export async function cleanupAllData(): Promise<{
     urls: number;
     categories: number;
     tags: number;
+    discoveries: number;
+    reinterpretRuns: number;
   };
 }> {
   try {
@@ -369,6 +371,8 @@ export async function cleanupAllData(): Promise<{
       urls: 0,
       categories: 0,
       tags: 0,
+      discoveries: 0,
+      reinterpretRuns: 0,
     };
 
     // Delete recipes (they reference notes and images)
@@ -390,8 +394,16 @@ export async function cleanupAllData(): Promise<{
     // Delete ingredient references (they reference ingredients and parsed lines)
     await prisma.ingredientReference.deleteMany({});
 
-    // Delete parsed ingredient lines (they reference notes)
+    // Delete parsed ingredient lines (they reference notes); their mentions and discovery evidence cascade
     await prisma.parsedIngredientLine.deleteMany({});
+
+    // Open review cards with no example lines left would show stale counts; decided ones stay as history
+    deletedCounts.discoveries = (
+      await prisma.discovery.deleteMany({
+        where: { status: { in: ["OPEN", "DEFERRED"] }, evidence: { none: {} } },
+      })
+    ).count;
+    deletedCounts.reinterpretRuns = (await prisma.reinterpretRun.deleteMany({})).count;
 
     // Delete parsed instruction lines (they reference notes)
     await prisma.parsedInstructionLine.deleteMany({});

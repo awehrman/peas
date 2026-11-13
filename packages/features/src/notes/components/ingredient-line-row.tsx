@@ -5,13 +5,14 @@ import type { ReactNode } from "react";
 import { Button, cn } from "@peas/components";
 import { Check, X } from "lucide-react";
 
-import { ParsedLine } from "../../parsed-line";
 import { type MutationAction, useMutation } from "../../shared";
 import {
   type MentionCorrectionActions,
   MentionPanel,
 } from "../../teach/mention-panel";
 import type { LineReviewStatus, NoteIngredientLine } from "../types";
+
+import { IngredientLineText } from "./ingredient-line-text";
 
 export interface IngredientLineActions extends MentionCorrectionActions {
   onSetReviewStatus?: MutationAction<
@@ -21,7 +22,6 @@ export interface IngredientLineActions extends MentionCorrectionActions {
 
 interface IngredientLineRowProps extends IngredientLineActions {
   line: NoteIngredientLine;
-  getIngredientHref?: (ingredientId: string) => string;
 }
 
 const REVIEW_LABELS: Record<LineReviewStatus, string> = {
@@ -32,7 +32,6 @@ const REVIEW_LABELS: Record<LineReviewStatus, string> = {
 
 export function IngredientLineRow({
   line,
-  getIngredientHref,
   onSetReviewStatus,
   onCorrectMention,
   onSearchConcepts,
@@ -54,11 +53,10 @@ export function IngredientLineRow({
       )}
     >
       <div className="flex items-start justify-between gap-3">
-        <ParsedLine
+        <IngredientLineText
           reference={line.reference}
-          segments={line.segments}
           parseStatus={line.parseStatus}
-          getIngredientHref={getIngredientHref}
+          mentions={line.mentions}
         />
         <div className="flex shrink-0 items-center gap-1">
           <span className="sr-only">{REVIEW_LABELS[line.reviewStatus]}</span>
@@ -96,7 +94,7 @@ export function IngredientLineRow({
           ) : null}
         </div>
       </div>
-      {line.mentions?.length ? (
+      {line.mentions.length ? (
         <MentionPanel
           lineText={line.reference}
           mentions={line.mentions}

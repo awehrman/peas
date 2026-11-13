@@ -114,6 +114,16 @@ export interface ConceptDetailRecord {
     label: string;
   }[];
   classifications: EffectiveClassification[];
+  /** Explicit classification keys, so the editor knows which values it can remove. */
+  explicitClassificationKeys: string[];
+  tags: string[];
+  /** Concepts that can stand in for this one. */
+  substitutions: {
+    conceptId: string;
+    canonicalName: string;
+    ratio: string | null;
+    note: string | null;
+  }[];
 }
 
 /**
@@ -151,6 +161,12 @@ export async function getConceptDetail(
           },
         },
       },
+      classifications: { select: { key: true }, orderBy: { key: "asc" } },
+      tags: { select: { name: true }, orderBy: { name: "asc" } },
+      substitutionsFrom: {
+        include: { toConcept: { select: { id: true, canonicalName: true } } },
+        orderBy: { toConcept: { canonicalName: "asc" } },
+      },
     },
   });
   if (!concept) return null;
@@ -186,6 +202,14 @@ export async function getConceptDetail(
       label: attribute.attributeValue.label,
     })),
     classifications: await getEffectiveClassifications(concept.id, db),
+    explicitClassificationKeys: concept.classifications.map((row) => row.key),
+    tags: concept.tags.map((tag) => tag.name),
+    substitutions: concept.substitutionsFrom.map((substitution) => ({
+      conceptId: substitution.toConcept.id,
+      canonicalName: substitution.toConcept.canonicalName,
+      ratio: substitution.ratio,
+      note: substitution.note,
+    })),
   };
 }
 

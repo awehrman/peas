@@ -33,7 +33,7 @@ import type {
 } from "../generated/resolvers-types.js";
 
 /** Discovery as resolvers return it; `examples` has its own field resolver. */
-export type DiscoveryParent = Omit<Discovery, "examples">;
+export type DiscoveryParent = Omit<Discovery, "examples" | "fixtureBlock">;
 
 /** Ingredient lines as the note and recipe repositories return them; `mentions` has its own field resolver. */
 export type IngredientLineParent = Omit<IngredientLine, "mentions">;
@@ -234,10 +234,15 @@ export function mentionView(
   context: ResolverContext
 ) {
   const segment = detail.syntax.segment;
+  const span = {
+    start: detail.spanStart,
+    end: detail.spanEnd,
+    text: detail.rawText,
+  };
   const segmentResolution: SegmentResolution = {
     segmentIndex: detail.segmentIndex,
-    partIndex: 0,
-    span: segment.span,
+    partIndex: detail.partIndex,
+    span,
     status:
       detail.resolutionStatus === "VERIFIED"
         ? "AUTO_RESOLVED"
@@ -272,6 +277,8 @@ export function mentionView(
   return {
     id: detail.id,
     segmentIndex: detail.segmentIndex,
+    partIndex: detail.partIndex,
+    span,
     rawText: detail.rawText,
     status: detail.resolutionStatus,
     concept,
@@ -280,7 +287,9 @@ export function mentionView(
     verified: detail.verifiedAt !== null,
     lexiconRevision: detail.lexiconRevision,
     summary: shown,
-    tokens: syntaxTokens(segment),
+    tokens: segment.coordination
+      ? syntaxTokens(segment, span)
+      : syntaxTokens(segment),
     candidates: candidateViews(detail.resolution, context),
     unresolved: detail.resolution.unresolved,
   };
@@ -331,6 +340,10 @@ export async function describeDecision(
       return `Taught: merged ${name(payload.mergedId)} into ${name(payload.survivorId)}`;
     case "CORRECT_MENTION":
       return `Corrected to ${name(payload.conceptId)}`;
+    case "APPROVE_CONCEPT":
+      return `Approved ${name(payload.conceptId)}`;
+    case "EDIT_CONCEPT":
+      return `Updated ${payload.canonicalName ?? name(payload.conceptId)}`;
     case "REVERT":
       return "Reverted the decision";
   }

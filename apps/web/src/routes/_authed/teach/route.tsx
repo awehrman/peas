@@ -1,9 +1,12 @@
-import { Outlet, createFileRoute, redirect } from "@tanstack/react-router";
+import { KnowledgeLayout } from "~/components/knowledge-layout";
+import { canCurateKnowledge } from "~/lib/permissions";
 
-/** Teach Peas is for admins; the GraphQL resolvers enforce it too. */
+import { createFileRoute, redirect } from "@tanstack/react-router";
+
+/** Teach Peas is part of the Knowledge section; the GraphQL resolvers enforce it too. */
 export const Route = createFileRoute("/_authed/teach")({
   beforeLoad: ({ context }) => {
-    if (!context.viewer.isAdmin) throw redirect({ to: "/" });
+    if (!canCurateKnowledge(context.viewer)) throw redirect({ to: "/" });
   },
-  component: Outlet,
+  component: KnowledgeLayout,
 });

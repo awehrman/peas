@@ -53,9 +53,19 @@ async function addLines(
   return ids;
 }
 
-async function mentionOf(parsedLineId: string, segmentIndex = 0) {
+async function mentionOf(
+  parsedLineId: string,
+  segmentIndex = 0,
+  partIndex = 0
+) {
   return prisma.ingredientMention.findUniqueOrThrow({
-    where: { parsedLineId_segmentIndex: { parsedLineId, segmentIndex } },
+    where: {
+      parsedLineId_segmentIndex_partIndex: {
+        parsedLineId,
+        segmentIndex,
+        partIndex,
+      },
+    },
     include: { attributes: true },
   });
 }
@@ -209,8 +219,8 @@ describe.skipIf(!hasTestDatabase)("teaching Peas (integration)", () => {
 
       expect(first).toMatchObject({
         lines: 5,
-        mentionsWritten: 5,
-        mentionsChanged: 5,
+        mentionsWritten: 6,
+        mentionsChanged: 6,
       });
       expect(checkpoints).toHaveLength(3);
       expect(
@@ -230,11 +240,18 @@ describe.skipIf(!hasTestDatabase)("teaching Peas (integration)", () => {
       expect((await mentionOf(organic ?? "")).resolutionStatus).toBe(
         "NEEDS_REVIEW"
       );
-      const splitMention = await mentionOf(split ?? "");
-      expect(splitMention.resolutionStatus).toBe("NEEDS_REVIEW");
-      expect(JSON.stringify(splitMention.resolution)).toContain(
-        "parts_not_stored:1"
-      );
+      expect(await mentionOf(split ?? "", 0, 0)).toMatchObject({
+        rawText: "Salt",
+        partIndex: 0,
+        resolutionStatus: "AUTO_RESOLVED",
+        conceptId: ontology.concepts.salt,
+      });
+      expect(await mentionOf(split ?? "", 0, 1)).toMatchObject({
+        rawText: "parsley",
+        partIndex: 1,
+        resolutionStatus: "AUTO_RESOLVED",
+        conceptId: ontology.concepts.parsley,
+      });
 
       const discoveries = await prisma.discovery.findMany({
         select: { type: true, key: true, mentionCount: true },
@@ -279,8 +296,8 @@ describe.skipIf(!hasTestDatabase)("teaching Peas (integration)", () => {
 
       expect(await getCorpusCoverage()).toEqual({
         byStatus: {
-          AUTO_RESOLVED: 1,
-          NEEDS_REVIEW: 2,
+          AUTO_RESOLVED: 3,
+          NEEDS_REVIEW: 1,
           UNRESOLVED: 2,
           VERIFIED: 0,
         },
@@ -347,6 +364,7 @@ describe.skipIf(!hasTestDatabase)("teaching Peas (integration)", () => {
 
       const reinterpreted = await reinterpretAffected(applied.payload);
       expect(reinterpreted).toEqual({
+        scope: expect.objectContaining({ phrases: ["icing sugar"] }),
         linesReprocessed: 1,
         mentionsChanged: preview.counts.affected,
         needsBackgroundReinterpret: false,

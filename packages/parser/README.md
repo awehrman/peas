@@ -4,8 +4,8 @@ Ingredient-line parsers for Peas.
 
 | Parser | Where | Status |
 | --- | --- | --- |
-| v1 | `src/v1/parser.peggy` | The live import parser. The queue uses it for every imported line. |
-| v2 | `src/v2/` | New structural parser built in Phase 1. Fully tested from fixtures, not yet wired into imports (Phase 5). |
+| v1 | `src/v1/parser.peggy` | No longer used by imports since Phase 5; kept for the v1 baseline and snapshot until Phase 7. |
+| v2 | `src/v2/` | The import parser since Phase 5: the queue parses and resolves every imported line with `processIngredientLine`. |
 | Legacy | `legacy/` | Old grammar work kept for reference only. Nothing builds or imports it. |
 
 Most of this README is about v2: how it thinks, what it produces, and how to try it.
@@ -302,7 +302,7 @@ Knowledge changes need no grammar change: add the entry "icing sugar" for powder
 
 ## Teaching Peas: discoveries and decisions
 
-Phase 4 adds the pure half of the review loop to `src/v2/knowledge/` and `src/v2/preview/`. The database and the review screens build on these; nothing here touches a database.
+Phase 4 adds the pure half of the review loop to `src/v2/knowledge/` and `src/v2/preview/`; Phase 6 adds structural patterns and calibration. The database and the review screens build on these; nothing here touches a database.
 
 | Function | What it does | Example |
 | --- | --- | --- |
@@ -312,6 +312,10 @@ Phase 4 adds the pure half of the review loop to `src/v2/knowledge/` and `src/v2
 | `decisionScope(payload)` | The phrases, concepts, and mentions a decision can affect, for prefiltering previews and reinterpretation | `{ phrases: ["scallion", "scallions"], conceptIds: [...] }` |
 | `generatePlural(phrase)` | The PLURAL entry a phrase decision adds; null for mass nouns and phrases that already look plural | "cherry tomato" gives "cherry tomatoes"; "flour" gives null |
 | `diffResolution(before, after, ...)` and `summarizeResolution` | How a decision changes one mention (newly resolved, concept or attribute change, ambiguity, lost resolution) in readable form | "unresolved: icing sugar" becomes "powdered sugar" |
+| `structureSignature(syntax)` and `structuralIssue(syntax)` | Phase 6: a line's shape as token classes (`N` number, `F` fraction, `U` unit, `W` unknown word, `L` lexeme, punctuation kept) and why it needs the grammar (`UNPARSED`, `QUANTITY_IN_PHRASE`, `HEADING`); `discover` emits STRUCTURAL_PATTERN keyed by the signature | "rosemary a few sprigs" is `W U` (QUANTITY_IN_PHRASE); "For the glaze:" is `W :` (HEADING) |
+| `draftGoldenCases(signature, lines)` | Pending golden cases for a structural pattern's lines, with v2's current reading and an empty expected value | `pending-w-u-1`, `pending-w-u-2` |
+| `upgradeStoredSyntax(syntax, parserVersion)` | Carries stored syntax across a major parser version through `SYNTAX_UPGRADES` (empty until the syntax tree changes shape) | a 2.x mention reads unchanged |
+| `calibrateThresholds(groups)` | Precision and coverage of automatic resolution over a grid of `minMargin` and `maxUnknownForAuto`, with a recommendation at the target precision | keeps 0.15 / 0 on the semantic set |
 
 Decision payloads are validated by `DecisionPayloadSchema`. Phase 4 added optional fields without changing stored payloads: `exclusive` on MAP_TO_CONCEPT (the phrase stops meaning anything else), `plural` and `attributeValueIds` on CREATE_CONCEPT, `modifierText` on CONCEPT_PLUS_ATTRIBUTE, `applicableConceptIds` on CLASSIFY_MODIFIER and ADD_ATTRIBUTE_VALUE, and `teachPhrase` on CORRECT_MENTION. IGNORE_TOKEN stores an INSTRUCTION entry with the value key `noise`, which the resolver counts as explained and leaves out of its result.
 
@@ -329,6 +333,8 @@ All commands run from the repo root with `yarn workspace @peas/parser <command>`
 | `evaluate:resolution` | Resolution report over the corpus and golden inputs with the fixture snapshot (`--snapshot <path>` for any `ResolverSnapshot` JSON); writes `fixtures/reports/resolution.md` |
 | `extract:descriptors` | Classifies the v1 descriptor list into suggested roles and targets; writes `fixtures/lexicon/v1-descriptors.candidates.json` |
 | `corpus:baseline-v1` | Re-snapshots v1 output to `fixtures/baseline/v1.jsonl` |
+| `pull:fixtures --discovery <id>` | Writes a structural pattern's example lines to `fixtures/golden/pending/<slug>.json` as pending cases (runs in `@peas/database`; `--signature "W U"` and `--limit` also work) |
+| `calibrate:thresholds` | Calibrates automatic resolution; writes `fixtures/reports/calibration.md`. `--labels <file>` adds verified mentions exported by `yarn workspace @peas/database export:calibration-labels`; `--target 0.98` sets the precision target |
 | `build` | Builds v1 and v2 into `dist/` |
 
 ## Fixtures
@@ -344,6 +350,7 @@ All commands run from the repo root with `yarn workspace @peas/parser <command>`
 | `fixtures/lexicon/semantic-cases.json` | The lexicon and small ontology (concepts, relationships, applicability, concept attributes) `golden/semantic.json` assumes; resolver tests build their snapshot from it, and the database integration tests load it to prove every target interpretation can be stored |
 | `fixtures/lexicon/snapshot.json` | That fixture as a `ResolverSnapshot`, regenerated by `evaluate:resolution` |
 | `fixtures/lexicon/modifiers.seed.json` | 99 reviewed modifier entries (preparations, degrees, measurement modifiers, instructions, attributes) loaded by `db:seed:modifiers` |
+| `fixtures/lexicon/starter-foods.seed.json` | 28 starter foods (chicken and its parts, dairy, pantry, produce, oils) with names, relationships, characterizing attributes, and attribute applicability, loaded by `db:seed:foods` |
 | `fixtures/lexicon/v1-descriptors.candidates.json` | Every v1 descriptor with a suggested role and target, for reviewing what to add to the modifier seed next |
 | `fixtures/baseline/v1.jsonl` | v1 output for every corpus line, for comparison |
 | `fixtures/reports/v1-vs-v2.md` | Latest comparison report |

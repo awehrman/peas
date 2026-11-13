@@ -8,7 +8,7 @@ A high-performance, scalable queue processing service built with TypeScript, Nod
 
 - **HTML File Processing**: Stream-based processing of HTML files with validation and error handling
 - **Note Parsing**: Intelligent parsing of recipe notes with metadata extraction
-- **Ingredient Processing**: Advanced ingredient line parsing with caching and pattern recognition
+- **Ingredient Processing**: v2 parsing and resolution of every ingredient line (mentions and discoveries, no legacy tables), cached per parser version and lexicon revision, with background reinterpretation after large Teach Peas decisions
 - **Queue Management**: Robust job queue system with retry logic and error recovery
 - **Real-time Monitoring**: WebSocket-based status updates and progress tracking
 
@@ -189,11 +189,32 @@ NODE_OPTIONS="--expose-gc" yarn start
 # Resolve every active ingredient line with the v2 parser and write mentions and discoveries (idempotent; resume with --after <lineId>)
 yarn workspace @peas/queue backfill:mentions [--after <parsedLineId>] [--batch 500] [--mode CONSERVATIVE]
 
-# Re-resolve lines whose mentions predate a lexicon revision, e.g. after a Teach Peas decision affected more than 1,000 lines
+# Re-resolve lines whose mentions predate a lexicon revision; the API uses the reinterpret queue instead, and returns this command only when the queue is unreachable
 yarn workspace @peas/queue reinterpret --revision <r> [--decision <decisionId>] [--batch 500]
 ```
 
 Both scripts share `backfillMentions` in `@peas/database`, never write legacy tables, and leave verified mentions alone.
+
+### v2 import pipeline (Phase 5)
+
+- **Parse** (`services/ingredient/actions/parse-ingredient-line`): `processLine` runs `processIngredientLine` in CONSERVATIVE mode with the process's resolver context and stores the result as `metadata.v2Result`. Syntax decides the parse status (PARSED succeeds; PARTIAL and FAILED are errors); resolution never fails a job. Each parse is recorded in the last-hour metrics window. Logs `[V2_PARSE]`.
+- **Save** (`save-ingredient-line`): `saveImportedLine` upserts the line by `(noteId, blockIndex, lineIndex)` and writes one mention per coordinated part plus discoveries, in one transaction; verified mentions are protected. Logs `[V2_SAVE]`.
+- **Lexicon cache** (`services/ingredient/lexicon-cache.ts`): one resolver context per process, reused for 15 seconds, then rebuilt only if the revision changed (snapshot from Redis `lexicon:snapshot:<revision>`, else the database). A message on `lexicon:revision` marks it stale immediately. Logs `[LEXICON_CACHE]`.
+- **Reinterpret queue** (`workers/reinterpret`, `services/reinterpret`): a run per revision (`reinterpret-<revision>`) selects the stale lines, starts batches of 200 (`reinterpret-<revision>-<n>`, 3 attempts with backoff, concurrency 2), and records progress in `ReinterpretRun`. Fresh lines are skipped, so retries and repeated runs are safe. Logs `[REINTERPRET]`.
+
+### Grammar loop and maintenance (Phase 6)
+
+```bash
+# Re-read every stored mention with the working-tree parser and write packages/parser/fixtures/reports/reparse-<version>.md; writes nothing to the database
+yarn workspace @peas/queue reparse:dry-run
+
+# After a grammar change ships: start the REPARSE_BY_VERSION run ("reparse-<version>") for lines written by other parser versions
+yarn workspace @peas/queue reparse
+```
+
+- **Routes:** `POST /reinterpret/reparse` (optional `parserVersion`, defaults to the running parser), `POST /reinterpret/sweep`, and `POST /reinterpret/snapshot`.
+- **Jobs on the reinterpret queue:** `CORPUS_HEALTH_SNAPSHOT` (aggregate SQL only; one per finished run, keyed by the run id) and `EXPLORATORY_SWEEP` (discoveries only, never mentions). `scheduleMaintenanceJobs` registers a daily snapshot (`0 3 * * *`) and a weekly sweep (`0 4 * * 0`) on start. Logs `[HEALTH_SNAPSHOT]`, `[EXPLORATORY_SWEEP]`, `[MAINTENANCE]`.
+- Background batches add the mentions they change to the decision that produced the revision (`LexiconDecision.mentionsChanged`), so the health page's "taught to fixed" counts them.
 
 ### API Endpoints
 
@@ -229,6 +250,26 @@ GET /health/ready
 
 # Component health check
 GET /health/component/:component
+```
+
+#### Reinterpretation and lexicon revisions
+
+```bash
+# Start (or return) the background run for a revision: 202 { jobId: "reinterpret-15", status }
+POST /reinterpret { "revision": 15, "phrases": ["icing sugar"], "conceptIds": [] }
+
+# Progress of a revision's run
+GET /reinterpret/:revision/status
+
+# Tell every queue process to reload its resolver context now
+POST /reinterpret/lexicon-revision { "revision": 15 }
+```
+
+#### Ingredient metrics
+
+```bash
+# Last hour of parses in this process (lines per second, structural success, resolution coverage, candidates per part, unknown words) plus corpus counts (mentions by status, open discoveries, reinterpretation backlog)
+GET /metrics/ingredients
 ```
 
 #### Performance Monitoring

@@ -61,6 +61,15 @@ query ConceptDetail($id: ID!) {
       inheritedFrom {
         ...ConceptRefFields
       }
+      isExplicit
+    }
+    tags
+    substitutions {
+      concept {
+        ...ConceptRefFields
+      }
+      ratio
+      note
     }
     mentions {
       mentionId
@@ -79,5 +88,55 @@ query ConceptDetail($id: ID!) {
       reverted
       canRevert
     }
+  }
+}
+
+mutation SetConceptClassification($input: ConceptClassificationInput!) {
+  setConceptClassification(input: $input) {
+    ...PayloadFields
+  }
+}
+
+mutation RemoveConceptClassification($conceptId: ID!, $key: String!) {
+  removeConceptClassification(conceptId: $conceptId, key: $key) {
+    ...PayloadFields
+  }
+}
+
+mutation SetConceptTags($conceptId: ID!, $tags: [String!]!) {
+  setConceptTags(conceptId: $conceptId, tags: $tags) {
+    ...PayloadFields
+  }
+}
+
+mutation SetConceptSubstitution($input: ConceptSubstitutionInput!) {
+  setConceptSubstitution(input: $input) {
+    ...PayloadFields
+  }
+}
+
+mutation RemoveConceptSubstitution($conceptId: ID!, $substituteId: ID!) {
+  removeConceptSubstitution(
+    conceptId: $conceptId
+    substituteId: $substituteId
+  ) {
+    ...PayloadFields
+  }
+}
+
+query LexiconPage($query: String, $role: String, $page: Int) {
+  lexicon(query: $query, role: $role, page: $page) {
+    items {
+      id
+      text
+      role
+      kind
+      status
+      targetLabel
+      conceptId
+    }
+    total
+    page
+    pageSize
   }
 }

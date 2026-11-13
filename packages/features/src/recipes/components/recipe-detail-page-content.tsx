@@ -6,10 +6,19 @@ import { Badge, Card, CardContent, CardHeader, CardTitle } from "@peas/component
 import { ArrowLeft } from "lucide-react";
 
 import { AppLink } from "../../app-navigation";
-import { ParsedLine } from "../../parsed-line";
+import { IngredientLineText } from "../../notes/components/ingredient-line-text";
+import type { NoteMention } from "../../teach/mention-panel";
+import type { ConceptRef } from "../../teach/types";
 import type { RecipeDetail } from "../types";
 
 import { EditRecipeDialog, type UpdateRecipe } from "./edit-recipe-dialog";
+
+function conceptsOf(mentions: readonly NoteMention[]): ConceptRef[] {
+  const byId = new Map<string, ConceptRef>();
+  for (const mention of mentions)
+    if (mention.concept) byId.set(mention.concept.id, mention.concept);
+  return [...byId.values()];
+}
 
 interface RecipeDetailPageContentProps {
   recipe: RecipeDetail;
@@ -110,13 +119,24 @@ export function RecipeDetailPageContent({
                   {block.lines
                     .filter((line) => line.isActive)
                     .map((line) => (
-                      <li key={line.id}>
-                        <ParsedLine
+                      <li
+                        key={line.id}
+                        className="flex flex-wrap items-baseline gap-x-2"
+                      >
+                        <IngredientLineText
                           reference={line.reference}
-                          segments={line.segments}
                           parseStatus={line.parseStatus}
-                          getIngredientHref={(id) => `/ingredients?id=${id}`}
+                          mentions={line.mentions}
                         />
+                        {conceptsOf(line.mentions).map((concept) => (
+                          <AppLink
+                            key={concept.id}
+                            href={`/concepts/${concept.id}`}
+                            className="text-xs text-primary underline underline-offset-2"
+                          >
+                            {concept.canonicalName}
+                          </AppLink>
+                        ))}
                       </li>
                     ))}
                 </ul>

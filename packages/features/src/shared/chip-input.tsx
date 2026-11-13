@@ -1,11 +1,19 @@
 "use client";
 
-import { type ChangeEvent, type KeyboardEvent, type ReactNode, useState } from "react";
+import { AddableLabel } from "./addable-label";
+import { RemovableList } from "./removable-list";
+
+import {
+  type ChangeEvent,
+  type KeyboardEvent,
+  type ReactNode,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
 import { Badge, Input, Label, UnderlineInput } from "@peas/components";
 import { X } from "lucide-react";
-
-import { RemovableList } from "./removable-list";
 
 interface ChipInputProps {
   id: string;
@@ -16,6 +24,16 @@ interface ChipInputProps {
   description?: string;
   /** `underline` shows entries as a plain list above a borderless input. */
   variant?: "outlined" | "underline";
+  /** Show only the label and a plus button (named by this); the input appears when the button is used. */
+  addLabel?: string;
+  /** Read-only entries shown before the editable ones, e.g. tags added automatically. */
+  fixedValues?: string[];
+  /** Explains the fixed entries, e.g. "Added automatically from the properties". */
+  fixedValuesDescription?: string;
+  /** Checks an entry before it is added; return a message to refuse it. */
+  validate?: (value: string) => string | null | Promise<string | null>;
+  /** Suggestions offered while typing (an HTML datalist). */
+  suggestions?: string[];
 }
 
 /**
@@ -29,48 +47,122 @@ export function ChipInput({
   placeholder,
   description,
   variant = "outlined",
+  addLabel,
+  fixedValues = [],
+  fixedValuesDescription,
+  validate,
+  suggestions,
 }: ChipInputProps): ReactNode {
   const [draft, setDraft] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const errorId = `${id}-error`;
+  const suggestionsId = suggestions ? `${id}-suggestions` : undefined;
+  const [isAdding, setIsAdding] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const isCollapsed = addLabel !== undefined && !isAdding;
+
+  useEffect(() => {
+    if (isAdding) inputRef.current?.focus();
+  }, [isAdding]);
   const descriptionId = description ? `${id}-description` : undefined;
   const isUnderline = variant === "underline";
 
-  function commitDraft() {
+  /** Adds the draft's entries; resolves false when validation refused one (the draft stays for fixing). */
+  async function commitDraft(): Promise<boolean> {
     const additions = draft
       .split(",")
       .map((value) => value.trim())
       .filter(Boolean);
-    if (additions.length === 0) return;
+    if (additions.length === 0) return true;
 
     const existing = new Set(values.map((value) => value.toLowerCase()));
-    const unique = additions.filter((value) => !existing.has(value.toLowerCase()));
+    const unique = additions.filter(
+      (value) => !existing.has(value.toLowerCase())
+    );
+    for (const value of unique) {
+      const problem = validate ? await validate(value) : null;
+      if (problem) {
+        setError(problem);
+        return false;
+      }
+    }
+    setError(null);
     onChange([...values, ...unique]);
     setDraft("");
+    return true;
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     if (event.key === "Enter" || event.key === ",") {
       event.preventDefault();
-      commitDraft();
+      void commitDraft();
     }
     if (event.key === "Backspace" && draft === "" && values.length > 0) {
       onChange(values.slice(0, -1));
     }
   }
 
-  const removeValue = (value: string) => onChange(values.filter((item) => item !== value));
+  const removeValue = (value: string) =>
+    onChange(values.filter((item) => item !== value));
   const inputProps = {
     id,
     value: draft,
     placeholder,
-    "aria-describedby": descriptionId,
-    onChange: (event: ChangeEvent<HTMLInputElement>) => setDraft(event.target.value),
+    list: suggestionsId,
+    "aria-invalid": error ? true : undefined,
+    "aria-describedby":
+      [descriptionId, error ? errorId : undefined].filter(Boolean).join(" ") ||
+      undefined,
+    onChange: (event: ChangeEvent<HTMLInputElement>) => {
+      setDraft(event.target.value);
+      setError(null);
+    },
     onKeyDown: handleKeyDown,
-    onBlur: commitDraft,
+    onBlur: () => {
+      void commitDraft().then((isAdded) => {
+        if (isAdded) setIsAdding(false);
+      });
+    },
   };
 
   return (
-    <div className={isUnderline ? "flex flex-col gap-1" : "flex flex-col gap-2"}>
-      <Label htmlFor={id}>{label}</Label>
+    <div
+      className={isUnderline ? "flex flex-col gap-1" : "flex flex-col gap-2"}
+    >
+      {addLabel ? (
+        <AddableLabel
+          label={label}
+          htmlFor={isCollapsed ? undefined : id}
+          addLabel={addLabel}
+          canAdd={isCollapsed}
+          onAdd={() => setIsAdding(true)}
+        />
+      ) : (
+        <Label htmlFor={id}>{label}</Label>
+      )}
+      {fixedValues.length > 0 ? (
+        <ul
+          aria-label={`${label} added automatically`}
+          aria-describedby={
+            fixedValuesDescription ? `${id}-fixed-description` : undefined
+          }
+          className="flex flex-wrap gap-1"
+        >
+          {fixedValues.map((value) => (
+            <li
+              key={value}
+              className="rounded-sm bg-secondary-50 px-1.5 py-0.5 text-xs text-secondary-700"
+            >
+              {value}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {fixedValues.length > 0 && fixedValuesDescription ? (
+        <p id={`${id}-fixed-description`} className="sr-only">
+          {fixedValuesDescription}
+        </p>
+      ) : null}
       {isUnderline ? (
         <RemovableList
           label={label}
@@ -96,11 +188,23 @@ export function ChipInput({
           ))}
         </ul>
       ) : null}
-      {isUnderline ? (
-        <UnderlineInput className="text-sm" {...inputProps} />
+      {isCollapsed ? null : isUnderline ? (
+        <UnderlineInput ref={inputRef} className="text-sm" {...inputProps} />
       ) : (
-        <Input {...inputProps} />
+        <Input ref={inputRef} {...inputProps} />
       )}
+      {suggestions && !isCollapsed ? (
+        <datalist id={suggestionsId}>
+          {suggestions.map((option) => (
+            <option key={option} value={option} />
+          ))}
+        </datalist>
+      ) : null}
+      {error ? (
+        <p id={errorId} role="alert" className="text-xs text-error-700">
+          {error}
+        </p>
+      ) : null}
       {description ? (
         <p id={descriptionId} className="text-xs text-greyscale-600">
           {description}

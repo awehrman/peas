@@ -388,6 +388,91 @@ describe("applyDecisionToSnapshot", () => {
     );
   });
 
+  it("approves a proposed concept and activates its proposed FOOD entries", () => {
+    const before = snapshotWith();
+    const salt = conceptId("salt");
+    for (const concept of before.concepts)
+      if (concept.id === salt) concept.status = "PROPOSED";
+    for (const entry of before.entries)
+      if (entry.conceptId === salt) entry.status = "PROPOSED";
+    expect(resolve(before, "Salt to taste").mention?.status).toBe("UNRESOLVED");
+
+    const after = apply(before, { type: "APPROVE_CONCEPT", conceptId: salt });
+
+    expect(after.concepts.find((concept) => concept.id === salt)?.status).toBe(
+      "VERIFIED"
+    );
+    expect(
+      after.entries
+        .filter((entry) => entry.conceptId === salt)
+        .map((entry) => entry.status)
+    ).not.toContain("PROPOSED");
+    expect(resolve(after, "Salt to taste")).toMatchObject({
+      mention: { status: "AUTO_RESOLVED" },
+      described: { concept: "salt" },
+    });
+    expect(
+      decisionScope({ type: "APPROVE_CONCEPT", conceptId: salt }, before)
+    ).toEqual({ phrases: ["salt"], conceptIds: [salt], mentionIds: [] });
+    expect(
+      decisionScope({ type: "APPROVE_CONCEPT", conceptId: salt })
+    ).toEqual({ phrases: [], conceptIds: [salt], mentionIds: [] });
+  });
+
+  it("edits a concept's names and parents in one decision", () => {
+    const before = snapshotWith();
+    const powdered = conceptId("powdered-sugar");
+    const tomato = conceptId("tomato");
+    const canonical = before.entries.find(
+      (entry) => entry.conceptId === powdered && entry.text === "powdered sugar"
+    );
+    if (!canonical) throw new Error("fixture lacks powdered sugar");
+    const salt = conceptId("salt");
+    const saltEntry = before.entries.find((entry) => entry.conceptId === salt);
+    if (!saltEntry) throw new Error("fixture lacks salt");
+
+    const payload = {
+      type: "EDIT_CONCEPT" as const,
+      conceptId: powdered,
+      canonicalName: "icing sugar",
+      addNames: [{ text: "icing sugar", kind: "CANONICAL" as const }],
+      setNameKinds: [{ entryId: canonical.id, kind: "ALIAS" as const }],
+      retireEntryIds: [saltEntry.id],
+      addRelationships: [{ targetConceptId: tomato, relationshipType: "IS_A" as const }],
+    };
+    const after = apply(before, payload);
+
+    expect(after.concepts.find((concept) => concept.id === powdered)?.canonicalName).toBe(
+      "icing sugar"
+    );
+    expect(
+      after.entries
+        .filter((entry) => entry.conceptId === powdered)
+        .map((entry) => [entry.text, entry.kind])
+    ).toEqual(expect.arrayContaining([["icing sugar", "CANONICAL"], ["powdered sugar", "ALIAS"]]));
+    expect(after.entries.some((entry) => entry.id === saltEntry.id)).toBe(false);
+    expect(after.relationships).toContainEqual({ sourceId: powdered, targetId: tomato, type: "IS_A" });
+    expect(resolve(after, "2 tbsp icing sugar").described).toMatchObject({
+      concept: "icing-sugar",
+    });
+    expect(resolve(after, "2 tbsp powdered sugar").mention?.resolution.candidates[0]?.conceptId).toBe(
+      powdered
+    );
+
+    const undone = apply(after, {
+      type: "EDIT_CONCEPT",
+      conceptId: powdered,
+      retireRelationships: [{ targetConceptId: tomato, relationshipType: "IS_A" }],
+    });
+    expect(undone.relationships).not.toContainEqual({ sourceId: powdered, targetId: tomato, type: "IS_A" });
+
+    const scope = decisionScope(payload, before);
+    expect(scope.conceptIds).toEqual([powdered, tomato]);
+    expect(scope.phrases).toEqual(
+      expect.arrayContaining(["icing sugar", "powdered sugar", saltEntry.text])
+    );
+  });
+
   it("teaches from a correction, and leaves the snapshot alone for review-only decisions", () => {
     const taught = apply(snapshotWith(), {
       type: "CORRECT_MENTION",

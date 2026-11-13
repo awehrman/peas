@@ -277,6 +277,9 @@ describe("mention views", () => {
     id: "m",
     parsedLineId: "l",
     segmentIndex: 0,
+    partIndex: 0,
+    spanStart: segment.span.start,
+    spanEnd: segment.span.end,
     rawText: segment.span.text,
     conceptId: null,
     conceptName: null,
@@ -310,6 +313,8 @@ describe("mention views", () => {
     const view = mentionView(detail, context);
 
     expect(view).toMatchObject({
+      partIndex: 0,
+      span: { start: 0, end: segment.span.end, text: segment.span.text },
       status: "NEEDS_REVIEW",
       concept: null,
       quantity: "2 cup",

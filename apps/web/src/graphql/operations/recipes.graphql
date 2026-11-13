@@ -1,5 +1,17 @@
-query RecipesPage($query: String, $category: String, $tag: String, $page: Int) {
-  recipes(query: $query, category: $category, tag: $tag, page: $page) {
+query RecipesPage(
+  $query: String
+  $category: String
+  $tag: String
+  $conceptId: ID
+  $page: Int
+) {
+  recipes(
+    query: $query
+    category: $category
+    tag: $tag
+    conceptId: $conceptId
+    page: $page
+  ) {
     items {
       id
       title
@@ -12,6 +24,11 @@ query RecipesPage($query: String, $category: String, $tag: String, $page: Int) {
     total
     page
     pageSize
+    concept {
+      id
+      canonicalName
+      status
+    }
   }
   recipeTaxonomy {
     categories

@@ -1,12 +1,5 @@
 "use client";
 
-import type { ReactNode } from "react";
-
-import { Button, Placeholder, Progress } from "@peas/components";
-import { NotebookPen } from "lucide-react";
-
-import { AppLink } from "../../app-navigation";
-import type { DashboardStats } from "../types";
 import { type CleanupAllDataResult, CleanupCard } from "./cleanup-card";
 import {
   RankedList,
@@ -17,6 +10,13 @@ import {
   formatCount,
   formatPercent,
 } from "./stat-charts";
+
+import type { ReactNode } from "react";
+
+import { Progress } from "@peas/components";
+
+import { AppLink } from "../../app-navigation";
+import type { DashboardStats } from "../types";
 
 interface DashboardPageContentProps {
   stats: DashboardStats;
@@ -34,23 +34,6 @@ export function DashboardPageContent({
     </div>
   ) : null;
 
-  if (stats.noteCount === 0) {
-    return (
-      <div className="flex flex-col gap-6">
-        <Placeholder
-          label="No notes yet. Import an Evernote export to see stats about your recipes."
-          icon={<NotebookPen />}
-          button={
-            <Button asChild>
-              <AppLink href="/import">Import notes</AppLink>
-            </Button>
-          }
-        />
-        {adminTools}
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col gap-6">
       <OverviewTiles stats={stats} />
@@ -63,17 +46,17 @@ export function DashboardPageContent({
       <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
         <StatCard
           title="Most-used ingredients"
-          description="By ingredient lines that mention them"
+          description="Concepts by ingredient lines that mention them"
         >
           <RankedList
             label="Most-used ingredients"
             unit={["line", "lines"]}
-            emptyLabel="No ingredients have been linked to lines yet."
-            items={stats.topIngredients.map((ingredient) => ({
-              key: ingredient.ingredientId,
-              label: ingredient.name,
-              count: ingredient.lineCount,
-              href: `/ingredients?id=${encodeURIComponent(ingredient.ingredientId)}`,
+            emptyLabel="No lines have been resolved to concepts yet."
+            items={stats.topConcepts.map((concept) => ({
+              key: concept.conceptId,
+              label: concept.name,
+              count: concept.lineCount,
+              href: `/concepts/${encodeURIComponent(concept.conceptId)}`,
             }))}
           />
         </StatCard>
@@ -103,17 +86,19 @@ export function DashboardPageContent({
         </StatCard>
       </div>
 
-      {stats.notesBySavedYear.length > 0 ? (
-        <StatCard
-          title="Recipes saved by year"
-          description="When each note was first saved in Evernote"
-        >
+      <StatCard
+        title="Recipes saved by year"
+        description="When each note was first saved in Evernote"
+      >
+        {stats.notesBySavedYear.length > 0 ? (
           <YearChart
             label="Notes saved per year"
             years={stats.notesBySavedYear}
           />
-        </StatCard>
-      ) : null}
+        ) : (
+          <p className="text-sm text-muted-foreground">No saved dates yet.</p>
+        )}
+      </StatCard>
 
       {adminTools}
     </div>
@@ -122,7 +107,10 @@ export function DashboardPageContent({
 
 function OverviewTiles({ stats }: { stats: DashboardStats }): ReactNode {
   const { ingredientLines } = stats;
-  const linesPerNote = Math.round(ingredientLines.total / stats.noteCount);
+  const linesPerNote =
+    stats.noteCount > 0
+      ? Math.round(ingredientLines.total / stats.noteCount)
+      : 0;
 
   return (
     <section
@@ -132,7 +120,15 @@ function OverviewTiles({ stats }: { stats: DashboardStats }): ReactNode {
       <StatTile
         label="Notes"
         value={stats.noteCount}
-        detail={`${formatCount(stats.notesByStatus.completed)} imported successfully`}
+        detail={
+          stats.noteCount > 0 ? (
+            `${formatCount(stats.notesByStatus.completed)} imported successfully`
+          ) : (
+            <AppLink href="/import" className="hover:underline">
+              Import an Evernote export
+            </AppLink>
+          )
+        }
       />
       <StatTile
         label="Recipes"
@@ -144,32 +140,28 @@ function OverviewTiles({ stats }: { stats: DashboardStats }): ReactNode {
               {stats.notesReadyToPromote === 1 ? "note" : "notes"} ready to
               become recipes
             </AppLink>
-          ) : (
+          ) : stats.noteCount > 0 ? (
             "Every completed note is a recipe"
+          ) : (
+            "Made from completed notes"
           )
         }
       />
       <StatTile
-        label="Ingredients"
-        value={stats.ingredientCount}
+        label="Concepts"
+        value={stats.conceptCount}
         detail={
           <div className="flex flex-col gap-1.5 pt-1">
             <Progress
               value={percentValue(
-                stats.reviewedIngredientCount,
-                stats.ingredientCount
+                stats.verifiedConceptCount,
+                stats.conceptCount
               )}
-              aria-label="Ingredients reviewed"
+              aria-label="Concepts verified"
             />
-            <AppLink
-              href="/ingredients?view=unreviewed"
-              className="hover:underline"
-            >
-              {formatPercent(
-                stats.reviewedIngredientCount,
-                stats.ingredientCount
-              )}{" "}
-              reviewed
+            <AppLink href="/concepts" className="hover:underline">
+              {formatPercent(stats.verifiedConceptCount, stats.conceptCount)}{" "}
+              verified
             </AppLink>
           </div>
         }
@@ -177,7 +169,11 @@ function OverviewTiles({ stats }: { stats: DashboardStats }): ReactNode {
       <StatTile
         label="Ingredient lines"
         value={ingredientLines.total}
-        detail={`About ${formatCount(linesPerNote)} per note · ${formatCount(stats.instructionLineCount)} instruction steps`}
+        detail={
+          stats.noteCount > 0
+            ? `About ${formatCount(linesPerNote)} per note · ${formatCount(stats.instructionLineCount)} instruction steps`
+            : `${formatCount(stats.instructionLineCount)} instruction steps`
+        }
       />
     </section>
   );
@@ -191,9 +187,11 @@ function ImportStatusCard({ stats }: { stats: DashboardStats }): ReactNode {
     <StatCard
       title="Import status"
       description={
-        needsAttention > 0
-          ? `${formatCount(needsAttention)} ${needsAttention === 1 ? "note needs" : "notes need"} a look`
-          : "Every note imported cleanly"
+        stats.noteCount === 0
+          ? "No notes imported yet"
+          : needsAttention > 0
+            ? `${formatCount(needsAttention)} ${needsAttention === 1 ? "note needs" : "notes need"} a look`
+            : "Every note imported cleanly"
       }
     >
       <StackedBar
@@ -243,7 +241,11 @@ function ParsingQualityCard({ stats }: { stats: DashboardStats }): ReactNode {
   return (
     <StatCard
       title="Parsing quality"
-      description={`${formatPercent(lines.parsedSuccessfully, parsedLines)} of parsed ingredient lines parsed without errors`}
+      description={
+        parsedLines > 0
+          ? `${formatPercent(lines.parsedSuccessfully, parsedLines)} of parsed ingredient lines parsed without errors`
+          : "No ingredient lines parsed yet"
+      }
     >
       <div className="flex flex-col gap-5">
         <StackedBar

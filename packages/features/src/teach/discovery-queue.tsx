@@ -22,6 +22,8 @@ export interface DiscoveryQueueProps {
   nextCursor: string | null;
   taughtMessage?: string | null;
   onRefresh?: MutationAction<[]>;
+  /** Shown under the page header, e.g. the corpus health card. */
+  summary?: ReactNode;
 }
 
 function queueHref(type: DiscoveryType | null, cursor?: string | null): string {
@@ -42,6 +44,7 @@ export function DiscoveryQueuePageContent({
   nextCursor,
   taughtMessage,
   onRefresh,
+  summary,
 }: DiscoveryQueueProps): ReactNode {
   const refresh = useMutation(onRefresh);
   const total = counts.reduce((sum, row) => sum + row.count, 0);
@@ -92,6 +95,7 @@ export function DiscoveryQueuePageContent({
         </div>
       </header>
       <InlineError message={refresh.error} />
+      {summary}
 
       {taughtMessage ? (
         <p

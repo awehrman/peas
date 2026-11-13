@@ -23,13 +23,13 @@ import {
 import { ArrowLeft, CookingPot } from "lucide-react";
 
 import { AppLink, useAppNavigation } from "../../app-navigation";
-import { ParsedLineLegend } from "../../parsed-line";
 import {
   InlineError,
   type MutationAction,
   formatDate,
   useMutation,
 } from "../../shared";
+import { RoleLegend } from "../../teach/highlighted-line";
 import type { NoteDetail } from "../types";
 
 interface NoteDetailPageContentProps extends IngredientLineActions {
@@ -101,7 +101,7 @@ export function NoteDetailPageContent({
               <CardTitle>
                 <h2>Ingredients</h2>
               </CardTitle>
-              <ParsedLineLegend />
+              <RoleLegend />
             </CardHeader>
             <CardContent>
               {hasIngredients ? (
@@ -116,7 +116,6 @@ export function NoteDetailPageContent({
                         <IngredientLineRow
                           key={line.id}
                           line={line}
-                          getIngredientHref={(id) => `/ingredients?id=${id}`}
                           onSetReviewStatus={onSetReviewStatus}
                           onCorrectMention={onCorrectMention}
                           onSearchConcepts={onSearchConcepts}

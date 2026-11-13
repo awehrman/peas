@@ -1,5 +1,6 @@
 import { NotFoundState } from "~/components/route-states";
 import { ConceptDetailDocument } from "~/graphql/generated";
+import { useConceptEditActions } from "~/lib/concepts";
 import { useTeachActions } from "~/lib/teach";
 
 import { useReadQuery } from "@apollo/client/react";
@@ -19,13 +20,19 @@ export const Route = createFileRoute("/_authed/concepts/$id")({
 function ConceptPage() {
   const { queryRef } = Route.useLoaderData();
   const { data } = useReadQuery(queryRef);
+  const { id } = Route.useParams();
   const { onApplyDecision, onSearchConcepts } = useTeachActions();
+  const editActions = useConceptEditActions(id);
   if (!data.concept) return <NotFoundState />;
+
+  const recipesHref = `/recipes?concept=${encodeURIComponent(data.concept.id)}`;
   return (
     <ConceptDetailPageContent
       concept={data.concept}
+      recipesHref={recipesHref}
       onApplyDecision={onApplyDecision}
       onSearchConcepts={onSearchConcepts}
+      {...editActions}
     />
   );
 }

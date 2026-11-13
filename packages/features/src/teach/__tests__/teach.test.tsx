@@ -674,6 +674,29 @@ describe("DiscoveryReviewPageContent", () => {
       )
     );
   });
+
+  it("says the queue is updating mentions when it took the background run", async () => {
+    const { push } = renderCard({
+      onApplyDecision: vi.fn(async () => ({
+        success: true as const,
+        data: {
+          summary: "Taught: x",
+          mentionsUpdated: 0,
+          needsBackgroundReinterpret: true,
+          reinterpretCommand: null,
+        },
+      })),
+    });
+    const nameField = screen.getByLabelText("Concept name");
+    await act(async () => {
+      fireEvent.submit(nameField.closest("form") as HTMLFormElement);
+    });
+    await waitFor(() =>
+      expect(push).toHaveBeenCalledWith(
+        `/teach/d2?taught=${encodeURIComponent("Taught: x; many mentions are affected and are being updated in the background")}`
+      )
+    );
+  });
 });
 
 describe("PlaygroundPageContent", () => {

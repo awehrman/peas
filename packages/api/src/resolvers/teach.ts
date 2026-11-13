@@ -1,3 +1,4 @@
+import { fixtureBlockFor } from "./grammar-loop";
 import { failure, toFailurePayload } from "./payload";
 import {
   candidateViews,
@@ -17,6 +18,7 @@ import {
 
 import {
   OntologyError,
+  addDecisionMentionsChanged,
   applyDecision,
   deferDiscovery,
   getAttributeVocabulary,
@@ -30,6 +32,7 @@ import {
   getMentionDetail,
   getMentionDetailsForLine,
   listConcepts,
+  listLexiconEntries,
   loadResolverSnapshot,
   previewDecision,
   prisma,
@@ -40,6 +43,7 @@ import {
 import {
   DEGREE_KEYS,
   INSTRUCTION_KEYS,
+  LEXICON_ROLES,
   MEASUREMENT_MODIFIER_KEYS,
   buildResolverContext,
   describeQuantity,
@@ -50,13 +54,17 @@ import {
 import { GraphQLError, GraphQLScalarType, valueFromASTUntyped } from "graphql";
 import { ZodError, z } from "zod";
 
-import { type ApiContext, FORBIDDEN, isAdmin, requireViewer } from "../context";
+import { type ApiContext, FORBIDDEN, canCurateKnowledge, requireViewer } from "../context";
 import { KNOWLEDGE_DOMAINS, createMutationEffect } from "../effects";
 import type {
   MutationResolvers,
   QueryResolvers,
   Resolvers,
 } from "../generated/resolvers-types";
+import {
+  notifyLexiconRevision,
+  requestBackgroundReinterpret,
+} from "../queue-client";
 
 const CONCEPTS_PAGE_SIZE = 50;
 const MAX_PLAYGROUND_LINE_LENGTH = 500;
@@ -64,10 +72,10 @@ const REINTERPRET_LIMIT = 1000;
 
 const BAD_USER_INPUT = "BAD_USER_INPUT";
 
-function requireAdmin(context: ApiContext) {
+function requireCurator(context: ApiContext) {
   const viewer = requireViewer(context);
-  if (!isAdmin(viewer))
-    throw new GraphQLError("Only admins can teach Peas", {
+  if (!canCurateKnowledge(viewer))
+    throw new GraphQLError("You can't teach Peas yet", {
       extensions: { code: FORBIDDEN },
     });
   return viewer;
@@ -94,6 +102,7 @@ function toQueryError(error: unknown): never {
 }
 
 const limitSchema = z.number().int().min(1).max(100);
+const lexiconRoleSchema = z.enum(LEXICON_ROLES);
 
 export const JSONScalar = new GraphQLScalarType({
   name: "JSON",
@@ -110,6 +119,7 @@ export const TeachQuery: Pick<
   | "discoveryCounts"
   | "discovery"
   | "concepts"
+  | "lexicon"
   | "concept"
   | "searchConcepts"
   | "vocabulary"
@@ -118,7 +128,7 @@ export const TeachQuery: Pick<
   | "mention"
 > = {
   discoveryQueue: async (_parent, args, context) => {
-    requireAdmin(context);
+    requireCurator(context);
     const page = await getDiscoveryQueue({
       type: args.type ?? undefined,
       cursor: args.cursor ?? null,
@@ -131,7 +141,7 @@ export const TeachQuery: Pick<
   },
 
   discoveryCounts: async (_parent, _args, context) => {
-    requireAdmin(context);
+    requireCurator(context);
     const counts = await getDiscoveryCounts();
     return Object.entries(counts).map(([type, count]) => ({
       type: type as keyof typeof counts,
@@ -140,7 +150,7 @@ export const TeachQuery: Pick<
   },
 
   discovery: async (_parent, { id }, context) => {
-    requireAdmin(context);
+    requireCurator(context);
     const detail = await getDiscoveryDetail(idSchema.parse(id), {
       exampleLimit: 0,
     });
@@ -149,8 +159,21 @@ export const TeachQuery: Pick<
     return described ?? null;
   },
 
+  lexicon: async (_parent, args, context) => {
+    requireCurator(context);
+    const page = toPage(args.page);
+    const role = lexiconRoleSchema.safeParse(args.role).data;
+    const { items, total } = await listLexiconEntries({
+      query: toFilter(args.query),
+      role,
+      offset: (page - 1) * CONCEPTS_PAGE_SIZE,
+      limit: CONCEPTS_PAGE_SIZE,
+    });
+    return { items, total, page, pageSize: CONCEPTS_PAGE_SIZE };
+  },
+
   concepts: async (_parent, args, context) => {
-    requireAdmin(context);
+    requireCurator(context);
     const page = toPage(args.page);
     const { items, total } = await listConcepts({
       query: toFilter(args.query),
@@ -161,12 +184,12 @@ export const TeachQuery: Pick<
   },
 
   concept: async (_parent, { id }, context) => {
-    requireAdmin(context);
+    const viewer = requireViewer(context);
     const detail = await getConceptDetail(idSchema.parse(id));
     if (!detail) return null;
     const [mentions, decisions] = await Promise.all([
       getConceptMentions(detail.id),
-      getConceptDecisions(detail.id),
+      canCurateKnowledge(viewer) ? getConceptDecisions(detail.id) : [],
     ]);
     const inheritedIds = detail.classifications.flatMap((row) =>
       row.source === "INHERITED" ? [row.inheritedFromConceptId] : []
@@ -175,6 +198,7 @@ export const TeachQuery: Pick<
       (
         await getConceptRefs([
           ...inheritedIds,
+          ...detail.substitutions.map((row) => row.conceptId),
           ...(detail.mergedIntoId ? [detail.mergedIntoId] : []),
         ])
       ).map((ref) => [ref.id, ref])
@@ -218,6 +242,17 @@ export const TeachQuery: Pick<
           row.source === "INHERITED"
             ? (refs.get(row.inheritedFromConceptId) ?? null)
             : null,
+        isExplicit: detail.explicitClassificationKeys.includes(row.key),
+      })),
+      tags: detail.tags,
+      substitutions: detail.substitutions.map((row) => ({
+        concept: refs.get(row.conceptId) ?? {
+          id: row.conceptId,
+          canonicalName: row.canonicalName,
+          status: "VERIFIED" as const,
+        },
+        ratio: row.ratio,
+        note: row.note,
       })),
       mentions,
       decisions: decisions.map((decision) => ({
@@ -228,13 +263,13 @@ export const TeachQuery: Pick<
   },
 
   searchConcepts: async (_parent, { query }, context) => {
-    requireAdmin(context);
+    requireViewer(context);
     if (query.length > MAX_SEARCH_QUERY_LENGTH) return [];
     return searchConcepts(query, { limit: 10 });
   },
 
   vocabulary: async (_parent, _args, context) => {
-    requireAdmin(context);
+    requireCurator(context);
     const vocabulary = await getAttributeVocabulary();
     return {
       definitions: vocabulary.definitions.map((definition) => ({
@@ -258,7 +293,7 @@ export const TeachQuery: Pick<
   },
 
   playground: async (_parent, { line, mode }, context) => {
-    requireAdmin(context);
+    requireCurator(context);
     const text = line.slice(0, MAX_PLAYGROUND_LINE_LENGTH);
     const resolverContext = await currentResolverContext();
     const parseMode = mode ?? "CONSERVATIVE";
@@ -293,7 +328,7 @@ export const TeachQuery: Pick<
   },
 
   previewDecision: async (_parent, { payload }, context) => {
-    const viewer = requireAdmin(context);
+    const viewer = requireCurator(context);
     try {
       const preview = await previewDecision(payload, { userId: viewer.id });
       return {
@@ -318,15 +353,46 @@ export const TeachQuery: Pick<
 
 const applyDecisionInputSchema = z.object({ discoveryId: idSchema.nullish() });
 
+/**
+ * What every applied decision needs next: reinterpret the mentions it affects (up to 1,000 lines in the request; above that a background run whose job id comes back), tell the queue about the new revision, and count the changed mentions on the decision for "taught to fixed".
+ *
+ * @example
+ * const { reinterpreted, reprocessingJobId } = await followUpDecision(applied, viewer.id);
+ */
+export async function followUpDecision(
+  applied: Awaited<ReturnType<typeof applyDecision>>,
+  userId: string
+): Promise<{
+  reinterpreted: Awaited<ReturnType<typeof reinterpretAffected>>;
+  reprocessingJobId: string | null;
+}> {
+  const reinterpreted = await reinterpretAffected(applied.payload, {
+    limit: REINTERPRET_LIMIT,
+  });
+  await addDecisionMentionsChanged(
+    { id: applied.decisionId },
+    reinterpreted.mentionsChanged
+  );
+  void notifyLexiconRevision(applied.revision, userId);
+  const reprocessingJobId = reinterpreted.needsBackgroundReinterpret
+    ? await requestBackgroundReinterpret(
+        applied.revision,
+        reinterpreted.scope,
+        userId
+      ).catch(() => null)
+    : null;
+  return { reinterpreted, reprocessingJobId };
+}
+
 export const TeachMutation: Pick<
   MutationResolvers,
   "applyDecision" | "deferDiscovery" | "refreshDiscoveries"
 > = {
   applyDecision: async (_parent, { input }, context) => {
     const viewer = requireViewer(context);
-    if (!isAdmin(viewer))
+    if (!canCurateKnowledge(viewer))
       return {
-        ...failure("Only admins can teach Peas"),
+        ...failure("You can't teach Peas yet"),
         needsBackgroundReinterpret: false,
       };
 
@@ -337,9 +403,10 @@ export const TeachMutation: Pick<
         userId: viewer.id,
         discoveryId: discoveryId ?? null,
       });
-      const reinterpreted = await reinterpretAffected(applied.payload, {
-        limit: REINTERPRET_LIMIT,
-      });
+      const { reinterpreted, reprocessingJobId } = await followUpDecision(
+        applied,
+        viewer.id
+      );
       const evicted =
         applied.payload.type === "MERGE_CONCEPTS"
           ? [
@@ -356,9 +423,10 @@ export const TeachMutation: Pick<
         summary: await describeDecision(applied.payload),
         mentionsUpdated: reinterpreted.mentionsChanged,
         needsBackgroundReinterpret: reinterpreted.needsBackgroundReinterpret,
-        reinterpretCommand: reinterpreted.needsBackgroundReinterpret
-          ? `yarn workspace @peas/queue reinterpret --revision ${applied.revision} --decision ${applied.decisionId}`
-          : null,
+        reinterpretCommand:
+          reinterpreted.needsBackgroundReinterpret && !reprocessingJobId
+            ? `yarn workspace @peas/queue reinterpret --revision ${applied.revision} --decision ${applied.decisionId}`
+            : null,
         effect: createMutationEffect({
           changed: discoveryId
             ? [{ typename: "Discovery", id: discoveryId }]
@@ -366,6 +434,7 @@ export const TeachMutation: Pick<
           evicted,
           invalidatedDomains: [...KNOWLEDGE_DOMAINS],
           lexiconRevision: applied.revision,
+          reprocessingJobId,
         }),
       };
     } catch (error) {
@@ -375,7 +444,7 @@ export const TeachMutation: Pick<
 
   deferDiscovery: async (_parent, { id }, context) => {
     const viewer = requireViewer(context);
-    if (!isAdmin(viewer)) return failure("Only admins can teach Peas");
+    if (!canCurateKnowledge(viewer)) return failure("You can't teach Peas yet");
 
     try {
       const discoveryId = idSchema.parse(id);
@@ -395,7 +464,7 @@ export const TeachMutation: Pick<
 
   refreshDiscoveries: async (_parent, _args, context) => {
     const viewer = requireViewer(context);
-    if (!isAdmin(viewer)) return failure("Only admins can teach Peas");
+    if (!canCurateKnowledge(viewer)) return failure("You can't teach Peas yet");
 
     try {
       const result = await prisma.$transaction(
@@ -425,6 +494,7 @@ export const teachTypeResolvers: Pick<
   JSON: JSONScalar,
 
   Discovery: {
+    fixtureBlock: (parent) => fixtureBlockFor(parent),
     examples: async (parent, args) => {
       const limit = args.limit ? limitSchema.parse(args.limit) : 20;
       const offset = Math.max(0, args.offset ?? 0);

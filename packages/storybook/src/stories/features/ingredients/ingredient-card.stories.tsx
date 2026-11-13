@@ -1,4 +1,8 @@
-import { IngredientCard, type IngredientDetail, type IngredientOption } from "@peas/features";
+import {
+  IngredientCard,
+  type IngredientDetail,
+  type IngredientOption,
+} from "@peas/features";
 import type { Meta, StoryObj } from "@storybook/react";
 
 const PANTRY: IngredientOption[] = [
@@ -18,21 +22,37 @@ const ingredient: IngredientDetail = {
   properties: ["FRUIT", "VEGAN", "VEGETARIAN"],
   aliases: [{ id: "alias-1", name: "eating apple" }],
   substitutions: [{ id: "pear", name: "pear" }],
-  parent: null,
-  variants: [{ id: "granny-smith", name: "granny smith apple" }],
+  relationships: [],
+  variants: [
+    {
+      relationshipType: "IS_A",
+      ingredient: { id: "granny-smith", name: "granny smith apple" },
+    },
+  ],
   category: "fruit",
   tags: ["baking"],
   referenceCount: 3,
   references: [
-    { id: "ref-1", reference: "2 apples, peeled and sliced", noteId: "note-1", noteTitle: "Apple Crumble" },
-    { id: "ref-2", reference: "1 apple, grated", noteId: "note-2", noteTitle: "Bircher Muesli" },
+    {
+      id: "ref-1",
+      reference: "2 apples, peeled and sliced",
+      noteId: "note-1",
+      noteTitle: "Apple Crumble",
+    },
+    {
+      id: "ref-2",
+      reference: "1 apple, grated",
+      noteId: "note-2",
+      noteTitle: "Bircher Muesli",
+    },
     { id: "ref-3", reference: "4 large apples", noteId: null, noteTitle: null },
   ],
 };
 
 const searchPantry = async (query: string, excludeId?: string) =>
   PANTRY.filter(
-    (option) => option.id !== excludeId && option.name.includes(query.toLowerCase())
+    (option) =>
+      option.id !== excludeId && option.name.includes(query.toLowerCase())
   );
 
 const meta = {
@@ -72,12 +92,37 @@ export const ReviewQueue: Story = {
 
 export const Reviewed: Story = {
   args: {
-    ingredient: { ...ingredient, isReviewed: true, reviewedAt: "2026-11-01T12:00:00.000Z" },
+    ingredient: {
+      ...ingredient,
+      isReviewed: true,
+      reviewedAt: "2026-11-01T12:00:00.000Z",
+    },
+  },
+};
+
+export const Variant: Story = {
+  args: {
+    ingredient: {
+      ...ingredient,
+      id: "granny-smith",
+      name: "granny smith apple",
+      plural: "granny smith apples",
+      relationships: [
+        {
+          relationshipType: "IS_A",
+          ingredient: { id: "apple", name: "apple" },
+        },
+      ],
+      variants: [],
+    },
   },
 };
 
 export const SaveFails: Story = {
   args: {
-    onSave: async () => ({ success: false, message: 'An ingredient named "pear" already exists' }),
+    onSave: async () => ({
+      success: false,
+      message: 'An ingredient named "pear" already exists',
+    }),
   },
 };

@@ -1,158 +1,109 @@
-// Parse a single ingredient line using the configured parser version
-// and normalize the parser output into the shared ParsedSegment format.
-import type { ParserResult } from "./types";
+import {
+  type IngredientLineResult,
+  IngredientLineSyntaxSchema,
+  ResolutionSchema,
+} from "@peas/parser/v2";
 
-import type { ParsedSegment } from "../../../../schemas/base";
 import type { StructuredLogger } from "../../../../types";
 import type { IngredientJobData } from "../../../../workers/ingredient/dependencies";
 import { CachedIngredientParser } from "../../cached-ingredient-parser";
-import { STATIC_V1_PARSER_ID, resolveIngredientParser } from "../../parser-resolver";
+import {
+  type IngredientMetrics,
+  ingredientMetrics,
+} from "../../ingredient-metrics";
 
 /**
- * Parse an ingredient line into structured segments.
+ * A v2 result read back from job data, validated with the shared Zod schemas so a malformed payload never reaches the save step.
+ *
+ * @example
+ * readV2Result(data.metadata) // { line, mentions } or null
+ */
+export function readV2Result(
+  metadata: Record<string, unknown> | undefined
+): IngredientLineResult | null {
+  const value = metadata?.v2Result as
+    | { line?: unknown; mentions?: unknown }
+    | undefined;
+  if (!value || !Array.isArray(value.mentions)) return null;
+  const line = IngredientLineSyntaxSchema.safeParse(value.line);
+  if (!line.success) return null;
+  for (const mention of value.mentions as { resolution?: unknown }[]) {
+    if (!ResolutionSchema.safeParse(mention.resolution).success) return null;
+  }
+  return {
+    line: line.data,
+    mentions: value.mentions as IngredientLineResult["mentions"],
+  };
+}
+
+/**
+ * Parses and resolves an ingredient line with v2 (Phase 5c). The parse status reflects only the syntax (PARSED is a success; PARTIAL and FAILED are errors); how well the line resolved is tracked on its mentions and never fails the job.
  */
 export async function parseIngredientLine(
   data: IngredientJobData,
-  logger: StructuredLogger
+  logger: StructuredLogger,
+  metrics: IngredientMetrics = ingredientMetrics
 ): Promise<IngredientJobData> {
   if (!data.noteId) {
     throw new Error("No note ID available for ingredient parsing");
   }
-
   if (!data.ingredientReference) {
     throw new Error("No ingredient reference available for parsing");
   }
 
   try {
-    const startTime = Date.now();
-
-    // Check if we should clear cache (for testing or when cache is stale)
-    const shouldClearCache = data.metadata?.clearCache === true;
-    if (shouldClearCache) {
-      logger.log(
-        `[PARSE_INGREDIENT_LINE] Clearing ingredient cache as requested`
-      );
+    if (data.metadata?.clearCache === true) {
       await CachedIngredientParser.invalidateIngredientCache();
     }
 
-    // First, check if we have a cached result for this exact ingredient string
-    let parseResult: ParserResult = { rule: "", type: "", values: [] };
-    let parsedSegments: ParsedSegment[] = [];
-    let usedCache = false;
-    let parserVersion = STATIC_V1_PARSER_ID;
-
-    try {
-      const cachedResult = await CachedIngredientParser.parseIngredientLine(
+    const startedAt = Date.now();
+    const { result, revision, parserVersion } =
+      await CachedIngredientParser.parseIngredientLine(
         data.ingredientReference,
         { cacheResults: true },
         logger
       );
-
-      // If we got a cached result, use it (no confidence check needed since it's the actual v1 parser result)
-      usedCache = true;
-      logger.log(
-        `[CACHED RESULT] Using cached result for: ${JSON.stringify(
-          cachedResult,
-          null,
-          2
-        )}`
-      );
-
-      // Convert cached parser result to ParsedSegment format
-      const cachedSegments: ParsedSegment[] = [];
-      let segmentIndex = 0;
-
-      // Map the cached result values to ParsedSegment format
-      cachedResult.values.forEach((segment) => {
-        cachedSegments.push({
-          index: segmentIndex++,
-          rule: segment.rule,
-          type: segment.type as ParsedSegment["type"],
-          value: segment.value,
-          processingTime: segment.processingTime,
-        });
-      });
-
-      parsedSegments = cachedSegments;
-      parseResult = cachedResult;
-      parserVersion = cachedResult.parserVersion ?? STATIC_V1_PARSER_ID;
-
-      // Log the cached result structure
-      logger.log(
-        `[PARSE_INGREDIENT_LINE] Cached result structure: ${JSON.stringify(parseResult, null, 2)}`
-      );
-    } catch (cachedError) {
-      logger.log(`[PARSE_INGREDIENT_LINE] Cache check failed: ${cachedError}`);
-    }
-
-    // If no cached result or low confidence, use the main parser
-    if (!usedCache) {
-      logger.log(
-        `[PARSE_INGREDIENT_LINE] No cached result found, using main parser for: "${data.ingredientReference}"`
-      );
-
-      let parse: (input: string) => ParserResult;
-
-      try {
-        const parser = await resolveIngredientParser(logger);
-        parse = parser.parse;
-        parserVersion = parser.id;
-        logger.log(
-          `[PARSE_INGREDIENT_LINE] Using ${parser.id} parser for: "${data.ingredientReference}"`
-        );
-      } catch (parserError) {
-        /* istanbul ignore next -- @preserve */
-        logger.log(`[PARSE_INGREDIENT_LINE] Parser failed to load: ${parserError}`);
-        /* istanbul ignore next -- @preserve */
-        throw new Error(`Failed to load ingredient parser: ${parserError}`);
-      }
-
-      parseResult = parse(data.ingredientReference);
-
-      // Log the entire stringified parser result
-      logger.log(
-        `[PARSE_INGREDIENT_LINE] ${parserVersion} parser raw result: ${JSON.stringify(parseResult, null, 2)}`
-      );
-
-      // Map raw parser segments → shared ParsedSegment shape
-      parsedSegments = parseResult.values.map((seg, idx) => ({
-        index: idx,
-        rule: seg.rule,
-        type: seg.type as ParsedSegment["type"],
-        value: String(seg.value),
-        processingTime: Date.now() - startTime,
-      }));
-    }
-
-    // Store raw segments for later processing (parsing rules will be created during save)
+    const statuses = result.mentions.map((mention) => mention.status);
+    const unknownTokens = result.mentions.reduce(
+      (count, mention) => count + mention.resolution.unresolved.length,
+      0
+    );
+    const candidateCount = result.mentions.reduce(
+      (count, mention) => count + mention.resolution.candidates.length,
+      0
+    );
+    metrics.record({
+      at: Date.now(),
+      syntaxStatus: result.line.status,
+      resolutionStatuses: statuses,
+      candidateCount,
+      unknownTokens,
+      lexiconRevision: revision,
+    });
     logger.log(
-      `[PARSE_INGREDIENT_LINE] Parsed ${parsedSegments.length} segments for: "${data.ingredientReference}"`
+      `[V2_PARSE] "${data.ingredientReference}" syntax=${result.line.status} mentions=${statuses.join(",") || "none"} revision=${revision} ms=${Date.now() - startedAt}`
     );
 
-    const updatedData: IngredientJobData = {
+    return {
       ...data,
       parseStatus:
-        parsedSegments.length > 0
+        result.line.status === "PARSED"
           ? "COMPLETED_SUCCESSFULLY"
           : "COMPLETED_WITH_ERROR",
       metadata: {
         ...data.metadata,
-        parsedSegments,
-        parseResult,
-        rule: parseResult.rule,
-        usedCache,
+        v2Result: result,
+        lexiconRevision: revision,
         parserVersion,
-        // Note: patternRules will be generated during save step
+        resolutionStatuses: statuses,
+        unknownTokens,
+        candidateCount,
       },
     };
-
-    return updatedData;
   } catch (error) {
     logger.log(
-      `[PARSE_INGREDIENT_LINE] Failed to parse ingredient "${data.ingredientReference}": ${error}`
+      `[V2_PARSE] Failed to parse "${data.ingredientReference}": ${error}`
     );
-
-    /* istanbul ignore next -- @preserve */
     return {
       ...data,
       parseStatus: "COMPLETED_WITH_ERROR",

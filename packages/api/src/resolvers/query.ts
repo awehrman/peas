@@ -1,23 +1,24 @@
-import { MAX_SEARCH_QUERY_LENGTH, toFilter, toPage } from "./validation";
+import { toFilter, toPage } from "./validation";
 
 import {
+  getConceptRefs,
   getDashboardStats,
   getImportStats,
-  getIngredientCategoryNames,
-  getIngredientCounts,
-  getIngredientDetail,
-  getIngredientSummaries,
   getNoteDetail,
   getNotesPage,
   getQueueJobByJobId,
   getRecipeDetail,
   getRecipeTaxonomyOptions,
   getRecipesPage,
-  searchIngredients,
+  getReinterpretRun,
 } from "@peas/database";
+
+import { z } from "zod";
 
 import { requireViewer } from "../context";
 import type { QueryResolvers } from "../generated/resolvers-types";
+
+const conceptIdSchema = z.uuid();
 
 export const Query: QueryResolvers = {
   viewer: (_parent, _args, context) => context.viewer,
@@ -49,28 +50,52 @@ export const Query: QueryResolvers = {
   job: async (_parent, { jobId }, context) => {
     requireViewer(context);
     const job = await getQueueJobByJobId(jobId);
-    if (!job) return null;
+    if (job) {
+      return {
+        jobId: job.jobId,
+        type: job.type,
+        status: job.status,
+        noteId: job.noteId,
+        processedCount: null,
+        totalCount: null,
+        errorMessage: job.errorMessage,
+        retryCount: job.retryCount,
+        startedAt: job.startedAt?.toISOString() ?? null,
+        completedAt: job.completedAt?.toISOString() ?? null,
+      };
+    }
 
+    const run = await getReinterpretRun(jobId);
+    if (!run) return null;
     return {
-      jobId: job.jobId,
-      type: job.type,
-      status: job.status,
-      noteId: job.noteId,
-      errorMessage: job.errorMessage,
-      retryCount: job.retryCount,
-      startedAt: job.startedAt?.toISOString() ?? null,
-      completedAt: job.completedAt?.toISOString() ?? null,
+      jobId: run.jobId,
+      type: "REINTERPRET",
+      status: run.status,
+      noteId: null,
+      processedCount: run.processedLines,
+      totalCount: run.totalLines,
+      errorMessage: run.errorMessage,
+      retryCount: run.failedBatches,
+      startedAt: run.startedAt?.toISOString() ?? null,
+      completedAt: run.completedAt?.toISOString() ?? null,
     };
   },
 
-  recipes: (_parent, args, context) => {
+  recipes: async (_parent, args, context) => {
     requireViewer(context);
-    return getRecipesPage({
-      query: toFilter(args.query),
-      category: toFilter(args.category),
-      tag: toFilter(args.tag),
-      page: toPage(args.page),
-    });
+    const conceptId = conceptIdSchema.safeParse(args.conceptId).data;
+    const [page, concepts] = await Promise.all([
+      getRecipesPage({
+        query: toFilter(args.query),
+        category: toFilter(args.category),
+        tag: toFilter(args.tag),
+        conceptId,
+        exactConcept: args.exactConcept ?? false,
+        page: toPage(args.page),
+      }),
+      conceptId ? getConceptRefs([conceptId]) : [],
+    ]);
+    return { ...page, concept: concepts[0] ?? null };
   },
 
   recipe: (_parent, { id }, context) => {
@@ -81,31 +106,5 @@ export const Query: QueryResolvers = {
   recipeTaxonomy: (_parent, _args, context) => {
     requireViewer(context);
     return getRecipeTaxonomyOptions();
-  },
-
-  ingredients: (_parent, { view }, context) => {
-    requireViewer(context);
-    return getIngredientSummaries(view);
-  },
-
-  ingredientCounts: (_parent, _args, context) => {
-    requireViewer(context);
-    return getIngredientCounts();
-  },
-
-  ingredient: (_parent, { id }, context) => {
-    requireViewer(context);
-    return getIngredientDetail(id);
-  },
-
-  ingredientCategoryNames: (_parent, _args, context) => {
-    requireViewer(context);
-    return getIngredientCategoryNames();
-  },
-
-  searchIngredients: (_parent, { query, excludeId }, context) => {
-    requireViewer(context);
-    if (query.length > MAX_SEARCH_QUERY_LENGTH) return [];
-    return searchIngredients(query, excludeId ?? undefined);
   },
 };

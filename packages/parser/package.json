@@ -27,6 +27,8 @@
     "build": "node scripts/build.js",
     "build:v1": "peggy -o dist/v1/parser.js --format es src/v1/parser.peggy && node -e \"require('fs').writeFileSync('dist/v1/index.js', 'export { parse } from \\'./parser.js\\';')\"",
     "generate:v2": "node scripts/generate-v2.js",
+    "pull:fixtures": "yarn workspace @peas/database pull:fixtures",
+    "calibrate:thresholds": "tsx scripts/calibrate-thresholds.ts",
     "build:v2": "yarn generate:v2 && tsc -p tsconfig.build.json",
     "typecheck": "yarn generate:v2 && tsc -p tsconfig.json --noEmit",
     "clean": "rm -rf dist",

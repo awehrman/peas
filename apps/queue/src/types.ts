@@ -45,7 +45,7 @@ export enum QueueName {
   SOURCE = "source",
   IMAGE = "image",
   CATEGORIZATION = "categorization",
-  PATTERN_TRACKING = "patternTracking",
+  REINTERPRET = "reinterpret",
 }
 
 /**
@@ -89,11 +89,16 @@ export enum ActionName {
   SAVE_CATEGORY = "save_category",
   DETERMINE_TAGS = "determine_tags",
   SAVE_TAGS = "save_tags",
-  TRACK_PATTERN = "track_pattern",
   COMPLETION_STATUS = "completion_status",
 
   // Source actions
   PROCESS_SOURCE = "process_source",
+
+  // Reinterpretation actions
+  REINTERPRET_FAN_OUT = "reinterpret_fan_out",
+  REINTERPRET_BATCH = "reinterpret_batch",
+  CORPUS_HEALTH_SNAPSHOT = "corpus_health_snapshot",
+  EXPLORATORY_SWEEP = "exploratory_sweep",
 
   // Utility actions
   NO_OP = "no_op",
@@ -127,6 +132,7 @@ export enum ActionCategory {
 export enum HttpStatus {
   OK = 200,
   CREATED = 201,
+  ACCEPTED = 202,
   NO_CONTENT = 204,
   BAD_REQUEST = 400,
   UNAUTHORIZED = 401,
@@ -280,7 +286,12 @@ export const QUEUE_ACTIONS: Record<QueueName, ActionName[]> = {
     ActionName.SAVE_TAGS,
   ],
   [QueueName.SOURCE]: [ActionName.PROCESS_SOURCE],
-  [QueueName.PATTERN_TRACKING]: [ActionName.TRACK_PATTERN],
+  [QueueName.REINTERPRET]: [
+    ActionName.REINTERPRET_FAN_OUT,
+    ActionName.REINTERPRET_BATCH,
+    ActionName.CORPUS_HEALTH_SNAPSHOT,
+    ActionName.EXPLORATORY_SWEEP,
+  ],
 };
 
 /**
@@ -325,11 +336,16 @@ export const ACTION_CATEGORIES: Record<ActionName, ActionCategory> = {
   [ActionName.SAVE_CATEGORY]: ActionCategory.CATEGORIZATION,
   [ActionName.DETERMINE_TAGS]: ActionCategory.CATEGORIZATION,
   [ActionName.SAVE_TAGS]: ActionCategory.CATEGORIZATION,
-  [ActionName.TRACK_PATTERN]: ActionCategory.CATEGORIZATION,
   [ActionName.COMPLETION_STATUS]: ActionCategory.CATEGORIZATION,
 
   // Source actions
   [ActionName.PROCESS_SOURCE]: ActionCategory.SOURCE,
+
+  // Reinterpretation actions
+  [ActionName.REINTERPRET_FAN_OUT]: ActionCategory.INGREDIENT,
+  [ActionName.REINTERPRET_BATCH]: ActionCategory.INGREDIENT,
+  [ActionName.CORPUS_HEALTH_SNAPSHOT]: ActionCategory.INGREDIENT,
+  [ActionName.EXPLORATORY_SWEEP]: ActionCategory.INGREDIENT,
 
   // Utility actions
   [ActionName.NO_OP]: ActionCategory.NOTE,

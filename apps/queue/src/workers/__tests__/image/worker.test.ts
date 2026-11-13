@@ -55,7 +55,7 @@ describe("ImageWorker", () => {
         instructionQueue: {} as Queue,
         categorizationQueue: {} as Queue,
         sourceQueue: {} as Queue,
-        patternTrackingQueue: {} as Queue,
+        reinterpretQueue: {} as Queue,
       },
       database: {
         prisma: {} as Partial<PrismaClient> as PrismaClient,

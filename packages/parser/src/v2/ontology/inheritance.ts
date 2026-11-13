@@ -15,8 +15,8 @@ export const INHERITANCE_RULES: Readonly<
 > = {
   IS_A: ["FOOD_GROUP", "DIETARY", "ALLERGEN", "CATEGORY"],
   PART_OF: ["FOOD_GROUP", "ALLERGEN"],
-  DERIVED_FROM: ["ALLERGEN"],
-  PROCESSED_FROM: ["ALLERGEN"],
+  DERIVED_FROM: ["FOOD_GROUP", "ALLERGEN"],
+  PROCESSED_FROM: ["FOOD_GROUP", "ALLERGEN"],
 };
 
 /** Kinds that inherit along a whole path: the intersection of each edge's rule. */
@@ -70,7 +70,7 @@ export type EffectiveClassification = ClassificationValue &
  * @example
  * // "buttermilk" DERIVED_FROM "milk" (DAIRY TRUE, ALLERGEN_MILK TRUE)
  * effectiveClassifications([], [{ conceptId: milk, path: ["DERIVED_FROM"], classifications: [...] }])
- * // -> ALLERGEN_MILK TRUE (INHERITED from milk); DAIRY is not inherited across DERIVED_FROM
+ * // -> DAIRY and ALLERGEN_MILK TRUE (INHERITED from milk); milk's category is not inherited across DERIVED_FROM
  */
 export function effectiveClassifications(
   explicit: readonly ClassificationValue[],

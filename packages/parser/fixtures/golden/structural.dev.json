@@ -793,9 +793,7 @@
           "phrase": "whole black peppercorns"
         }
       ]
-    },
-    "knownFailure": true,
-    "note": "Size word before an implied unit is not a measurement modifier yet."
+    }
   },
   {
     "id": "corpus-005",
@@ -2784,9 +2782,7 @@
           "trailing": "crushed"
         }
       ]
-    },
-    "knownFailure": true,
-    "note": "Postfix quantity with a size word before the unit."
+    }
   },
   {
     "id": "corpus-125",
@@ -2955,9 +2951,7 @@
           "trailing": "chopped"
         }
       ]
-    },
-    "knownFailure": true,
-    "note": "Implied unit without 'of', preceded by a size word."
+    }
   },
   {
     "id": "corpus-135",

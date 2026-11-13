@@ -1,20 +1,15 @@
 import { failure, toFailurePayload } from "./payload";
 import {
   idSchema,
-  ingredientCreateSchema,
-  ingredientSaveSchema,
   lineReviewInputSchema,
   recipeUpdateSchema,
 } from "./validation";
 
 import {
   cleanupAllData,
-  createIngredient,
-  getNextUnreviewedIngredientId,
   getNoteDetail,
   promoteCompletedNotesToRecipes,
   promoteNoteToRecipe,
-  saveIngredientDetails,
   setIngredientLineReviewStatus,
   updateRecipe,
 } from "@peas/database";
@@ -114,54 +109,6 @@ export const Mutation: MutationResolvers = {
         effect: createMutationEffect({
           changed: [{ typename: "Recipe", id: data.id }],
           invalidatedDomains: ["RECIPES", "RECIPE_TAXONOMY"],
-        }),
-      };
-    } catch (error) {
-      return toFailurePayload(error);
-    }
-  },
-
-  saveIngredient: async (_parent, { input }, context) => {
-    requireViewer(context);
-
-    try {
-      const { advanceToNext, ...data } = ingredientSaveSchema.parse(input);
-      const saved = await saveIngredientDetails(data);
-      const nextId = advanceToNext
-        ? await getNextUnreviewedIngredientId(saved.name, saved.id)
-        : null;
-
-      return {
-        __typename: "SaveIngredientPayload",
-        success: true,
-        nextId,
-        effect: createMutationEffect({
-          changed: [{ typename: "Ingredient", id: saved.id }],
-          invalidatedDomains: [
-            "INGREDIENTS",
-            "INGREDIENT_DETAIL",
-            "DASHBOARD_STATS",
-          ],
-        }),
-      };
-    } catch (error) {
-      return toFailurePayload(error);
-    }
-  },
-
-  createIngredient: async (_parent, { input }, context) => {
-    requireViewer(context);
-
-    try {
-      const data = ingredientCreateSchema.parse(input);
-      const created = await createIngredient(data);
-
-      return {
-        __typename: "CreateIngredientPayload",
-        success: true,
-        id: created.id,
-        effect: createMutationEffect({
-          invalidatedDomains: ["INGREDIENTS", "DASHBOARD_STATS"],
         }),
       };
     } catch (error) {

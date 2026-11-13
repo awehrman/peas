@@ -8,7 +8,7 @@ import { cn, NavigationMenu, NavigationMenuItem, NavigationMenuList } from "@pea
 import { LogOut } from "lucide-react";
 
 import { NAVIGATION_CONSTANTS } from "../config/constants";
-import { isNavigationItemActive } from "../config/navigation";
+import { isNavigationEntryActive } from "../config/navigation";
 import { NavigationProvider, useNavigation } from "../contexts/NavigationContext";
 import { NavigationToggle } from "./navigation-toggle";
 import { PureNavigationProps } from "../types/navigation";
@@ -72,7 +72,7 @@ function MobileSidebarNavigation({
           >
             <NavigationMenuList className="flex-col space-y-1 w-full flex-1">
               {navigationItems.map((item) => {
-                const isActive = isNavigationItemActive(pathname, item.href);
+                const isActive = isNavigationEntryActive(pathname, item);
                 return (
                   <NavigationMenuItem key={item.href} className="w-full">
                     <NavItem

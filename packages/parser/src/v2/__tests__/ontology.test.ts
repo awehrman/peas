@@ -34,7 +34,8 @@ describe("inheritableKinds", () => {
       "CATEGORY",
     ]);
     expect(inheritableKinds(["PART_OF"])).toEqual(["FOOD_GROUP", "ALLERGEN"]);
-    expect(inheritableKinds(["DERIVED_FROM"])).toEqual(["ALLERGEN"]);
+    expect(inheritableKinds(["DERIVED_FROM"])).toEqual(["FOOD_GROUP", "ALLERGEN"]);
+    expect(inheritableKinds(["PROCESSED_FROM"])).toEqual(["FOOD_GROUP", "ALLERGEN"]);
   });
 
   it("intersects the rules along a path and never inherits certifications", () => {
@@ -42,14 +43,14 @@ describe("inheritableKinds", () => {
       "FOOD_GROUP",
       "ALLERGEN",
     ]);
-    expect(inheritableKinds(["PROCESSED_FROM", "IS_A"])).toEqual(["ALLERGEN"]);
+    expect(inheritableKinds(["PROCESSED_FROM", "IS_A"])).toEqual(["FOOD_GROUP", "ALLERGEN"]);
     expect(inheritableKinds([])).toEqual([]);
     expect(inheritableKinds(["IS_A"])).not.toContain("CERTIFICATION");
   });
 });
 
 describe("effectiveClassifications", () => {
-  it("inherits only allergens across DERIVED_FROM (buttermilk from milk)", () => {
+  it("inherits food groups and allergens, not categories, across DERIVED_FROM (buttermilk from milk)", () => {
     const result = effectiveClassifications(
       [],
       [
@@ -59,6 +60,7 @@ describe("effectiveClassifications", () => {
           classifications: [
             { kind: "FOOD_GROUP", key: "DAIRY", value: "TRUE" },
             { kind: "ALLERGEN", key: "ALLERGEN_MILK", value: "TRUE" },
+            { kind: "CATEGORY", key: "CATEGORY:Milk", value: "TRUE" },
           ],
         },
       ]
@@ -67,6 +69,14 @@ describe("effectiveClassifications", () => {
       {
         kind: "ALLERGEN",
         key: "ALLERGEN_MILK",
+        value: "TRUE",
+        source: "INHERITED",
+        inheritedFromConceptId: ids.milk,
+        path: ["DERIVED_FROM"],
+      },
+      {
+        kind: "FOOD_GROUP",
+        key: "DAIRY",
         value: "TRUE",
         source: "INHERITED",
         inheritedFromConceptId: ids.milk,

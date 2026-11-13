@@ -6,3 +6,4 @@ export { healthEnhancedRouter } from "./health-enhanced";
 export { metricsRouter } from "./metrics";
 export { cacheRouter } from "./cache";
 export { performanceRouter } from "./performance";
+export { reinterpretRouter } from "./reinterpret";

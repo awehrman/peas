@@ -15,15 +15,16 @@ const ID_KEYED_TYPES = [
   "NamedTag",
   "Recipe",
   "RecipeSummary",
-  "Ingredient",
-  "IngredientSummary",
-  "IngredientOption",
-  "IngredientAlias",
-  "IngredientReference",
   "Discovery",
   "Mention",
   "Concept",
   "ConceptSummary",
+  "IngredientSummary",
+  "Ingredient",
+  "IngredientOption",
+  "IngredientAlias",
+  "IngredientReference",
+  "LexiconEntryRow",
   "ConceptRef",
   "LexiconEntryRef",
 ] as const;
@@ -33,12 +34,18 @@ const EMBEDDED_TYPES = [
   "EntityRef",
   "MutationEffect",
   "DeletedCount",
-  "ParsedSegment",
   "IngredientBlock",
   "DashboardStats",
   "NoteStatusCounts",
   "IngredientLineStats",
-  "TopIngredient",
+  "TopConcept",
+  "CorpusHealth",
+  "CorpusMentionCounts",
+  "UnknownPhrase",
+  "ReinterpretBacklog",
+  "LiveParseMetrics",
+  "ConceptClassification",
+  "ConceptSubstitution",
   "LabelCount",
   "YearCount",
   "TextSpan",
@@ -71,7 +78,7 @@ function redirectToEntity(typename: string) {
 }
 
 /**
- * Cache configuration (decision M5: identity is `__typename:id`, never names or slugs). `note(id)`, `recipe(id)`, and `ingredient(id)` read straight from the entity cache when it already holds the entity. `possibleTypes` comes from codegen so interface fragments (`PayloadFields on MutationPayload`) match.
+ * Cache configuration (decision M5: identity is `__typename:id`, never names or slugs). `note(id)`, `recipe(id)`, `concept(id)`, and the other detail fields read straight from the entity cache when it already holds the entity. `possibleTypes` comes from codegen so interface fragments (`PayloadFields on MutationPayload`) match.
  */
 export const cacheConfig: InMemoryCacheConfig = {
   possibleTypes: fragmentMatcher.possibleTypes,
@@ -90,9 +97,9 @@ export const cacheConfig: InMemoryCacheConfig = {
       fields: {
         note: redirectToEntity("Note"),
         recipe: redirectToEntity("Recipe"),
-        ingredient: redirectToEntity("Ingredient"),
         discovery: redirectToEntity("Discovery"),
         concept: redirectToEntity("Concept"),
+        ingredient: redirectToEntity("Ingredient"),
         mention: redirectToEntity("Mention"),
       },
     },

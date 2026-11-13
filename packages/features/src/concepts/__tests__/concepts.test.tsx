@@ -66,6 +66,7 @@ const concept: ConceptDetail = {
       value: "TRUE",
       source: "INHERITED",
       inheritedFrom: CHICKEN,
+      isExplicit: false,
     },
     {
       key: "VEGAN",
@@ -73,6 +74,7 @@ const concept: ConceptDetail = {
       value: "FALSE",
       source: "EXPLICIT",
       inheritedFrom: null,
+      isExplicit: true,
     },
     {
       key: "ALLERGEN_X",
@@ -80,8 +82,11 @@ const concept: ConceptDetail = {
       value: "UNKNOWN",
       source: "CONFLICT",
       inheritedFrom: null,
+      isExplicit: false,
     },
   ],
+  tags: ["poultry"],
+  substitutions: [{ concept: CHICKEN, ratio: "1:1", note: "any cut" }],
   mentions: [
     {
       mentionId: "m1",
@@ -140,9 +145,14 @@ describe("ConceptDetailPageContent", () => {
       "boneless thigh is a kind of chicken thigh(proposed)"
     );
     expect(screen.getByText("bone: Bone-in")).toBeInTheDocument();
-    expect(screen.getByText("POULTRY").closest("li")).toHaveTextContent(
-      "POULTRY: true (inherited from chicken)"
+    expect(screen.getByText("poultry", { selector: "span" }).closest("li")).toHaveTextContent(
+      "poultry(food group): yes(inherited from chicken)"
     );
+    expect(screen.getByRole("list", { name: "Tags" })).toHaveTextContent("poultry");
+    expect(
+      screen.getByRole("list", { name: "Substitutions" })
+    ).toHaveTextContent("chicken(1:1): any cut");
+    expect(screen.queryByRole("button", { name: /Remove/ })).not.toBeInTheDocument();
     expect(screen.getByText("(conflicting parents)")).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "1 lb chicken thighs" })
@@ -233,6 +243,8 @@ describe("ConceptDetailPageContent", () => {
             children: [],
             attributes: [],
             classifications: [],
+            tags: [],
+            substitutions: [],
             mentions: [],
             decisions: [],
           }}
@@ -249,11 +261,15 @@ describe("ConceptDetailPageContent", () => {
       "No narrower concepts yet.",
       "No characterizing attributes.",
       "No classifications.",
+      "No tags.",
+      "No substitutions.",
       "No stored mentions yet.",
-      "No decisions yet.",
     ]) {
       expect(screen.getByText(empty)).toBeInTheDocument();
     }
+    expect(
+      screen.queryByRole("heading", { name: "Decisions" })
+    ).not.toBeInTheDocument();
   });
 });
 

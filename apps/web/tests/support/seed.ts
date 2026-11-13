@@ -15,7 +15,14 @@ export const E2E_NOTE = {
     "2 cups dried kidney beans",
     "1 tbsp olive oil",
     "Kosher salt, to taste",
+    "1 cup milk",
   ],
+} as const;
+
+/** A recipe whose chicken thighs (PART_OF chicken) let the concept filter include more specific concepts. */
+export const E2E_CONCEPT_RECIPE = {
+  title: "E2E Chicken Stew",
+  lines: ["1 lb chicken thighs"],
 } as const;
 
 export const E2E_RECIPE = {
@@ -41,6 +48,29 @@ export const E2E_TEACH = {
 
 export type E2eProject = keyof typeof E2E_TEACH.perProject;
 
+/** One proposed food per browser project, so each project approves its own from the ingredient card. */
+export const E2E_PROPOSED_FOOD: Record<E2eProject, string> = {
+  chromium: "shallot",
+  webkit: "leek",
+};
+
+/** One proposed food per browser project for the concept page's Approve button. */
+export const E2E_PROPOSED_CONCEPT: Record<E2eProject, string> = {
+  chromium: "scallion",
+  webkit: "fennel",
+};
+
+/** One line per browser project whose structure the grammar doesn't cover, so each project reviews (and marks as noise) its own structural pattern. */
+export const E2E_STRUCTURAL: Record<
+  E2eProject,
+  { line: string; signature: string }
+> = {
+  chromium: { line: "For the glaze:", signature: "W :" },
+  webkit: { line: "rosemary a few sprigs", signature: "W U" },
+};
+
+export const E2E_STRUCTURE_NOTE = "E2E Structure";
+
 /** The teach note's lines: the shared ones plus each project's alias, modifier, and correction lines. */
 export function teachLines(): string[] {
   return [
@@ -52,12 +82,6 @@ export function teachLines(): string[] {
     ]),
   ];
 }
-
-export const E2E_INGREDIENTS = [
-  { name: "garlic", isReviewed: true },
-  { name: "lemon", isReviewed: false },
-  { name: "shallot", isReviewed: false },
-] as const;
 
 export async function seedE2eDatabase(): Promise<{
   noteId: string;
@@ -77,7 +101,8 @@ export async function seedE2eDatabase(): Promise<{
 
   await prisma.$executeRawUnsafe(
     `TRUNCATE "Note", "Recipe", "Ingredient", "IngredientCategory", "IngredientTag", "Category", "Tag", "Session", "User",
-      "LexiconRevision", "FoodConcept", "LexiconEntry", "AttributeDefinition", "PreparationOperation", "Discovery", "LexiconDecision"
+      "LexiconRevision", "FoodConcept", "LexiconEntry", "AttributeDefinition", "PreparationOperation", "Discovery", "LexiconDecision",
+      "ReinterpretRun"
      RESTART IDENTITY CASCADE`
   );
 
@@ -110,11 +135,6 @@ export async function seedE2eDatabase(): Promise<{
         reference,
         parseStatus: "COMPLETED_SUCCESSFULLY",
         parserVersion: "static_v1",
-        parsed: {
-          create: [
-            { index: 0, rule: "e2e", type: "ingredient", value: reference },
-          ],
-        },
       },
       select: { id: true },
     });
@@ -146,13 +166,27 @@ export async function seedE2eDatabase(): Promise<{
     data: { title: E2E_RECIPE.title, noteId: recipeNote.id },
   });
 
-  for (const ingredient of E2E_INGREDIENTS) {
-    await prisma.ingredient.create({
+  for (const recipe of [E2E_CONCEPT_RECIPE]) {
+    const recipeNoteRow = await prisma.note.create({
       data: {
-        name: ingredient.name,
-        isReviewed: ingredient.isReviewed,
-        reviewedAt: ingredient.isReviewed ? new Date() : null,
+        title: recipe.title,
+        html: "<p></p>",
+        status: "COMPLETED",
+        totalIngredientLines: recipe.lines.length,
+        parsedIngredientLines: {
+          create: recipe.lines.map((reference, lineIndex) => ({
+            blockIndex: 0,
+            lineIndex,
+            reference,
+            parseStatus: "COMPLETED_SUCCESSFULLY" as const,
+            parserVersion: "static_v1",
+          })),
+        },
       },
+      select: { id: true },
+    });
+    await prisma.recipe.create({
+      data: { title: recipe.title, noteId: recipeNoteRow.id },
     });
   }
 
@@ -215,6 +249,28 @@ async function seedTeachData(): Promise<void> {
       );
       return id;
     };
+    for (const name of [
+      ...Object.values(E2E_PROPOSED_FOOD),
+      ...Object.values(E2E_PROPOSED_CONCEPT),
+    ]) {
+      const { id } = await createConcept(tx, {
+        canonicalName: name,
+        status: "PROPOSED",
+      });
+      await createLexiconEntries(
+        tx,
+        [
+          {
+            text: name,
+            role: "FOOD" as const,
+            kind: "CANONICAL" as const,
+            conceptId: id,
+            status: "PROPOSED" as const,
+          },
+        ],
+        revision
+      );
+    }
     await concept("powdered sugar", ["powdered sugar"]);
     const apple = await concept("apple", ["apple", "apples"]);
     await concept("milk", ["milk"]);
@@ -273,6 +329,27 @@ async function seedTeachData(): Promise<void> {
       totalIngredientLines: lines.length,
       parsedIngredientLines: {
         create: lines.map((reference, lineIndex) => ({
+          blockIndex: 0,
+          lineIndex,
+          reference,
+          parseStatus: "COMPLETED_SUCCESSFULLY" as const,
+          parserVersion: "static_v1",
+        })),
+      },
+    },
+  });
+
+  const structural = Object.values(E2E_STRUCTURAL).map(
+    (fixture) => fixture.line
+  );
+  await prisma.note.create({
+    data: {
+      title: E2E_STRUCTURE_NOTE,
+      html: "<p></p>",
+      status: "COMPLETED",
+      totalIngredientLines: structural.length,
+      parsedIngredientLines: {
+        create: structural.map((reference, lineIndex) => ({
           blockIndex: 0,
           lineIndex,
           reference,

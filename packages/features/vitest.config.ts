@@ -21,10 +21,10 @@ export default defineConfig({
       ],
       // Ratchet: the floor of the last measured coverage (12 November 2026); raise it as coverage grows
       thresholds: {
-        statements: 41,
-        branches: 44,
-        functions: 42,
-        lines: 42,
+        statements: 47,
+        branches: 52,
+        functions: 49,
+        lines: 48,
       },
     },
     // Mock WebSocket and other browser APIs

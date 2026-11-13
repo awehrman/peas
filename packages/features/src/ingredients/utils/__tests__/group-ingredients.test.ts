@@ -7,7 +7,9 @@ import {
   groupIngredients,
 } from "../group-ingredients";
 
-function makeIngredient(overrides: Partial<IngredientSummary>): IngredientSummary {
+function makeIngredient(
+  overrides: Partial<IngredientSummary>
+): IngredientSummary {
   return {
     id: overrides.name ?? "id",
     name: "apple",
@@ -29,16 +31,26 @@ describe("groupIngredients", () => {
 
     expect(groups).toHaveLength(1);
     expect(groups[0]?.label).toBe("All Ingredients");
-    expect(groups[0]?.ingredients.map((i) => i.name)).toEqual(["apple", "pear"]);
+    expect(groups[0]?.ingredients.map((i) => i.name)).toEqual([
+      "apple",
+      "pear",
+    ]);
   });
 
   it("buckets by first letter once the list reaches the threshold, with non-letters last", () => {
-    const ingredients = Array.from({ length: NAME_BUCKET_THRESHOLD }, (_, index) =>
-      makeIngredient({ id: `id-${index}`, name: index % 2 === 0 ? `basil ${index}` : `apple ${index}` })
+    const ingredients = Array.from(
+      { length: NAME_BUCKET_THRESHOLD },
+      (_, index) =>
+        makeIngredient({
+          id: `id-${index}`,
+          name: index % 2 === 0 ? `basil ${index}` : `apple ${index}`,
+        })
     );
     ingredients.push(makeIngredient({ id: "digit", name: "7up" }));
 
-    const labels = groupIngredients(ingredients, "name").map((group) => group.label);
+    const labels = groupIngredients(ingredients, "name").map(
+      (group) => group.label
+    );
 
     expect(labels).toEqual(["A", "B", "#"]);
   });
@@ -52,20 +64,29 @@ describe("groupIngredients", () => {
       "property"
     );
 
-    expect(groups.map((group) => group.label)).toEqual(["Vegetarian", "Dairy", "No Properties"]);
+    expect(groups.map((group) => group.label)).toEqual([
+      "Vegetarian",
+      "Dairy",
+      "No Properties",
+    ]);
     expect(groups[2]?.ingredients.map((i) => i.name)).toEqual(["salt"]);
   });
 
   it("separates top-level ingredients from variants", () => {
     const groups = groupIngredients(
       [
-        makeIngredient({ name: "granny smith", parentIngredientId: "apple-id" }),
+        makeIngredient({
+          name: "granny smith",
+          parentIngredientId: "apple-id",
+        }),
         makeIngredient({ name: "apple" }),
       ],
       "relationship"
     );
 
-    expect(groups.map((group) => [group.label, group.ingredients.length])).toEqual([
+    expect(
+      groups.map((group) => [group.label, group.ingredients.length])
+    ).toEqual([
       ["Top Level Ingredients", 1],
       ["Variants", 1],
     ]);

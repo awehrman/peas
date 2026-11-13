@@ -89,3 +89,93 @@ export async function getEffectiveClassifications(
 
   return effectiveClassifications(byConcept.get(conceptId) ?? [], inherited);
 }
+
+/** How far up the hierarchy `getEffectiveClassificationsForMany` looks, as `getAncestors` does. */
+const MAX_INHERITANCE_DEPTH = 10;
+
+export interface ConceptClassifications {
+  /** Explicit values plus inherited ones (explicit wins). */
+  effective: EffectiveClassification[];
+  /** What the concept would inherit if it had no explicit values. */
+  inherited: EffectiveClassification[];
+}
+
+/**
+ * Effective and inherit-only classifications for many concepts at once: relationships and classifications are read in two queries and the ancestors are walked in memory (nearest path per ancestor), so list pages don't run one recursive query per row.
+ *
+ * @example
+ * const byConcept = await getEffectiveClassificationsForMany([flourId, wheatId]);
+ * byConcept.get(flourId)?.inherited // [{ key: "ALLERGEN_GLUTEN", value: "TRUE", source: "INHERITED", inheritedFromConceptId: wheatId, path: ["DERIVED_FROM"] }]
+ */
+export async function getEffectiveClassificationsForMany(
+  conceptIds: readonly string[],
+  db: DbClient = prisma
+): Promise<Map<string, ConceptClassifications>> {
+  const result = new Map<string, ConceptClassifications>();
+  if (conceptIds.length === 0) return result;
+  const [relationships, rows] = await Promise.all([
+    db.foodRelationship.findMany({
+      where: { status: { not: "DEPRECATED" } },
+      select: { sourceId: true, targetId: true, type: true },
+    }),
+    db.foodClassification.findMany({
+      select: { conceptId: true, kind: true, key: true, value: true },
+    }),
+  ]);
+
+  const parents = new Map<
+    string,
+    { targetId: string; type: (typeof relationships)[number]["type"] }[]
+  >();
+  for (const relationship of relationships) {
+    const list = parents.get(relationship.sourceId) ?? [];
+    list.push({ targetId: relationship.targetId, type: relationship.type });
+    parents.set(relationship.sourceId, list);
+  }
+  const byConcept = new Map<
+    string,
+    { kind: ClassificationKind; key: string; value: TriState }[]
+  >();
+  for (const row of rows) {
+    const list = byConcept.get(row.conceptId) ?? [];
+    list.push({ kind: row.kind, key: row.key, value: row.value });
+    byConcept.set(row.conceptId, list);
+  }
+
+  for (const conceptId of conceptIds) {
+    const ancestors: AncestorClassifications[] = [];
+    const seen = new Set([conceptId]);
+    let frontier: {
+      conceptId: string;
+      path: AncestorClassifications["path"];
+    }[] = [{ conceptId, path: [] }];
+    for (
+      let depth = 0;
+      depth < MAX_INHERITANCE_DEPTH && frontier.length > 0;
+      depth += 1
+    ) {
+      const next: typeof frontier = [];
+      for (const node of frontier)
+        for (const parent of parents.get(node.conceptId) ?? []) {
+          if (seen.has(parent.targetId)) continue;
+          seen.add(parent.targetId);
+          const path = [...node.path, parent.type];
+          ancestors.push({
+            conceptId: parent.targetId,
+            path,
+            classifications: byConcept.get(parent.targetId) ?? [],
+          });
+          next.push({ conceptId: parent.targetId, path });
+        }
+      frontier = next;
+    }
+    result.set(conceptId, {
+      effective: effectiveClassifications(
+        byConcept.get(conceptId) ?? [],
+        ancestors
+      ),
+      inherited: effectiveClassifications([], ancestors),
+    });
+  }
+  return result;
+}

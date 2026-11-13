@@ -15,10 +15,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@peas/components";
-import { CookingPot } from "lucide-react";
+import { CookingPot, X } from "lucide-react";
 
 import { AppLink, buildHref, useAppNavigation } from "../../app-navigation";
 import { InlineError, type MutationAction, PageLinks, SearchForm, useMutation } from "../../shared";
+import type { ConceptRef } from "../../teach/types";
 import type {
   RecipeListItem,
   RecipeTaxonomyOptions,
@@ -30,7 +31,7 @@ const RECIPES_PATH = "/recipes";
 const ANY_VALUE = "__any__";
 
 interface RecipesListPageContentProps {
-  data: RecipesPageData;
+  data: RecipesPageData & { concept?: ConceptRef | null };
   filters: RecipesFilters;
   options: RecipeTaxonomyOptions;
   onPromoteCompletedNotes?: MutationAction<[], { created: number }>;
@@ -43,7 +44,12 @@ export function RecipesListPageContent({
   onPromoteCompletedNotes,
 }: RecipesListPageContentProps): ReactNode {
   const { push } = useAppNavigation();
-  const currentParams = { q: filters.query, category: filters.category, tag: filters.tag };
+  const currentParams = {
+    q: filters.query,
+    category: filters.category,
+    tag: filters.tag,
+    concept: filters.conceptId,
+  };
   const navigate = (overrides: Record<string, string | undefined>) =>
     push(buildHref(RECIPES_PATH, currentParams, { ...overrides, page: undefined }));
 
@@ -77,9 +83,30 @@ export function RecipesListPageContent({
         {onPromoteCompletedNotes ? <PromoteNotesButton onPromote={onPromoteCompletedNotes} /> : null}
       </div>
 
-      <p className="text-sm text-greyscale-600" aria-live="polite">
-        {data.total} {data.total === 1 ? "recipe" : "recipes"}
-      </p>
+      <div className="flex flex-wrap items-center gap-3">
+        <p className="text-sm text-greyscale-600" aria-live="polite">
+          {data.total} {data.total === 1 ? "recipe" : "recipes"}
+          {data.concept ? ` with ${data.concept.canonicalName}` : null}
+        </p>
+        {data.concept ? (
+          <span className="inline-flex items-center gap-1 rounded-full bg-greyscale-100 py-0.5 pr-1 pl-2 text-sm text-greyscale-800">
+            <AppLink
+              href={`/concepts/${data.concept.id}`}
+              className="hover:underline"
+            >
+              {data.concept.canonicalName}
+            </AppLink>
+            <button
+              type="button"
+              aria-label={`Stop filtering by ${data.concept.canonicalName}`}
+              className="rounded-full p-0.5 text-greyscale-600 hover:text-greyscale-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              onClick={() => navigate({ concept: undefined })}
+            >
+              <X className="h-3 w-3" aria-hidden="true" />
+            </button>
+          </span>
+        ) : null}
+      </div>
 
       {data.items.length === 0 ? (
         <Placeholder

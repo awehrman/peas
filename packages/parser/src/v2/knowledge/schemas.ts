@@ -31,6 +31,8 @@ export const DECISION_TYPES = [
   "REJECT",
   "MERGE_CONCEPTS",
   "CORRECT_MENTION",
+  "APPROVE_CONCEPT",
+  "EDIT_CONCEPT",
   "REVERT",
 ] as const;
 export type DecisionType = (typeof DECISION_TYPES)[number];
@@ -58,12 +60,18 @@ const adjacentHead = z.object({
  * @example IDENTITY_DECISION        { type: "IDENTITY_DECISION", phrase: "smoked paprika", modifierEntryIds: [<smoked>], headConceptId: <paprika>, cooccurrence: 14 }
  * @example AMBIGUOUS_MATCH          { type: "AMBIGUOUS_MATCH", phrase: "cream", entryIds: [<heavy cream>, <sour cream>] }
  * @example RELATIONSHIP_SUGGESTION  { type: "RELATIONSHIP_SUGGESTION", sourceConceptId: <scallion>, targetConceptId: <onion>, relationshipType: "IS_A", evidence: "shares head token 'onion'" }
- * @example STRUCTURAL_PATTERN       { type: "STRUCTURAL_PATTERN", signature: "QTY UNIT PAREN(QTY UNIT) PHRASE", example: "1 cup (2 sticks) butter" }
+ * @example STRUCTURAL_PATTERN       { type: "STRUCTURAL_PATTERN", signature: "W U W", example: "small handful coriander, chopped", reason: "QUANTITY_IN_PHRASE", parserVersion: "2.0.0" }
  * @example VERIFIED_DRIFT           { type: "VERIFIED_DRIFT", mentionId: <m>, verifiedConceptId: <scallion>, proposedConceptId: <onion>, parserVersion: "2.0.0", lexiconRevision: 42 }
  */
+/** Set to "exploratory" on discoveries first found by an exploratory sweep; imports leave it out. */
+const discoverySource = {
+  source: z.literal("exploratory").optional(),
+};
+
 export const DiscoveryPayloadSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("UNKNOWN_FOOD_PHRASE"),
+    ...discoverySource,
     phrase,
     headToken: z.string().min(1).nullable(),
     /** Lexemes next to the phrase ("chopped" in "1 cup chopped calamansi"). */
@@ -73,6 +81,7 @@ export const DiscoveryPayloadSchema = z.discriminatedUnion("type", [
   }),
   z.object({
     type: z.literal("UNKNOWN_MODIFIER"),
+    ...discoverySource,
     token: phrase,
     position: z.enum([...PREP_POSITIONS, "MEASUREMENT"]),
     neighbors: z.array(z.string().min(1)),
@@ -82,12 +91,14 @@ export const DiscoveryPayloadSchema = z.discriminatedUnion("type", [
   }),
   z.object({
     type: z.literal("ATTRIBUTE_INTERPRETATION"),
+    ...discoverySource,
     phrase,
     entryIds: z.array(z.uuid()).min(1),
     headConceptId: z.uuid().nullable(),
   }),
   z.object({
     type: z.literal("IDENTITY_DECISION"),
+    ...discoverySource,
     phrase,
     modifierEntryIds: z.array(z.uuid()).min(1),
     headConceptId: z.uuid(),
@@ -95,11 +106,13 @@ export const DiscoveryPayloadSchema = z.discriminatedUnion("type", [
   }),
   z.object({
     type: z.literal("AMBIGUOUS_MATCH"),
+    ...discoverySource,
     phrase,
     entryIds: z.array(z.uuid()).min(2),
   }),
   z.object({
     type: z.literal("RELATIONSHIP_SUGGESTION"),
+    ...discoverySource,
     sourceConceptId: z.uuid(),
     targetConceptId: z.uuid(),
     relationshipType,
@@ -107,11 +120,17 @@ export const DiscoveryPayloadSchema = z.discriminatedUnion("type", [
   }),
   z.object({
     type: z.literal("STRUCTURAL_PATTERN"),
+    ...discoverySource,
+    /** `structureSignature` of the line, e.g. "W U W". */
     signature: z.string().min(1),
+    /** The first line seen with this shape. */
     example: z.string().min(1),
+    reason: z.enum(["UNPARSED", "QUANTITY_IN_PHRASE", "HEADING"]).optional(),
+    parserVersion: z.string().min(1).optional(),
   }),
   z.object({
     type: z.literal("VERIFIED_DRIFT"),
+    ...discoverySource,
     mentionId: z.uuid(),
     verifiedConceptId: z.uuid().nullable(),
     proposedConceptId: z.uuid().nullable(),
@@ -124,6 +143,7 @@ export const DiscoveryPayloadSchema = z.discriminatedUnion("type", [
  * What a reviewer decided, stored as LexiconDecision.payload. Phase 4 applies the side effects; Phase 2 only validates and records.
  *
  * @example MAP_TO_CONCEPT         { type: "MAP_TO_CONCEPT", phrase: "spring onions", conceptId: <scallion>, kind: "REGIONAL" }
+ * @example EDIT_CONCEPT           { type: "EDIT_CONCEPT", conceptId: <scallion>, canonicalName: "green onion", addNames: [{ text: "green onions", kind: "PLURAL" }], retireEntryIds: [<"scalion" typo>], addRelationships: [{ targetConceptId: <onion>, relationshipType: "IS_A" }] }
  * @example MAP_TO_CONCEPT         { type: "MAP_TO_CONCEPT", phrase: "pepper", conceptId: <black pepper>, kind: "ALIAS", exclusive: true } // "pepper" now only means black pepper
  * @example CREATE_CONCEPT         { type: "CREATE_CONCEPT", canonicalName: "smoked paprika", phrase: "smoked paprika", relationships: [{ targetConceptId: <paprika>, relationshipType: "IS_A" }] }
  * @example CONCEPT_PLUS_ATTRIBUTE { type: "CONCEPT_PLUS_ATTRIBUTE", phrase: "whole milk", modifierText: "whole", conceptId: <milk>, attributeValueIds: [<fat_content=whole>] }
@@ -236,6 +256,27 @@ export const DecisionPayloadSchema = z.discriminatedUnion("type", [
     /** Also teach the phrase as an ALIAS of `conceptId` ("teach from correction"). */
     teachPhrase: phrase.optional(),
   }),
+  /** Promotes a PROPOSED concept to VERIFIED and activates its PROPOSED FOOD entries, so conservative imports start resolving to it. */
+  z.object({ type: z.literal("APPROVE_CONCEPT"), conceptId: z.uuid() }),
+  /** The ingredient card's lexicon changes as one decision: rename, names added, re-kinded, or retired, and parents added or retired. Relationships are named by target and type (the source is the concept). */
+  z.object({
+    type: z.literal("EDIT_CONCEPT"),
+    conceptId: z.uuid(),
+    canonicalName: phrase.optional(),
+    addNames: z
+      .array(z.object({ text: phrase, kind: z.enum(LEXICON_TERM_KINDS) }))
+      .optional(),
+    setNameKinds: z
+      .array(z.object({ entryId: z.uuid(), kind: z.enum(LEXICON_TERM_KINDS) }))
+      .optional(),
+    retireEntryIds: z.array(z.uuid()).optional(),
+    addRelationships: z
+      .array(z.object({ targetConceptId: z.uuid(), relationshipType }))
+      .optional(),
+    retireRelationships: z
+      .array(z.object({ targetConceptId: z.uuid(), relationshipType }))
+      .optional(),
+  }),
   z.object({ type: z.literal("REVERT"), decisionId: z.uuid() }),
 ]);
 
@@ -244,6 +285,10 @@ const effectRow = z.object({
   id: z.uuid(),
   /** The row's status before the decision, so REVERT can restore it ("PROPOSED" for an entry the decision activated). */
   previous: z.string().min(1).optional(),
+  /** A lexicon entry's kind before EDIT_CONCEPT changed it ("ALIAS" for a name promoted to CANONICAL). */
+  previousKind: z.string().min(1).optional(),
+  /** A concept's canonical name before EDIT_CONCEPT renamed it. */
+  previousName: z.string().min(1).optional(),
 });
 
 /**

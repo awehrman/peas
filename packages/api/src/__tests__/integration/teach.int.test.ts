@@ -12,10 +12,21 @@ import {
   prisma,
   seedOntologyVocabulary,
 } from "@peas/database";
-import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { AuthUser } from "../../auth/session.js";
 import { createApiServer } from "../../server.js";
+
+const curation = vi.hoisted(() => ({ isOpen: true }));
+vi.mock("../../context.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../context.js")>();
+  return {
+    ...actual,
+    canCurateKnowledge: (
+      viewer: Parameters<typeof actual.canCurateKnowledge>[0]
+    ) => curation.isOpen || actual.isAdmin(viewer),
+  };
+});
 
 const server = createApiServer({ development: false });
 
@@ -47,6 +58,7 @@ describe.skipIf(!hasTestDatabase)("Teach Peas resolvers (integration)", () => {
     await resetDatabase();
     await resetOntology();
     await seedOntologyVocabulary();
+    curation.isOpen = true;
     user = await createUser({ username: "cook" });
     admin = await createUser({ username: "boss", admin: true });
   });
@@ -57,7 +69,8 @@ describe.skipIf(!hasTestDatabase)("Teach Peas resolvers (integration)", () => {
     await prisma.$disconnect();
   });
 
-  it("keeps the review tools to admins", async () => {
+  it("keeps the review tools to admins when curation is restricted", async () => {
+    curation.isOpen = false;
     const queue = await execute(
       server,
       user,
@@ -72,7 +85,7 @@ describe.skipIf(!hasTestDatabase)("Teach Peas resolvers (integration)", () => {
     });
     expect(applied.data?.applyDecision).toMatchObject({
       success: false,
-      message: "Only admins can teach Peas",
+      message: "You can't teach Peas yet",
     });
 
     const anonymous = await execute(
@@ -108,10 +121,14 @@ describe.skipIf(!hasTestDatabase)("Teach Peas resolvers (integration)", () => {
     });
     expect(created.data?.applyDecision.effect.invalidatedDomains).toEqual([
       "NOTE_DETAIL",
+      "RECIPES",
+      "RECIPE_DETAIL",
+      "DASHBOARD_STATS",
       "DISCOVERIES",
       "CONCEPTS",
       "CONCEPT_DETAIL",
       "MENTIONS",
+      "CORPUS_HEALTH",
     ]);
     expect(created.data?.applyDecision.effect.lexiconRevision).toBe(
       created.data?.applyDecision.revision
@@ -551,6 +568,7 @@ describe.skipIf(!hasTestDatabase)("Teach Peas resolvers (integration)", () => {
     );
     expect(longSearch.data?.searchConcepts).toEqual([]);
 
+    curation.isOpen = false;
     for (const mutation of [
       `mutation { refreshDiscoveries { success message } }`,
       `mutation ($id: ID!) { deferDiscovery(id: $id) { success message } }`,
@@ -560,9 +578,10 @@ describe.skipIf(!hasTestDatabase)("Teach Peas resolvers (integration)", () => {
       >(server, user, mutation, { id: discoveryId });
       expect(Object.values(result.data ?? {})[0]).toEqual({
         success: false,
-        message: "Only admins can teach Peas",
+        message: "You can't teach Peas yet",
       });
     }
+    curation.isOpen = true;
     const missingDefer = await execute<{
       deferDiscovery: { success: boolean; message: string };
     }>(

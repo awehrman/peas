@@ -28,6 +28,7 @@ import {
 import type {
   ConceptStatus,
   EntryStatus,
+  LexiconTermKind,
   FoodRelationshipType,
 } from "@prisma/client";
 
@@ -463,6 +464,51 @@ async function applyEffects(
       return;
     }
 
+    case "APPROVE_CONCEPT": {
+      const concept = await tx.foodConcept.findUnique({
+        where: { id: payload.conceptId },
+        select: { status: true },
+      });
+      if (!concept) throw new OntologyError("That concept does not exist");
+      if (concept.status !== "PROPOSED")
+        throw new OntologyError(
+          `Only proposed concepts can be approved; this one is ${concept.status.toLowerCase()}`
+        );
+      await tx.foodConcept.update({
+        where: { id: payload.conceptId },
+        data: { status: "VERIFIED" },
+      });
+      effects.updated.push({
+        table: "FoodConcept",
+        id: payload.conceptId,
+        previous: "PROPOSED",
+      });
+      const entries = await tx.lexiconEntry.findMany({
+        where: {
+          conceptId: payload.conceptId,
+          role: "FOOD",
+          status: "PROPOSED",
+        },
+        select: { id: true },
+      });
+      if (entries.length > 0)
+        await tx.lexiconEntry.updateMany({
+          where: { id: { in: entries.map((entry) => entry.id) } },
+          data: { status: "ACTIVE" },
+        });
+      for (const entry of entries)
+        effects.updated.push({
+          table: "LexiconEntry",
+          id: entry.id,
+          previous: "PROPOSED",
+        });
+      return;
+    }
+
+    case "EDIT_CONCEPT":
+      await editConcept(context, payload);
+      return;
+
     case "REVERT":
       await revertDecision(context, payload.decisionId);
       return;
@@ -470,6 +516,138 @@ async function applyEffects(
     case "MARK_AMBIGUOUS":
     case "REJECT":
       return;
+  }
+}
+
+/** The ingredient card's lexicon changes; every changed row is recorded with what it was, so REVERT puts it back. */
+async function editConcept(
+  context: EffectContext,
+  payload: Extract<DecisionPayload, { type: "EDIT_CONCEPT" }>
+): Promise<void> {
+  const { tx, effects } = context;
+  const concept = await tx.foodConcept.findUnique({
+    where: { id: payload.conceptId },
+    select: { canonicalName: true, status: true },
+  });
+  if (!concept) throw new OntologyError("That concept does not exist");
+  if (concept.status === "DEPRECATED")
+    throw new OntologyError("A merged concept cannot be edited");
+
+  if (payload.canonicalName && payload.canonicalName !== concept.canonicalName) {
+    await tx.foodConcept.update({
+      where: { id: payload.conceptId },
+      data: { canonicalName: payload.canonicalName },
+    });
+    effects.updated.push({
+      table: "FoodConcept",
+      id: payload.conceptId,
+      previous: concept.status,
+      previousName: concept.canonicalName,
+    });
+  }
+
+  const targetKey = computeTargetKey({ role: "FOOD", conceptId: payload.conceptId });
+  // A proposed food's new names stay proposed until it is approved
+  const nameStatus = concept.status === "PROPOSED" ? "PROPOSED" : "ACTIVE";
+  for (const name of payload.addNames ?? []) {
+    const existing = await tx.lexiconEntry.findUnique({
+      where: {
+        matchKey_targetKey: { matchKey: entryMatchKey(name.text), targetKey },
+      },
+      select: { id: true, status: true, kind: true },
+    });
+    if (!existing) {
+      const [created] = await createLexiconEntries(
+        tx,
+        [
+          {
+            text: name.text,
+            role: "FOOD",
+            kind: name.kind,
+            conceptId: payload.conceptId,
+            status: nameStatus,
+            decisionId: context.decisionId,
+          },
+        ],
+        context.revision
+      );
+      if (created) effects.created.push({ table: "LexiconEntry", id: created.id });
+      continue;
+    }
+    if (existing.status !== "DEPRECATED" && existing.kind === name.kind) continue;
+    await tx.lexiconEntry.update({
+      where: { id: existing.id },
+      data: {
+        status: existing.status === "DEPRECATED" ? nameStatus : existing.status,
+        kind: name.kind,
+        revisionRetired: null,
+      },
+    });
+    effects.updated.push({
+      table: "LexiconEntry",
+      id: existing.id,
+      previous: existing.status,
+      ...(existing.kind ? { previousKind: existing.kind } : {}),
+    });
+  }
+
+  for (const change of payload.setNameKinds ?? []) {
+    const entry = await tx.lexiconEntry.findFirst({
+      where: { id: change.entryId, conceptId: payload.conceptId },
+      select: { status: true, kind: true },
+    });
+    if (!entry) throw new OntologyError("That name does not belong to this concept");
+    if (entry.kind === change.kind) continue;
+    await tx.lexiconEntry.update({
+      where: { id: change.entryId },
+      data: { kind: change.kind },
+    });
+    effects.updated.push({
+      table: "LexiconEntry",
+      id: change.entryId,
+      previous: entry.status,
+      ...(entry.kind ? { previousKind: entry.kind } : {}),
+    });
+  }
+
+  for (const entryId of payload.retireEntryIds ?? []) {
+    const entry = await tx.lexiconEntry.findFirst({
+      where: { id: entryId, conceptId: payload.conceptId },
+      select: { status: true },
+    });
+    if (!entry) throw new OntologyError("That name does not belong to this concept");
+    if (entry.status === "DEPRECATED") continue;
+    await tx.lexiconEntry.update({
+      where: { id: entryId },
+      data: { status: "DEPRECATED", revisionRetired: context.revision },
+    });
+    effects.deprecated.push({ table: "LexiconEntry", id: entryId, previous: entry.status });
+  }
+
+  for (const relationship of payload.addRelationships ?? [])
+    await ensureActiveRelationship(
+      context,
+      payload.conceptId,
+      relationship.targetConceptId,
+      relationship.relationshipType
+    );
+
+  for (const relationship of payload.retireRelationships ?? []) {
+    const edge = await tx.foodRelationship.findFirst({
+      where: {
+        sourceId: payload.conceptId,
+        targetId: relationship.targetConceptId,
+        type: relationship.relationshipType,
+        status: { not: "DEPRECATED" },
+      },
+      select: { id: true, status: true },
+    });
+    if (!edge) continue;
+    await tx.foodRelationship.update({
+      where: { id: edge.id },
+      data: { status: "DEPRECATED" },
+    });
+    effects.deprecated.push({ table: "FoodRelationship", id: edge.id, previous: edge.status });
   }
 }
 
@@ -540,6 +718,9 @@ async function revertDecision(
             status: previous,
             revisionRetired:
               previous === "DEPRECATED" ? context.revision : null,
+            ...(row.previousKind
+              ? { kind: row.previousKind as LexiconTermKind }
+              : {}),
           },
         });
       } else if (row.table === "FoodRelationship") {
@@ -550,7 +731,10 @@ async function revertDecision(
       } else if (row.table === "FoodConcept") {
         await tx.foodConcept.update({
           where: { id: row.id },
-          data: { status: row.previous as ConceptStatus },
+          data: {
+            status: row.previous as ConceptStatus,
+            ...(row.previousName ? { canonicalName: row.previousName } : {}),
+          },
         });
       }
     }

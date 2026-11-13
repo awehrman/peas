@@ -17,6 +17,8 @@ import {
 } from "../resolve/resolve-segment.js";
 import type { ResolutionCandidate } from "../resolve/schemas.js";
 
+import { structuralIssue } from "./structure-signature.js";
+
 /**
  * Something one line suggests a reviewer should look at. The backfill groups these by `(payload.type, key)` across lines and stores the span as evidence on the mention for `segmentIndex`.
  *
@@ -194,6 +196,21 @@ export function discover(
     const ambiguous = ambiguousMatch(zones.main, headIndex, mention, context);
     if (ambiguous) add({ ...ambiguous, segmentIndex });
   }
+
+  const issue = structuralIssue(result.line);
+  if (issue)
+    add({
+      key: issue.signature,
+      segmentIndex: issue.segmentIndex,
+      span: issue.span,
+      payload: {
+        type: "STRUCTURAL_PATTERN",
+        signature: issue.signature,
+        example: raw,
+        reason: issue.reason,
+        parserVersion: result.line.parserVersion,
+      },
+    });
 
   return [...found.values()];
 }

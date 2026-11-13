@@ -17,7 +17,13 @@ interface SortableGroup extends IngredientGroup {
   sortKey: number;
 }
 
+const PROPERTY_LABELS: Partial<Record<IngredientProperty, string>> = {
+  FAT: "Oil & Fat",
+};
+
 export function formatPropertyLabel(property: IngredientProperty): string {
+  const label = PROPERTY_LABELS[property];
+  if (label) return label;
   return property
     .split("_")
     .map((word) => word.charAt(0) + word.slice(1).toLowerCase())
@@ -66,7 +72,10 @@ export function getReferenceCountBucket(count: number): {
       ? [3, 10]
       : count <= 20
         ? [11, 20]
-        : [Math.floor((count - 1) / 10) * 10 + 1, Math.floor((count - 1) / 10) * 10 + 10];
+        : [
+            Math.floor((count - 1) / 10) * 10 + 1,
+            Math.floor((count - 1) / 10) * 10 + 10,
+          ];
 
   return {
     key: `count-${lower}-${upper}`,
@@ -90,7 +99,13 @@ export function groupIngredients(
     switch (grouping) {
       case "property": {
         if (ingredient.properties.length === 0) {
-          addToGroup(groups, "none", "No Properties", INGREDIENT_PROPERTIES.length, ingredient);
+          addToGroup(
+            groups,
+            "none",
+            "No Properties",
+            INGREDIENT_PROPERTIES.length,
+            ingredient
+          );
           break;
         }
         for (const property of new Set(ingredient.properties)) {
@@ -106,20 +121,33 @@ export function groupIngredients(
       }
       case "count": {
         const bucket = getReferenceCountBucket(ingredient.referenceCount);
-        addToGroup(groups, bucket.key, bucket.label, bucket.lowerBound, ingredient);
+        addToGroup(
+          groups,
+          bucket.key,
+          bucket.label,
+          bucket.lowerBound,
+          ingredient
+        );
         break;
       }
       case "relationship": {
         if (ingredient.parentIngredientId) {
           addToGroup(groups, "variants", "Variants", 1, ingredient);
         } else {
-          addToGroup(groups, "top-level", "Top Level Ingredients", 0, ingredient);
+          addToGroup(
+            groups,
+            "top-level",
+            "Top Level Ingredients",
+            0,
+            ingredient
+          );
         }
         break;
       }
       default: {
         if (ingredients.length < NAME_BUCKET_THRESHOLD) {
-          const label = view === "unreviewed" ? "Ingredients To Review" : "All Ingredients";
+          const label =
+            view === "unreviewed" ? "Ingredients To Review" : "All Ingredients";
           addToGroup(groups, "all", label, 0, ingredient);
         } else {
           const bucket = getNameBucket(ingredient.name);

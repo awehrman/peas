@@ -1,9 +1,12 @@
-import { Outlet, createFileRoute, redirect } from "@tanstack/react-router";
+import { KnowledgeLayout } from "~/components/knowledge-layout";
+import { canCurateKnowledge } from "~/lib/permissions";
 
-/** The concept pages are for admins; the GraphQL resolvers enforce it too. */
+import { createFileRoute, redirect } from "@tanstack/react-router";
+
+/** Concepts are part of the Knowledge section (see `canCurateKnowledge`). */
 export const Route = createFileRoute("/_authed/concepts")({
   beforeLoad: ({ context }) => {
-    if (!context.viewer.isAdmin) throw redirect({ to: "/" });
+    if (!canCurateKnowledge(context.viewer)) throw redirect({ to: "/ingredients" });
   },
-  component: Outlet,
+  component: KnowledgeLayout,
 });

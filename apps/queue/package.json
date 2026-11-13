@@ -21,7 +21,9 @@
     "preview-export": "tsx scripts/preview-export.ts",
     "clear-imports": "tsx scripts/clear-imports.ts",
     "backfill:mentions": "tsx scripts/backfill-mentions.ts",
-    "reinterpret": "tsx scripts/reinterpret.ts"
+    "reinterpret": "tsx scripts/reinterpret.ts",
+    "reparse": "tsx scripts/reparse.ts",
+    "reparse:dry-run": "tsx scripts/reparse-dry-run.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1167.0",

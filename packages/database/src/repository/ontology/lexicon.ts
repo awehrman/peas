@@ -13,7 +13,12 @@ import {
   entryTokenKeys,
   normalizeText,
 } from "@peas/parser/v2";
-import type { EntryStatus, LexiconTermKind } from "@prisma/client";
+import type {
+  EntryStatus,
+  LexiconRole,
+  LexiconTermKind,
+  Prisma,
+} from "@prisma/client";
 
 import { prisma } from "../../client.js";
 
@@ -174,6 +179,7 @@ export interface LexiconEntryRefRecord {
   id: string;
   text: string;
   role: LexiconEntryInput["role"];
+  kind: LexiconTermKind | null;
   status: EntryStatus;
   conceptId: string | null;
   attributeValueId: string | null;
@@ -188,32 +194,30 @@ export interface LexiconEntryRefRecord {
  * await getLexiconEntryRefs([greenColor, greenRipeness])
  * // [{ text: "green", role: "ATTRIBUTE", targetLabel: "color: green" }, { text: "green", role: "ATTRIBUTE", targetLabel: "ripeness: unripe" }]
  */
-export async function getLexiconEntryRefs(
-  ids: readonly string[],
-  db: DbClient = prisma
-): Promise<LexiconEntryRefRecord[]> {
-  if (ids.length === 0) return [];
-  const rows = await db.lexiconEntry.findMany({
-    where: { id: { in: [...new Set(ids)] } },
-    select: {
-      id: true,
-      text: true,
-      role: true,
-      status: true,
-      conceptId: true,
-      attributeValueId: true,
-      valueKey: true,
-      concept: { select: { canonicalName: true } },
-      attributeValue: {
-        select: { key: true, definition: { select: { key: true } } },
-      },
-      preparation: { select: { key: true } },
-    },
-  });
-  return rows.map((row) => ({
+const ENTRY_REF_SELECT = {
+  id: true,
+  text: true,
+  role: true,
+  kind: true,
+  status: true,
+  conceptId: true,
+  attributeValueId: true,
+  valueKey: true,
+  concept: { select: { canonicalName: true } },
+  attributeValue: {
+    select: { key: true, definition: { select: { key: true } } },
+  },
+  preparation: { select: { key: true } },
+} as const;
+
+type EntryRefRow = Prisma.LexiconEntryGetPayload<{ select: typeof ENTRY_REF_SELECT }>;
+
+function toEntryRef(row: EntryRefRow): LexiconEntryRefRecord {
+  return {
     id: row.id,
     text: row.text,
     role: row.role,
+    kind: row.kind,
     status: row.status,
     conceptId: row.conceptId,
     attributeValueId: row.attributeValueId,
@@ -222,5 +226,51 @@ export async function getLexiconEntryRefs(
       (row.attributeValue
         ? `${row.attributeValue.definition.key}: ${row.attributeValue.key}`
         : (row.preparation?.key ?? row.valueKey ?? "")),
-  }));
+  };
+}
+
+export async function getLexiconEntryRefs(
+  ids: readonly string[],
+  db: DbClient = prisma
+): Promise<LexiconEntryRefRecord[]> {
+  if (ids.length === 0) return [];
+  const rows = await db.lexiconEntry.findMany({
+    where: { id: { in: [...new Set(ids)] } },
+    select: ENTRY_REF_SELECT,
+  });
+  return rows.map(toEntryRef);
+}
+
+/**
+ * One page of the lexicon for the Knowledge section: every name and modifier Peas knows, alphabetical, filtered by text and role. Retired (DEPRECATED) entries are hidden.
+ *
+ * @example
+ * await listLexiconEntries({ query: "chicken", role: "FOOD" }) // { items: [{ text: "chicken thighs", kind: "PLURAL", targetLabel: "chicken thigh" }, ...], total: 9 }
+ */
+export async function listLexiconEntries(
+  {
+    query,
+    role,
+    offset = 0,
+    limit = 50,
+  }: { query?: string; role?: LexiconRole; offset?: number; limit?: number } = {},
+  db: DbClient = prisma
+): Promise<{ items: LexiconEntryRefRecord[]; total: number }> {
+  const trimmed = query?.trim();
+  const where: Prisma.LexiconEntryWhereInput = {
+    status: { not: "DEPRECATED" },
+    ...(role ? { role } : {}),
+    ...(trimmed ? { normalized: { contains: trimmed, mode: "insensitive" } } : {}),
+  };
+  const [rows, total] = await Promise.all([
+    db.lexiconEntry.findMany({
+      where,
+      orderBy: [{ normalized: "asc" }, { role: "asc" }, { id: "asc" }],
+      skip: offset,
+      take: limit,
+      select: ENTRY_REF_SELECT,
+    }),
+    db.lexiconEntry.count({ where }),
+  ]);
+  return { items: rows.map(toEntryRef), total };
 }

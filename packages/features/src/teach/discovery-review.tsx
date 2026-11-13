@@ -9,6 +9,10 @@ import { ExamplesDrawer } from "./examples-drawer";
 import { HighlightedLine } from "./highlighted-line";
 import { ImpactPreview } from "./impact-preview";
 import {
+  type MarkDiscoveryAsNoise,
+  StructuralPatternPanel,
+} from "./structural-review";
+import {
   type ApplyDecisionResult,
   DISCOVERY_TYPE_LABELS,
   type DecisionPayload,
@@ -50,6 +54,8 @@ export interface DiscoveryReviewProps {
     ApplyDecisionResult
   >;
   onDefer?: MutationAction<[discoveryId: string]>;
+  /** Structural patterns only. */
+  onMarkNoise?: MarkDiscoveryAsNoise;
   onPreviewDecision: PreviewDecision;
   onSearchConcepts: SearchConcepts;
   onLoadExamples: (
@@ -65,6 +71,12 @@ function isTyping(target: EventTarget | null): boolean {
     (["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName) &&
       !(target instanceof HTMLInputElement && target.type === "radio"))
   );
+}
+
+function structuralReason(payload: unknown): string | null {
+  if (typeof payload !== "object" || payload === null || !("reason" in payload))
+    return null;
+  return typeof payload.reason === "string" ? payload.reason : null;
 }
 
 function teachHref(id: string | null, message: string): string {
@@ -84,15 +96,20 @@ export function DiscoveryReviewPageContent({
   taughtMessage,
   onApplyDecision,
   onDefer,
+  onMarkNoise,
   onPreviewDecision,
   onSearchConcepts,
   onLoadExamples,
 }: DiscoveryReviewProps): ReactNode {
   const { push } = useAppNavigation();
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const isStructural = discovery.type === "STRUCTURAL_PATTERN";
   const options = useMemo(
-    () => decisionOptionsFor(discovery, vocabulary, onSearchConcepts),
-    [discovery, vocabulary, onSearchConcepts]
+    () =>
+      isStructural
+        ? []
+        : decisionOptionsFor(discovery, vocabulary, onSearchConcepts),
+    [isStructural, discovery, vocabulary, onSearchConcepts]
   );
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [payload, setPayload] = useState<DecisionPayload | null>(() =>
@@ -152,9 +169,11 @@ export function DiscoveryReviewPageContent({
       needsBackgroundReinterpret,
       reinterpretCommand,
     } = result.data;
-    const message = needsBackgroundReinterpret
-      ? `${summary}; many mentions are affected, run: ${reinterpretCommand ?? "yarn workspace @peas/queue reinterpret"}`
-      : `${summary}; ${mentionsUpdated} ${mentionsUpdated === 1 ? "mention" : "mentions"} updated`;
+    const message = !needsBackgroundReinterpret
+      ? `${summary}; ${mentionsUpdated} ${mentionsUpdated === 1 ? "mention" : "mentions"} updated`
+      : reinterpretCommand
+        ? `${summary}; many mentions are affected, run: ${reinterpretCommand}`
+        : `${summary}; many mentions are affected and are being updated in the background`;
     push(teachHref(nextId, message));
   }, [apply, discovery.id, nextId, payload, push]);
 
@@ -206,6 +225,20 @@ export function DiscoveryReviewPageContent({
     previousId,
     push,
   ]);
+
+  const deferButton = onDefer ? (
+    <Button
+      type="button"
+      variant="outline"
+      disabled={defer.isPending}
+      onClick={() => void handleDefer()}
+    >
+      Defer{" "}
+      <kbd className="ml-2 text-xs" aria-hidden="true">
+        d
+      </kbd>
+    </Button>
+  ) : null;
 
   return (
     <article className="flex max-w-5xl flex-col gap-6">
@@ -298,53 +331,59 @@ export function DiscoveryReviewPageContent({
             ) : null}
           </section>
 
-          <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              void handleApply();
-            }}
-            className="flex flex-col gap-4"
-          >
-            <DecisionOptions
-              discovery={discovery}
-              options={options}
-              selectedIndex={selectedIndex}
-              onSelect={setSelectedIndex}
-              onPayloadChange={setPayload}
-            />
-            <div className="flex flex-wrap items-center gap-2">
-              <Button
-                type="submit"
-                disabled={!payload || apply.isPending || !onApplyDecision}
-              >
-                {apply.isPending ? "Teaching…" : "Apply"}{" "}
-                <kbd className="ml-2 text-xs" aria-hidden="true">
-                  Enter
-                </kbd>
-              </Button>
-              {onDefer ? (
+          {isStructural ? (
+            <>
+              <StructuralPatternPanel
+                discoveryId={discovery.id}
+                signature={discovery.key}
+                reason={structuralReason(discovery.payload)}
+                fixtureBlock={discovery.fixtureBlock ?? null}
+                mentionCount={discovery.mentionCount}
+                onMarkNoise={onMarkNoise}
+                onMarked={(message) => push(teachHref(nextId, message))}
+                deferButton={deferButton}
+              />
+              <InlineError message={defer.error} />
+            </>
+          ) : (
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                void handleApply();
+              }}
+              className="flex flex-col gap-4"
+            >
+              <DecisionOptions
+                discovery={discovery}
+                options={options}
+                selectedIndex={selectedIndex}
+                onSelect={setSelectedIndex}
+                onPayloadChange={setPayload}
+              />
+              <div className="flex flex-wrap items-center gap-2">
                 <Button
-                  type="button"
-                  variant="outline"
-                  disabled={defer.isPending}
-                  onClick={() => void handleDefer()}
+                  type="submit"
+                  disabled={!payload || apply.isPending || !onApplyDecision}
                 >
-                  Defer{" "}
+                  {apply.isPending ? "Teaching…" : "Apply"}{" "}
                   <kbd className="ml-2 text-xs" aria-hidden="true">
-                    d
+                    Enter
                   </kbd>
                 </Button>
-              ) : null}
-            </div>
-            <InlineError message={apply.error ?? defer.error} />
-          </form>
+                {deferButton}
+              </div>
+              <InlineError message={apply.error ?? defer.error} />
+            </form>
+          )}
         </div>
 
-        <ImpactPreview
-          preview={preview}
-          isLoading={isPreviewing}
-          error={previewError}
-        />
+        {isStructural ? null : (
+          <ImpactPreview
+            preview={preview}
+            isLoading={isPreviewing}
+            error={previewError}
+          />
+        )}
       </div>
 
       <nav
@@ -365,7 +404,9 @@ export function DiscoveryReviewPageContent({
           <span />
         )}
         <p className="text-xs text-greyscale-600">
-          Shortcuts: j/k move, 1–9 choose, e examples, Enter apply, d defer
+          {isStructural
+            ? "Shortcuts: j/k move, e examples, d defer"
+            : "Shortcuts: j/k move, 1–9 choose, e examples, Enter apply, d defer"}
         </p>
         {nextId ? (
           <AppLink

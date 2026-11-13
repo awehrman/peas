@@ -1,6 +1,10 @@
 import type { ReactNode } from "react";
 
-export function InlineError({ message }: { message: string | null }): ReactNode {
+export function InlineError({
+  message,
+}: {
+  message: string | null;
+}): ReactNode {
   if (!message) return null;
 
   return (

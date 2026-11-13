@@ -126,6 +126,8 @@ export async function loadResolverSnapshot(
  * @example
  * processIngredientLine("2 tbsp icing sugar", await loadResolverContext())
  */
-export async function loadResolverContext(db: DbClient = prisma): Promise<ResolverContext> {
+export async function loadResolverContext(
+  db: DbClient = prisma
+): Promise<ResolverContext> {
   return buildResolverContext(await loadResolverSnapshot(db));
 }

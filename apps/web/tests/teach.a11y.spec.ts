@@ -79,7 +79,7 @@ test.describe("Teach Peas accessibility", () => {
 
     await page.keyboard.press("Tab");
     await expect(
-      page.getByRole("link", { name: "Review queue" })
+      page.getByRole("article").getByRole("link", { name: "Review queue" })
     ).not.toBeFocused();
     await expect(page.locator(":focus")).toBeVisible();
   });

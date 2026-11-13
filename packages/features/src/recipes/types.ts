@@ -21,6 +21,8 @@ export interface RecipesFilters {
   query?: string;
   category?: string;
   tag?: string;
+  /** Recipes that mention this concept or a more specific one. */
+  conceptId?: string;
 }
 
 export interface RecipeTaxonomyOptions {

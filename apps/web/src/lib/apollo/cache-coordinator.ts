@@ -24,16 +24,6 @@ export const DOMAIN_CACHE_KEYS: Readonly<
   RECIPES: { fields: ["recipes"], types: ["RecipeSummary"] },
   RECIPE_DETAIL: { fields: ["recipe"], types: ["Recipe"] },
   RECIPE_TAXONOMY: { fields: ["recipeTaxonomy"], types: [] },
-  INGREDIENTS: {
-    fields: [
-      "ingredients",
-      "ingredientCounts",
-      "ingredientCategoryNames",
-      "searchIngredients",
-    ],
-    types: ["IngredientSummary"],
-  },
-  INGREDIENT_DETAIL: { fields: ["ingredient"], types: ["Ingredient"] },
   IMPORT_STATS: { fields: ["importStats"], types: [] },
   DASHBOARD_STATS: { fields: ["dashboardStats"], types: [] },
   DISCOVERIES: {
@@ -41,13 +31,28 @@ export const DOMAIN_CACHE_KEYS: Readonly<
     types: ["Discovery"],
   },
   CONCEPTS: {
-    fields: ["concepts", "searchConcepts"],
-    types: ["ConceptSummary"],
+    fields: [
+      "concepts",
+      "searchConcepts",
+      "lexicon",
+      "ingredients",
+      "ingredientCounts",
+      "ingredientCategoryNames",
+      "searchIngredients",
+    ],
+    types: ["ConceptSummary", "IngredientSummary"],
   },
-  CONCEPT_DETAIL: { fields: ["concept"], types: ["Concept"] },
+  CONCEPT_DETAIL: {
+    fields: ["concept", "ingredient"],
+    types: ["Concept", "Ingredient"],
+  },
   MENTIONS: {
     fields: ["mention", "playground", "previewDecision"],
     types: ["Mention"],
+  },
+  CORPUS_HEALTH: {
+    fields: ["corpusHealth", "corpusHealthTrends"],
+    types: ["CorpusHealthSnapshot"],
   },
 };
 
@@ -57,6 +62,9 @@ export interface JobUpdate {
   jobId: string;
   status: JobState;
   errorMessage: string | null;
+  /** Lines done and total, reported by background reinterpretation runs. */
+  processedCount: number | null;
+  totalCount: number | null;
 }
 
 export interface CacheCoordinatorOptions {
@@ -77,8 +85,10 @@ export interface CacheCoordinator {
   trackJob(jobId: string): void;
   /** Receives job status changes; returns an unsubscribe function. */
   onJobUpdate(listener: (update: JobUpdate) => void): () => void;
-  /** Stops all polling. */
+  /** Stops all polling and drops listeners. */
   dispose(): void;
+  /** Accepts jobs again after `dispose`, for effects that clean up and run again on the same instance. */
+  resume(): void;
 }
 
 const TERMINAL_JOB_STATES: readonly JobState[] = [
@@ -192,6 +202,8 @@ export function createCacheCoordinator(
             jobId,
             status: job.status,
             errorMessage: job.errorMessage ?? null,
+            processedCount: job.processedCount ?? null,
+            totalCount: job.totalCount ?? null,
           };
         } else {
           misses += 1;
@@ -199,6 +211,8 @@ export function createCacheCoordinator(
             jobId,
             status: misses >= missingJobPolls ? "MISSING" : "PENDING",
             errorMessage: null,
+            processedCount: null,
+            totalCount: null,
           };
         }
       } catch (error) {
@@ -206,6 +220,8 @@ export function createCacheCoordinator(
           jobId,
           status: "PENDING",
           errorMessage: error instanceof Error ? error.message : String(error),
+          processedCount: null,
+          totalCount: null,
         };
       }
 
@@ -278,6 +294,9 @@ export function createCacheCoordinator(
       for (const timer of timers.values()) clearTimeout(timer);
       timers.clear();
       listeners.clear();
+    },
+    resume() {
+      disposed = false;
     },
   };
 }

@@ -40,7 +40,7 @@ describe("Image Worker Dependencies", () => {
         instructionQueue: mockQueue,
         categorizationQueue: mockQueue,
         sourceQueue: mockQueue,
-        patternTrackingQueue: mockQueue,
+        reinterpretQueue: mockQueue,
       },
       errorHandler: {
         withErrorHandling: vi.fn(),

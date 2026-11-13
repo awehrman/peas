@@ -1,10 +1,15 @@
 "use client";
 
+import {
+  ClassificationEditor,
+  SubstitutionEditor,
+  TagEditor,
+} from "./concept-editors";
 import { EntryList } from "./entry-list";
 import { RelationshipEditor } from "./relationship-editor";
-import type { ConceptDetail } from "./types";
+import type { ConceptDetail, ConceptEditActions } from "./types";
 
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 
 import {
   Badge,
@@ -24,8 +29,12 @@ import type {
   SearchConcepts,
 } from "../teach/types";
 
-export interface ConceptDetailProps {
+export interface ConceptDetailProps extends ConceptEditActions {
   concept: ConceptDetail;
+  /** Recipes filtered to this concept and its more specific concepts. */
+  recipesHref?: string;
+  /** Where the back link goes; admins return to the concepts workbench, everyone else to the ingredients list. */
+  backLink?: { href: string; label: string };
   onApplyDecision?: MutationAction<
     [payload: DecisionPayload, discoveryId: string | null],
     ApplyDecisionResult
@@ -53,13 +62,21 @@ function Section({
 }
 
 /**
- * The concept page: names, relationships, attributes, effective classifications (inherited ones marked), example mentions, and the decisions behind it, each revertible.
+ * The concept page: names, relationships, attributes, effective classifications (inherited ones marked), tags, substitutions, example mentions, and the decisions behind it, each revertible. Editing controls appear only for the actions passed in, so viewers who aren't admins get a read-only page.
  */
 export function ConceptDetailPageContent({
   concept,
+  recipesHref,
+  backLink = { href: "/concepts", label: "All concepts" },
   onApplyDecision,
   onSearchConcepts,
+  onSetClassification,
+  onRemoveClassification,
+  onSetTags,
+  onSetSubstitution,
+  onRemoveSubstitution,
 }: ConceptDetailProps): ReactNode {
+  const [approvedMessage, setApprovedMessage] = useState<string | null>(null);
   const ref = {
     id: concept.id,
     canonicalName: concept.canonicalName,
@@ -68,11 +85,11 @@ export function ConceptDetailPageContent({
   return (
     <article className="flex max-w-5xl flex-col gap-6">
       <AppLink
-        href="/concepts"
+        href={backLink.href}
         className="inline-flex items-center gap-1 text-sm text-greyscale-600 hover:underline"
       >
         <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-        All concepts
+        {backLink.label}
       </AppLink>
       <header className="flex flex-col gap-2">
         <h1 className="text-2xl font-semibold text-greyscale-900">
@@ -86,6 +103,19 @@ export function ConceptDetailPageContent({
           </Badge>
           {concept.isComposed ? (
             <Badge variant="outline">made from other ingredients</Badge>
+          ) : null}
+          {concept.status === "PROPOSED" && onApplyDecision ? (
+            <ApproveConcept
+              conceptId={concept.id}
+              name={concept.canonicalName}
+              onApplyDecision={onApplyDecision}
+              onApproved={setApprovedMessage}
+            />
+          ) : null}
+          {approvedMessage ? (
+            <span role="status" className="text-success-900">
+              {approvedMessage}
+            </span>
           ) : null}
           {concept.mergedInto ? (
             <span>
@@ -101,6 +131,14 @@ export function ConceptDetailPageContent({
         </div>
         {concept.description ? (
           <p className="text-sm text-greyscale-700">{concept.description}</p>
+        ) : null}
+        {recipesHref ? (
+          <AppLink
+            href={recipesHref}
+            className="self-start text-sm text-primary underline underline-offset-2"
+          >
+            Recipes with {concept.canonicalName}
+          </AppLink>
         ) : null}
       </header>
 
@@ -135,36 +173,22 @@ export function ConceptDetailPageContent({
           )}
         </Section>
         <Section title="Classifications">
-          {concept.classifications.length === 0 ? (
-            <p className="text-sm text-greyscale-600">No classifications.</p>
-          ) : (
-            <ul className="flex flex-col gap-1 text-sm">
-              {concept.classifications.map((row) => (
-                <li key={row.key}>
-                  <span className="font-medium">{row.key}</span>:{" "}
-                  {row.value.toLowerCase()}
-                  {row.source === "INHERITED" && row.inheritedFrom ? (
-                    <span className="text-greyscale-600">
-                      {" "}
-                      (inherited from{" "}
-                      <AppLink
-                        href={`/concepts/${row.inheritedFrom.id}`}
-                        className="text-primary underline underline-offset-2"
-                      >
-                        {row.inheritedFrom.canonicalName}
-                      </AppLink>
-                      )
-                    </span>
-                  ) : row.source === "CONFLICT" ? (
-                    <span className="text-error-700">
-                      {" "}
-                      (conflicting parents)
-                    </span>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-          )}
+          <ClassificationEditor
+            classifications={concept.classifications}
+            onSetClassification={onSetClassification}
+            onRemoveClassification={onRemoveClassification}
+          />
+        </Section>
+        <Section title="Tags">
+          <TagEditor tags={concept.tags} onSetTags={onSetTags} />
+        </Section>
+        <Section title="Substitutions">
+          <SubstitutionEditor
+            substitutions={concept.substitutions}
+            onSetSubstitution={onSetSubstitution}
+            onRemoveSubstitution={onRemoveSubstitution}
+            onSearchConcepts={onSearchConcepts}
+          />
         </Section>
         <Section title="Example mentions">
           {concept.mentions.length === 0 ? (
@@ -178,7 +202,7 @@ export function ConceptDetailPageContent({
                   {mention.noteId ? (
                     <AppLink
                       href={`/notes/${mention.noteId}`}
-                      className="text-primary hover:underline"
+                      className="text-primary underline underline-offset-2"
                     >
                       {mention.lineText}
                     </AppLink>
@@ -199,52 +223,87 @@ export function ConceptDetailPageContent({
             </ul>
           )}
         </Section>
-        <Section title="Decisions">
-          {concept.decisions.length === 0 ? (
-            <p className="text-sm text-greyscale-600">No decisions yet.</p>
-          ) : (
-            <ul className="flex flex-col gap-2 text-sm">
-              {concept.decisions.map((decision) => (
-                <li
-                  key={decision.id}
-                  className="flex flex-wrap items-center justify-between gap-2"
-                >
-                  <span>
-                    <span className="font-medium">
-                      {decision.type.replace(/_/g, " ").toLowerCase()}
-                    </span>{" "}
-                    by {decision.username} on {formatDate(decision.createdAt)}{" "}
-                    <span className="text-greyscale-600">
-                      (revision {decision.revision})
+        {onApplyDecision || concept.decisions.length > 0 ? (
+          <Section title="Decisions">
+            {concept.decisions.length === 0 ? (
+              <p className="text-sm text-greyscale-600">No decisions yet.</p>
+            ) : (
+              <ul className="flex flex-col gap-2 text-sm">
+                {concept.decisions.map((decision) => (
+                  <li
+                    key={decision.id}
+                    className="flex flex-wrap items-center justify-between gap-2"
+                  >
+                    <span>
+                      <span className="font-medium">
+                        {decision.type.replace(/_/g, " ").toLowerCase()}
+                      </span>{" "}
+                      by {decision.username} on {formatDate(decision.createdAt)}{" "}
+                      <span className="text-greyscale-600">
+                        (revision {decision.revision})
+                      </span>
+                      {decision.reverted ? (
+                        <span className="text-greyscale-600"> reverted</span>
+                      ) : null}
                     </span>
-                    {decision.reverted ? (
-                      <span className="text-greyscale-600"> reverted</span>
+                    {decision.canRevert && onApplyDecision ? (
+                      <ConfirmDialog
+                        trigger={
+                          <Button type="button" size="sm" variant="outline">
+                            Revert
+                          </Button>
+                        }
+                        title="Revert this decision?"
+                        description="Entries and relationships it created are retired and anything it changed goes back. Affected mentions are reinterpreted."
+                        confirmLabel="Revert"
+                        onConfirm={() =>
+                          onApplyDecision(
+                            { type: "REVERT", decisionId: decision.id },
+                            null
+                          )
+                        }
+                      />
                     ) : null}
-                  </span>
-                  {decision.canRevert && onApplyDecision ? (
-                    <ConfirmDialog
-                      trigger={
-                        <Button type="button" size="sm" variant="outline">
-                          Revert
-                        </Button>
-                      }
-                      title="Revert this decision?"
-                      description="Entries and relationships it created are retired and anything it changed goes back. Affected mentions are reinterpreted."
-                      confirmLabel="Revert"
-                      onConfirm={() =>
-                        onApplyDecision(
-                          { type: "REVERT", decisionId: decision.id },
-                          null
-                        )
-                      }
-                    />
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-          )}
-        </Section>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Section>
+        ) : null}
       </div>
     </article>
+  );
+}
+
+function ApproveConcept({
+  conceptId,
+  name,
+  onApplyDecision,
+  onApproved,
+}: {
+  conceptId: string;
+  name: string;
+  onApplyDecision: NonNullable<ConceptDetailProps["onApplyDecision"]>;
+  onApproved: (message: string) => void;
+}): ReactNode {
+  return (
+    <ConfirmDialog
+      trigger={
+        <Button type="button" size="sm">
+          Approve
+        </Button>
+      }
+      title={`Approve ${name}?`}
+      description="Its names become active, so imports resolve to it, and it appears on the ingredients page. Affected mentions are reinterpreted."
+      confirmLabel="Approve"
+      onConfirm={async () => {
+        const result = await onApplyDecision(
+          { type: "APPROVE_CONCEPT", conceptId },
+          null
+        );
+        if (result.success) onApproved(result.data?.summary ?? "Approved");
+        return result;
+      }}
+    />
   );
 }

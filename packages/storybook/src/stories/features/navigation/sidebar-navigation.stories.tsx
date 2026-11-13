@@ -10,7 +10,7 @@ const meta = {
   },
   tags: ["autodocs"],
   args: {
-    navigationItems: getNavigationItems(true),
+    navigationItems: getNavigationItems({ isAdmin: true, canCurate: true }),
     pathname: "/notes",
     signOut: async () => {
       console.log("Sign out");

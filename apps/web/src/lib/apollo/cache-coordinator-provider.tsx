@@ -27,7 +27,11 @@ export function CacheCoordinatorProvider({
 }) {
   const client = useApolloClient();
   const coordinator = useMemo(() => createCacheCoordinator(client), [client]);
-  useEffect(() => () => coordinator.dispose(), [coordinator]);
+  useEffect(() => {
+    // React can clean up and re-run this effect on the same memoized instance (StrictMode, dev remounts)
+    coordinator.resume();
+    return () => coordinator.dispose();
+  }, [coordinator]);
   return (
     <CacheCoordinatorContext.Provider value={coordinator}>
       {children}

@@ -14,6 +14,7 @@ const searchSchema = z.object({
   q: optionalText,
   category: optionalText,
   tag: optionalText,
+  concept: optionalText,
   page: optionalPage,
 });
 
@@ -26,6 +27,7 @@ export const Route = createFileRoute("/_authed/recipes/")({
         query: deps.q ?? null,
         category: deps.category ?? null,
         tag: deps.tag ?? null,
+        conceptId: deps.concept ?? null,
         page: deps.page ?? 1,
       },
     }),
@@ -54,7 +56,12 @@ function RecipesPage() {
   return (
     <RecipesListPageContent
       data={data.recipes}
-      filters={{ query: search.q, category: search.category, tag: search.tag }}
+      filters={{
+        query: search.q,
+        category: search.category,
+        tag: search.tag,
+        conceptId: search.concept,
+      }}
       options={data.recipeTaxonomy}
       onPromoteCompletedNotes={
         viewer.isAdmin ? promoteCompletedNotes : undefined

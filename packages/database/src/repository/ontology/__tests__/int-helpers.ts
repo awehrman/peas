@@ -21,7 +21,8 @@ export async function resetDatabase(): Promise<void> {
       "LexiconRevision", "FoodConcept", "LexiconEntry", "AttributeDefinition", "PreparationOperation",
       "FoodRelationship", "FoodClassification", "Discovery", "LexiconDecision", "LegacyIngredientMapping",
       "IngredientMention", "ParsedIngredientLine", "Note", "User", "ConceptMergeRecord", "FoodSubstitution", "FoodProduct",
-      "Ingredient", "Alias", "IngredientProperty", "IngredientCategory", "IngredientTag", "Brand"
+      "Ingredient", "Alias", "IngredientProperty", "IngredientCategory", "IngredientTag", "Brand",
+      "ReinterpretRun", "Recipe", "CorpusHealthSnapshot"
     RESTART IDENTITY CASCADE
   `);
 }

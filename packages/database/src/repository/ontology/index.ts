@@ -3,8 +3,13 @@ export * from "./apply-decision.js";
 export * from "./attributes.js";
 export * from "./backfill.js";
 export * from "./classifications.js";
+export * from "./concept-editing.js";
 export * from "./concepts.js";
+export * from "./corpus-health.js";
 export * from "./decisions.js";
+export * from "./grammar-loop.js";
+export * from "./health-trends.js";
+export * from "./ingredient-card.js";
 export * from "./discoveries.js";
 export {
   type DbClient,
@@ -22,6 +27,7 @@ export * from "./lexicon.js";
 export * from "./mentions.js";
 export * from "./merge.js";
 export * from "./preview.js";
+export * from "./reinterpret-runs.js";
 export * from "./relationships.js";
 export * from "./resolver-context.js";
 export * from "./revision.js";

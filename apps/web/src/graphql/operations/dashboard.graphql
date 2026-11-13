@@ -3,8 +3,8 @@ query DashboardStats {
     noteCount
     recipeCount
     notesReadyToPromote
-    ingredientCount
-    reviewedIngredientCount
+    conceptCount
+    verifiedConceptCount
     instructionLineCount
     notesByStatus {
       pending
@@ -21,8 +21,8 @@ query DashboardStats {
       markedCorrect
       markedIncorrect
     }
-    topIngredients {
-      ingredientId
+    topConcepts {
+      conceptId
       name
       lineCount
     }

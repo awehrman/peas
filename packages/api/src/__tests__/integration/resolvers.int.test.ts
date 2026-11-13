@@ -6,37 +6,24 @@ import {
   resetDatabase,
 } from "./helpers.js";
 
-import { prisma } from "@peas/database";
-import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import { createConcept, prisma } from "@peas/database";
+import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { AuthUser } from "../../auth/session.js";
 import { createApiServer } from "../../server.js";
 
-const server = createApiServer({ development: false });
-
-const SAVE_INGREDIENT = `
-  mutation ($input: IngredientSaveInput!) {
-    saveIngredient(input: $input) { success message nextId effect { changed { typename id } invalidatedDomains } }
-  }
-`;
-
-function saveInput(id: string, overrides: Record<string, unknown> = {}) {
+const curation = vi.hoisted(() => ({ isOpen: true }));
+vi.mock("../../context.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../context.js")>();
   return {
-    id,
-    name: "garlic",
-    plural: null,
-    properties: ["VEGAN", "VEGETABLE"],
-    isComposedIngredient: false,
-    parentIngredientId: null,
-    substitutionIds: [],
-    aliases: ["ajo"],
-    category: "Alliums",
-    tags: ["Pantry"],
-    markReviewed: true,
-    advanceToNext: true,
-    ...overrides,
+    ...actual,
+    canCurateKnowledge: (
+      viewer: Parameters<typeof actual.canCurateKnowledge>[0]
+    ) => curation.isOpen || actual.isAdmin(viewer),
   };
-}
+});
+
+const server = createApiServer({ development: false });
 
 describe.skipIf(!hasTestDatabase)(
   "GraphQL resolvers against the database (integration)",
@@ -46,6 +33,7 @@ describe.skipIf(!hasTestDatabase)(
 
     beforeEach(async () => {
       await resetDatabase();
+      curation.isOpen = true;
       user = await createUser({ username: "cook" });
       admin = await createUser({ username: "boss", admin: true });
     });
@@ -249,118 +237,93 @@ describe.skipIf(!hasTestDatabase)(
       });
     });
 
-    describe("ingredients", () => {
-      it("creates, edits, reviews, and searches ingredients", async () => {
-        const created = await execute<{
-          createIngredient: { success: boolean; id: string };
+    describe("concepts", () => {
+      it("lets everyone read concepts, and only curators edit classifications, tags, and substitutions", async () => {
+        const butter = await createConcept(prisma, {
+          canonicalName: "butter",
+          status: "VERIFIED",
+        });
+        const ghee = await createConcept(prisma, {
+          canonicalName: "ghee",
+          status: "VERIFIED",
+        });
+        const CONCEPT = `query ($id: ID!) { concept(id: $id) { canonicalName tags classifications { key value isExplicit } substitutions { concept { canonicalName } ratio } decisions { id } } }`;
+
+        curation.isOpen = false;
+        const denied = await execute<{
+          setConceptTags: { success: boolean; message: string };
         }>(
           server,
           user,
-          `mutation { createIngredient(input: { name: "garlic", plural: "garlics" }) { success id } }`
+          `mutation ($id: ID!) { setConceptTags(conceptId: $id, tags: ["fridge"]) { success message } }`,
+          { id: butter.id }
         );
-        const garlicId = created.data!.createIngredient.id;
-        const shallot = await execute<{ createIngredient: { id: string } }>(
+        expect(denied.data?.setConceptTags).toEqual({
+          success: false,
+          message: "You can't edit concepts yet",
+        });
+        curation.isOpen = true;
+
+        const edits = await execute<Record<string, { success: boolean }>>(
           server,
-          user,
-          `mutation { createIngredient(input: { name: "shallot", plural: null }) { id } }`
+          admin,
+          `mutation ($id: ID!, $ghee: ID!) {
+            tags: setConceptTags(conceptId: $id, tags: ["fridge", "baking"]) { success }
+            vegan: setConceptClassification(input: { conceptId: $id, kind: DIETARY, key: "VEGAN", value: FALSE }) { success }
+            category: setConceptClassification(input: { conceptId: $id, kind: CATEGORY, key: "CATEGORY:Dairy", value: TRUE }) { success }
+            swap: setConceptSubstitution(input: { conceptId: $id, substituteId: $ghee, ratio: "1:1" }) { success }
+          }`,
+          { id: butter.id, ghee: ghee.id }
+        );
+        expect(edits.errors).toBeUndefined();
+        expect(
+          Object.values(edits.data ?? {}).every((row) => row.success)
+        ).toBe(true);
+
+        const read = await execute<{
+          concept: {
+            tags: string[];
+            classifications: { key: string; isExplicit: boolean }[];
+            substitutions: {
+              concept: { canonicalName: string };
+              ratio: string;
+            }[];
+            decisions: unknown[];
+          };
+        }>(server, user, CONCEPT, { id: butter.id });
+        expect(read.data?.concept).toMatchObject({
+          canonicalName: "butter",
+          tags: ["baking", "fridge"],
+          substitutions: [{ concept: { canonicalName: "ghee" }, ratio: "1:1" }],
+          decisions: [],
+        });
+        expect(read.data?.concept.classifications).toEqual(
+          expect.arrayContaining([
+            { key: "VEGAN", value: "FALSE", isExplicit: true },
+            { key: "CATEGORY:Dairy", value: "TRUE", isExplicit: true },
+          ])
         );
 
-        const duplicate = await execute(
+        const removed = await execute<Record<string, { success: boolean }>>(
           server,
-          user,
-          `mutation { createIngredient(input: { name: "Garlic" }) { success message } }`
+          admin,
+          `mutation ($id: ID!, $ghee: ID!) {
+            vegan: removeConceptClassification(conceptId: $id, key: "VEGAN") { success }
+            swap: removeConceptSubstitution(conceptId: $id, substituteId: $ghee) { success }
+          }`,
+          { id: butter.id, ghee: ghee.id }
         );
-        expect(duplicate.data).toEqual({
-          createIngredient: {
-            success: false,
-            message: 'An ingredient named "Garlic" already exists',
-          },
+        expect(removed.data).toEqual({
+          vegan: { success: true },
+          swap: { success: true },
         });
 
-        const saved = await execute<{
-          saveIngredient: { success: boolean; nextId: string | null };
-        }>(server, user, SAVE_INGREDIENT, {
-          input: saveInput(garlicId),
-        });
-        expect(saved.data?.saveIngredient).toMatchObject({
-          success: true,
-          nextId: shallot.data!.createIngredient.id,
-        });
-
-        const detail = await execute<{ ingredient: Record<string, unknown> }>(
-          server,
-          user,
-          `query ($id: ID!) { ingredient(id: $id) { name isReviewed properties category tags aliases { name } } }`,
-          { id: garlicId }
-        );
-        expect(detail.data?.ingredient).toEqual({
-          name: "garlic",
-          isReviewed: true,
-          properties: expect.arrayContaining(["VEGAN", "VEGETABLE"]),
-          category: "Alliums",
-          tags: ["pantry"],
-          aliases: [{ name: "ajo" }],
-        });
-
-        const lists = await execute<{
-          ingredients: { name: string }[];
-          ingredientCounts: { all: number; unreviewed: number };
-          ingredientCategoryNames: string[];
-        }>(
-          server,
-          user,
-          `{ ingredients(view: unreviewed) { name } ingredientCounts { all unreviewed } ingredientCategoryNames }`
-        );
-        expect(lists.data).toEqual({
-          ingredients: [{ name: "shallot" }],
-          ingredientCounts: { all: 2, unreviewed: 1 },
-          ingredientCategoryNames: ["Alliums"],
-        });
-
-        const search = await execute<{ searchIngredients: { name: string }[] }>(
-          server,
-          user,
-          `{ searchIngredients(query: "ajo") { name } }`
-        );
-        expect(search.data?.searchIngredients).toEqual([{ name: "garlic" }]);
-        const excluded = await execute<{
-          searchIngredients: { name: string }[];
-        }>(
-          server,
-          user,
-          `query ($id: ID) { searchIngredients(query: "garl", excludeId: $id) { name } }`,
-          { id: garlicId }
-        );
-        expect(excluded.data?.searchIngredients).toEqual([]);
-      });
-
-      it("rejects invalid edits with readable messages", async () => {
-        const created = await execute<{ createIngredient: { id: string } }>(
-          server,
-          user,
-          `mutation { createIngredient(input: { name: "leek" }) { id } }`
-        );
-        const id = created.data!.createIngredient.id;
-
-        const ownParent = await execute(server, user, SAVE_INGREDIENT, {
-          input: saveInput(id, { name: "leek", parentIngredientId: id }),
-        });
-        expect(ownParent.data).toMatchObject({
-          saveIngredient: {
-            success: false,
-            message: "An ingredient cannot be its own parent",
-          },
-        });
-
-        const samePlural = await execute(server, user, SAVE_INGREDIENT, {
-          input: saveInput(id, { name: "leek", plural: "Leek" }),
-        });
-        expect(samePlural.data).toMatchObject({
-          saveIngredient: {
-            success: false,
-            message: "plural: Plural must be different from the name",
-          },
-        });
+        const search = await execute<{
+          searchConcepts: { canonicalName: string }[];
+        }>(server, user, `{ searchConcepts(query: "gh") { canonicalName } }`);
+        expect(search.data?.searchConcepts).toEqual([
+          { canonicalName: "ghee" },
+        ]);
       });
     });
 
@@ -415,6 +378,64 @@ describe.skipIf(!hasTestDatabase)(
         });
         expect(await prisma.note.count()).toBe(0);
         expect(await prisma.user.count()).toBe(2);
+      });
+
+      it("keeps food knowledge and decided review cards, and drops cards left without lines", async () => {
+        await prisma.discovery.deleteMany({});
+        const { id: conceptId } = await createConcept(prisma, {
+          canonicalName: "cleanup parsnip",
+          status: "VERIFIED",
+        });
+        const card = (
+          key: string,
+          status: "OPEN" | "DEFERRED" | "RESOLVED"
+        ) => ({
+          type: "UNKNOWN_FOOD_PHRASE" as const,
+          key,
+          status,
+          payload: { type: "UNKNOWN_FOOD_PHRASE", phrase: key, headToken: key },
+          mentionCount: 3,
+          firstSeenRevision: 1,
+          lastSeenRevision: 1,
+        });
+        await prisma.discovery.createMany({
+          data: [
+            card("cleanup open", "OPEN"),
+            card("cleanup deferred", "DEFERRED"),
+            card("cleanup resolved", "RESOLVED"),
+          ],
+        });
+        await prisma.reinterpretRun.create({
+          data: {
+            jobId: "reinterpret-99",
+            kind: "REINTERPRET_BY_REVISION",
+            revision: 99,
+          },
+        });
+
+        const result = await execute<{
+          cleanupAllData: { deletedCounts: { key: string; count: number }[] };
+        }>(
+          server,
+          admin,
+          "mutation { cleanupAllData { deletedCounts { key count } } }"
+        );
+        expect(result.data?.cleanupAllData.deletedCounts).toEqual(
+          expect.arrayContaining([
+            { key: "discoveries", count: 2 },
+            { key: "reinterpretRuns", count: 1 },
+          ])
+        );
+        expect(
+          (await prisma.discovery.findMany({ select: { key: true } })).map(
+            (row) => row.key
+          )
+        ).toEqual(["cleanup resolved"]);
+        expect(
+          await prisma.foodConcept.findUnique({ where: { id: conceptId } })
+        ).not.toBeNull();
+        expect(await prisma.reinterpretRun.count()).toBe(0);
+        await prisma.discovery.deleteMany({});
       });
     });
   }

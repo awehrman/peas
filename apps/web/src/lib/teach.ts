@@ -2,8 +2,12 @@ import {
   ApplyDecisionDocument,
   type ApplyDecisionMutation,
   DeferDiscoveryDocument,
+  MarkDiscoveryAsNoiseDocument,
   PreviewDecisionDocument,
+  RunExploratorySweepDocument,
   SearchConceptsDocument,
+  StartReparseDocument,
+  TakeHealthSnapshotDocument,
 } from "~/graphql/generated";
 import { useMutationAction } from "~/lib/apollo/cache-coordinator-provider";
 
@@ -97,6 +101,14 @@ export function useTeachActions() {
     payload: (result) => result.deferDiscovery,
   });
 
+  const onMarkNoise = useMutationAction(MarkDiscoveryAsNoiseDocument, {
+    variables: (id: string) => ({ id }),
+    payload: (result) => result.markDiscoveryAsNoise,
+    result: (result) => ({
+      linesDeactivated: result.markDiscoveryAsNoise.linesDeactivated ?? 0,
+    }),
+  });
+
   const onPreviewDecision = useCallback(
     (payload: DecisionPayload) => previewDecision(client, payload),
     [client]
@@ -107,5 +119,47 @@ export function useTeachActions() {
     [client]
   );
 
-  return { onApplyDecision, onDefer, onPreviewDecision, onSearchConcepts };
+  return {
+    onApplyDecision,
+    onDefer,
+    onMarkNoise,
+    onPreviewDecision,
+    onSearchConcepts,
+  };
+}
+
+/**
+ * The Health tab's maintenance controls. A reparse's run id comes back as `effect.reprocessingJobId`, so the Knowledge layout's banner follows it.
+ *
+ * @example
+ * const { onStartReparse, onRunSweep, onTakeSnapshot } = useHealthActions();
+ */
+export function useHealthActions() {
+  const toMessage =
+    (fallback: string) => (message: string | null | undefined) => ({
+      message: message ?? fallback,
+    });
+
+  const onStartReparse = useMutationAction(StartReparseDocument, {
+    variables: () => ({}),
+    payload: (result) => result.startReparse,
+    result: (result) =>
+      toMessage("Reparse started")(result.startReparse.message),
+  });
+
+  const onRunSweep = useMutationAction(RunExploratorySweepDocument, {
+    variables: () => ({}),
+    payload: (result) => result.runExploratorySweep,
+    result: (result) =>
+      toMessage("Sweep started")(result.runExploratorySweep.message),
+  });
+
+  const onTakeSnapshot = useMutationAction(TakeHealthSnapshotDocument, {
+    variables: () => ({}),
+    payload: (result) => result.takeHealthSnapshot,
+    result: (result) =>
+      toMessage("Snapshot taken")(result.takeHealthSnapshot.message),
+  });
+
+  return { onStartReparse, onRunSweep, onTakeSnapshot };
 }

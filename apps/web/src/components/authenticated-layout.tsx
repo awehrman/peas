@@ -1,5 +1,6 @@
 import { RouterLink, RouterNavigationProvider } from "./router-navigation";
 import type { ViewerSummary } from "~/server/auth.functions";
+import { canCurateKnowledge } from "~/lib/permissions";
 import { signOutFn } from "~/server/auth.functions";
 
 import { type ReactNode, Suspense, useCallback, useMemo } from "react";
@@ -52,8 +53,12 @@ export function AuthenticatedLayout({
   const router = useRouter();
   const client = useApolloClient();
   const navigationItems = useMemo(
-    () => getNavigationItems(viewer.isAdmin),
-    [viewer.isAdmin]
+    () =>
+      getNavigationItems({
+        isAdmin: viewer.isAdmin,
+        canCurate: canCurateKnowledge(viewer),
+      }),
+    [viewer]
   );
 
   const signOut = useCallback(async () => {

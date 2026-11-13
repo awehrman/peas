@@ -1,5 +1,17 @@
 "use client";
 
+import {
+  AddIngredientDialog,
+  type CreateIngredient,
+} from "./add-ingredient-dialog";
+import {
+  type CheckIngredientName,
+  IngredientCard,
+  type SaveIngredient,
+} from "./ingredient-card";
+import { IngredientGroupList } from "./ingredient-group-list";
+import type { SearchIngredients } from "./ingredient-picker";
+
 import type { ReactNode } from "react";
 
 import { Placeholder, cn } from "@peas/components";
@@ -12,11 +24,6 @@ import type {
   IngredientGrouping,
   IngredientView,
 } from "../types";
-
-import { AddIngredientDialog, type CreateIngredient } from "./add-ingredient-dialog";
-import { IngredientCard, type SaveIngredient } from "./ingredient-card";
-import { IngredientGroupList } from "./ingredient-group-list";
-import type { SearchIngredients } from "./ingredient-picker";
 
 const INGREDIENTS_PATH = "/ingredients";
 
@@ -36,6 +43,8 @@ interface IngredientsPageContentProps {
   categoryOptions: string[];
   onSave: SaveIngredient;
   onCreate: CreateIngredient;
+  /** Checks a new alternate name against every food\'s names. */
+  onCheckName?: CheckIngredientName;
   onSearch: SearchIngredients;
 }
 
@@ -48,11 +57,16 @@ export function IngredientsPageContent({
   categoryOptions,
   onSave,
   onCreate,
+  onCheckName,
   onSearch,
 }: IngredientsPageContentProps): ReactNode {
   const { push } = useAppNavigation();
-  const params = { view: view === "all" ? undefined : view, group: grouping === "name" ? undefined : grouping };
-  const getIngredientHref = (id: string) => buildHref(INGREDIENTS_PATH, params, { id });
+  const params = {
+    view: view === "all" ? undefined : view,
+    group: grouping === "name" ? undefined : grouping,
+  };
+  const getIngredientHref = (id: string) =>
+    buildHref(INGREDIENTS_PATH, params, { id });
 
   const selectedCard = selected ? (
     <section aria-label="Selected ingredient">
@@ -63,9 +77,14 @@ export function IngredientsPageContent({
         isReviewQueue={view === "unreviewed"}
         onSave={onSave}
         onSearch={onSearch}
+        onCheckName={onCheckName}
         onSaved={({ nextId, advanced }) => {
           if (!advanced) return;
-          push(nextId ? getIngredientHref(nextId) : buildHref(INGREDIENTS_PATH, params));
+          push(
+            nextId
+              ? getIngredientHref(nextId)
+              : buildHref(INGREDIENTS_PATH, params)
+          );
         }}
       />
     </section>
@@ -77,11 +96,18 @@ export function IngredientsPageContent({
         <FilterLinks
           label="Ingredient view"
           options={[
-            { label: `View all (${counts.all})`, isActive: view === "all", href: buildHref(INGREDIENTS_PATH, { ...params, view: undefined }) },
+            {
+              label: `Approved (${counts.all})`,
+              isActive: view === "all",
+              href: buildHref(INGREDIENTS_PATH, { ...params, view: undefined }),
+            },
             {
               label: `Needs review (${counts.unreviewed})`,
               isActive: view === "unreviewed",
-              href: buildHref(INGREDIENTS_PATH, { ...params, view: "unreviewed" }),
+              href: buildHref(INGREDIENTS_PATH, {
+                ...params,
+                view: "unreviewed",
+              }),
             },
           ]}
         />
@@ -89,14 +115,16 @@ export function IngredientsPageContent({
           <FilterLinks
             label="Group by"
             showLabel
-            options={(Object.keys(GROUPING_LABELS) as IngredientGrouping[]).map((option) => ({
-              label: GROUPING_LABELS[option],
-              isActive: grouping === option,
-              href: buildHref(INGREDIENTS_PATH, {
-                ...params,
-                group: option === "name" ? undefined : option,
-              }),
-            }))}
+            options={(Object.keys(GROUPING_LABELS) as IngredientGrouping[]).map(
+              (option) => ({
+                label: GROUPING_LABELS[option],
+                isActive: grouping === option,
+                href: buildHref(INGREDIENTS_PATH, {
+                  ...params,
+                  group: option === "name" ? undefined : option,
+                }),
+              })
+            )}
           />
           <AddIngredientDialog
             onCreate={onCreate}
@@ -109,7 +137,11 @@ export function IngredientsPageContent({
         {groups.length === 0 ? (
           <div className="flex flex-col gap-6">
             <Placeholder
-              label={view === "unreviewed" ? "Every ingredient has been reviewed." : "No ingredients yet. Import some notes to get started."}
+              label={
+                view === "unreviewed"
+                  ? "Every ingredient has been reviewed."
+                  : "No approved ingredients yet. Add one, or approve proposed foods under Needs review."
+              }
               icon={<Carrot />}
             />
             {selectedCard}
@@ -117,7 +149,7 @@ export function IngredientsPageContent({
         ) : (
           <IngredientGroupList
             groups={groups}
-            selectedId={selected?.id}
+            selectedId={listAnchorId(groups, selected)}
             selectedCard={selectedCard}
             getIngredientHref={getIngredientHref}
           />
@@ -133,10 +165,16 @@ interface FilterLinksProps {
   options: { label: string; href: string; isActive: boolean }[];
 }
 
-function FilterLinks({ label, showLabel = false, options }: FilterLinksProps): ReactNode {
+function FilterLinks({
+  label,
+  showLabel = false,
+  options,
+}: FilterLinksProps): ReactNode {
   return (
     <nav aria-label={label} className="flex items-center gap-2">
-      {showLabel ? <span className="text-sm text-greyscale-600">{label}:</span> : null}
+      {showLabel ? (
+        <span className="text-sm text-greyscale-600">{label}:</span>
+      ) : null}
       <ul className="flex flex-wrap gap-4">
         {options.map((option) => (
           <li key={option.label}>
@@ -157,4 +195,24 @@ function FilterLinks({ label, showLabel = false, options }: FilterLinksProps): R
       </ul>
     </nav>
   );
+}
+
+/**
+ * Where the selected card sits in the list: beside the food itself, or, for a food outside the current view (an approved variant opened from the needs-review list), beside its base food.
+ *
+ * @example
+ * listAnchorId(groups, cannedTomatoes) // canned tomatoes' id, or tomato's when canned tomatoes isn't listed
+ */
+function listAnchorId(
+  groups: IngredientGroup[],
+  selected: IngredientDetail | null
+): string | undefined {
+  if (!selected) return undefined;
+  const listed = new Set(
+    groups.flatMap((group) => group.ingredients.map((item) => item.id))
+  );
+  if (listed.has(selected.id)) return selected.id;
+  return selected.relationships.find((relation) =>
+    listed.has(relation.ingredient.id)
+  )?.ingredient.id;
 }

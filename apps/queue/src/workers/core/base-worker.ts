@@ -126,6 +126,15 @@ export abstract class BaseWorker<
   ): Promise<void> {}
 
   /**
+   * Extra fields for this job's entry in systemMonitor, e.g. how an ingredient line parsed
+   */
+  protected getJobMetricsMetadata(
+    _result: TResult
+  ): Record<string, unknown> | undefined {
+    return undefined;
+  }
+
+  /**
    * Lifecycle hook: called if job processing throws
    */
   protected async onJobError(
@@ -264,7 +273,9 @@ export abstract class BaseWorker<
           totalDuration,
           true,
           context.queueName,
-          context.workerName
+          context.workerName,
+          undefined,
+          this.getJobMetricsMetadata(result as TResult)
         );
         this.dependencies.logger.log(
           `${this.getOperationName()} completed for job ${context.jobId} in ${totalDuration}ms`,

@@ -29,15 +29,15 @@ async function main(): Promise<void> {
   const batchSize = Number.parseInt(values.batch, 10);
   if (!Number.isInteger(batchSize) || batchSize < 1) throw new Error("--batch must be a positive integer");
 
+  const snapshot = await loadResolverSnapshot();
   let prefilter: { phrases: string[]; conceptIds: string[] } | undefined;
   if (values.decision) {
     const decision = await prisma.lexiconDecision.findUnique({ where: { id: values.decision }, select: { payload: true } });
     if (!decision) throw new Error(`Decision ${values.decision} does not exist`);
-    const scope = decisionScope(DecisionPayloadSchema.parse(decision.payload));
+    const scope = decisionScope(DecisionPayloadSchema.parse(decision.payload), snapshot);
     prefilter = { phrases: scope.phrases, conceptIds: scope.conceptIds };
   }
 
-  const snapshot = await loadResolverSnapshot();
   console.log(`Reinterpreting lines older than revision ${revision} at revision ${snapshot.revision}`);
   const totals = await backfillMentions(buildResolverContext(snapshot), {
     batchSize,

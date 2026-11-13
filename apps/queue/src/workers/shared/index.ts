@@ -3,8 +3,6 @@ export * from "./error-handling";
 export * from "./retry";
 export * from "./action-registry";
 export * from "./completion-status-action";
-export * from "./database-operations";
 export * from "./worker-factory";
 export * from "./constants";
 export * from "./status-utils";
-// Pattern tracker moved to services/pattern-tracking/

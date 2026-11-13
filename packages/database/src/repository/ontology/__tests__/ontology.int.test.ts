@@ -254,7 +254,10 @@ describe.skipIf(!hasTestDatabase)("ontology repositories (integration)", () => {
         (await getEffectiveClassifications(buttermilk)).map(
           ({ key, source }) => ({ key, source })
         )
-      ).toEqual([{ key: "ALLERGEN_MILK", source: "INHERITED" }]);
+      ).toEqual([
+        { key: "ALLERGEN_MILK", source: "INHERITED" },
+        { key: "DAIRY", source: "INHERITED" },
+      ]);
 
       await prisma.$transaction((tx) =>
         setClassification(tx, {
@@ -272,6 +275,12 @@ describe.skipIf(!hasTestDatabase)("ontology repositories (integration)", () => {
           value: "FALSE",
           source: "EXPLICIT",
         },
+        expect.objectContaining({
+          kind: "FOOD_GROUP",
+          key: "DAIRY",
+          value: "TRUE",
+          source: "INHERITED",
+        }),
       ]);
       expect(detail?.parents.map((parent) => parent.canonicalName)).toEqual([
         "milk",

@@ -14,8 +14,8 @@ import {
   Input,
   Label,
 } from "@peas/components";
-import pluralize from "pluralize";
 import { Plus, Sparkles } from "lucide-react";
+import pluralize from "pluralize";
 
 import { InlineError, type MutationAction, useMutation } from "../../shared";
 import type { IngredientCreateInput } from "../types";
@@ -59,7 +59,10 @@ export function AddIngredientDialog({
     setHasSubmitted(true);
     if (hasErrors) return;
 
-    const result = await create.run({ name: name.trim(), plural: plural.trim() || null });
+    const result = await create.run({
+      name: name.trim(),
+      plural: plural.trim() || null,
+    });
     if (result.success && result.data) {
       handleOpenChange(false);
       onCreated(result.data.id);
@@ -75,11 +78,16 @@ export function AddIngredientDialog({
         </Button>
       </DialogTrigger>
       <DialogContent>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
+        <form
+          onSubmit={handleSubmit}
+          className="flex flex-col gap-4"
+          noValidate
+        >
           <DialogHeader>
             <DialogTitle>Add ingredient</DialogTitle>
             <DialogDescription>
-              New ingredients start out unreviewed so they show up in the review queue.
+              New ingredients start out unreviewed so they show up in the review
+              queue.
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-2">
@@ -90,11 +98,18 @@ export function AddIngredientDialog({
               required
               autoFocus
               aria-invalid={hasSubmitted && !!errors.name}
-              aria-describedby={hasSubmitted && errors.name ? "new-ingredient-name-error" : undefined}
+              aria-describedby={
+                hasSubmitted && errors.name
+                  ? "new-ingredient-name-error"
+                  : undefined
+              }
               onChange={(event) => setName(event.target.value)}
             />
             {hasSubmitted && errors.name ? (
-              <p id="new-ingredient-name-error" className="text-xs text-error-700">
+              <p
+                id="new-ingredient-name-error"
+                className="text-xs text-error-700"
+              >
                 {errors.name}
               </p>
             ) : null}
@@ -106,7 +121,9 @@ export function AddIngredientDialog({
                 id="new-ingredient-plural"
                 value={plural}
                 aria-invalid={!!errors.plural}
-                aria-describedby={errors.plural ? "new-ingredient-plural-error" : undefined}
+                aria-describedby={
+                  errors.plural ? "new-ingredient-plural-error" : undefined
+                }
                 onChange={(event) => setPlural(event.target.value)}
               />
               <Button
@@ -121,14 +138,21 @@ export function AddIngredientDialog({
               </Button>
             </div>
             {errors.plural ? (
-              <p id="new-ingredient-plural-error" className="text-xs text-error-700">
+              <p
+                id="new-ingredient-plural-error"
+                className="text-xs text-error-700"
+              >
                 {errors.plural}
               </p>
             ) : null}
           </div>
           <InlineError message={create.error} />
           <DialogFooter>
-            <Button type="button" variant="ghost" onClick={() => handleOpenChange(false)}>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => handleOpenChange(false)}
+            >
               Cancel
             </Button>
             <Button type="submit" disabled={create.isPending}>

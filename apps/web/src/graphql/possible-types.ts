@@ -5,11 +5,13 @@ export type PossibleTypesResultData = {
       "BasicPayload",
       "CleanupAllDataPayload",
       "CreateIngredientPayload",
+      "MarkNoisePayload",
       "PromoteCompletedNotesPayload",
       "PromoteNotePayload",
       "RefreshDiscoveriesPayload",
       "SaveIngredientPayload",
-      "SetLineReviewStatusPayload"
+      "SetLineReviewStatusPayload",
+      "StartJobPayload"
     ]
   }
 };
@@ -20,11 +22,13 @@ const result: PossibleTypesResultData = {
       "BasicPayload",
       "CleanupAllDataPayload",
       "CreateIngredientPayload",
+      "MarkNoisePayload",
       "PromoteCompletedNotesPayload",
       "PromoteNotePayload",
       "RefreshDiscoveriesPayload",
       "SaveIngredientPayload",
-      "SetLineReviewStatusPayload"
+      "SetLineReviewStatusPayload",
+      "StartJobPayload"
     ]
   }
 };
