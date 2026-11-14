@@ -15,15 +15,43 @@ export async function cleanupLocalFiles(
       `[CLEANUP_LOCAL_FILES] Starting cleanup for note: ${data.noteId}`
     );
 
-    // List of files to clean up
-    const filesToCleanup = [
-      { path: data.imagePath, name: "original uploaded" },
-      { path: data.originalPath, name: "processed original" },
-      { path: data.thumbnailPath, name: "thumbnail" },
-      { path: data.crop3x2Path, name: "crop3x2" },
-      { path: data.crop4x3Path, name: "crop4x3" },
-      { path: data.crop16x9Path, name: "crop16x9" },
+    // Processed files without an R2 copy are served from local disk, so keep them
+    const localFiles = [
+      { path: data.imagePath, name: "original uploaded", shouldDelete: true },
+      {
+        path: data.originalPath,
+        name: "processed original",
+        shouldDelete: Boolean(data.r2OriginalUrl),
+      },
+      {
+        path: data.thumbnailPath,
+        name: "thumbnail",
+        shouldDelete: Boolean(data.r2ThumbnailUrl),
+      },
+      {
+        path: data.crop3x2Path,
+        name: "crop3x2",
+        shouldDelete: Boolean(data.r2Crop3x2Url),
+      },
+      {
+        path: data.crop4x3Path,
+        name: "crop4x3",
+        shouldDelete: Boolean(data.r2Crop4x3Url),
+      },
+      {
+        path: data.crop16x9Path,
+        name: "crop16x9",
+        shouldDelete: Boolean(data.r2Crop16x9Url),
+      },
     ];
+    const filesToCleanup = localFiles.filter((file) => file.shouldDelete);
+
+    const keptCount = localFiles.length - filesToCleanup.length;
+    if (keptCount > 0) {
+      logger.log(
+        `[CLEANUP_LOCAL_FILES] Keeping ${keptCount} processed file(s) for local serving`
+      );
+    }
 
     const cleanupResults = await Promise.allSettled(
       filesToCleanup.map(async ({ path: filePath, name }) => {

@@ -8,7 +8,7 @@ export * from "./shared";
 export * from "./note";
 export * from "./instruction";
 export * from "./ingredient";
-export * from "./pattern-tracking";
+export * from "./reinterpret";
 
 // Explicitly re-export BaseJobData to avoid conflicts
 export type { BaseJobData } from "./types";
@@ -17,4 +17,4 @@ export type { BaseJobData } from "./types";
 export { createNoteWorker } from "./note";
 export { createInstructionWorker } from "./instruction";
 export { createIngredientWorker } from "./ingredient";
-export { createPatternTrackingWorker } from "./pattern-tracking";
+export { createReinterpretWorker } from "./reinterpret";

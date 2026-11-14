@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import {
   createConsoleSpies,
@@ -24,13 +24,13 @@ import type { BaseJobData } from "../../../types";
 // Test action that succeeds on first try
 class SuccessAction extends BaseAction<
   BaseJobData,
-  { logger: { log: ReturnType<typeof vi.fn> } }
+  { logger: { log: Mock } }
 > {
   name = ActionName.NO_OP;
 
   async execute(
     data: BaseJobData,
-    _deps: { logger: { log: ReturnType<typeof vi.fn> } },
+    _deps: { logger: { log: Mock } },
     _context: ActionContext
   ): Promise<BaseJobData> {
     return { ...data, metadata: { ...data.metadata, success: true } };
@@ -44,13 +44,13 @@ class SuccessAction extends BaseAction<
 // Test action that fails consistently
 class FailureAction extends BaseAction<
   BaseJobData,
-  { logger: { log: ReturnType<typeof vi.fn> } }
+  { logger: { log: Mock } }
 > {
   name = ActionName.VALIDATION;
 
   async execute(
     _data: BaseJobData,
-    _deps: { logger: { log: ReturnType<typeof vi.fn> } },
+    _deps: { logger: { log: Mock } },
     _context: ActionContext
   ): Promise<BaseJobData> {
     throw new Error("Persistent failure");
@@ -64,7 +64,7 @@ class FailureAction extends BaseAction<
 // Test action that succeeds after a few failures
 class EventuallySuccessAction extends BaseAction<
   BaseJobData,
-  { logger: { log: ReturnType<typeof vi.fn> } }
+  { logger: { log: Mock } }
 > {
   name = ActionName.LOGGING;
   private attemptCount = 0;
@@ -77,7 +77,7 @@ class EventuallySuccessAction extends BaseAction<
 
   async execute(
     data: BaseJobData,
-    _deps: { logger: { log: ReturnType<typeof vi.fn> } },
+    _deps: { logger: { log: Mock } },
     _context: ActionContext
   ): Promise<BaseJobData> {
     this.attemptCount++;
@@ -100,8 +100,8 @@ class EventuallySuccessAction extends BaseAction<
 }
 
 describe("RetryAction", () => {
-  let mockLogger: { log: ReturnType<typeof vi.fn> };
-  let mockDeps: { logger: { log: ReturnType<typeof vi.fn> } };
+  let mockLogger: { log: Mock };
+  let mockDeps: { logger: { log: Mock } };
   let mockContext: ActionContext;
   let mockData: BaseJobData;
   let consoleSpies: ReturnType<typeof createConsoleSpies>;
@@ -193,13 +193,13 @@ describe("RetryAction", () => {
     it("should handle non-Error objects thrown by action", async () => {
       const throwingAction = new (class extends BaseAction<
         BaseJobData,
-        { logger: { log: ReturnType<typeof vi.fn> } }
+        { logger: { log: Mock } }
       > {
         name = ActionName.NO_OP;
 
         async execute(
           _data: BaseJobData,
-          _deps: { logger: { log: ReturnType<typeof vi.fn> } },
+          _deps: { logger: { log: Mock } },
           _context: ActionContext
         ): Promise<BaseJobData> {
           throw "String error";
@@ -294,8 +294,8 @@ describe("RetryAction", () => {
 });
 
 describe("wrapActionWithRetryAndErrorHandling", () => {
-  let mockLogger: { log: ReturnType<typeof vi.fn> };
-  let mockDeps: { logger: { log: ReturnType<typeof vi.fn> } };
+  let mockLogger: { log: Mock };
+  let mockDeps: { logger: { log: Mock } };
   let mockContext: ActionContext;
   let mockData: BaseJobData;
 
@@ -356,8 +356,8 @@ describe("wrapActionWithRetryAndErrorHandling", () => {
 });
 
 describe("wrapActionWithRetryAndErrorHandlingFactory", () => {
-  let mockLogger: { log: ReturnType<typeof vi.fn> };
-  let mockDeps: { logger: { log: ReturnType<typeof vi.fn> } };
+  let mockLogger: { log: Mock };
+  let mockDeps: { logger: { log: Mock } };
   let mockContext: ActionContext;
   let mockData: BaseJobData;
 
@@ -378,7 +378,7 @@ describe("wrapActionWithRetryAndErrorHandlingFactory", () => {
   it("should create retry wrapper from factory", () => {
     const actionFactory = new ActionFactory<
       BaseJobData,
-      { logger: { log: ReturnType<typeof vi.fn> } }
+      { logger: { log: Mock } }
     >();
     actionFactory.register(ActionName.NO_OP, () => new SuccessAction());
 
@@ -393,7 +393,7 @@ describe("wrapActionWithRetryAndErrorHandlingFactory", () => {
   it("should execute wrapped action from factory", async () => {
     const actionFactory = new ActionFactory<
       BaseJobData,
-      { logger: { log: ReturnType<typeof vi.fn> } }
+      { logger: { log: Mock } }
     >();
     actionFactory.register(ActionName.NO_OP, () => new SuccessAction());
 
@@ -413,7 +413,7 @@ describe("wrapActionWithRetryAndErrorHandlingFactory", () => {
   it("should retry failed actions from factory", async () => {
     const actionFactory = new ActionFactory<
       BaseJobData,
-      { logger: { log: ReturnType<typeof vi.fn> } }
+      { logger: { log: Mock } }
     >();
     actionFactory.register(
       ActionName.LOGGING,
@@ -440,7 +440,7 @@ describe("wrapActionWithRetryAndErrorHandlingFactory", () => {
 });
 
 describe("createRetryWrapper", () => {
-  let mockLogger: { log: ReturnType<typeof vi.fn> };
+  let mockLogger: { log: Mock };
   let mockDeps: RetryDeps;
   let mockContext: ActionContext;
   let mockData: RetryData;

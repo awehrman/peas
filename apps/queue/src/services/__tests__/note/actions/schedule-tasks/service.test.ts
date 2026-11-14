@@ -8,9 +8,11 @@ import { scheduleAllFollowupTasks } from "../../../../note/actions/schedule-task
 
 // Mock the ProcessSourceAction
 vi.mock("../../../../note/actions/process-source/action", () => ({
-  ProcessSourceAction: vi.fn().mockImplementation(() => ({
-    execute: vi.fn().mockResolvedValue({}),
-  })),
+  ProcessSourceAction: vi.fn().mockImplementation(function () {
+    return {
+      execute: vi.fn().mockResolvedValue({}),
+    };
+  }),
 }));
 
 describe("scheduleAllFollowupTasks", () => {
@@ -84,17 +86,18 @@ describe("scheduleAllFollowupTasks", () => {
     } as NoteWorkerDependencies;
 
     // Get mocked ProcessSourceAction
-    const processSourceModule = await import(
-      "../../../../note/actions/process-source/action"
-    );
+    const processSourceModule =
+      await import("../../../../note/actions/process-source/action");
     mockProcessSourceAction = vi.mocked(
       processSourceModule.ProcessSourceAction
     );
 
     // Setup default mock implementations
-    mockProcessSourceAction.mockImplementation(() => ({
-      execute: vi.fn().mockResolvedValue(mockData),
-    }));
+    mockProcessSourceAction.mockImplementation(function () {
+      return {
+        execute: vi.fn().mockResolvedValue(mockData),
+      };
+    });
   });
 
   describe("basic functionality", () => {
@@ -122,9 +125,11 @@ describe("scheduleAllFollowupTasks", () => {
 
     it("should execute ProcessSourceAction with correct parameters", async () => {
       const mockExecute = vi.fn().mockResolvedValue(mockData);
-      mockProcessSourceAction.mockImplementation(() => ({
-        execute: mockExecute,
-      }));
+      mockProcessSourceAction.mockImplementation(function () {
+        return {
+          execute: mockExecute,
+        };
+      });
 
       await scheduleAllFollowupTasks(mockData, mockLogger, mockDeps);
 
@@ -141,9 +146,11 @@ describe("scheduleAllFollowupTasks", () => {
 
     it("should create context with correct properties", async () => {
       const mockExecute = vi.fn().mockResolvedValue(mockData);
-      mockProcessSourceAction.mockImplementation(() => ({
-        execute: mockExecute,
-      }));
+      mockProcessSourceAction.mockImplementation(function () {
+        return {
+          execute: mockExecute,
+        };
+      });
 
       await scheduleAllFollowupTasks(mockData, mockLogger, mockDeps);
 
@@ -233,9 +240,11 @@ describe("scheduleAllFollowupTasks", () => {
 
     it("should log error message when action execution fails", async () => {
       const actionError = new Error("Action execution failed");
-      mockProcessSourceAction.mockImplementation(() => ({
-        execute: vi.fn().mockRejectedValue(actionError),
-      }));
+      mockProcessSourceAction.mockImplementation(function () {
+        return {
+          execute: vi.fn().mockRejectedValue(actionError),
+        };
+      });
 
       await expect(
         scheduleAllFollowupTasks(mockData, mockLogger, mockDeps)
@@ -247,9 +256,11 @@ describe("scheduleAllFollowupTasks", () => {
 
     it("should log error message with different error types", async () => {
       const stringError = "String error";
-      mockProcessSourceAction.mockImplementation(() => ({
-        execute: vi.fn().mockRejectedValue(stringError),
-      }));
+      mockProcessSourceAction.mockImplementation(function () {
+        return {
+          execute: vi.fn().mockRejectedValue(stringError),
+        };
+      });
 
       await expect(
         scheduleAllFollowupTasks(mockData, mockLogger, mockDeps)
@@ -263,9 +274,11 @@ describe("scheduleAllFollowupTasks", () => {
   describe("error handling", () => {
     it("should handle ProcessSourceAction execution errors", async () => {
       const actionError = new Error("Process source failed");
-      mockProcessSourceAction.mockImplementation(() => ({
-        execute: vi.fn().mockRejectedValue(actionError),
-      }));
+      mockProcessSourceAction.mockImplementation(function () {
+        return {
+          execute: vi.fn().mockRejectedValue(actionError),
+        };
+      });
 
       await expect(
         scheduleAllFollowupTasks(mockData, mockLogger, mockDeps)
@@ -273,7 +286,7 @@ describe("scheduleAllFollowupTasks", () => {
     });
 
     it("should handle ProcessSourceAction constructor errors", async () => {
-      mockProcessSourceAction.mockImplementation(() => {
+      mockProcessSourceAction.mockImplementation(function () {
         throw new Error("Constructor failed");
       });
 
@@ -283,9 +296,11 @@ describe("scheduleAllFollowupTasks", () => {
     });
 
     it("should handle non-Error exceptions", async () => {
-      mockProcessSourceAction.mockImplementation(() => ({
-        execute: vi.fn().mockRejectedValue("String error"),
-      }));
+      mockProcessSourceAction.mockImplementation(function () {
+        return {
+          execute: vi.fn().mockRejectedValue("String error"),
+        };
+      });
 
       await expect(
         scheduleAllFollowupTasks(mockData, mockLogger, mockDeps)
@@ -294,9 +309,11 @@ describe("scheduleAllFollowupTasks", () => {
 
     it("should handle Promise.all rejection", async () => {
       const actionError = new Error("Parallel execution failed");
-      mockProcessSourceAction.mockImplementation(() => ({
-        execute: vi.fn().mockRejectedValue(actionError),
-      }));
+      mockProcessSourceAction.mockImplementation(function () {
+        return {
+          execute: vi.fn().mockRejectedValue(actionError),
+        };
+      });
 
       await expect(
         scheduleAllFollowupTasks(mockData, mockLogger, mockDeps)
@@ -473,9 +490,11 @@ describe("scheduleAllFollowupTasks", () => {
   describe("context creation", () => {
     it("should create context with correct jobId", async () => {
       const mockExecute = vi.fn().mockResolvedValue(mockData);
-      mockProcessSourceAction.mockImplementation(() => ({
-        execute: mockExecute,
-      }));
+      mockProcessSourceAction.mockImplementation(function () {
+        return {
+          execute: mockExecute,
+        };
+      });
 
       await scheduleAllFollowupTasks(mockData, mockLogger, mockDeps);
 
@@ -485,9 +504,11 @@ describe("scheduleAllFollowupTasks", () => {
 
     it("should create context with correct queueName", async () => {
       const mockExecute = vi.fn().mockResolvedValue(mockData);
-      mockProcessSourceAction.mockImplementation(() => ({
-        execute: mockExecute,
-      }));
+      mockProcessSourceAction.mockImplementation(function () {
+        return {
+          execute: mockExecute,
+        };
+      });
 
       await scheduleAllFollowupTasks(mockData, mockLogger, mockDeps);
 
@@ -497,9 +518,11 @@ describe("scheduleAllFollowupTasks", () => {
 
     it("should create context with correct operation", async () => {
       const mockExecute = vi.fn().mockResolvedValue(mockData);
-      mockProcessSourceAction.mockImplementation(() => ({
-        execute: mockExecute,
-      }));
+      mockProcessSourceAction.mockImplementation(function () {
+        return {
+          execute: mockExecute,
+        };
+      });
 
       await scheduleAllFollowupTasks(mockData, mockLogger, mockDeps);
 
@@ -509,9 +532,11 @@ describe("scheduleAllFollowupTasks", () => {
 
     it("should create context with correct workerName", async () => {
       const mockExecute = vi.fn().mockResolvedValue(mockData);
-      mockProcessSourceAction.mockImplementation(() => ({
-        execute: mockExecute,
-      }));
+      mockProcessSourceAction.mockImplementation(function () {
+        return {
+          execute: mockExecute,
+        };
+      });
 
       await scheduleAllFollowupTasks(mockData, mockLogger, mockDeps);
 
@@ -521,9 +546,11 @@ describe("scheduleAllFollowupTasks", () => {
 
     it("should create context with correct attemptNumber", async () => {
       const mockExecute = vi.fn().mockResolvedValue(mockData);
-      mockProcessSourceAction.mockImplementation(() => ({
-        execute: mockExecute,
-      }));
+      mockProcessSourceAction.mockImplementation(function () {
+        return {
+          execute: mockExecute,
+        };
+      });
 
       await scheduleAllFollowupTasks(mockData, mockLogger, mockDeps);
 
@@ -533,9 +560,11 @@ describe("scheduleAllFollowupTasks", () => {
 
     it("should create context with current timestamp", async () => {
       const mockExecute = vi.fn().mockResolvedValue(mockData);
-      mockProcessSourceAction.mockImplementation(() => ({
-        execute: mockExecute,
-      }));
+      mockProcessSourceAction.mockImplementation(function () {
+        return {
+          execute: mockExecute,
+        };
+      });
       const beforeTime = Date.now();
 
       await scheduleAllFollowupTasks(mockData, mockLogger, mockDeps);

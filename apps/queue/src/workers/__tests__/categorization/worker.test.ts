@@ -1,6 +1,6 @@
 import type { QueueJob } from "@prisma/client";
 import { Queue } from "bullmq";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import type { IServiceContainer } from "../../../services/container";
 import { ActionName } from "../../../types";
@@ -90,13 +90,14 @@ describe("CategorizationWorker", () => {
       ).createActionPipeline(mockData, mockContext);
 
       // Verify pipeline has the expected actions
-      expect(pipeline).toHaveLength(4);
+      expect(pipeline).toHaveLength(5);
 
       // Check that the actions are properly created (they should have the correct names)
       expect(pipeline[0]?.name).toBe(ActionName.DETERMINE_CATEGORY);
       expect(pipeline[1]?.name).toBe(ActionName.SAVE_CATEGORY);
       expect(pipeline[2]?.name).toBe(ActionName.DETERMINE_TAGS);
       expect(pipeline[3]?.name).toBe(ActionName.SAVE_TAGS);
+      expect(pipeline[4]?.name).toBe(ActionName.RECOMPUTE_NOTE_CATEGORIES);
     });
   });
 
@@ -176,7 +177,7 @@ describe("CategorizationWorker", () => {
         }
       ).createActionPipeline(testData, testContext);
 
-      expect(pipeline).toHaveLength(4);
+      expect(pipeline).toHaveLength(5);
       expect(consoleSpy).toHaveBeenCalledWith(
         "[CATEGORIZATION_WORKER] Creating action pipeline..."
       );
@@ -186,7 +187,7 @@ describe("CategorizationWorker", () => {
       );
       expect(consoleSpy).toHaveBeenCalledWith(
         "[CATEGORIZATION_WORKER] Created pipeline with",
-        4,
+        5,
         "actions"
       );
 
@@ -219,7 +220,7 @@ describe("CategorizationWorker", () => {
 
       const logger = (
         worker as unknown as {
-          dependencies: { logger: { log: ReturnType<typeof vi.fn> } };
+          dependencies: { logger: { log: Mock } };
         }
       ).dependencies.logger;
       const onBeforeJob = worker as unknown as {
@@ -250,7 +251,7 @@ describe("CategorizationWorker", () => {
 
       const logger = (
         worker as unknown as {
-          dependencies: { logger: { log: ReturnType<typeof vi.fn> } };
+          dependencies: { logger: { log: Mock } };
         }
       ).dependencies.logger;
       const onAfterJob = worker as unknown as {
@@ -283,7 +284,7 @@ describe("CategorizationWorker", () => {
 
       const logger = (
         worker as unknown as {
-          dependencies: { logger: { log: ReturnType<typeof vi.fn> } };
+          dependencies: { logger: { log: Mock } };
         }
       ).dependencies.logger;
       const onJobError = worker as unknown as {

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import { ActionName } from "../../../types";
 import { ActionFactory } from "../../core/action-factory";
@@ -18,14 +18,14 @@ vi.mock("../../../monitoring/system-monitor", () => ({
 // Test action implementations with proper typing
 class TestAction extends ConcreteBaseAction<
   BaseJobData,
-  { logger: { log: ReturnType<typeof vi.fn> } },
+  { logger: { log: Mock } },
   BaseJobData
 > {
   name = ActionName.NO_OP;
 
   async execute(
     data: BaseJobData,
-    deps: { logger: { log: ReturnType<typeof vi.fn> } },
+    deps: { logger: { log: Mock } },
     context: ActionContext
   ): Promise<BaseJobData> {
     deps.logger.log(`Executing test action for job ${context.jobId}`);
@@ -55,14 +55,14 @@ class TestActionWithError extends ConcreteBaseAction<
 
 class TestActionWithWrapper extends ConcreteBaseAction<
   BaseJobData,
-  { logger: { log: ReturnType<typeof vi.fn> } },
+  { logger: { log: Mock } },
   BaseJobData
 > {
   name = ActionName.LOGGING;
 
   async execute(
     data: BaseJobData,
-    deps: { logger: { log: ReturnType<typeof vi.fn> } },
+    deps: { logger: { log: Mock } },
     context: ActionContext
   ): Promise<BaseJobData> {
     deps.logger.log(`Executing wrapped action for job ${context.jobId}`);
@@ -77,16 +77,16 @@ class TestActionWithWrapper extends ConcreteBaseAction<
 describe("ActionFactory", () => {
   let factory: ActionFactory<
     BaseJobData,
-    { logger: { log: ReturnType<typeof vi.fn> } },
+    { logger: { log: Mock } },
     BaseJobData
   >;
-  let mockLogger: { log: ReturnType<typeof vi.fn> };
+  let mockLogger: { log: Mock };
   let mockContext: ActionContext;
 
   beforeEach(() => {
     factory = new ActionFactory<
       BaseJobData,
-      { logger: { log: ReturnType<typeof vi.fn> } },
+      { logger: { log: Mock } },
       BaseJobData
     >();
     mockLogger = { log: vi.fn() };
@@ -105,7 +105,7 @@ describe("ActionFactory", () => {
     it("should register an action successfully", () => {
       const actionFactory = (): BaseAction<
         BaseJobData,
-        { logger: { log: ReturnType<typeof vi.fn> } },
+        { logger: { log: Mock } },
         BaseJobData
       > => new TestAction();
 
@@ -118,7 +118,7 @@ describe("ActionFactory", () => {
     it("should overwrite existing action when registering with same name", () => {
       const action1 = (): BaseAction<
         BaseJobData,
-        { logger: { log: ReturnType<typeof vi.fn> } },
+        { logger: { log: Mock } },
         BaseJobData
       > => new TestAction();
       const action2 = (): BaseAction<BaseJobData, object, BaseJobData> =>
@@ -138,30 +138,30 @@ describe("ActionFactory", () => {
     it("should register action with wrappers", () => {
       const actionFactory = (): BaseAction<
         BaseJobData,
-        { logger: { log: ReturnType<typeof vi.fn> } },
+        { logger: { log: Mock } },
         BaseJobData
       > => new TestActionWithWrapper();
       const wrapper = (
         action: BaseAction<
           BaseJobData,
-          { logger: { log: ReturnType<typeof vi.fn> } },
+          { logger: { log: Mock } },
           BaseJobData
         >
       ): BaseAction<
         BaseJobData,
-        { logger: { log: ReturnType<typeof vi.fn> } },
+        { logger: { log: Mock } },
         BaseJobData
       > => {
         return new (class extends ConcreteBaseAction<
           BaseJobData,
-          { logger: { log: ReturnType<typeof vi.fn> } },
+          { logger: { log: Mock } },
           BaseJobData
         > {
           name = ActionName.ERROR_HANDLING;
 
           async execute(
             data: BaseJobData,
-            deps: { logger: { log: ReturnType<typeof vi.fn> } },
+            deps: { logger: { log: Mock } },
             context: ActionContext
           ): Promise<BaseJobData> {
             deps.logger.log("Wrapper pre-execution");
@@ -187,30 +187,30 @@ describe("ActionFactory", () => {
     it("should apply multiple wrappers in order", () => {
       const actionFactory = (): BaseAction<
         BaseJobData,
-        { logger: { log: ReturnType<typeof vi.fn> } },
+        { logger: { log: Mock } },
         BaseJobData
       > => new TestActionWithWrapper();
       const wrapper1 = (
         action: BaseAction<
           BaseJobData,
-          { logger: { log: ReturnType<typeof vi.fn> } },
+          { logger: { log: Mock } },
           BaseJobData
         >
       ): BaseAction<
         BaseJobData,
-        { logger: { log: ReturnType<typeof vi.fn> } },
+        { logger: { log: Mock } },
         BaseJobData
       > => {
         return new (class extends ConcreteBaseAction<
           BaseJobData,
-          { logger: { log: ReturnType<typeof vi.fn> } },
+          { logger: { log: Mock } },
           BaseJobData
         > {
           name = ActionName.ERROR_HANDLING;
 
           async execute(
             data: BaseJobData,
-            deps: { logger: { log: ReturnType<typeof vi.fn> } },
+            deps: { logger: { log: Mock } },
             context: ActionContext
           ): Promise<BaseJobData> {
             deps.logger.log("Wrapper1 pre-execution");
@@ -228,24 +228,24 @@ describe("ActionFactory", () => {
       const wrapper2 = (
         action: BaseAction<
           BaseJobData,
-          { logger: { log: ReturnType<typeof vi.fn> } },
+          { logger: { log: Mock } },
           BaseJobData
         >
       ): BaseAction<
         BaseJobData,
-        { logger: { log: ReturnType<typeof vi.fn> } },
+        { logger: { log: Mock } },
         BaseJobData
       > => {
         return new (class extends ConcreteBaseAction<
           BaseJobData,
-          { logger: { log: ReturnType<typeof vi.fn> } },
+          { logger: { log: Mock } },
           BaseJobData
         > {
           name = ActionName.RETRY_WRAPPER;
 
           async execute(
             data: BaseJobData,
-            deps: { logger: { log: ReturnType<typeof vi.fn> } },
+            deps: { logger: { log: Mock } },
             context: ActionContext
           ): Promise<BaseJobData> {
             deps.logger.log("Wrapper2 pre-execution");
@@ -276,7 +276,7 @@ describe("ActionFactory", () => {
     it("should create an action successfully", () => {
       const actionFactory = (): BaseAction<
         BaseJobData,
-        { logger: { log: ReturnType<typeof vi.fn> } },
+        { logger: { log: Mock } },
         BaseJobData
       > => new TestAction();
       factory.register(ActionName.NO_OP, actionFactory);
@@ -290,30 +290,30 @@ describe("ActionFactory", () => {
     it("should create an action with wrappers", async () => {
       const actionFactory = (): BaseAction<
         BaseJobData,
-        { logger: { log: ReturnType<typeof vi.fn> } },
+        { logger: { log: Mock } },
         BaseJobData
       > => new TestActionWithWrapper();
       const wrapper = (
         action: BaseAction<
           BaseJobData,
-          { logger: { log: ReturnType<typeof vi.fn> } },
+          { logger: { log: Mock } },
           BaseJobData
         >
       ): BaseAction<
         BaseJobData,
-        { logger: { log: ReturnType<typeof vi.fn> } },
+        { logger: { log: Mock } },
         BaseJobData
       > => {
         return new (class extends ConcreteBaseAction<
           BaseJobData,
-          { logger: { log: ReturnType<typeof vi.fn> } },
+          { logger: { log: Mock } },
           BaseJobData
         > {
           name = ActionName.ERROR_HANDLING;
 
           async execute(
             data: BaseJobData,
-            deps: { logger: { log: ReturnType<typeof vi.fn> } },
+            deps: { logger: { log: Mock } },
             context: ActionContext
           ): Promise<BaseJobData> {
             deps.logger.log("Wrapper executing");
@@ -350,7 +350,7 @@ describe("ActionFactory", () => {
       const actionFactory = vi.fn(
         (): BaseAction<
           BaseJobData,
-          { logger: { log: ReturnType<typeof vi.fn> } },
+          { logger: { log: Mock } },
           BaseJobData
         > => new TestAction()
       );
@@ -370,7 +370,7 @@ describe("ActionFactory", () => {
         ActionName.NO_OP,
         (): BaseAction<
           BaseJobData,
-          { logger: { log: ReturnType<typeof vi.fn> } },
+          { logger: { log: Mock } },
           BaseJobData
         > => new TestAction()
       );
@@ -393,7 +393,7 @@ describe("ActionFactory", () => {
         ActionName.NO_OP,
         (): BaseAction<
           BaseJobData,
-          { logger: { log: ReturnType<typeof vi.fn> } },
+          { logger: { log: Mock } },
           BaseJobData
         > => new TestAction()
       );
@@ -406,7 +406,7 @@ describe("ActionFactory", () => {
         ActionName.LOGGING,
         (): BaseAction<
           BaseJobData,
-          { logger: { log: ReturnType<typeof vi.fn> } },
+          { logger: { log: Mock } },
           BaseJobData
         > => new TestActionWithWrapper()
       );
@@ -424,7 +424,7 @@ describe("ActionFactory", () => {
         ActionName.NO_OP,
         (): BaseAction<
           BaseJobData,
-          { logger: { log: ReturnType<typeof vi.fn> } },
+          { logger: { log: Mock } },
           BaseJobData
         > => new TestAction()
       );
@@ -445,18 +445,18 @@ describe("ActionFactory", () => {
     it("should clear all registered actions and wrappers", () => {
       const actionFactory = (): BaseAction<
         BaseJobData,
-        { logger: { log: ReturnType<typeof vi.fn> } },
+        { logger: { log: Mock } },
         BaseJobData
       > => new TestAction();
       const wrapper = (
         action: BaseAction<
           BaseJobData,
-          { logger: { log: ReturnType<typeof vi.fn> } },
+          { logger: { log: Mock } },
           BaseJobData
         >
       ): BaseAction<
         BaseJobData,
-        { logger: { log: ReturnType<typeof vi.fn> } },
+        { logger: { log: Mock } },
         BaseJobData
       > => action;
 
@@ -499,7 +499,7 @@ describe("ActionFactory", () => {
     it("should handle wrapper that returns null", () => {
       const actionFactory = (): BaseAction<
         BaseJobData,
-        { logger: { log: ReturnType<typeof vi.fn> } },
+        { logger: { log: Mock } },
         BaseJobData
       > => new TestAction();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -517,7 +517,7 @@ describe("ActionFactory", () => {
     it("should handle empty wrappers array", () => {
       const actionFactory = (): BaseAction<
         BaseJobData,
-        { logger: { log: ReturnType<typeof vi.fn> } },
+        { logger: { log: Mock } },
         BaseJobData
       > => new TestAction();
 

@@ -1,6 +1,6 @@
 import express from "express";
 import request from "supertest";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import { FILE_CONSTANTS } from "../../config/constants";
 import { ServiceContainer } from "../../services";
@@ -83,10 +83,10 @@ describe("Import Router", () => {
 
   // Type for mock queue
   type MockQueue = {
-    getWaiting: ReturnType<typeof vi.fn>;
-    getActive: ReturnType<typeof vi.fn>;
-    getCompleted: ReturnType<typeof vi.fn>;
-    getFailed: ReturnType<typeof vi.fn>;
+    getWaiting: Mock;
+    getActive: Mock;
+    getCompleted: Mock;
+    getFailed: Mock;
   };
 
   // Type for service container with queues
@@ -119,7 +119,7 @@ describe("Import Router", () => {
 
     // Setup default mock implementations
     (
-      ServiceContainer.getInstance as ReturnType<typeof vi.fn>
+      ServiceContainer.getInstance as Mock
     ).mockResolvedValue(mockServiceContainer);
 
     // Mock process.cwd to return a consistent test path
@@ -129,14 +129,14 @@ describe("Import Router", () => {
     });
 
     // Mock getHtmlFiles
-    (getHtmlFiles as ReturnType<typeof vi.fn>).mockResolvedValue([
+    (getHtmlFiles as Mock).mockResolvedValue([
       "file1.html",
       "file2.html",
       "file3.html",
     ]);
 
     // Mock processFilesWithStreaming
-    (processFilesWithStreaming as ReturnType<typeof vi.fn>).mockResolvedValue({
+    (processFilesWithStreaming as Mock).mockResolvedValue({
       totalFiles: 3,
       processedFiles: 2,
       failedFiles: 1,
@@ -147,7 +147,7 @@ describe("Import Router", () => {
     });
 
     // Mock measureExecutionTime
-    (measureExecutionTime as ReturnType<typeof vi.fn>).mockImplementation(
+    (measureExecutionTime as Mock).mockImplementation(
       async (fn: () => Promise<unknown>, _label: string) => {
         const result = await fn();
         return {
@@ -159,14 +159,14 @@ describe("Import Router", () => {
 
     // Mock ErrorHandler
     (
-      ErrorHandler.createHttpSuccessResponse as ReturnType<typeof vi.fn>
+      ErrorHandler.createHttpSuccessResponse as Mock
     ).mockReturnValue({
       success: true,
       data: {},
       message: "Success",
     });
 
-    (ErrorHandler.handleRouteError as ReturnType<typeof vi.fn>).mockReturnValue(
+    (ErrorHandler.handleRouteError as Mock).mockReturnValue(
       {
         success: false,
         error: "Error occurred",
@@ -174,7 +174,7 @@ describe("Import Router", () => {
     );
 
     // Mock createQueueStatusResponse
-    (createQueueStatusResponse as ReturnType<typeof vi.fn>).mockReturnValue({
+    (createQueueStatusResponse as Mock).mockReturnValue({
       success: true,
       data: {
         waiting: 5,
@@ -185,7 +185,7 @@ describe("Import Router", () => {
     });
 
     // Mock formatLogMessage
-    (formatLogMessage as ReturnType<typeof vi.fn>).mockReturnValue(
+    (formatLogMessage as Mock).mockReturnValue(
       "Import completed successfully in 1000ms"
     );
   });
@@ -252,7 +252,7 @@ describe("Import Router", () => {
     });
 
     it("should handle case when no HTML files are found", async () => {
-      (getHtmlFiles as ReturnType<typeof vi.fn>).mockResolvedValue([]);
+      (getHtmlFiles as Mock).mockResolvedValue([]);
 
       const response = await request(app).post("/import");
 
@@ -266,7 +266,7 @@ describe("Import Router", () => {
 
     it("should handle processing errors gracefully", async () => {
       const error = new Error("Processing failed");
-      (processFilesWithStreaming as ReturnType<typeof vi.fn>).mockRejectedValue(
+      (processFilesWithStreaming as Mock).mockRejectedValue(
         error
       );
 
@@ -278,7 +278,7 @@ describe("Import Router", () => {
 
     it("should handle getHtmlFiles errors", async () => {
       const error = new Error("Failed to get HTML files");
-      (getHtmlFiles as ReturnType<typeof vi.fn>).mockRejectedValue(error);
+      (getHtmlFiles as Mock).mockRejectedValue(error);
 
       const response = await request(app).post("/import");
 
@@ -288,7 +288,7 @@ describe("Import Router", () => {
 
     it("should handle measureExecutionTime errors", async () => {
       const error = new Error("Execution time measurement failed");
-      (measureExecutionTime as ReturnType<typeof vi.fn>).mockRejectedValue(
+      (measureExecutionTime as Mock).mockRejectedValue(
         error
       );
 
@@ -299,7 +299,7 @@ describe("Import Router", () => {
     });
 
     it("should handle different processing results", async () => {
-      (processFilesWithStreaming as ReturnType<typeof vi.fn>).mockResolvedValue(
+      (processFilesWithStreaming as Mock).mockResolvedValue(
         {
           totalFiles: 5,
           processedFiles: 3,
@@ -326,7 +326,7 @@ describe("Import Router", () => {
     });
 
     it("should handle processing with zero files", async () => {
-      (processFilesWithStreaming as ReturnType<typeof vi.fn>).mockResolvedValue(
+      (processFilesWithStreaming as Mock).mockResolvedValue(
         {
           totalFiles: 0,
           processedFiles: 0,
@@ -353,7 +353,7 @@ describe("Import Router", () => {
     });
 
     it("should handle processing with null endTime", async () => {
-      (processFilesWithStreaming as ReturnType<typeof vi.fn>).mockResolvedValue(
+      (processFilesWithStreaming as Mock).mockResolvedValue(
         {
           totalFiles: 1,
           processedFiles: 1,
@@ -421,7 +421,7 @@ describe("Import Router", () => {
     it("should handle ServiceContainer.getInstance errors", async () => {
       const error = new Error("Service container error");
       (
-        ServiceContainer.getInstance as ReturnType<typeof vi.fn>
+        ServiceContainer.getInstance as Mock
       ).mockRejectedValue(error);
 
       const response = await request(app).get("/import/status");
@@ -518,7 +518,7 @@ describe("Import Router", () => {
 
   describe("Error Handling", () => {
     it("should handle non-Error objects in catch blocks", async () => {
-      (processFilesWithStreaming as ReturnType<typeof vi.fn>).mockRejectedValue(
+      (processFilesWithStreaming as Mock).mockRejectedValue(
         "String error"
       );
 
@@ -528,7 +528,7 @@ describe("Import Router", () => {
     });
 
     it("should handle null/undefined errors", async () => {
-      (processFilesWithStreaming as ReturnType<typeof vi.fn>).mockRejectedValue(
+      (processFilesWithStreaming as Mock).mockRejectedValue(
         null
       );
 

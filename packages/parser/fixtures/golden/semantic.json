@@ -1,0 +1,101 @@
+{
+  "description": "Target interpretations (original rebuild plan, section 32). Used by the Phase 3 resolver tests with fixtures/lexicon/semantic-cases.json. Concept keys refer to `concept` values in that lexicon; ontology decisions may revise these.",
+  "cases": [
+    {
+      "id": "semantic-001",
+      "input": "1 cup whole milk",
+      "expected": { "quantity": "1 cup", "concept": "whole-milk", "attributes": [] }
+    },
+    {
+      "id": "semantic-002",
+      "input": "1 cup milk, warmed",
+      "expected": {
+        "quantity": "1 cup",
+        "concept": "milk",
+        "preparations": [{ "operation": "warm", "position": "POST_HEAD" }]
+      }
+    },
+    {
+      "id": "semantic-003",
+      "input": "2 green apples",
+      "expected": { "quantity": "2", "concept": "apple", "attributes": ["color:green"] }
+    },
+    {
+      "id": "semantic-004",
+      "input": "2 Granny Smith apples",
+      "expected": { "quantity": "2", "concept": "granny-smith-apple", "attributes": [] }
+    },
+    {
+      "id": "semantic-005",
+      "input": "1 lb chicken thighs",
+      "expected": { "quantity": "1 lb", "concept": "chicken-thigh", "attributes": [] }
+    },
+    {
+      "id": "semantic-006",
+      "input": "1 lb boneless chicken thighs",
+      "expected": { "quantity": "1 lb", "concept": "chicken-thigh", "attributes": ["bone:boneless"] }
+    },
+    {
+      "id": "semantic-007",
+      "input": "1 lb boneless skinless chicken thighs",
+      "expected": {
+        "quantity": "1 lb",
+        "concept": "chicken-thigh",
+        "attributes": ["bone:boneless", "skin:skinless"]
+      }
+    },
+    {
+      "id": "semantic-008",
+      "input": "1 cup finely chopped parsley",
+      "expected": {
+        "quantity": "1 cup",
+        "concept": "parsley",
+        "preparations": [{ "operation": "chop", "degree": "fine", "position": "PRE_HEAD" }]
+      }
+    },
+    {
+      "id": "semantic-009",
+      "input": "1 cup fresh mozzarella",
+      "expected": { "quantity": "1 cup", "concept": "fresh-mozzarella", "attributes": [] }
+    },
+    {
+      "id": "semantic-010",
+      "input": "2 tbsp powdered sugar",
+      "expected": { "quantity": "2 tbsp", "concept": "powdered-sugar", "attributes": [] }
+    },
+    {
+      "id": "semantic-011",
+      "input": "2 tbsp confectioners sugar",
+      "expected": {
+        "quantity": "2 tbsp",
+        "concept": "powdered-sugar",
+        "matchedTermKind": "ALIAS"
+      }
+    },
+    {
+      "id": "semantic-012",
+      "input": "1 can whole peeled tomatoes",
+      "expected": {
+        "quantity": "1 can",
+        "concept": "canned-tomatoes",
+        "attributes": ["form:whole"],
+        "preparations": [{ "operation": "peel", "position": "PRE_HEAD" }]
+      }
+    },
+    {
+      "id": "semantic-013",
+      "input": "Salt to taste",
+      "expected": { "quantity": "TO_TASTE", "concept": "salt" }
+    },
+    {
+      "id": "semantic-014",
+      "input": "2 (14 oz) cans tomatoes",
+      "expected": { "quantity": "2 (14 oz) can", "concept": "canned-tomatoes" }
+    },
+    {
+      "id": "semantic-015",
+      "input": "3 tablespoons calamansi juice",
+      "expected": { "quantity": "3 tbsp", "concept": null, "status": "UNRESOLVED", "unresolved": ["calamansi juice"] }
+    }
+  ]
+}

@@ -1,0 +1,3146 @@
+[
+  {
+    "id": "coverage-001",
+    "input": "1½ cups flour",
+    "tags": [
+      "unicode-fraction"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 1/2 cup",
+          "phrase": "flour"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-002",
+    "input": "1 ½ cups sugar",
+    "tags": [
+      "unicode-fraction"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 1/2 cup",
+          "phrase": "sugar"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-003",
+    "input": "⅓ cup milk",
+    "tags": [
+      "unicode-fraction"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1/3 cup",
+          "phrase": "milk"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-004",
+    "input": "1⁄4 tsp nutmeg",
+    "tags": [
+      "unicode-fraction"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1/4 tsp",
+          "phrase": "nutmeg"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-005",
+    "input": "1-1/2 cups milk",
+    "tags": [
+      "mixed-fraction"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 1/2 cup",
+          "phrase": "milk"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-006",
+    "input": "2 1/4 cups all-purpose flour",
+    "tags": [
+      "mixed-fraction"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "2 1/4 cup",
+          "phrase": "all-purpose flour"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-007",
+    "input": "one onion, diced",
+    "tags": [
+      "spelled-number"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1",
+          "phrase": "onion",
+          "trailing": "diced"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-008",
+    "input": "two eggs",
+    "tags": [
+      "spelled-number"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "2",
+          "phrase": "eggs"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-009",
+    "input": "half a dozen eggs",
+    "tags": [
+      "spelled-number"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1/2 dozen",
+          "phrase": "eggs"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-010",
+    "input": "a dozen clams",
+    "tags": [
+      "spelled-number"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 dozen",
+          "phrase": "clams"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-011",
+    "input": "twelve shrimp",
+    "tags": [
+      "spelled-number"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "12",
+          "phrase": "shrimp"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-012",
+    "input": "2–3 tbsp honey",
+    "tags": [
+      "range"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "2-3 tbsp",
+          "phrase": "honey"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-013",
+    "input": "1 to 2 teaspoons chili flakes",
+    "tags": [
+      "range"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1-2 tsp",
+          "phrase": "chili flakes"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-014",
+    "input": "3 or 4 sprigs thyme",
+    "tags": [
+      "range"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "3-4 sprig",
+          "phrase": "thyme"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-015",
+    "input": "1.5 kg pork shoulder",
+    "tags": [
+      "decimal"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 1/2 kg",
+          "phrase": "pork shoulder"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-016",
+    "input": "1,5 kg pork ribs",
+    "tags": [
+      "decimal"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 1/2 kg",
+          "phrase": "pork ribs"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-017",
+    "input": "2 (14 oz) cans diced tomatoes",
+    "tags": [
+      "package"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "2 (14 oz) can",
+          "phrase": "diced tomatoes"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-018",
+    "input": "1 can (400 g) chickpeas, drained and rinsed",
+    "tags": [
+      "package"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 (400 g) can",
+          "phrase": "chickpeas",
+          "trailing": "drained and rinsed"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-019",
+    "input": "2 x 400g tins chopped tomatoes",
+    "tags": [
+      "package"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "2 (400 g) tin",
+          "phrase": "chopped tomatoes"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-020",
+    "input": "1 28-oz can crushed tomatoes",
+    "tags": [
+      "package"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 (28 oz) can",
+          "phrase": "crushed tomatoes"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-021",
+    "input": "4 6-ounce salmon fillets",
+    "tags": [
+      "package"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "4 (6 oz)",
+          "phrase": "salmon fillets"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-022",
+    "input": "2 cups or 500 ml milk",
+    "tags": [
+      "alternative"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "2 cup | 500 ml",
+          "phrase": "milk"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-023",
+    "input": "1 cup/250 ml stock",
+    "tags": [
+      "alternative"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 cup | 250 ml",
+          "phrase": "stock"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-024",
+    "input": "1 cup plus 2 tbsp sugar",
+    "tags": [
+      "compound"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 cup + 2 tbsp",
+          "phrase": "sugar"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-025",
+    "input": "1 tbsp butter and 2 tbsp olive oil",
+    "tags": [
+      "multiple-ingredients"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 tbsp",
+          "phrase": "butter"
+        },
+        {
+          "quantity": "2 tbsp",
+          "phrase": "olive oil"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-026",
+    "input": "Salt and pepper to taste",
+    "tags": [
+      "multiple-ingredients",
+      "unspecified"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "TO_TASTE",
+          "phrase": "Salt and pepper"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-027",
+    "input": "a pinch of salt",
+    "tags": [
+      "unspecified",
+      "article"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 pinch",
+          "phrase": "salt"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-028",
+    "input": "Pinch of cayenne",
+    "tags": [
+      "implied-amount"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "(1) pinch",
+          "phrase": "cayenne"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-029",
+    "input": "about 2 cups chicken stock",
+    "tags": [
+      "approximate"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "~2 cup",
+          "phrase": "chicken stock"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-030",
+    "input": "3 tablespoons calamansi juice",
+    "tags": [
+      "unknown-food"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "3 tbsp",
+          "phrase": "calamansi juice"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-031",
+    "input": "1 heaping cup flour",
+    "tags": [
+      "measurement-modifier"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 cup",
+          "measurementModifiers": "heaping",
+          "phrase": "flour"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-032",
+    "input": "olive oil, as needed",
+    "tags": [
+      "unspecified"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "AS_NEEDED",
+          "phrase": "olive oil"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-033",
+    "input": "some fresh basil",
+    "tags": [
+      "unspecified"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "SOME",
+          "phrase": "fresh basil"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-034",
+    "input": "2 eggs",
+    "tags": [
+      "missing-unit"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "2",
+          "phrase": "eggs"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-035",
+    "input": "fresh parsley",
+    "tags": [
+      "missing-amount"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "phrase": "fresh parsley"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-036",
+    "input": "1 cup",
+    "tags": [
+      "malformed"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 cup",
+          "phrase": ""
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-037",
+    "input": "(optional)",
+    "tags": [
+      "malformed"
+    ],
+    "expected": {
+      "status": "PARTIAL",
+      "segments": [
+        {
+          "phrase": "",
+          "parentheticals": [
+            "optional"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-038",
+    "input": "1 T sugar",
+    "tags": [
+      "unit-case"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 tbsp",
+          "phrase": "sugar"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-039",
+    "input": "1 t salt",
+    "tags": [
+      "unit-case"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 tsp",
+          "phrase": "salt"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-040",
+    "input": "4 t-bone steaks",
+    "tags": [
+      "unit-case"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "4",
+          "phrase": "t-bone steaks"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-041",
+    "input": "1/2 tsp. vanilla extract",
+    "tags": [
+      "abbreviation"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1/2 tsp",
+          "phrase": "vanilla extract"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-042",
+    "input": "10g butter",
+    "tags": [
+      "glued-unit"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "10 g",
+          "phrase": "butter"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-043",
+    "input": "olive oil 2 tbsp",
+    "tags": [
+      "postfix-quantity"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "2 tbsp",
+          "phrase": "olive oil"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-044",
+    "input": "2 cups finely chopped fresh flat-leaf parsley",
+    "tags": [
+      "descriptors"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "2 cup",
+          "phrase": "finely chopped fresh flat-leaf parsley"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-045",
+    "input": "1 lb boneless skinless chicken thighs",
+    "tags": [
+      "descriptors"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 lb",
+          "phrase": "boneless skinless chicken thighs"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-046",
+    "input": "800g-1kg beef brisket",
+    "tags": [
+      "measure-range"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "800 g-1 kg",
+          "phrase": "beef brisket"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-047",
+    "input": "2 tbsp to 1/4 cup sugar",
+    "tags": [
+      "measure-range"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "2 tbsp-1/4 cup",
+          "phrase": "sugar"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-048",
+    "input": "2 lb to 3 lb beef chuck",
+    "tags": [
+      "range"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "2-3 lb",
+          "phrase": "beef chuck"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-049",
+    "input": "1 lb 12 oz pork shoulder",
+    "tags": [
+      "compound"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 lb + 12 oz",
+          "phrase": "pork shoulder"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-050",
+    "input": "1 cup 250 ml milk",
+    "tags": [
+      "compound"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 cup",
+          "phrase": "250 ml milk"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-051",
+    "input": "several cloves garlic, minced",
+    "tags": [
+      "unspecified"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "SEVERAL clove",
+          "phrase": "garlic",
+          "trailing": "minced"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-052",
+    "input": "thyme a few sprigs, leaves picked",
+    "tags": [
+      "postfix-quantity",
+      "unspecified"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "FEW sprig",
+          "phrase": "thyme",
+          "trailing": "leaves picked"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-053",
+    "input": "1 rack baby back ribs",
+    "tags": [
+      "count-unit"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 rack",
+          "phrase": "baby back ribs"
+        }
+      ]
+    }
+  },
+  {
+    "id": "coverage-054",
+    "input": "1/2 recipe pie dough",
+    "tags": [
+      "count-unit"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1/2 recipe",
+          "phrase": "pie dough"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-001",
+    "input": "1 knob of butter",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 knob",
+          "phrase": "butter"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-002",
+    "input": "1 bay leaf",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1",
+          "phrase": "bay leaf"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-003",
+    "input": "2 sprigs fresh rosemary, needles picked off the stem and chopped",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "2 sprig",
+          "phrase": "fresh rosemary",
+          "trailing": "needles picked off the stem and chopped"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-004",
+    "input": "Small handful of whole black peppercorns",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "(1) handful",
+          "measurementModifiers": "Small",
+          "phrase": "whole black peppercorns"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-005",
+    "input": "1 cup port",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 cup",
+          "phrase": "port"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-006",
+    "input": "1 tablespoon honey",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 tbsp",
+          "phrase": "honey"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-007",
+    "input": "1/4 cup flour",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1/4 cup",
+          "phrase": "flour"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-008",
+    "input": "¼ teaspoon dry mustard",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1/4 tsp",
+          "phrase": "dry mustard"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-009",
+    "input": "2 cups seasoned flour",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "2 cup",
+          "phrase": "seasoned flour"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-010",
+    "input": "2 Tbsp. Dijon mustard",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "2 tbsp",
+          "phrase": "Dijon mustard"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-011",
+    "input": "4 venison medallions",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "4",
+          "phrase": "venison medallions"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-012",
+    "input": "frenched antelope chops or large venison chops (about 3 lb.)",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "phrase": "frenched antelope chops or large venison chops",
+          "parentheticals": [
+            "[~3 lb]"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-013",
+    "input": "Tabasco sauce",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "phrase": "Tabasco sauce"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-014",
+    "input": "1 (2\"-piece) ginger, peeled and minced",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 (2 in) piece",
+          "phrase": "ginger",
+          "trailing": "peeled and minced"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-015",
+    "input": "1 1/8 lb of venison trimmings",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 1/8 lb",
+          "phrase": "venison trimmings"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-016",
+    "input": "1 3/4 oz of water",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 3/4 oz",
+          "phrase": "water"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-017",
+    "input": "1 bunch of thyme",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 bunch",
+          "phrase": "thyme"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-018",
+    "input": "1 clove garlic (unpeeled), crushed",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 clove",
+          "phrase": "garlic",
+          "parentheticals": [
+            "unpeeled"
+          ],
+          "trailing": "crushed"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-019",
+    "input": "1 deer rack, eight ribs (about 1 kilo)",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1",
+          "phrase": "deer rack",
+          "parentheticals": [
+            "[~1 kg]"
+          ],
+          "trailing": "eight ribs"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-020",
+    "input": "1 garlic clove, crushed",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1",
+          "phrase": "garlic clove",
+          "trailing": "crushed"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-021",
+    "input": "1 handful of small girolles",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 handful",
+          "phrase": "small girolles"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-022",
+    "input": "1 large onion, thinly sliced",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1",
+          "phrase": "large onion",
+          "trailing": "thinly sliced"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-023",
+    "input": "1 onion, diced",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1",
+          "phrase": "onion",
+          "trailing": "diced"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-024",
+    "input": "1 pound venison, trimmed of fat",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 lb",
+          "phrase": "venison",
+          "trailing": "trimmed of fat"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-025",
+    "input": "1 recipe BBQ Rub (below), or a store-bought rub",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 recipe",
+          "phrase": "BBQ Rub",
+          "parentheticals": [
+            "below"
+          ],
+          "trailing": "or a store-bought rub"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-026",
+    "input": "1 red bell pepper, julienned",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1",
+          "phrase": "red bell pepper",
+          "trailing": "julienned"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-027",
+    "input": "1 rosemary sprig",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1",
+          "phrase": "rosemary sprig"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-028",
+    "input": "1 small-medium celeriac (600g), peeled and sliced very finely, ideally on a mandoline",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1",
+          "phrase": "small-medium celeriac",
+          "parentheticals": [
+            "[600 g]"
+          ],
+          "trailing": "peeled and sliced very finely, ideally on a mandoline"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-029",
+    "input": "1 tablespoon beef base (or 1 cup beef stock reduced to about ⅓ cup)",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 tbsp",
+          "phrase": "beef base",
+          "parentheticals": [
+            "or 1 cup beef stock reduced to about ⅓ cup"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-030",
+    "input": "1 tablespoon grainy mustard",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 tbsp",
+          "phrase": "grainy mustard"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-031",
+    "input": "1 tablespoon light-flavoured oil, such as vegetable oil",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 tbsp",
+          "phrase": "light-flavoured oil",
+          "trailing": "such as vegetable oil"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-032",
+    "input": "1 tablespoon soft unsalted butter",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 tbsp",
+          "phrase": "soft unsalted butter"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-033",
+    "input": "1 tbsp caster sugar",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 tbsp",
+          "phrase": "caster sugar"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-034",
+    "input": "1 tbsp of maple syrup",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 tbsp",
+          "phrase": "maple syrup"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-035",
+    "input": "1 tbsp. minced garlic",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 tbsp",
+          "phrase": "minced garlic"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-036",
+    "input": "1 teaspoon cayenne pepper",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 tsp",
+          "phrase": "cayenne pepper"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-037",
+    "input": "1 teaspoon juniper berries",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 tsp",
+          "phrase": "juniper berries"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-038",
+    "input": "1 tsp black peppercorns",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 tsp",
+          "phrase": "black peppercorns"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-039",
+    "input": "1 whole backstrap, trimmed",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1",
+          "phrase": "whole backstrap",
+          "trailing": "trimmed"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-040",
+    "input": "1.5 tablespoons pomegranate syrup",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 1/2 tbsp",
+          "phrase": "pomegranate syrup"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-041",
+    "input": "1/2 carrot, diced",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1/2",
+          "phrase": "carrot",
+          "trailing": "diced"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-042",
+    "input": "1/2 lemon",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1/2",
+          "phrase": "lemon"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-043",
+    "input": "1/2 turnip, peeled and diced",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1/2",
+          "phrase": "turnip",
+          "trailing": "peeled and diced"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-044",
+    "input": "1/4 cauliflower, cut into small florets",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1/4",
+          "phrase": "cauliflower",
+          "trailing": "cut into small florets"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-045",
+    "input": "½ cup (120 ml) Madeira wine",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1/2 cup | 120 ml",
+          "phrase": "Madeira wine"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-046",
+    "input": "½ cup chili powder",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1/2 cup",
+          "phrase": "chili powder"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-047",
+    "input": "½ cup packed brown sugar",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1/2 cup",
+          "phrase": "packed brown sugar"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-048",
+    "input": "½ medium white onion, small dice",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1/2",
+          "phrase": "medium white onion",
+          "trailing": "small dice"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-049",
+    "input": "½ tsp ground black pepper, plus more to taste",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1/2 tsp",
+          "phrase": "ground black pepper",
+          "trailing": "plus more to taste"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-050",
+    "input": "⅓ cup molasses",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1/3 cup",
+          "phrase": "molasses"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-051",
+    "input": "¼ cup BBQ Rub (this page)",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1/4 cup",
+          "phrase": "BBQ Rub",
+          "parentheticals": [
+            "this page"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-052",
+    "input": "¼ cup dried currants",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1/4 cup",
+          "phrase": "dried currants"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-053",
+    "input": "¼ cup olive oil",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1/4 cup",
+          "phrase": "olive oil"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-054",
+    "input": "¼ cup water",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1/4 cup",
+          "phrase": "water"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-055",
+    "input": "⅛ cup white sugar",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1/8 cup",
+          "phrase": "white sugar"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-056",
+    "input": "100g blackberries",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "100 g",
+          "phrase": "blackberries"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-057",
+    "input": "100g of sugar",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "100 g",
+          "phrase": "sugar"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-058",
+    "input": "100ml of water",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "100 ml",
+          "phrase": "water"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-059",
+    "input": "10g of unsalted butter",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "10 g",
+          "phrase": "unsalted butter"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-060",
+    "input": "1⅓ cups sugar",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 1/3 cup",
+          "phrase": "sugar"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-061",
+    "input": "125g suet",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "125 g",
+          "phrase": "suet"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-062",
+    "input": "150g blueberries",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "150 g",
+          "phrase": "blueberries"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-063",
+    "input": "150g of green beans, cut into quarters",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "150 g",
+          "phrase": "green beans",
+          "trailing": "cut into quarters"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-064",
+    "input": "16 oz Schwarzbier (or suggested substitute, see notes)",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "16 oz",
+          "phrase": "Schwarzbier",
+          "parentheticals": [
+            "or suggested substitute, see notes"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-065",
+    "input": "175ml red wine",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "175 ml",
+          "phrase": "red wine"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-066",
+    "input": "1l white chicken stock",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 l",
+          "phrase": "white chicken stock"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-067",
+    "input": "2 baby beetroots",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "2",
+          "phrase": "baby beetroots"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-068",
+    "input": "2 celery stalks, finely chopped",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "2",
+          "phrase": "celery stalks",
+          "trailing": "finely chopped"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-069",
+    "input": "2 cups (140 g) sliced cremini mushrooms",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "2 cup | 140 g",
+          "phrase": "sliced cremini mushrooms"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-070",
+    "input": "2 garlic cloves, finely sliced",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "2",
+          "phrase": "garlic cloves",
+          "trailing": "finely sliced"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-071",
+    "input": "2 navel oranges, zest & juice only",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "2",
+          "phrase": "navel oranges",
+          "trailing": "zest & juice only"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-072",
+    "input": "2 rosemary sprigs",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "2",
+          "phrase": "rosemary sprigs"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-073",
+    "input": "2 sprigs of rosemary",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "2 sprig",
+          "phrase": "rosemary"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-074",
+    "input": "2 tablespoons butter",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "2 tbsp",
+          "phrase": "butter"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-075",
+    "input": "2 tablespoons extra-virgin olive oil",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "2 tbsp",
+          "phrase": "extra-virgin olive oil"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-076",
+    "input": "2 tablespoons Hungarian paprika",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "2 tbsp",
+          "phrase": "Hungarian paprika"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-077",
+    "input": "2 tablespoons white onion, diced small",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "2 tbsp",
+          "phrase": "white onion",
+          "trailing": "diced small"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-078",
+    "input": "2 tbsp all-purpose flour",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "2 tbsp",
+          "phrase": "all-purpose flour"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-079",
+    "input": "2 tbsp of rosemary leaves, finely chopped",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "2 tbsp",
+          "phrase": "rosemary leaves",
+          "trailing": "finely chopped"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-080",
+    "input": "2 tbsp. malted milk powder",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "2 tbsp",
+          "phrase": "malted milk powder"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-081",
+    "input": "2 teaspoons ground cumin",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "2 tsp",
+          "phrase": "ground cumin"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-082",
+    "input": "2 tsp coriander seeds",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "2 tsp",
+          "phrase": "coriander seeds"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-083",
+    "input": "2 tsp. kosher salt, plus more to taste",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "2 tsp",
+          "phrase": "kosher salt",
+          "trailing": "plus more to taste"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-084",
+    "input": "2–3kg venison haunch, or leg of lamb, bone removed",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "2-3 kg",
+          "phrase": "venison haunch",
+          "trailing": "or leg of lamb, bone removed"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-085",
+    "input": "20 g stem ginger",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "20 g",
+          "phrase": "stem ginger"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-086",
+    "input": "200g of elderberries, washed and removed from their stalks",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "200 g",
+          "phrase": "elderberries",
+          "trailing": "washed and removed from their stalks"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-087",
+    "input": "200ml of red wine",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "200 ml",
+          "phrase": "red wine"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-088",
+    "input": "2½ cups raspberry preserves",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "2 1/2 cup",
+          "phrase": "raspberry preserves"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-089",
+    "input": "250g of butter",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "250 g",
+          "phrase": "butter"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-090",
+    "input": "2tbsp extra virgin olive oil",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "2 tbsp",
+          "phrase": "extra virgin olive oil"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-091",
+    "input": "3 cloves garlic, thinly sliced",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "3 clove",
+          "phrase": "garlic",
+          "trailing": "thinly sliced"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-092",
+    "input": "3 juniper berries, lightly crushed",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "3",
+          "phrase": "juniper berries",
+          "trailing": "lightly crushed"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-093",
+    "input": "3 tablespoons (45 mL) grapeseed oil",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "3 tbsp | 45 ml",
+          "phrase": "grapeseed oil"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-094",
+    "input": "3 tbsp granulated sugar",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "3 tbsp",
+          "phrase": "granulated sugar"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-095",
+    "input": "3 tbsp. yellow mustard seeds",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "3 tbsp",
+          "phrase": "yellow mustard seeds"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-096",
+    "input": "300g fresh or frozen blueberries, (if you can get wild, even better)",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "300 g",
+          "phrase": "fresh or frozen blueberries",
+          "parentheticals": [
+            "if you can get wild, even better"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-097",
+    "input": "300ml of beef stock",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "300 ml",
+          "phrase": "beef stock"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-098",
+    "input": "320 g Greek yoghurt",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "320 g",
+          "phrase": "Greek yoghurt"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-099",
+    "input": "4 1/2 oz of port",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "4 1/2 oz",
+          "phrase": "port"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-100",
+    "input": "4 juniper berries",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "4",
+          "phrase": "juniper berries"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-101",
+    "input": "4 shallots, finely sliced",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "4",
+          "phrase": "shallots",
+          "trailing": "finely sliced"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-102",
+    "input": "4 tbsp crème fraîche",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "4 tbsp",
+          "phrase": "crème fraîche"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-103",
+    "input": "4 venison loins, weighing 130g each",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "4",
+          "phrase": "venison loins",
+          "trailing": "weighing 130g each"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-104",
+    "input": "40 g Lime (calcium oxide)",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "40 g",
+          "phrase": "Lime",
+          "parentheticals": [
+            "calcium oxide"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-105",
+    "input": "40g of blackberry vinegar",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "40 g",
+          "phrase": "blackberry vinegar"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-106",
+    "input": "5 1/3 oz of lemon juice",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "5 1/3 oz",
+          "phrase": "lemon juice"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-107",
+    "input": "5 lb (2.3 kg) venison backstrap or pork tenderloin",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "5 lb | 2 3/10 kg",
+          "phrase": "venison backstrap or pork tenderloin"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-108",
+    "input": "500g of elderberries",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "500 g",
+          "phrase": "elderberries"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-109",
+    "input": "500ml ale",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "500 ml",
+          "phrase": "ale"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-110",
+    "input": "50g of sugar",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "50 g",
+          "phrase": "sugar"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-111",
+    "input": "6 cardamom pods, crushed",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "6",
+          "phrase": "cardamom pods",
+          "trailing": "crushed"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-112",
+    "input": "6 tbsp. (3/4 stick) unsalted butter",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "6 tbsp | 3/4 stick",
+          "phrase": "unsalted butter"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-113",
+    "input": "650g of venison shoulder, cubed",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "650 g",
+          "phrase": "venison shoulder",
+          "trailing": "cubed"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-114",
+    "input": "75 ml port",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "75 ml",
+          "phrase": "port"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-115",
+    "input": "8 3/4 oz of brandy",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "8 3/4 oz",
+          "phrase": "brandy"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-116",
+    "input": "8 3/4 oz of pork mince",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "8 3/4 oz",
+          "phrase": "pork mince"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-117",
+    "input": "8 oz (226 g) chèvre cheese, crumbled",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "8 oz | 226 g",
+          "phrase": "chèvre cheese",
+          "trailing": "crumbled"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-118",
+    "input": "800g–1kg (1lb 12oz–2lb 4oz) bone-in venison shoulder",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "800 g-1 kg",
+          "phrase": "bone-in venison shoulder",
+          "parentheticals": [
+            "[(1 lb + 12 oz)-(2 lb + 4 oz)]"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-119",
+    "input": "a few sprigs of rosemary, needles picked",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "FEW sprig",
+          "phrase": "rosemary",
+          "trailing": "needles picked"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-120",
+    "input": "bay leaf 1",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1",
+          "phrase": "bay leaf"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-121",
+    "input": "carrot 1, finely diced",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1",
+          "phrase": "carrot",
+          "trailing": "finely diced"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-122",
+    "input": "extra-virgin olive oil 4 tbsp",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "4 tbsp",
+          "phrase": "extra-virgin olive oil"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-123",
+    "input": "Finely grated zest of 1 orange grated zest of 1 orange",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "phrase": "Finely grated zest of 1 orange grated zest of 1 orange"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-124",
+    "input": "garlic 1 small clove, crushed",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 clove",
+          "measurementModifiers": "small",
+          "phrase": "garlic",
+          "trailing": "crushed"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-125",
+    "input": "Gremolata, if desired (recipe follows)",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "phrase": "Gremolata",
+          "parentheticals": [
+            "recipe follows"
+          ],
+          "trailing": "if desired"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-126",
+    "input": "Juice of 1 lemon (optional)",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "phrase": "Juice of 1 lemon",
+          "parentheticals": [
+            "optional"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-127",
+    "input": "lemon 1, zested plus juice of ½",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1",
+          "phrase": "lemon",
+          "trailing": "zested plus juice of ½"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-128",
+    "input": "Microgreens",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "phrase": "Microgreens"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-129",
+    "input": "olive oil 2 tbsp",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "2 tbsp",
+          "phrase": "olive oil"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-130",
+    "input": "passata 200ml",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "200 ml",
+          "phrase": "passata"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-131",
+    "input": "rapeseed oil, for frying",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "phrase": "rapeseed oil",
+          "trailing": "for frying"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-132",
+    "input": "rosemary a few sprigs",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "FEW sprig",
+          "phrase": "rosemary"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-133",
+    "input": "Salt and sugar to taste",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "TO_TASTE",
+          "phrase": "Salt and sugar"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-134",
+    "input": "small handful coriander, chopped",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "(1) handful",
+          "measurementModifiers": "small",
+          "phrase": "coriander",
+          "trailing": "chopped"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-135",
+    "input": "thumb-sized piece fresh ginger, grated",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "phrase": "thumb-sized piece fresh ginger",
+          "trailing": "grated"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-136",
+    "input": "unsalted butter 100g",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "100 g",
+          "phrase": "unsalted butter"
+        }
+      ]
+    }
+  },
+  {
+    "id": "corpus-137",
+    "input": "Water",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "phrase": "Water"
+        }
+      ]
+    }
+  }
+]

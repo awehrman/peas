@@ -1,3 +1,5 @@
+// Must run first: config modules read process.env when they are imported
+import "./config/load-env";
 import { SECURITY_CONSTANTS, SERVER_DEFAULTS } from "./config";
 import {
   cacheRouter,
@@ -5,8 +7,10 @@ import {
   imagesRouter,
   importRouter,
   metricsRouter,
+  reinterpretRouter,
   notesRouter,
   performanceRouter,
+  sourcesRouter,
   uploadRouter,
 } from "./routes";
 import { ServiceContainer } from "./services";
@@ -15,15 +19,25 @@ import { ErrorSeverity, ErrorType, HttpStatus } from "./types";
 import { createBullBoard } from "@bull-board/api";
 import { BullMQAdapter } from "@bull-board/api/dist/queueAdapters/bullMQ.js";
 import { ExpressAdapter } from "@bull-board/express";
-import cors from "cors";
 import express from "express";
 
 import { configManager } from "./config/configuration-manager";
 import { ManagerFactory } from "./config/factory";
-import "./config/load-env";
-import { SecurityMiddleware } from "./middleware/security";
+import {
+  createBasicAuthMiddleware,
+  getQueueAuthSecret,
+  requireQueueAuth,
+} from "./middleware/auth";
+import { SecurityMiddleware, parseAllowedOrigins } from "./middleware/security";
+import {
+  LOCAL_IMAGE_ROUTE,
+  getLocalImageRoot,
+} from "./services/image/local-storage";
 import { errorHandler as stdErrorHandler } from "./utils/standardized-error-handler";
 import { LOG_MESSAGES, LoggerFactory } from "./utils/standardized-logger";
+import { subscribeToLexiconRevisions } from "./services/ingredient/lexicon-cache";
+import { scheduleMaintenanceJobs } from "./services/reinterpret/schedules";
+import { scheduleSourceJobs } from "./services/source/schedules";
 import { startWorkers } from "./workers/startup";
 
 // Type guard to check if value is an Error
@@ -43,6 +57,9 @@ function createError(value: unknown): Error {
 }
 
 async function initializeApp() {
+  // Fail fast: every API route and the WebSocket server depend on this secret
+  getQueueAuthSecret();
+
   // Initialize standardized systems
   const config = configManager.loadConfig();
   const logger = LoggerFactory.getLogger();
@@ -94,7 +111,6 @@ async function initializeApp() {
 
     // Add comprehensive request logging
     console.log(`[EXPRESS] ${req.method} ${req.path} - Request received`);
-    console.log(`[EXPRESS] Headers:`, req.headers);
     console.log(`[EXPRESS] Content-Type: ${req.get("Content-Type")}`);
     console.log(`[EXPRESS] Content-Length: ${req.get("Content-Length")}`);
 
@@ -124,24 +140,28 @@ async function initializeApp() {
   // Apply security middleware globally
   app.use(SecurityMiddleware.addSecurityHeaders);
   app.use(
-    SecurityMiddleware.configureCORS([
-      ...SECURITY_CONSTANTS.CORS.ALLOWED_ORIGINS,
-    ])
+    SecurityMiddleware.configureCORS(
+      parseAllowedOrigins(process.env.CORS_ALLOWED_ORIGINS)
+    )
   );
+  // /upload has its own size and rate limits, mounted with its route
+  const isUploadRequest = (req: express.Request) => req.path.startsWith("/upload");
+  // One recipe list page requests dozens of images
+  const isLocalImageRequest = (req: express.Request) =>
+    req.path.startsWith(`${LOCAL_IMAGE_ROUTE}/`);
   app.use(
     SecurityMiddleware.validateRequestSize(
-      SECURITY_CONSTANTS.REQUEST_LIMITS.MAX_REQUEST_SIZE_BYTES
+      SECURITY_CONSTANTS.REQUEST_LIMITS.MAX_REQUEST_SIZE_BYTES,
+      { skip: isUploadRequest }
     )
   );
   app.use(
     SecurityMiddleware.rateLimit(
       SECURITY_CONSTANTS.RATE_LIMITS.GLOBAL_WINDOW_MS,
-      SECURITY_CONSTANTS.RATE_LIMITS.GLOBAL_MAX_REQUESTS
+      SECURITY_CONSTANTS.RATE_LIMITS.GLOBAL_MAX_REQUESTS,
+      { skip: (req) => isUploadRequest(req) || isLocalImageRequest(req) }
     )
   );
-
-  // Fallback CORS for compatibility
-  app.use(cors());
 
   app.use(express.json({ limit: SERVER_DEFAULTS.REQUEST_SIZE_LIMIT }));
 
@@ -183,36 +203,54 @@ async function initializeApp() {
 
   // Bull-Board setup with error handling
   const serverAdapter = new ExpressAdapter();
-  try {
-    createBullBoard({
-      queues: [
-        new BullMQAdapter(serviceContainer.queues.noteQueue),
-        new BullMQAdapter(serviceContainer.queues.imageQueue),
-        // TODO: Add back other queues as needed
-        // new BullMQAdapter(serviceContainer.queues.ingredientQueue),
-        // new BullMQAdapter(serviceContainer.queues.instructionQueue),
-        // new BullMQAdapter(serviceContainer.queues.categorizationQueue),
-        // new BullMQAdapter(serviceContainer.queues.sourceQueue),
-      ],
-      serverAdapter,
-    });
-
-    serverAdapter.setBasePath("/bull-board");
-    app.use("/bull-board", serverAdapter.getRouter());
-  } catch (error) {
-    const properError = createError(error);
-    serviceContainer.errorHandler.createJobError(properError, {
-      operation: "bull_board_setup",
-      timestamp: new Date(),
-    });
-    serviceContainer.errorHandler.logError(properError, {
-      operation: "bull_board_setup",
-      timestamp: new Date(),
-    });
+  const bullBoardPassword = process.env.BULL_BOARD_PASSWORD;
+  if (!bullBoardPassword) {
     serviceContainer.logger.log(
-      "Failed to setup Bull Board, continuing without it",
-      "error"
+      "Bull Board disabled: set BULL_BOARD_PASSWORD to enable it",
+      "info"
     );
+  } else {
+    try {
+      createBullBoard({
+        queues: [
+          new BullMQAdapter(serviceContainer.queues.noteQueue),
+          new BullMQAdapter(serviceContainer.queues.imageQueue),
+          new BullMQAdapter(serviceContainer.queues.sourceQueue),
+          new BullMQAdapter(serviceContainer.queues.bookLookupQueue),
+          // TODO: Add back other queues as needed
+          // new BullMQAdapter(serviceContainer.queues.ingredientQueue),
+          // new BullMQAdapter(serviceContainer.queues.instructionQueue),
+          // new BullMQAdapter(serviceContainer.queues.categorizationQueue),
+          // new BullMQAdapter(serviceContainer.queues.sourceQueue),
+        ],
+        serverAdapter,
+      });
+
+      serverAdapter.setBasePath("/bull-board");
+      app.use(
+        "/bull-board",
+        createBasicAuthMiddleware(
+          process.env.BULL_BOARD_USERNAME || "admin",
+          bullBoardPassword,
+          "Bull Board"
+        ),
+        serverAdapter.getRouter()
+      );
+    } catch (error) {
+      const properError = createError(error);
+      serviceContainer.errorHandler.createJobError(properError, {
+        operation: "bull_board_setup",
+        timestamp: new Date(),
+      });
+      serviceContainer.errorHandler.logError(properError, {
+        operation: "bull_board_setup",
+        timestamp: new Date(),
+      });
+      serviceContainer.logger.log(
+        "Failed to setup Bull Board, continuing without it",
+        "error"
+      );
+    }
   }
 
   return { app, serviceContainer };
@@ -222,15 +260,32 @@ async function initializeApp() {
 initializeApp()
   .then(({ app, serviceContainer }) => {
     // Routes
-    app.use("/import", importRouter);
-    app.use("/upload", uploadRouter); // Unified HTML + image upload
-    app.use("/notes", notesRouter);
-    app.use("/images", imagesRouter);
-    app.use("/health", healthEnhancedRouter); // Enhanced health endpoints
-    // Test routes removed - use health endpoints for testing
-    app.use("/metrics", metricsRouter);
-    app.use("/cache", cacheRouter); // Cache management endpoints
-    app.use("/performance", performanceRouter); // Performance monitoring endpoints
+    app.use("/health", healthEnhancedRouter); // Public so platform health checks work
+    // Public because <img> tags cannot send the queue auth header
+    app.use(
+      LOCAL_IMAGE_ROUTE,
+      express.static(getLocalImageRoot(), { index: false, maxAge: "1d" })
+    );
+    app.use("/import", requireQueueAuth, importRouter);
+    app.use(
+      "/upload",
+      SecurityMiddleware.validateRequestSize(
+        SECURITY_CONSTANTS.REQUEST_LIMITS.MAX_UPLOAD_REQUEST_SIZE_BYTES
+      ),
+      SecurityMiddleware.rateLimit(
+        SECURITY_CONSTANTS.RATE_LIMITS.UPLOAD_WINDOW_MS,
+        SECURITY_CONSTANTS.RATE_LIMITS.UPLOAD_MAX_REQUESTS
+      ),
+      requireQueueAuth,
+      uploadRouter
+    ); // Unified HTML + image upload
+    app.use("/notes", requireQueueAuth, notesRouter);
+    app.use("/images", requireQueueAuth, imagesRouter);
+    app.use("/metrics", requireQueueAuth, metricsRouter);
+    app.use("/reinterpret", requireQueueAuth, reinterpretRouter);
+    app.use("/sources", requireQueueAuth, sourcesRouter);
+    app.use("/cache", requireQueueAuth, cacheRouter); // Cache management endpoints
+    app.use("/performance", requireQueueAuth, performanceRouter); // Performance monitoring endpoints
 
     // 404 handler
     app.use((req, res) => {
@@ -331,6 +386,29 @@ initializeApp()
 
     // Start workers
     startWorkers(serviceContainer.queues, serviceContainer);
+
+    // Weekly URL rechecks and daily pending book lookups
+    scheduleSourceJobs(
+      serviceContainer.queues.sourceQueue,
+      serviceContainer.queues.bookLookupQueue,
+      serviceContainer.logger
+    ).catch((error: unknown) =>
+      serviceContainer.logger.log(`[SOURCES] scheduling failed: ${error}`, "warn")
+    );
+
+    // Daily corpus health snapshots and weekly exploratory sweeps
+    scheduleMaintenanceJobs(serviceContainer.queues.reinterpretQueue, serviceContainer.logger).catch(
+      (error: unknown) =>
+        serviceContainer.logger.log(`[MAINTENANCE] scheduling failed: ${error}`, "warn")
+    );
+
+    // Reload the resolver context as soon as a Teach Peas decision changes the lexicon
+    subscribeToLexiconRevisions(serviceContainer.logger).catch((error: unknown) =>
+      serviceContainer.logger.log(
+        `[LEXICON_CACHE] subscription failed, falling back to the TTL: ${error}`,
+        "warn"
+      )
+    );
 
     // Handle server errors
     server.on("error", (error) => {

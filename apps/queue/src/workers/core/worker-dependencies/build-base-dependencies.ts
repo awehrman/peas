@@ -96,6 +96,7 @@ export function buildBaseDependencies(
       instructionQueue: container.queues.instructionQueue,
       categorizationQueue: container.queues.categorizationQueue,
       sourceQueue: container.queues.sourceQueue,
+      bookLookupQueue: container.queues.bookLookupQueue,
     },
   };
 }

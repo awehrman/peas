@@ -26,7 +26,8 @@ export interface IQueueService {
   instructionQueue: Queue;
   categorizationQueue: Queue;
   sourceQueue: Queue;
-  patternTrackingQueue: Queue;
+  reinterpretQueue: Queue;
+  bookLookupQueue: Queue;
 }
 
 /**

@@ -3,10 +3,12 @@
 import { useCallback, useState } from "react";
 
 import { UPLOAD_ERROR_MESSAGES } from "../constants/upload-constants";
+import { useQueueTokenProvider } from "../context/queue-auth";
 import { useImportUpload } from "../context/upload/upload-provider";
 import { UploadService } from "../services/upload-service";
 import type { FileUploadItem } from "../types/import-types";
 import { getUserErrorMessage, logError } from "../utils/error-utils";
+import { expandArchives } from "../utils/expand-archives";
 import {
   groupFilesByHtmlAndImages,
   validateFileList,
@@ -18,7 +20,9 @@ import {
  */
 export function useFileUpload() {
   const { state, dispatch } = useImportUpload();
+  const getQueueToken = useQueueTokenProvider();
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [selectionSummary, setSelectionSummary] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
   const processFileGroup = useCallback(
@@ -53,39 +57,45 @@ export function useFileUpload() {
       dispatch({
         type: "ADD_FILES",
         files: fileUploadItems,
-        directoryName: group.htmlFile.name.replace(/\.(html|htm)$/i, ""),
+        directoryName: getGroupTitle(group),
       });
 
       // Upload the group to the queue
       try {
-        await UploadService.uploadFileGroup(group, (progress) => {
-          // Batch update all files in the group at once
-          dispatch({
-            type: "UPDATE_BATCH_STATUS",
-            importId: group.importId,
-            status:
-              progress.status === "uploading"
-                ? "uploading"
-                : progress.status === "completed"
-                  ? "completed"
-                  : "failed",
-            progress: progress.progress,
-            error: progress.error,
-          });
+        const authToken = await getQueueToken?.();
 
-          // Complete or fail the batch based on progress
-          if (progress.status === "completed") {
+        await UploadService.uploadFileGroup(
+          group,
+          (progress) => {
+            // Batch update all files in the group at once
             dispatch({
-              type: "COMPLETE_BATCH",
-              successMessage: `Successfully uploaded ${group.htmlFile.name} with ${group.imageFiles.length} images`,
+              type: "UPDATE_BATCH_STATUS",
+              importId: group.importId,
+              status:
+                progress.status === "uploading"
+                  ? "uploading"
+                  : progress.status === "completed"
+                    ? "completed"
+                    : "failed",
+              progress: progress.progress,
+              error: progress.error,
             });
-          } else if (progress.status === "failed") {
-            dispatch({
-              type: "FAIL_BATCH",
-              errorMessage: progress.error || "Upload failed",
-            });
-          }
-        });
+
+            // Complete or fail the batch based on progress
+            if (progress.status === "completed") {
+              dispatch({
+                type: "COMPLETE_BATCH",
+                successMessage: `Successfully uploaded ${group.htmlFile.name} with ${group.imageFiles.length} images`,
+              });
+            } else if (progress.status === "failed") {
+              dispatch({
+                type: "FAIL_BATCH",
+                errorMessage: progress.error || "Upload failed",
+              });
+            }
+          },
+          authToken
+        );
       } catch (error) {
         logError(`Upload group ${group.importId}`, error);
         dispatch({
@@ -94,7 +104,7 @@ export function useFileUpload() {
         });
       }
     },
-    [dispatch]
+    [dispatch, getQueueToken]
   );
 
   const handleFilesChange = useCallback(
@@ -102,11 +112,13 @@ export function useFileUpload() {
       if (files.length === 0) return;
 
       setValidationError(null);
+      setSelectionSummary(null);
       setIsProcessing(true);
 
       try {
-        // Validate files
-        const validationResult = validateFileList(files);
+        // Zipped exports are unpacked in the browser and grouped like folders
+        const expandedFiles = await expandArchives(files);
+        const validationResult = validateFileList(expandedFiles);
         if (!validationResult.success) {
           const errorMessage = validationResult.error.issues
             .map((err) => err.message)
@@ -130,6 +142,29 @@ export function useFileUpload() {
           return;
         }
 
+        const imageCount = groupingResult.groups.reduce(
+          (total, group) => total + group.imageFiles.length,
+          0
+        );
+        const skipped = groupingResult.ignoredFiles.length;
+        setSelectionSummary(
+          `Queuing ${groupingResult.groups.length} notes with ${imageCount} images` +
+            (skipped > 0 ? ` (skipped ${skipped}: ${groupingResult.ignoredFiles.join(", ")})` : "")
+        );
+
+        // Every note gets a row right away, so totals stay fixed while uploads run
+        const createdAt = new Date().toISOString();
+        dispatch({
+          type: "QUEUE_BATCHES",
+          batches: groupingResult.groups.map((group) => ({
+            importId: group.importId,
+            createdAt,
+            numberOfFiles: 1 + group.imageFiles.length,
+            files: [],
+            directoryName: getGroupTitle(group),
+          })),
+        });
+
         // Process each group (HTML file + associated images)
         for (const group of groupingResult.groups) {
           await processFileGroup(group);
@@ -142,13 +177,22 @@ export function useFileUpload() {
         setIsProcessing(false);
       }
     },
-    [processFileGroup]
+    [processFileGroup, dispatch]
   );
 
   return {
     state,
     validationError,
+    selectionSummary,
     isProcessing,
     handleFilesChange,
   };
+}
+
+type FileGroup = ReturnType<typeof groupFilesByHtmlAndImages>["groups"][number];
+
+/** The note's file name without its folder or extension, used until the queue sends the real title. */
+function getGroupTitle(group: FileGroup): string {
+  const fileName = group.htmlFile.name.split("/").pop() ?? group.htmlFile.name;
+  return fileName.replace(/\.(html|htm)$/i, "");
 }

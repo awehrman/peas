@@ -1,361 +1,182 @@
 import React from "react";
 
-import { FileDropZone } from "@peas/components";
 import {
+  type ActivityState,
+  type ImportCard,
+  ImportFileUpload,
+  ImportOverview,
   ImportProvider,
-  UploadBatchHistory,
-  UploadProgress,
+  type ImportStatsState,
+  type UploadState,
+  buildImportRows,
+  createInitialCard,
+  summarizeSteps,
 } from "@peas/features";
 import type { Meta, StoryObj } from "@storybook/react";
 
-// Mock the useInitialization hook
-const mockUseInitialization = (props: {
-  initialNoteCount: number;
-  initialIngredientCount: number;
-  initialParsingErrorCount: number;
-}) => {
-  console.log("useInitialization called with:", props);
-};
+const RECIPES = [
+  ["Venison stew", "https://www.seriouseats.com/venison-stew"],
+  ["Brown butter cornbread", "https://cooking.nytimes.com/recipes/cornbread"],
+  ["Charred leeks with romesco", "Salt Fat Acid Heat, p. 212"],
+  ["Lemon olive oil cake", "https://www.bonappetit.com/recipe/lemon-cake"],
+  ["Smoky black bean soup", "https://www.budgetbytes.com/black-bean-soup"],
+  ["Miso glazed eggplant", "https://www.justonecookbook.com/miso-eggplant"],
+  ["Chicken adobo", "https://www.kawalingpinoy.com/chicken-adobo"],
+  ["Shakshuka", "https://www.seriouseats.com/shakshuka"],
+  ["Pickled red onions", undefined],
+  ["Sourdough focaccia", "https://www.kingarthurbaking.com/recipes/focaccia"],
+  ["Pea and mint risotto", "https://www.bbcgoodfood.com/recipes/pea-risotto"],
+  ["Gochujang noodles", "https://www.maangchi.com/recipe/gochujang-noodles"],
+] as const;
 
-// Mock the useFileUpload hook to simulate different upload states
-const mockUseFileUpload = (scenario: string) => {
-  const createMockFile = (
-    id: string,
-    fileName: string,
-    status: "pending" | "uploading" | "completed" | "failed",
-    progress: number = 0,
-    error?: string
-  ) => ({
-    id,
-    file: new File([""], fileName, { type: "text/html" }),
-    status,
-    progress,
-    error,
-  });
+const THUMBNAIL_COLORS = ["8fbf9f", "e0b15a", "c96f53", "7a9cc6", "a37fb5"];
 
-  switch (scenario) {
-    case "uploading":
-      return {
-        state: {
-          currentBatch: {
-            importId: "uploading-batch-123",
-            createdAt: new Date().toISOString(),
-            numberOfFiles: 1,
-            directoryName: "My Recipes",
-            files: [
-              createMockFile("file-1", "chocolate-cake.html", "uploading", 45),
-            ],
-          },
-          previousBatches: [],
-        },
-        validationError: null,
-        isProcessing: true,
-        handleFilesChange: () => {},
-      };
-
-    case "success":
-      return {
-        state: {
-          currentBatch: undefined,
-          previousBatches: [
-            {
-              importId: "success-batch-456",
-              createdAt: new Date().toISOString(),
-              numberOfFiles: 1,
-              directoryName: "Recipe Collection",
-              successMessage: "Successfully uploaded 1 file!",
-              files: [
-                createMockFile(
-                  "file-1",
-                  "chocolate-cake.html",
-                  "completed",
-                  100
-                ),
-              ],
-            },
-          ],
-        },
-        validationError: null,
-        isProcessing: false,
-        handleFilesChange: () => {},
-      };
-
-    case "failed":
-      return {
-        state: {
-          currentBatch: undefined,
-          previousBatches: [
-            {
-              importId: "failed-batch-789",
-              createdAt: new Date().toISOString(),
-              numberOfFiles: 1,
-              directoryName: "Failed Upload",
-              errorMessage: "Upload failed due to network error",
-              files: [
-                createMockFile(
-                  "file-1",
-                  "recipe1.html",
-                  "failed",
-                  0,
-                  "Network timeout"
-                ),
-              ],
-            },
-          ],
-        },
-        validationError: null,
-        isProcessing: false,
-        handleFilesChange: () => {},
-      };
-
-    case "validation-error":
-      return {
-        state: {
-          currentBatch: undefined,
-          previousBatches: [],
-        },
-        validationError:
-          "Invalid file type. Please select HTML files and associated images.",
-        isProcessing: false,
-        handleFilesChange: () => {},
-      };
-
-    default: // initial
-      return {
-        state: {
-          currentBatch: undefined,
-          previousBatches: [],
-        },
-        validationError: null,
-        isProcessing: false,
-        handleFilesChange: () => {},
-      };
-  }
-};
-
-// Mock ImportFileUpload component that uses our mock data
-interface MockImportFileUploadProps {
-  scenario: string;
+function thumbnail(index: number): string | undefined {
+  if (index % 4 === 3) return undefined;
+  const color = THUMBNAIL_COLORS[index % THUMBNAIL_COLORS.length];
+  return `https://placehold.co/80x80/${color}/ffffff?text=${index + 1}`;
 }
 
-const MockImportFileUpload: React.FC<MockImportFileUploadProps> = ({
-  scenario,
-}) => {
-  const mockData = mockUseFileUpload(scenario);
+type Stage = "imported" | "ingredients" | "images" | "failed" | "queued";
 
-  const uploadState = mockData.state.currentBatch ? "uploading" : "initial";
-  const description =
-    uploadState === "uploading"
-      ? "Processing your files..."
-      : "Select an Evernote export directory.";
-  const error =
-    mockData.validationError ||
-    (mockData.state.currentBatch as any)?.errorMessage;
+function cardAt(index: number, stage: Stage): ImportCard | undefined {
+  if (stage === "queued") return undefined;
 
-  return (
-    <div>
-      <FileDropZone
-        onFilesChange={() => {}}
-        multiple
-        allowDirectories
-        disabled={mockData.isProcessing}
-        description={description}
-        error={error}
-        isProcessing={mockData.isProcessing}
-      />
-
-      {/* Upload Progress */}
-      {mockData.state.currentBatch && (
-        <UploadProgress batch={mockData.state.currentBatch} />
-      )}
-
-      {/* Previous Batches */}
-      <UploadBatchHistory batches={mockData.state.previousBatches} />
-    </div>
-  );
-};
-
-// Local ImportPage component (same as the one in web app)
-interface ImportPageProps {
-  initialNoteCount?: number;
-  initialIngredientCount?: number;
-  initialParsingErrorCount?: number;
-  scenario?: string;
-}
-
-const ImportPage: React.FC<ImportPageProps> = ({
-  initialNoteCount = 0,
-  initialIngredientCount = 0,
-  initialParsingErrorCount = 0,
-  scenario = "initial",
-}) => {
-  // Mock the useInitialization hook
-  mockUseInitialization({
-    initialNoteCount,
-    initialIngredientCount,
-    initialParsingErrorCount,
-  });
-
-  return (
-    <div className="container mx-auto p-6">
-      <div className="grid gap-6">
-        {/* Import Notes Section */}
-        <div className="bg-card p-4 rounded-lg border">
-          <h2 className="text-lg font-semibold mb-4">Import Notes</h2>
-          <MockImportFileUpload scenario={scenario} />
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Wrapper component that provides the context
-const ImportPageWithContext: React.FC<{
-  initialNoteCount?: number;
-  initialIngredientCount?: number;
-  initialParsingErrorCount?: number;
-  scenario?: string;
-}> = ({
-  initialNoteCount = 0,
-  initialIngredientCount = 0,
-  initialParsingErrorCount = 0,
-  scenario = "initial",
-}) => {
-  const mockStatsRefresh = async () => {
-    console.log("Stats refresh requested from ImportPage story");
-    return {
-      numberOfNotes: initialNoteCount,
-      numberOfIngredients: initialIngredientCount,
-      numberOfParsingErrors: initialParsingErrorCount,
-    };
+  const [title, source] = RECIPES[index % RECIPES.length]!;
+  const card: ImportCard = {
+    ...createInitialCard(`import-${index}`, `note-${index}`),
+    title,
+    source,
+    thumbnailUrl: stage === "imported" ? thumbnail(index) : undefined,
+    isComplete: stage === "imported",
   };
+  const done = { started: true, completed: true, hasError: false };
+  card.status.cleanedNote = done;
+  card.status.savedNote = done;
+
+  if (stage === "ingredients") {
+    card.status.ingredientProcessing = {
+      started: true,
+      completed: false,
+      hasError: false,
+      processedSteps: 4 + (index % 6),
+      steps: 14,
+    };
+  }
+  if (stage === "images") {
+    card.status.ingredientProcessing = done;
+    card.status.instructionProcessing = done;
+    card.status.connectingSource = done;
+    card.status.addingImages = {
+      started: true,
+      completed: false,
+      hasError: false,
+      processedSteps: 1,
+      steps: 3,
+    };
+  }
+  if (stage === "failed") {
+    card.status.ingredientProcessing = {
+      started: true,
+      completed: false,
+      hasError: true,
+      errorMessage: 'Could not parse "a knob of butter, softened"',
+    };
+  }
+  return card;
+}
+
+function buildScenario(stages: Stage[]): { uploads: UploadState; activity: ActivityState } {
+  const cards = stages
+    .map((stage, index) => cardAt(index, stage))
+    .filter((card): card is ImportCard => card !== undefined);
+
+  return {
+    uploads: {
+      pendingBatches: [],
+      previousBatches: stages.map((_, index) => ({
+        importId: `import-${index}`,
+        createdAt: new Date().toISOString(),
+        numberOfFiles: 2,
+        files: [],
+        directoryName: RECIPES[index % RECIPES.length]![0],
+      })),
+    },
+    activity: {
+      cardIds: cards.map((card) => card.id),
+      cardsById: Object.fromEntries(cards.map((card) => [card.id, card])),
+    },
+  };
+}
+
+const LIBRARY: ImportStatsState = {
+  numberOfNotes: 1284,
+  numberOfIngredients: 9312,
+  numberOfParsingErrors: 41,
+};
+
+const SCENARIOS: Record<string, Stage[]> = {
+  midImport: [
+    ...Array<Stage>(14).fill("imported"),
+    "failed",
+    "images",
+    "ingredients",
+    "ingredients",
+    ...Array<Stage>(8).fill("queued"),
+  ],
+  finished: Array<Stage>(20).fill("imported"),
+  empty: [],
+};
+
+interface ImportPageStoryProps {
+  scenario: keyof typeof SCENARIOS;
+}
+
+function ImportPageStory({ scenario }: ImportPageStoryProps) {
+  const { uploads, activity } = buildScenario(SCENARIOS[scenario] ?? []);
+  const rows = buildImportRows(uploads, activity);
 
   return (
-    <ImportProvider onStatsRefresh={mockStatsRefresh}>
-      <ImportPage
-        initialNoteCount={initialNoteCount}
-        initialIngredientCount={initialIngredientCount}
-        initialParsingErrorCount={initialParsingErrorCount}
-        scenario={scenario}
-      />
+    <ImportProvider onStatsRefresh={async () => LIBRARY}>
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 p-8">
+        <ImportFileUpload />
+        <ImportOverview rows={rows} steps={summarizeSteps(activity, rows.length)} library={LIBRARY} />
+      </div>
     </ImportProvider>
   );
-};
+}
 
 const meta = {
   title: "Import/Page/ImportPage",
-  component: ImportPageWithContext,
-  parameters: {
-    layout: "fullscreen",
-  },
+  component: ImportPageStory,
+  parameters: { layout: "fullscreen" },
   tags: ["autodocs"],
   argTypes: {
-    initialNoteCount: {
-      control: { type: "number", min: 0, max: 1000 },
-      description: "Initial number of notes from server",
-    },
-    initialIngredientCount: {
-      control: { type: "number", min: 0, max: 1000 },
-      description: "Initial number of ingredients from server",
-    },
-    initialParsingErrorCount: {
-      control: { type: "number", min: 0, max: 100 },
-      description: "Initial number of parsing errors from server",
-    },
     scenario: {
       control: { type: "select" },
-      options: [
-        "initial",
-        "uploading",
-        "success",
-        "failed",
-        "validation-error",
-      ],
-      description: "Upload scenario to demonstrate different states",
+      options: Object.keys(SCENARIOS),
     },
   },
-} satisfies Meta<typeof ImportPageWithContext>;
+} satisfies Meta<typeof ImportPageStory>;
 
 export default meta;
-type Story = StoryObj<typeof ImportPageWithContext>;
+type Story = StoryObj<typeof ImportPageStory>;
 
-export const Default: Story = {
-  args: {
-    initialNoteCount: 0,
-    initialIngredientCount: 0,
-    initialParsingErrorCount: 0,
-    scenario: "initial",
-  },
+export const MidImport: Story = {
+  args: { scenario: "midImport" },
   parameters: {
     docs: {
       description: {
-        story: "Import page in initial state, ready to accept files.",
+        story: "A large export partway through: one note needs a look, a few are importing, the rest wait in the queue.",
       },
     },
   },
 };
 
-export const Uploading: Story = {
-  args: {
-    initialNoteCount: 0,
-    initialIngredientCount: 0,
-    initialParsingErrorCount: 0,
-    scenario: "uploading",
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "Import page showing upload in progress with 1 file being processed.",
-      },
-    },
-  },
+export const Finished: Story = {
+  args: { scenario: "finished" },
 };
 
-export const UploadSuccess: Story = {
-  args: {
-    initialNoteCount: 0,
-    initialIngredientCount: 0,
-    initialParsingErrorCount: 0,
-    scenario: "success",
-  },
-  parameters: {
-    docs: {
-      description: {
-        story: "Import page showing successful upload completion.",
-      },
-    },
-  },
-};
-
-export const UploadFailed: Story = {
-  args: {
-    initialNoteCount: 0,
-    initialIngredientCount: 0,
-    initialParsingErrorCount: 0,
-    scenario: "failed",
-  },
-  parameters: {
-    docs: {
-      description: {
-        story: "Import page showing failed upload with error message.",
-      },
-    },
-  },
-};
-
-export const ValidationError: Story = {
-  args: {
-    initialNoteCount: 0,
-    initialIngredientCount: 0,
-    initialParsingErrorCount: 0,
-    scenario: "validation-error",
-  },
-  parameters: {
-    docs: {
-      description: {
-        story: "Import page showing validation error for invalid file types.",
-      },
-    },
-  },
+export const Empty: Story = {
+  args: { scenario: "empty" },
 };

@@ -35,19 +35,43 @@ export type FontWeight = {
   black: string;
 };
 
+export type Tracking = {
+  tight: string;
+  normal: string;
+  wide: string;
+};
+
 export type Typography = {
   fontFamily: FontFamily;
   fontSize: FontSize;
+  /** Line height paired with each font size */
+  lineHeight: FontSize;
   fontWeight: FontWeight;
+  tracking: Tracking;
 };
 
 /**
  * Default typography settings
+ *
+ * Source Sans 3 has a small x-height, so line heights run a touch tighter
+ * than Tailwind's defaults to keep text blocks from looking airy.
  */
 export const typography: Typography = {
   fontFamily: {
-    sans: ["var(--font-source-sans)", "sans-serif"],
-    mono: ["JetBrains Mono", "monospace"],
+    sans: [
+      "var(--font-source-sans)",
+      "system-ui",
+      "-apple-system",
+      "Segoe UI",
+      "sans-serif",
+    ],
+    mono: [
+      "ui-monospace",
+      "SFMono-Regular",
+      "Menlo",
+      "Consolas",
+      "monospace",
+    ],
   },
   fontSize: {
     xs: "0.75rem", // 12px
@@ -64,6 +88,21 @@ export const typography: Typography = {
     "8xl": "6rem", // 96px
     "9xl": "8rem", // 128px
   },
+  lineHeight: {
+    xs: "1rem",
+    sm: "1.25rem",
+    base: "1.5rem",
+    lg: "1.625rem",
+    xl: "1.75rem",
+    "2xl": "2rem",
+    "3xl": "2.25rem",
+    "4xl": "2.5rem",
+    "5xl": "1.1",
+    "6xl": "1.05",
+    "7xl": "1",
+    "8xl": "1",
+    "9xl": "1",
+  },
   fontWeight: {
     thin: "100",
     extralight: "200",
@@ -74,6 +113,11 @@ export const typography: Typography = {
     bold: "700",
     extrabold: "800",
     black: "900",
+  },
+  tracking: {
+    tight: "-0.015em",
+    normal: "0em",
+    wide: "0.025em",
   },
 };
 

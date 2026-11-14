@@ -12,9 +12,16 @@ model User {
   username      String   @unique
   email         String   @unique
   passwordHash  String
+  avatarUrl     String?
   sessions Session[]
 
   userType UserType @default(USER)
+
+  verifiedMentions IngredientMention[]
+  decisions        LexiconDecision[]
+  categoryDecisions  NoteCategory[]
+  duplicateDecisions DuplicateCandidate[]
+  structureDecisions StructureProposal[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

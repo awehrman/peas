@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import { ActionName } from "../../../types";
 import type { NotePipelineData } from "../../../types/notes";
@@ -87,8 +87,8 @@ describe("registerNoteActions", () => {
     NoteWorkerDependencies,
     NotePipelineData
   >;
-  let mockCreateActionRegistration: ReturnType<typeof vi.fn>;
-  let mockRegisterActions: ReturnType<typeof vi.fn>;
+  let mockCreateActionRegistration: Mock;
+  let mockRegisterActions: Mock;
 
   beforeEach(() => {
     // Clear all mocks

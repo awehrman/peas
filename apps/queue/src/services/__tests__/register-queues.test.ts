@@ -1,5 +1,5 @@
 import type { Queue } from "bullmq";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import { testQueueInterface } from "../../test-utils/service";
 import {
@@ -19,7 +19,7 @@ vi.mock("../../queues/create-queue", () => ({
 }));
 
 describe("register-queues.ts", () => {
-  let mockCreateQueue: ReturnType<typeof vi.fn>;
+  let mockCreateQueue: Mock;
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -38,7 +38,8 @@ describe("register-queues.ts", () => {
         instructionQueue: mockQueue,
         categorizationQueue: mockQueue,
         sourceQueue: mockQueue,
-        patternTrackingQueue: mockQueue,
+        reinterpretQueue: mockQueue,
+        bookLookupQueue: mockQueue,
       };
 
       expect(queueService).toHaveProperty("noteQueue");
@@ -47,7 +48,7 @@ describe("register-queues.ts", () => {
       expect(queueService).toHaveProperty("instructionQueue");
       expect(queueService).toHaveProperty("categorizationQueue");
       expect(queueService).toHaveProperty("sourceQueue");
-      expect(queueService).toHaveProperty("patternTrackingQueue");
+      expect(queueService).toHaveProperty("reinterpretQueue");
     });
   });
 
@@ -67,18 +68,18 @@ describe("register-queues.ts", () => {
         expect(queueService).toHaveProperty("instructionQueue");
         expect(queueService).toHaveProperty("categorizationQueue");
         expect(queueService).toHaveProperty("sourceQueue");
-        expect(queueService).toHaveProperty("patternTrackingQueue");
+        expect(queueService).toHaveProperty("reinterpretQueue");
       });
 
       it("should call createQueue for each queue type", () => {
-        expect(mockCreateQueue).toHaveBeenCalledTimes(7);
+        expect(mockCreateQueue).toHaveBeenCalledTimes(8);
         expect(mockCreateQueue).toHaveBeenCalledWith("note");
         expect(mockCreateQueue).toHaveBeenCalledWith("image");
         expect(mockCreateQueue).toHaveBeenCalledWith("ingredient");
         expect(mockCreateQueue).toHaveBeenCalledWith("instruction");
         expect(mockCreateQueue).toHaveBeenCalledWith("categorization");
         expect(mockCreateQueue).toHaveBeenCalledWith("source");
-        expect(mockCreateQueue).toHaveBeenCalledWith("patternTracking");
+        expect(mockCreateQueue).toHaveBeenCalledWith("reinterpret");
       });
 
       it("should assign created queues to readonly properties", () => {
@@ -88,7 +89,7 @@ describe("register-queues.ts", () => {
         expect(queueService.instructionQueue).toBeDefined();
         expect(queueService.categorizationQueue).toBeDefined();
         expect(queueService.sourceQueue).toBeDefined();
-        expect(queueService.patternTrackingQueue).toBeDefined();
+        expect(queueService.reinterpretQueue).toBeDefined();
 
         expect(queueService.noteQueue.name).toBe("note");
         expect(queueService.imageQueue.name).toBe("image");
@@ -96,7 +97,7 @@ describe("register-queues.ts", () => {
         expect(queueService.instructionQueue.name).toBe("instruction");
         expect(queueService.categorizationQueue.name).toBe("categorization");
         expect(queueService.sourceQueue.name).toBe("source");
-        expect(queueService.patternTrackingQueue.name).toBe("patternTracking");
+        expect(queueService.reinterpretQueue.name).toBe("reinterpret");
       });
 
       it("should implement IQueueService interface", () => {
@@ -112,7 +113,7 @@ describe("register-queues.ts", () => {
         expect(queueService.instructionQueue).toBeInstanceOf(Object);
         expect(queueService.categorizationQueue).toBeInstanceOf(Object);
         expect(queueService.sourceQueue).toBeInstanceOf(Object);
-        expect(queueService.patternTrackingQueue).toBeInstanceOf(Object);
+        expect(queueService.reinterpretQueue).toBeInstanceOf(Object);
       });
 
       it("should have queue methods available", () => {
@@ -142,7 +143,7 @@ describe("register-queues.ts", () => {
           "instruction",
           "categorization",
           "source",
-          "patternTracking",
+          "reinterpret",
         ];
 
         const actualNames = [
@@ -152,7 +153,7 @@ describe("register-queues.ts", () => {
           queueService.instructionQueue.name,
           queueService.categorizationQueue.name,
           queueService.sourceQueue.name,
-          queueService.patternTrackingQueue.name,
+          queueService.reinterpretQueue.name,
         ];
 
         expect(actualNames).toEqual(expectedNames);
@@ -209,7 +210,7 @@ describe("register-queues.ts", () => {
       expect(service).toHaveProperty("instructionQueue");
       expect(service).toHaveProperty("categorizationQueue");
       expect(service).toHaveProperty("sourceQueue");
-      expect(service).toHaveProperty("patternTrackingQueue");
+      expect(service).toHaveProperty("reinterpretQueue");
     });
 
     it("should implement IQueueService interface", () => {
@@ -228,7 +229,7 @@ describe("register-queues.ts", () => {
       expect(service.instructionQueue.name).toBe("instruction");
       expect(service.categorizationQueue.name).toBe("categorization");
       expect(service.sourceQueue.name).toBe("source");
-      expect(service.patternTrackingQueue.name).toBe("patternTracking");
+      expect(service.reinterpretQueue.name).toBe("reinterpret");
     });
 
     it("should return different instances on multiple calls", () => {
@@ -244,12 +245,12 @@ describe("register-queues.ts", () => {
       vi.clearAllMocks();
 
       registerQueues();
-      expect(mockCreateQueue).toHaveBeenCalledTimes(7);
+      expect(mockCreateQueue).toHaveBeenCalledTimes(8);
 
       vi.clearAllMocks();
 
       registerQueues();
-      expect(mockCreateQueue).toHaveBeenCalledTimes(7);
+      expect(mockCreateQueue).toHaveBeenCalledTimes(8);
     });
   });
 
@@ -273,7 +274,7 @@ describe("register-queues.ts", () => {
         "instructionQueue",
         "categorizationQueue",
         "sourceQueue",
-        "patternTrackingQueue",
+        "reinterpretQueue",
       ];
 
       requiredProperties.forEach((prop) => {

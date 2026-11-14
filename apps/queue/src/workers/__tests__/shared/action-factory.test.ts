@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { type Mock, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ActionFactory } from "../../core/action-factory";
 import { SharedActionFactory } from "../../shared/action-factory";
@@ -9,13 +9,15 @@ vi.mock("../../core/action-factory", () => {
   const MockActionFactory = vi.fn();
 
   // Create a simple mock that doesn't cause circular references
-  MockActionFactory.mockImplementation(() => ({
-    register: vi.fn(),
-    has: vi.fn(),
-    create: vi.fn(),
-    getRegisteredActions: vi.fn(),
-    clear: vi.fn(),
-  }));
+  MockActionFactory.mockImplementation(function () {
+    return {
+      register: vi.fn(),
+      has: vi.fn(),
+      create: vi.fn(),
+      getRegisteredActions: vi.fn(),
+      clear: vi.fn(),
+    };
+  });
 
   return { ActionFactory: MockActionFactory };
 });
@@ -180,11 +182,9 @@ describe("SharedActionFactory", () => {
 
   describe("error handling", () => {
     it("should not throw when ActionFactory constructor fails", () => {
-      (ActionFactory as unknown as ReturnType<typeof vi.fn>).mockImplementation(
-        () => {
-          throw new Error("Constructor error");
-        }
-      );
+      (ActionFactory as unknown as Mock).mockImplementation(function () {
+        throw new Error("Constructor error");
+      });
 
       expect(() => {
         SharedActionFactory.createStandardFactory();

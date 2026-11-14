@@ -1,4 +1,8 @@
-import { updateNote, updateParsingErrorCount } from "@peas/database";
+import {
+  markNoteCompleted,
+  updateNote,
+  updateParsingErrorCount,
+} from "@peas/database";
 import type { Prisma } from "@peas/database";
 
 import type { StructuredLogger } from "../../../../types";
@@ -144,8 +148,7 @@ export async function markImageJobCompleted(
       if (isComplete) {
         try {
           // Get R2 URLs from the most recent image for this note
-          const { PrismaClient } = await import("@prisma/client");
-          const prisma = new PrismaClient();
+          const { prisma } = await import("@peas/database");
 
           const latestImage = await prisma.image.findFirst({
             where: { noteId: status.noteId },
@@ -165,8 +168,6 @@ export async function markImageJobCompleted(
               r2Crop16x9Url: latestImage.crop16x9ImageUrl,
             };
           }
-
-          await prisma.$disconnect();
         } catch (dbError) {
           logger.log(`[TRACK_COMPLETION] Failed to fetch R2 URLs: ${dbError}`);
         }
@@ -306,10 +307,8 @@ export async function markWorkerCompleted(
   // This prevents intermediate status updates that cause UI resets
   if (allCompleted) {
     try {
-      // Update the note status in the database
-      await updateNote(noteId, {
-        status: "COMPLETED",
-      });
+      // A note held for a duplicate decision stays DUPLICATE
+      await markNoteCompleted(noteId);
 
       // Update the parsing error count based on actual parsing errors
       try {

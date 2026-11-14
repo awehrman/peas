@@ -1,7 +1,7 @@
 // Test setup file for Vitest
 import fs from "fs/promises";
 import path from "path";
-import { afterAll, afterEach, beforeAll, vi } from "vitest";
+import { type Mock, afterAll, afterEach, beforeAll, vi } from "vitest";
 
 import { QUEUE_DEFAULTS, SERVER_DEFAULTS } from "../config";
 
@@ -184,10 +184,10 @@ export async function waitFor(
  * Mock console methods for testing
  */
 export function mockConsole(): {
-  log: ReturnType<typeof vi.fn>;
-  error: ReturnType<typeof vi.fn>;
-  warn: ReturnType<typeof vi.fn>;
-  info: ReturnType<typeof vi.fn>;
+  log: Mock;
+  error: Mock;
+  warn: Mock;
+  info: Mock;
   restore: () => void;
 } {
   const log = vi.fn();
@@ -232,30 +232,38 @@ vi.mock("./config/redis", () => ({
 
 // Mock BullMQ for testing
 vi.mock("bullmq", () => ({
-  Queue: vi.fn().mockImplementation(() => ({
-    add: vi.fn().mockResolvedValue({ id: "test-job-id" }),
-    close: vi.fn().mockResolvedValue(undefined),
-  })),
-  Worker: vi.fn().mockImplementation(() => ({
-    close: vi.fn().mockResolvedValue(undefined),
-  })),
+  Queue: vi.fn().mockImplementation(function () {
+    return {
+      add: vi.fn().mockResolvedValue({ id: "test-job-id" }),
+      close: vi.fn().mockResolvedValue(undefined),
+    };
+  }),
+  Worker: vi.fn().mockImplementation(function () {
+    return {
+      close: vi.fn().mockResolvedValue(undefined),
+    };
+  }),
 }));
 
 // Mock createQueue globally for all tests
 vi.mock("apps/queue/src/queues/createQueue", () => ({
-  createQueue: vi.fn((name) => ({
-    get name() {
-      return name;
-    },
-  })),
+  createQueue: vi.fn(function (name) {
+    return {
+      get name() {
+        return name;
+      },
+    };
+  }),
 }));
 // Also mock for tests that import from ../queues/createQueue
 vi.mock("../queues/createQueue", () => ({
-  createQueue: vi.fn((name) => ({
-    get name() {
-      return name;
-    },
-  })),
+  createQueue: vi.fn(function (name) {
+    return {
+      get name() {
+        return name;
+      },
+    };
+  }),
 }));
 
 // Export a function that can be called to verify setup

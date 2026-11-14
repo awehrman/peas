@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import { ActionName } from "../../../../../types";
 import type { NotePipelineData } from "../../../../../types/notes";
@@ -17,7 +17,7 @@ describe("ProcessSourceAction", () => {
   let mockData: NotePipelineData;
   let mockDeps: NoteWorkerDependencies;
   let mockContext: ActionContext;
-  let mockProcessSource: ReturnType<typeof vi.fn>;
+  let mockProcessSource: Mock;
 
   beforeEach(async () => {
     // Clear all mocks
@@ -162,7 +162,7 @@ describe("ProcessSourceAction", () => {
     it("should execute the service action with correct parameters", async () => {
       const result = await action.execute(mockData, mockDeps, mockContext);
 
-      expect(mockProcessSource).toHaveBeenCalledWith(mockData, mockDeps.logger);
+      expect(mockProcessSource).toHaveBeenCalledWith(mockData, mockDeps.logger, mockDeps.queues);
       expect(result).toBe(mockData);
     });
 
@@ -268,7 +268,8 @@ describe("ProcessSourceAction", () => {
       expect(result).toBe(mockData); // Service returns the original mockData
       expect(mockProcessSource).toHaveBeenCalledWith(
         dataWithDifferentNoteId,
-        mockDeps.logger
+        mockDeps.logger,
+        mockDeps.queues
       );
     });
 
@@ -301,7 +302,8 @@ describe("ProcessSourceAction", () => {
       expect(result).toBe(mockData); // Service returns the original mockData
       expect(mockProcessSource).toHaveBeenCalledWith(
         complexData,
-        mockDeps.logger
+        mockDeps.logger,
+        mockDeps.queues
       );
     });
   });

@@ -4,10 +4,13 @@ import { SimHash } from "simhash-js";
  * Utility functions for SimHash-based similarity comparison
  */
 
+/** simhash-js produces unsigned 32-bit hashes. */
+export const SIMHASH_BITS = 32;
+
 /**
  * Generate a SimHash for a given text
  * @param text The text to generate a SimHash for
- * @returns The SimHash as a string (binary representation)
+ * @returns The SimHash as a zero-padded 32-character binary string, so every hash has the same length and Hamming distances compare
  */
 export function generateSimHash(text: string): string {
   if (!text || text.trim().length === 0) {
@@ -16,7 +19,7 @@ export function generateSimHash(text: string): string {
 
   const simhash = new SimHash();
   const hashNumber = simhash.hash(text.trim().toLowerCase());
-  return hashNumber.toString(2); // Convert to binary string
+  return (hashNumber >>> 0).toString(2).padStart(SIMHASH_BITS, "0");
 }
 
 /**

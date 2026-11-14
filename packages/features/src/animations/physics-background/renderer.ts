@@ -1,55 +1,41 @@
 import { PHYSICS_CONFIG } from "./config.js";
 import { peaManager } from "./pea-manager.js";
-
-import Matter from "matter-js";
+import type { PeaBody } from "./physics-engine.js";
 
 /**
- * Handles canvas rendering for the physics background
+ * Handles canvas rendering for the physics background. Drawing happens in
+ * CSS pixels; the backing store is scaled by devicePixelRatio for sharpness.
  */
 export class PhysicsRenderer {
   private canvas: HTMLCanvasElement;
-  private isRunning = false;
+  private width = 0;
+  private height = 0;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
   }
 
   /**
-   * Start the rendering loop
+   * Size the canvas backing store to match its CSS size
    */
-  public start(): void {
-    this.isRunning = true;
-    this.draw();
-  }
+  public resize(width: number, height: number): void {
+    const pixelRatio = window.devicePixelRatio || 1;
 
-  /**
-   * Stop the rendering loop
-   */
-  public stop(): void {
-    this.isRunning = false;
-  }
-
-  /**
-   * Main drawing loop
-   */
-  private draw(): void {
-    if (!this.isRunning) return;
-
-    const ctx = this.canvas.getContext("2d");
-    if (!ctx) return;
-
-    ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    window.requestAnimationFrame(() => this.draw());
+    this.width = width;
+    this.height = height;
+    this.canvas.width = Math.round(width * pixelRatio);
+    this.canvas.height = Math.round(height * pixelRatio);
+    this.canvas.getContext("2d")?.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
   }
 
   /**
    * Draw all peas
    */
-  public drawPeas(bodies: Matter.Body[]): void {
+  public drawPeas(bodies: PeaBody[]): void {
     const ctx = this.canvas.getContext("2d");
     if (!ctx) return;
 
-    ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    ctx.clearRect(0, 0, this.width, this.height);
 
     bodies.forEach((body) => {
       this.drawPeaIfVisible(ctx, body);
@@ -57,57 +43,35 @@ export class PhysicsRenderer {
   }
 
   /**
-   * Draw a single pea if it's visible
+   * Draw a single pea, rotated about its center, if it's visible
    */
-  private drawPeaIfVisible(
-    ctx: CanvasRenderingContext2D,
-    body: Matter.Body
-  ): void {
-    // Only draw peas that are visible (culling for performance)
+  private drawPeaIfVisible(ctx: CanvasRenderingContext2D, body: PeaBody): void {
     if (!this.isPeaVisible(body)) return;
 
-    const peaIdx = (body as Matter.Body & { peaIdx?: number }).peaIdx;
-    const sizeScale = (body as Matter.Body & { sizeScale?: number }).sizeScale;
-
-    if (typeof peaIdx !== "number" || typeof sizeScale !== "number") return;
-
-    const pea = peaManager.getPea(peaIdx);
-    const img = peaManager.getPeaImage(peaIdx);
-
+    const pea = peaManager.getPea(body.peaIdx);
+    const img = peaManager.getPeaImage(body.peaIdx);
     if (!pea || !img) return;
 
-    const { width, height } = pea;
-    const drawWidth = width / sizeScale;
-    const drawHeight = height / sizeScale;
+    const drawWidth = pea.width * body.drawScale;
+    const drawHeight = pea.height * body.drawScale;
 
     ctx.save();
-    ctx.translate(
-      body.position.x - drawWidth / 2,
-      body.position.y - drawHeight / 2
-    );
+    ctx.translate(body.position.x, body.position.y);
     ctx.rotate(body.angle);
-    ctx.drawImage(img, 0, 0, drawWidth, drawHeight);
+    ctx.drawImage(img, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
     ctx.restore();
   }
 
   /**
    * Check if a pea is visible on screen
    */
-  private isPeaVisible(body: Matter.Body): boolean {
+  private isPeaVisible(body: PeaBody): boolean {
     const margin = PHYSICS_CONFIG.CULLING_MARGIN;
     return (
       body.position.x >= -margin &&
-      body.position.x <= this.canvas.width + margin &&
+      body.position.x <= this.width + margin &&
       body.position.y >= -margin &&
-      body.position.y <= this.canvas.height + margin
+      body.position.y <= this.height + margin
     );
-  }
-
-  /**
-   * Update canvas size
-   */
-  public updateCanvasSize(width: number, height: number): void {
-    this.canvas.width = width;
-    this.canvas.height = height;
   }
 }

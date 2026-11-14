@@ -17,11 +17,18 @@
     "test:coverage": "vitest run --coverage",
     "lint": "eslint --ext .ts,.tsx src",
     "type-check": "tsc --noEmit",
-    "cleanup:imports": "node scripts/cleanup-orphaned-imports.js"
+    "cleanup:imports": "node scripts/cleanup-orphaned-imports.js",
+    "preview-export": "tsx scripts/preview-export.ts",
+    "clear-imports": "tsx scripts/clear-imports.ts",
+    "backfill:mentions": "tsx scripts/backfill-mentions.ts",
+    "reinterpret": "tsx scripts/reinterpret.ts",
+    "reparse": "tsx scripts/reparse.ts",
+    "reparse:dry-run": "tsx scripts/reparse-dry-run.ts",
+    "structure:shadow": "tsx scripts/structure-shadow.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.864.0",
-    "@aws-sdk/s3-request-presigner": "^3.864.0",
+    "@aws-sdk/client-s3": "^3.1167.0",
+    "@aws-sdk/s3-request-presigner": "^3.1167.0",
     "@bull-board/api": "^6.11.0",
     "@bull-board/express": "^6.11.0",
     "@peas/database": "*",
@@ -36,14 +43,16 @@
     "dotenv": "^17.2.0",
     "express": "^5.1.0",
     "find-up": "^7.0.0",
+    "ipaddr.js": "^2.5.0",
     "multer": "^2.0.2",
     "pluralize": "^8.0.0",
     "redis": "^5.6.0",
     "sharp": "^0.34.3",
     "simhash-js": "^1.0.0",
     "ts-node": "^10.9.2",
+    "undici": "^8.12.4",
     "ws": "^8.18.0",
-    "zod": "^4.0.5"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@peas/database": "*",
@@ -55,14 +64,15 @@
     "@types/pluralize": "^0.0.33",
     "@types/supertest": "^6.0.3",
     "@types/ws": "^8.5.10",
-    "@vitest/coverage-istanbul": "3.2.4",
-    "@vitest/ui": "^3.2.4",
+    "@vitest/coverage-istanbul": "5.1.0",
+    "@vitest/ui": "^5.1.0",
     "eslint": "^9.0.0",
     "supertest": "^7.1.4",
     "ts-node-dev": "^2.0.0",
-    "tsup": "^8.5.0",
+    "tsup": "^9.0.0",
     "tsx": "^4.7.0",
-    "typescript": "^5.8.3",
-    "vitest": "^3.2.4"
+    "typescript": "^6.0.3",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.0"
   }
 }

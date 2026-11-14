@@ -1,0 +1,901 @@
+{
+  "revision": 1,
+  "entries": [
+    {
+      "id": "b1e20705-a53b-470b-8370-3097d6f614f9",
+      "text": "milk",
+      "role": "FOOD",
+      "status": "ACTIVE",
+      "kind": "CANONICAL",
+      "conceptId": "8bf2fdd1-8a0b-52c0-a8e1-deee1dae4ac3",
+      "attributeValueId": null,
+      "preparationId": null,
+      "valueKey": null
+    },
+    {
+      "id": "02e541fe-83d1-481e-b892-42ca98ebd8d0",
+      "text": "whole milk",
+      "role": "FOOD",
+      "status": "ACTIVE",
+      "kind": "CANONICAL",
+      "conceptId": "086574e3-f14f-56ac-8527-6f00c6357521",
+      "attributeValueId": null,
+      "preparationId": null,
+      "valueKey": null
+    },
+    {
+      "id": "e825dd8e-709a-4336-9527-c5b377176c20",
+      "text": "apple",
+      "role": "FOOD",
+      "status": "ACTIVE",
+      "kind": "CANONICAL",
+      "conceptId": "0a785295-6b32-5359-837c-2fc80c9e38c2",
+      "attributeValueId": null,
+      "preparationId": null,
+      "valueKey": null
+    },
+    {
+      "id": "72c149b7-9215-4bf0-995e-cc8a83fbba3e",
+      "text": "apples",
+      "role": "FOOD",
+      "status": "ACTIVE",
+      "kind": "PLURAL",
+      "conceptId": "0a785295-6b32-5359-837c-2fc80c9e38c2",
+      "attributeValueId": null,
+      "preparationId": null,
+      "valueKey": null
+    },
+    {
+      "id": "113141cb-eaa3-4a58-b0af-d98c8f133414",
+      "text": "granny smith apple",
+      "role": "FOOD",
+      "status": "ACTIVE",
+      "kind": "CANONICAL",
+      "conceptId": "3b56c78a-9a9a-5994-818b-120e1044e259",
+      "attributeValueId": null,
+      "preparationId": null,
+      "valueKey": null
+    },
+    {
+      "id": "0570bff8-c673-465e-b0e5-121a78acba50",
+      "text": "granny smith apples",
+      "role": "FOOD",
+      "status": "ACTIVE",
+      "kind": "PLURAL",
+      "conceptId": "3b56c78a-9a9a-5994-818b-120e1044e259",
+      "attributeValueId": null,
+      "preparationId": null,
+      "valueKey": null
+    },
+    {
+      "id": "1bc38eb8-aa83-4d78-808c-e5a05e987d85",
+      "text": "chicken",
+      "role": "FOOD",
+      "status": "ACTIVE",
+      "kind": "CANONICAL",
+      "conceptId": "8d0692e2-ddaa-552e-951c-a88f8c5b2605",
+      "attributeValueId": null,
+      "preparationId": null,
+      "valueKey": null
+    },
+    {
+      "id": "84cd3dda-32d6-4ec1-8179-49d872b64ac3",
+      "text": "chicken thigh",
+      "role": "FOOD",
+      "status": "ACTIVE",
+      "kind": "CANONICAL",
+      "conceptId": "a7ce9366-e2d3-51d9-a0e0-b941768ae854",
+      "attributeValueId": null,
+      "preparationId": null,
+      "valueKey": null
+    },
+    {
+      "id": "deda69fe-ffef-48f4-b1f3-74124f27386c",
+      "text": "chicken thighs",
+      "role": "FOOD",
+      "status": "ACTIVE",
+      "kind": "PLURAL",
+      "conceptId": "a7ce9366-e2d3-51d9-a0e0-b941768ae854",
+      "attributeValueId": null,
+      "preparationId": null,
+      "valueKey": null
+    },
+    {
+      "id": "068094fc-344c-4e62-adc2-ba84d446ff1a",
+      "text": "parsley",
+      "role": "FOOD",
+      "status": "ACTIVE",
+      "kind": "CANONICAL",
+      "conceptId": "3900529b-01b8-576c-9806-0bab7102c8fa",
+      "attributeValueId": null,
+      "preparationId": null,
+      "valueKey": null
+    },
+    {
+      "id": "0048fcf6-750d-4fe2-b8d2-442bef0d3e2c",
+      "text": "mozzarella",
+      "role": "FOOD",
+      "status": "ACTIVE",
+      "kind": "CANONICAL",
+      "conceptId": "70d2afb0-6499-5c90-8c53-d76622e591a1",
+      "attributeValueId": null,
+      "preparationId": null,
+      "valueKey": null
+    },
+    {
+      "id": "70931da2-bc86-494f-b0f2-1ed026a1d069",
+      "text": "fresh mozzarella",
+      "role": "FOOD",
+      "status": "ACTIVE",
+      "kind": "CANONICAL",
+      "conceptId": "b6838cf4-0729-5be0-a9a9-108a60890457",
+      "attributeValueId": null,
+      "preparationId": null,
+      "valueKey": null
+    },
+    {
+      "id": "d8892aba-d6dc-45d7-b992-c50d999645dc",
+      "text": "powdered sugar",
+      "role": "FOOD",
+      "status": "ACTIVE",
+      "kind": "CANONICAL",
+      "conceptId": "30079cea-40c6-5149-8bc4-29e5b64ebd3f",
+      "attributeValueId": null,
+      "preparationId": null,
+      "valueKey": null
+    },
+    {
+      "id": "29c3ced4-23e2-40d0-8c7e-296848edbffd",
+      "text": "confectioners sugar",
+      "role": "FOOD",
+      "status": "ACTIVE",
+      "kind": "ALIAS",
+      "conceptId": "30079cea-40c6-5149-8bc4-29e5b64ebd3f",
+      "attributeValueId": null,
+      "preparationId": null,
+      "valueKey": null
+    },
+    {
+      "id": "5cac3630-ee44-41f3-ac6f-29403884e56e",
+      "text": "tomato",
+      "role": "FOOD",
+      "status": "ACTIVE",
+      "kind": "CANONICAL",
+      "conceptId": "780ec91b-eb8f-5f75-aac2-f0e88020fcbc",
+      "attributeValueId": null,
+      "preparationId": null,
+      "valueKey": null
+    },
+    {
+      "id": "be739fd5-bc06-48ef-8a33-4a6f58125244",
+      "text": "tomatoes",
+      "role": "FOOD",
+      "status": "ACTIVE",
+      "kind": "PLURAL",
+      "conceptId": "780ec91b-eb8f-5f75-aac2-f0e88020fcbc",
+      "attributeValueId": null,
+      "preparationId": null,
+      "valueKey": null
+    },
+    {
+      "id": "8f0300d7-74e1-4027-91a1-799c5755c342",
+      "text": "salt",
+      "role": "FOOD",
+      "status": "ACTIVE",
+      "kind": "CANONICAL",
+      "conceptId": "a6db2cb2-df29-50a1-81af-86e8b1f6cca3",
+      "attributeValueId": null,
+      "preparationId": null,
+      "valueKey": null
+    },
+    {
+      "id": "3cd1695c-4f3d-4401-8c3c-5bfc6ed30471",
+      "text": "whole",
+      "role": "ATTRIBUTE",
+      "status": "ACTIVE",
+      "kind": null,
+      "conceptId": null,
+      "attributeValueId": "0d79dff5-8211-5ac5-8dbc-8eb4cd755c6a",
+      "preparationId": null,
+      "valueKey": null
+    },
+    {
+      "id": "cb4e9c9f-a461-433f-92e9-c13615e9e7f0",
+      "text": "whole",
+      "role": "ATTRIBUTE",
+      "status": "ACTIVE",
+      "kind": null,
+      "conceptId": null,
+      "attributeValueId": "cc8290d8-4fe5-51a4-8769-28d05fb6da7f",
+      "preparationId": null,
+      "valueKey": null
+    },
+    {
+      "id": "2786f551-7e37-4a72-822c-8dc53aacb751",
+      "text": "green",
+      "role": "ATTRIBUTE",
+      "status": "ACTIVE",
+      "kind": null,
+      "conceptId": null,
+      "attributeValueId": "474eef10-99bc-5ed3-b974-67d83eab8958",
+      "preparationId": null,
+      "valueKey": null
+    },
+    {
+      "id": "9152c0dd-6a57-48de-94ce-37d6e0d699e3",
+      "text": "green",
+      "role": "ATTRIBUTE",
+      "status": "ACTIVE",
+      "kind": null,
+      "conceptId": null,
+      "attributeValueId": "f32e15c5-3eef-5ada-9172-8e5945b8f0eb",
+      "preparationId": null,
+      "valueKey": null
+    },
+    {
+      "id": "63024d7a-17bc-41c1-a7ac-c67df416c887",
+      "text": "boneless",
+      "role": "ATTRIBUTE",
+      "status": "ACTIVE",
+      "kind": null,
+      "conceptId": null,
+      "attributeValueId": "4f2419ea-75da-5003-a0ce-399cf523836f",
+      "preparationId": null,
+      "valueKey": null
+    },
+    {
+      "id": "2ea367cd-e613-4027-ba5a-dc4905518db0",
+      "text": "skinless",
+      "role": "ATTRIBUTE",
+      "status": "ACTIVE",
+      "kind": null,
+      "conceptId": null,
+      "attributeValueId": "e779afc0-121b-522a-b1a2-096b21fa3fa6",
+      "preparationId": null,
+      "valueKey": null
+    },
+    {
+      "id": "c7d129d0-4c7c-4407-b6d3-38aa35a227cf",
+      "text": "fresh",
+      "role": "ATTRIBUTE",
+      "status": "ACTIVE",
+      "kind": null,
+      "conceptId": null,
+      "attributeValueId": "c72b77f2-24de-5a86-856c-66c6944bad6c",
+      "preparationId": null,
+      "valueKey": null
+    },
+    {
+      "id": "3bac62e8-5ad0-457e-9745-098e85d9d7d2",
+      "text": "chopped",
+      "role": "PREPARATION",
+      "status": "ACTIVE",
+      "kind": null,
+      "conceptId": null,
+      "attributeValueId": null,
+      "preparationId": "cbfe0a2c-b5f8-5c4c-8550-682e6fd3cf0c",
+      "valueKey": null
+    },
+    {
+      "id": "03b030e4-97fb-475f-a964-8d51484e2317",
+      "text": "peeled",
+      "role": "PREPARATION",
+      "status": "ACTIVE",
+      "kind": null,
+      "conceptId": null,
+      "attributeValueId": null,
+      "preparationId": "92427a4e-e73f-55fa-b6d5-822552b1a524",
+      "valueKey": null
+    },
+    {
+      "id": "3df9a16f-a6d5-403a-8133-0aab8189286a",
+      "text": "warmed",
+      "role": "PREPARATION",
+      "status": "ACTIVE",
+      "kind": null,
+      "conceptId": null,
+      "attributeValueId": null,
+      "preparationId": "749767ad-ae53-511c-8df9-384afbfeca00",
+      "valueKey": null
+    },
+    {
+      "id": "51582bd5-a1bb-44be-b19c-24d7c21fde3b",
+      "text": "finely",
+      "role": "DEGREE",
+      "status": "ACTIVE",
+      "kind": null,
+      "conceptId": null,
+      "attributeValueId": null,
+      "preparationId": null,
+      "valueKey": "fine"
+    }
+  ],
+  "vocabulary": {
+    "definitions": [
+      {
+        "id": "6c350c24-8884-5ef0-a256-aa221eaea513",
+        "key": "color",
+        "name": "Color",
+        "values": [
+          {
+            "id": "4aa3d264-0bc7-5e18-98bc-ce6492f11d2d",
+            "key": "black",
+            "label": "Black"
+          },
+          {
+            "id": "2e7adb9d-9049-5bd3-92f1-9820a4104a13",
+            "key": "brown",
+            "label": "Brown"
+          },
+          {
+            "id": "474eef10-99bc-5ed3-b974-67d83eab8958",
+            "key": "green",
+            "label": "Green"
+          },
+          {
+            "id": "0f7f966c-9140-59eb-bc8a-d637b2596edc",
+            "key": "orange",
+            "label": "Orange"
+          },
+          {
+            "id": "e32a2806-3af0-5dbd-8cfc-3289848dd537",
+            "key": "purple",
+            "label": "Purple"
+          },
+          {
+            "id": "03447519-daee-5eeb-b411-d679df8b3fa3",
+            "key": "red",
+            "label": "Red"
+          },
+          {
+            "id": "83a4d144-254e-52d2-8b03-b8e92981bf30",
+            "key": "white",
+            "label": "White"
+          },
+          {
+            "id": "e072bddf-3e18-565f-bf9d-18c33948ff8c",
+            "key": "yellow",
+            "label": "Yellow"
+          }
+        ]
+      },
+      {
+        "id": "d6020fb7-c007-5502-8643-6b3f75b193d0",
+        "key": "fat_content",
+        "name": "Fat content",
+        "values": [
+          {
+            "id": "0d79dff5-8211-5ac5-8dbc-8eb4cd755c6a",
+            "key": "whole",
+            "label": "Whole"
+          },
+          {
+            "id": "87807284-fb0f-5428-9afc-f9ea45fa7e55",
+            "key": "reduced_fat",
+            "label": "Reduced-fat"
+          },
+          {
+            "id": "943787b9-7134-5c8c-afe0-45b8a18f59fd",
+            "key": "low_fat",
+            "label": "Low-fat"
+          },
+          {
+            "id": "66fdcc99-bfd8-5642-9b13-ec205e446609",
+            "key": "nonfat",
+            "label": "Nonfat"
+          }
+        ]
+      },
+      {
+        "id": "84f33063-9365-5fa7-b7ca-9a5a613b26c6",
+        "key": "bone",
+        "name": "Bone",
+        "values": [
+          {
+            "id": "8ddb8577-2fa2-5078-8a20-f701b65e5df4",
+            "key": "bone_in",
+            "label": "Bone-in"
+          },
+          {
+            "id": "4f2419ea-75da-5003-a0ce-399cf523836f",
+            "key": "boneless",
+            "label": "Boneless"
+          }
+        ]
+      },
+      {
+        "id": "27103770-e6d5-583a-8a84-6c519bd43668",
+        "key": "skin",
+        "name": "Skin",
+        "values": [
+          {
+            "id": "8047dbf1-778c-56b4-8013-884140d269dd",
+            "key": "skin_on",
+            "label": "Skin-on"
+          },
+          {
+            "id": "e779afc0-121b-522a-b1a2-096b21fa3fa6",
+            "key": "skinless",
+            "label": "Skinless"
+          }
+        ]
+      },
+      {
+        "id": "79d9afa4-d913-568e-a603-888be5932dfc",
+        "key": "form",
+        "name": "Form",
+        "values": [
+          {
+            "id": "cc8290d8-4fe5-51a4-8769-28d05fb6da7f",
+            "key": "whole",
+            "label": "Whole"
+          },
+          {
+            "id": "6cfb310a-4b9f-55fe-b659-5c79fb7ddd65",
+            "key": "ground",
+            "label": "Ground"
+          },
+          {
+            "id": "216887bc-3a6f-53a4-9b02-a809acf5f25f",
+            "key": "powdered",
+            "label": "Powdered"
+          },
+          {
+            "id": "388debfc-e222-5634-b33b-bbdc88f816f4",
+            "key": "flaked",
+            "label": "Flaked"
+          },
+          {
+            "id": "1e9e3d79-8c03-5b88-9230-a6d856519043",
+            "key": "crushed",
+            "label": "Crushed"
+          }
+        ]
+      },
+      {
+        "id": "db4024f3-abb7-5ef3-9f93-b9c14011b59c",
+        "key": "preservation",
+        "name": "Preservation",
+        "values": [
+          {
+            "id": "c72b77f2-24de-5a86-856c-66c6944bad6c",
+            "key": "fresh",
+            "label": "Fresh"
+          },
+          {
+            "id": "bcca4a1a-dee9-5504-93ec-79584f88679e",
+            "key": "dried",
+            "label": "Dried"
+          },
+          {
+            "id": "dcad8244-9a9e-5200-ac28-a9414dedcf3a",
+            "key": "frozen",
+            "label": "Frozen"
+          },
+          {
+            "id": "5994726a-19e1-5cb7-9b86-33e9694c9486",
+            "key": "canned",
+            "label": "Canned"
+          },
+          {
+            "id": "718bf4aa-4443-5a06-bb95-3f94241c61e4",
+            "key": "smoked",
+            "label": "Smoked"
+          },
+          {
+            "id": "c32c876c-b696-54ce-971b-4c5d98f385b3",
+            "key": "pickled",
+            "label": "Pickled"
+          },
+          {
+            "id": "6a1d8b1a-e185-51e4-8cb3-7381aacbc539",
+            "key": "cured",
+            "label": "Cured"
+          }
+        ]
+      },
+      {
+        "id": "4132bc16-aa08-5be1-935e-bd463125eee6",
+        "key": "ripeness",
+        "name": "Ripeness",
+        "values": [
+          {
+            "id": "f32e15c5-3eef-5ada-9172-8e5945b8f0eb",
+            "key": "unripe",
+            "label": "Unripe"
+          },
+          {
+            "id": "480f7e44-99e2-51df-a7bc-6adac1a79160",
+            "key": "ripe",
+            "label": "Ripe"
+          },
+          {
+            "id": "19a912f0-f3e8-5852-a9b6-51d31402b4e1",
+            "key": "overripe",
+            "label": "Overripe"
+          }
+        ]
+      },
+      {
+        "id": "3b441e18-7f52-5e26-8f69-44c9191ea3c4",
+        "key": "sweetness",
+        "name": "Sweetness",
+        "values": [
+          {
+            "id": "c70b0313-df2b-5b8e-af59-904623a6e601",
+            "key": "sweetened",
+            "label": "Sweetened"
+          },
+          {
+            "id": "dc9ef8e3-5c1f-5d3a-a570-bb6ef181663b",
+            "key": "unsweetened",
+            "label": "Unsweetened"
+          },
+          {
+            "id": "c9b3b8f5-aa76-5c8b-a076-f32a9cd335b2",
+            "key": "semisweet",
+            "label": "Semisweet"
+          },
+          {
+            "id": "db0c14a9-8bd2-5693-817f-8cdfa32c729f",
+            "key": "bittersweet",
+            "label": "Bittersweet"
+          }
+        ]
+      },
+      {
+        "id": "cd6fb176-7500-5a9e-a4c1-448eac6eae5a",
+        "key": "size",
+        "name": "Size",
+        "values": [
+          {
+            "id": "b8790a8d-b2b0-53b4-b9e7-3798c5f1c42e",
+            "key": "small",
+            "label": "Small"
+          },
+          {
+            "id": "ddfdfff9-ebdc-5ed2-bc9f-95d4510d10bb",
+            "key": "medium",
+            "label": "Medium"
+          },
+          {
+            "id": "fb4b5025-b46b-5616-83f7-07ad996eb0ec",
+            "key": "large",
+            "label": "Large"
+          },
+          {
+            "id": "04c3377c-52dd-5104-8dc4-252bf2c7f1a0",
+            "key": "extra_large",
+            "label": "Extra-large"
+          },
+          {
+            "id": "60f8895e-5584-5984-b3e0-09388d2ab628",
+            "key": "jumbo",
+            "label": "Jumbo"
+          }
+        ]
+      },
+      {
+        "id": "774ea5e9-ef10-55c6-a31e-c797e390f42e",
+        "key": "temperature",
+        "name": "Temperature",
+        "values": [
+          {
+            "id": "7a57adc8-fbf0-5c35-909b-55ddfc62ba87",
+            "key": "cold",
+            "label": "Cold"
+          },
+          {
+            "id": "f55561a0-2843-54a1-8e78-b68146e0ae37",
+            "key": "room_temperature",
+            "label": "Room temperature"
+          },
+          {
+            "id": "901b670d-5186-5de1-9c49-88fbd8d4dbbf",
+            "key": "warm",
+            "label": "Warm"
+          },
+          {
+            "id": "33492b6e-226d-5b0c-a5bb-40d125a3d332",
+            "key": "hot",
+            "label": "Hot"
+          }
+        ]
+      },
+      {
+        "id": "5386c323-b836-5938-8e1f-fad2d86ab7c5",
+        "key": "salt_level",
+        "name": "Salt level",
+        "values": [
+          {
+            "id": "d33f739e-59f0-5253-913a-60b862e065c1",
+            "key": "salted",
+            "label": "Salted"
+          },
+          {
+            "id": "ab23b479-c30f-565b-9e47-bff70998aa36",
+            "key": "unsalted",
+            "label": "Unsalted"
+          },
+          {
+            "id": "0c4d6bce-5ff3-5a0b-ac98-0f40a144d066",
+            "key": "low_sodium",
+            "label": "Low-sodium"
+          }
+        ]
+      }
+    ],
+    "preparations": [
+      {
+        "id": "cbfe0a2c-b5f8-5c4c-8550-682e6fd3cf0c",
+        "key": "chop",
+        "label": "Chop"
+      },
+      {
+        "id": "bcfcab35-0663-53d8-8188-d94df3daa4be",
+        "key": "dice",
+        "label": "Dice"
+      },
+      {
+        "id": "ba0d6037-3ff5-57c3-ba60-8c6b1ed2ac2a",
+        "key": "mince",
+        "label": "Mince"
+      },
+      {
+        "id": "3e9494e7-65d5-57c1-838a-77ea9aee17cf",
+        "key": "slice",
+        "label": "Slice"
+      },
+      {
+        "id": "b10ea9d4-94f2-52aa-ab91-014798420e2b",
+        "key": "julienne",
+        "label": "Julienne"
+      },
+      {
+        "id": "e46591c7-c81b-5d23-804a-0488868670a7",
+        "key": "grate",
+        "label": "Grate"
+      },
+      {
+        "id": "25764a73-ba19-53bd-8a16-a351757db807",
+        "key": "shred",
+        "label": "Shred"
+      },
+      {
+        "id": "92427a4e-e73f-55fa-b6d5-822552b1a524",
+        "key": "peel",
+        "label": "Peel"
+      },
+      {
+        "id": "436f7a61-4548-5fd8-bc13-5487aeb3d5dc",
+        "key": "core",
+        "label": "Core"
+      },
+      {
+        "id": "1aa033f3-29f4-5ff7-9230-c46aa41400c8",
+        "key": "seed",
+        "label": "Seed"
+      },
+      {
+        "id": "e282c683-b1b1-5114-8f53-05a1a534a85c",
+        "key": "pit",
+        "label": "Pit"
+      },
+      {
+        "id": "6fadef7c-74e3-5ce9-afb1-19ad4d9339bb",
+        "key": "trim",
+        "label": "Trim"
+      },
+      {
+        "id": "46504153-6dcf-5745-897f-3abc1ba35e1e",
+        "key": "halve",
+        "label": "Halve"
+      },
+      {
+        "id": "dddc2b6e-2c9f-5076-a2bc-24b2302418f8",
+        "key": "quarter",
+        "label": "Quarter"
+      },
+      {
+        "id": "29894275-7026-5739-9098-c88d425c43ba",
+        "key": "crush",
+        "label": "Crush"
+      },
+      {
+        "id": "4578f534-c9ce-5d43-aa60-439247dff6d2",
+        "key": "mash",
+        "label": "Mash"
+      },
+      {
+        "id": "5b5d78ab-dd74-514a-ad6f-52ade4fa8c06",
+        "key": "puree",
+        "label": "Purée"
+      },
+      {
+        "id": "8bdfd4d2-2b0e-563c-b406-3570879101fc",
+        "key": "drain",
+        "label": "Drain"
+      },
+      {
+        "id": "2fa4261c-0f6d-51eb-bac6-5b75f7447bd4",
+        "key": "rinse",
+        "label": "Rinse"
+      },
+      {
+        "id": "ed6fc732-3e10-53f5-99e8-3fb1e37b7423",
+        "key": "toast",
+        "label": "Toast"
+      },
+      {
+        "id": "2dca2b65-2fc2-50ba-8343-3a8b546d2610",
+        "key": "melt",
+        "label": "Melt"
+      },
+      {
+        "id": "be220a9d-f33e-5e84-aef9-ff09e0342385",
+        "key": "soften",
+        "label": "Soften"
+      },
+      {
+        "id": "749767ad-ae53-511c-8df9-384afbfeca00",
+        "key": "warm",
+        "label": "Warm"
+      },
+      {
+        "id": "6f54bf5e-0a63-5684-a183-ed8de68b184f",
+        "key": "chill",
+        "label": "Chill"
+      },
+      {
+        "id": "362f88cd-2f74-5f7b-ba3c-954649f5ed30",
+        "key": "beat",
+        "label": "Beat"
+      },
+      {
+        "id": "5332d5f0-498f-5fc0-aff2-5b833bcd1c51",
+        "key": "sift",
+        "label": "Sift"
+      },
+      {
+        "id": "fb8bb00c-96d9-5f21-9d7d-594c6f5c29b1",
+        "key": "pack",
+        "label": "Pack"
+      }
+    ]
+  },
+  "concepts": [
+    {
+      "id": "8bf2fdd1-8a0b-52c0-a8e1-deee1dae4ac3",
+      "canonicalName": "milk",
+      "status": "VERIFIED"
+    },
+    {
+      "id": "086574e3-f14f-56ac-8527-6f00c6357521",
+      "canonicalName": "whole milk",
+      "status": "VERIFIED"
+    },
+    {
+      "id": "0a785295-6b32-5359-837c-2fc80c9e38c2",
+      "canonicalName": "apple",
+      "status": "VERIFIED"
+    },
+    {
+      "id": "3b56c78a-9a9a-5994-818b-120e1044e259",
+      "canonicalName": "granny smith apple",
+      "status": "VERIFIED"
+    },
+    {
+      "id": "8d0692e2-ddaa-552e-951c-a88f8c5b2605",
+      "canonicalName": "chicken",
+      "status": "VERIFIED"
+    },
+    {
+      "id": "a7ce9366-e2d3-51d9-a0e0-b941768ae854",
+      "canonicalName": "chicken thigh",
+      "status": "VERIFIED"
+    },
+    {
+      "id": "3900529b-01b8-576c-9806-0bab7102c8fa",
+      "canonicalName": "parsley",
+      "status": "VERIFIED"
+    },
+    {
+      "id": "70d2afb0-6499-5c90-8c53-d76622e591a1",
+      "canonicalName": "mozzarella",
+      "status": "VERIFIED"
+    },
+    {
+      "id": "b6838cf4-0729-5be0-a9a9-108a60890457",
+      "canonicalName": "fresh mozzarella",
+      "status": "VERIFIED"
+    },
+    {
+      "id": "30079cea-40c6-5149-8bc4-29e5b64ebd3f",
+      "canonicalName": "powdered sugar",
+      "status": "VERIFIED"
+    },
+    {
+      "id": "780ec91b-eb8f-5f75-aac2-f0e88020fcbc",
+      "canonicalName": "tomato",
+      "status": "VERIFIED"
+    },
+    {
+      "id": "2a96550b-4f38-5b53-95e0-c566e32c0244",
+      "canonicalName": "canned tomatoes",
+      "status": "VERIFIED"
+    },
+    {
+      "id": "a6db2cb2-df29-50a1-81af-86e8b1f6cca3",
+      "canonicalName": "salt",
+      "status": "VERIFIED"
+    }
+  ],
+  "relationships": [
+    {
+      "sourceId": "086574e3-f14f-56ac-8527-6f00c6357521",
+      "targetId": "8bf2fdd1-8a0b-52c0-a8e1-deee1dae4ac3",
+      "type": "IS_A"
+    },
+    {
+      "sourceId": "3b56c78a-9a9a-5994-818b-120e1044e259",
+      "targetId": "0a785295-6b32-5359-837c-2fc80c9e38c2",
+      "type": "IS_A"
+    },
+    {
+      "sourceId": "a7ce9366-e2d3-51d9-a0e0-b941768ae854",
+      "targetId": "8d0692e2-ddaa-552e-951c-a88f8c5b2605",
+      "type": "PART_OF"
+    },
+    {
+      "sourceId": "b6838cf4-0729-5be0-a9a9-108a60890457",
+      "targetId": "70d2afb0-6499-5c90-8c53-d76622e591a1",
+      "type": "IS_A"
+    },
+    {
+      "sourceId": "2a96550b-4f38-5b53-95e0-c566e32c0244",
+      "targetId": "780ec91b-eb8f-5f75-aac2-f0e88020fcbc",
+      "type": "PROCESSED_FROM"
+    }
+  ],
+  "applicability": [
+    {
+      "definitionId": "d6020fb7-c007-5502-8643-6b3f75b193d0",
+      "conceptId": "8bf2fdd1-8a0b-52c0-a8e1-deee1dae4ac3"
+    },
+    {
+      "definitionId": "6c350c24-8884-5ef0-a256-aa221eaea513",
+      "conceptId": "0a785295-6b32-5359-837c-2fc80c9e38c2"
+    },
+    {
+      "definitionId": "4132bc16-aa08-5be1-935e-bd463125eee6",
+      "conceptId": "780ec91b-eb8f-5f75-aac2-f0e88020fcbc"
+    },
+    {
+      "definitionId": "84f33063-9365-5fa7-b7ca-9a5a613b26c6",
+      "conceptId": "8d0692e2-ddaa-552e-951c-a88f8c5b2605"
+    },
+    {
+      "definitionId": "27103770-e6d5-583a-8a84-6c519bd43668",
+      "conceptId": "8d0692e2-ddaa-552e-951c-a88f8c5b2605"
+    },
+    {
+      "definitionId": "79d9afa4-d913-568e-a603-888be5932dfc",
+      "conceptId": "780ec91b-eb8f-5f75-aac2-f0e88020fcbc"
+    },
+    {
+      "definitionId": "79d9afa4-d913-568e-a603-888be5932dfc",
+      "conceptId": "2a96550b-4f38-5b53-95e0-c566e32c0244"
+    },
+    {
+      "definitionId": "db4024f3-abb7-5ef3-9f93-b9c14011b59c",
+      "conceptId": "70d2afb0-6499-5c90-8c53-d76622e591a1"
+    }
+  ],
+  "conceptAttributes": [
+    {
+      "conceptId": "2a96550b-4f38-5b53-95e0-c566e32c0244",
+      "attributeValueId": "5994726a-19e1-5cb7-9b86-33e9694c9486"
+    }
+  ],
+  "priorVerifiedShare": {}
+}

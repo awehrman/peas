@@ -1,6 +1,6 @@
 import express from "express";
 import request from "supertest";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import { ServiceContainer } from "../../services";
 import { createMockQueue, createTestApp } from "../../test-utils/helpers";
@@ -41,7 +41,7 @@ describe("Notes Router", () => {
 
     // Setup ServiceContainer mock
     (
-      ServiceContainer.getInstance as ReturnType<typeof vi.fn>
+      ServiceContainer.getInstance as Mock
     ).mockResolvedValue(mockServiceContainer);
 
     app = createTestApp();
@@ -218,7 +218,7 @@ describe("Notes Router", () => {
     it("should handle ServiceContainer.getInstance errors", async () => {
       const mockError = new Error("Service container error");
       (
-        ServiceContainer.getInstance as ReturnType<typeof vi.fn>
+        ServiceContainer.getInstance as Mock
       ).mockRejectedValue(mockError);
 
       const response = await request(app)
@@ -238,7 +238,7 @@ describe("Notes Router", () => {
     it("should handle queue.add errors", async () => {
       const mockError = new Error("Queue error");
       (
-        mockServiceContainer.queues.noteQueue.add as ReturnType<typeof vi.fn>
+        mockServiceContainer.queues.noteQueue.add as Mock
       ).mockRejectedValue(mockError);
 
       const response = await request(app)

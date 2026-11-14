@@ -1,8 +1,4 @@
-import {
-  createIngredientReference,
-  findOrCreateIngredient,
-  saveParsedIngredientLine,
-} from "@peas/database";
+import { saveImportedLine } from "@peas/database";
 
 import { ActionName } from "../../../../types";
 import type { StructuredLogger } from "../../../../types";
@@ -11,7 +7,13 @@ import {
   getIngredientCompletionStatus,
   markIngredientLineCompleted,
 } from "../../../note/actions/track-completion/service";
+import { V2_PARSER_ID } from "../../ingredient-processor";
+import { getResolverContext } from "../../lexicon-cache";
+import { readV2Result } from "../parse-ingredient-line/service";
 
+/**
+ * Saves a parsed line with v2 (Phase 5d): the line row, its mentions, and its discoveries in one transaction. Nothing is written to the legacy segment, reference, ingredient, parsing-rule, or pattern tables.
+ */
 export async function saveIngredientLine(
   data: IngredientJobData,
   logger: StructuredLogger,
@@ -22,141 +24,40 @@ export async function saveIngredientLine(
   }
 ): Promise<IngredientJobData> {
   try {
-    // Validate that we have required data
     if (!data.noteId) {
       throw new Error("No note ID available for ingredient saving");
     }
-
     if (!data.ingredientReference) {
       throw new Error("No ingredient reference available for saving");
     }
 
-    logger.log(
-      `[SAVE_INGREDIENT_LINE] Starting to save ingredient: noteId=${data.noteId}, lineIndex=${data.lineIndex}, jobId=${data.jobId}`
-    );
-
-    // Handle parsed segments if they exist
-    const parsedSegments = data.metadata?.parsedSegments as
-      | Array<{
-          index: number;
-          rule: string;
-          type: string;
-          value: string;
-          processingTime?: number;
-        }>
-      | undefined;
-
-    // Update the ingredient line in the database with segments
-    const result = await saveParsedIngredientLine(
-      data.noteId,
-      data.lineIndex,
-      data.ingredientReference,
-      data.parseStatus,
-      undefined, // rule
-      0, // blockIndex
-      data.isActive,
-      parsedSegments || []
-    );
-
-    if (parsedSegments && parsedSegments.length > 0) {
-      // Create parsing rules and get rule IDs for segments
-      const { findOrCreateParsingRule } = await import("@peas/database");
-      const segmentsWithRuleIds: Array<{
-        index: number;
-        rule: string;
-        type: string;
-        value: string;
-        processingTime?: number;
-        ruleId: string;
-      }> = [];
-      const patternRules: Array<{
-        ruleId: string;
-        ruleNumber: number;
-      }> = [];
-
-      // Create parsing rules and build pattern rules
-      for (let i = 0; i < parsedSegments.length; i++) {
-        const segment = parsedSegments[i];
-        if (!segment) continue; // Skip undefined segments
-
-        const rule = await findOrCreateParsingRule(segment.rule);
-
-        segmentsWithRuleIds.push({
-          index: segment.index,
-          rule: segment.rule,
-          type: segment.type,
-          value: segment.value,
-          processingTime: segment.processingTime,
-          ruleId: rule.id,
-        });
-
-        patternRules.push({
-          ruleId: rule.id,
-          ruleNumber: i + 1,
-        });
-      }
-
-      // Process ingredient segments
-      for (const segment of segmentsWithRuleIds) {
-        if (segment.type === "ingredient") {
-          const ingredient = await findOrCreateIngredient(segment.value);
-          await createIngredientReference(
-            ingredient.id,
-            result.id,
-            segment.index,
-            data.ingredientReference,
-            data.noteId
-          );
-        }
-      }
-
-      // Queue pattern tracking for later processing
-      /* istanbul ignore else -- @preserve */
-      if (patternRules.length > 0) {
-        try {
-          // Import queue dynamically to avoid circular dependencies
-          const { createQueue } = await import(
-            "../../../../queues/create-queue"
-          );
-          const patternQueue = createQueue("patternTracking");
-
-          await patternQueue.add(
-            "track-pattern",
-            {
-              jobId: `pattern-${data.jobId}-${Date.now()}`,
-              patternRules,
-              exampleLine: data.ingredientReference,
-              noteId: data.noteId,
-              importId: data.importId,
-              metadata: {
-                originalJobId: data.jobId,
-                lineIndex: data.lineIndex,
-                ingredientLineId: result.id,
-              },
-            },
-            {
-              removeOnComplete: 100,
-              removeOnFail: 50,
-              attempts: 3,
-              backoff: {
-                type: "exponential",
-                delay: 2000,
-              },
-            }
-          );
-
-          logger.log(
-            `[SAVE_INGREDIENT_LINE] Queued pattern tracking for job ${data.jobId}`
-          );
-        } catch (queueError) {
-          /* istanbul ignore next -- @preserve */
-          logger.log(
-            `[SAVE_INGREDIENT_LINE] Failed to queue pattern tracking: ${queueError}`
-          );
-          // Don't fail the main save operation if pattern tracking fails
-        }
-      }
+    const v2Result = readV2Result(data.metadata);
+    if (!v2Result) {
+      throw new Error(
+        `No valid v2 parse result for "${data.ingredientReference}"`
+      );
     }
+    const parserVersion =
+      typeof data.metadata?.parserVersion === "string"
+        ? data.metadata.parserVersion
+        : V2_PARSER_ID;
+
+    const result = await saveImportedLine(
+      {
+        noteId: data.noteId,
+        blockIndex: data.blockIndex ?? 0,
+        lineIndex: data.lineIndex,
+        reference: data.ingredientReference,
+        parseStatus: data.parseStatus,
+        isActive: data.isActive,
+        parserVersion,
+        result: v2Result,
+      },
+      await getResolverContext(logger)
+    );
+    logger.log(
+      `[V2_SAVE] line=${result.lineId} mentions=${result.mentionsWritten} changed=${result.mentionsChanged} protected=${result.protectedMentions} discoveries=${result.discoveriesTouched}`
+    );
 
     // Mark this ingredient line as completed in in-memory tracking
     markIngredientLineCompleted(
@@ -200,12 +101,12 @@ export async function saveIngredientLine(
             metadata: {
               totalIngredients: completionStatus.totalIngredients,
               completedIngredients: completionStatus.completedIngredients,
-              savedIngredientId: result.id,
+              savedIngredientId: result.lineId,
               lineIndex: data.lineIndex,
             },
           });
           logger.log(
-            `[SAVE_INGREDIENT_LINE] Successfully broadcasted ingredient completion for line ${data.lineIndex} with ID ${result.id}`
+            `[SAVE_INGREDIENT_LINE] Successfully broadcasted ingredient completion for line ${data.lineIndex} with ID ${result.lineId}`
           );
         }
 

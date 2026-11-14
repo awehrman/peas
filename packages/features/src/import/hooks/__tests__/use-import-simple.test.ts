@@ -45,7 +45,7 @@ describe("useImport", () => {
   };
 
   const mockActivityContext = {
-    state: { currentPageIndex: 0, pageToCardIds: {}, cardsById: {} },
+    state: { cardIds: [], cardsById: {} },
     dispatch: vi.fn(),
   };
 

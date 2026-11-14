@@ -1,23 +1,34 @@
 "use client";
 
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
 import { useStats } from "../context/stats/stats-provider";
-import { useImportUpload } from "../context/upload/upload-provider";
 import type { ImportStatsState, StatusEvent } from "../types/import-types";
 
+/** Each note completes dozens of steps; refresh the counts at most this often */
+export const STATS_REFRESH_INTERVAL_MS = 2000;
+
 /**
- * Hook to integrate WebSocket status updates with upload context
- * This connects real-time processing updates from the queue to the upload UI
+ * Hook to integrate WebSocket status updates with the import stats.
+ * Upload batches are finished by the upload request itself; queue events
+ * belong to notes that may have been uploaded long before, so they only
+ * refresh the counts.
  */
 export function useWebSocketUploadIntegration(
-  onStatsRefresh?: () => Promise<ImportStatsState>
+  onStatsRefresh?: () => Promise<ImportStatsState | void>
 ) {
-  const { dispatch } = useImportUpload();
   const { dispatch: statsDispatch } = useStats();
 
-  // Track ongoing refresh to prevent race conditions
   const refreshInProgress = useRef(false);
+  const lastRefreshAt = useRef(0);
+  const trailingRefresh = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (trailingRefresh.current) clearTimeout(trailingRefresh.current);
+    },
+    []
+  );
 
   // Function to refresh stats from the server
   const refreshStats = useCallback(async () => {
@@ -32,79 +43,41 @@ export function useWebSocketUploadIntegration(
     }
 
     refreshInProgress.current = true;
+    lastRefreshAt.current = Date.now();
 
     try {
+      // Apps that keep the stats in their own cache refresh it and return nothing
       const newStats = await onStatsRefresh();
-
-      // Update the stats context with fresh data
-      statsDispatch({
-        type: "REFRESH_STATS",
-        stats: newStats,
-      });
+      if (newStats) statsDispatch({ type: "REFRESH_STATS", stats: newStats });
     } catch (error) {
       console.error("Failed to refresh stats:", error);
-      // Note: We don't update the UI with error state here to avoid disrupting the user experience
-      // The stats will remain at their last known good state
+      // The stats keep their last known good state
     } finally {
       refreshInProgress.current = false;
     }
   }, [statsDispatch, onStatsRefresh]);
 
+  // Refreshes now if the interval has passed, and always once more after the
+  // last event so the final counts are accurate
+  const scheduleStatsRefresh = useCallback(() => {
+    if (trailingRefresh.current) clearTimeout(trailingRefresh.current);
+
+    const elapsed = Date.now() - lastRefreshAt.current;
+    if (elapsed >= STATS_REFRESH_INTERVAL_MS) void refreshStats();
+
+    trailingRefresh.current = setTimeout(() => {
+      trailingRefresh.current = null;
+      void refreshStats();
+    }, STATS_REFRESH_INTERVAL_MS);
+  }, [refreshStats]);
+
   const handleStatusUpdate = useCallback(
     (statusEvent: StatusEvent) => {
-      const { importId, status, progress, message } = statusEvent;
-
-      // Update all files in the current batch that match this importId
-      // Note: This is a simplified approach. In a production system, you might want
-      // to maintain a mapping of importId to specific file IDs for more granular updates
-
-      if (
-        status === "processing_started" ||
-        status === "processing_progress" ||
-        status === "PROCESSING"
-      ) {
-        // Update all files in the batch to uploading status
-        // We'll use a special action to update all files in a batch
-        dispatch({
-          type: "UPDATE_BATCH_STATUS",
-          importId,
-          status: "uploading",
-          progress: progress || 0,
-        });
-      } else if (status === "processing_completed" || status === "COMPLETED") {
-        // Mark all files as completed
-        dispatch({
-          type: "UPDATE_BATCH_STATUS",
-          importId,
-          status: "completed",
-          progress: 100,
-        });
-
-        // Complete the batch
-        dispatch({
-          type: "COMPLETE_BATCH",
-          successMessage: message || "Processing completed successfully",
-        });
-
-        // Refresh stats when note processing is completed
-        refreshStats();
-      } else if (status === "processing_failed" || status === "FAILED") {
-        // Mark all files as failed
-        dispatch({
-          type: "UPDATE_BATCH_STATUS",
-          importId,
-          status: "failed",
-          error: message || "Processing failed",
-        });
-
-        // Fail the batch
-        dispatch({
-          type: "FAIL_BATCH",
-          errorMessage: message || "Processing failed",
-        });
+      if (statusEvent.status === "COMPLETED" || statusEvent.status === "processing_completed") {
+        scheduleStatsRefresh();
       }
     },
-    [dispatch, refreshStats]
+    [scheduleStatsRefresh]
   );
 
   return { handleStatusUpdate, refreshStats };

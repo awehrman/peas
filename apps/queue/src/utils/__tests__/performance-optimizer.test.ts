@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import {
   type PerformanceMetrics,
@@ -34,10 +34,10 @@ describe("PerformanceOptimizer", () => {
   let optimizer: PerformanceOptimizer;
   let mockProcess: {
     hrtime: {
-      bigint: ReturnType<typeof vi.fn>;
+      bigint: Mock;
     };
-    memoryUsage: ReturnType<typeof vi.fn>;
-    cpuUsage: ReturnType<typeof vi.fn>;
+    memoryUsage: Mock;
+    cpuUsage: Mock;
   };
 
   beforeEach(() => {
@@ -91,7 +91,7 @@ describe("PerformanceOptimizer", () => {
         0, 1000000,
       ]) as unknown as typeof process.hrtime;
       (
-        process.hrtime as unknown as { bigint: ReturnType<typeof vi.fn> }
+        process.hrtime as unknown as { bigint: Mock }
       ).bigint = vi.fn(() => BigInt(1000000));
       process.memoryUsage = vi.fn(() => ({
         heapUsed: 50 * 1024 * 1024,
@@ -120,7 +120,7 @@ describe("PerformanceOptimizer", () => {
         0, 1000000,
       ]) as unknown as typeof process.hrtime;
       (
-        process.hrtime as unknown as { bigint: ReturnType<typeof vi.fn> }
+        process.hrtime as unknown as { bigint: Mock }
       ).bigint = vi.fn(() => BigInt(1000000));
       process.memoryUsage = vi.fn(() => ({
         heapUsed: 50 * 1024 * 1024,

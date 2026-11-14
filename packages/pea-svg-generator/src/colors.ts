@@ -1,116 +1,61 @@
 import type { PeaColor } from "./types.js";
+import {
+  darkenHexColor,
+  isLightColor,
+  lightenHexColor,
+} from "./utils/color-utils.js";
 
-export const PEA_COLORS: PeaColor[] = [
-  {
-    name: "Classic Green",
-    base: "#4CAF50",
-    stroke: "#388E3C",
-    highlight: "#66BB6A",
-  },
-  {
-    name: "Bright Green",
-    base: "#9abf44",
-    stroke: "#7a9f35",
-    highlight: "#b8d45a",
-  },
-  {
-    name: "Dark Green",
-    base: "#23400d",
-    stroke: "#1a300a",
-    highlight: "#2d5210",
-  },
-  {
-    name: "Light Green",
-    base: "#cde87d",
-    stroke: "#a3c864",
-    highlight: "#d8ed8a",
-  },
-  {
-    name: "Forest Green",
-    base: "#4c7017",
-    stroke: "#3d5a12",
-    highlight: "#5d8a1d",
-  },
-  {
-    name: "Lime Green",
-    base: "#a8d048",
-    stroke: "#86a639",
-    highlight: "#b8da5a",
-  },
-  {
-    name: "Yellow",
-    base: "#FFC107",
-    stroke: "#FF8F00",
-    highlight: "#FFD54F",
-  },
-  {
-    name: "Purple",
-    base: "#9C27B0",
-    stroke: "#7B1FA2",
-    highlight: "#BA68C8",
-  },
-  {
-    name: "Sugar Snap",
-    base: "#8BC34A",
-    stroke: "#689F38",
-    highlight: "#A5D6A7",
-  },
-  {
-    name: "Split Pea",
-    base: "#795548",
-    stroke: "#5D4037",
-    highlight: "#A1887F",
-  },
+/** User-selected palette, preserved exactly from the five reference swatches.
+ * Stroke and dot colors are derived from each base to keep the subtle contour style cohesive.
+ */
+const swatches = [
+  { name: "Soft Lemon", base: "#f5f5b8", group: "accent" },
+  { name: "Pinkish Cinnamon", base: "#f2ad78", group: "accent" },
+  { name: "Olive Green", base: "#718600", group: "green" },
+  { name: "Near Black Forest", base: "#172713", group: "green" },
+  { name: "Cranberry", base: "#a10b2b", group: "accent" },
+  { name: "Orange Yellow", base: "#ffab00", group: "accent" },
+  { name: "Deep Forest", base: "#00592e", group: "green" },
+  { name: "Dusty Lavender", base: "#bfabcc", group: "accent" },
+  { name: "Plum", base: "#5c2c45", group: "accent" },
+  { name: "Pale Yellow", base: "#fff59e", group: "accent" },
+  { name: "Lincoln Green", base: "#405416", group: "green" },
+  { name: "Walnut Brown", base: "#5e4017", group: "accent" },
+  { name: "Leaf Green", base: "#85b857", group: "green" },
+  { name: "Ivory Buff", base: "#ebd999", group: "accent" },
+  { name: "Brick Red", base: "#a32100", group: "accent" },
+  { name: "Brown", base: "#6c2b11", group: "accent" },
+  { name: "Vandyke Brown", base: "#362304", group: "green" },
+  { name: "Ochraceous Salmon", base: "#d99e73", group: "accent" },
+  { name: "Vinaceous Cinnamon", base: "#f59994", group: "accent" },
+ ] as const;
+
+// Pale bases get darker spots and outlines; lightening them would vanish into white.
+export const PEA_COLORS: PeaColor[] = swatches.map(({ name, base }) => ({
+  name,
+  base,
+  stroke: darkenHexColor(base, isLightColor(base) ? 0.32 : 0.2),
+  highlight: isLightColor(base)
+    ? darkenHexColor(base, 0.2)
+    : lightenHexColor(base, 0.33),
+}));
+
+export const GREEN_COLOR_NAMES = new Set<string>(
+  swatches.filter(({ group }) => group === "green").map(({ name }) => name),
+);
+
+// Keep these combinations compatible with the original standalone generator.
+export const MIXED_COLOR_COMBINATIONS = [
+  { base: "Olive Green", highlight: "Leaf Green" },
+  { base: "Deep Forest", highlight: "Mint Green" },
+  { base: "Lincoln Green", highlight: "Spring Green" },
+  { base: "Leaf Green", highlight: "Olive Green" },
+  { base: "Spring Green", highlight: "Soft Lemon" },
+  { base: "Near Black Forest", highlight: "Leaf Green" },
 ];
 
 export const HIGHLIGHT_POSITIONS = [
-  // Top left
-  { x: -5, y: -5, rx: 8, ry: 6, opacity: 0.7 },
-  { x: 10, y: 5, rx: 5, ry: 4, opacity: 0.5 },
-
-  // Top right
-  { x: 10, y: -10, rx: 8, ry: 6, opacity: 0.7 },
-  { x: -5, y: 10, rx: 5, ry: 4, opacity: 0.5 },
-
-  // Bottom left
-  { x: -10, y: 10, rx: 8, ry: 6, opacity: 0.7 },
-  { x: 15, y: -10, rx: 5, ry: 4, opacity: 0.5 },
-
-  // Bottom right
-  { x: 15, y: 10, rx: 8, ry: 6, opacity: 0.7 },
-  { x: -10, y: -10, rx: 5, ry: 4, opacity: 0.5 },
-
-  // Center
-  { x: 0, y: 0, rx: 10, ry: 8, opacity: 0.7 },
-  { x: -10, y: -10, rx: 4, ry: 3, opacity: 0.5 },
-
-  // Multiple small
-  { x: -10, y: -10, rx: 6, ry: 4, opacity: 0.7 },
-  { x: 15, y: 10, rx: 4, ry: 3, opacity: 0.5 },
-  { x: 0, y: -5, rx: 3, ry: 2, opacity: 0.6 },
-
-  // Diagonal
-  { x: -10, y: -5, rx: 7, ry: 5, opacity: 0.7 },
-  { x: 15, y: 5, rx: 5, ry: 3, opacity: 0.5 },
-
-  // Upper
-  { x: -10, y: -15, rx: 8, ry: 6, opacity: 0.7 },
+  { x: -10, y: -10, rx: 8, ry: 6, opacity: 0.7 },
   { x: 10, y: -5, rx: 5, ry: 4, opacity: 0.5 },
-
-  // Lower
-  { x: 10, y: 15, rx: 8, ry: 6, opacity: 0.7 },
-  { x: -10, y: 5, rx: 5, ry: 4, opacity: 0.5 },
-
-  // Side
-  { x: -15, y: 0, rx: 8, ry: 6, opacity: 0.7 },
-  { x: 15, y: 0, rx: 5, ry: 4, opacity: 0.5 },
-];
-
-export const MIXED_COLOR_COMBINATIONS = [
-  { base: "Bright Green", highlight: "Lime Green" },
-  { base: "Dark Green", highlight: "Light Green" },
-  { base: "Forest Green", highlight: "Bright Green" },
-  { base: "Lime Green", highlight: "Forest Green" },
-  { base: "Classic Green", highlight: "Bright Green" },
-  { base: "Light Green", highlight: "Dark Green" },
+  { x: 0, y: 0, rx: 4, ry: 3, opacity: 0.6 },
 ];

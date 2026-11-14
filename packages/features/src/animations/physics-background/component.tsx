@@ -4,8 +4,6 @@ import { PhysicsEngine, PhysicsRenderer, peaManager } from "./index.js";
 
 import { useEffect, useRef } from "react";
 
-import Matter from "matter-js";
-
 interface PhysicsBackgroundProps {
   children: React.ReactNode;
   className?: string;
@@ -19,7 +17,6 @@ export function PhysicsBackground({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const physicsEngineRef = useRef<PhysicsEngine | null>(null);
   const rendererRef = useRef<PhysicsRenderer | null>(null);
-  const runnerRef = useRef<Matter.Runner | null>(null);
   const isInitializedRef = useRef(false);
 
   // Setup physics and pea images
@@ -37,35 +34,36 @@ export function PhysicsBackground({
 
     const container = containerRef.current;
     const canvas = canvasRef.current;
-    canvas.width = container.clientWidth;
-    canvas.height = container.clientHeight;
+    const width = container.clientWidth;
+    const height = container.clientHeight;
 
     // Initialize pea manager
     peaManager.initialize();
 
     // Initialize physics engine
     const physicsEngine = new PhysicsEngine();
-    physicsEngine.initialize(canvas);
+    physicsEngine.initialize(canvas, width, height);
     physicsEngineRef.current = physicsEngine;
 
     // Initialize renderer
     const renderer = new PhysicsRenderer(canvas);
+    renderer.resize(width, height);
     rendererRef.current = renderer;
 
-    // Start physics engine
-    const runner = physicsEngine.start();
-    runnerRef.current = runner;
+    physicsEngine.start();
+    physicsEngine.startPeaCreation();
 
-    // Start pea creation
-    physicsEngine.startPeaCreation(canvas);
-
-    // Animation loop
+    // Animation loop; ends once the viewport is full and every pea is at rest
     let running = true;
     function animate() {
       if (!running) return;
 
-      const bodies = physicsEngine.getBodies();
-      renderer.drawPeas(bodies);
+      renderer.drawPeas(physicsEngine.getBodies());
+
+      if (physicsEngine.isSettled()) {
+        physicsEngine.freeze();
+        return;
+      }
 
       window.requestAnimationFrame(animate);
     }
@@ -74,14 +72,7 @@ export function PhysicsBackground({
     // Cleanup
     return () => {
       running = false;
-
-      if (runnerRef.current) {
-        physicsEngine.stop(runnerRef.current);
-      }
-
-      if (rendererRef.current) {
-        rendererRef.current.stop();
-      }
+      physicsEngine.stop();
 
       // Reset initialization flag
       isInitializedRef.current = false;
@@ -93,24 +84,17 @@ export function PhysicsBackground({
     const handleResize = () => {
       if (
         !containerRef.current ||
-        !canvasRef.current ||
         !physicsEngineRef.current ||
         !rendererRef.current
       ) {
         return;
       }
 
-      const container = containerRef.current;
-      const canvas = canvasRef.current;
-
-      // Update canvas size
-      rendererRef.current.updateCanvasSize(
-        container.clientWidth,
-        container.clientHeight
-      );
-
-      // Update physics containment walls
-      physicsEngineRef.current.updateContainmentWalls(canvas);
+      const { clientWidth, clientHeight } = containerRef.current;
+      rendererRef.current.resize(clientWidth, clientHeight);
+      physicsEngineRef.current.resize(clientWidth, clientHeight);
+      // Resizing clears the canvas, and a frozen scene has no loop to redraw it
+      rendererRef.current.drawPeas(physicsEngineRef.current.getBodies());
     };
 
     window.addEventListener("resize", handleResize);

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import { createTestError } from "../../test-utils/service";
 import {
@@ -49,7 +49,7 @@ describe("DatabaseOptimizer", () => {
 
     // Setup default mock behavior
     (
-      mockPerformanceOptimizer.profile as ReturnType<typeof vi.fn>
+      mockPerformanceOptimizer.profile as Mock
     ).mockImplementation(async (name, fn) => {
       return await fn();
     });

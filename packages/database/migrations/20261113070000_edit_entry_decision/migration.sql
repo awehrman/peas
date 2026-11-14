@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "DecisionType" ADD VALUE 'EDIT_ENTRY' BEFORE 'REVERT';

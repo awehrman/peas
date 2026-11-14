@@ -1,7 +1,9 @@
 import type { R2Config, UploadResult } from "./types";
 
 import {
+  DeleteObjectsCommand,
   GetObjectCommand,
+  ListObjectsV2Command,
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
@@ -141,6 +143,48 @@ export class R2Service {
         `Failed to generate presigned download URL: ${error instanceof Error ? error.message : String(error)}`
       );
     }
+  }
+
+  /**
+   * Deletes every object under a key prefix, e.g. "originals/"
+   */
+  async deletePrefix(
+    prefix: string
+  ): Promise<{ deleted: number; errors: number }> {
+    let deleted = 0;
+    let errors = 0;
+    let continuationToken: string | undefined;
+
+    do {
+      const listing = await this.client.send(
+        new ListObjectsV2Command({
+          Bucket: this.config.bucketName,
+          Prefix: prefix,
+          ContinuationToken: continuationToken,
+        })
+      );
+      const keys = (listing.Contents ?? [])
+        .map((object) => object.Key)
+        .filter((key): key is string => !!key);
+
+      // A listing page holds at most 1,000 keys, the DeleteObjects limit
+      if (keys.length > 0) {
+        const result = await this.client.send(
+          new DeleteObjectsCommand({
+            Bucket: this.config.bucketName,
+            Delete: { Objects: keys.map((Key) => ({ Key })) },
+          })
+        );
+        deleted += result.Deleted?.length ?? 0;
+        errors += result.Errors?.length ?? 0;
+      }
+
+      continuationToken = listing.IsTruncated
+        ? listing.NextContinuationToken
+        : undefined;
+    } while (continuationToken);
+
+    return { deleted, errors };
   }
 
   /**

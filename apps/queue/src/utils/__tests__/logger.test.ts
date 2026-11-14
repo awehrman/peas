@@ -1,12 +1,20 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { type Mock, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   EnhancedLoggerService,
   type LogConfig,
   type LogEntry,
   createLogger,
+  getLogConfigFromEnv,
   logger,
 } from "../logger";
+
+// readdirSync is overloaded; these tests stub the string[] (file name) form.
+function readdirNames(fs: {
+  readdirSync: unknown;
+}): Mock<(path: string) => string[]> {
+  return fs.readdirSync as Mock<(path: string) => string[]>;
+}
 
 // Mock fs module
 vi.mock("fs", () => {
@@ -637,10 +645,7 @@ describe("EnhancedLoggerService", () => {
       const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
 
       // Mock old backup files - use string array
-      fs.readdirSync.mockReturnValue([
-        "old.log.backup",
-        "recent.log.backup",
-      ] as unknown as ReturnType<typeof fs.readdirSync>);
+      readdirNames(fs).mockReturnValue(["old.log.backup", "recent.log.backup"]);
 
       // Mock different modification times
       fs.statSync.mockImplementation((path) => {
@@ -709,7 +714,7 @@ describe("EnhancedLoggerService", () => {
         .mockImplementation(() => {});
 
       // Mock backup files - use string array
-      fs.readdirSync.mockReturnValue(["test.log.backup"] as unknown as ReturnType<typeof fs.readdirSync>);
+      readdirNames(fs).mockReturnValue(["test.log.backup"]);
 
       // Mock statSync to throw error
       fs.statSync.mockImplementation(() => {
@@ -843,6 +848,40 @@ describe("EnhancedLoggerService", () => {
     });
   });
 
+  describe("getLogConfigFromEnv", () => {
+    it("reads level and toggles from the environment", () => {
+      expect(
+        getLogConfigFromEnv({
+          LOG_LEVEL: "WARN",
+          ENABLE_FILE_LOGGING: "false",
+          ENABLE_CONSOLE_LOGGING: "false",
+          LOG_DIR: "/tmp/peas-logs",
+        })
+      ).toEqual({
+        logLevel: "warn",
+        enableFileLogging: false,
+        enableConsoleLogging: false,
+        logDir: "/tmp/peas-logs",
+      });
+    });
+
+    it("ignores unknown levels and unset toggles", () => {
+      expect(getLogConfigFromEnv({ LOG_LEVEL: "loud" })).toEqual({});
+    });
+
+    it("lets createLogger skip info logs when LOG_LEVEL=warn", async () => {
+      const previous = process.env.LOG_LEVEL;
+      process.env.LOG_LEVEL = "warn";
+      const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+      createLogger({ enableFileLogging: false }).info("routine detail");
+
+      expect(consoleSpy).not.toHaveBeenCalled();
+      consoleSpy.mockRestore();
+      process.env.LOG_LEVEL = previous;
+    });
+  });
+
   describe("createLogger", () => {
     it("should create logger with default config", async () => {
       const fs = vi.mocked(await import("fs"));
@@ -931,10 +970,10 @@ describe("EnhancedLoggerService", () => {
       const fs = vi.mocked(await import("fs"));
 
       // Mock only 2 backup files
-      fs.readdirSync.mockReturnValue([
+      readdirNames(fs).mockReturnValue([
         "queue-worker.log.2023-01-01.backup",
         "queue-worker.log.2023-01-02.backup",
-      ] as unknown as ReturnType<typeof fs.readdirSync>);
+      ]);
 
       // Mock modification times
       fs.statSync.mockImplementation((path) => {
@@ -1127,13 +1166,13 @@ describe("EnhancedLoggerService", () => {
       const fs = vi.mocked(await import("fs"));
 
       // Mock multiple backup files
-      fs.readdirSync.mockReturnValue([
+      readdirNames(fs).mockReturnValue([
         "queue-worker.log.2023-01-01.backup",
         "queue-worker.log.2023-01-02.backup",
         "queue-worker.log.2023-01-03.backup",
         "queue-worker.log.2023-01-04.backup",
         "queue-worker.log.2023-01-05.backup",
-      ] as unknown as ReturnType<typeof fs.readdirSync>);
+      ]);
 
       // Mock different modification times
       fs.statSync.mockImplementation((path) => {
@@ -1351,6 +1390,4 @@ describe("EnhancedLoggerService", () => {
       );
     });
   });
-
-
 });

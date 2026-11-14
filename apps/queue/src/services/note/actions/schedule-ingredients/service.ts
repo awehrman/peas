@@ -78,10 +78,19 @@ export async function processIngredients(
         `[SCHEDULE_INGREDIENTS] Adding job to queue for ingredient ${ingredient.blockIndex}:${ingredient.lineIndex}: ${ingredient.reference}`
       );
 
-      // Schedule a single job - the worker pipeline will handle parse + save
+      // Schedule a single job - the worker pipeline will handle parse + save.
+      // The deterministic jobId deduplicates in-flight jobs for the same line;
+      // finished jobs are removed so a later re-import can reuse the id.
       await ingredientQueue.add(
         ActionName.PARSE_INGREDIENT_LINE,
-        ingredientJobData
+        ingredientJobData,
+        {
+          jobId: ingredientJobData.jobId,
+          attempts: 3,
+          backoff: { type: "exponential", delay: 2000 },
+          removeOnComplete: true,
+          removeOnFail: true,
+        }
       );
     }
 

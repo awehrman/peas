@@ -36,6 +36,19 @@ export async function saveNote(
       `[SAVE_NOTE] Successfully created note with ID: ${dbNote.id}, title: "${dbNote.title}", evernoteMetadataId: ${dbNote.evernoteMetadataId || "none"}`
     );
 
+    // Structure review (Phase 8.5): record line positions and any lines the validator thinks were misfiled; never fails the import
+    try {
+      const structure = await db.validateStoredNote(dbNote.id, {
+        contentTags: data.file.contentTags,
+      });
+      if (structure.findings > 0)
+        logger.log(
+          `[SAVE_NOTE] Structure review: ${structure.findings} proposal(s) for note ${dbNote.id}${structure.carriedOver > 0 ? `, ${structure.carriedOver} decided as before` : ""}`
+        );
+    } catch (error) {
+      logger.log(`[SAVE_NOTE] Structure review skipped: ${error}`);
+    }
+
     // Initialize completion tracking for this note
     /* istanbul ignore next -- @preserve */
     if (data.importId) {

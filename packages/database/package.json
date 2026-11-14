@@ -10,22 +10,53 @@
     "build": "node scripts/railway-build.js",
     "build:schema": "node scripts/build-schema.js",
     "db:generate": "node scripts/railway-build.js --generate-only",
-    "db:push": "yarn build:schema && dotenv -e ../../.env.local -- prisma db push --skip-generate",
+    "db:push": "yarn build:schema && dotenv -e ../../.env.local -- prisma db push",
     "db:migrate": "yarn build:schema && dotenv -e ../../.env.local -- prisma migrate dev",
+    "db:verify-migrations": "yarn build:schema && dotenv -e ../../.env.local -- node scripts/verify-migrations.js",
     "db:sync": "yarn build:schema && dotenv -e ../../.env.local -- prisma generate && dotenv -e ../../.env.local -- prisma migrate dev",
     "db:studio": "yarn build:schema && dotenv -e ../../.env.local -- prisma studio",
     "db:seed": "yarn build:schema && dotenv -e ../../.env.local -- node scripts/seed.js",
+    "export:lines": "dotenv -e ../../.env.local -- node scripts/export-ingredient-lines.js",
+    "user:role": "dotenv -e ../../.env.local -- node scripts/set-user-role.js",
     "lint": "eslint src --ext .ts",
     "lint:prisma": "npm run build:schema && prisma validate",
     "format:prisma": "npm run build:schema && prisma format",
-    "prisma:generate": "dotenv -e ../../.env.local -- prisma generate"
+    "prisma:generate": "dotenv -e ../../.env.local -- prisma generate",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:int": "vitest run --config vitest.int.config.ts",
+    "db:seed:ontology": "yarn build:schema && dotenv -e ../../.env.local -- tsx scripts/seed-ontology-vocabulary.ts",
+    "typecheck": "tsc -p tsconfig.test.json",
+    "test:coverage": "vitest run --config vitest.int.config.ts --coverage",
+    "db:seed:modifiers": "dotenv -e ../../.env.local -- tsx scripts/seed-lexicon-modifiers.ts",
+    "db:seed:foods": "dotenv -e ../../.env.local -- tsx scripts/seed-starter-foods.ts",
+    "db:seed:all": "yarn db:seed && yarn db:seed:ontology && yarn db:seed:modifiers && yarn db:seed:foods",
+    "db:backfill:import-integrity": "dotenv -e ../../.env.local -- tsx scripts/backfill-sources-and-categories.ts",
+    "pull:fixtures": "dotenv -e ../../.env.local -- tsx scripts/pull-fixtures.ts",
+    "export:calibration-labels": "dotenv -e ../../.env.local -- tsx scripts/export-calibration-labels.ts",
+    "db:evaluate:resolution": "dotenv -e ../../.env.local -- tsx scripts/evaluate-resolution.ts",
+    "db:benchmark:explorer": "tsx scripts/benchmark-explorer.ts",
+    "db:backfill:structure": "dotenv -e ../../.env.local -- tsx scripts/backfill-structure.ts",
+    "db:reclassify:structure": "dotenv -e ../../.env.local -- tsx scripts/reclassify-structure.ts"
   },
   "dependencies": {
-    "@prisma/client": "6.11.1",
-    "dotenv": "^17.2.0"
+    "@peas/parser": "*",
+    "@prisma/adapter-pg": "^7.10.1",
+    "@prisma/client": "^7.10.1",
+    "dotenv": "^17.2.0",
+    "pg": "^8.16.0",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@peas/eslint-config": "*",
+    "@types/node": "^24.0.13",
+    "@vitest/coverage-v8": "^5.1.0",
     "dotenv-cli": "^8.0.0",
-    "prisma": "^6.11.0"
+    "eslint": "^9.34.0",
+    "prisma": "^7.10.1",
+    "tsx": "^4.7.0",
+    "typescript": "^6.0.3",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.0"
   }
 }

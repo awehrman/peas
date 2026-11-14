@@ -12,6 +12,8 @@ export interface JobMetrics {
   queueName?: string;
   workerName?: string;
   error?: string;
+  /** Worker-specific fields; ingredient jobs add parseStatus, resolutionStatuses, unknownTokens, candidateCount, and lexiconRevision. */
+  metadata?: Record<string, unknown>;
   timestamp: Date;
 }
 

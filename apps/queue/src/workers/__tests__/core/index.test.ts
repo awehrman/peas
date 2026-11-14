@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { type Mock, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createMockLogger } from "../../../test-utils/helpers";
 import { ActionName } from "../../../types";
@@ -22,9 +22,11 @@ vi.mock("../../../monitoring/system-monitor", () => ({
 }));
 
 vi.mock("bullmq", () => ({
-  Worker: vi.fn().mockImplementation(() => ({
-    isRunning: () => true,
-  })),
+  Worker: vi.fn().mockImplementation(function () {
+    return {
+      isRunning: () => true,
+    };
+  }),
 }));
 
 vi.mock("../../config/redis", () => ({
@@ -80,8 +82,8 @@ class TestWorker extends BaseWorker {
 
 describe("Core Module Integration", () => {
   let mockQueue: { name: string };
-  let mockLogger: { log: ReturnType<typeof vi.fn> };
-  let mockDependencies: { logger: { log: ReturnType<typeof vi.fn> } };
+  let mockLogger: { log: Mock };
+  let mockDependencies: { logger: { log: Mock } };
   let mockContext: ActionContext;
 
   beforeEach(() => {
@@ -127,7 +129,7 @@ describe("Core Module Integration", () => {
     it("should work with BaseAction instances", () => {
       const factory = new ActionFactory<
         BaseJobData,
-        { logger: { log: ReturnType<typeof vi.fn> } },
+        { logger: { log: Mock } },
         BaseJobData
       >();
 
@@ -143,7 +145,7 @@ describe("Core Module Integration", () => {
     it("should work with concrete action classes", () => {
       const factory = new ActionFactory<
         BaseJobData,
-        { logger?: { log: ReturnType<typeof vi.fn> } },
+        { logger?: { log: Mock } },
         BaseJobData
       >();
 
@@ -314,7 +316,7 @@ describe("Core Module Integration", () => {
       // Create factory and register actions
       const factory = new ActionFactory<
         BaseJobData,
-        { logger: { log: ReturnType<typeof vi.fn> } },
+        { logger: { log: Mock } },
         BaseJobData
       >();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

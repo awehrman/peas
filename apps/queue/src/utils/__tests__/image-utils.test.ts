@@ -14,6 +14,9 @@ import {
   isImageFileEnhanced,
 } from "../image-utils";
 
+// Services resolve upload paths from the working directory.
+const QUEUE_ROOT = process.cwd();
+
 // Mock fs module
 vi.mock("fs", () => ({
   promises: {
@@ -672,7 +675,7 @@ describe("Image Utils", () => {
       expect(result).toHaveLength(2);
       expect(result[0]?.fileName).toBe("image1.jpg");
       expect(result[0]?.filePath).toBe(
-        "/Users/awehrman/projects/peas/apps/queue/uploads/images/test-import-123/image1.jpg"
+        `${QUEUE_ROOT}/uploads/images/test-import-123/image1.jpg`
       );
       expect(result[0]?.size).toBe(1024);
       expect(result[0]?.extension).toBe(".jpg");

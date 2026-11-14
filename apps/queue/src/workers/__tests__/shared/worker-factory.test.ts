@@ -97,9 +97,11 @@ describe("Worker Factory", () => {
 
     it("should handle factory errors", () => {
       const factoryError = new Error("Factory failed");
-      const mockFactory: WorkerFactory = vi.fn().mockImplementation(() => {
-        throw factoryError;
-      });
+      const mockFactory: WorkerFactory = vi
+        .fn()
+        .mockImplementation(function () {
+          throw factoryError;
+        });
       const configs: WorkerConfig[] = [
         {
           name: "failing-worker",
@@ -122,9 +124,11 @@ describe("Worker Factory", () => {
     });
 
     it("should handle non-Error exceptions", () => {
-      const mockFactory: WorkerFactory = vi.fn().mockImplementation(() => {
-        throw "String error";
-      });
+      const mockFactory: WorkerFactory = vi
+        .fn()
+        .mockImplementation(function () {
+          throw "String error";
+        });
       const configs: WorkerConfig[] = [
         {
           name: "string-error-worker",
@@ -147,9 +151,11 @@ describe("Worker Factory", () => {
     });
 
     it("should handle null/undefined exceptions", () => {
-      const mockFactory: WorkerFactory = vi.fn().mockImplementation(() => {
-        throw null;
-      });
+      const mockFactory: WorkerFactory = vi
+        .fn()
+        .mockImplementation(function () {
+          throw null;
+        });
       const configs: WorkerConfig[] = [
         {
           name: "null-error-worker",
@@ -246,11 +252,9 @@ describe("Worker Factory", () => {
 
     it("should use Promise.allSettled for concurrent closing", async () => {
       const slowWorker = {
-        close: vi
-          .fn()
-          .mockImplementation(
-            () => new Promise((resolve) => setTimeout(resolve, 100))
-          ),
+        close: vi.fn().mockImplementation(function () {
+          return new Promise((resolve) => setTimeout(resolve, 100));
+        }),
         getStatus: vi.fn().mockReturnValue({ status: "slow" }),
       };
       const fastWorker = {

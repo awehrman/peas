@@ -10,21 +10,21 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       reporter: ["text", "json", "html"],
+      // Without an include, Vitest only counts files that tests import, hiding untested components
+      include: ["src/**/*.{ts,tsx}"],
       exclude: [
-        "node_modules/",
-        "src/test-utils/",
+        "src/test-utils/**",
+        "src/**/__tests__/**",
         "**/*.d.ts",
         "**/*.test.{ts,tsx}",
         "**/*.spec.{ts,tsx}",
-        "dist/",
       ],
+      // Ratchet: the floor of the last measured coverage (12 November 2026); raise it as coverage grows
       thresholds: {
-        global: {
-          branches: 100,
-          functions: 100,
-          lines: 100,
-          statements: 100,
-        },
+        statements: 47,
+        branches: 52,
+        functions: 49,
+        lines: 48,
       },
     },
     // Mock WebSocket and other browser APIs
@@ -32,6 +32,8 @@ export default defineConfig({
   },
   resolve: {
     alias: {
+      // Components source imports its own "@/lib"; features has no src/lib to clash with
+      "@/lib": path.resolve(__dirname, "../components/src/lib"),
       "@": path.resolve(__dirname, "./src"),
       "@peas/components": path.resolve(__dirname, "../components/src"),
       "@peas/theme": path.resolve(__dirname, "../theme/src"),

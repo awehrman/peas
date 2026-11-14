@@ -2,14 +2,19 @@ import "@testing-library/jest-dom";
 import { cleanup } from "@testing-library/react";
 import { afterAll, afterEach, beforeAll, vi } from "vitest";
 
+// Constructor mocks use `function` so they work with `new` (Vitest 4+ calls
+// the implementation as a constructor, which arrow functions cannot be).
+
 // Mock WebSocket globally
-global.WebSocket = vi.fn(() => ({
-  addEventListener: vi.fn(),
-  removeEventListener: vi.fn(),
-  close: vi.fn(),
-  send: vi.fn(),
-  readyState: 1, // OPEN
-})) as unknown as typeof WebSocket;
+global.WebSocket = vi.fn(function () {
+  return {
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    close: vi.fn(),
+    send: vi.fn(),
+    readyState: 1, // OPEN
+  };
+}) as unknown as typeof WebSocket;
 
 // Mock window.btoa for base64 encoding
 global.btoa = vi.fn((str: string) =>
@@ -25,22 +30,30 @@ global.atob = vi.fn((str: string) =>
 global.fetch = vi.fn();
 
 // Mock File and FileList for file upload tests
-global.File = vi.fn((fileBits, fileName, options) => ({
-  name: fileName,
-  size: fileBits[0]?.length || 0,
-  type: options?.type || "",
-  lastModified: Date.now(),
-  arrayBuffer: vi.fn(),
-  slice: vi.fn(),
-  stream: vi.fn(),
-  text: vi.fn(),
-})) as unknown as typeof File;
+global.File = vi.fn(function (
+  fileBits: BlobPart[],
+  fileName: string,
+  options?: FilePropertyBag
+) {
+  return {
+    name: fileName,
+    size: (fileBits[0] as string | undefined)?.length || 0,
+    type: options?.type || "",
+    lastModified: Date.now(),
+    arrayBuffer: vi.fn(),
+    slice: vi.fn(),
+    stream: vi.fn(),
+    text: vi.fn(),
+  };
+}) as unknown as typeof File;
 
-global.FileList = vi.fn(() => ({
-  length: 0,
-  item: vi.fn(),
-  [Symbol.iterator]: vi.fn(),
-})) as typeof FileList;
+global.FileList = vi.fn(function () {
+  return {
+    length: 0,
+    item: vi.fn(),
+    [Symbol.iterator]: vi.fn(),
+  };
+}) as unknown as typeof FileList;
 
 // Mock URL.createObjectURL
 global.URL.createObjectURL = vi.fn(() => "mock-object-url");

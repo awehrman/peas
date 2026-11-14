@@ -33,6 +33,10 @@ vi.mock("../upload", () => ({
   uploadRouter: vi.fn(),
 }));
 
+vi.mock("../reinterpret", () => ({
+  reinterpretRouter: vi.fn(),
+}));
+
 describe("Routes Index", () => {
   it("should export all router modules", async () => {
     // Import the index module
@@ -47,14 +51,15 @@ describe("Routes Index", () => {
     expect(routesIndex).toHaveProperty("performanceRouter");
     expect(routesIndex).toHaveProperty("imagesRouter");
     expect(routesIndex).toHaveProperty("uploadRouter");
+    expect(routesIndex).toHaveProperty("reinterpretRouter");
   });
 
-  it("should export exactly 8 router modules", async () => {
+  it("should export exactly 10 router modules", async () => {
     const routesIndex = await import("../index");
 
     // Count the number of exports
     const exportCount = Object.keys(routesIndex).length;
-    expect(exportCount).toBe(8);
+    expect(exportCount).toBe(10);
   });
 
   it("should export importRouter from import module", async () => {
@@ -133,6 +138,8 @@ describe("Routes Index", () => {
       "performanceRouter",
       "imagesRouter",
       "uploadRouter",
+      "reinterpretRouter",
+      "sourcesRouter",
     ];
 
     // Verify all properties are expected

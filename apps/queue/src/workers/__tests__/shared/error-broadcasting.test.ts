@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import { LogLevel } from "../../../types";
 import {
@@ -16,12 +16,12 @@ vi.mock("../../services/note/actions/track-completion/service", () => ({
 
 describe("ErrorBroadcasting", () => {
   let mockLogger: {
-    log: ReturnType<typeof vi.fn>;
+    log: Mock;
   };
-  let mockAddStatusEventAndBroadcast: ReturnType<typeof vi.fn>;
+  let mockAddStatusEventAndBroadcast: Mock;
   let mockDeps: ErrorBroadcastDependencies;
-  let mockMarkNoteAsFailed: ReturnType<typeof vi.fn>;
-  let markNoteAsFailedModule: { markNoteAsFailed: ReturnType<typeof vi.fn> } | typeof import("../../../services/note/actions/track-completion/service");
+  let mockMarkNoteAsFailed: Mock;
+  let markNoteAsFailedModule: { markNoteAsFailed: Mock } | typeof import("../../../services/note/actions/track-completion/service");
 
   beforeEach(async () => {
     vi.clearAllMocks();

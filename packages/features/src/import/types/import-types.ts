@@ -21,6 +21,8 @@ export interface UploadBatch {
 }
 
 export interface UploadState {
+  /** Notes from the current selection that have not started uploading yet */
+  pendingBatches: UploadBatch[];
   currentBatch?: UploadBatch;
   previousBatches: UploadBatch[];
 }
@@ -71,8 +73,13 @@ export interface StepStatus {
 
 export interface ImportCard {
   id: string;
-  isExpanded: boolean;
-  imageThumbnail?: string;
+  noteId?: string;
+  title?: string;
+  thumbnailUrl?: string;
+  /** Website URL or book reference the recipe came from */
+  source?: string;
+  /** Set by the queue's final note_completion event */
+  isComplete: boolean;
   status: {
     uploaded: StepStatus;
     cleanedNote: StepStatus;
@@ -87,9 +94,13 @@ export interface ImportCard {
   };
 }
 
+export type ImportCardDetails = Partial<
+  Pick<ImportCard, "title" | "thumbnailUrl" | "source" | "isComplete">
+>;
+
 export interface ActivityState {
-  currentPageIndex: number;
-  pageToCardIds: Record<number, string[]>;
+  /** Card ids in the order their first event arrived */
+  cardIds: string[];
   cardsById: Record<string, ImportCard>;
 }
 
@@ -102,6 +113,7 @@ export interface ImportState {
 
 // Action types
 export type UploadAction =
+  | { type: "QUEUE_BATCHES"; batches: UploadBatch[] }
   | {
       type: "START_BATCH";
       importId: string;
@@ -140,17 +152,15 @@ export type WsAction =
 export type StatsAction = { type: "REFRESH_STATS"; stats: ImportStatsState };
 
 export type ActivityAction =
-  | { type: "ADD_IMPORT_CARD"; pageIndex: number; card: ImportCard }
-  | { type: "TOGGLE_CARD_EXPANDED"; pageIndex: number; cardId: string }
+  | { type: "ADD_IMPORT_CARD"; card: ImportCard }
   | {
       type: "UPDATE_CARD_STATUS";
-      pageIndex: number;
       cardId: string;
       step: keyof ImportCard["status"];
       statusUpdate: Partial<StepStatus>;
+      noteId?: string;
     }
-  | { type: "UPDATE_CARD_TITLE"; cardId: string; title: string }
-  | { type: "SET_PAGE"; pageIndex: number }
+  | { type: "UPDATE_CARD_DETAILS"; cardId: string; details: ImportCardDetails }
   | { type: "RESET_ACTIVITY" };
 
 export type ImportAction =

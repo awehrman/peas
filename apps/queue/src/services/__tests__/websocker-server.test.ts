@@ -1,5 +1,14 @@
 import type { NoteStatus } from "@peas/database";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createHmac } from "crypto";
+import {
+  type Mock,
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import { WebSocket, WebSocketServer } from "ws";
 
 import {
@@ -11,14 +20,14 @@ import { WebSocketManager } from "../websocket-server";
 // Type definitions for mocks
 interface MockWebSocket {
   readyState: number;
-  send: ReturnType<typeof vi.fn>;
-  close: ReturnType<typeof vi.fn>;
-  on: ReturnType<typeof vi.fn>;
+  send: Mock;
+  close: Mock;
+  on: Mock;
 }
 
 interface MockWebSocketServer {
-  on: ReturnType<typeof vi.fn>;
-  close: ReturnType<typeof vi.fn>;
+  on: Mock;
+  close: Mock;
 }
 
 // Mock WebSocket dependencies
@@ -65,12 +74,12 @@ describe("websocket-server.ts", () => {
       close: vi.fn(),
     };
 
-    (WebSocketServer as unknown as ReturnType<typeof vi.fn>).mockImplementation(
-      () => mockWebSocketServer
-    );
-    (WebSocket as unknown as ReturnType<typeof vi.fn>).mockImplementation(
-      () => mockWebSocket
-    );
+    (WebSocketServer as unknown as Mock).mockImplementation(function () {
+      return mockWebSocketServer;
+    });
+    (WebSocket as unknown as Mock).mockImplementation(function () {
+      return mockWebSocket;
+    });
   });
 
   afterEach(() => {
@@ -88,14 +97,48 @@ describe("websocket-server.ts", () => {
         const manager = new WebSocketManager();
 
         expect(manager).toBeInstanceOf(WebSocketManager);
-        expect(WebSocketServer).toHaveBeenCalledWith({ port: 8080 });
+        expect(WebSocketServer).toHaveBeenCalledWith({
+          port: 8080,
+          verifyClient: expect.any(Function),
+        });
       });
 
       it("should create WebSocketManager with custom port", () => {
         const manager = new WebSocketManager(9000);
 
         expect(manager).toBeInstanceOf(WebSocketManager);
-        expect(WebSocketServer).toHaveBeenCalledWith({ port: 9000 });
+        expect(WebSocketServer).toHaveBeenCalledWith({
+          port: 9000,
+          verifyClient: expect.any(Function),
+        });
+      });
+
+      it("should only accept handshakes that carry a valid queue token", () => {
+        const secret = "a".repeat(32);
+        vi.stubEnv("QUEUE_AUTH_SECRET", secret);
+
+        const [{ verifyClient }] = (
+          WebSocketServer as unknown as Mock
+        ).mock.calls.at(-1) as [
+          { verifyClient: (info: { req: { url?: string } }) => boolean },
+        ];
+
+        const payload = Buffer.from(
+          JSON.stringify({ sub: "user-1", exp: Date.now() / 1000 + 60 })
+        ).toString("base64url");
+        const signature = createHmac("sha256", secret)
+          .update(payload)
+          .digest("base64url");
+
+        expect(verifyClient({ req: { url: "/" } })).toBe(false);
+        expect(verifyClient({ req: { url: "/?token=forged.token" } })).toBe(
+          false
+        );
+        expect(
+          verifyClient({ req: { url: `/?token=${payload}.${signature}` } })
+        ).toBe(true);
+
+        vi.unstubAllEnvs();
       });
 
       it("should setup event handlers", () => {
@@ -354,7 +397,7 @@ describe("websocket-server.ts", () => {
         };
         getClients(wsManager).set("client1", client);
 
-        mockWebSocket.send.mockImplementation(() => {
+        mockWebSocket.send.mockImplementation(function () {
           throw createTestError("Send error");
         });
 
@@ -440,19 +483,20 @@ describe("websocket-server.ts", () => {
 
     describe("initializeWebSocketServer", () => {
       it("should create and return WebSocketManager instance", async () => {
-        const { initializeWebSocketServer } = await import(
-          "../websocket-server"
-        );
+        const { initializeWebSocketServer } =
+          await import("../websocket-server");
         const manager = initializeWebSocketServer(8080);
 
         expect(manager).toBeDefined();
-        expect(WebSocketServer).toHaveBeenCalledWith({ port: 8080 });
+        expect(WebSocketServer).toHaveBeenCalledWith({
+          port: 8080,
+          verifyClient: expect.any(Function),
+        });
       });
 
       it("should return existing instance on subsequent calls", async () => {
-        const { initializeWebSocketServer } = await import(
-          "../websocket-server"
-        );
+        const { initializeWebSocketServer } =
+          await import("../websocket-server");
         const manager1 = initializeWebSocketServer(8080);
         const manager2 = initializeWebSocketServer(9000); // Different port should be ignored
 
@@ -470,9 +514,8 @@ describe("websocket-server.ts", () => {
       });
 
       it("should return manager after initialization", async () => {
-        const { initializeWebSocketServer, getWebSocketManager } = await import(
-          "../websocket-server"
-        );
+        const { initializeWebSocketServer, getWebSocketManager } =
+          await import("../websocket-server");
         const initializedManager = initializeWebSocketServer(8080);
         const retrievedManager = getWebSocketManager();
 
@@ -552,7 +595,7 @@ describe("websocket-server.ts", () => {
       // Create a client with a WebSocket that throws an error on send
       const errorWebSocket = {
         ...mockWebSocket,
-        send: vi.fn().mockImplementation(() => {
+        send: vi.fn().mockImplementation(function () {
           throw new Error("Send failed");
         }),
       };
@@ -587,7 +630,7 @@ describe("websocket-server.ts", () => {
       // Create a client with a WebSocket that throws an error on send
       const errorWebSocket = {
         ...mockWebSocket,
-        send: vi.fn().mockImplementation(() => {
+        send: vi.fn().mockImplementation(function () {
           throw new Error("Broadcast failed");
         }),
       };

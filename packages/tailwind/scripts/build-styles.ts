@@ -68,6 +68,8 @@ function buildCss({
   shadows,
 }: ThemeModule) {
   let css = `@import "tailwindcss";\n\n`;
+  // dark: utilities follow the ThemeProvider's .dark class, not the OS setting
+  css += `@custom-variant dark (&:where(.dark, .dark *));\n\n`;
   css += `\n/* ================= Theme Tokens ================= */\n@theme {\n`;
 
   css += `\n  /* Colors */\n\n`;
@@ -106,24 +108,29 @@ function buildCss({
     }
   }
 
+  // Tailwind v4 namespaces: --font-* (families), --text-* (sizes, with
+  // --text-*--line-height), --font-weight-*, --tracking-*
   css += `\n  /* Typography */\n\n`;
-  for (const [key, value] of Object.entries(typography)) {
-    if (value && typeof value === "object") {
-      for (const [subKey, subValue] of Object.entries(
-        value as Record<string, unknown>
-      )) {
-        if (Array.isArray(subValue)) {
-          css += `    --${toKebabCase(key)}-${toKebabCase(
-            subKey
-          )}: ${subValue.join(", ")};\n`;
-        } else {
-          css += `    --${toKebabCase(key)}-${toKebabCase(subKey)}: ${subValue};\n`;
-        }
-      }
-      css += `\n`;
-    } else if (value != null) {
-      css += `    --font-${toKebabCase(key)}: ${value};\n`;
+  const typographyGroups = typography as Record<string, Record<string, unknown> | undefined>;
+  const lineHeights = typographyGroups.lineHeight ?? {};
+
+  for (const [family, stack] of Object.entries(typographyGroups.fontFamily ?? {})) {
+    css += `    --font-${family}: ${Array.isArray(stack) ? stack.join(", ") : stack};\n`;
+  }
+  css += `\n`;
+  for (const [size, value] of Object.entries(typographyGroups.fontSize ?? {})) {
+    css += `    --text-${size}: ${value};\n`;
+    if (lineHeights[size] != null) {
+      css += `    --text-${size}--line-height: ${lineHeights[size]};\n`;
     }
+  }
+  css += `\n`;
+  for (const [weight, value] of Object.entries(typographyGroups.fontWeight ?? {})) {
+    css += `    --font-weight-${weight}: ${value};\n`;
+  }
+  css += `\n`;
+  for (const [tracking, value] of Object.entries(typographyGroups.tracking ?? {})) {
+    css += `    --tracking-${tracking}: ${value};\n`;
   }
 
   css += `\n  /* Spacing */\n\n`;
@@ -150,6 +157,28 @@ function buildCss({
   }
   css += `\n`;
   css += `}\n\n`;
+  // Tailwind v4 borders default to currentColor; use the soft border token instead
+  css += `@layer base {
+  *, ::after, ::before, ::backdrop, ::file-selector-button {
+    border-color: var(--color-border);
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    color: var(--color-foreground);
+    background-color: var(--color-background);
+  }
+
+  h1, h2, h3 {
+    letter-spacing: var(--tracking-tight);
+  }
+}
+`;
   return css;
 }
 
@@ -268,11 +297,8 @@ async function notifyConsumers() {
       filePath: path.resolve(__dirname, "../../features/src/styles.css"),
     },
     {
-      label: "@peas/web/src/app/globals.css",
-      filePath: path.resolve(
-        __dirname,
-        "../../../apps/web/src/app/globals.css"
-      ),
+      label: "@peas/web/src/styles/app.css",
+      filePath: path.resolve(__dirname, "../../../apps/web/src/styles/app.css"),
     },
   ];
 

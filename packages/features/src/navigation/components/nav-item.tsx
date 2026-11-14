@@ -12,6 +12,7 @@ interface NavItemProps {
   icon: LucideIcon;
   onClick?: () => void;
   className?: string;
+  iconClassName?: string;
   style?: CSSProperties;
   LinkComponent?: React.ComponentType<NavigationLinkComponentProps>;
 }
@@ -22,6 +23,7 @@ export function NavItem({
   icon,
   onClick,
   className,
+  iconClassName,
   style,
   LinkComponent,
 }: NavItemProps) {
@@ -39,7 +41,11 @@ export function NavItem({
   const IconComponent = icon;
   const content = (
     <>
-      <IconComponent className="h-4 w-4" style={style} />
+      <IconComponent
+        aria-hidden="true"
+        className={`h-4 w-4 ${iconClassName || ""}`}
+        style={style}
+      />
       <span style={style}>{name}</span>
     </>
   );

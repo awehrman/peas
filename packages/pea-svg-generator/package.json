@@ -21,13 +21,15 @@
     "lint": "eslint . --max-warnings 0",
     "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist",
     "generate": "node dist/cli.js",
-    "generate:blobs": "node dist/cli.js blobs"
+    "generate:blobs": "node dist/cli.js blobs",
+    "generate:readme": "tsx scripts/readme-peas.ts"
   },
   "devDependencies": {
     "@peas/eslint-config": "*",
     "@peas/typescript-config": "*",
     "@types/node": "^24.0.13",
-    "tsup": "^8.5.0",
-    "typescript": "^5.8.3"
+    "tsup": "^9.0.0",
+    "tsx": "^4.7.0",
+    "typescript": "^6.0.3"
   }
 }

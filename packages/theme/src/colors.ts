@@ -1,5 +1,8 @@
 /**
  * Color system for the design system
+ *
+ * Hues come from the original recipes app: teal for actions, soft blue for
+ * highlights and focus, a navy sidebar and neutral cool greys.
  */
 
 export type ColorScale = {
@@ -78,7 +81,7 @@ const black = "#000000";
  * Maps to Tailwind color scale: 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950
  */
 const oklchScale = {
-  50: 100.0, // Lightest
+  50: 98.0, // Lightest
   100: 95.0,
   200: 90.0,
   300: 80.0,
@@ -91,117 +94,60 @@ const oklchScale = {
   950: 10.0, // Darkest
 } as const;
 
-const primaryColors = {
-  50: `oklch(${oklchScale[50]}% 0.0900 127.79)`,
-  100: `oklch(${oklchScale[100]}% 0.0900 127.79)`,
-  200: `oklch(${oklchScale[200]}% 0.0900 127.79)`,
-  300: `oklch(${oklchScale[300]}% 0.0900 127.79)`,
-  400: `oklch(${oklchScale[400]}% 0.0900 127.79)`,
-  500: `oklch(${oklchScale[500]}% 0.0900 127.79)`,
-  600: `oklch(${oklchScale[600]}% 0.0900 127.79)`,
-  700: `oklch(${oklchScale[700]}% 0.0900 127.79)`,
-  800: `oklch(${oklchScale[800]}% 0.0900 127.79)`,
-  900: `oklch(${oklchScale[900]}% 0.0900 127.79)`,
-  950: `oklch(${oklchScale[950]}% 0.0900 127.79)`,
+/** Very light and very dark steps can't hold full chroma, so it tapers off. */
+const chromaTaper = {
+  50: 0.15,
+  100: 0.3,
+  200: 0.55,
+  300: 0.85,
+  400: 1,
+  500: 1,
+  600: 1,
+  700: 0.9,
+  800: 0.75,
+  900: 0.6,
+  950: 0.45,
 } as const;
 
-const secondaryColors = {
-  50: `oklch(${oklchScale[50]}% 0.0300 335.85)`,
-  100: `oklch(${oklchScale[100]}% 0.0300 335.85)`,
-  200: `oklch(${oklchScale[200]}% 0.0300 335.85)`,
-  300: `oklch(${oklchScale[300]}% 0.0300 335.85)`,
-  400: `oklch(${oklchScale[400]}% 0.0300 335.85)`,
-  500: `oklch(${oklchScale[500]}% 0.0300 335.85)`,
-  600: `oklch(${oklchScale[600]}% 0.0300 335.85)`,
-  700: `oklch(${oklchScale[700]}% 0.0300 335.85)`,
-  800: `oklch(${oklchScale[800]}% 0.0300 335.85)`,
-  900: `oklch(${oklchScale[900]}% 0.0300 335.85)`,
-  950: `oklch(${oklchScale[950]}% 0.0300 335.85)`,
-} as const;
+function createScale(chroma: number, hue: number): ColorScale {
+  const steps = Object.keys(oklchScale) as unknown as (keyof typeof oklchScale)[];
+  return Object.fromEntries(
+    steps.map((step) => [
+      step,
+      `oklch(${oklchScale[step]}% ${(chroma * chromaTaper[step]).toFixed(4)} ${hue})`,
+    ])
+  ) as ColorScale;
+}
 
-const successColors = {
-  50: `oklch(${oklchScale[50]}% 0.1788 132.11)`,
-  100: `oklch(${oklchScale[100]}% 0.1788 132.11)`,
-  200: `oklch(${oklchScale[200]}% 0.1788 132.11)`,
-  300: `oklch(${oklchScale[300]}% 0.1788 132.11)`,
-  400: `oklch(${oklchScale[400]}% 0.1788 132.11)`,
-  500: `oklch(${oklchScale[500]}% 0.1788 132.11)`,
-  600: `oklch(${oklchScale[600]}% 0.1788 132.11)`,
-  700: `oklch(${oklchScale[700]}% 0.1788 132.11)`,
-  800: `oklch(${oklchScale[800]}% 0.1788 132.11)`,
-  900: `oklch(${oklchScale[900]}% 0.1788 132.11)`,
-  950: `oklch(${oklchScale[950]}% 0.1788 132.11)`,
-} as const;
+// recipes altGreen #73C6B6 ≈ oklch(76.9% 0.085 180.13)
+const primaryColors = createScale(0.085, 180.13);
 
-const warningColors = {
-  50: `oklch(${oklchScale[50]}% 0.1609 93.25)`,
-  100: `oklch(${oklchScale[100]}% 0.1609 93.25)`,
-  200: `oklch(${oklchScale[200]}% 0.1609 93.25)`,
-  300: `oklch(${oklchScale[300]}% 0.1609 93.25)`,
-  400: `oklch(${oklchScale[400]}% 0.1609 93.25)`,
-  500: `oklch(${oklchScale[500]}% 0.1609 93.25)`,
-  600: `oklch(${oklchScale[600]}% 0.1609 93.25)`,
-  700: `oklch(${oklchScale[700]}% 0.1609 93.25)`,
-  800: `oklch(${oklchScale[800]}% 0.1609 93.25)`,
-  900: `oklch(${oklchScale[900]}% 0.1609 93.25)`,
-  950: `oklch(${oklchScale[950]}% 0.1609 93.25)`,
-} as const;
+// recipes highlight #80AEF5 ≈ oklch(74.6% 0.1146 258.84)
+const secondaryColors = createScale(0.1146, 258.84);
 
-const errorColors = {
-  50: `oklch(${oklchScale[50]}% 0.1433 35.05)`,
-  100: `oklch(${oklchScale[100]}% 0.1433 35.05)`,
-  200: `oklch(${oklchScale[200]}% 0.1433 35.05)`,
-  300: `oklch(${oklchScale[300]}% 0.1433 35.05)`,
-  400: `oklch(${oklchScale[400]}% 0.1433 35.05)`,
-  500: `oklch(${oklchScale[500]}% 0.1433 35.05)`,
-  600: `oklch(${oklchScale[600]}% 0.1433 35.05)`,
-  700: `oklch(${oklchScale[700]}% 0.1433 35.05)`,
-  800: `oklch(${oklchScale[800]}% 0.1433 35.05)`,
-  900: `oklch(${oklchScale[900]}% 0.1433 35.05)`,
-  950: `oklch(${oklchScale[950]}% 0.1433 35.05)`,
-} as const;
+// recipes green rgba(120, 224, 143) ≈ oklch(82.4% 0.1497 149.34)
+const successColors = createScale(0.1497, 149.34);
 
-const infoColors = {
-  50: `oklch(${oklchScale[50]}% 0.1153 192.59)`,
-  100: `oklch(${oklchScale[100]}% 0.1153 192.59)`,
-  200: `oklch(${oklchScale[200]}% 0.1153 192.59)`,
-  300: `oklch(${oklchScale[300]}% 0.1153 192.59)`,
-  400: `oklch(${oklchScale[400]}% 0.1153 192.59)`,
-  500: `oklch(${oklchScale[500]}% 0.1153 192.59)`,
-  600: `oklch(${oklchScale[600]}% 0.1153 192.59)`,
-  700: `oklch(${oklchScale[700]}% 0.1153 192.59)`,
-  800: `oklch(${oklchScale[800]}% 0.1153 192.59)`,
-  900: `oklch(${oklchScale[900]}% 0.1153 192.59)`,
-  950: `oklch(${oklchScale[950]}% 0.1153 192.59)`,
-} as const;
+// recipes orange rgba(255, 159, 67) ≈ oklch(78.5% 0.154 60.69)
+const warningColors = createScale(0.154, 60.69);
 
-const greyscaleColors = {
-  50: `oklch(${oklchScale[50]}% 0.013 150.5)`,
-  100: `oklch(${oklchScale[100]}% 0.017 150.5)`,
-  200: `oklch(${oklchScale[200]}% 0.015 150.5)`,
-  300: `oklch(${oklchScale[300]}% 0.013 150.5)`,
-  400: `oklch(${oklchScale[400]}% 0.011 150.5)`,
-  500: `oklch(${oklchScale[500]}% 0.009 150.5)`,
-  600: `oklch(${oklchScale[600]}% 0.007 150.5)`,
-  700: `oklch(${oklchScale[700]}% 0.004 150.5)`,
-  800: `oklch(${oklchScale[800]}% 0.002 150.5)`,
-  900: `oklch(${oklchScale[900]}% 0.002 150.5)`,
-  950: `oklch(${oklchScale[950]}% 0.002 150.5)`,
-} as const;
+// recipes red rgba(255, 99, 72) ≈ oklch(69.6% 0.1953 32.05)
+const errorColors = createScale(0.1953, 32.05);
 
-const neutralColors = {
-  50: `oklch(${oklchScale[50] + 5.0}% 0.0382 96.53)`, // 100% for neutrals-50 (extra light)
-  100: `oklch(${oklchScale[50]}% 0.0382 96.53)`,
-  200: `oklch(${oklchScale[100]}% 0.0382 96.53)`,
-  300: `oklch(${oklchScale[200]}% 0.0382 96.53)`,
-  400: `oklch(${oklchScale[300]}% 0.0382 96.53)`,
-  500: `oklch(${oklchScale[400]}% 0.0382 96.53)`,
-  600: `oklch(${oklchScale[500]}% 0.0382 96.53)`,
-  700: `oklch(${oklchScale[600]}% 0.0382 96.53)`,
-  800: `oklch(${oklchScale[700]}% 0.0382 96.53)`,
-  900: `oklch(${oklchScale[800]}% 0.0382 96.53)`,
-  950: `oklch(${oklchScale[900]}% 0.0382 96.53)`,
-} as const;
+const infoColors = createScale(0.1146, 258.84);
+
+// recipes lighterGrey #909497 ≈ oklch(66.4% 0.0064 239.87)
+const greyscaleColors = createScale(0.0064, 239.87);
+
+const neutralColors = createScale(0.004, 239.87);
+
+// recipes menuBackground / menuColor
+const navy = "oklch(35.9% 0.0558 259.66)";
+const menuColor = "oklch(87.8% 0.0502 265.38)";
+
+// recipes headerBackground #f8f8f8 and bodyText #222
+const headerBackground = "oklch(97.9% 0 0)";
+const bodyText = "oklch(25.2% 0 0)";
 
 /**
  * Default color palette
@@ -211,69 +157,69 @@ export const colors: ColorPalette = {
   black,
   primary: {
     ...primaryColors,
-    DEFAULT: primaryColors[500], // Used for backgrounds, borders, fills
+    DEFAULT: primaryColors[600], // Darker than recipes' teal so white text stays readable
     foreground: white, // Text color on primary backgrounds
   },
   secondary: {
     ...secondaryColors,
-    DEFAULT: secondaryColors[500], // Used for backgrounds, borders, fills
-    foreground: white, // Text color on secondary backgrounds
+    DEFAULT: secondaryColors[100], // Soft blue fill for secondary buttons and badges
+    foreground: secondaryColors[800], // Text color on secondary backgrounds
   },
   success: {
     ...successColors,
-    DEFAULT: successColors[500], // Used for backgrounds, borders, fills
+    DEFAULT: successColors[600], // Used for backgrounds, borders, fills
     foreground: white, // Text color on success backgrounds
   },
   warning: {
     ...warningColors,
     DEFAULT: warningColors[500], // Used for backgrounds, borders, fills
-    foreground: white, // Text color on warning backgrounds
+    foreground: bodyText, // Text color on warning backgrounds
   },
   error: {
     ...errorColors,
-    DEFAULT: errorColors[500], // Used for backgrounds, borders, fills
+    DEFAULT: errorColors[600], // Used for backgrounds, borders, fills
     foreground: white, // Text color on error backgrounds
   },
   info: {
     ...infoColors,
-    DEFAULT: infoColors[500], // Used for backgrounds, borders, fills
+    DEFAULT: infoColors[600], // Used for backgrounds, borders, fills
     foreground: white, // Text color on info backgrounds
   },
   greyscale: greyscaleColors,
   neutrals: neutralColors,
   destructive: {
-    DEFAULT: errorColors[500], // Used for destructive action backgrounds
+    DEFAULT: errorColors[600], // Used for destructive action backgrounds
     foreground: white, // Text color on destructive backgrounds
   },
   muted: {
-    DEFAULT: neutralColors[100], // Used for disabled/secondary backgrounds (95% lightness)
-    foreground: neutralColors[800], // Text color on muted backgrounds
+    DEFAULT: greyscaleColors[100], // Used for disabled/secondary backgrounds
+    foreground: greyscaleColors[600], // Text color on muted backgrounds
   },
   accent: {
-    DEFAULT: neutralColors[300], // Used for accent/highlight backgrounds (80% lightness)
-    foreground: neutralColors[800], // Text color on accent backgrounds
+    DEFAULT: secondaryColors[50], // Hover/highlight backgrounds (recipes lightBlue)
+    foreground: bodyText, // Text color on accent backgrounds
   },
   popover: {
-    DEFAULT: white, // Used for dropdown/popover backgrounds (same as background)
-    foreground: greyscaleColors[500], // Text color on popover backgrounds
+    DEFAULT: white, // Used for dropdown/popover backgrounds
+    foreground: bodyText, // Text color on popover backgrounds
   },
   card: {
-    DEFAULT: white, // Used for card/panel backgrounds (same as background)
-    foreground: greyscaleColors[500], // Text color on card backgrounds
+    DEFAULT: white, // Used for card/panel backgrounds
+    foreground: bodyText, // Text color on card backgrounds
   },
   navigation: {
-    DEFAULT: primaryColors[800], // Used for navigation/sidebar backgrounds
-    foreground: neutralColors[300], // Text color on navigation backgrounds
+    DEFAULT: navy, // Used for navigation/sidebar backgrounds
+    foreground: menuColor, // Text color on navigation backgrounds
   },
   header: {
-    DEFAULT: greyscaleColors[50], // Used for header/topbar backgrounds
-    foreground: greyscaleColors[700], // Text color on header backgrounds
+    DEFAULT: headerBackground, // Used for header/topbar backgrounds
+    foreground: greyscaleColors[600], // Text color on header backgrounds
   },
   border: greyscaleColors[200], // Used for borders, dividers, outlines
-  input: neutralColors[300], // Used for input field backgrounds (80% lightness)
-  ring: primaryColors[500], // Used for focus rings/outlines (same as primary)
+  input: greyscaleColors[300], // Input borders; fields stay white
+  ring: secondaryColors[400], // Focus rings (recipes highlight blue)
   background: white, // Used for main page/app background
-  foreground: greyscaleColors[900], // Used for default text color
+  foreground: bodyText, // Used for default text color
 };
 
 export default colors;

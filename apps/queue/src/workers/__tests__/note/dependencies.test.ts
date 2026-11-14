@@ -14,10 +14,6 @@ vi.mock("../../../parsers/html", () => ({
   parseHTMLContent: vi.fn(),
 }));
 
-vi.mock("@peas/parser", () => ({
-  parseHTMLContent: vi.fn(),
-}));
-
 vi.mock("../../../services/note/actions/clean-html/action", () => ({
   cleanHtmlFile: vi.fn(),
 }));
@@ -84,7 +80,8 @@ describe("buildNoteWorkerDependencies", () => {
         instructionQueue: { name: "instruction" } as any,
         categorizationQueue: { name: "categorization" } as any,
         sourceQueue: { name: "source" } as any,
-        patternTrackingQueue: { name: "patternTracking" } as any,
+        reinterpretQueue: { name: "reinterpret" } as any,
+        bookLookupQueue: { name: "reinterpret" } as any,
       },
       cache: {} as any,
       database: {} as any,
@@ -95,9 +92,8 @@ describe("buildNoteWorkerDependencies", () => {
     } as IServiceContainer;
 
     // Mock buildBaseDependencies to return our mock
-    const { buildBaseDependencies } = await import(
-      "../../core/worker-dependencies/build-base-dependencies"
-    );
+    const { buildBaseDependencies } =
+      await import("../../core/worker-dependencies/build-base-dependencies");
     vi.mocked(buildBaseDependencies).mockReturnValue(mockBaseDeps);
 
     // Set up mock return values
@@ -137,9 +133,8 @@ describe("buildNoteWorkerDependencies", () => {
     });
 
     it("should call buildBaseDependencies with the container", async () => {
-      const { buildBaseDependencies } = await import(
-        "../../core/worker-dependencies/build-base-dependencies"
-      );
+      const { buildBaseDependencies } =
+        await import("../../core/worker-dependencies/build-base-dependencies");
 
       buildNoteWorkerDependencies(mockContainer);
 
@@ -375,9 +370,8 @@ describe("buildNoteWorkerDependencies", () => {
         },
       };
 
-      const { buildBaseDependencies } = await import(
-        "../../core/worker-dependencies/build-base-dependencies"
-      );
+      const { buildBaseDependencies } =
+        await import("../../core/worker-dependencies/build-base-dependencies");
       vi.mocked(buildBaseDependencies).mockReturnValue(differentBaseDeps);
 
       const deps = buildNoteWorkerDependencies(differentContainer);
@@ -391,9 +385,8 @@ describe("buildNoteWorkerDependencies", () => {
 
   describe("error handling", () => {
     it("should propagate errors from buildBaseDependencies", async () => {
-      const { buildBaseDependencies } = await import(
-        "../../core/worker-dependencies/build-base-dependencies"
-      );
+      const { buildBaseDependencies } =
+        await import("../../core/worker-dependencies/build-base-dependencies");
       const testError = new Error("Base dependencies failed");
       vi.mocked(buildBaseDependencies).mockImplementation(() => {
         throw testError;
@@ -409,9 +402,8 @@ describe("buildNoteWorkerDependencies", () => {
       const testData = createMockNoteData();
 
       // Test cleanHtml error
-      const cleanHtmlModule = await import(
-        "../../../services/note/actions/clean-html/action"
-      );
+      const cleanHtmlModule =
+        await import("../../../services/note/actions/clean-html/action");
       const cleanHtmlSpy = vi.mocked(cleanHtmlModule.cleanHtmlFile);
       cleanHtmlSpy.mockRejectedValueOnce(new Error("Service error"));
 
@@ -420,9 +412,8 @@ describe("buildNoteWorkerDependencies", () => {
       );
 
       // Test parseHtml error
-      const parseHtmlModule = await import(
-        "../../../services/note/actions/parse-html/action"
-      );
+      const parseHtmlModule =
+        await import("../../../services/note/actions/parse-html/action");
       const parseHtmlSpy = vi.mocked(parseHtmlModule.parseHtmlFile);
       parseHtmlSpy.mockRejectedValueOnce(new Error("Parse error"));
 
@@ -431,9 +422,8 @@ describe("buildNoteWorkerDependencies", () => {
       );
 
       // Test saveNote error
-      const saveNoteModule = await import(
-        "../../../services/note/actions/save-note/action"
-      );
+      const saveNoteModule =
+        await import("../../../services/note/actions/save-note/action");
       const saveNoteSpy = vi.mocked(saveNoteModule.saveNote);
       saveNoteSpy.mockRejectedValueOnce(new Error("Save error"));
 
@@ -461,12 +451,10 @@ describe("buildNoteWorkerDependencies", () => {
       const deps = buildNoteWorkerDependencies(mockContainer);
       const testData = createMockNoteData();
 
-      const cleanHtmlModule = await import(
-        "../../../services/note/actions/clean-html/action"
-      );
-      const parseHtmlModule = await import(
-        "../../../services/note/actions/parse-html/action"
-      );
+      const cleanHtmlModule =
+        await import("../../../services/note/actions/clean-html/action");
+      const parseHtmlModule =
+        await import("../../../services/note/actions/parse-html/action");
 
       vi.mocked(cleanHtmlModule.cleanHtmlFile).mockResolvedValue({
         cleaned: true,
@@ -475,9 +463,8 @@ describe("buildNoteWorkerDependencies", () => {
         parsed: true,
       } as any);
 
-      const saveNoteModule = await import(
-        "../../../services/note/actions/save-note/action"
-      );
+      const saveNoteModule =
+        await import("../../../services/note/actions/save-note/action");
       vi.mocked(saveNoteModule.saveNote).mockResolvedValue({
         saved: true,
       } as any);

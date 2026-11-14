@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import { createTestError } from "../../../test-utils/service";
 import {
@@ -12,20 +12,20 @@ import {
 // ============================================================================
 
 interface MockActionCache {
-  getOrSet: ReturnType<typeof vi.fn>;
-  invalidateByPattern: ReturnType<typeof vi.fn>;
-  delete: ReturnType<typeof vi.fn>;
+  getOrSet: Mock;
+  invalidateByPattern: Mock;
+  delete: Mock;
 }
 
 interface MockCacheKeyGenerator {
-  databaseQuery: ReturnType<typeof vi.fn>;
-  noteMetadata: ReturnType<typeof vi.fn>;
-  noteStatus: ReturnType<typeof vi.fn>;
+  databaseQuery: Mock;
+  noteMetadata: Mock;
+  noteStatus: Mock;
 }
 
 interface MockDatabase {
-  getNotes: ReturnType<typeof vi.fn>;
-  createNote: ReturnType<typeof vi.fn>;
+  getNotes: Mock;
+  createNote: Mock;
 }
 
 // Mock the action cache

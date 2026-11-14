@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import {
   MemoryOptimizer,
@@ -31,7 +31,7 @@ describe("MemoryOptimizer", () => {
     vi.useFakeTimers();
 
     // Mock global.gc
-    (global as unknown as { gc: ReturnType<typeof vi.fn> }).gc = vi.fn();
+    (global as unknown as { gc: Mock }).gc = vi.fn();
 
     optimizer = new MemoryOptimizer();
   });
@@ -421,13 +421,13 @@ describe("MemoryOptimizer", () => {
       optimizer.forceGarbageCollection();
 
       expect(
-        (global as unknown as { gc: ReturnType<typeof vi.fn> }).gc
+        (global as unknown as { gc: Mock }).gc
       ).toHaveBeenCalled();
     });
 
     it("should handle missing global.gc gracefully", () => {
       const globalWithGc = global as unknown as {
-        gc?: ReturnType<typeof vi.fn>;
+        gc?: Mock;
       };
       delete globalWithGc.gc;
 
@@ -451,7 +451,7 @@ describe("MemoryOptimizer", () => {
 
       expect(result.actions).toContain("Forced garbage collection");
       expect(
-        (global as unknown as { gc: ReturnType<typeof vi.fn> }).gc
+        (global as unknown as { gc: Mock }).gc
       ).toHaveBeenCalled();
     });
 
@@ -781,12 +781,12 @@ describe("Memory Optimization Utilities", () => {
 
   describe("forceGarbageCollection", () => {
     it("should force garbage collection using singleton", () => {
-      (global as unknown as { gc: ReturnType<typeof vi.fn> }).gc = vi.fn();
+      (global as unknown as { gc: Mock }).gc = vi.fn();
 
       forceGarbageCollection();
 
       expect(
-        (global as unknown as { gc: ReturnType<typeof vi.fn> }).gc
+        (global as unknown as { gc: Mock }).gc
       ).toHaveBeenCalled();
     });
   });

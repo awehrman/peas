@@ -3,6 +3,8 @@ import type { ComponentType } from "react";
 import type { NavigationItem, NavigationLinkComponentProps } from "../types/navigation";
 import { NavigationMenuItem, cn } from "@peas/components";
 
+import { isNavigationEntryActive } from "../config/navigation";
+
 import { NavItem } from "./nav-item";
 
 interface NavigationItemsListProps {
@@ -17,7 +19,7 @@ export function NavigationItemsList({
   pathname,
 }: NavigationItemsListProps) {
   return navigationItems.map((item) => {
-    const isActive = pathname === item.href;
+    const isActive = isNavigationEntryActive(pathname, item);
     return (
       <NavigationMenuItem key={item.href} className="w-full">
         <NavItem
@@ -26,12 +28,17 @@ export function NavigationItemsList({
           icon={item.icon}
           LinkComponent={LinkComponent}
           className={cn(
-            "flex items-center gap-3 w-full p-3 rounded-md font-normal transition-colors duration-200",
+            "group/nav-item flex items-center gap-3 w-full px-5 py-1.5 text-sm font-medium transition-colors duration-200",
             isActive
-              ? "!text-primary-500"
-              : "text-navigation-foreground hover:!text-primary-500"
+              ? "!text-primary-300 bg-white/10"
+              : "text-navigation-foreground hover:!text-primary-300 hover:bg-white/5"
           )}
-          style={isActive ? { color: "oklch(60% 0.0900 127.79)" } : undefined}
+          iconClassName={cn(
+            "shrink-0 transition-opacity duration-200",
+            isActive
+              ? "opacity-100"
+              : "opacity-0 group-hover/nav-item:opacity-100 group-focus-visible/nav-item:opacity-100"
+          )}
         />
       </NavigationMenuItem>
     );

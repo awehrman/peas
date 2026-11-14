@@ -68,6 +68,14 @@ export default [
         setInterval: "readonly",
         clearInterval: "readonly",
         crypto: "readonly",
+        // Web platform globals built into Node 22
+        URL: "readonly",
+        URLSearchParams: "readonly",
+        AbortSignal: "readonly",
+        fetch: "readonly",
+        Request: "readonly",
+        Response: "readonly",
+        Headers: "readonly",
       },
     },
     rules: {

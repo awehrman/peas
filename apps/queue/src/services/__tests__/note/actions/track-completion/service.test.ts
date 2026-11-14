@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 import type { Prisma } from "@prisma/client";
 
 import type { StructuredLogger } from "../../../../../types";
@@ -19,6 +19,7 @@ import {
 
 // Mock the @peas/database module
 vi.mock("@peas/database", () => ({
+  markNoteCompleted: vi.fn().mockResolvedValue({ updated: true }),
   updateNote: vi.fn(),
   updateParsingErrorCount: vi.fn(),
 }));
@@ -26,7 +27,7 @@ vi.mock("@peas/database", () => ({
 describe("Track Completion Service", () => {
   let mockLogger: StructuredLogger;
   let mockStatusBroadcaster: {
-    addStatusEventAndBroadcast: ReturnType<typeof vi.fn>;
+    addStatusEventAndBroadcast: Mock;
   };
 
   beforeEach(() => {
@@ -353,6 +354,24 @@ describe("Track Completion Service", () => {
       );
     });
 
+    it("completes the note through markNoteCompleted, which leaves DUPLICATE notes alone", async () => {
+      const noteId = "test-note-duplicate";
+      const { markNoteCompleted, updateNote } = await import("@peas/database");
+      vi.mocked(markNoteCompleted).mockClear();
+      vi.mocked(updateNote).mockClear();
+
+      initializeNoteCompletion(noteId, "test-import-dup");
+      for (const worker of ["note", "instruction", "ingredient", "image"] as const) {
+        await markWorkerCompleted(noteId, worker, mockLogger, mockStatusBroadcaster);
+      }
+
+      expect(markNoteCompleted).toHaveBeenCalledWith(noteId);
+      expect(updateNote).not.toHaveBeenCalledWith(
+        noteId,
+        expect.objectContaining({ status: "COMPLETED" })
+      );
+    });
+
     it("should handle broadcast errors gracefully", async () => {
       const noteId = "test-note-123";
       const importId = "test-import-456";
@@ -515,7 +534,7 @@ describe("Track Completion Service", () => {
         "../../../../cleanup/cleanup-service"
       );
       vi.spyOn(
-        CleanupService.prototype as unknown as { cleanupImportDirectory: ReturnType<typeof vi.fn> },
+        CleanupService.prototype as unknown as { cleanupImportDirectory: Mock },
         "cleanupImportDirectory"
       ).mockRejectedValue(new Error("cleanup failed"));
 
@@ -711,7 +730,7 @@ describe("Track Completion Service", () => {
         "../../../../cleanup/cleanup-service"
       );
       vi.spyOn(
-        CleanupService.prototype as unknown as { cleanupImportDirectory: ReturnType<typeof vi.fn> },
+        CleanupService.prototype as unknown as { cleanupImportDirectory: Mock },
         "cleanupImportDirectory"
       ).mockRejectedValue(new Error("cleanup error"));
 
@@ -1062,7 +1081,7 @@ describe("Track Completion Service", () => {
       "../../../../cleanup/cleanup-service"
     );
     vi.spyOn(
-      CleanupService.prototype as unknown as { cleanupImportDirectory: ReturnType<typeof vi.fn> },
+      CleanupService.prototype as unknown as { cleanupImportDirectory: Mock },
       "cleanupImportDirectory"
     ).mockRejectedValue(new Error("cleanup error"));
 

@@ -5,16 +5,15 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["fullTextSearchPostgres"]
+  provider = "prisma-client-js"
   // The default output is `node_modules/@prisma/client`, which plays nicely with TypeScript
   // references across the codebase and with Yarn Plug'n'Play. Custom output broke
   // TypeScript by hiding `PrismaClient`, so we revert to the default.
 }
 
+// The connection URL lives in prisma.config.ts (Prisma 7)
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 // This schema is composed from modular files in the schemas/ directory

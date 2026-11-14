@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import { ActionName } from "../../../types";
 import { ActionFactory } from "../../core/action-factory";
@@ -18,10 +18,10 @@ import type { BaseJobData } from "../../types";
 
 describe("ErrorHandling", () => {
   let mockErrorHandler: {
-    withErrorHandling: ReturnType<typeof vi.fn>;
+    withErrorHandling: Mock;
   };
   let mockLogger: {
-    log: ReturnType<typeof vi.fn>;
+    log: Mock;
   };
   let mockActionFactory: ActionFactory<ErrorJobData, object>;
   let mockContext: ActionContext;

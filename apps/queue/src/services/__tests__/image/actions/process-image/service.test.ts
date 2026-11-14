@@ -1,5 +1,5 @@
 import { promises as fs } from "fs";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { type Mock, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createMockLogger } from "../../../../../test-utils/helpers";
 import type { ImageJobData } from "../../../../../workers/image/types";
@@ -21,7 +21,7 @@ describe("Process Image Service", () => {
   let mockData: ImageJobData;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let mockImageProcessor: any;
-  let mockFsAccess: ReturnType<typeof vi.fn>;
+  let mockFsAccess: Mock;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let mockImageProcessorClass: any;
 
@@ -41,9 +41,9 @@ describe("Process Image Service", () => {
     };
 
     // Create mock ImageProcessor class
-    mockImageProcessorClass = vi
-      .fn()
-      .mockImplementation(() => mockImageProcessor);
+    mockImageProcessorClass = vi.fn().mockImplementation(function () {
+      return mockImageProcessor;
+    });
 
     // Mock the ImageProcessor import
     const imageProcessorModule = vi.mocked(

@@ -49,4 +49,6 @@ export interface PeaGeneratorOptions {
   margin?: number;
   outputPath?: string;
   useBlobs?: boolean; // New option to use blob shapes
+  count?: number; // Number of peas in generated blob preview
+  seed?: number; // Reproducible random generation
 }

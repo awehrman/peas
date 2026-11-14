@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import { ActionName } from "../../../../../types";
 import { BaseAction } from "../../../../../workers/core/base-action";
@@ -30,8 +30,8 @@ describe("ParseIngredientLineAction", () => {
         addStatusEventAndBroadcast: vi.fn(),
       },
       services: {
-        parseIngredient: vi.fn() as ReturnType<typeof vi.fn>,
-        saveIngredient: vi.fn() as ReturnType<typeof vi.fn>,
+        parseIngredient: vi.fn() as Mock,
+        saveIngredient: vi.fn() as Mock,
       },
     };
 
@@ -112,7 +112,7 @@ describe("ParseIngredientLineAction", () => {
   describe("execute", () => {
     it("should call parseIngredient service", async () => {
       (
-        mockDependencies.services.parseIngredient as ReturnType<typeof vi.fn>
+        mockDependencies.services.parseIngredient as Mock
       ).mockResolvedValue(mockData);
 
       const result = await action.execute(
@@ -130,7 +130,7 @@ describe("ParseIngredientLineAction", () => {
     it("should handle service errors", async () => {
       const serviceError = new Error("Service error");
       (
-        mockDependencies.services.parseIngredient as ReturnType<typeof vi.fn>
+        mockDependencies.services.parseIngredient as Mock
       ).mockRejectedValue(serviceError);
 
       await expect(

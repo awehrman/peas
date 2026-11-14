@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import { ActionName } from "../../../../../types";
 import type {
@@ -10,6 +10,9 @@ import type { ActionContext } from "../../../../../workers/core/types";
 // Mock the service function
 vi.mock("../../../../categorization/actions/save-tags/service", () => ({
   saveTags: vi.fn(),
+  recomputeNoteCategories: vi.fn(),
+  recomputeCategory: vi.fn(),
+  recomputeAllCategories: vi.fn(),
 }));
 
 describe("SaveTagsAction", () => {
@@ -19,8 +22,8 @@ describe("SaveTagsAction", () => {
   let mockDeps: CategorizationWorkerDependencies;
   let mockContext: ActionContext;
   let testData: CategorizationJobData;
-  let mockSaveTags: ReturnType<typeof vi.fn>;
-  let mockAddStatusEventAndBroadcast: ReturnType<typeof vi.fn>;
+  let mockSaveTags: Mock;
+  let mockAddStatusEventAndBroadcast: Mock;
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -50,6 +53,9 @@ describe("SaveTagsAction", () => {
         saveCategory: vi.fn(),
         determineTags: vi.fn(),
         saveTags: vi.fn(),
+        recomputeNoteCategories: vi.fn(),
+        recomputeCategory: vi.fn(),
+        recomputeAllCategories: vi.fn(),
       },
     };
 

@@ -9,6 +9,7 @@ class MockPrismaClient {
 }
 vi.mock("@peas/database", () => ({
   PrismaClient: MockPrismaClient,
+  createPrismaClient: () => new MockPrismaClient(),
 }));
 
 describe("database.ts", () => {

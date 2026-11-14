@@ -1,82 +1,44 @@
 import { defineConfig, devices } from "@playwright/test";
 
+const E2E_PORT = 3110;
+const testDatabaseUrl = process.env.TEST_DATABASE_URL ?? "";
+
 /**
- * @see https://playwright.dev/docs/test-configuration
+ * End-to-end tests run against their own dev server (port 3110) backed by TEST_DATABASE_URL, which the global setup migrates and seeds. WebKit runs too, because Apollo's TanStack Start integration has had Safari-only hydration bugs.
+ *
+ *   TEST_DATABASE_URL=postgresql://<you>@localhost:5432/peas_test yarn workspace @peas/web test:e2e
  */
 export default defineConfig({
   testDir: "./tests",
-  /* Run tests in files in parallel */
-  fullyParallel: true,
-  /* Fail the build on CI if you accidentally left test.only in the source code. */
+  testMatch: "**/*.spec.ts",
+  globalSetup: "./tests/support/global-setup.ts",
+  fullyParallel: false,
+  workers: 1,
   forbidOnly: !!process.env.CI,
-  /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
-  /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : undefined,
-  /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: [
-    ["html"],
-    ["json", { outputFile: "test-results/results.json" }],
-    ["junit", { outputFile: "test-results/results.xml" }],
-  ],
-  /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
+  reporter: process.env.CI
+    ? [["github"], ["html", { open: "never" }]]
+    : [["list"]],
   use: {
-    /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: "http://localhost:3000",
-
-    /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
+    baseURL: `http://localhost:${E2E_PORT}`,
     trace: "on-first-retry",
-
-    /* Take screenshot on failure */
     screenshot: "only-on-failure",
-
-    /* Record video on failure */
-    video: "retain-on-failure",
   },
-
-  /* Configure projects for major browsers */
   projects: [
-    {
-      name: "chromium",
-      use: { ...devices["Desktop Chrome"] },
-    },
-
-    {
-      name: "firefox",
-      use: { ...devices["Desktop Firefox"] },
-    },
-
-    {
-      name: "webkit",
-      use: { ...devices["Desktop Safari"] },
-    },
-
-    /* Test against mobile viewports. */
-    {
-      name: "Mobile Chrome",
-      use: { ...devices["Pixel 5"] },
-    },
-    {
-      name: "Mobile Safari",
-      use: { ...devices["iPhone 12"] },
-    },
-
-    /* Test against branded browsers. */
-    {
-      name: "Microsoft Edge",
-      use: { ...devices["Desktop Edge"], channel: "msedge" },
-    },
-    {
-      name: "Google Chrome",
-      use: { ...devices["Desktop Chrome"], channel: "chrome" },
-    },
+    { name: "chromium", use: { ...devices["Desktop Chrome"] } },
+    { name: "webkit", use: { ...devices["Desktop Safari"] } },
   ],
-
-  /* Run your local dev server before starting the tests */
   webServer: {
-    command: "yarn dev",
-    url: "http://localhost:3000",
-    reuseExistingServer: !process.env.CI,
-    timeout: 120 * 1000,
+    command: `npx vite dev --port ${E2E_PORT} --strictPort`,
+    url: `http://localhost:${E2E_PORT}/login`,
+    reuseExistingServer: false,
+    timeout: 120_000,
+    env: {
+      DATABASE_URL: testDatabaseUrl,
+      PORT: String(E2E_PORT),
+      SIGN_UP_CODES: "e2e-invite",
+      // A queue running on the developer's machine works against the dev database; the e2e server must never reach it
+      QUEUE_INTERNAL_URL: "http://127.0.0.1:9",
+    },
   },
 });

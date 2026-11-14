@@ -1,0 +1,49 @@
+{
+  "name": "@peas/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "GraphQL schema, resolvers, auth core, and mutation-effect contract for the Peas web app. Ships TypeScript source; the web app bundles it with Vite.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./auth": "./src/auth/index.ts",
+    "./effects": "./src/effects.ts",
+    "./schema.graphql": "./src/schema/schema.graphql"
+  },
+  "scripts": {
+    "codegen": "graphql-codegen --config codegen.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --config vitest.int.config.ts --coverage",
+    "test:int": "vitest run --config vitest.int.config.ts"
+  },
+  "dependencies": {
+    "@apollo/server": "^5.5.2",
+    "@aws-sdk/client-s3": "^3.1167.0",
+    "@graphql-tools/schema": "^10.0.0",
+    "@node-rs/argon2": "^2.0.2",
+    "@oslojs/crypto": "^1.0.1",
+    "@oslojs/encoding": "^1.1.0",
+    "@peas/database": "*",
+    "@peas/parser": "*",
+    "@peas/pea-svg-generator": "*",
+    "graphql": "^16.15.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@graphql-codegen/cli": "^8.0.0",
+    "@graphql-codegen/typescript": "^7.0.1",
+    "@graphql-codegen/typescript-resolvers": "^7.0.1",
+    "@peas/eslint-config": "*",
+    "@peas/typescript-config": "*",
+    "@types/node": "^24.0.13",
+    "@vitest/coverage-v8": "^5.1.0",
+    "dotenv": "^17.2.0",
+    "eslint": "^9.34.0",
+    "typescript": "^6.0.3",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.0"
+  }
+}

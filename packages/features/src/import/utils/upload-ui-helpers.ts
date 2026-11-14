@@ -21,7 +21,7 @@ export function getUploadDescription(uploadState: string): string {
       return "Processing your files...";
     case UPLOAD_STATES.INITIAL:
     default:
-      return "Select an Evernote export directory.";
+      return "Drop an Evernote export (.zip or folder) or choose one below.";
   }
 }
 

@@ -1,8 +1,9 @@
 import { createIngredientWorker } from "./ingredient";
 import { createInstructionWorker } from "./instruction";
 import { createNoteWorker } from "./note";
-import { createPatternTrackingWorker } from "./pattern-tracking";
+import { createReinterpretWorker } from "./reinterpret";
 import { createCategorizationWorker } from "./categorization";
+import { createBookLookupWorker, createSourceWorker } from "./source";
 
 import { Queue } from "bullmq";
 
@@ -29,9 +30,10 @@ export function startWorkers(
     instructionQueue: Queue;
     ingredientQueue: Queue;
     imageQueue: Queue;
-    patternTrackingQueue: Queue;
+    reinterpretQueue: Queue;
     categorizationQueue: Queue;
-    // TODO more queues here
+    sourceQueue: Queue;
+    bookLookupQueue: Queue;
   },
   serviceContainer: IServiceContainer
 ): WorkerRegistry<FlexibleWorker> {
@@ -62,16 +64,25 @@ export function startWorkers(
       queues.imageQueue
     ),
     createWorkerConfig(
-      WORKER_CONSTANTS.NAMES.PATTERN_TRACKING,
-      createPatternTrackingWorker,
-      queues.patternTrackingQueue
+      WORKER_CONSTANTS.NAMES.REINTERPRET,
+      createReinterpretWorker,
+      queues.reinterpretQueue
     ),
     createWorkerConfig(
       WORKER_CONSTANTS.NAMES.CATEGORIZATION,
       createCategorizationWorker,
       queues.categorizationQueue
     ),
-    // TODO more workers here
+    createWorkerConfig(
+      WORKER_CONSTANTS.NAMES.SOURCE,
+      createSourceWorker,
+      queues.sourceQueue
+    ),
+    createWorkerConfig(
+      WORKER_CONSTANTS.NAMES.BOOK_LOOKUP,
+      createBookLookupWorker,
+      queues.bookLookupQueue
+    ),
   ];
 
   console.log("[WORKER_STARTUP] Created worker configs:", workerConfigs.length);
@@ -85,8 +96,10 @@ export function startWorkers(
   queueMonitor.startMonitoring(queues.instructionQueue);
   queueMonitor.startMonitoring(queues.ingredientQueue);
   queueMonitor.startMonitoring(queues.imageQueue);
-  queueMonitor.startMonitoring(queues.patternTrackingQueue);
+  queueMonitor.startMonitoring(queues.reinterpretQueue);
   queueMonitor.startMonitoring(queues.categorizationQueue);
+  queueMonitor.startMonitoring(queues.sourceQueue);
+  queueMonitor.startMonitoring(queues.bookLookupQueue);
   // TODO: Add monitoring for additional queues as they're implemented
 
   console.log("[WORKER_STARTUP] Started queue monitoring");
@@ -97,9 +110,10 @@ export function startWorkers(
     instructionWorker: workers[WORKER_CONSTANTS.NAMES.INSTRUCTION],
     ingredientWorker: workers[WORKER_CONSTANTS.NAMES.INGREDIENT],
     imageWorker: workers[WORKER_CONSTANTS.NAMES.IMAGE],
-    patternTrackingWorker: workers[WORKER_CONSTANTS.NAMES.PATTERN_TRACKING],
+    reinterpretWorker: workers[WORKER_CONSTANTS.NAMES.REINTERPRET],
     categorizationWorker: workers[WORKER_CONSTANTS.NAMES.CATEGORIZATION],
-    // TODO more workers here
+    sourceWorker: workers[WORKER_CONSTANTS.NAMES.SOURCE],
+    bookLookupWorker: workers[WORKER_CONSTANTS.NAMES.BOOK_LOOKUP],
   } as WorkerRegistry<FlexibleWorker>;
 
   console.log("[WORKER_STARTUP] Stored workers in service container");

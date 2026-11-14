@@ -1,11 +1,26 @@
 import type { Prisma } from "@prisma/client";
 
 import { prisma } from "../client.js";
+import {
+  computeContentHash,
+  computeRawHtmlHash,
+} from "../import-integrity/content-hash.js";
+import {
+  padSimHash,
+  simHashBands,
+  simHashDistance,
+} from "../import-integrity/simhash.js";
 import type {
   ParsedHTMLFile,
   ParsedIngredientLine,
   ParsedInstructionLine,
 } from "../models/parsed-html-file.js";
+import {
+  type NoteCategoryRecord,
+  getNoteCategoryMemberships,
+  saveImportedCategory,
+} from "./categories.js";
+import { type NoteSourceRecord, getNoteSources } from "./source.js";
 
 export type NoteWithParsedLines = {
   id: string;
@@ -58,15 +73,7 @@ export async function getNoteWithIngredients(noteId: string) {
     const note = await prisma.note.findUnique({
       where: { id: noteId },
       include: {
-        parsedIngredientLines: {
-          include: {
-            ingredientReferences: {
-              include: {
-                ingredient: true, // Include the actual ingredients
-              },
-            },
-          },
-        },
+        parsedIngredientLines: true,
         parsedInstructionLines: true,
       },
     });
@@ -78,63 +85,58 @@ export async function getNoteWithIngredients(noteId: string) {
 }
 
 /**
- * Mark a note as duplicate with error details and confidence level
+ * Marks a note COMPLETED once its workers finish, unless it is waiting for a duplicate decision.
+ *
+ * @example
+ * await markNoteCompleted(noteId) // { updated: false } when the note is DUPLICATE
  */
-export async function markNoteAsDuplicate(
-  noteId: string,
-  duplicateInfo?: {
-    existingNotes: Array<{ id: string; title: string | null }>;
-    duplicateReason?: string;
-    confidence?: number;
-  }
-): Promise<void> {
-  const errorDetails = duplicateInfo?.existingNotes.length
-    ? {
-        duplicateNoteIds: duplicateInfo.existingNotes.map((n) => n.id),
-        duplicateNoteTitles: duplicateInfo.existingNotes
-          .map((n) => n.title)
-          .filter(Boolean),
-        message:
-          duplicateInfo.duplicateReason ||
-          `This recipe is already in your collection`,
-      }
-    : {
-        message: duplicateInfo?.duplicateReason || "This recipe is a duplicate",
-      };
-
-  await prisma.note.update({
-    where: { id: noteId },
-    data: {
-      status: "DUPLICATE",
-      errorMessage:
-        duplicateInfo?.duplicateReason || `Duplicate recipe detected.`,
-      errorDetails,
-      duplicateConfidence: duplicateInfo?.confidence || null,
-    },
+export async function markNoteCompleted(
+  noteId: string
+): Promise<{ updated: boolean }> {
+  const result = await prisma.note.updateMany({
+    where: { id: noteId, status: { not: "DUPLICATE" } },
+    data: { status: "COMPLETED" },
   });
+  return { updated: result.count > 0 };
+}
+
+/** Hashes stored with a note so re-imports and identical copies are found without comparing text. */
+function noteContentHashes(file: ParsedHTMLFile): {
+  rawHtmlHash: string;
+  contentHash: string | null;
+} {
+  return {
+    rawHtmlHash: computeRawHtmlHash(file.contents),
+    contentHash: computeContentHash({
+      title: file.title,
+      ingredientLines: file.ingredients.map((line) => line.reference),
+      instructionLines: file.instructions.map((line) => line.reference),
+    }),
+  };
 }
 
 /**
- * Update the SimHash for a note's title
+ * Update the SimHash for a note's title, with the bands that index it.
  */
 export async function updateNoteTitleSimHash(
   noteId: string,
   titleSimHash: string
 ): Promise<void> {
+  const padded = titleSimHash ? padSimHash(titleSimHash) : titleSimHash;
   await prisma.note.update({
     where: { id: noteId },
     data: {
-      titleSimHash,
+      titleSimHash: padded,
+      titleSimHashBands: simHashBands(padded),
     },
   });
 }
 
 /**
- * Find notes with similar titles using SimHash
- * @param titleSimHash The SimHash of the title to search for
- * @param maxHammingDistance Maximum Hamming distance to consider similar
- * @param excludeNoteId Optional note ID to exclude from results
- * @returns Array of notes with similar titles
+ * Notes whose title SimHash is within `maxHammingDistance` (at most 3) of the given one. Candidates come from the GIN-indexed bands (two hashes within distance 3 share a band), so the query never scans every note; archived notes are skipped.
+ *
+ * @example
+ * await findNotesWithSimilarTitles(hash, 3, noteId) // [{ id, title, titleSimHash, status }]
  */
 export async function findNotesWithSimilarTitles(
   titleSimHash: string,
@@ -146,12 +148,11 @@ export async function findNotesWithSimilarTitles(
   }
 
   try {
-    // Get all notes with non-empty SimHashes
-    const allNotes = await prisma.note.findMany({
+    const bands = simHashBands(titleSimHash);
+    const candidates = await prisma.note.findMany({
       where: {
-        titleSimHash: {
-          not: null,
-        },
+        titleSimHashBands: { hasSome: bands },
+        archivedAt: null,
         ...(excludeNoteId && { id: { not: excludeNoteId } }),
       },
       select: {
@@ -162,40 +163,15 @@ export async function findNotesWithSimilarTitles(
       },
     });
 
-    // Filter notes based on Hamming distance
-    const similarNotes = allNotes.filter((note) => {
-      if (!note.titleSimHash) return false;
-
-      const distance = calculateHammingDistance(
-        titleSimHash,
-        note.titleSimHash
-      );
-      return distance <= maxHammingDistance;
-    });
-
-    return similarNotes;
+    return candidates.filter(
+      (note) =>
+        note.titleSimHash !== null &&
+        simHashDistance(titleSimHash, note.titleSimHash) <= maxHammingDistance
+    );
   } catch (error) {
     console.error("Error finding notes with similar titles:", error);
     return [];
   }
-}
-
-/**
- * Calculate Hamming distance between two SimHashes
- * This is a simple implementation - in production, you might want to use a more optimized version
- */
-function calculateHammingDistance(hash1: string, hash2: string): number {
-  if (!hash1 || !hash2 || hash1.length !== hash2.length) {
-    return Number.MAX_SAFE_INTEGER;
-  }
-
-  let distance = 0;
-  for (let i = 0; i < hash1.length; i++) {
-    if (hash1[i] !== hash2[i]) {
-      distance++;
-    }
-  }
-  return distance;
 }
 
 export async function createNote(
@@ -210,6 +186,7 @@ export async function createNote(
         totalIngredientLines: file.ingredients.length,
         totalInstructionLines: file.instructions.length,
         parsingErrorCount: 0,
+        ...noteContentHashes(file),
         // Relations
         parsedIngredientLines: {
           create: file.ingredients.map((ingredient: ParsedIngredientLine) => ({
@@ -307,6 +284,7 @@ export async function createNoteWithEvernoteMetadata(
                 totalIngredientLines: file.ingredients.length,
                 totalInstructionLines: file.instructions.length,
                 parsingErrorCount: 0,
+                ...noteContentHashes(file),
                 // Delete existing parsed lines and create new ones
                 parsedIngredientLines: {
                   deleteMany: {},
@@ -402,6 +380,7 @@ export async function createNoteWithEvernoteMetadata(
                 totalIngredientLines: file.ingredients.length,
                 totalInstructionLines: file.instructions.length,
                 parsingErrorCount: 0,
+                ...noteContentHashes(file),
                 // Delete existing parsed lines and create new ones
                 parsedIngredientLines: {
                   deleteMany: {},
@@ -482,6 +461,7 @@ export async function createNoteWithEvernoteMetadata(
             totalIngredientLines: file.ingredients.length,
             totalInstructionLines: file.instructions.length,
             parsingErrorCount: 0,
+            ...noteContentHashes(file),
             // Relations
             parsedIngredientLines: {
               create: file.ingredients.map(
@@ -625,32 +605,7 @@ export async function saveCategoryToNote(
   categoryName: string
 ): Promise<{ id: string; name: string }> {
   try {
-    // Use a transaction to ensure data consistency
-    return await prisma.$transaction(async (tx) => {
-      // First, try to find the category
-      let category = await tx.category.findFirst({
-        where: { name: categoryName },
-      });
-
-      // If not found, create it
-      if (!category) {
-        category = await tx.category.create({
-          data: { name: categoryName },
-        });
-      }
-
-      // Then connect the category to the note
-      await tx.note.update({
-        where: { id: noteId },
-        data: {
-          categories: {
-            connect: { id: category.id },
-          },
-        },
-      });
-
-      return category;
-    });
+    return await saveImportedCategory(noteId, categoryName);
   } catch (error) {
     console.error(
       `Error saving category "${categoryName}" to note ${noteId}:`,
@@ -723,19 +678,12 @@ export async function getNoteCategories(
   noteId: string
 ): Promise<Array<{ id: string; name: string }>> {
   try {
-    const note = await prisma.note.findUnique({
-      where: { id: noteId },
-      include: {
-        categories: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
+    const memberships = await prisma.noteCategory.findMany({
+      where: { noteId, state: { in: ["APPROVED", "INFERRED"] } },
+      select: { category: { select: { id: true, name: true } } },
+      orderBy: { category: { name: "asc" } },
     });
-
-    return note?.categories || [];
+    return memberships.map((membership) => membership.category);
   } catch (error) {
     console.error(`Error getting categories for note ${noteId}:`, error);
     throw error;
@@ -780,8 +728,8 @@ export async function getImportStats(): Promise<{
 }> {
   try {
     const [ingredientCount, noteCount, parsingErrorCount] = await Promise.all([
-      // Count total ingredients
-      prisma.ingredient.count(),
+      // Distinct foods the imported lines mention
+      prisma.foodConcept.count({ where: { mentions: { some: {} } } }),
 
       // Count total notes
       prisma.note.count(),
@@ -803,4 +751,289 @@ export async function getImportStats(): Promise<{
     console.error("Failed to get import stats:", error);
     throw error;
   }
+}
+
+// ============================================================================
+// NOTE VIEWER
+// ============================================================================
+
+export const NOTE_STATUSES = [
+  "PENDING",
+  "PROCESSING",
+  "COMPLETED",
+  "FAILED",
+  "DUPLICATE",
+] as const;
+
+export type NoteStatusValue = (typeof NOTE_STATUSES)[number];
+
+export interface NotesPageQuery {
+  status?: NoteStatusValue;
+  query?: string;
+  /** Archived notes (superseded duplicates) are hidden unless asked for. */
+  includeArchived?: boolean;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface NoteListItemRecord {
+  id: string;
+  title: string | null;
+  status: NoteStatusValue;
+  duplicateConfidence: number | null;
+  parsingErrorCount: number;
+  ingredientLineCount: number;
+  instructionLineCount: number;
+  thumbnailUrl: string | null;
+  notebook: string | null;
+  recipeId: string | null;
+  archivedAt: string | null;
+  createdAt: string;
+}
+
+export interface NotesPageResult {
+  items: NoteListItemRecord[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface NoteIngredientLineRecord {
+  id: string;
+  blockIndex: number;
+  lineIndex: number;
+  reference: string;
+  parseStatus:
+    | "AWAITING_PARSING"
+    | "COMPLETED_WITH_ERROR"
+    | "COMPLETED_SUCCESSFULLY";
+  reviewStatus: "UNREVIEWED" | "CORRECT" | "INCORRECT";
+  isActive: boolean;
+  parserVersion: string | null;
+  /** INGREDIENT unless structure review filed the line as a heading, note, or other text, or moved it to the instructions. */
+  lineKind: "INGREDIENT" | "INSTRUCTION" | "SECTION_HEADING" | "NOTE" | "OTHER";
+}
+
+export interface NoteDetailRecord {
+  id: string;
+  title: string | null;
+  status: NoteStatusValue;
+  createdAt: string;
+  errorMessage: string | null;
+  duplicateConfidence: number | null;
+  parsingErrorCount: number;
+  archivedAt: string | null;
+  archivedReason: string | null;
+  supersededById: string | null;
+  /** Open duplicate candidates where this note is the incoming one. */
+  pendingDuplicateIds: string[];
+  evernote: {
+    source: string | null;
+    notebook: string | null;
+    tags: string[];
+    originalCreatedAt: string | null;
+  } | null;
+  images: {
+    id: string;
+    url: string;
+    thumbnailUrl: string | null;
+    processingStatus: string;
+  }[];
+  sources: NoteSourceRecord[];
+  categories: NoteCategoryRecord[];
+  tags: { id: string; name: string }[];
+  ingredientBlocks: { blockIndex: number; lines: NoteIngredientLineRecord[] }[];
+  instructions: {
+    id: string;
+    lineIndex: number;
+    text: string;
+    isActive: boolean;
+    lineKind: NoteIngredientLineRecord["lineKind"];
+  }[];
+  recipeId: string | null;
+}
+
+const DEFAULT_NOTES_PAGE_SIZE = 25;
+
+/**
+ * Paginated, filterable note list for the /notes page.
+ */
+export async function getNotesPage({
+  status,
+  query,
+  includeArchived = false,
+  page = 1,
+  pageSize = DEFAULT_NOTES_PAGE_SIZE,
+}: NotesPageQuery = {}): Promise<NotesPageResult> {
+  const currentPage = Math.max(1, Math.floor(page));
+  const trimmedQuery = query?.trim();
+
+  const where: Prisma.NoteWhereInput = {
+    ...(status ? { status } : {}),
+    ...(includeArchived ? {} : { archivedAt: null }),
+    ...(trimmedQuery
+      ? { title: { contains: trimmedQuery, mode: "insensitive" } }
+      : {}),
+  };
+
+  const [total, notes] = await Promise.all([
+    prisma.note.count({ where }),
+    prisma.note.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip: (currentPage - 1) * pageSize,
+      take: pageSize,
+      select: {
+        id: true,
+        title: true,
+        status: true,
+        duplicateConfidence: true,
+        parsingErrorCount: true,
+        archivedAt: true,
+        createdAt: true,
+        evernoteMetadata: { select: { notebook: true } },
+        images: {
+          select: { thumbnailImageUrl: true, originalImageUrl: true },
+          take: 1,
+        },
+        recipe: { select: { id: true } },
+        _count: {
+          select: { parsedIngredientLines: true, parsedInstructionLines: true },
+        },
+      },
+    }),
+  ]);
+
+  return {
+    total,
+    page: currentPage,
+    pageSize,
+    items: notes.map((note) => {
+      const image = note.images[0];
+      return {
+        id: note.id,
+        title: note.title,
+        status: note.status,
+        duplicateConfidence: note.duplicateConfidence,
+        parsingErrorCount: note.parsingErrorCount,
+        ingredientLineCount: note._count.parsedIngredientLines,
+        instructionLineCount: note._count.parsedInstructionLines,
+        thumbnailUrl: image
+          ? (image.thumbnailImageUrl ?? image.originalImageUrl)
+          : null,
+        notebook: note.evernoteMetadata?.notebook ?? null,
+        recipeId: note.recipe?.id ?? null,
+        archivedAt: note.archivedAt?.toISOString() ?? null,
+        createdAt: note.createdAt.toISOString(),
+      };
+    }),
+  };
+}
+
+/**
+ * Everything the note detail page needs, shaped for display.
+ */
+export async function getNoteDetail(
+  noteId: string
+): Promise<NoteDetailRecord | null> {
+  const note = await prisma.note.findUnique({
+    where: { id: noteId },
+    include: {
+      evernoteMetadata: true,
+      images: { orderBy: { createdAt: "asc" } },
+      tags: { select: { id: true, name: true } },
+      parsedIngredientLines: {
+        orderBy: [{ blockIndex: "asc" }, { lineIndex: "asc" }],
+      },
+      parsedInstructionLines: { orderBy: { lineIndex: "asc" } },
+      recipe: { select: { id: true } },
+      duplicateCandidates: {
+        where: { status: "PENDING" },
+        select: { id: true },
+      },
+    },
+  });
+
+  if (!note) return null;
+
+  const [sources, categories] = await Promise.all([
+    getNoteSources(noteId),
+    getNoteCategoryMemberships(noteId),
+  ]);
+
+  const blocks = new Map<number, NoteIngredientLineRecord[]>();
+  for (const line of note.parsedIngredientLines) {
+    const record: NoteIngredientLineRecord = {
+      id: line.id,
+      blockIndex: line.blockIndex,
+      lineIndex: line.lineIndex,
+      reference: line.reference,
+      parseStatus: line.parseStatus,
+      reviewStatus: line.reviewStatus,
+      isActive: line.isActive,
+      parserVersion: line.parserVersion,
+      lineKind: line.lineKind,
+    };
+    const block = blocks.get(line.blockIndex) ?? [];
+    block.push(record);
+    blocks.set(line.blockIndex, block);
+  }
+
+  const metadata = note.evernoteMetadata;
+
+  return {
+    id: note.id,
+    title: note.title,
+    status: note.status,
+    createdAt: note.createdAt.toISOString(),
+    errorMessage: note.errorMessage,
+    duplicateConfidence: note.duplicateConfidence,
+    parsingErrorCount: note.parsingErrorCount,
+    archivedAt: note.archivedAt?.toISOString() ?? null,
+    archivedReason: note.archivedReason,
+    supersededById: note.supersededById,
+    pendingDuplicateIds: note.duplicateCandidates.map((candidate) => candidate.id),
+    evernote: metadata
+      ? {
+          source: metadata.source,
+          notebook: metadata.notebook,
+          tags: metadata.tags,
+          originalCreatedAt: metadata.originalCreatedAt?.toISOString() ?? null,
+        }
+      : null,
+    images: note.images.map((image) => ({
+      id: image.id,
+      url: image.crop3x2ImageUrl ?? image.originalImageUrl,
+      thumbnailUrl: image.thumbnailImageUrl,
+      processingStatus: image.processingStatus,
+    })),
+    sources,
+    categories,
+    tags: note.tags,
+    ingredientBlocks: [...blocks.entries()]
+      .sort(([a], [b]) => a - b)
+      .map(([blockIndex, lines]) => ({ blockIndex, lines })),
+    instructions: note.parsedInstructionLines.map((line) => ({
+      id: line.id,
+      lineIndex: line.lineIndex,
+      text: line.normalizedText ?? line.originalText,
+      isActive: line.isActive,
+      lineKind: line.lineKind,
+    })),
+    recipeId: note.recipe?.id ?? null,
+  };
+}
+
+/**
+ * Record whether a parsed ingredient line came out right.
+ */
+export async function setIngredientLineReviewStatus(
+  lineId: string,
+  reviewStatus: "UNREVIEWED" | "CORRECT" | "INCORRECT"
+): Promise<{ id: string; noteId: string | null }> {
+  return prisma.parsedIngredientLine.update({
+    where: { id: lineId },
+    data: { reviewStatus },
+    select: { id: true, noteId: true },
+  });
 }

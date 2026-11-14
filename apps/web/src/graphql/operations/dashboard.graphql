@@ -1,0 +1,87 @@
+query DashboardStats {
+  dashboardStats {
+    noteCount
+    recipeCount
+    notesReadyToPromote
+    conceptCount
+    verifiedConceptCount
+    instructionLineCount
+    notesByStatus {
+      pending
+      processing
+      completed
+      failed
+      duplicate
+    }
+    ingredientLines {
+      total
+      parsedSuccessfully
+      parsedWithErrors
+      awaitingParsing
+      markedCorrect
+      markedIncorrect
+    }
+    topConcepts {
+      conceptId
+      name
+      lineCount
+    }
+    topSources {
+      label
+      count
+    }
+    topCategories {
+      label
+      count
+    }
+    topTags {
+      label
+      count
+    }
+    notesBySavedYear {
+      year
+      count
+    }
+  }
+}
+
+query CorpusAnalytics {
+  corpusAnalytics {
+    computedAt
+    isStale
+    settledMentions
+    conceptsWithMentions
+    unusedVerifiedConcepts
+    rareConceptCount
+    topExpanded {
+      concept {
+        ...ConceptRefFields
+      }
+      directMentions
+      directNotes
+      expandedMentions
+    }
+    rare {
+      concept {
+        ...ConceptRefFields
+      }
+      directMentions
+      directNotes
+      expandedMentions
+    }
+    preparations {
+      preparationKey
+      label
+      mentions
+      concepts
+    }
+    attributes {
+      definitionKey
+      definitionName
+      valueKey
+      label
+      mentions
+      asserted
+    }
+  }
+}

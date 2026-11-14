@@ -42,6 +42,9 @@ const mockDependencies: CategorizationWorkerDependencies = {
     saveCategory: vi.fn().mockResolvedValue({}),
     determineTags: vi.fn().mockResolvedValue({}),
     saveTags: vi.fn().mockResolvedValue({}),
+    recomputeNoteCategories: vi.fn().mockResolvedValue({}),
+    recomputeCategory: vi.fn().mockResolvedValue({}),
+    recomputeAllCategories: vi.fn().mockResolvedValue({}),
   },
 };
 
@@ -70,7 +73,7 @@ describe("Categorization Pipeline", () => {
   });
 
   describe("createCategorizationPipeline", () => {
-    it("should create pipeline with all four categorization actions", () => {
+    it("should create pipeline with the four categorization actions and the category recompute", () => {
       const pipeline = createCategorizationPipeline(
         mockActionFactory,
         mockDependencies,
@@ -78,8 +81,8 @@ describe("Categorization Pipeline", () => {
         mockContext
       );
 
-      expect(pipeline).toHaveLength(4);
-      expect(mockActionFactory.create).toHaveBeenCalledTimes(4);
+      expect(pipeline).toHaveLength(5);
+      expect(mockActionFactory.create).toHaveBeenCalledTimes(5);
     });
 
     it("should create actions in correct order", () => {
@@ -171,7 +174,7 @@ describe("Categorization Pipeline", () => {
         mockContext
       );
 
-      expect(mockActionFactory.create).toHaveBeenCalledTimes(4);
+      expect(mockActionFactory.create).toHaveBeenCalledTimes(5);
     });
 
     it("should handle different context structures", () => {
@@ -192,8 +195,8 @@ describe("Categorization Pipeline", () => {
         differentContext
       );
 
-      expect(pipeline).toHaveLength(4);
-      expect(mockActionFactory.create).toHaveBeenCalledTimes(4);
+      expect(pipeline).toHaveLength(5);
+      expect(mockActionFactory.create).toHaveBeenCalledTimes(5);
     });
 
     it("should handle dependencies without statusBroadcaster", () => {
@@ -209,8 +212,8 @@ describe("Categorization Pipeline", () => {
         mockContext
       );
 
-      expect(pipeline).toHaveLength(4);
-      expect(mockActionFactory.create).toHaveBeenCalledTimes(4);
+      expect(pipeline).toHaveLength(5);
+      expect(mockActionFactory.create).toHaveBeenCalledTimes(5);
     });
 
     it("should log error and rethrow when action creation fails", () => {

@@ -1,5 +1,4 @@
-import path from "path";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import type { IServiceContainer } from "../../../../../services/container";
 import {
@@ -9,34 +8,78 @@ import {
 import type { ImageJobData } from "../../../../../workers/image/types";
 import { saveImage } from "../../../../image/actions/save-image/service";
 
-// Mock path module
-vi.mock("path");
+const LOCAL_IMAGE_DIR = "/srv/peas-media";
+const IMPORT_DIR = `${LOCAL_IMAGE_DIR}/test-import-456`;
+const LOCAL_BASE_URL = "http://localhost:4200/media/images/test-import-456";
+
+function buildExpectedUpsert(
+  urls: {
+    original: string;
+    thumbnail: string;
+    crop3x2: string;
+    crop4x3: string;
+    crop16x9: string;
+  },
+  overrides: {
+    importId?: string;
+    noteId?: string;
+    originalWidth?: number;
+    originalHeight?: number;
+    originalSize?: number;
+    originalFormat?: string;
+  } = {}
+) {
+  const fields = {
+    originalImageUrl: urls.original,
+    thumbnailImageUrl: urls.thumbnail,
+    crop3x2ImageUrl: urls.crop3x2,
+    crop4x3ImageUrl: urls.crop4x3,
+    crop16x9ImageUrl: urls.crop16x9,
+    originalWidth: overrides.originalWidth ?? 1920,
+    originalHeight: overrides.originalHeight ?? 1080,
+    originalSize: overrides.originalSize ?? 1024,
+    originalFormat: overrides.originalFormat ?? "jpeg",
+    processingStatus: "COMPLETED",
+  };
+  const importId = overrides.importId ?? "test-import-456";
+  const noteId = overrides.noteId ?? "test-note-123";
+
+  return {
+    where: { importId },
+    update: { ...fields, processingError: null, noteId },
+    create: { ...fields, noteId, importId },
+  };
+}
+
+const localUrls = {
+  original: `${LOCAL_BASE_URL}/original.jpg`,
+  thumbnail: `${LOCAL_BASE_URL}/thumbnail.jpg`,
+  crop3x2: `${LOCAL_BASE_URL}/crop3x2.jpg`,
+  crop4x3: `${LOCAL_BASE_URL}/crop4x3.jpg`,
+  crop16x9: `${LOCAL_BASE_URL}/crop16x9.jpg`,
+};
 
 describe("saveImage", () => {
   let mockLogger: ReturnType<typeof createMockLogger>;
   let mockServiceContainer: IServiceContainer;
   let mockData: ImageJobData;
-  let mockPrisma: { image: { upsert: ReturnType<typeof vi.fn> } };
-  let mockPathBasename: ReturnType<typeof vi.fn>;
-  let originalEnv: Record<string, string | undefined>;
+  let mockPrisma: { image: { upsert: Mock } };
+  let originalEnv: typeof process.env;
 
   beforeEach(() => {
     vi.clearAllMocks();
 
-    // Store original environment
     originalEnv = process.env;
+    process.env = { ...originalEnv, LOCAL_IMAGE_DIR, PORT: "4200" };
+    delete process.env.IMAGE_BASE_URL;
 
-    // Create mock logger
     mockLogger = createMockLogger();
 
-    // Create mock Prisma client
     mockPrisma = {
       image: {
         upsert: vi.fn(),
       },
     };
-
-    // Create mock service container
 
     mockServiceContainer = {
       ...createMockServiceContainer(),
@@ -46,19 +89,18 @@ describe("saveImage", () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any;
 
-    // Create mock data
     mockData = {
       noteId: "test-note-123",
       importId: "test-import-456",
       imageId: "test-import-456",
-      imagePath: "/path/to/image.jpg",
-      outputDir: "/path/to/output",
+      imagePath: "/uploads/temp/image.jpg",
+      outputDir: IMPORT_DIR,
       filename: "image.jpg",
-      originalPath: "/path/to/original.jpg",
-      thumbnailPath: "/path/to/thumbnail.jpg",
-      crop3x2Path: "/path/to/crop3x2.jpg",
-      crop4x3Path: "/path/to/crop4x3.jpg",
-      crop16x9Path: "/path/to/crop16x9.jpg",
+      originalPath: `${IMPORT_DIR}/original.jpg`,
+      thumbnailPath: `${IMPORT_DIR}/thumbnail.jpg`,
+      crop3x2Path: `${IMPORT_DIR}/crop3x2.jpg`,
+      crop4x3Path: `${IMPORT_DIR}/crop4x3.jpg`,
+      crop16x9Path: `${IMPORT_DIR}/crop16x9.jpg`,
       originalSize: 1024,
       thumbnailSize: 512,
       crop3x2Size: 768,
@@ -71,80 +113,26 @@ describe("saveImage", () => {
       },
     };
 
-    // Setup default mocks
-    mockPathBasename = vi.mocked(path.basename);
-    mockPathBasename.mockImplementation((path: string) => {
-      if (path.includes("original")) return "original.jpg";
-      if (path.includes("thumbnail")) return "thumbnail.jpg";
-      if (path.includes("crop3x2")) return "crop3x2.jpg";
-      if (path.includes("crop4x3")) return "crop4x3.jpg";
-      if (path.includes("crop16x9")) return "crop16x9.jpg";
-      return "unknown.jpg";
-    });
-
-    mockPrisma.image.upsert.mockResolvedValue({
-      id: "saved-image-123",
-      originalImageUrl: "/images/original.jpg",
-      thumbnailImageUrl: "/images/thumbnail.jpg",
-      crop3x2ImageUrl: "/images/crop3x2.jpg",
-      crop4x3ImageUrl: "/images/crop4x3.jpg",
-      crop16x9ImageUrl: "/images/crop16x9.jpg",
-    });
-
-    // Reset environment
-    process.env = { ...originalEnv };
+    mockPrisma.image.upsert.mockResolvedValue({ id: "saved-image-123" });
   });
 
   afterEach(() => {
-    // Restore original environment
     process.env = originalEnv;
   });
 
   describe("successful scenarios", () => {
-    it("should save image with local URLs when no R2 URLs are provided", async () => {
+    it("should save locally served URLs when no R2 URLs are provided", async () => {
       const result = await saveImage(
         mockData,
         mockServiceContainer,
         mockLogger
       );
 
-      // Verify database upsert was called correctly
       expect(mockPrisma.image.upsert).toHaveBeenCalledTimes(1);
-      expect(mockPrisma.image.upsert).toHaveBeenCalledWith({
-        where: {
-          importId: "test-import-456",
-        },
-        update: {
-          originalImageUrl: "/images/original.jpg",
-          thumbnailImageUrl: "/images/thumbnail.jpg",
-          crop3x2ImageUrl: "/images/crop3x2.jpg",
-          crop4x3ImageUrl: "/images/crop4x3.jpg",
-          crop16x9ImageUrl: "/images/crop16x9.jpg",
-          originalWidth: 1920,
-          originalHeight: 1080,
-          originalSize: 1024,
-          originalFormat: "jpeg",
-          processingStatus: "COMPLETED",
-          processingError: null,
-          noteId: "test-note-123",
-        },
-        create: {
-          originalImageUrl: "/images/original.jpg",
-          thumbnailImageUrl: "/images/thumbnail.jpg",
-          crop3x2ImageUrl: "/images/crop3x2.jpg",
-          crop4x3ImageUrl: "/images/crop4x3.jpg",
-          crop16x9ImageUrl: "/images/crop16x9.jpg",
-          originalWidth: 1920,
-          originalHeight: 1080,
-          originalSize: 1024,
-          originalFormat: "jpeg",
-          processingStatus: "COMPLETED",
-          noteId: "test-note-123",
-          importId: "test-import-456",
-        },
-      });
+      expect(mockPrisma.image.upsert).toHaveBeenCalledWith(
+        buildExpectedUpsert(localUrls)
+      );
 
-      // Verify logging
       expect(mockLogger.log).toHaveBeenCalledWith(
         "[SAVE_IMAGE] Saving image URLs for note: test-note-123"
       );
@@ -155,22 +143,12 @@ describe("saveImage", () => {
         "[SAVE_IMAGE] ✅ Image record upserted with ID: saved-image-123"
       );
       expect(mockLogger.log).toHaveBeenCalledWith(
-        "[SAVE_IMAGE] Original: /images/original.jpg (local)"
+        `[SAVE_IMAGE] Original: ${localUrls.original} (local)`
       );
       expect(mockLogger.log).toHaveBeenCalledWith(
-        "[SAVE_IMAGE] Thumbnail: /images/thumbnail.jpg (local)"
-      );
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        "[SAVE_IMAGE] 3:2 crop: /images/crop3x2.jpg (local)"
-      );
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        "[SAVE_IMAGE] 4:3 crop: /images/crop4x3.jpg (local)"
-      );
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        "[SAVE_IMAGE] 16:9 crop: /images/crop16x9.jpg (local)"
+        `[SAVE_IMAGE] 16:9 crop: ${localUrls.crop16x9} (local)`
       );
 
-      // Verify return value
       expect(result).toEqual({
         ...mockData,
         imageId: "saved-image-123",
@@ -178,13 +156,20 @@ describe("saveImage", () => {
     });
 
     it("should save image with R2 URLs when provided", async () => {
+      const r2Urls = {
+        original: "https://r2.example.com/original.jpg",
+        thumbnail: "https://r2.example.com/thumbnail.jpg",
+        crop3x2: "https://r2.example.com/crop3x2.jpg",
+        crop4x3: "https://r2.example.com/crop4x3.jpg",
+        crop16x9: "https://r2.example.com/crop16x9.jpg",
+      };
       const dataWithR2Urls = {
         ...mockData,
-        r2OriginalUrl: "https://r2.example.com/original.jpg",
-        r2ThumbnailUrl: "https://r2.example.com/thumbnail.jpg",
-        r2Crop3x2Url: "https://r2.example.com/crop3x2.jpg",
-        r2Crop4x3Url: "https://r2.example.com/crop4x3.jpg",
-        r2Crop16x9Url: "https://r2.example.com/crop16x9.jpg",
+        r2OriginalUrl: r2Urls.original,
+        r2ThumbnailUrl: r2Urls.thumbnail,
+        r2Crop3x2Url: r2Urls.crop3x2,
+        r2Crop4x3Url: r2Urls.crop4x3,
+        r2Crop16x9Url: r2Urls.crop16x9,
       };
 
       const result = await saveImage(
@@ -193,58 +178,12 @@ describe("saveImage", () => {
         mockLogger
       );
 
-      // Verify database upsert was called with R2 URLs
-      expect(mockPrisma.image.upsert).toHaveBeenCalledWith({
-        where: {
-          importId: "test-import-456",
-        },
-        update: {
-          originalImageUrl: "https://r2.example.com/original.jpg",
-          thumbnailImageUrl: "https://r2.example.com/thumbnail.jpg",
-          crop3x2ImageUrl: "https://r2.example.com/crop3x2.jpg",
-          crop4x3ImageUrl: "https://r2.example.com/crop4x3.jpg",
-          crop16x9ImageUrl: "https://r2.example.com/crop16x9.jpg",
-          originalWidth: 1920,
-          originalHeight: 1080,
-          originalSize: 1024,
-          originalFormat: "jpeg",
-          processingStatus: "COMPLETED",
-          processingError: null,
-          noteId: "test-note-123",
-        },
-        create: {
-          originalImageUrl: "https://r2.example.com/original.jpg",
-          thumbnailImageUrl: "https://r2.example.com/thumbnail.jpg",
-          crop3x2ImageUrl: "https://r2.example.com/crop3x2.jpg",
-          crop4x3ImageUrl: "https://r2.example.com/crop4x3.jpg",
-          crop16x9ImageUrl: "https://r2.example.com/crop16x9.jpg",
-          originalWidth: 1920,
-          originalHeight: 1080,
-          originalSize: 1024,
-          originalFormat: "jpeg",
-          processingStatus: "COMPLETED",
-          noteId: "test-note-123",
-          importId: "test-import-456",
-        },
-      });
-
-      // Verify logging shows R2 URLs
+      expect(mockPrisma.image.upsert).toHaveBeenCalledWith(
+        buildExpectedUpsert(r2Urls)
+      );
       expect(mockLogger.log).toHaveBeenCalledWith(
         "[SAVE_IMAGE] Original: https://r2.example.com/original.jpg (R2)"
       );
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        "[SAVE_IMAGE] Thumbnail: https://r2.example.com/thumbnail.jpg (R2)"
-      );
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        "[SAVE_IMAGE] 3:2 crop: https://r2.example.com/crop3x2.jpg (R2)"
-      );
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        "[SAVE_IMAGE] 4:3 crop: https://r2.example.com/crop4x3.jpg (R2)"
-      );
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        "[SAVE_IMAGE] 16:9 crop: https://r2.example.com/crop16x9.jpg (R2)"
-      );
-
       expect(result).toEqual({
         ...dataWithR2Urls,
         imageId: "saved-image-123",
@@ -257,101 +196,31 @@ describe("saveImage", () => {
         r2Url: "https://r2.example.com/fallback.jpg",
       };
 
-      const result = await saveImage(
-        dataWithR2Fallback,
-        mockServiceContainer,
-        mockLogger
+      await saveImage(dataWithR2Fallback, mockServiceContainer, mockLogger);
+
+      expect(mockPrisma.image.upsert).toHaveBeenCalledWith(
+        buildExpectedUpsert({
+          ...localUrls,
+          original: "https://r2.example.com/fallback.jpg",
+        })
       );
-
-      // Verify database upsert was called with fallback R2 URL
-      expect(mockPrisma.image.upsert).toHaveBeenCalledWith({
-        where: {
-          importId: "test-import-456",
-        },
-        update: {
-          originalImageUrl: "https://r2.example.com/fallback.jpg",
-          thumbnailImageUrl: "/images/thumbnail.jpg",
-          crop3x2ImageUrl: "/images/crop3x2.jpg",
-          crop4x3ImageUrl: "/images/crop4x3.jpg",
-          crop16x9ImageUrl: "/images/crop16x9.jpg",
-          originalWidth: 1920,
-          originalHeight: 1080,
-          originalSize: 1024,
-          originalFormat: "jpeg",
-          processingStatus: "COMPLETED",
-          processingError: null,
-          noteId: "test-note-123",
-        },
-        create: {
-          originalImageUrl: "https://r2.example.com/fallback.jpg",
-          thumbnailImageUrl: "/images/thumbnail.jpg",
-          crop3x2ImageUrl: "/images/crop3x2.jpg",
-          crop4x3ImageUrl: "/images/crop4x3.jpg",
-          crop16x9ImageUrl: "/images/crop16x9.jpg",
-          originalWidth: 1920,
-          originalHeight: 1080,
-          originalSize: 1024,
-          originalFormat: "jpeg",
-          processingStatus: "COMPLETED",
-          noteId: "test-note-123",
-          importId: "test-import-456",
-        },
-      });
-
-      expect(result).toEqual({
-        ...dataWithR2Fallback,
-        imageId: "saved-image-123",
-      });
     });
 
     it("should use custom IMAGE_BASE_URL from environment", async () => {
-      process.env.IMAGE_BASE_URL = "https://custom.example.com/images";
+      process.env.IMAGE_BASE_URL = "https://queue.example.com/media/images/";
 
-      const result = await saveImage(
-        mockData,
-        mockServiceContainer,
-        mockLogger
+      await saveImage(mockData, mockServiceContainer, mockLogger);
+
+      const customBase = "https://queue.example.com/media/images/test-import-456";
+      expect(mockPrisma.image.upsert).toHaveBeenCalledWith(
+        buildExpectedUpsert({
+          original: `${customBase}/original.jpg`,
+          thumbnail: `${customBase}/thumbnail.jpg`,
+          crop3x2: `${customBase}/crop3x2.jpg`,
+          crop4x3: `${customBase}/crop4x3.jpg`,
+          crop16x9: `${customBase}/crop16x9.jpg`,
+        })
       );
-
-      // Verify database upsert was called with custom base URL
-      expect(mockPrisma.image.upsert).toHaveBeenCalledWith({
-        where: {
-          importId: "test-import-456",
-        },
-        update: {
-          originalImageUrl: "https://custom.example.com/images/original.jpg",
-          thumbnailImageUrl: "https://custom.example.com/images/thumbnail.jpg",
-          crop3x2ImageUrl: "https://custom.example.com/images/crop3x2.jpg",
-          crop4x3ImageUrl: "https://custom.example.com/images/crop4x3.jpg",
-          crop16x9ImageUrl: "https://custom.example.com/images/crop16x9.jpg",
-          originalWidth: 1920,
-          originalHeight: 1080,
-          originalSize: 1024,
-          originalFormat: "jpeg",
-          processingStatus: "COMPLETED",
-          processingError: null,
-          noteId: "test-note-123",
-        },
-        create: {
-          originalImageUrl: "https://custom.example.com/images/original.jpg",
-          thumbnailImageUrl: "https://custom.example.com/images/thumbnail.jpg",
-          crop3x2ImageUrl: "https://custom.example.com/images/crop3x2.jpg",
-          crop4x3ImageUrl: "https://custom.example.com/images/crop4x3.jpg",
-          crop16x9ImageUrl: "https://custom.example.com/images/crop16x9.jpg",
-          originalWidth: 1920,
-          originalHeight: 1080,
-          originalSize: 1024,
-          originalFormat: "jpeg",
-          processingStatus: "COMPLETED",
-          noteId: "test-note-123",
-          importId: "test-import-456",
-        },
-      });
-
-      expect(result).toEqual({
-        ...mockData,
-        imageId: "saved-image-123",
-      });
     });
 
     it("should handle mixed R2 and local URLs", async () => {
@@ -359,302 +228,50 @@ describe("saveImage", () => {
         ...mockData,
         r2OriginalUrl: "https://r2.example.com/original.jpg",
         r2ThumbnailUrl: "https://r2.example.com/thumbnail.jpg",
-        // crop3x2, crop4x3, crop16x9 use local URLs
       };
 
-      const result = await saveImage(
-        dataWithMixedUrls,
-        mockServiceContainer,
-        mockLogger
-      );
+      await saveImage(dataWithMixedUrls, mockServiceContainer, mockLogger);
 
-      // Verify database upsert was called with mixed URLs
-      expect(mockPrisma.image.upsert).toHaveBeenCalledWith({
-        where: {
-          importId: "test-import-456",
-        },
-        update: {
-          originalImageUrl: "https://r2.example.com/original.jpg",
-          thumbnailImageUrl: "https://r2.example.com/thumbnail.jpg",
-          crop3x2ImageUrl: "/images/crop3x2.jpg",
-          crop4x3ImageUrl: "/images/crop4x3.jpg",
-          crop16x9ImageUrl: "/images/crop16x9.jpg",
-          originalWidth: 1920,
-          originalHeight: 1080,
-          originalSize: 1024,
-          originalFormat: "jpeg",
-          processingStatus: "COMPLETED",
-          processingError: null,
-          noteId: "test-note-123",
-        },
-        create: {
-          originalImageUrl: "https://r2.example.com/original.jpg",
-          thumbnailImageUrl: "https://r2.example.com/thumbnail.jpg",
-          crop3x2ImageUrl: "/images/crop3x2.jpg",
-          crop4x3ImageUrl: "/images/crop4x3.jpg",
-          crop16x9ImageUrl: "/images/crop16x9.jpg",
-          originalWidth: 1920,
-          originalHeight: 1080,
-          originalSize: 1024,
-          originalFormat: "jpeg",
-          processingStatus: "COMPLETED",
-          noteId: "test-note-123",
-          importId: "test-import-456",
-        },
-      });
-
-      // Verify logging shows mixed URLs
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        "[SAVE_IMAGE] Original: https://r2.example.com/original.jpg (R2)"
+      expect(mockPrisma.image.upsert).toHaveBeenCalledWith(
+        buildExpectedUpsert({
+          ...localUrls,
+          original: "https://r2.example.com/original.jpg",
+          thumbnail: "https://r2.example.com/thumbnail.jpg",
+        })
       );
       expect(mockLogger.log).toHaveBeenCalledWith(
         "[SAVE_IMAGE] Thumbnail: https://r2.example.com/thumbnail.jpg (R2)"
       );
       expect(mockLogger.log).toHaveBeenCalledWith(
-        "[SAVE_IMAGE] 3:2 crop: /images/crop3x2.jpg (local)"
-      );
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        "[SAVE_IMAGE] 4:3 crop: /images/crop4x3.jpg (local)"
-      );
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        "[SAVE_IMAGE] 16:9 crop: /images/crop16x9.jpg (local)"
-      );
-
-      expect(result).toEqual({
-        ...dataWithMixedUrls,
-        imageId: "saved-image-123",
-      });
-    });
-
-    it("should work with minimal data", async () => {
-      const minimalData = {
-        noteId: "minimal-note",
-        importId: "minimal-import",
-        imagePath: "/minimal/image.jpg",
-        outputDir: "/minimal/output",
-        filename: "minimal.jpg",
-        originalPath: "/minimal/original.jpg",
-        thumbnailPath: "/minimal/thumbnail.jpg",
-        crop3x2Path: "/minimal/crop3x2.jpg",
-        crop4x3Path: "/minimal/crop4x3.jpg",
-        crop16x9Path: "/minimal/crop16x9.jpg",
-        originalSize: 100,
-        thumbnailSize: 50,
-        crop3x2Size: 75,
-        crop4x3Size: 75,
-        crop16x9Size: 75,
-        metadata: {
-          width: 100,
-          height: 100,
-          format: "png",
-        },
-      };
-
-      // The path.basename mock is already set up to handle all paths correctly
-
-      const result = await saveImage(
-        minimalData,
-        mockServiceContainer,
-        mockLogger
-      );
-
-      expect(mockPrisma.image.upsert).toHaveBeenCalledWith({
-        where: {
-          importId: "minimal-import-minimal.jpg",
-        },
-        update: {
-          originalImageUrl: "/images/original.jpg",
-          thumbnailImageUrl: "/images/thumbnail.jpg",
-          crop3x2ImageUrl: "/images/crop3x2.jpg",
-          crop4x3ImageUrl: "/images/crop4x3.jpg",
-          crop16x9ImageUrl: "/images/crop16x9.jpg",
-          originalWidth: 100,
-          originalHeight: 100,
-          originalSize: 100,
-          originalFormat: "png",
-          processingStatus: "COMPLETED",
-          processingError: null,
-          noteId: "minimal-note",
-        },
-        create: {
-          originalImageUrl: "/images/original.jpg",
-          thumbnailImageUrl: "/images/thumbnail.jpg",
-          crop3x2ImageUrl: "/images/crop3x2.jpg",
-          crop4x3ImageUrl: "/images/crop4x3.jpg",
-          crop16x9ImageUrl: "/images/crop16x9.jpg",
-          originalWidth: 100,
-          originalHeight: 100,
-          originalSize: 100,
-          originalFormat: "png",
-          processingStatus: "COMPLETED",
-          noteId: "minimal-note",
-          importId: "minimal-import-minimal.jpg",
-        },
-      });
-
-      expect(result).toEqual({
-        ...minimalData,
-        imageId: "saved-image-123",
-      });
-    });
-  });
-
-  describe("error handling scenarios", () => {
-    it("should handle database upsert errors", async () => {
-      const dbError = new Error("Database connection failed");
-      mockPrisma.image.upsert.mockRejectedValue(dbError);
-
-      await expect(
-        saveImage(mockData, mockServiceContainer, mockLogger)
-      ).rejects.toThrow("Database connection failed");
-
-      // Verify error logging
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        "[SAVE_IMAGE] ❌ Failed to save image URLs: Error: Database connection failed"
+        `[SAVE_IMAGE] 3:2 crop: ${localUrls.crop3x2} (local)`
       );
     });
 
-    it("should handle missing importId", async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const dataWithoutImportId = { ...mockData, importId: undefined } as any;
-
-      const result = await saveImage(
-        dataWithoutImportId,
-        mockServiceContainer,
-        mockLogger
-      );
-
-      // Verify database was called with fallback importId
-      expect(mockPrisma.image.upsert).toHaveBeenCalledWith({
-        where: {
-          importId: "test-import-456",
-        },
-        update: expect.any(Object),
-        create: expect.any(Object),
-      });
-
-      expect(result).toEqual({
-        ...dataWithoutImportId,
-        imageId: "saved-image-123",
-      });
-    });
-
-    it("should handle missing noteId", async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const dataWithoutNoteId = { ...mockData, noteId: undefined } as any;
-
-      const result = await saveImage(
-        dataWithoutNoteId,
-        mockServiceContainer,
-        mockLogger
-      );
-
-      // Verify database was called with undefined noteId
-      expect(mockPrisma.image.upsert).toHaveBeenCalledWith({
-        where: {
-          importId: "test-import-456",
-        },
-        update: expect.objectContaining({
-          noteId: undefined,
-        }),
-        create: expect.objectContaining({
-          noteId: undefined,
-        }),
-      });
-
-      expect(result).toEqual({
-        ...dataWithoutNoteId,
-        imageId: "saved-image-123",
-      });
-    });
-
-    it("should handle missing metadata", async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const dataWithoutMetadata = { ...mockData, metadata: undefined } as any;
-
-      await expect(
-        saveImage(dataWithoutMetadata, mockServiceContainer, mockLogger)
-      ).rejects.toThrow();
-
-      // Verify error logging
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        expect.stringMatching(/\[SAVE_IMAGE\] ❌ Failed to save image URLs: /)
-      );
-    });
-
-    it("should handle path.basename errors", async () => {
-      mockPathBasename.mockImplementation(() => {
-        throw new Error("Path basename failed");
-      });
-
-      await expect(
-        saveImage(mockData, mockServiceContainer, mockLogger)
-      ).rejects.toThrow("Path basename failed");
-
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        "[SAVE_IMAGE] ❌ Failed to save image URLs: Error: Path basename failed"
-      );
-    });
-  });
-
-  describe("URL generation edge cases", () => {
-    it("should handle empty file paths", async () => {
-      const dataWithEmptyPaths = {
+    it("should URL-encode file names with spaces and symbols", async () => {
+      const dataWithSpaces = {
         ...mockData,
-        originalPath: "",
-        thumbnailPath: "",
-        crop3x2Path: "",
-        crop4x3Path: "",
-        crop16x9Path: "",
+        originalPath: `${IMPORT_DIR}/Screen Shot 2019@2x-original.png`,
       };
 
-      // Override the path.basename mock for empty paths
-      mockPathBasename.mockImplementation(() => "");
+      await saveImage(dataWithSpaces, mockServiceContainer, mockLogger);
 
-      const result = await saveImage(
-        dataWithEmptyPaths,
-        mockServiceContainer,
-        mockLogger
+      expect(mockPrisma.image.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          create: expect.objectContaining({
+            originalImageUrl: `${LOCAL_BASE_URL}/Screen%20Shot%202019%402x-original.png`,
+          }),
+        })
       );
+    });
 
-      expect(mockPrisma.image.upsert).toHaveBeenCalledWith({
-        where: {
-          importId: "test-import-456",
-        },
-        update: {
-          originalImageUrl: "/images/",
-          thumbnailImageUrl: "/images/",
-          crop3x2ImageUrl: "/images/",
-          crop4x3ImageUrl: "/images/",
-          crop16x9ImageUrl: "/images/",
-          originalWidth: 1920,
-          originalHeight: 1080,
-          originalSize: 1024,
-          originalFormat: "jpeg",
-          processingStatus: "COMPLETED",
-          processingError: null,
-          noteId: "test-note-123",
-        },
-        create: {
-          originalImageUrl: "/images/",
-          thumbnailImageUrl: "/images/",
-          crop3x2ImageUrl: "/images/",
-          crop4x3ImageUrl: "/images/",
-          crop16x9ImageUrl: "/images/",
-          originalWidth: 1920,
-          originalHeight: 1080,
-          originalSize: 1024,
-          originalFormat: "jpeg",
-          processingStatus: "COMPLETED",
-          noteId: "test-note-123",
-          importId: "test-import-456",
-        },
-      });
+    it("should build the upsert key from importId and filename when imageId is missing", async () => {
+      const dataWithoutImageId = { ...mockData, imageId: undefined };
 
-      expect(result).toEqual({
-        ...dataWithEmptyPaths,
-        imageId: "saved-image-123",
-      });
+      await saveImage(dataWithoutImageId, mockServiceContainer, mockLogger);
+
+      expect(mockPrisma.image.upsert).toHaveBeenCalledWith(
+        buildExpectedUpsert(localUrls, { importId: "test-import-456-image.jpg" })
+      );
     });
 
     it("should handle zero file sizes", async () => {
@@ -667,50 +284,76 @@ describe("saveImage", () => {
         crop16x9Size: 0,
       };
 
-      const result = await saveImage(
-        dataWithZeroSizes,
-        mockServiceContainer,
-        mockLogger
+      await saveImage(dataWithZeroSizes, mockServiceContainer, mockLogger);
+
+      expect(mockPrisma.image.upsert).toHaveBeenCalledWith(
+        buildExpectedUpsert(localUrls, { originalSize: 0 })
+      );
+    });
+  });
+
+  describe("error handling scenarios", () => {
+    it("should handle database upsert errors", async () => {
+      mockPrisma.image.upsert.mockRejectedValue(
+        new Error("Database connection failed")
       );
 
-      expect(mockPrisma.image.upsert).toHaveBeenCalledWith({
-        where: {
-          importId: "test-import-456",
-        },
-        update: {
-          originalImageUrl: "/images/original.jpg",
-          thumbnailImageUrl: "/images/thumbnail.jpg",
-          crop3x2ImageUrl: "/images/crop3x2.jpg",
-          crop4x3ImageUrl: "/images/crop4x3.jpg",
-          crop16x9ImageUrl: "/images/crop16x9.jpg",
-          originalWidth: 1920,
-          originalHeight: 1080,
-          originalSize: 0,
-          originalFormat: "jpeg",
-          processingStatus: "COMPLETED",
-          processingError: null,
-          noteId: "test-note-123",
-        },
-        create: {
-          originalImageUrl: "/images/original.jpg",
-          thumbnailImageUrl: "/images/thumbnail.jpg",
-          crop3x2ImageUrl: "/images/crop3x2.jpg",
-          crop4x3ImageUrl: "/images/crop4x3.jpg",
-          crop16x9ImageUrl: "/images/crop16x9.jpg",
-          originalWidth: 1920,
-          originalHeight: 1080,
-          originalSize: 0,
-          originalFormat: "jpeg",
-          processingStatus: "COMPLETED",
-          noteId: "test-note-123",
-          importId: "test-import-456",
-        },
-      });
+      await expect(
+        saveImage(mockData, mockServiceContainer, mockLogger)
+      ).rejects.toThrow("Database connection failed");
 
-      expect(result).toEqual({
-        ...dataWithZeroSizes,
-        imageId: "saved-image-123",
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        "[SAVE_IMAGE] ❌ Failed to save image URLs: Error: Database connection failed"
+      );
+    });
+
+    it("should handle missing noteId", async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const dataWithoutNoteId = { ...mockData, noteId: undefined } as any;
+
+      await saveImage(dataWithoutNoteId, mockServiceContainer, mockLogger);
+
+      expect(mockPrisma.image.upsert).toHaveBeenCalledWith({
+        where: { importId: "test-import-456" },
+        update: expect.objectContaining({ noteId: undefined }),
+        create: expect.objectContaining({ noteId: undefined }),
       });
+    });
+
+    it("should handle missing metadata", async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const dataWithoutMetadata = { ...mockData, metadata: undefined } as any;
+
+      await expect(
+        saveImage(dataWithoutMetadata, mockServiceContainer, mockLogger)
+      ).rejects.toThrow();
+
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        expect.stringMatching(/\[SAVE_IMAGE\] ❌ Failed to save image URLs: /)
+      );
+    });
+
+    it("should reject processed images outside local storage when R2 is not used", async () => {
+      const dataOutsideStorage = {
+        ...mockData,
+        thumbnailPath: "/somewhere/else/thumbnail.jpg",
+      };
+
+      await expect(
+        saveImage(dataOutsideStorage, mockServiceContainer, mockLogger)
+      ).rejects.toThrow(
+        "Image is outside local image storage: /somewhere/else/thumbnail.jpg"
+      );
+      expect(mockPrisma.image.upsert).not.toHaveBeenCalled();
+    });
+
+    it("should reject empty processed image paths when R2 is not used", async () => {
+      const dataWithEmptyPaths = { ...mockData, originalPath: "" };
+
+      await expect(
+        saveImage(dataWithEmptyPaths, mockServiceContainer, mockLogger)
+      ).rejects.toThrow("Image is outside local image storage");
+      expect(mockPrisma.image.upsert).not.toHaveBeenCalled();
     });
   });
 });

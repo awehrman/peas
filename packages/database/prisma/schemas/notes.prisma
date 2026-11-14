@@ -63,16 +63,81 @@ model Note {
   errorDetails Json?
   duplicateConfidence Float? // Confidence level (0.0 to 1.0) when note is marked as duplicate
   titleSimHash String? // SimHash of the title for similarity comparison
+  /// Four 8-bit bands of titleSimHash ("0:a3"); titles within Hamming distance 3 share at least one band.
+  titleSimHashBands String[]
+  /// SHA-256 of the uploaded HTML: the same file imported again.
+  rawHtmlHash String?
+  /// SHA-256 of the normalized title, ingredient lines, and instructions.
+  contentHash String?
 
-  categories Category[]
-  tags       Tag[]
-  sources    Source[]
+  /// Soft deletion: an archived note keeps its lines, mentions, sources, and categories but is hidden by default.
+  archivedAt     DateTime?
+  archivedReason String?
+  supersededBy   Note?     @relation("NoteSupersededBy", fields: [supersededById], references: [id], onDelete: SetNull)
+  supersededById String?
+  supersedes     Note[]    @relation("NoteSupersededBy")
+
+  noteSources         NoteSource[]
+  structureProposals  StructureProposal[]
+  categoryMemberships NoteCategory[]
+  duplicateCandidates DuplicateCandidate[] @relation("DuplicateIncoming")
+  duplicateOf         DuplicateCandidate[] @relation("DuplicateExisting")
+
+  tags Tag[]
+
+  recipe Recipe?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([titleSimHash]) // Index for SimHash similarity queries
+  @@index([titleSimHashBands], type: Gin)
+  @@index([rawHtmlHash])
+  @@index([contentHash])
+  @@index([archivedAt])
   @@index([importId]) // Index for import tracking and upserts
+}
+
+enum DuplicateKind {
+  EXACT
+  LIKELY
+  POSSIBLE
+}
+
+enum DuplicateCandidateStatus {
+  PENDING
+  RESOLVED
+  DISMISSED
+}
+
+/// A possible duplicate pair found at import. Resolution is an explicit, reversible decision.
+model DuplicateCandidate {
+  id String @id @default(uuid(7)) @db.Uuid
+
+  note           Note   @relation("DuplicateIncoming", fields: [noteId], references: [id], onDelete: Cascade)
+  noteId         String
+  existingNote   Note   @relation("DuplicateExisting", fields: [existingNoteId], references: [id], onDelete: Cascade)
+  existingNoteId String
+
+  kind       DuplicateKind
+  confidence Float
+  /// What matched (DuplicateSignalsSchema).
+  signals Json
+  status  DuplicateCandidateStatus @default(PENDING)
+  /// { keep: EXISTING | INCOMING | BOTH, mergeSources } (DuplicateResolutionSchema).
+  resolution        Json?
+  /// Every row written by the resolution, so undo reverses exactly that (ResolutionEffectsSchema).
+  resolutionEffects Json?
+  resolvedAt        DateTime?
+  resolvedBy        User?     @relation(fields: [resolvedById], references: [id], onDelete: SetNull)
+  resolvedById      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([noteId, existingNoteId])
+  @@index([status, kind])
+  @@index([existingNoteId])
 }
 
 model NoteStatusEvent {
@@ -101,3 +166,50 @@ model NoteStatusEvent {
   @@index([noteId, createdAt])  // for filtering by note + time
   @@index([status, createdAt])  // for filtering by status + time
 } 
+
+enum StructureProposalStatus {
+  OPEN
+  APPROVED
+  REJECTED
+  CHANGED
+  SUPERSEDED
+}
+
+/// A line the structure validator thinks the importer misfiled (Phase 8.5), and the reviewer's decision. Keyed by content (note, position, text), so revalidating the same content finds the existing row instead of asking again.
+model StructureProposal {
+  id String @id @default(uuid(7)) @db.Uuid
+
+  note         Note   @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  noteId       String
+  contentIndex Int
+  text         String
+  /// SHA-256 of the trimmed text.
+  textHash     String
+  /// INGREDIENT or INSTRUCTION: where the importer filed it.
+  assignedKind String
+  /// StructureProposal from @peas/parser/v2 (Zod-validated): RECLASSIFY or SPLIT.
+  proposal          Json
+  /// "SECTION_HEADING", or split parts joined with "+".
+  proposedLabel     String
+  /// proposedLabel and the strongest signal ("SECTION_HEADING:COLON_HEADING"), for grouping and learning.
+  patternKey        String
+  margin            Float
+  /// BlockSignal[] (Zod-validated).
+  signals           Json
+  classifierVersion String
+
+  status       StructureProposalStatus @default(OPEN)
+  /// What the reviewer chose (the proposal, or another kind).
+  decidedLabel String?
+  decidedBy    User?                   @relation(fields: [decidedById], references: [id], onDelete: SetNull)
+  decidedById  String?
+  decidedAt    DateTime?
+  /// StructureEffects: every row written, so undo reverses exactly that.
+  effects      Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([noteId, contentIndex, textHash])
+  @@index([status, patternKey])
+}

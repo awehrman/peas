@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import { createMockLogger } from "../../../../../test-utils/helpers";
 import type { ImageJobData, ImageWorkerDependencies } from "../../../../../workers/image/types";
@@ -15,7 +15,7 @@ describe("Upload Original Action", () => {
   let mockData: ImageJobData;
   let mockDependencies: ImageWorkerDependencies;
   let mockContext: ActionContext;
-  let mockUploadOriginal: ReturnType<typeof vi.fn>;
+  let mockUploadOriginal: Mock;
 
   beforeEach(async () => {
     vi.clearAllMocks();

@@ -1,5 +1,5 @@
 import type { ParseStatus } from "@peas/database";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import type { StructuredLogger } from "../../../../../types";
 import type { IngredientJobData } from "../../../../../workers/ingredient/dependencies";
@@ -16,7 +16,7 @@ describe("Schedule Categorization Service", () => {
       event: Record<string, unknown>
     ) => Promise<Record<string, unknown>>;
   };
-  let mockScheduleCategorizationJob: ReturnType<typeof vi.fn>;
+  let mockScheduleCategorizationJob: Mock;
   let testData: IngredientJobData;
 
   beforeEach(async () => {

@@ -81,6 +81,7 @@ export interface BaseWorkerDependencies {
     instructionQueue?: Queue;
     categorizationQueue?: Queue;
     sourceQueue?: Queue;
+    bookLookupQueue?: Queue;
   };
 }
 

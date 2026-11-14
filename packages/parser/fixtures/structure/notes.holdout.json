@@ -1,0 +1,90 @@
+{
+  "description": "Held-out labelled note content for the structure validator (Phase 8.5). Written after the dev set was tuned and never used to choose signals or weights; failures here are reported, not fixed by retuning against this file. Same format as notes.dev.json.",
+  "notes": [
+    {
+      "id": "salad-two-headings",
+      "lines": [
+        "H | For the dressing:",
+        "I | 3 tbsp sherry vinegar",
+        "I | 1 tsp Dijon mustard",
+        "I | ½ cup extra-virgin olive oil",
+        "",
+        "H | For the salad:",
+        "I | 1 head romaine, chopped",
+        "I | 1 cup cherry tomatoes, halved",
+        "I | Pinch of salt",
+        "",
+        "S | Whisk the vinegar and mustard, then slowly whisk in the oil.",
+        "",
+        "S | Toss the salad with the dressing just before serving.",
+        ""
+      ]
+    },
+    {
+      "id": "stir-fry-steps-in-block",
+      "lines": [
+        "I | 1 lb flank steak, thinly sliced",
+        "I | 2 tbsp soy sauce",
+        "I | 1 tbsp cornstarch",
+        "I | Oil for frying",
+        "",
+        "S | Heat oil in a wok over high heat.",
+        "S | Stir-fry the beef in batches until browned, about 2 minutes.",
+        "S | In a small bowl, mix the soy sauce and cornstarch, then add to the wok.",
+        ""
+      ]
+    },
+    {
+      "id": "cookies-yield-and-tip",
+      "lines": [
+        "O | Makes about 24 cookies",
+        "",
+        "I | 2¼ cups all-purpose flour",
+        "I | 1 cup butter, softened",
+        "I | ¾ cup brown sugar",
+        "I | 2 cups chocolate chips",
+        "",
+        "S | Cream the butter and sugar until fluffy, then mix in the flour.",
+        "",
+        "N | Tip: Chill the dough for easier scooping.",
+        "",
+        "S | Bake at 350°F for 10 to 12 minutes.",
+        ""
+      ]
+    },
+    {
+      "id": "rice-alone-and-caps",
+      "lines": [
+        "I | 1 lb chicken breast, cubed",
+        "I | 2 tbsp curry paste",
+        "I | 1 can coconut milk",
+        "",
+        "I | 2 cups cooked rice, for serving",
+        "",
+        "S | Simmer the chicken in the curry paste and coconut milk for 15 minutes.",
+        "",
+        "H | TO SERVE",
+        "I | Lemon juice, to taste",
+        "I | Fresh cilantro",
+        ""
+      ]
+    },
+    {
+      "id": "brownies-short-step",
+      "lines": [
+        "I | 1 cup sugar",
+        "I | ½ cup cocoa powder",
+        "I | 2 eggs",
+        "",
+        "S | In a large bowl, whisk eggs and sugar.",
+        "S | Fold in the cocoa and pour into a greased pan.",
+        "S | Cut into squares.",
+        "",
+        "H | Sauce",
+        "I | ½ cup heavy cream",
+        "I | 4 oz dark chocolate, chopped",
+        ""
+      ]
+    }
+  ]
+}

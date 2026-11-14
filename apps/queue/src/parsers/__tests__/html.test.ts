@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import { HTML_PARSING_CONSTANTS } from "../constants";
 import { parseHTMLContent } from "../html";
@@ -14,8 +14,8 @@ vi.mock("date-fns", () => ({
 }));
 
 describe("HTML Parser", () => {
-  let mockLoad: ReturnType<typeof vi.fn>;
-  let mockParseISO: ReturnType<typeof vi.fn>;
+  let mockLoad: Mock;
+  let mockParseISO: Mock;
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -84,6 +84,7 @@ describe("HTML Parser", () => {
 
       expect(result).toEqual({
         title: "Test Recipe",
+        contentTags: expect.any(Array),
         ingredients: expect.arrayContaining([
           expect.objectContaining({
             reference: expect.any(String),

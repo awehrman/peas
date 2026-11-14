@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import { ActionName } from "../../../../../types";
 import type { NotePipelineData } from "../../../../../types/notes";
@@ -24,7 +24,7 @@ describe("SaveNoteAction", () => {
   let mockData: NotePipelineData;
   let mockDeps: NoteWorkerDependencies;
   let mockContext: ActionContext;
-  let mockSaveNoteDataSchema: ReturnType<typeof vi.fn>;
+  let mockSaveNoteDataSchema: Mock;
 
   beforeEach(async () => {
     // Clear all mocks
@@ -203,7 +203,28 @@ describe("SaveNoteAction", () => {
         contextName: "save_note",
         startMessage: "Creating note structure",
         completionMessage: "Created note structure",
+        additionalBroadcasting: expect.any(Function),
       });
+    });
+
+    it("includes the saved note's title in the completion event", async () => {
+      (mockDeps.services.saveNote as any).mockResolvedValue({
+        ...mockData,
+        noteId: "new-note-789",
+        note: { id: "new-note-789", title: "Venison stew" },
+      });
+
+      await action.execute(mockData, mockDeps, mockContext);
+
+      expect(mockDeps.statusBroadcaster?.addStatusEventAndBroadcast).toHaveBeenCalledWith(
+        expect.objectContaining({
+          importId: "test-import-789",
+          noteId: "new-note-789",
+          status: "COMPLETED",
+          context: "save_note",
+          metadata: { title: "Venison stew" },
+        })
+      );
     });
 
     it("should handle service call correctly", async () => {

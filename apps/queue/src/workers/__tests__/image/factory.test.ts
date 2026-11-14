@@ -51,13 +51,14 @@ describe("Image Worker Factory", () => {
     };
 
     // Setup mocks
-    const { buildImageWorkerDependencies } = await import(
-      "../../image/dependencies"
-    );
+    const { buildImageWorkerDependencies } =
+      await import("../../image/dependencies");
     const { ImageWorker } = await import("../../image/worker");
 
     vi.mocked(buildImageWorkerDependencies).mockReturnValue(mockDependencies);
-    vi.mocked(ImageWorker).mockImplementation(() => mockImageWorker as ImageWorker);
+    vi.mocked(ImageWorker).mockImplementation(function () {
+      return mockImageWorker as ImageWorker;
+    });
   });
 
   describe("createImageWorker", () => {
@@ -125,9 +126,8 @@ describe("Image Worker Factory", () => {
     });
 
     it("should call buildImageWorkerDependencies with correct container", async () => {
-      const { buildImageWorkerDependencies } = await import(
-        "../../image/dependencies"
-      );
+      const { buildImageWorkerDependencies } =
+        await import("../../image/dependencies");
 
       createImageWorker(mockQueue, mockContainer);
 
@@ -160,15 +160,15 @@ describe("Image Worker Factory", () => {
     });
 
     it("should handle undefined queue", () => {
-      expect(() => createImageWorker(undefined as unknown as Queue, mockContainer)).toThrow(
-        "Cannot read properties of undefined (reading 'name')"
-      );
+      expect(() =>
+        createImageWorker(undefined as unknown as Queue, mockContainer)
+      ).toThrow("Cannot read properties of undefined (reading 'name')");
     });
 
     it("should handle undefined container", () => {
-      expect(() => createImageWorker(mockQueue, undefined as unknown as IServiceContainer)).toThrow(
-        "Cannot convert undefined or null to object"
-      );
+      expect(() =>
+        createImageWorker(mockQueue, undefined as unknown as IServiceContainer)
+      ).toThrow("Cannot convert undefined or null to object");
     });
   });
 });

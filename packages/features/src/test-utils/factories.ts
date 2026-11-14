@@ -54,6 +54,7 @@ export const createMockUploadBatch = (
 export const createMockUploadState = (
   overrides: Partial<UploadState> = {}
 ): UploadState => ({
+  pendingBatches: [],
   previousBatches: [],
   currentBatch: undefined,
   ...overrides,
@@ -71,8 +72,7 @@ export const createMockImportStatsState = (
 export const createMockActivityState = (
   overrides: Partial<ActivityState> = {}
 ): ActivityState => ({
-  currentPageIndex: 0,
-  pageToCardIds: {},
+  cardIds: [],
   cardsById: {},
   ...overrides,
 });

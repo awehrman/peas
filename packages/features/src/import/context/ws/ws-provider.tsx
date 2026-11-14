@@ -16,13 +16,14 @@ import {
   useContextSelector,
 } from "use-context-selector";
 
-import { getWebSocketUrl } from "../../../utils/websocket-config";
+import { getAuthenticatedWebSocketUrl } from "../../../utils/websocket-config";
 import type {
   StatusEvent,
   WebSocketMessage,
   WsConnectionState,
   WsContextValue,
 } from "../../types/import-types";
+import { useQueueTokenProvider } from "../queue-auth";
 
 const WsContext = createSelectorContext<WsContextValue | null>(null);
 
@@ -43,8 +44,10 @@ export function WsProvider({
   onStatusUpdate,
 }: WsProviderProps) {
   const [state, dispatch] = useReducer(wsReducer, initialState);
+  const getQueueToken = useQueueTokenProvider();
 
   const wsRef = useRef<WebSocket | null>(null);
+  const connectAttemptRef = useRef(0);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null
   );
@@ -53,6 +56,11 @@ export function WsProvider({
   );
   const reconnectAttemptsRef = useRef(0);
   const isManualDisconnectRef = useRef(false);
+  const onStatusUpdateRef = useRef(onStatusUpdate);
+
+  useEffect(() => {
+    onStatusUpdateRef.current = onStatusUpdate;
+  }, [onStatusUpdate]);
 
   const clearTimers = useCallback(() => {
     if (reconnectTimeoutRef.current) {
@@ -77,7 +85,7 @@ export function WsProvider({
     }, 3000);
   }, []);
 
-  const connect = useCallback(() => {
+  const connect = useCallback(async () => {
     if (
       wsRef.current?.readyState === WebSocket.OPEN ||
       wsRef.current?.readyState === WebSocket.CONNECTING
@@ -95,10 +103,16 @@ export function WsProvider({
       wsRef.current = null;
     }
 
+    const attempt = ++connectAttemptRef.current;
+
     try {
       dispatch({ type: "WS_CONNECTING" });
 
-      const url = getWebSocketUrl();
+      const url = await getAuthenticatedWebSocketUrl(getQueueToken);
+
+      // A newer connect() or a disconnect() happened while fetching the token
+      if (attempt !== connectAttemptRef.current) return;
+
       wsRef.current = new WebSocket(url);
 
       connectionTimeoutRef.current = setTimeout(() => {
@@ -134,18 +148,11 @@ export function WsProvider({
 
           // Handle different message types with proper typing
           switch (message.type) {
-            case "status_update": {
-              const statusEvent = message.data as StatusEvent;
-              console.debug("Status update:", statusEvent);
-              // Call the status update callback if provided
-              onStatusUpdate?.(statusEvent);
+            case "status_update":
+              onStatusUpdateRef.current?.(message.data as StatusEvent);
               break;
-            }
             case "connection_established":
-              console.debug("Connection established:", message.data);
-              break;
             case "pong":
-              console.debug("Pong received:", message.data);
               break;
             case "error":
               console.error("WebSocket error:", message.data);
@@ -162,10 +169,11 @@ export function WsProvider({
       clearTimers();
       dispatch({ type: "WS_ERROR" });
     }
-  }, [clearTimers, scheduleReconnect]);
+  }, [clearTimers, scheduleReconnect, getQueueToken]);
 
   const disconnect = useCallback(() => {
     isManualDisconnectRef.current = true;
+    connectAttemptRef.current++;
     clearTimers();
 
     if (wsRef.current) {

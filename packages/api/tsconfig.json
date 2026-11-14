@@ -1,0 +1,22 @@
+{
+  "extends": "@peas/typescript-config/base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "types": [
+      "node",
+      "vite/client"
+    ]
+  },
+  "include": [
+    "src/**/*.ts",
+    "scripts/**/*.ts",
+    "codegen.ts",
+    "vitest.config.ts",
+    "vitest.int.config.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

@@ -3,6 +3,19 @@ import { describe, expect, it } from "vitest";
 import { parseHTMLContent } from "../../html";
 
 describe("parseContentLines function", () => {
+  it("records the element each content line came from", () => {
+    const result = parseHTMLContent(`
+      <html><body><en-note>
+        <h1>Recipe Title</h1>
+        <div>2 cups flour</div>
+        <p>1 cup sugar</p>
+        <ul><li>1 egg</li></ul>
+      </en-note></body></html>
+    `);
+    expect(result.contentTags).toEqual(["div", "p", "ul"]);
+    expect(result.contents.split("\n")).toHaveLength(3);
+  });
+
   describe("Ingredient parsing", () => {
     it("should parse ingredients from consecutive lines", () => {
       const html = `

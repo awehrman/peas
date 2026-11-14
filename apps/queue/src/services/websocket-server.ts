@@ -1,8 +1,10 @@
 import type { NoteStatus } from "@peas/database";
 import { randomUUID } from "crypto";
+import type { IncomingMessage } from "http";
 import { WebSocket, WebSocketServer } from "ws";
 
 import { WEBSOCKET_CONSTANTS } from "../config/constants";
+import { isAuthorizedWebSocketRequest } from "../middleware/auth";
 
 interface StatusEvent {
   type: "status_update";
@@ -44,7 +46,11 @@ export class WebSocketManager {
   constructor(port: number = 8080) {
     this.port = port;
     try {
-      this.wss = new WebSocketServer({ port });
+      this.wss = new WebSocketServer({
+        port,
+        verifyClient: ({ req }: { req: IncomingMessage }) =>
+          isAuthorizedWebSocketRequest(req),
+      });
       this.setupEventHandlers();
       this.startHeartbeat();
       console.log(

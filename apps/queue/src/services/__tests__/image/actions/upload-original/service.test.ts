@@ -1,6 +1,6 @@
 import { promises as fs } from "fs";
 import path from "path";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import type { IServiceContainer } from "../../../../../services/container";
 import { createMockLogger } from "../../../../../test-utils/helpers";
@@ -27,10 +27,10 @@ describe("Upload Original Service", () => {
   let mockLogger: ReturnType<typeof createMockLogger>;
   let mockServiceContainer: IServiceContainer;
   let mockData: ImageJobData;
-  let mockR2: { uploadFile: ReturnType<typeof vi.fn> };
-  let mockFsAccess: ReturnType<typeof vi.fn>;
-  let mockPathExtname: ReturnType<typeof vi.fn>;
-  let mockPathParse: ReturnType<typeof vi.fn>;
+  let mockR2: { uploadFile: Mock };
+  let mockFsAccess: Mock;
+  let mockPathExtname: Mock;
+  let mockPathParse: Mock;
 
   beforeEach(() => {
     vi.clearAllMocks();

@@ -1,8 +1,7 @@
-import path from "path";
-
 import type { IServiceContainer } from "../../../../services/container";
 import type { StructuredLogger } from "../../../../types";
 import type { ImageJobData } from "../../../../workers/image/types";
+import { getLocalImageUrl } from "../../local-storage";
 
 export async function saveImage(
   data: ImageJobData,
@@ -15,21 +14,15 @@ export async function saveImage(
     logger.log(`[SAVE_IMAGE] Image path: ${data.imagePath}`);
     logger.log(`[SAVE_IMAGE] Filename: ${data.filename}`);
 
-    // Use R2 URLs if available, otherwise fall back to local paths
-    const baseUrl = process.env.IMAGE_BASE_URL || "/images";
-
+    // Use R2 URLs if available, otherwise serve the files kept on local disk
     const originalUrl =
-      data.r2OriginalUrl ||
-      data.r2Url ||
-      `${baseUrl}/${path.basename(data.originalPath)}`;
+      data.r2OriginalUrl || data.r2Url || getLocalImageUrl(data.originalPath);
     const thumbnailUrl =
-      data.r2ThumbnailUrl || `${baseUrl}/${path.basename(data.thumbnailPath)}`;
-    const crop3x2Url =
-      data.r2Crop3x2Url || `${baseUrl}/${path.basename(data.crop3x2Path)}`;
-    const crop4x3Url =
-      data.r2Crop4x3Url || `${baseUrl}/${path.basename(data.crop4x3Path)}`;
+      data.r2ThumbnailUrl || getLocalImageUrl(data.thumbnailPath);
+    const crop3x2Url = data.r2Crop3x2Url || getLocalImageUrl(data.crop3x2Path);
+    const crop4x3Url = data.r2Crop4x3Url || getLocalImageUrl(data.crop4x3Path);
     const crop16x9Url =
-      data.r2Crop16x9Url || `${baseUrl}/${path.basename(data.crop16x9Path)}`;
+      data.r2Crop16x9Url || getLocalImageUrl(data.crop16x9Path);
 
     logger.log(`[SAVE_IMAGE] Generated URLs:`);
     logger.log(`[SAVE_IMAGE] Original: ${originalUrl}`);

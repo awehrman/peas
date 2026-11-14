@@ -2,12 +2,13 @@ import { HTML_PARSING_CONSTANTS } from "./constants";
 import type { HTMLParsingOptions } from "./types";
 
 import type { ParsedHTMLFile } from "@peas/database";
+import { segmentContent } from "@peas/parser/v2";
 import { Cheerio, CheerioAPI, load } from "cheerio";
 import { parseISO } from "date-fns";
 import { Element } from "domhandler";
 
-import { LOG_MESSAGES, PROCESSING_CONSTANTS } from "../config/constants";
-import { ParsedIngredientLine, ParsedInstructionLine } from "../types";
+import { LOG_MESSAGES } from "../config/constants";
+import type { ParsedIngredientLine, ParsedInstructionLine } from "../types";
 import { formatLogMessage } from "../utils/utils";
 
 /**
@@ -46,7 +47,7 @@ export function parseHTMLContent(
     const evernoteMetadata = extractMetadata($);
 
     // Extract content
-    const contents = extractContent($, enNote);
+    const { texts: contents, tags: contentTags } = extractContent($, enNote);
 
     // Parse ingredients and instructions
     const { ingredients, instructions } = parseContentLines(contents);
@@ -57,6 +58,7 @@ export function parseHTMLContent(
       ingredients,
       instructions,
       contents: contents.join(HTML_PARSING_CONSTANTS.DEFAULTS.LINE_SEPARATOR),
+      contentTags,
       evernoteMetadata,
     };
 
@@ -152,145 +154,49 @@ function extractMetadata($: CheerioAPI): {
 }
 
 /**
- * Extract content from HTML
+ * Extract content from HTML: the text of each en-note child after the title (or of every child when there is no h1), and each child's element name.
  */
-function extractContent($: CheerioAPI, enNote: Cheerio<Element>): string[] {
+function extractContent(
+  $: CheerioAPI,
+  enNote: Cheerio<Element>
+): { texts: string[]; tags: string[] } {
   const h1 = enNote.find(HTML_PARSING_CONSTANTS.SELECTORS.H1);
-
-  if (h1.length > 0) {
-    return (
-      h1
-        .nextAll()
-        /* istanbul ignore next -- @preserve */
-        .map((i: number, el: Element) => $(el).text())
-        .get()
-    );
-  }
-
-  return (
-    enNote
-      .children()
+  const elements = h1.length > 0 ? h1.nextAll() : enNote.children();
+  return {
+    texts: elements
       /* istanbul ignore next -- @preserve */
       .map((i: number, el: Element) => $(el).text())
-      .get()
-  );
+      .get(),
+    tags: elements
+      /* istanbul ignore next -- @preserve */
+      .map((i: number, el: Element) => (el.tagName ?? "").toLowerCase())
+      .get(),
+  };
 }
 
 /**
- * Parse content lines into ingredients and instructions
+ * Files content lines into ingredient blocks and instructions with the shared DOM rules (`segmentContent` in @peas/parser), so the importer and the structure validator always agree on where a line was filed.
  */
 function parseContentLines(contents: string[]): {
   ingredients: ParsedIngredientLine[];
   instructions: ParsedInstructionLine[];
 } {
-  const ingredients: Array<{ text: string; originalLineIndex: number }>[] = [];
+  const ingredients: ParsedIngredientLine[] = [];
   const instructions: ParsedInstructionLine[] = [];
-  let currentChunk: Array<{ text: string; originalLineIndex: number }> = [];
-
-  /* istanbul ignore next -- @preserve */
-  contents.forEach((line, lineIndex) => {
-    if (isEmptyLine(line)) {
-      // End current ingredient block if we have one
-      if (currentChunk.length > 0) {
-        ingredients.push(currentChunk);
-        currentChunk = [];
-      }
-    } else if (line.length > 0) {
-      const cleanText = cleanHtmlText(line);
-
-      if (
-        cleanText &&
-        cleanText.length >= PROCESSING_CONSTANTS.MIN_INGREDIENT_TEXT_LENGTH
-      ) {
-        if (isInstructionLine(contents, lineIndex)) {
-          // Single line surrounded by empty lines - this is an instruction
-          if (
-            cleanText.length >= PROCESSING_CONSTANTS.MIN_INSTRUCTION_TEXT_LENGTH
-          ) {
-            instructions.push({
-              reference: cleanText,
-              lineIndex: instructions.length, // Start at 0 and increment for each instruction
-              parseStatus: "AWAITING_PARSING",
-            });
-          } else {
-            // Short line that doesn't qualify as instruction - treat as ingredient
-            currentChunk.push({
-              text: cleanText,
-              originalLineIndex: lineIndex,
-            });
-          }
-        } else {
-          // Line is part of a block - this is an ingredient
-          currentChunk.push({ text: cleanText, originalLineIndex: lineIndex });
-        }
-      }
-    }
-  });
-
-  // Add any remaining chunk
-  if (currentChunk.length > 0) {
-    ingredients.push(currentChunk);
-  }
-
-  // Convert ingredient chunks to ParsedIngredientLine format
-  const parsedIngredients: ParsedIngredientLine[] = [];
-
-  ingredients.forEach((block, blockIndex) => {
-    block.forEach((item, lineIndexInBlock) => {
-      parsedIngredients.push({
-        blockIndex,
-        lineIndex: lineIndexInBlock,
-        reference: item.text,
+  for (const block of segmentContent(contents)) {
+    if (block.assigned === "INGREDIENT")
+      ingredients.push({
+        blockIndex: block.blockIndex,
+        lineIndex: block.lineIndex,
+        reference: block.text,
         parseStatus: "AWAITING_PARSING",
       });
-    });
-  });
-
-  return { ingredients: parsedIngredients, instructions };
-}
-
-/**
- * Check if a line is empty or contains only break tags
- */
-function isEmptyLine(line: string): boolean {
-  return (
-    line === HTML_PARSING_CONSTANTS.DEFAULTS.EMPTY_STRING ||
-    line.includes(HTML_PARSING_CONSTANTS.PATTERNS.BR_TAG)
-  );
-}
-
-/**
- * Clean HTML text by trimming whitespace
- * Note: HTML entities are already decoded by Cheerio's .text() method
- */
-function cleanHtmlText(text: string): string {
-  return text.trim();
-}
-
-/**
- * Check if a line should be treated as an instruction
- */
-function isInstructionLine(contents: string[], lineIndex: number): boolean {
-  // Find the first non-empty line index
-  const firstNonEmptyLineIndex = contents.findIndex(
-    (line) => !isEmptyLine(line)
-  );
-
-  // If this is the first non-empty line, it should always be treated as an ingredient
-  if (lineIndex === firstNonEmptyLineIndex) {
-    return false;
+    else
+      instructions.push({
+        reference: block.text,
+        lineIndex: block.lineIndex,
+        parseStatus: "AWAITING_PARSING",
+      });
   }
-
-  /* istanbul ignore next -- @preserve */
-  const prevLine =
-    lineIndex > 0
-      ? contents[lineIndex - 1] || HTML_PARSING_CONSTANTS.DEFAULTS.EMPTY_STRING
-      : HTML_PARSING_CONSTANTS.DEFAULTS.EMPTY_STRING;
-  const nextLine =
-    /* istanbul ignore next -- @preserve */
-    lineIndex < contents.length - 1
-      ? contents[lineIndex + 1] || HTML_PARSING_CONSTANTS.DEFAULTS.EMPTY_STRING
-      : HTML_PARSING_CONSTANTS.DEFAULTS.EMPTY_STRING;
-
-  return isEmptyLine(prevLine) && isEmptyLine(nextLine);
+  return { ingredients, instructions };
 }

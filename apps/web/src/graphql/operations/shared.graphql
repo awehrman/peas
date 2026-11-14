@@ -1,0 +1,150 @@
+# Every mutation payload: success, message, and the cache effect the coordinator applies.
+fragment PayloadFields on MutationPayload {
+  success
+  message
+  effect {
+    changed {
+      typename
+      id
+    }
+    evicted {
+      typename
+      id
+    }
+    invalidatedDomains
+    lexiconRevision
+    reprocessingJobId
+  }
+}
+
+fragment NoteSourceFields on NoteSource {
+  id
+  isPrimary
+  origin
+  originalText
+  source {
+    id
+    kind
+    displayName
+    url {
+      id
+      originalUrl
+      normalizedUrl
+      siteName
+      checkStatus
+      lastCheckedAt
+      lastSuccessfulVisitAt
+      lastHttpStatus
+      lastFailureReason
+      lastFinalUrl
+    }
+    book {
+      ...BookFields
+    }
+    bookLookup {
+      id
+      status
+    }
+  }
+}
+
+fragment BookFields on Book {
+  id
+  title
+  subtitle
+  authors
+  publisher
+  publishedYear
+  isbn13
+  isbn10
+  coverId
+  matchStatus
+  openLibraryWorkKey
+}
+
+fragment CategoryEvidenceFields on CategoryEvidence {
+  lineId
+  mentionId
+  conceptId
+  conceptName
+  path {
+    type
+    conceptId
+    conceptName
+  }
+}
+
+fragment CategoryMembershipFields on CategoryMembership {
+  id
+  state
+  origin
+  decidedAt
+  evidence {
+    ...CategoryEvidenceFields
+  }
+  category {
+    id
+    name
+    slug
+    kind
+  }
+}
+
+fragment IngredientBlockFields on IngredientBlock {
+  blockIndex
+  lines {
+    id
+    blockIndex
+    lineIndex
+    reference
+    parseStatus
+    reviewStatus
+    isActive
+    parserVersion
+    lineKind
+    mentions {
+      ...MentionFields
+    }
+  }
+}
+
+fragment InstructionFields on InstructionLine {
+  id
+  lineIndex
+  text
+  isActive
+  lineKind
+}
+
+query JobStatus($jobId: ID!) {
+  job(jobId: $jobId) {
+    jobId
+    type
+    status
+    noteId
+    processedCount
+    totalCount
+    errorMessage
+    retryCount
+    startedAt
+    completedAt
+  }
+}
+
+query ImportStats {
+  importStats {
+    numberOfNotes
+    numberOfIngredients
+    numberOfParsingErrors
+  }
+}
+
+mutation CleanupAllData {
+  cleanupAllData {
+    ...PayloadFields
+    deletedCounts {
+      key
+      count
+    }
+  }
+}

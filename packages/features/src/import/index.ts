@@ -1,5 +1,6 @@
 // Context exports
 export { ImportProvider } from "./context/import-provider";
+export type { QueueTokenProvider } from "./context/queue-auth";
 export {
   ActivityProvider,
   useActivity,
@@ -37,6 +38,7 @@ export * from "./services";
 export * from "./utils/error-utils";
 export * from "./utils/upload-ui-helpers";
 export * from "./utils/activity-helpers";
+export * from "./utils/import-rows";
 
 // UI exports - ImportPage moved to web app
 
@@ -53,6 +55,7 @@ export type {
   ActivityState,
   ActivityAction,
   ImportCard,
+  ImportCardDetails,
   StepStatus,
   UploadBatch,
   WebSocketMessage,

@@ -1,4 +1,12 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  type Mock,
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 
 import { ManagerFactory } from "../../../../config/factory";
 import {
@@ -10,11 +18,11 @@ import {
 
 // Type definitions for testing
 type MockCacheManager = {
-  get: ReturnType<typeof vi.fn>;
-  set: ReturnType<typeof vi.fn>;
-  delete: ReturnType<typeof vi.fn>;
-  invalidateByPattern: ReturnType<typeof vi.fn>;
-  clearAll: ReturnType<typeof vi.fn>;
+  get: Mock;
+  set: Mock;
+  delete: Mock;
+  invalidateByPattern: Mock;
+  clearAll: Mock;
 };
 
 type ActionCacheClass = {
@@ -48,9 +56,9 @@ describe("ActionCache", () => {
       clearAll: vi.fn(),
     };
 
-    (
-      ManagerFactory.createCacheManager as ReturnType<typeof vi.fn>
-    ).mockReturnValue(mockCacheManager);
+    (ManagerFactory.createCacheManager as Mock).mockReturnValue(
+      mockCacheManager
+    );
 
     // Mock console.warn
     consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
@@ -300,6 +308,26 @@ describe("ActionCache", () => {
         "user:*"
       );
       expect(cleared).toBeGreaterThan(0);
+    });
+
+    it("should apply glob patterns to memory and send substring patterns to Redis as globs", async () => {
+      const cache = ActionCache.getInstance();
+      mockCacheManager.invalidateByPattern.mockResolvedValue(0);
+
+      await cache.set("action:parse_ingredient_line:static_v1_flour_1", {});
+      await cache.set("action:other:flour", {});
+
+      await cache.invalidateByPattern("action:parse_ingredient_line:*");
+
+      expect(
+        await cache.get("action:parse_ingredient_line:static_v1_flour_1")
+      ).toBeNull();
+      expect(await cache.get("action:other:flour")).not.toBeNull();
+
+      await cache.invalidateByPattern("other:");
+      expect(mockCacheManager.invalidateByPattern).toHaveBeenLastCalledWith(
+        "*other:*"
+      );
     });
 
     it("should handle Redis invalidation errors gracefully", async () => {

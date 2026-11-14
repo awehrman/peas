@@ -1,5 +1,8 @@
+import { getCorpusHealth } from "@peas/database";
 import { Router } from "express";
 
+import { ingredientMetrics } from "../services/ingredient/ingredient-metrics";
+import { structureShadowMetrics } from "../services/note/structure-shadow";
 import { HttpStatus } from "../types";
 import { ErrorHandler } from "../utils/error-handler";
 import {
@@ -42,6 +45,30 @@ metricsRouter.get("/snapshot", (req, res) => {
     const errorResponse = ErrorHandler.handleRouteError(
       error,
       "get_metrics_snapshot"
+    );
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse);
+  }
+});
+
+/**
+ * v2 import health (Phase 5g): live throughput and resolution from this process's last hour of parses, corpus-wide database counts (mentions by status, open discoveries, reinterpretation backlog), and what shadow structure validation has found since the process started (Phase 8.5-B).
+ */
+metricsRouter.get("/ingredients", async (_req, res) => {
+  try {
+    const corpus = await getCorpusHealth();
+    res.json({
+      success: true,
+      data: {
+        live: ingredientMetrics.summary(),
+        corpus,
+        structure: structureShadowMetrics.summary(),
+      },
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    const errorResponse = ErrorHandler.handleRouteError(
+      error,
+      "get_ingredient_metrics"
     );
     res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse);
   }

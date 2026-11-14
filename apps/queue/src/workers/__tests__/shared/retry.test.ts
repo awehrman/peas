@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import { ActionName, LogLevel } from "../../../types";
 import type { StructuredLogger } from "../../../types";
@@ -21,7 +21,7 @@ import type { BaseJobData } from "../../types";
 
 describe("Retry", () => {
   let mockLogger: {
-    log: ReturnType<typeof vi.fn>;
+    log: Mock;
   };
   let mockActionFactory: ActionFactory<BaseJobData, object>;
   let mockContext: ActionContext;

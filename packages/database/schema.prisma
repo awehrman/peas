@@ -5,13 +5,12 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["fullTextSearchPostgres"]
+  provider = "prisma-client-js"
 }
 
+// The connection URL lives in prisma.config.ts (Prisma 7)
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 
@@ -30,9 +29,16 @@ model User {
   username      String   @unique
   email         String   @unique
   passwordHash  String
+  avatarUrl     String?
   sessions Session[]
 
   userType UserType @default(USER)
+
+  verifiedMentions IngredientMention[]
+  decisions        LexiconDecision[]
+  categoryDecisions  NoteCategory[]
+  duplicateDecisions DuplicateCandidate[]
+  structureDecisions StructureProposal[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -113,16 +119,81 @@ model Note {
   errorDetails Json?
   duplicateConfidence Float? // Confidence level (0.0 to 1.0) when note is marked as duplicate
   titleSimHash String? // SimHash of the title for similarity comparison
+  /// Four 8-bit bands of titleSimHash ("0:a3"); titles within Hamming distance 3 share at least one band.
+  titleSimHashBands String[]
+  /// SHA-256 of the uploaded HTML: the same file imported again.
+  rawHtmlHash String?
+  /// SHA-256 of the normalized title, ingredient lines, and instructions.
+  contentHash String?
 
-  categories Category[]
-  tags       Tag[]
-  sources    Source[]
+  /// Soft deletion: an archived note keeps its lines, mentions, sources, and categories but is hidden by default.
+  archivedAt     DateTime?
+  archivedReason String?
+  supersededBy   Note?     @relation("NoteSupersededBy", fields: [supersededById], references: [id], onDelete: SetNull)
+  supersededById String?
+  supersedes     Note[]    @relation("NoteSupersededBy")
+
+  noteSources         NoteSource[]
+  structureProposals  StructureProposal[]
+  categoryMemberships NoteCategory[]
+  duplicateCandidates DuplicateCandidate[] @relation("DuplicateIncoming")
+  duplicateOf         DuplicateCandidate[] @relation("DuplicateExisting")
+
+  tags Tag[]
+
+  recipe Recipe?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([titleSimHash]) // Index for SimHash similarity queries
+  @@index([titleSimHashBands], type: Gin)
+  @@index([rawHtmlHash])
+  @@index([contentHash])
+  @@index([archivedAt])
   @@index([importId]) // Index for import tracking and upserts
+}
+
+enum DuplicateKind {
+  EXACT
+  LIKELY
+  POSSIBLE
+}
+
+enum DuplicateCandidateStatus {
+  PENDING
+  RESOLVED
+  DISMISSED
+}
+
+/// A possible duplicate pair found at import. Resolution is an explicit, reversible decision.
+model DuplicateCandidate {
+  id String @id @default(uuid(7)) @db.Uuid
+
+  note           Note   @relation("DuplicateIncoming", fields: [noteId], references: [id], onDelete: Cascade)
+  noteId         String
+  existingNote   Note   @relation("DuplicateExisting", fields: [existingNoteId], references: [id], onDelete: Cascade)
+  existingNoteId String
+
+  kind       DuplicateKind
+  confidence Float
+  /// What matched (DuplicateSignalsSchema).
+  signals Json
+  status  DuplicateCandidateStatus @default(PENDING)
+  /// { keep: EXISTING | INCOMING | BOTH, mergeSources } (DuplicateResolutionSchema).
+  resolution        Json?
+  /// Every row written by the resolution, so undo reverses exactly that (ResolutionEffectsSchema).
+  resolutionEffects Json?
+  resolvedAt        DateTime?
+  resolvedBy        User?     @relation(fields: [resolvedById], references: [id], onDelete: SetNull)
+  resolvedById      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([noteId, existingNoteId])
+  @@index([status, kind])
+  @@index([existingNoteId])
 }
 
 model NoteStatusEvent {
@@ -151,6 +222,54 @@ model NoteStatusEvent {
   @@index([noteId, createdAt])  // for filtering by note + time
   @@index([status, createdAt])  // for filtering by status + time
 } 
+
+enum StructureProposalStatus {
+  OPEN
+  APPROVED
+  REJECTED
+  CHANGED
+  SUPERSEDED
+}
+
+/// A line the structure validator thinks the importer misfiled (Phase 8.5), and the reviewer's decision. Keyed by content (note, position, text), so revalidating the same content finds the existing row instead of asking again.
+model StructureProposal {
+  id String @id @default(uuid(7)) @db.Uuid
+
+  note         Note   @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  noteId       String
+  contentIndex Int
+  text         String
+  /// SHA-256 of the trimmed text.
+  textHash     String
+  /// INGREDIENT or INSTRUCTION: where the importer filed it.
+  assignedKind String
+  /// StructureProposal from @peas/parser/v2 (Zod-validated): RECLASSIFY or SPLIT.
+  proposal          Json
+  /// "SECTION_HEADING", or split parts joined with "+".
+  proposedLabel     String
+  /// proposedLabel and the strongest signal ("SECTION_HEADING:COLON_HEADING"), for grouping and learning.
+  patternKey        String
+  margin            Float
+  /// BlockSignal[] (Zod-validated).
+  signals           Json
+  classifierVersion String
+
+  status       StructureProposalStatus @default(OPEN)
+  /// What the reviewer chose (the proposal, or another kind).
+  decidedLabel String?
+  decidedBy    User?                   @relation(fields: [decidedById], references: [id], onDelete: SetNull)
+  decidedById  String?
+  decidedAt    DateTime?
+  /// StructureEffects: every row written, so undo reverses exactly that.
+  effects      Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([noteId, contentIndex, textHash])
+  @@index([status, patternKey])
+}
+
 
 // prisma/schemas/images.prisma
 // Images module
@@ -182,6 +301,8 @@ model Image {
   note Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
   noteId String
   importId String? // Import session identifier for tracking and upserts
+
+  recipes Recipe[]
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -260,6 +381,15 @@ enum ReviewStatus {
   INCORRECT
 }
 
+/// What a stored line is after structure review (Phase 8.5). The importer files INGREDIENT and INSTRUCTION; a reviewer can mark a line as a heading, a note, or other text, or record that it moved to the other list (the original row is kept inactive with the kind it moved to).
+enum LineKind {
+  INGREDIENT
+  INSTRUCTION
+  SECTION_HEADING
+  NOTE
+  OTHER
+}
+
 // Parsing module
 // Contains parsed content from recipe notes
 
@@ -269,32 +399,35 @@ model ParsedIngredientLine {
   blockIndex Int
   lineIndex  Int
   reference  String
-  rule       String?
 
   parseStatus ParseStatus @default(AWAITING_PARSING)
   reviewStatus ReviewStatus @default(UNREVIEWED)
   parsedAt              DateTime?
-  parsed                ParsedSegment[]
   queueJobs QueueJob[]
 
-  ingredientReferences IngredientReference[]
+  // Ingredient mentions (one per parsed segment, or per part of a segment split on "and")
+  mentions IngredientMention[]
 
   // New field to mark lines as active/inactive
   isActive Boolean @default(true)
 
+  // The parser that produced the mentions, e.g. "v2:2.3.0"
+  parserVersion String?
+
+  /// Position in the extracted note content (Note.html split on newlines, blank lines included).
+  contentIndex Int?
+  /// The en-note child element the line came from ("div", "p", "li"), for new imports.
+  elementTag   String?
+  lineKind     LineKind @default(INGREDIENT)
+
   Note   Note?   @relation(fields: [noteId], references: [id], onDelete: Cascade)
   noteId String?
-
-  // Link to the unique line pattern
-  uniqueLinePattern   UniqueLinePattern? @relation(fields: [uniqueLinePatternId], references: [id])
-  uniqueLinePatternId String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([noteId])
   @@index([isActive])
-  @@index([uniqueLinePatternId])
   @@unique([noteId, blockIndex, lineIndex])
 }
 
@@ -310,6 +443,12 @@ model ParsedInstructionLine {
 
   isActive Boolean @default(true)
 
+  /// Position in the extracted note content (Note.html split on newlines, blank lines included).
+  contentIndex Int?
+  /// The en-note child element the line came from, for new imports.
+  elementTag   String?
+  lineKind     LineKind @default(INSTRUCTION)
+
   note   Note?   @relation(fields: [noteId], references: [id], onDelete: Cascade)
   noteId String?
   queueJobs QueueJob[]
@@ -321,79 +460,77 @@ model ParsedInstructionLine {
   @@index([isActive])
 }
 
-model ParsingRule {
-  id String @id @default(cuid())
-
-  // "#1_ingredientLine >> #3_ingredients >> #2_ingredientExpression >> #2_ingredient"
-  name String @unique
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Related parsed segments
-  parsedSegments ParsedSegment[]
-
-  @@index([name])
-}
-
-model ParsedSegment {
-  id String @id @default(cuid())
-
-  index Int
-  rule  String
-  type  String
-  value String
-  processingTime Int? // Processing time in milliseconds
-
-  ingredientLine   ParsedIngredientLine @relation(fields: [ingredientLineId], references: [id], onDelete: Cascade)
-  ingredientLineId String
-
-  // Reference to the parsing rule
-  parsingRule   ParsingRule? @relation(fields: [ruleId], references: [id])
-  ruleId        String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([ingredientLineId])
-  @@index([ruleId])
-}
-
-model UniqueLinePattern {
-  id String @id @default(cuid())
-
-  // Array of parsing rule IDs in order
-  ruleIds String[]
-
-  // Example line that matches this pattern
-  exampleLine String?
-
-  // Count of times this pattern has been seen
-  occurrenceCount Int @default(1)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Related parsed ingredient lines
-  parsedIngredientLines ParsedIngredientLine[]
-
-  @@unique([ruleIds])
-  @@index([occurrenceCount])
-} 
 
 // prisma/schemas/meta.prisma
 // Meta module
 // Contains categorization and tagging
 
+enum CategoryKind {
+  MANUAL
+  CONCEPT
+}
+
+enum CategoryAssignmentState {
+  INFERRED
+  APPROVED
+  EXCLUDED
+}
+
+enum CategoryAssignmentOrigin {
+  IMPORT
+  MANUAL
+  CONCEPT_RULE
+  DUPLICATE_MERGE
+}
+
 model Category {
   id String @id @default(cuid())
 
-  name String
+  name        String
+  slug        String       @unique
+  kind        CategoryKind @default(MANUAL)
+  description String?
 
-  notes Note[]
+  /// CONCEPT categories match notes mentioning this food or a descendant reached through `traversal`.
+  concept   FoodConcept?           @relation(fields: [conceptId], references: [id], onDelete: SetNull)
+  conceptId String?                @db.Uuid
+  traversal FoodRelationshipType[] @default([IS_A, PART_OF])
+  /// Bumped on every rule change, so memberships record the rule that produced them.
+  ruleVersion Int @default(1)
+
+  memberships NoteCategory[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([conceptId])
+}
+
+/// A note's membership in a category. Recomputation only writes INFERRED rows; APPROVED and EXCLUDED are reviewer decisions.
+model NoteCategory {
+  id String @id @default(uuid(7)) @db.Uuid
+
+  note       Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  noteId     String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  categoryId String
+
+  state  CategoryAssignmentState
+  origin CategoryAssignmentOrigin
+  /// Why a CONCEPT rule matched (CategoryEvidenceSchema).
+  evidence        Json?
+  ruleVersion     Int?
+  lexiconRevision Int?
+
+  decidedAt   DateTime?
+  decidedBy   User?     @relation(fields: [decidedById], references: [id], onDelete: SetNull)
+  decidedById String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([noteId, categoryId])
+  @@index([categoryId, state])
 }
 
 model Tag {
@@ -401,31 +538,75 @@ model Tag {
 
   name String
 
-  notes Note[]
+  notes   Note[]
+  recipes Recipe[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-} 
+}
+
 
 // prisma/schemas/source.prisma
 // Source module
-// Contains source tracking and references
+// Where a recipe came from: a web page, a book, or text that is neither (yet).
+// Notes link to sources through NoteSource; recipes read their note's sources.
+
+enum SourceKind {
+  URL
+  BOOK
+  OTHER
+}
+
+enum UrlCheckStatus {
+  UNCHECKED
+  REACHABLE
+  UNREACHABLE
+  BLOCKED
+}
+
+enum BookMatchStatus {
+  UNMATCHED
+  AUTO_MATCHED
+  CONFIRMED
+  MANUAL
+}
+
+enum BookLookupStatus {
+  PENDING
+  MATCHED
+  AMBIGUOUS
+  NO_MATCH
+  ERROR
+  LEFT_UNRESOLVED
+}
+
+enum NoteSourceOrigin {
+  EVERNOTE_IMPORT
+  DUPLICATE_MERGE
+  MANUAL
+}
 
 model Source {
   id String @id @default(cuid())
 
-  // URLs associated with this source
-  urls URL[]
-  
-  // Book information (optional)
-  book Book? @relation(fields: [bookId], references: [id])
+  kind SourceKind @default(OTHER)
+  /// Identity used for deduplication: "url:<normalized url>", "book:<bookId>", or "text:<normalized text>".
+  canonicalKey String  @unique
+  displayName  String?
+  metadata     Json?
+
+  url URL?
+
+  book   Book?   @relation(fields: [bookId], references: [id])
   bookId String?
 
-  // Notes that reference this source
-  notes Note[]
+  noteSources NoteSource[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([kind])
+  @@index([bookId])
 }
 
 model Website {
@@ -448,169 +629,751 @@ model URL {
   id String @id @default(cuid())
 
   author String?
-  url String
-  lastAccessed DateTime?
-  isBrokenLink Boolean @default(false)
+  /// The URL exactly as it appeared in the import.
+  originalUrl   String
+  /// Identity of the URL (normalizeUrl); legacy non-http rows keep their original string.
+  normalizedUrl String  @unique
+
+  checkStatus           UrlCheckStatus @default(UNCHECKED)
+  consecutiveFailures   Int            @default(0)
+  lastCheckedAt         DateTime?
+  /// Last 2xx response after permitted redirects. Reachability says nothing about whether the page still holds the recipe.
+  lastSuccessfulVisitAt DateTime?
+  lastHttpStatus        Int?
+  lastFailureReason     String?
+  lastFinalUrl          String?
+  canonicalUrl          String?
 
   // Website this URL belongs to
   website Website? @relation(fields: [websiteId], references: [id])
   websiteId String?
 
-  // Source this URL belongs to
-  source Source @relation(fields: [sourceId], references: [id])
-  sourceId String
+  source   Source @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  sourceId String @unique
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([url])
-  @@index([lastAccessed])
-  @@index([isBrokenLink])
+  @@index([originalUrl])
+  @@index([lastFinalUrl])
+  @@index([checkStatus])
+  @@index([lastCheckedAt])
 }
 
+/// A work. Edition fields (ISBNs, edition key) are set only with evidence for that edition.
 model Book {
   id String @id @default(cuid())
 
-  title String
-  author String?
-  publisher String?
-  publicationDate DateTime?
-  isbn String?
+  title         String
+  subtitle      String?
+  authors       String[]
+  publisher     String?
+  publishedYear Int?
+
+  isbn10                String?
+  isbn13                String?
+  openLibraryWorkKey    String? @unique
+  openLibraryEditionKey String?
+  coverId               Int?
+
+  matchStatus   BookMatchStatus @default(UNMATCHED)
+  /// The source text this book was first matched from.
+  originalTitle String?
+  provenance    Json?
 
   sources Source[]
+  lookups BookLookup[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-} 
 
-// prisma/schemas/ingredients.prisma
-model Ingredient {
-  id               String               @id @default(cuid())
-  name             String
-  plural           String?
-  isReviewed       Boolean              @default(false)
-  reviewedAt       DateTime?
-  isComposedIngredient Boolean           @default(false) // Indicates if this ingredient can also be a recipe
-
-  // Alias names (e.g. "Granny Smith")
-  aliases          Alias[]
-
-  // Tag-style properties (e.g. dairy, nut, vegan, etc.)
-  properties       IngredientProperty[]
-
-  // Optional substitutions (self-relations)
-  substitutions    Ingredient[]         @relation("Substitutions")
-  substitutedBy    Ingredient[]         @relation("Substitutions")
-
-  // Variant system (self-relation to parent ingredient)
-  variants         Ingredient[]         @relation("Variants")
-  parentIngredient Ingredient?          @relation("Variants", fields: [parentIngredientId], references: [id])
-  parentIngredientId String?
-
-  isChildVariant   Boolean              @default(false) // true if this is a variant of another
-
-  // Category (e.g. "fruit", "meat")
-  categoryId       String?
-  category         IngredientCategory?  @relation(fields: [categoryId], references: [id])
-
-  // Tags (flexible labeling like "low-carb", "breakfast")
-  tags             IngredientTag[]
-
-  // References to where this ingredient was found
-  references       IngredientReference[]
-
-  // Brands (many-to-many)
-  brands           Brand[]              @relation("IngredientBrands")
-
-  createdAt        DateTime             @default(now())
-  updatedAt        DateTime             @updatedAt
+  @@index([isbn13])
+  @@index([isbn10])
 }
 
-model Alias {
-  id           String     @id @default(cuid())
-  name         String
-  plural       String?
-  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
-  ingredientId String
+/// One bibliographic lookup per distinct source text, so a cookbook cited by hundreds of notes is looked up once.
+model BookLookup {
+  id String @id @default(uuid(7)) @db.Uuid
+
+  queryKey String           @unique
+  query    String
+  status   BookLookupStatus @default(PENDING)
+  /// Ranked candidates with their matching evidence (BookCandidatesSchema).
+  candidates  Json?
+  provider    String    @default("openlibrary")
+  fetchedAt   DateTime?
+  attempts    Int       @default(0)
+  errorReason String?
+
+  book   Book?   @relation(fields: [bookId], references: [id], onDelete: SetNull)
+  bookId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
 }
 
-model IngredientProperty {
-  id            String        @id @default(cuid())
-  ingredient    Ingredient    @relation(fields: [ingredientId], references: [id])
-  ingredientId  String
-  propertyType  PropertyType
+model NoteSource {
+  id String @id @default(uuid(7)) @db.Uuid
+
+  note     Note   @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  noteId   String
+  source   Source @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  sourceId String
+
+  /// The source string as it appeared on this note.
+  originalText String?
+  /// At most one per note (partial unique index in the migration).
+  isPrimary    Boolean          @default(false)
+  origin       NoteSourceOrigin @default(EVERNOTE_IMPORT)
+
+  createdAt DateTime @default(now())
+
+  @@unique([noteId, sourceId])
+  @@index([sourceId])
 }
 
-// Track where ingredients are found in parsed lines
-model IngredientReference {
-  id                String      @id @default(cuid())
-  
-  // The ingredient that was found
-  ingredient        Ingredient  @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
-  ingredientId      String
-  
-  // The parsed line where it was found
-  parsedLine        ParsedIngredientLine @relation(fields: [parsedLineId], references: [id], onDelete: Cascade)
-  parsedLineId      String
-  
-  // The segment within the line where it was found
-  segmentIndex      Int         // Index within the parsed segments
-  
-  // Context from the original line
-  reference         String      // The full original text (e.g., "2 cups flour")
-  noteId            String?     // Optional link to the note
-  
-  createdAt         DateTime    @default(now())
-  updatedAt         DateTime    @updatedAt
 
-  @@unique([ingredientId, parsedLineId, segmentIndex])
-  @@index([ingredientId])
-  @@index([parsedLineId])
-  @@index([noteId])
-}
-
-enum PropertyType {
-  // Dietary
-  VEGAN
-  VEGETARIAN
-  GLUTEN_FREE
-
-  // Core types
-  MEAT
-  FISH
-  DAIRY
-  EGG
-  GRAIN
-  LEGUME
-  FRUIT
-  VEGETABLE
-  HERB
-  SPICE
-
-  // Allergens
-  NUTS
-  SHELLFISH
-  SOY
-  SESAME
-  CORN
-  ALCOHOL
-}
-
-model IngredientCategory {
-  id          String       @id @default(cuid())
-  name        String
-  ingredients Ingredient[]
-}
+// prisma/schemas/tags-and-brands.prisma
+// Ingredient tags and brands, linked to food concepts and products (ontology.prisma).
 
 model IngredientTag {
-  id           String       @id @default(cuid())
-  name         String       @unique
-  ingredients  Ingredient[] // Many-to-many relation
+  id       String        @id @default(cuid())
+  name     String        @unique
+  concepts FoodConcept[]
 }
 
 model Brand {
-  id          String        @id @default(cuid())
-  name        String        @unique
-  ingredients Ingredient[] @relation("IngredientBrands")
+  id       String        @id @default(cuid())
+  name     String        @unique
+  products FoodProduct[]
+}
+
+
+// prisma/schemas/recipes.prisma
+// Recipes module
+// A recipe is a curated note: it keeps the note as provenance and reuses
+// the note's parsed ingredient and instruction lines.
+
+model Recipe {
+  id String @id @default(cuid())
+
+  title String
+
+  note   Note   @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  noteId String @unique
+
+  image   Image?  @relation(fields: [imageId], references: [id], onDelete: SetNull)
+  imageId String?
+
+  /// Categories and sources are read through the note (NoteCategory, NoteSource).
+  tags Tag[]
+
+  /// Food concepts that this recipe makes, e.g. a "garam masala" recipe (FoodConcept.isComposed).
+  composedConcepts FoodConcept[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([title])
+}
+
+
+// prisma/schemas/ontology.prisma
+// Food ontology, lexicon, and ingredient mentions (v2 parser, Phase 2).
+//
+// Ids are time-ordered UUIDs (v7) stored as native uuid columns. Columns that
+// point at legacy tables (Recipe, Brand, IngredientTag, ParsedIngredientLine,
+// User) stay text because those tables use cuid ids.
+//
+// The migration adds constraints Prisma cannot express (pg_trgm index, CHECK
+// constraints, a partial index). `prisma db push` would drop them; always use
+// migrations. Enum value lists are mirrored in @peas/parser/v2 (ontology/types.ts,
+// knowledge/schemas.ts) and checked by the database tests.
+
+enum ConceptStatus {
+  PROPOSED
+  VERIFIED
+  DEPRECATED
+}
+
+enum EntryStatus {
+  PROPOSED
+  ACTIVE
+  DEPRECATED
+}
+
+enum LexiconRole {
+  FOOD
+  ATTRIBUTE
+  PREPARATION
+  DEGREE
+  MEASUREMENT_MODIFIER
+  INSTRUCTION
+}
+
+enum LexiconTermKind {
+  CANONICAL
+  ALIAS
+  PLURAL
+  REGIONAL
+  ABBREVIATION
+  VARIANT
+}
+
+enum FoodRelationshipType {
+  IS_A
+  PART_OF
+  DERIVED_FROM
+  PROCESSED_FROM
+}
+
+enum AttributeValueType {
+  ENUM
+  NUMBER
+  BOOLEAN
+  TEXT
+}
+
+enum ClassificationKind {
+  FOOD_GROUP
+  DIETARY
+  ALLERGEN
+  CATEGORY
+  CERTIFICATION
+}
+
+enum TriState {
+  TRUE
+  FALSE
+  UNKNOWN
+}
+
+enum ValueSource {
+  LEGACY
+  MANUAL
+  ASSERTED
+  INFERRED
+}
+
+enum ResolutionStatus {
+  UNRESOLVED
+  AUTO_RESOLVED
+  NEEDS_REVIEW
+  VERIFIED
+}
+
+enum ParseMode {
+  CONSERVATIVE
+  EXPLORATORY
+}
+
+enum PrepPosition {
+  PRE_HEAD
+  POST_HEAD
+}
+
+enum DiscoveryType {
+  UNKNOWN_FOOD_PHRASE
+  UNKNOWN_MODIFIER
+  ATTRIBUTE_INTERPRETATION
+  IDENTITY_DECISION
+  AMBIGUOUS_MATCH
+  RELATIONSHIP_SUGGESTION
+  STRUCTURAL_PATTERN
+  VERIFIED_DRIFT
+}
+
+enum DiscoveryStatus {
+  OPEN
+  DEFERRED
+  RESOLVED
+  REJECTED
+}
+
+enum DecisionType {
+  MAP_TO_CONCEPT
+  CREATE_CONCEPT
+  CONCEPT_PLUS_ATTRIBUTE
+  CLASSIFY_MODIFIER
+  ADD_ATTRIBUTE_VALUE
+  ADD_RELATIONSHIP
+  MARK_AMBIGUOUS
+  IGNORE_TOKEN
+  REJECT
+  MERGE_CONCEPTS
+  CORRECT_MENTION
+  APPROVE_CONCEPT
+  EDIT_CONCEPT
+  EDIT_ENTRY
+  REVERT
+}
+
+enum LegacyMappingStatus {
+  PENDING
+  MAPPED
+  NEEDS_REVIEW
+  SKIPPED
+}
+
+/// A food identity, e.g. "chicken thigh" or "granny smith apple". Names live in LexiconEntry rows.
+model FoodConcept {
+  id               String        @id @default(uuid(7)) @db.Uuid
+  canonicalName    String
+  slug             String        @unique
+  status           ConceptStatus @default(PROPOSED)
+  description      String?
+  isComposed       Boolean       @default(false)
+  composedRecipe   Recipe?       @relation(fields: [composedRecipeId], references: [id], onDelete: SetNull)
+  composedRecipeId String?
+  /// Set when the concept is deprecated by a merge.
+  mergedInto       FoodConcept?  @relation("ConceptMergedInto", fields: [mergedIntoId], references: [id], onDelete: SetNull)
+  mergedIntoId     String?       @db.Uuid
+  mergedFrom       FoodConcept[] @relation("ConceptMergedInto")
+
+  entries           LexiconEntry[]
+  outgoing          FoodRelationship[]        @relation("RelationshipSource")
+  incoming          FoodRelationship[]        @relation("RelationshipTarget")
+  attributes        ConceptAttribute[]
+  applicability     AttributeApplicability[]
+  classifications   FoodClassification[]
+  substitutionsFrom FoodSubstitution[]        @relation("SubstituteFrom")
+  substitutionsTo   FoodSubstitution[]        @relation("SubstituteTo")
+  products          FoodProduct[]
+  tags              IngredientTag[]
+  mentions          IngredientMention[]
+  survivorMerges    ConceptMergeRecord[]      @relation("MergeSurvivor")
+  mergedMerges      ConceptMergeRecord[]      @relation("MergeMerged")
+  legacyMappings    LegacyIngredientMapping[]
+  recipeCategories  Category[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([canonicalName])
+}
+
+/// One known expression and the role it plays, e.g. "chicken thighs" (FOOD, PLURAL of chicken thigh) or "finely" (DEGREE, valueKey fine).
+model LexiconEntry {
+  id                 String                @id @default(uuid(7)) @db.Uuid
+  /// Original casing and punctuation.
+  text               String
+  /// normalizeText(text).text from @peas/parser/v2.
+  normalized         String
+  /// entryMatchKey(text): lowercased tokens joined by spaces; what the parser compares.
+  matchKey           String
+  tokenCount         Int
+  role               LexiconRole
+  /// FOOD entries only.
+  kind               LexiconTermKind?
+  locale             String?
+  status             EntryStatus           @default(PROPOSED)
+  concept            FoodConcept?          @relation(fields: [conceptId], references: [id], onDelete: Cascade)
+  conceptId          String?               @db.Uuid
+  attributeValue     AttributeValue?       @relation(fields: [attributeValueId], references: [id], onDelete: Cascade)
+  attributeValueId   String?               @db.Uuid
+  preparation        PreparationOperation? @relation(fields: [preparationId], references: [id], onDelete: Cascade)
+  preparationId      String?               @db.Uuid
+  /// DEGREE, MEASUREMENT_MODIFIER, and INSTRUCTION targets, e.g. "fine", "packed", "divided".
+  valueKey           String?
+  /// food:<conceptId>, attr:<attributeValueId>, prep:<preparationId>, or <role>:<valueKey> (decision D4).
+  targetKey          String
+  normalizerVersion  String
+  revisionAddedRef   LexiconRevision       @relation("EntryRevisionAdded", fields: [revisionAdded], references: [id])
+  revisionAdded      Int
+  revisionRetiredRef LexiconRevision?      @relation("EntryRevisionRetired", fields: [revisionRetired], references: [id])
+  revisionRetired    Int?
+  decision           LexiconDecision?      @relation(fields: [decisionId], references: [id], onDelete: SetNull)
+  decisionId         String?               @db.Uuid
+
+  mentionAttributes MentionAttribute[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([matchKey, targetKey])
+  @@index([matchKey])
+  @@index([status, role])
+  @@index([conceptId])
+}
+
+/// An attribute dimension, e.g. bone, color, fat_content.
+model AttributeDefinition {
+  id            String                   @id @default(uuid(7)) @db.Uuid
+  key           String                   @unique
+  name          String
+  valueType     AttributeValueType       @default(ENUM)
+  values        AttributeValue[]
+  applicability AttributeApplicability[]
+}
+
+/// One value of a dimension, e.g. bone=boneless.
+model AttributeValue {
+  id           String              @id @default(uuid(7)) @db.Uuid
+  definition   AttributeDefinition @relation(fields: [definitionId], references: [id], onDelete: Cascade)
+  definitionId String              @db.Uuid
+  key          String
+  label        String
+
+  entries           LexiconEntry[]
+  conceptAttributes ConceptAttribute[]
+  mentionAttributes MentionAttribute[]
+
+  @@unique([definitionId, key])
+}
+
+/// The dimension applies to this concept and its IS_A / PART_OF descendants.
+model AttributeApplicability {
+  definition   AttributeDefinition @relation(fields: [definitionId], references: [id], onDelete: Cascade)
+  definitionId String              @db.Uuid
+  concept      FoodConcept         @relation(fields: [conceptId], references: [id], onDelete: Cascade)
+  conceptId    String              @db.Uuid
+
+  @@id([definitionId, conceptId])
+}
+
+/// Attributes that characterize the concept itself, e.g. buttermilk has fat_content=low.
+model ConceptAttribute {
+  concept          FoodConcept    @relation(fields: [conceptId], references: [id], onDelete: Cascade)
+  conceptId        String         @db.Uuid
+  attributeValue   AttributeValue @relation(fields: [attributeValueId], references: [id], onDelete: Cascade)
+  attributeValueId String         @db.Uuid
+  source           ValueSource    @default(MANUAL)
+
+  @@id([conceptId, attributeValueId])
+}
+
+/// A preparation operation, e.g. mince, dice, sift.
+model PreparationOperation {
+  id    String @id @default(uuid(7)) @db.Uuid
+  key   String @unique
+  label String
+
+  entries      LexiconEntry[]
+  preparations MentionPreparation[]
+}
+
+/// Directed edge from the more specific concept (source) to the more general or originating one (target).
+model FoodRelationship {
+  id         String               @id @default(uuid(7)) @db.Uuid
+  source     FoodConcept          @relation("RelationshipSource", fields: [sourceId], references: [id], onDelete: Cascade)
+  sourceId   String               @db.Uuid
+  target     FoodConcept          @relation("RelationshipTarget", fields: [targetId], references: [id], onDelete: Cascade)
+  targetId   String               @db.Uuid
+  type       FoodRelationshipType
+  status     EntryStatus          @default(PROPOSED)
+  decision   LexiconDecision?     @relation(fields: [decisionId], references: [id], onDelete: SetNull)
+  decisionId String?              @db.Uuid
+  createdAt  DateTime             @default(now())
+
+  @@unique([sourceId, targetId, type])
+  @@index([targetId, type])
+}
+
+/// An explicit classification, e.g. DAIRY TRUE or ALLERGEN_PEANUT FALSE. Inherited values are computed at read time.
+model FoodClassification {
+  id        String             @id @default(uuid(7)) @db.Uuid
+  concept   FoodConcept        @relation(fields: [conceptId], references: [id], onDelete: Cascade)
+  conceptId String             @db.Uuid
+  kind      ClassificationKind
+  /// DAIRY, GLUTEN_FREE, ALLERGEN_PEANUT, CATEGORY:<name>
+  key       String
+  value     TriState           @default(UNKNOWN)
+  source    ValueSource        @default(MANUAL)
+  note      String?
+
+  @@unique([conceptId, key])
+  @@index([key, value])
+}
+
+/// A contextual substitution, kept out of FoodRelationship on purpose.
+model FoodSubstitution {
+  id            String      @id @default(uuid(7)) @db.Uuid
+  fromConcept   FoodConcept @relation("SubstituteFrom", fields: [fromConceptId], references: [id], onDelete: Cascade)
+  fromConceptId String      @db.Uuid
+  toConcept     FoodConcept @relation("SubstituteTo", fields: [toConceptId], references: [id], onDelete: Cascade)
+  toConceptId   String      @db.Uuid
+  /// "1:1", "3/4 cup per cup"
+  ratio         String?
+  note          String?
+
+  @@unique([fromConceptId, toConceptId])
+}
+
+/// A branded product, e.g. "Kerrygold" butter.
+model FoodProduct {
+  id        String       @id @default(uuid(7)) @db.Uuid
+  name      String
+  brand     Brand?       @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  brandId   String?
+  concept   FoodConcept? @relation(fields: [conceptId], references: [id], onDelete: SetNull)
+  conceptId String?      @db.Uuid
+
+  @@unique([brandId, name])
+}
+
+/// One ingredient mention: a segment of a parsed line, its syntax, and how it resolved.
+model IngredientMention {
+  id                String               @id @default(uuid(7)) @db.Uuid
+  parsedLine        ParsedIngredientLine @relation(fields: [parsedLineId], references: [id], onDelete: Cascade)
+  parsedLineId      String
+  segmentIndex      Int
+  /// 0 unless "and" split the segment into several foods ("salt and pepper": salt is part 0, pepper part 1).
+  partIndex         Int                  @default(0)
+  /// Segment (or part) text from the raw line.
+  rawText           String
+  normalizedText    String
+  spanStart         Int
+  spanEnd           Int
+  /// IngredientSegmentSyntax plus line context (Zod-validated).
+  syntax            Json
+  /// Quantity (Zod-validated), denormalized for queries.
+  quantity          Json?
+  concept           FoodConcept?         @relation(fields: [conceptId], references: [id], onDelete: SetNull)
+  conceptId         String?              @db.Uuid
+  /// Resolution (Zod-validated): ranked candidates, reasons, unresolved spans.
+  resolution        Json
+  resolutionStatus  ResolutionStatus     @default(UNRESOLVED)
+  score             Float?
+  mode              ParseMode            @default(CONSERVATIVE)
+  parserVersion     String
+  normalizerVersion String
+  resolverVersion   String
+  lexiconRevision   Int
+  verifiedAt        DateTime?
+  verifiedBy        User?                @relation(fields: [verifiedById], references: [id], onDelete: SetNull)
+  verifiedById      String?
+
+  attributes   MentionAttribute[]
+  preparations MentionPreparation[]
+  modifiers    MentionModifier[]
+  evidence     DiscoveryEvidence[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([parsedLineId, segmentIndex, partIndex])
+  /// Trigram index for preview prefiltering (decision D20); needs the pg_trgm extension created in the migration.
+  @@index([normalizedText(ops: raw("gin_trgm_ops"))], type: Gin, map: "ingredient_mention_normalized_trgm")
+  @@index([conceptId])
+  @@index([resolutionStatus])
+  @@index([lexiconRevision])
+  @@index([parserVersion])
+}
+
+model MentionAttribute {
+  mention          IngredientMention @relation(fields: [mentionId], references: [id], onDelete: Cascade)
+  mentionId        String            @db.Uuid
+  attributeValue   AttributeValue    @relation(fields: [attributeValueId], references: [id], onDelete: Cascade)
+  attributeValueId String            @db.Uuid
+  lexiconEntry     LexiconEntry?     @relation(fields: [lexiconEntryId], references: [id], onDelete: SetNull)
+  lexiconEntryId   String?           @db.Uuid
+  /// ASSERTED (in the text), INFERRED, or MANUAL.
+  source           ValueSource
+  spanStart        Int?
+  spanEnd          Int?
+
+  @@id([mentionId, attributeValueId])
+}
+
+model MentionPreparation {
+  mention       IngredientMention    @relation(fields: [mentionId], references: [id], onDelete: Cascade)
+  mentionId     String               @db.Uuid
+  order         Int
+  preparation   PreparationOperation @relation(fields: [preparationId], references: [id], onDelete: Cascade)
+  preparationId String               @db.Uuid
+  degreeKey     String?
+  position      PrepPosition
+  spanStart     Int
+  spanEnd       Int
+
+  @@id([mentionId, order])
+}
+
+/// MEASUREMENT_MODIFIER and INSTRUCTION values on a mention.
+model MentionModifier {
+  mention   IngredientMention @relation(fields: [mentionId], references: [id], onDelete: Cascade)
+  mentionId String            @db.Uuid
+  order     Int
+  role      LexiconRole
+  valueKey  String
+  spanStart Int
+  spanEnd   Int
+
+  @@id([mentionId, order])
+}
+
+/// Something the review queue should look at, deduplicated by (type, key).
+model Discovery {
+  id                   String              @id @default(uuid(7)) @db.Uuid
+  type                 DiscoveryType
+  /// Normalized phrase, bigram, or structural signature.
+  key                  String
+  /// DiscoveryPayload (Zod discriminated union by type).
+  payload              Json
+  status               DiscoveryStatus     @default(OPEN)
+  mentionCount         Int                 @default(0)
+  distinctNoteCount    Int                 @default(0)
+  priority             Float               @default(0)
+  firstSeenRevision    Int
+  lastSeenRevision     Int
+  resolvedByDecision   LexiconDecision?    @relation("DiscoveryResolvedBy", fields: [resolvedByDecisionId], references: [id], onDelete: SetNull)
+  resolvedByDecisionId String?             @db.Uuid
+  evidence             DiscoveryEvidence[]
+  decisions            LexiconDecision[]   @relation("DecisionDiscovery")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([type, key])
+  @@index([status, priority])
+}
+
+model DiscoveryEvidence {
+  discovery   Discovery         @relation(fields: [discoveryId], references: [id], onDelete: Cascade)
+  discoveryId String            @db.Uuid
+  mention     IngredientMention @relation(fields: [mentionId], references: [id], onDelete: Cascade)
+  mentionId   String            @db.Uuid
+  /// Denormalized for distinct-note counts.
+  noteId      String?
+  spanStart   Int
+  spanEnd     Int
+
+  @@id([discoveryId, mentionId])
+  @@index([mentionId])
+}
+
+/// A reviewed knowledge change. Every decision gets its own revision.
+model LexiconDecision {
+  id           String           @id @default(uuid(7)) @db.Uuid
+  type         DecisionType
+  /// DecisionPayload (Zod discriminated union by type).
+  payload      Json
+  /// DecisionEffects: ids created, updated, or deprecated; used by REVERT.
+  effects      Json
+  discovery    Discovery?       @relation("DecisionDiscovery", fields: [discoveryId], references: [id], onDelete: SetNull)
+  discoveryId  String?          @db.Uuid
+  user         User             @relation(fields: [userId], references: [id])
+  userId       String
+  revisionRef  LexiconRevision  @relation(fields: [revision], references: [id])
+  revision     Int              @unique
+  revertedBy   LexiconDecision? @relation("DecisionRevertedBy", fields: [revertedById], references: [id], onDelete: SetNull)
+  revertedById String?          @unique @db.Uuid
+  reverts      LexiconDecision? @relation("DecisionRevertedBy")
+
+  entries             LexiconEntry[]
+  relationships       FoodRelationship[]
+  resolvedDiscoveries Discovery[]          @relation("DiscoveryResolvedBy")
+  merges              ConceptMergeRecord[]
+  /// Mentions whose reading this decision changed, in the request and in background reinterpretation; the health page's "taught to fixed".
+  mentionsChanged     Int                  @default(0)
+
+  createdAt DateTime @default(now())
+}
+
+/// Monotonic knowledge version. Rows are only inserted, never updated.
+model LexiconRevision {
+  id        Int      @id @default(autoincrement())
+  /// "decision:<id>", "seed:<name>", "legacy-import"
+  reason    String
+  createdAt DateTime @default(now())
+
+  entriesAdded   LexiconEntry[]   @relation("EntryRevisionAdded")
+  entriesRetired LexiconEntry[]   @relation("EntryRevisionRetired")
+  decision       LexiconDecision?
+}
+
+model ConceptMergeRecord {
+  id         String          @id @default(uuid(7)) @db.Uuid
+  survivor   FoodConcept     @relation("MergeSurvivor", fields: [survivorId], references: [id], onDelete: Cascade)
+  survivorId String          @db.Uuid
+  merged     FoodConcept     @relation("MergeMerged", fields: [mergedId], references: [id], onDelete: Cascade)
+  mergedId   String          @db.Uuid
+  decision   LexiconDecision @relation(fields: [decisionId], references: [id], onDelete: Cascade)
+  decisionId String          @db.Uuid
+  /// The merged concept's entries, relationships, and classifications before the merge.
+  snapshot   Json
+  createdAt  DateTime        @default(now())
+}
+
+/// Where a legacy Ingredient row went. legacyIngredientId is plain text so it survives the Phase 7 drop.
+model LegacyIngredientMapping {
+  legacyIngredientId String              @id
+  concept            FoodConcept?        @relation(fields: [conceptId], references: [id], onDelete: SetNull)
+  conceptId          String?             @db.Uuid
+  status             LegacyMappingStatus @default(PENDING)
+  note               String?
+  migratedAt         DateTime?
+}
+
+enum ReinterpretKind {
+  /// Lines a lexicon decision can affect, re-resolved at a newer revision.
+  REINTERPRET_BY_REVISION
+  /// Lines parsed by another parser version (Phase 6 grammar changes).
+  REPARSE_BY_VERSION
+}
+
+/// One background reinterpretation (Phase 5). The reinterpret worker fans it out into batch jobs and counts progress here; the web app polls it through Query.job.
+model ReinterpretRun {
+  id             String          @id @default(uuid(7)) @db.Uuid
+  /// Shared with the BullMQ jobs, e.g. "reinterpret-15" (batches are "reinterpret-15-3").
+  jobId          String          @unique
+  kind           ReinterpretKind
+  revision       Int?
+  parserVersion  String?
+  /// { phrases: string[], conceptIds: string[] } for REINTERPRET_BY_REVISION.
+  scope          Json?
+  status         QueueJobStatus  @default(PENDING)
+  totalLines     Int             @default(0)
+  processedLines Int             @default(0)
+  batchCount     Int             @default(0)
+  completedBatches Int           @default(0)
+  failedBatches  Int             @default(0)
+  errorMessage   String?
+  startedAt      DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@index([status])
+}
+
+/// A point-in-time copy of the corpus health numbers, for trends on /teach/health. Written by the daily snapshot job and after every reinterpretation or reparse run.
+model CorpusHealthSnapshot {
+  id                    String   @id @default(uuid(7)) @db.Uuid
+  takenAt               DateTime @default(now())
+  /// SCHEDULED, REINTERPRET, REPARSE, or MANUAL.
+  trigger               String
+  parserVersion         String
+  lexiconRevision       Int
+  totalLines            Int
+  totalMentions         Int
+  /// { AUTO_RESOLVED: n, NEEDS_REVIEW: n, UNRESOLVED: n, VERIFIED: n }
+  byResolutionStatus    Json
+  /// { COMPLETED_SUCCESSFULLY: n, COMPLETED_WITH_ERROR: n, AWAITING_PARSING: n }
+  byParseStatus         Json
+  /// { "2.1.0": { total: n, unresolved: n } }
+  byParserVersion       Json
+  /// { UNKNOWN_FOOD_PHRASE: n, STRUCTURAL_PATTERN: n, ... }
+  openDiscoveriesByType Json
+  verifiedCount         Int
+  avgCandidates         Float
+
+  @@index([takenAt])
+}
+
+/// Corpus-wide usage computed in the background (Phase 8-D), so the dashboard never aggregates every mention on request. Taken with every health snapshot and when the newest one is stale.
+model CorpusAnalyticsSnapshot {
+  id              String   @id @default(uuid(7)) @db.Uuid
+  takenAt         DateTime @default(now())
+  /// SCHEDULED, REINTERPRET, REPARSE, MANUAL, or STALE (refreshed after a request found it out of date).
+  trigger         String
+  lexiconRevision Int
+  /// CorpusAnalyticsRecord (Zod-validated).
+  payload         Json
+
+  @@index([takenAt])
 }
 

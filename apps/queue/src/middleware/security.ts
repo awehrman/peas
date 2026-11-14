@@ -28,17 +28,26 @@ interface RateLimitStore {
   };
 }
 
-const rateLimitStore: RateLimitStore = {};
+export interface MiddlewareSkipOptions {
+  /** Requests this returns true for bypass the middleware */
+  skip?: (req: Request) => boolean;
+}
 
 export function createRateLimitMiddleware(
   windowMs: number = 15 * 60 * 1000, // 15 minutes
-  maxRequests: number = 100
+  maxRequests: number = 100,
+  { skip }: MiddlewareSkipOptions = {}
 ) {
+  // Each limiter counts separately, so a route can have its own budget
+  const rateLimitStore: RateLimitStore = {};
+
   return function rateLimitMiddleware(
     req: Request,
     res: Response,
     next: NextFunction
   ) {
+    if (skip?.(req)) return next();
+
     const key = req.ip || "unknown";
     const now = Date.now();
 
@@ -219,16 +228,36 @@ export function configureCORS(
   };
 }
 
+/**
+ * Parses a comma-separated CORS_ALLOWED_ORIGINS value, falling back to the
+ * local development origins when it is unset or empty.
+ */
+export function parseAllowedOrigins(value: string | undefined): string[] {
+  const origins = (value ?? "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter((origin) => origin.length > 0);
+
+  return origins.length > 0
+    ? origins
+    : [...SECURITY_CONSTANTS.CORS.ALLOWED_ORIGINS];
+}
+
 // ============================================================================
 // REQUEST SIZE LIMITS
 // ============================================================================
 
-export function validateRequestSize(maxSizeBytes: number = 10 * 1024 * 1024) {
+export function validateRequestSize(
+  maxSizeBytes: number = 10 * 1024 * 1024,
+  { skip }: MiddlewareSkipOptions = {}
+) {
   return function requestSizeMiddleware(
     req: Request,
     res: Response,
     next: NextFunction
   ) {
+    if (skip?.(req)) return next();
+
     const contentLength = parseInt(req.headers["content-length"] || "0");
 
     if (contentLength > maxSizeBytes) {

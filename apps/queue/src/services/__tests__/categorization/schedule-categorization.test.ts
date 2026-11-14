@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import type { StructuredLogger } from "../../../types";
 
@@ -24,10 +24,10 @@ describe("Schedule Categorization Service", () => {
       event: Record<string, unknown>
     ) => Promise<Record<string, unknown>>;
   };
-  let mockAddStatusEventAndBroadcast: ReturnType<typeof vi.fn>;
-  let mockCreateQueue: ReturnType<typeof vi.fn>;
-  let mockCreateCategorizationJobData: ReturnType<typeof vi.fn>;
-  let mockQueue: { add: ReturnType<typeof vi.fn> };
+  let mockAddStatusEventAndBroadcast: Mock;
+  let mockCreateQueue: Mock;
+  let mockCreateCategorizationJobData: Mock;
+  let mockQueue: { add: Mock };
   let scheduleCategorizationJob: (
     noteId: string,
     importId: string,
@@ -106,6 +106,7 @@ describe("Schedule Categorization Service", () => {
         "determine_category",
         mockJobData,
         {
+          jobId: mockJobData.jobId,
           removeOnComplete: 100,
           removeOnFail: 50,
           attempts: 3,
@@ -380,7 +381,7 @@ describe("Schedule Categorization Service", () => {
       );
     });
 
-    it("should handle undefined job ID from queue", async () => {
+    it("creates the QueueJob row before the worker can pick the job up", async () => {
       // Arrange
       const noteId = "test-note-123";
       const importId = "test-import-456";
@@ -394,9 +395,17 @@ describe("Schedule Categorization Service", () => {
           scheduledAt: "2023-01-01T00:00:00.000Z",
         },
       };
-
+      const { createQueueJob } = await import("@peas/database");
+      const calls: string[] = [];
+      vi.mocked(createQueueJob).mockImplementation(async () => {
+        calls.push("createQueueJob");
+        return {} as Awaited<ReturnType<typeof createQueueJob>>;
+      });
       mockCreateCategorizationJobData.mockReturnValue(mockJobData);
-      mockQueue.add.mockResolvedValue({ id: undefined }); // Job ID is undefined
+      mockQueue.add.mockImplementation(async () => {
+        calls.push("queue.add");
+        return { id: mockJobData.jobId };
+      });
 
       // Act
       await scheduleCategorizationJob(
@@ -407,11 +416,9 @@ describe("Schedule Categorization Service", () => {
       );
 
       // Assert
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        `[SCHEDULE_CATEGORIZATION] Warning: Job ID is undefined, skipping QueueJob creation`
-      );
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        `[SCHEDULE_CATEGORIZATION] Successfully scheduled categorization for note: ${noteId}`
+      expect(calls).toEqual(["createQueueJob", "queue.add"]);
+      expect(vi.mocked(createQueueJob)).toHaveBeenCalledWith(
+        expect.objectContaining({ jobId: mockJobData.jobId, noteId })
       );
     });
 

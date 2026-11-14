@@ -1,7 +1,10 @@
 import express from "express";
 import request from "supertest";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
+import { getCorpusHealth } from "@peas/database";
+
+import { ingredientMetrics } from "../../services/ingredient/ingredient-metrics";
 import { createTestApp } from "../../test-utils/helpers";
 import { HttpStatus } from "../../types";
 import { ErrorHandler } from "../../utils/error-handler";
@@ -20,6 +23,14 @@ vi.mock("../../utils/metrics", () => ({
   getPrometheusMetrics: vi.fn(),
 }));
 
+vi.mock("@peas/database", () => ({
+  getCorpusHealth: vi.fn(),
+}));
+
+vi.mock("../../services/ingredient/ingredient-metrics", () => ({
+  ingredientMetrics: { summary: vi.fn() },
+}));
+
 // Mock the error handler before importing the router
 vi.mock("../../utils/error-handler", () => ({
   ErrorHandler: {
@@ -36,11 +47,44 @@ describe("Metrics Router", () => {
     app.use("/metrics", metricsRouter);
   });
 
+  describe("GET /metrics/ingredients", () => {
+    it("returns live parse metrics with corpus counts", async () => {
+      const live = { lineCount: 3, structuralSuccessShare: 1 };
+      const corpus = { lineCount: 10, openDiscoveryCount: 2 };
+      (ingredientMetrics.summary as Mock).mockReturnValue(live);
+      (getCorpusHealth as Mock).mockResolvedValue(corpus);
+
+      const response = await request(app).get("/metrics/ingredients");
+
+      expect(response.status).toBe(HttpStatus.OK);
+      expect(response.body).toMatchObject({
+        success: true,
+        data: { live, corpus },
+      });
+    });
+
+    it("reports database failures through the error handler", async () => {
+      (getCorpusHealth as Mock).mockRejectedValue(new Error("db down"));
+      (ErrorHandler.handleRouteError as Mock).mockReturnValue({
+        success: false,
+        error: "db down",
+      });
+
+      const response = await request(app).get("/metrics/ingredients");
+
+      expect(response.status).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
+      expect(ErrorHandler.handleRouteError).toHaveBeenCalledWith(
+        expect.any(Error),
+        "get_ingredient_metrics"
+      );
+    });
+  });
+
   describe("GET /metrics/prometheus", () => {
     it("should return prometheus metrics successfully", async () => {
       const mockMetrics =
         "# HELP http_requests_total Total HTTP requests\n# TYPE http_requests_total counter\nhttp_requests_total 100";
-      (getPrometheusMetrics as ReturnType<typeof vi.fn>).mockReturnValue(
+      (getPrometheusMetrics as Mock).mockReturnValue(
         mockMetrics
       );
 
@@ -56,7 +100,7 @@ describe("Metrics Router", () => {
 
     it("should handle errors when getting prometheus metrics", async () => {
       const mockError = new Error("Failed to get metrics");
-      (getPrometheusMetrics as ReturnType<typeof vi.fn>).mockImplementation(
+      (getPrometheusMetrics as Mock).mockImplementation(
         () => {
           throw mockError;
         }
@@ -68,7 +112,7 @@ describe("Metrics Router", () => {
         operation: "get_prometheus_metrics",
       };
       (
-        ErrorHandler.handleRouteError as ReturnType<typeof vi.fn>
+        ErrorHandler.handleRouteError as Mock
       ).mockReturnValue(mockErrorResponse);
 
       const response = await request(app).get("/metrics/prometheus");
@@ -83,7 +127,7 @@ describe("Metrics Router", () => {
 
     it("should handle non-Error objects thrown by getPrometheusMetrics", async () => {
       const mockError = "String error";
-      (getPrometheusMetrics as ReturnType<typeof vi.fn>).mockImplementation(
+      (getPrometheusMetrics as Mock).mockImplementation(
         () => {
           throw mockError;
         }
@@ -95,7 +139,7 @@ describe("Metrics Router", () => {
         operation: "get_prometheus_metrics",
       };
       (
-        ErrorHandler.handleRouteError as ReturnType<typeof vi.fn>
+        ErrorHandler.handleRouteError as Mock
       ).mockReturnValue(mockErrorResponse);
 
       const response = await request(app).get("/metrics/prometheus");
@@ -117,7 +161,7 @@ describe("Metrics Router", () => {
         memoryUsage: 1024 * 1024,
         uptime: 3600,
       };
-      (getMetricsSnapshot as ReturnType<typeof vi.fn>).mockReturnValue(
+      (getMetricsSnapshot as Mock).mockReturnValue(
         mockSnapshot
       );
 
@@ -135,7 +179,7 @@ describe("Metrics Router", () => {
 
     it("should handle errors when getting metrics snapshot", async () => {
       const mockError = new Error("Failed to get snapshot");
-      (getMetricsSnapshot as ReturnType<typeof vi.fn>).mockImplementation(
+      (getMetricsSnapshot as Mock).mockImplementation(
         () => {
           throw mockError;
         }
@@ -147,7 +191,7 @@ describe("Metrics Router", () => {
         operation: "get_metrics_snapshot",
       };
       (
-        ErrorHandler.handleRouteError as ReturnType<typeof vi.fn>
+        ErrorHandler.handleRouteError as Mock
       ).mockReturnValue(mockErrorResponse);
 
       const response = await request(app).get("/metrics/snapshot");
@@ -161,7 +205,7 @@ describe("Metrics Router", () => {
     });
 
     it("should handle null/undefined snapshot data", async () => {
-      (getMetricsSnapshot as ReturnType<typeof vi.fn>).mockReturnValue(null);
+      (getMetricsSnapshot as Mock).mockReturnValue(null);
 
       const response = await request(app).get("/metrics/snapshot");
 
@@ -183,7 +227,7 @@ describe("Metrics Router", () => {
         memoryUsage: 256 * 1024 * 1024,
         cpuUsage: 15.5,
       };
-      (getPerformanceMetrics as ReturnType<typeof vi.fn>).mockReturnValue(
+      (getPerformanceMetrics as Mock).mockReturnValue(
         mockPerformance
       );
 
@@ -201,7 +245,7 @@ describe("Metrics Router", () => {
 
     it("should handle errors when getting performance metrics", async () => {
       const mockError = new Error("Failed to get performance metrics");
-      (getPerformanceMetrics as ReturnType<typeof vi.fn>).mockImplementation(
+      (getPerformanceMetrics as Mock).mockImplementation(
         () => {
           throw mockError;
         }
@@ -213,7 +257,7 @@ describe("Metrics Router", () => {
         operation: "get_performance_metrics",
       };
       (
-        ErrorHandler.handleRouteError as ReturnType<typeof vi.fn>
+        ErrorHandler.handleRouteError as Mock
       ).mockReturnValue(mockErrorResponse);
 
       const response = await request(app).get("/metrics/performance");
@@ -227,7 +271,7 @@ describe("Metrics Router", () => {
     });
 
     it("should handle empty performance metrics object", async () => {
-      (getPerformanceMetrics as ReturnType<typeof vi.fn>).mockReturnValue({});
+      (getPerformanceMetrics as Mock).mockReturnValue({});
 
       const response = await request(app).get("/metrics/performance");
 
@@ -247,7 +291,7 @@ describe("Metrics Router", () => {
         requestDuration: 2000, // Less than 5000ms
         memoryUsage: 100 * 1024 * 1024, // Less than 500MB
       };
-      (getPerformanceMetrics as ReturnType<typeof vi.fn>).mockReturnValue(
+      (getPerformanceMetrics as Mock).mockReturnValue(
         mockPerformance
       );
 
@@ -268,7 +312,7 @@ describe("Metrics Router", () => {
         requestDuration: 2000, // Less than 5000ms
         memoryUsage: 100 * 1024 * 1024, // Less than 500MB
       };
-      (getPerformanceMetrics as ReturnType<typeof vi.fn>).mockReturnValue(
+      (getPerformanceMetrics as Mock).mockReturnValue(
         mockPerformance
       );
 
@@ -288,7 +332,7 @@ describe("Metrics Router", () => {
         requestDuration: 6000, // More than 5000ms
         memoryUsage: 100 * 1024 * 1024, // Less than 500MB
       };
-      (getPerformanceMetrics as ReturnType<typeof vi.fn>).mockReturnValue(
+      (getPerformanceMetrics as Mock).mockReturnValue(
         mockPerformance
       );
 
@@ -308,7 +352,7 @@ describe("Metrics Router", () => {
         requestDuration: 2000, // Less than 5000ms
         memoryUsage: 600 * 1024 * 1024, // More than 500MB
       };
-      (getPerformanceMetrics as ReturnType<typeof vi.fn>).mockReturnValue(
+      (getPerformanceMetrics as Mock).mockReturnValue(
         mockPerformance
       );
 
@@ -328,7 +372,7 @@ describe("Metrics Router", () => {
         requestDuration: 6000, // More than 5000ms
         memoryUsage: 600 * 1024 * 1024, // More than 500MB
       };
-      (getPerformanceMetrics as ReturnType<typeof vi.fn>).mockReturnValue(
+      (getPerformanceMetrics as Mock).mockReturnValue(
         mockPerformance
       );
 
@@ -344,7 +388,7 @@ describe("Metrics Router", () => {
 
     it("should handle errors when getting performance metrics for health check", async () => {
       const mockError = new Error("Failed to get performance metrics");
-      (getPerformanceMetrics as ReturnType<typeof vi.fn>).mockImplementation(
+      (getPerformanceMetrics as Mock).mockImplementation(
         () => {
           throw mockError;
         }
@@ -363,7 +407,7 @@ describe("Metrics Router", () => {
 
     it("should handle non-Error objects thrown by getPerformanceMetrics", async () => {
       const mockError = "String error";
-      (getPerformanceMetrics as ReturnType<typeof vi.fn>).mockImplementation(
+      (getPerformanceMetrics as Mock).mockImplementation(
         () => {
           throw mockError;
         }
@@ -380,7 +424,7 @@ describe("Metrics Router", () => {
     });
 
     it("should handle null/undefined error objects", async () => {
-      (getPerformanceMetrics as ReturnType<typeof vi.fn>).mockImplementation(
+      (getPerformanceMetrics as Mock).mockImplementation(
         () => {
           throw null;
         }
@@ -402,7 +446,7 @@ describe("Metrics Router", () => {
         requestDuration: 5000, // Exactly 5000ms (should be degraded)
         memoryUsage: 500 * 1024 * 1024, // Exactly 500MB (should be degraded)
       };
-      (getPerformanceMetrics as ReturnType<typeof vi.fn>).mockReturnValue(
+      (getPerformanceMetrics as Mock).mockReturnValue(
         mockPerformance
       );
 
@@ -421,7 +465,7 @@ describe("Metrics Router", () => {
         // Missing errorCount, requestDuration, memoryUsage
         someOtherMetric: 123,
       };
-      (getPerformanceMetrics as ReturnType<typeof vi.fn>).mockReturnValue(
+      (getPerformanceMetrics as Mock).mockReturnValue(
         mockPerformance
       );
 
@@ -456,6 +500,7 @@ describe("Metrics Router", () => {
       expect(routes).toEqual([
         { path: "/prometheus", method: "get" },
         { path: "/snapshot", method: "get" },
+        { path: "/ingredients", method: "get" },
         { path: "/performance", method: "get" },
         { path: "/health", method: "get" },
       ]);

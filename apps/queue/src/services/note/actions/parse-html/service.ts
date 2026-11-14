@@ -1,6 +1,7 @@
 import { parseHTMLContent } from "../../../../parsers/html";
 import type { StructuredLogger } from "../../../../types";
 import type { NotePipelineData } from "../../../../types/notes";
+import { runStructureShadow } from "../../structure-shadow";
 
 export async function parseHtml(
   data: NotePipelineData,
@@ -51,6 +52,11 @@ export async function parseHtml(
         `[PARSE_HTML] First few instructions: ${firstInstructions.join(", ")}`
       );
     }
+
+    runStructureShadow(
+      { title: parsedFile.title, contents: parsedFile.contents },
+      logger
+    );
 
     logger.log(
       `[PARSE_HTML] HTML parsing completed for import: ${data.importId}`

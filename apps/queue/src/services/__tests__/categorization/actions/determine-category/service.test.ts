@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import type { StructuredLogger } from "../../../../../types";
 import type { CategorizationJobData } from "../../../../categorization/types";
@@ -22,7 +22,7 @@ vi.mock("../../../../../config/constants", () => ({
 describe("Determine Category Service", () => {
   let mockLogger: StructuredLogger;
   let testData: CategorizationJobData;
-  let mockGetNoteWithEvernoteMetadata: ReturnType<typeof vi.fn>;
+  let mockGetNoteWithEvernoteMetadata: Mock;
   let determineCategory: (
     data: CategorizationJobData,
     logger: StructuredLogger

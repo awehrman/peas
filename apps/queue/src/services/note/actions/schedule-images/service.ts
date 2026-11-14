@@ -1,10 +1,9 @@
-import path from "path";
-
 import type { StructuredLogger } from "../../../../types";
 import { ActionName } from "../../../../types";
 import type { NotePipelineData } from "../../../../types/notes";
 import { findImagesForImport } from "../../../../utils/image-utils";
 import type { BaseWorkerDependencies } from "../../../../workers/types";
+import { getLocalImageDir } from "../../../image/local-storage";
 import { markNoteAsFailed } from "../track-completion/service";
 import { setTotalImageJobs } from "../track-completion/service";
 
@@ -193,7 +192,7 @@ export async function processImages(
         imageId: uniqueImageId,
         imagePath: imageFile.filePath,
         filename: imageFile.fileName,
-        outputDir: path.join(process.cwd(), "uploads", "processed"),
+        outputDir: getLocalImageDir(imageImportId ?? data.noteId),
         // Initialize processed image paths (will be set by PROCESS_IMAGE)
         originalPath: "",
         thumbnailPath: "",

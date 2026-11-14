@@ -45,7 +45,8 @@ export enum QueueName {
   SOURCE = "source",
   IMAGE = "image",
   CATEGORIZATION = "categorization",
-  PATTERN_TRACKING = "patternTracking",
+  REINTERPRET = "reinterpret",
+  BOOK_LOOKUP = "book-lookup",
 }
 
 /**
@@ -89,11 +90,23 @@ export enum ActionName {
   SAVE_CATEGORY = "save_category",
   DETERMINE_TAGS = "determine_tags",
   SAVE_TAGS = "save_tags",
-  TRACK_PATTERN = "track_pattern",
   COMPLETION_STATUS = "completion_status",
+  RECOMPUTE_NOTE_CATEGORIES = "recompute_note_categories",
+  RECOMPUTE_CATEGORY = "recompute_category",
+  RECOMPUTE_ALL_CATEGORIES = "recompute_all_categories",
 
   // Source actions
   PROCESS_SOURCE = "process_source",
+  CHECK_URL = "check_url",
+  RECHECK_STALE_URLS = "recheck_stale_urls",
+  LOOKUP_BOOK = "lookup_book",
+  LOOKUP_PENDING_BOOKS = "lookup_pending_books",
+
+  // Reinterpretation actions
+  REINTERPRET_FAN_OUT = "reinterpret_fan_out",
+  REINTERPRET_BATCH = "reinterpret_batch",
+  CORPUS_HEALTH_SNAPSHOT = "corpus_health_snapshot",
+  EXPLORATORY_SWEEP = "exploratory_sweep",
 
   // Utility actions
   NO_OP = "no_op",
@@ -127,6 +140,7 @@ export enum ActionCategory {
 export enum HttpStatus {
   OK = 200,
   CREATED = 201,
+  ACCEPTED = 202,
   NO_CONTENT = 204,
   BAD_REQUEST = 400,
   UNAUTHORIZED = 401,
@@ -278,9 +292,22 @@ export const QUEUE_ACTIONS: Record<QueueName, ActionName[]> = {
     ActionName.SAVE_CATEGORY,
     ActionName.DETERMINE_TAGS,
     ActionName.SAVE_TAGS,
+    ActionName.RECOMPUTE_NOTE_CATEGORIES,
+    ActionName.RECOMPUTE_CATEGORY,
+    ActionName.RECOMPUTE_ALL_CATEGORIES,
   ],
-  [QueueName.SOURCE]: [ActionName.PROCESS_SOURCE],
-  [QueueName.PATTERN_TRACKING]: [ActionName.TRACK_PATTERN],
+  [QueueName.SOURCE]: [
+    ActionName.PROCESS_SOURCE,
+    ActionName.CHECK_URL,
+    ActionName.RECHECK_STALE_URLS,
+  ],
+  [QueueName.BOOK_LOOKUP]: [ActionName.LOOKUP_BOOK, ActionName.LOOKUP_PENDING_BOOKS],
+  [QueueName.REINTERPRET]: [
+    ActionName.REINTERPRET_FAN_OUT,
+    ActionName.REINTERPRET_BATCH,
+    ActionName.CORPUS_HEALTH_SNAPSHOT,
+    ActionName.EXPLORATORY_SWEEP,
+  ],
 };
 
 /**
@@ -325,11 +352,23 @@ export const ACTION_CATEGORIES: Record<ActionName, ActionCategory> = {
   [ActionName.SAVE_CATEGORY]: ActionCategory.CATEGORIZATION,
   [ActionName.DETERMINE_TAGS]: ActionCategory.CATEGORIZATION,
   [ActionName.SAVE_TAGS]: ActionCategory.CATEGORIZATION,
-  [ActionName.TRACK_PATTERN]: ActionCategory.CATEGORIZATION,
   [ActionName.COMPLETION_STATUS]: ActionCategory.CATEGORIZATION,
+  [ActionName.RECOMPUTE_NOTE_CATEGORIES]: ActionCategory.CATEGORIZATION,
+  [ActionName.RECOMPUTE_CATEGORY]: ActionCategory.CATEGORIZATION,
+  [ActionName.RECOMPUTE_ALL_CATEGORIES]: ActionCategory.CATEGORIZATION,
 
   // Source actions
   [ActionName.PROCESS_SOURCE]: ActionCategory.SOURCE,
+  [ActionName.CHECK_URL]: ActionCategory.SOURCE,
+  [ActionName.RECHECK_STALE_URLS]: ActionCategory.SOURCE,
+  [ActionName.LOOKUP_BOOK]: ActionCategory.SOURCE,
+  [ActionName.LOOKUP_PENDING_BOOKS]: ActionCategory.SOURCE,
+
+  // Reinterpretation actions
+  [ActionName.REINTERPRET_FAN_OUT]: ActionCategory.INGREDIENT,
+  [ActionName.REINTERPRET_BATCH]: ActionCategory.INGREDIENT,
+  [ActionName.CORPUS_HEALTH_SNAPSHOT]: ActionCategory.INGREDIENT,
+  [ActionName.EXPLORATORY_SWEEP]: ActionCategory.INGREDIENT,
 
   // Utility actions
   [ActionName.NO_OP]: ActionCategory.NOTE,

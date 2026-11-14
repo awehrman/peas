@@ -17,6 +17,24 @@ export interface UploadProgressData {
   error?: string;
 }
 
+const UPLOAD_TIMEOUT_MS = 120_000;
+const MAX_UPLOAD_ATTEMPTS = 5;
+const MAX_RETRY_DELAY_MS = 60_000;
+const RETRYABLE_STATUSES = new Set([429, 503]);
+
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Server-suggested wait (Retry-After header or retryAfter body), else backoff. */
+async function getRetryDelayMs(response: Response, attempt: number): Promise<number> {
+  const header = Number(response.headers.get("Retry-After"));
+  const body = (await response.clone().json().catch(() => ({}))) as { retryAfter?: number };
+  const seconds = Number.isFinite(header) && header > 0 ? header : body.retryAfter;
+  const delay = seconds && seconds > 0 ? seconds * 1000 : 1000 * 2 ** (attempt - 1);
+  return Math.min(delay, MAX_RETRY_DELAY_MS);
+}
+
 export class UploadService {
   private static getUploadEndpoint(): string {
     // Use environment variable if available
@@ -33,7 +51,8 @@ export class UploadService {
    */
   static async uploadFileGroup(
     group: FileGroup,
-    onProgress?: (progress: UploadProgressData) => void
+    onProgress?: (progress: UploadProgressData) => void,
+    authToken?: string
   ): Promise<ImportUploadResult> {
     const formData = new FormData();
 
@@ -50,6 +69,10 @@ export class UploadService {
       "x-import-id": group.importId,
     };
 
+    if (authToken) {
+      headers.Authorization = `Bearer ${authToken}`;
+    }
+
     try {
       // Report upload start
       onProgress?.({
@@ -59,23 +82,44 @@ export class UploadService {
         message: "Starting upload...",
       });
 
-      // Create AbortController for timeout handling
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      let response: Response | undefined;
+      for (let attempt = 1; attempt <= MAX_UPLOAD_ATTEMPTS; attempt++) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), UPLOAD_TIMEOUT_MS);
 
-      const response = await fetch(this.getUploadEndpoint(), {
-        method: "POST",
-        body: formData,
-        headers,
-        signal: controller.signal,
-      });
+        response = await fetch(this.getUploadEndpoint(), {
+          method: "POST",
+          body: formData,
+          headers,
+          signal: controller.signal,
+        });
 
-      clearTimeout(timeoutId);
+        clearTimeout(timeoutId);
+
+        if (!RETRYABLE_STATUSES.has(response.status) || attempt === MAX_UPLOAD_ATTEMPTS) {
+          break;
+        }
+
+        const delayMs = await getRetryDelayMs(response, attempt);
+        onProgress?.({
+          importId: group.importId,
+          status: "uploading",
+          progress: 0,
+          message: `Queue is busy; retrying in ${Math.ceil(delayMs / 1000)}s...`,
+        });
+        await wait(delayMs);
+      }
+
+      if (!response) {
+        throw new Error("Upload did not start");
+      }
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         const errorMessage =
-          errorData.error || `Upload failed with status ${response.status}`;
+          response.status === 413
+            ? `${group.htmlFile.name} and its images are too large to upload in one request`
+            : errorData.error || `Upload failed with status ${response.status}`;
         throw new ImportError(errorMessage, {
           code: "UPLOAD_SERVER_ERROR",
           recoverable: response.status >= 500, // Server errors are potentially recoverable

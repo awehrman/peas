@@ -4,6 +4,7 @@ import multer from "multer";
 import path from "path";
 
 import type { IServiceContainer } from "../services/container";
+import { getLocalImageDir } from "../services/image/local-storage";
 import { ActionName, HttpStatus } from "../types";
 
 export const imagesRouter = express.Router();
@@ -127,7 +128,7 @@ imagesRouter.post(
           noteId: `note-${importId}`, // This will be updated when the note is created
           importId,
           imagePath: file.path,
-          outputDir: path.join(process.cwd(), "uploads", "processed"),
+          outputDir: getLocalImageDir(importId),
           filename: file.filename,
           // Initialize processed image paths (will be set by PROCESS_IMAGE)
           originalPath: "",

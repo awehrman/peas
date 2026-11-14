@@ -5,8 +5,9 @@ import { Placeholder } from "./placeholder";
 
 import React, { useCallback, useState } from "react";
 
-import { AlertCircle, File, Upload } from "lucide-react";
+import { AlertCircle, File, Loader2, Upload } from "lucide-react";
 
+import { collectDroppedFiles } from "../lib/file-paths";
 import { cn } from "../lib/utils";
 import { Alert, AlertDescription } from "../ui/alert";
 
@@ -17,6 +18,8 @@ export interface FileDropZoneProps {
   multiple?: boolean;
   /** Whether to allow directory selection */
   allowDirectories?: boolean;
+  /** Accepted types for the "Choose files" picker, e.g. ".zip,.html" */
+  accept?: string;
   /** Whether the drop zone is disabled */
   disabled?: boolean;
   /** Additional CSS classes */
@@ -29,17 +32,22 @@ export interface FileDropZoneProps {
   error?: string;
   /** Whether files are currently being processed */
   isProcessing?: boolean;
+  /** "compact" lays the zone out as a single row with the title above the description */
+  variant?: "default" | "compact";
 }
 
 export function FileDropZone({
   onFilesChange,
   multiple = true,
   allowDirectories = true,
+  accept,
   disabled = false,
   className,
+  title = "Drop files here",
   description = "Drop or choose files",
   error,
   isProcessing = false,
+  variant = "default",
 }: FileDropZoneProps) {
   const [isDragOver, setIsDragOver] = useState(false);
 
@@ -71,64 +79,98 @@ export function FileDropZone({
   );
 
   const handleDrop = useCallback(
-    (event: React.DragEvent<HTMLDivElement>) => {
+    async (event: React.DragEvent<HTMLDivElement>) => {
       event.preventDefault();
       setIsDragOver(false);
 
       if (disabled || isProcessing) return;
 
-      const files = Array.from(event.dataTransfer.files || []);
-      handleFiles(files);
+      handleFiles(await collectDroppedFiles(event.dataTransfer));
     },
     [disabled, isProcessing, handleFiles]
   );
 
   const isDisabled = disabled || isProcessing;
+  const isActiveDrop = isDragOver && !isDisabled;
+
+  const fileInput = !isProcessing ? (
+    <FileInput
+      onFilesChange={handleFiles}
+      multiple={multiple}
+      allowDirectories={allowDirectories}
+      accept={accept}
+      disabled={isDisabled}
+      showInput={true}
+    />
+  ) : null;
 
   return (
     <div className={cn("file-drop-zone", className)}>
       <div
         className={cn(
-          "border-2 border-dashed rounded-lg p-8 transition-colors",
-          isDragOver && !isDisabled
-            ? "border-blue-400 bg-blue-50"
-            : "border-greyscale-100",
+          "border-2 border-dashed rounded-lg transition-colors",
+          variant === "compact"
+            ? "flex flex-col gap-3 bg-card px-4 py-3 sm:flex-row sm:items-center"
+            : "px-6 py-2",
+          isActiveDrop
+            ? "border-primary-400 bg-primary-50"
+            : "border-greyscale-200",
           isDisabled
             ? "opacity-50 cursor-not-allowed"
-            : "hover:border-greyscale-200 cursor-pointer"
+            : "hover:border-greyscale-300 cursor-pointer"
         )}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        <Placeholder
-          icon={
-            isProcessing ? (
-              <File className="h-8 w-8 text-blue-500" />
-            ) : (
-              <Upload className="h-8 w-8 text-gray-400" />
-            )
-          }
-          label={
-            isProcessing
-              ? "Processing files..."
-              : isDragOver
-                ? "Drop files here"
-                : description
-          }
-          buttonSize="sm"
-          button={
-            !isProcessing ? (
-              <FileInput
-                onFilesChange={handleFiles}
-                multiple={multiple}
-                allowDirectories={allowDirectories}
-                disabled={isDisabled}
-                showInput={true}
-              />
-            ) : null
-          }
-        />
+        {variant === "compact" ? (
+          <>
+            <div className="flex min-w-0 flex-1 items-center gap-3">
+              <span
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-50 text-primary-600"
+                aria-hidden="true"
+              >
+                {isProcessing ? (
+                  <Loader2 className="h-5 w-5 motion-safe:animate-spin" />
+                ) : (
+                  <Upload className="h-5 w-5" />
+                )}
+              </span>
+              <div className="min-w-0" aria-live="polite">
+                <p className="text-sm font-medium">
+                  {isProcessing
+                    ? "Processing files…"
+                    : isActiveDrop
+                      ? "Release to import"
+                      : title}
+                </p>
+                {description ? (
+                  <p className="text-xs text-muted-foreground">{description}</p>
+                ) : null}
+              </div>
+            </div>
+            {fileInput}
+          </>
+        ) : (
+          <Placeholder
+            icon={
+              isProcessing ? (
+                <File className="h-8 w-8 text-blue-500" />
+              ) : (
+                <Upload className="h-8 w-8 text-gray-400" />
+              )
+            }
+            label={
+              isProcessing
+                ? "Processing files..."
+                : isDragOver
+                  ? "Drop files here"
+                  : description
+            }
+            buttonSize="sm"
+            button={fileInput}
+          />
+        )}
       </div>
 
       {error && (

@@ -414,7 +414,24 @@ export class EnhancedLoggerService implements ILoggerService {
  * Create a logger instance with default configuration
  */
 export function createLogger(config?: LogConfig): EnhancedLoggerService {
-  return new EnhancedLoggerService(config);
+  return new EnhancedLoggerService({ ...getLogConfigFromEnv(), ...config });
+}
+
+const LOG_LEVELS = ["debug", "info", "warn", "error", "fatal"] as const;
+
+/**
+ * LOG_LEVEL, ENABLE_FILE_LOGGING, ENABLE_CONSOLE_LOGGING and LOG_DIR from the
+ * environment. Large imports log ~900 info lines per note, so LOG_LEVEL=warn
+ * noticeably reduces queue overhead.
+ */
+export function getLogConfigFromEnv(env: typeof process.env = process.env): LogConfig {
+  const config: LogConfig = {};
+  const level = LOG_LEVELS.find((candidate) => candidate === env.LOG_LEVEL?.toLowerCase());
+  if (level) config.logLevel = level;
+  if (env.ENABLE_FILE_LOGGING === "false") config.enableFileLogging = false;
+  if (env.ENABLE_CONSOLE_LOGGING === "false") config.enableConsoleLogging = false;
+  if (env.LOG_DIR) config.logDir = env.LOG_DIR;
+  return config;
 }
 
 /**

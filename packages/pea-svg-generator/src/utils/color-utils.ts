@@ -25,6 +25,36 @@ export function darkenHexColor(hex: string, percent: number): string {
 }
 
 /**
+ * WCAG relative luminance of a hex color, from 0 (black) to 1 (white)
+ */
+export function getRelativeLuminance(hex: string): number {
+  hex = hex.replace(/^#/, "");
+  if (hex.length === 3) {
+    hex = hex
+      .split("")
+      .map((x) => x + x)
+      .join("");
+  }
+  const num = parseInt(hex, 16);
+  const [r, g, b] = [(num >> 16) & 0xff, (num >> 8) & 0xff, num & 0xff].map(
+    (channel) => {
+      const value = channel / 255;
+      return value <= 0.03928
+        ? value / 12.92
+        : ((value + 0.055) / 1.055) ** 2.4;
+    }
+  ) as [number, number, number];
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+/**
+ * Pale colors where lightened details wash out against the base
+ */
+export function isLightColor(hex: string): boolean {
+  return getRelativeLuminance(hex) > 0.55;
+}
+
+/**
  * Lightens a hex color by a given percentage
  */
 export function lightenHexColor(hex: string, percent: number): string {

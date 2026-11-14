@@ -1,6 +1,6 @@
 import express from "express";
 import request from "supertest";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import { createTestApp } from "../../test-utils/helpers";
 import { HttpStatus } from "../../types";
@@ -92,13 +92,13 @@ describe("Performance Router", () => {
       };
 
       (
-        performanceOptimizer.getPerformanceReport as ReturnType<typeof vi.fn>
+        performanceOptimizer.getPerformanceReport as Mock
       ).mockReturnValue(mockPerformanceReport);
       (
-        memoryOptimizer.getMemoryReport as ReturnType<typeof vi.fn>
+        memoryOptimizer.getMemoryReport as Mock
       ).mockReturnValue(mockMemoryReport);
       (
-        databaseOptimizer.getCacheStats as ReturnType<typeof vi.fn>
+        databaseOptimizer.getCacheStats as Mock
       ).mockReturnValue(mockCacheStats);
 
       const response = await request(app).get("/performance/overview");
@@ -131,7 +131,7 @@ describe("Performance Router", () => {
     it("should handle errors when getting performance overview", async () => {
       const mockError = new Error("Performance overview error");
       (
-        performanceOptimizer.getPerformanceReport as ReturnType<typeof vi.fn>
+        performanceOptimizer.getPerformanceReport as Mock
       ).mockImplementation(() => {
         throw mockError;
       });
@@ -148,7 +148,7 @@ describe("Performance Router", () => {
     it("should handle non-Error objects thrown by performance optimizer", async () => {
       const mockError = "String error";
       (
-        performanceOptimizer.getPerformanceReport as ReturnType<typeof vi.fn>
+        performanceOptimizer.getPerformanceReport as Mock
       ).mockImplementation(() => {
         throw mockError;
       });
@@ -178,7 +178,7 @@ describe("Performance Router", () => {
       };
 
       (
-        performanceOptimizer.getPerformanceReport as ReturnType<typeof vi.fn>
+        performanceOptimizer.getPerformanceReport as Mock
       ).mockReturnValue(mockPerformanceReport);
 
       const response = await request(app).get("/performance/metrics");
@@ -195,7 +195,7 @@ describe("Performance Router", () => {
     it("should handle errors when getting performance metrics", async () => {
       const mockError = new Error("Metrics error");
       (
-        performanceOptimizer.getPerformanceReport as ReturnType<typeof vi.fn>
+        performanceOptimizer.getPerformanceReport as Mock
       ).mockImplementation(() => {
         throw mockError;
       });
@@ -211,7 +211,7 @@ describe("Performance Router", () => {
 
     it("should handle non-Error exceptions when getting performance metrics", async () => {
       (
-        performanceOptimizer.getPerformanceReport as ReturnType<typeof vi.fn>
+        performanceOptimizer.getPerformanceReport as Mock
       ).mockImplementation(() => {
         throw "String metrics error";
       });
@@ -249,7 +249,7 @@ describe("Performance Router", () => {
       };
 
       (
-        memoryOptimizer.getMemoryReport as ReturnType<typeof vi.fn>
+        memoryOptimizer.getMemoryReport as Mock
       ).mockReturnValue(mockMemoryReport);
 
       const response = await request(app).get("/performance/memory");
@@ -268,7 +268,7 @@ describe("Performance Router", () => {
     it("should handle errors when getting memory data", async () => {
       const mockError = new Error("Memory data error");
       (
-        memoryOptimizer.getMemoryReport as ReturnType<typeof vi.fn>
+        memoryOptimizer.getMemoryReport as Mock
       ).mockImplementation(() => {
         throw mockError;
       });
@@ -284,7 +284,7 @@ describe("Performance Router", () => {
 
     it("should handle non-Error exceptions when getting memory data", async () => {
       (
-        memoryOptimizer.getMemoryReport as ReturnType<typeof vi.fn>
+        memoryOptimizer.getMemoryReport as Mock
       ).mockImplementation(() => {
         throw "String memory data error";
       });
@@ -314,7 +314,7 @@ describe("Performance Router", () => {
       };
 
       (
-        databaseOptimizer.getCacheStats as ReturnType<typeof vi.fn>
+        databaseOptimizer.getCacheStats as Mock
       ).mockReturnValue(mockCacheStats);
       (
         databaseOptimizer.getOptimizedConnectionConfig as ReturnType<
@@ -340,7 +340,7 @@ describe("Performance Router", () => {
     it("should handle errors when getting database data", async () => {
       const mockError = new Error("Database data error");
       (
-        databaseOptimizer.getCacheStats as ReturnType<typeof vi.fn>
+        databaseOptimizer.getCacheStats as Mock
       ).mockImplementation(() => {
         throw mockError;
       });
@@ -356,7 +356,7 @@ describe("Performance Router", () => {
 
     it("should handle non-Error exceptions when getting database data", async () => {
       (
-        databaseOptimizer.getCacheStats as ReturnType<typeof vi.fn>
+        databaseOptimizer.getCacheStats as Mock
       ).mockImplementation(() => {
         throw "String database data error";
       });
@@ -379,7 +379,7 @@ describe("Performance Router", () => {
       };
 
       (
-        memoryOptimizer.optimizeMemory as ReturnType<typeof vi.fn>
+        memoryOptimizer.optimizeMemory as Mock
       ).mockReturnValue(mockMemoryResult);
 
       const response = await request(app)
@@ -402,7 +402,7 @@ describe("Performance Router", () => {
       };
 
       (
-        databaseOptimizer.getCacheStats as ReturnType<typeof vi.fn>
+        databaseOptimizer.getCacheStats as Mock
       ).mockReturnValue(mockCacheStats);
 
       const response = await request(app)
@@ -434,10 +434,10 @@ describe("Performance Router", () => {
       };
 
       (
-        memoryOptimizer.optimizeMemory as ReturnType<typeof vi.fn>
+        memoryOptimizer.optimizeMemory as Mock
       ).mockReturnValue(mockMemoryResult);
       (
-        databaseOptimizer.getCacheStats as ReturnType<typeof vi.fn>
+        databaseOptimizer.getCacheStats as Mock
       ).mockReturnValue(mockCacheStats);
 
       const response = await request(app)
@@ -512,7 +512,7 @@ describe("Performance Router", () => {
     it("should handle errors during optimization", async () => {
       const mockError = new Error("Optimization error");
       (
-        memoryOptimizer.optimizeMemory as ReturnType<typeof vi.fn>
+        memoryOptimizer.optimizeMemory as Mock
       ).mockImplementation(() => {
         throw mockError;
       });
@@ -530,7 +530,7 @@ describe("Performance Router", () => {
 
     it("should handle non-Error exceptions during optimization", async () => {
       (
-        memoryOptimizer.optimizeMemory as ReturnType<typeof vi.fn>
+        memoryOptimizer.optimizeMemory as Mock
       ).mockImplementation(() => {
         throw "String optimization error";
       });
@@ -562,7 +562,7 @@ describe("Performance Router", () => {
     it("should handle errors when starting profiling", async () => {
       const mockError = new Error("Profiling start error");
       (
-        performanceOptimizer.startProfiling as ReturnType<typeof vi.fn>
+        performanceOptimizer.startProfiling as Mock
       ).mockImplementation(() => {
         throw mockError;
       });
@@ -578,7 +578,7 @@ describe("Performance Router", () => {
 
     it("should handle non-Error exceptions when starting profiling", async () => {
       (
-        performanceOptimizer.startProfiling as ReturnType<typeof vi.fn>
+        performanceOptimizer.startProfiling as Mock
       ).mockImplementation(() => {
         throw "String profiling error";
       });
@@ -608,7 +608,7 @@ describe("Performance Router", () => {
     it("should handle errors when stopping profiling", async () => {
       const mockError = new Error("Profiling stop error");
       (
-        performanceOptimizer.stopProfiling as ReturnType<typeof vi.fn>
+        performanceOptimizer.stopProfiling as Mock
       ).mockImplementation(() => {
         throw mockError;
       });
@@ -624,7 +624,7 @@ describe("Performance Router", () => {
 
     it("should handle non-Error exceptions when stopping profiling", async () => {
       (
-        performanceOptimizer.stopProfiling as ReturnType<typeof vi.fn>
+        performanceOptimizer.stopProfiling as Mock
       ).mockImplementation(() => {
         throw "String stop profiling error";
       });
@@ -651,7 +651,7 @@ describe("Performance Router", () => {
         heapTotal: 1024 * 1024 * 200,
       };
 
-      (memoryOptimizer.getMemoryStats as ReturnType<typeof vi.fn>)
+      (memoryOptimizer.getMemoryStats as Mock)
         .mockReturnValueOnce(mockBeforeGC)
         .mockReturnValueOnce(mockAfterGC);
 
@@ -672,7 +672,7 @@ describe("Performance Router", () => {
     it("should handle errors when forcing garbage collection", async () => {
       const mockError = new Error("GC error");
       (
-        memoryOptimizer.getMemoryStats as ReturnType<typeof vi.fn>
+        memoryOptimizer.getMemoryStats as Mock
       ).mockImplementation(() => {
         throw mockError;
       });
@@ -688,7 +688,7 @@ describe("Performance Router", () => {
 
     it("should handle non-Error exceptions when forcing garbage collection", async () => {
       (
-        memoryOptimizer.getMemoryStats as ReturnType<typeof vi.fn>
+        memoryOptimizer.getMemoryStats as Mock
       ).mockImplementation(() => {
         throw "String GC error";
       });
@@ -718,7 +718,7 @@ describe("Performance Router", () => {
     it("should handle errors when clearing cache", async () => {
       const mockError = new Error("Cache clear error");
       (
-        databaseOptimizer.clearQueryCache as ReturnType<typeof vi.fn>
+        databaseOptimizer.clearQueryCache as Mock
       ).mockImplementation(() => {
         throw mockError;
       });
@@ -734,7 +734,7 @@ describe("Performance Router", () => {
 
     it("should handle non-Error exceptions when clearing cache", async () => {
       (
-        databaseOptimizer.clearQueryCache as ReturnType<typeof vi.fn>
+        databaseOptimizer.clearQueryCache as Mock
       ).mockImplementation(() => {
         throw "String cache clear error";
       });
@@ -774,13 +774,13 @@ describe("Performance Router", () => {
       };
 
       (
-        performanceOptimizer.getPerformanceReport as ReturnType<typeof vi.fn>
+        performanceOptimizer.getPerformanceReport as Mock
       ).mockReturnValue(mockPerformanceReport);
       (
-        memoryOptimizer.getMemoryReport as ReturnType<typeof vi.fn>
+        memoryOptimizer.getMemoryReport as Mock
       ).mockReturnValue(mockMemoryReport);
       (
-        databaseOptimizer.getCacheStats as ReturnType<typeof vi.fn>
+        databaseOptimizer.getCacheStats as Mock
       ).mockReturnValue(mockCacheStats);
 
       const response = await request(app).get("/performance/health");
@@ -830,13 +830,13 @@ describe("Performance Router", () => {
       };
 
       (
-        performanceOptimizer.getPerformanceReport as ReturnType<typeof vi.fn>
+        performanceOptimizer.getPerformanceReport as Mock
       ).mockReturnValue(mockPerformanceReport);
       (
-        memoryOptimizer.getMemoryReport as ReturnType<typeof vi.fn>
+        memoryOptimizer.getMemoryReport as Mock
       ).mockReturnValue(mockMemoryReport);
       (
-        databaseOptimizer.getCacheStats as ReturnType<typeof vi.fn>
+        databaseOptimizer.getCacheStats as Mock
       ).mockReturnValue(mockCacheStats);
 
       const response = await request(app).get("/performance/health");
@@ -872,13 +872,13 @@ describe("Performance Router", () => {
       };
 
       (
-        performanceOptimizer.getPerformanceReport as ReturnType<typeof vi.fn>
+        performanceOptimizer.getPerformanceReport as Mock
       ).mockReturnValue(mockPerformanceReport);
       (
-        memoryOptimizer.getMemoryReport as ReturnType<typeof vi.fn>
+        memoryOptimizer.getMemoryReport as Mock
       ).mockReturnValue(mockMemoryReport);
       (
-        databaseOptimizer.getCacheStats as ReturnType<typeof vi.fn>
+        databaseOptimizer.getCacheStats as Mock
       ).mockReturnValue(mockCacheStats);
 
       const response = await request(app).get("/performance/health");
@@ -895,7 +895,7 @@ describe("Performance Router", () => {
     it("should handle errors when getting performance health", async () => {
       const mockError = new Error("Health check error");
       (
-        performanceOptimizer.getPerformanceReport as ReturnType<typeof vi.fn>
+        performanceOptimizer.getPerformanceReport as Mock
       ).mockImplementation(() => {
         throw mockError;
       });
@@ -912,7 +912,7 @@ describe("Performance Router", () => {
 
     it("should handle non-Error exceptions when getting performance health", async () => {
       (
-        performanceOptimizer.getPerformanceReport as ReturnType<typeof vi.fn>
+        performanceOptimizer.getPerformanceReport as Mock
       ).mockImplementation(() => {
         throw "String health check error";
       });
@@ -951,13 +951,13 @@ describe("Performance Router", () => {
       };
 
       (
-        performanceOptimizer.getPerformanceReport as ReturnType<typeof vi.fn>
+        performanceOptimizer.getPerformanceReport as Mock
       ).mockReturnValue(mockPerformanceReport);
       (
-        memoryOptimizer.getMemoryReport as ReturnType<typeof vi.fn>
+        memoryOptimizer.getMemoryReport as Mock
       ).mockReturnValue(mockMemoryReport);
       (
-        databaseOptimizer.getCacheStats as ReturnType<typeof vi.fn>
+        databaseOptimizer.getCacheStats as Mock
       ).mockReturnValue(mockCacheStats);
 
       const response = await request(app).get("/performance/health");

@@ -60,7 +60,6 @@ export function FileInputField({
         {...{ webkitdirectory: "" }}
         onChange={handleFileChange}
         className={cn("hidden", className)}
-        accept={accept}
         disabled={disabled}
       />
     </>

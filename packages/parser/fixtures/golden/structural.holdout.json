@@ -1,0 +1,680 @@
+[
+  {
+    "id": "holdout-001",
+    "input": "1 pound sliced applewood-smoked bacon",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 lb",
+          "phrase": "sliced applewood-smoked bacon"
+        }
+      ]
+    }
+  },
+  {
+    "id": "holdout-002",
+    "input": "½ teaspoon sea salt",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1/2 tsp",
+          "phrase": "sea salt"
+        }
+      ]
+    }
+  },
+  {
+    "id": "holdout-003",
+    "input": "2 Tbsp. finely chopped rosemary (or 2 tsp. dried)",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "2 tbsp",
+          "phrase": "finely chopped rosemary",
+          "parentheticals": [
+            "or 2 tsp. dried"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "holdout-004",
+    "input": "sea salt",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "phrase": "sea salt"
+        }
+      ]
+    }
+  },
+  {
+    "id": "holdout-005",
+    "input": "1 1⁄2 tsp. freshly ground black pepper",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 1/2 tsp",
+          "phrase": "freshly ground black pepper"
+        }
+      ]
+    }
+  },
+  {
+    "id": "holdout-006",
+    "input": "1 handful of baby salad leaves",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 handful",
+          "phrase": "baby salad leaves"
+        }
+      ]
+    }
+  },
+  {
+    "id": "holdout-007",
+    "input": "1 onion, peeled and cut into quarters",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1",
+          "phrase": "onion",
+          "trailing": "peeled and cut into quarters"
+        }
+      ]
+    }
+  },
+  {
+    "id": "holdout-008",
+    "input": "1 recipe quantity pickling liquid (see recipe, below)",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 recipe",
+          "phrase": "quantity pickling liquid",
+          "parentheticals": [
+            "see recipe, below"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "holdout-009",
+    "input": "1 sprig of thyme, leaves picked",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 sprig",
+          "phrase": "thyme",
+          "trailing": "leaves picked"
+        }
+      ]
+    }
+  },
+  {
+    "id": "holdout-010",
+    "input": "1 tbsp grapeseed oil",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 tbsp",
+          "phrase": "grapeseed oil"
+        }
+      ]
+    }
+  },
+  {
+    "id": "holdout-011",
+    "input": "1 teaspoon chilli powder",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 tsp",
+          "phrase": "chilli powder"
+        }
+      ]
+    }
+  },
+  {
+    "id": "holdout-012",
+    "input": "1 venison rack",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1",
+          "phrase": "venison rack"
+        }
+      ]
+    }
+  },
+  {
+    "id": "holdout-013",
+    "input": "1/2 celeriac, peeled and diced",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1/2",
+          "phrase": "celeriac",
+          "trailing": "peeled and diced"
+        }
+      ]
+    }
+  },
+  {
+    "id": "holdout-014",
+    "input": "1⁄2 cup dry, robust red wine",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1/2 cup",
+          "phrase": "dry",
+          "trailing": "robust red wine"
+        }
+      ]
+    }
+  },
+  {
+    "id": "holdout-015",
+    "input": "½ tsp ground nutmeg",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1/2 tsp",
+          "phrase": "ground nutmeg"
+        }
+      ]
+    }
+  },
+  {
+    "id": "holdout-016",
+    "input": "¼ cup dried cherries",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1/4 cup",
+          "phrase": "dried cherries"
+        }
+      ]
+    }
+  },
+  {
+    "id": "holdout-017",
+    "input": "¼ teaspoon crushed red pepper",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1/4 tsp",
+          "phrase": "crushed red pepper"
+        }
+      ]
+    }
+  },
+  {
+    "id": "holdout-018",
+    "input": "1½ tsp. ground cinnamon",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 1/2 tsp",
+          "phrase": "ground cinnamon"
+        }
+      ]
+    }
+  },
+  {
+    "id": "holdout-019",
+    "input": "150g bramble berries or blackberries",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "150 g",
+          "phrase": "bramble berries or blackberries"
+        }
+      ]
+    }
+  },
+  {
+    "id": "holdout-020",
+    "input": "175g of onion, finely chopped",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "175 g",
+          "phrase": "onion",
+          "trailing": "finely chopped"
+        }
+      ]
+    }
+  },
+  {
+    "id": "holdout-021",
+    "input": "2 bunches of Swiss chard, stems removed, roughly chopped",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "2 bunch",
+          "phrase": "Swiss chard",
+          "trailing": "stems removed, roughly chopped"
+        }
+      ]
+    }
+  },
+  {
+    "id": "holdout-022",
+    "input": "2 shallots, sliced",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "2",
+          "phrase": "shallots",
+          "trailing": "sliced"
+        }
+      ]
+    }
+  },
+  {
+    "id": "holdout-023",
+    "input": "2 tablespoons fresh lemon juice",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "2 tbsp",
+          "phrase": "fresh lemon juice"
+        }
+      ]
+    }
+  },
+  {
+    "id": "holdout-024",
+    "input": "2 tbsp (8 g) minced fresh rosemary",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "2 tbsp | 8 g",
+          "phrase": "minced fresh rosemary"
+        }
+      ]
+    }
+  },
+  {
+    "id": "holdout-025",
+    "input": "2 tbsp. whole black peppercorns, plus ground to taste",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "2 tbsp",
+          "phrase": "whole black peppercorns",
+          "trailing": "plus ground to taste"
+        }
+      ]
+    }
+  },
+  {
+    "id": "holdout-026",
+    "input": "200g of button mushrooms, halved",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "200 g",
+          "phrase": "button mushrooms",
+          "trailing": "halved"
+        }
+      ]
+    }
+  },
+  {
+    "id": "holdout-027",
+    "input": "24 wild garlic leaves",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "24",
+          "phrase": "wild garlic leaves"
+        }
+      ]
+    }
+  },
+  {
+    "id": "holdout-028",
+    "input": "3 cloves garlic, minced",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "3 clove",
+          "phrase": "garlic",
+          "trailing": "minced"
+        }
+      ]
+    }
+  },
+  {
+    "id": "holdout-029",
+    "input": "3 tablespoons butter, divided use",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "3 tbsp",
+          "phrase": "butter",
+          "trailing": "divided use"
+        }
+      ]
+    }
+  },
+  {
+    "id": "holdout-030",
+    "input": "4 1/2 oz of brandy",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "4 1/2 oz",
+          "phrase": "brandy"
+        }
+      ]
+    }
+  },
+  {
+    "id": "holdout-031",
+    "input": "4 shallots, halved",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "4",
+          "phrase": "shallots",
+          "trailing": "halved"
+        }
+      ]
+    }
+  },
+  {
+    "id": "holdout-032",
+    "input": "4-8 pickled carrots",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "4-8",
+          "phrase": "pickled carrots"
+        }
+      ]
+    }
+  },
+  {
+    "id": "holdout-033",
+    "input": "5 beetroots, trimmed",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "5",
+          "phrase": "beetroots",
+          "trailing": "trimmed"
+        }
+      ]
+    }
+  },
+  {
+    "id": "holdout-034",
+    "input": "6 garlic cloves, chopped",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "6",
+          "phrase": "garlic cloves",
+          "trailing": "chopped"
+        }
+      ]
+    }
+  },
+  {
+    "id": "holdout-035",
+    "input": "75 ml red wine vinegar",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "75 ml",
+          "phrase": "red wine vinegar"
+        }
+      ]
+    }
+  },
+  {
+    "id": "holdout-036",
+    "input": "8 large prunes (agen, for preference), stoned",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "8",
+          "phrase": "large prunes",
+          "parentheticals": [
+            "agen, for preference"
+          ],
+          "trailing": "stoned"
+        }
+      ]
+    }
+  },
+  {
+    "id": "holdout-037",
+    "input": "a handful of barberries",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "quantity": "1 handful",
+          "phrase": "barberries"
+        }
+      ]
+    }
+  },
+  {
+    "id": "holdout-038",
+    "input": "Ginger-Berry Glaze (recipe follows)",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "phrase": "Ginger-Berry Glaze",
+          "parentheticals": [
+            "recipe follows"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "holdout-039",
+    "input": "lemon juice",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "phrase": "lemon juice"
+        }
+      ]
+    }
+  },
+  {
+    "id": "holdout-040",
+    "input": "Parsley oil",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "phrase": "Parsley oil"
+        }
+      ]
+    }
+  },
+  {
+    "id": "holdout-041",
+    "input": "Salt and Black pepper",
+    "tags": [
+      "corpus"
+    ],
+    "expected": {
+      "status": "PARSED",
+      "segments": [
+        {
+          "phrase": "Salt and Black pepper"
+        }
+      ]
+    }
+  }
+]

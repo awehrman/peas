@@ -3,44 +3,47 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "main": "dist/index.js",
-  "types": "types/index.d.ts",
+  "main": "dist/v2/index.js",
+  "types": "dist/v2/index.d.ts",
   "exports": {
     ".": {
-      "types": "./types/index.d.ts",
-      "default": "./dist/index.js"
-    },
-    "./v1": {
-      "types": "./types/index.d.ts",
-      "default": "./dist/v1/index.js"
-    },
-    "./v1/minified": {
-      "types": "./types/index.d.ts",
-      "default": "./dist/v1/index.min.js"
-    },
-    "./v2": {
-      "types": "./types/index.d.ts",
+      "types": "./dist/v2/index.d.ts",
       "default": "./dist/v2/index.js"
     },
-    "./v2/minified": {
-      "types": "./types/index.d.ts",
-      "default": "./dist/v2/index.min.js"
+    "./v2": {
+      "types": "./dist/v2/index.d.ts",
+      "default": "./dist/v2/index.js"
     }
   },
   "scripts": {
     "build": "node scripts/build.js",
-    "build:v1": "peggy -o dist/v1/parser.js --format es src/v1/parser.peggy && node -e \"require('fs').writeFileSync('dist/v1/index.js', 'export { parse } from \\'./parser.js\\';')\"",
-    "build:v2": "peggy -o dist/v2/grammar.js --format es src/v2/grammar.peggy && node -e \"require('fs').writeFileSync('dist/v2/index.js', 'export { parse } from \\'./grammar.js\\';')\"",
-    "build:minified": "yarn build && yarn minify:v1 && yarn minify:v2",
-    "minify:v1": "npx terser dist/v1/index.js --compress --mangle -o dist/v1/index.min.js",
-    "minify:v2": "npx terser dist/v2/index.js --compress --mangle -o dist/v2/index.min.js",
+    "generate:v2": "node scripts/generate-v2.js",
+    "pull:fixtures": "yarn workspace @peas/database pull:fixtures",
+    "calibrate:thresholds": "tsx scripts/calibrate-thresholds.ts",
+    "build:v2": "yarn generate:v2 && tsc -p tsconfig.build.json",
+    "typecheck": "yarn generate:v2 && tsc -p tsconfig.json --noEmit",
     "clean": "rm -rf dist",
-    "prebuild": "yarn clean && mkdir -p dist/v1 dist/v2"
+    "test": "vitest",
+    "test:run": "vitest run",
+    "report:compare": "tsx scripts/compare-v1-v2.ts",
+    "preview:lexicon": "tsx scripts/preview-lexicon-change.ts",
+    "explain:line": "tsx scripts/explain-line.ts",
+    "test:coverage": "vitest run --coverage",
+    "extract:descriptors": "tsx scripts/extract-v1-descriptors.ts",
+    "evaluate:resolution": "tsx scripts/evaluate-resolution.ts",
+    "evaluate:structure": "tsx scripts/evaluate-structure.ts"
   },
   "dependencies": {
-    "peggy": "^5.0.5"
+    "peggy": "^5.1.1",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
-    "terser": "^5.43.1"
+    "@peas/typescript-config": "*",
+    "@types/node": "^24.0.13",
+    "@vitest/coverage-v8": "^5.1.0",
+    "tsx": "^4.7.0",
+    "typescript": "^6.0.3",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.0"
   }
 }

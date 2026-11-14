@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import { createMockQueue } from "../../../../../test-utils/helpers";
 import { ActionName } from "../../../../../types";
@@ -185,7 +185,7 @@ describe("processInstructions", () => {
 
     it("should handle queue.add errors and re-throw them", async () => {
       const queueError = new Error("Queue error");
-      (mockInstructionQueue.add as ReturnType<typeof vi.fn>).mockRejectedValue(
+      (mockInstructionQueue.add as Mock).mockRejectedValue(
         queueError
       );
 
@@ -200,7 +200,7 @@ describe("processInstructions", () => {
 
     it("should log error message when queue operation fails", async () => {
       const queueError = new Error("Queue operation failed");
-      (mockInstructionQueue.add as ReturnType<typeof vi.fn>).mockRejectedValue(
+      (mockInstructionQueue.add as Mock).mockRejectedValue(
         queueError
       );
 

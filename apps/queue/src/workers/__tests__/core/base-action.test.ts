@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import {
   createMockActionContext,
@@ -19,7 +19,7 @@ const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
 describe("BaseAction", () => {
   let mockContext: ActionContext;
-  let mockLogger: { log: ReturnType<typeof vi.fn> };
+  let mockLogger: { log: Mock };
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -568,7 +568,7 @@ describe("ValidationAction", () => {
 
 describe("LoggingAction", () => {
   let mockContext: ActionContext;
-  let mockLogger: { log: ReturnType<typeof vi.fn> };
+  let mockLogger: { log: Mock };
 
   beforeEach(() => {
     mockContext = createMockActionContext();

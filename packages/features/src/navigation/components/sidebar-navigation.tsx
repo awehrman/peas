@@ -2,6 +2,7 @@
 
 import { NavigationItemsList } from "./navigation-items-list";
 import { NavigationToggle } from "./navigation-toggle";
+import { UserAvatar } from "./user-avatar";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -9,6 +10,7 @@ import { NavigationMenu, NavigationMenuList, cn } from "@peas/components";
 import { LogOut } from "lucide-react";
 
 import { NAVIGATION_CONSTANTS } from "../config/constants";
+import { getToggleRestY } from "../config/navigation";
 import {
   NavigationProvider,
   useNavigation,
@@ -20,19 +22,30 @@ function SidebarNavigationComponent({
   LinkComponent,
   pathname,
   signOut,
+  user,
 }: PureNavigationProps) {
   const { isExpanded, setIsExpanded } = useNavigation();
-  const [mouseY, setMouseY] = useState<number>(
-    NAVIGATION_CONSTANTS.DEFAULT_MOUSE_Y
-  );
+  const isAvatarVisible = isExpanded && !!user;
+  const listTop = isAvatarVisible
+    ? NAVIGATION_CONSTANTS.NAV_LIST_TOP +
+      NAVIGATION_CONSTANTS.AVATAR_BLOCK_HEIGHT
+    : NAVIGATION_CONSTANTS.NAV_LIST_TOP;
+  const restY = isExpanded
+    ? getToggleRestY(navigationItems, pathname, listTop)
+    : NAVIGATION_CONSTANTS.HEADER_CENTER_Y;
+  const restYRef = useRef(restY);
+  restYRef.current = restY;
+  const [mouseY, setMouseY] = useState<number>(restY);
+  const mouseYRef = useRef(restY);
   const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const animationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isHoveringRef = useRef(false);
   const [isResetting, setIsResetting] = useState(false);
-  const [isHovering, setIsHovering] = useState(false);
 
   const toggleButtonStyle = useMemo(
     () => ({
       position: "absolute" as const,
-      top: `${mouseY - NAVIGATION_CONSTANTS.TOGGLE_VERTICAL_OFFSET}px`,
+      top: `${mouseY - NAVIGATION_CONSTANTS.TOGGLE_HALF_HEIGHT}px`,
       left: isExpanded ? "auto" : NAVIGATION_CONSTANTS.COLLAPSED_LEFT_POSITION,
       right: isExpanded ? NAVIGATION_CONSTANTS.EXPANDED_RIGHT_POSITION : "auto",
       transition: isResetting ? NAVIGATION_CONSTANTS.RESET_TRANSITION : "none",
@@ -54,8 +67,28 @@ function SidebarNavigationComponent({
     setIsExpanded((current) => !current);
   }, [setIsExpanded]);
 
-  const handleMouseEnter = useCallback(() => setIsHovering(true), []);
-  const handleMouseLeave = useCallback(() => setIsHovering(false), []);
+  const handleMouseEnter = useCallback(() => {
+    isHoveringRef.current = true;
+  }, []);
+  const handleMouseLeave = useCallback(() => {
+    isHoveringRef.current = false;
+  }, []);
+
+  // Glide back to the active page's row once the mouse stops driving it.
+  // Reads refs so a pending timer always uses the latest active page.
+  const returnToRest = useCallback(() => {
+    const target = restYRef.current;
+    if (isHoveringRef.current || mouseYRef.current === target) return;
+
+    setIsResetting(true);
+    mouseYRef.current = target;
+    setMouseY(target);
+
+    if (animationTimerRef.current) clearTimeout(animationTimerRef.current);
+    animationTimerRef.current = setTimeout(() => {
+      setIsResetting(false);
+    }, NAVIGATION_CONSTANTS.ANIMATION_DURATION);
+  }, []);
 
   const handleMouseMove = useCallback(
     (event: React.MouseEvent<HTMLDivElement>) => {
@@ -66,31 +99,31 @@ function SidebarNavigationComponent({
         Math.min(relativeY, rect.height - NAVIGATION_CONSTANTS.MOUSE_BOUNDARY)
       );
 
+      setIsResetting(false);
+      mouseYRef.current = constrainedY;
       setMouseY(constrainedY);
 
       if (resetTimerRef.current) {
         clearTimeout(resetTimerRef.current);
       }
-
       resetTimerRef.current = setTimeout(() => {
-        if (mouseY !== NAVIGATION_CONSTANTS.DEFAULT_MOUSE_Y && !isHovering) {
-          setIsResetting(true);
-          setMouseY(NAVIGATION_CONSTANTS.DEFAULT_MOUSE_Y);
-
-          setTimeout(() => {
-            setIsResetting(false);
-          }, NAVIGATION_CONSTANTS.ANIMATION_DURATION);
-        }
+        resetTimerRef.current = null;
+        returnToRest();
       }, NAVIGATION_CONSTANTS.AUTO_RESET_DELAY);
     },
-    [mouseY, isHovering]
+    [returnToRest]
   );
+
+  // A new active page while the mouse is elsewhere (a pending timer handles
+  // navigation started from the sidebar itself)
+  useEffect(() => {
+    if (!resetTimerRef.current) returnToRest();
+  }, [restY, returnToRest]);
 
   useEffect(() => {
     return () => {
-      if (resetTimerRef.current) {
-        clearTimeout(resetTimerRef.current);
-      }
+      if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
+      if (animationTimerRef.current) clearTimeout(animationTimerRef.current);
     };
   }, []);
 
@@ -121,9 +154,29 @@ function SidebarNavigationComponent({
       >
         {isExpanded ? (
           <>
+            {isAvatarVisible && (
+              <div
+                className={cn(
+                  "flex-none flex flex-col items-center gap-2 px-5",
+                  NAVIGATION_CONSTANTS.AVATAR_MARGIN
+                )}
+              >
+                <UserAvatar
+                  user={user}
+                  className={NAVIGATION_CONSTANTS.AVATAR_SIZE}
+                />
+                <span className="max-w-full truncate text-sm font-medium text-navigation-foreground">
+                  {user.username}
+                </span>
+              </div>
+            )}
+
             <div className="flex-none">
-              <NavigationMenu orientation="vertical" className="w-full">
-                <NavigationMenuList className="flex-col space-y-2 w-full">
+              <NavigationMenu
+                orientation="vertical"
+                className="w-full max-w-none flex-col items-stretch justify-start"
+              >
+                <NavigationMenuList className="flex-col space-x-0 w-full">
                   <NavigationItemsList
                     navigationItems={navigationItems}
                     LinkComponent={LinkComponent}
@@ -133,14 +186,14 @@ function SidebarNavigationComponent({
               </NavigationMenu>
             </div>
 
-            <div className="mt-auto pb-4">
+            <div className="mt-auto">
               <div className="w-full list-none">
                 <form
                   action={signOut}
-                  className="flex gap-3 items-center w-full p-3 rounded-md transition-colors font-normal text-navigation-foreground hover:!text-primary-500"
+                  className="flex gap-3 items-center w-full px-5 py-1.5 text-sm font-medium transition-colors text-navigation-foreground hover:!text-primary-300 hover:bg-white/5"
                   onSubmit={handleSignOutSubmit}
                 >
-                  <LogOut className="mr-2 h-4 w-4" />
+                  <LogOut className="h-4 w-4" />
                   <button type="submit">Sign Out</button>
                 </form>
               </div>
