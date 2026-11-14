@@ -3,7 +3,7 @@ import {
   RecipesPageDocument,
 } from "~/graphql/generated";
 import { useMutationAction } from "~/lib/apollo/cache-coordinator-provider";
-import { optionalPage, optionalText } from "~/lib/search";
+import { optionalEnum, optionalPage, optionalText } from "~/lib/search";
 
 import { useReadQuery } from "@apollo/client/react";
 import { RecipesListPageContent } from "@peas/features";
@@ -13,6 +13,7 @@ import { z } from "zod";
 const searchSchema = z.object({
   q: optionalText,
   category: optionalText,
+  provenance: optionalEnum(["approved", "inferred"] as const),
   tag: optionalText,
   concept: optionalText,
   page: optionalPage,
@@ -26,6 +27,11 @@ export const Route = createFileRoute("/_authed/recipes/")({
       variables: {
         query: deps.q ?? null,
         category: deps.category ?? null,
+        categoryProvenance: deps.provenance
+          ? deps.provenance === "approved"
+            ? "APPROVED"
+            : "INFERRED"
+          : null,
         tag: deps.tag ?? null,
         conceptId: deps.concept ?? null,
         page: deps.page ?? 1,
@@ -59,6 +65,11 @@ function RecipesPage() {
       filters={{
         query: search.q,
         category: search.category,
+        categoryProvenance: search.provenance
+          ? search.provenance === "approved"
+            ? "APPROVED"
+            : "INFERRED"
+          : "ANY",
         tag: search.tag,
         conceptId: search.concept,
       }}

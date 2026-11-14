@@ -68,13 +68,17 @@ export async function getDashboardStats(): Promise<DashboardStatsRecord> {
     topTags,
     notesBySavedYear,
   ] = await Promise.all([
-    prisma.note.count(),
-    prisma.recipe.count(),
-    prisma.note.count({ where: { status: "COMPLETED", recipe: null } }),
+    prisma.note.count({ where: { archivedAt: null } }),
+    prisma.recipe.count({ where: { note: { archivedAt: null } } }),
+    prisma.note.count({ where: { status: "COMPLETED", recipe: null, archivedAt: null } }),
     prisma.foodConcept.count({ where: { status: { not: "DEPRECATED" } } }),
     prisma.foodConcept.count({ where: { status: "VERIFIED" } }),
     prisma.parsedInstructionLine.count({ where: { isActive: true } }),
-    prisma.note.groupBy({ by: ["status"], _count: { _all: true } }),
+    prisma.note.groupBy({
+      by: ["status"],
+      where: { archivedAt: null },
+      _count: { _all: true },
+    }),
     prisma.parsedIngredientLine.groupBy({
       by: ["parseStatus"],
       where: activeLines,
@@ -182,21 +186,36 @@ async function getTopSources(): Promise<LabelCountRecord[]> {
 async function getTopTaxonomy(
   kind: "category" | "tag"
 ): Promise<LabelCountRecord[]> {
-  const query = {
-    where: { notes: { some: {} } },
-    select: { name: true, _count: { select: { notes: true } } },
-  };
   const rows =
     kind === "category"
-      ? await prisma.category.findMany(query)
-      : await prisma.tag.findMany(query);
+      ? (
+          await prisma.category.findMany({
+            select: {
+              name: true,
+              _count: {
+                select: {
+                  memberships: {
+                    where: {
+                      state: { in: ["APPROVED", "INFERRED"] },
+                      note: { archivedAt: null },
+                    },
+                  },
+                },
+              },
+            },
+          })
+        ).map((row) => ({ name: row.name, count: row._count.memberships }))
+      : (
+          await prisma.tag.findMany({
+            where: { notes: { some: {} } },
+            select: { name: true, _count: { select: { notes: true } } },
+          })
+        ).map((row) => ({ name: row.name, count: row._count.notes }));
 
   const countByName = new Map<string, number>();
   for (const row of rows) {
-    countByName.set(
-      row.name,
-      (countByName.get(row.name) ?? 0) + row._count.notes
-    );
+    if (row.count === 0) continue;
+    countByName.set(row.name, (countByName.get(row.name) ?? 0) + row.count);
   }
 
   return [...countByName.entries()]

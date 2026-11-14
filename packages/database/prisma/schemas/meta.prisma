@@ -1,16 +1,72 @@
 // Meta module
 // Contains categorization and tagging
 
+enum CategoryKind {
+  MANUAL
+  CONCEPT
+}
+
+enum CategoryAssignmentState {
+  INFERRED
+  APPROVED
+  EXCLUDED
+}
+
+enum CategoryAssignmentOrigin {
+  IMPORT
+  MANUAL
+  CONCEPT_RULE
+  DUPLICATE_MERGE
+}
+
 model Category {
   id String @id @default(cuid())
 
-  name String
+  name        String
+  slug        String       @unique
+  kind        CategoryKind @default(MANUAL)
+  description String?
 
-  notes   Note[]
-  recipes Recipe[]
+  /// CONCEPT categories match notes mentioning this food or a descendant reached through `traversal`.
+  concept   FoodConcept?           @relation(fields: [conceptId], references: [id], onDelete: SetNull)
+  conceptId String?                @db.Uuid
+  traversal FoodRelationshipType[] @default([IS_A, PART_OF])
+  /// Bumped on every rule change, so memberships record the rule that produced them.
+  ruleVersion Int @default(1)
+
+  memberships NoteCategory[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([conceptId])
+}
+
+/// A note's membership in a category. Recomputation only writes INFERRED rows; APPROVED and EXCLUDED are reviewer decisions.
+model NoteCategory {
+  id String @id @default(uuid(7)) @db.Uuid
+
+  note       Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  noteId     String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  categoryId String
+
+  state  CategoryAssignmentState
+  origin CategoryAssignmentOrigin
+  /// Why a CONCEPT rule matched (CategoryEvidenceSchema).
+  evidence        Json?
+  ruleVersion     Int?
+  lexiconRevision Int?
+
+  decidedAt   DateTime?
+  decidedBy   User?     @relation(fields: [decidedById], references: [id], onDelete: SetNull)
+  decidedById String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([noteId, categoryId])
+  @@index([categoryId, state])
 }
 
 model Tag {

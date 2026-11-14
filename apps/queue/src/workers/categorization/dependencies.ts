@@ -23,6 +23,18 @@ export interface CategorizationWorkerDependencies extends BaseWorkerDependencies
      * Save tags to database
      */
     saveTags: (data: CategorizationJobData) => Promise<CategorizationJobData>;
+    /**
+     * Derive ingredient-rule categories for a note
+     */
+    recomputeNoteCategories: (data: CategorizationJobData) => Promise<CategorizationJobData>;
+    /**
+     * Recompute one category across the corpus after its rule changed
+     */
+    recomputeCategory: (data: CategorizationJobData) => Promise<CategorizationJobData>;
+    /**
+     * Recompute every ingredient-rule category after a knowledge change
+     */
+    recomputeAllCategories: (data: CategorizationJobData) => Promise<CategorizationJobData>;
   };
   /** Status broadcaster for completion messages */
   statusBroadcaster?: {
@@ -39,6 +51,9 @@ export interface CategorizationJobData {
   noteId: string;
   importId: string;
   jobId: string;
+  /** Recompute jobs; absent for the per-note import pipeline. */
+  kind?: "RECOMPUTE_NOTE_CATEGORIES" | "RECOMPUTE_CATEGORY" | "RECOMPUTE_ALL_CATEGORIES";
+  categoryId?: string;
   metadata?: Record<string, unknown>;
 }
 
@@ -89,6 +104,24 @@ export function buildCategorizationDependencies(
           serviceContainer.logger,
           serviceContainer.statusBroadcaster
         );
+      },
+      recomputeNoteCategories: async (data: CategorizationJobData) => {
+        const { recomputeCategoriesForNote } = await import(
+          "../../services/categorization/actions/recompute-categories/service"
+        );
+        return recomputeCategoriesForNote(data, serviceContainer.logger);
+      },
+      recomputeCategory: async (data: CategorizationJobData) => {
+        const { recomputeOneCategory } = await import(
+          "../../services/categorization/actions/recompute-categories/service"
+        );
+        return recomputeOneCategory(data, serviceContainer.logger);
+      },
+      recomputeAllCategories: async (data: CategorizationJobData) => {
+        const { recomputeEveryCategory } = await import(
+          "../../services/categorization/actions/recompute-categories/service"
+        );
+        return recomputeEveryCategory(data, serviceContainer.logger);
       },
     },
   };

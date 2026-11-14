@@ -1,0 +1,100 @@
+fragment StructureProposalFields on StructureProposal {
+  id
+  noteId
+  noteTitle
+  contentIndex
+  text
+  assignedKind
+  proposalType
+  proposedLabel
+  parts {
+    kind
+    text
+  }
+  patternKey
+  margin
+  signals {
+    id
+    kind
+    weight
+    text
+  }
+  status
+  decidedLabel
+  decidedBy
+  decidedAt
+  before {
+    contentIndex
+    text
+  }
+  after {
+    contentIndex
+    text
+  }
+}
+
+query StructureReviewPage(
+  $status: StructureListStatus
+  $patternKey: String
+  $page: Int
+) {
+  structureCounts {
+    open
+    decided
+    byPattern {
+      patternKey
+      open
+    }
+  }
+  structureProposals(status: $status, patternKey: $patternKey, page: $page) {
+    items {
+      ...StructureProposalFields
+    }
+    total
+    page
+    pageSize
+  }
+  structurePatterns {
+    patternKey
+    proposedLabel
+    open
+    approved
+    rejected
+    changed
+    notes
+    precision
+    scope
+    topSourceLabel
+    topSourceShare
+    canAutoApply
+  }
+}
+
+mutation DecideStructureProposal($id: ID!, $input: StructureDecisionInput!) {
+  decideStructureProposal(id: $id, input: $input) {
+    ...PayloadFields
+    proposal {
+      ...StructureProposalFields
+    }
+  }
+}
+
+mutation UndoStructureDecision($id: ID!) {
+  undoStructureDecision(id: $id) {
+    ...PayloadFields
+    proposal {
+      ...StructureProposalFields
+    }
+  }
+}
+
+mutation DecideStructurePattern(
+  $patternKey: String!
+  $input: StructureDecisionInput!
+) {
+  decideStructurePattern(patternKey: $patternKey, input: $input) {
+    ...PayloadFields
+    applied
+    skipped
+  }
+}

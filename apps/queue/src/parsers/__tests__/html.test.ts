@@ -84,6 +84,7 @@ describe("HTML Parser", () => {
 
       expect(result).toEqual({
         title: "Test Recipe",
+        contentTags: expect.any(Array),
         ingredients: expect.arrayContaining([
           expect.objectContaining({
             reference: expect.any(String),

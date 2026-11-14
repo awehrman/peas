@@ -88,6 +88,7 @@ export const Query: QueryResolvers = {
       getRecipesPage({
         query: toFilter(args.query),
         category: toFilter(args.category),
+        categoryProvenance: args.categoryProvenance ?? "ANY",
         tag: toFilter(args.tag),
         conceptId,
         exactConcept: args.exactConcept ?? false,

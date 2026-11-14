@@ -2,6 +2,7 @@ export * from "./addable-label";
 export * from "./chip-input";
 export * from "./confirm-dialog";
 export * from "./format-date";
+export * from "./highlighted-text";
 export * from "./inline-error";
 export * from "./mutation-result";
 export * from "./page-links";

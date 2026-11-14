@@ -52,7 +52,8 @@ export class PeaGenerator {
    * Generates the complete SVG content
    */
   public generate(): string {
-    let svg = `<svg width="${this.options.width}" height="${this.options.height}" xmlns="http://www.w3.org/2000/svg">\n`;
+    const { width, height } = this.options;
+    let svg = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">\n`;
 
     if (this.options.useBlobs) {
       // Generate 200 random blob peas in a grid

@@ -83,6 +83,7 @@ describe("Images Router", () => {
         categorizationQueue: {} as any,
         sourceQueue: {} as any,
         reinterpretQueue: {} as any,
+        bookLookupQueue: {} as any,
       },
       database: {} as any,
       errorHandler: {} as any,

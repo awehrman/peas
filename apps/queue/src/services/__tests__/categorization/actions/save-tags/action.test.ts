@@ -10,6 +10,9 @@ import type { ActionContext } from "../../../../../workers/core/types";
 // Mock the service function
 vi.mock("../../../../categorization/actions/save-tags/service", () => ({
   saveTags: vi.fn(),
+  recomputeNoteCategories: vi.fn(),
+  recomputeCategory: vi.fn(),
+  recomputeAllCategories: vi.fn(),
 }));
 
 describe("SaveTagsAction", () => {
@@ -50,6 +53,9 @@ describe("SaveTagsAction", () => {
         saveCategory: vi.fn(),
         determineTags: vi.fn(),
         saveTags: vi.fn(),
+        recomputeNoteCategories: vi.fn(),
+        recomputeCategory: vi.fn(),
+        recomputeAllCategories: vi.fn(),
       },
     };
 

@@ -53,6 +53,9 @@ describe("DetermineCategoryAction", () => {
         saveCategory: vi.fn(),
         determineTags: vi.fn(),
         saveTags: vi.fn(),
+        recomputeNoteCategories: vi.fn(),
+        recomputeCategory: vi.fn(),
+        recomputeAllCategories: vi.fn(),
       },
     };
 

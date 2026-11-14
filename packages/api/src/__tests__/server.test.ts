@@ -279,9 +279,13 @@ describe("GraphQL server", () => {
       success: true,
       effect: {
         changed: [{ typename: "Recipe", id: "r1" }],
-        invalidatedDomains: ["RECIPES", "RECIPE_TAXONOMY"],
+        invalidatedDomains: ["NOTE_DETAIL", "RECIPES", "RECIPE_TAXONOMY", "CATEGORIES"],
       },
     });
+    expect(database.updateRecipe).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "r1", categories: ["Dinner"] }),
+      expect.any(String)
+    );
   });
 
   it("filters recipes by concept and names the concept", async () => {

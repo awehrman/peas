@@ -17,17 +17,76 @@ fragment PayloadFields on MutationPayload {
   }
 }
 
-fragment SourceFields on Source {
+fragment NoteSourceFields on NoteSource {
   id
-  urls {
+  isPrimary
+  origin
+  originalText
+  source {
     id
-    url
-    isBrokenLink
-    siteName
+    kind
+    displayName
+    url {
+      id
+      originalUrl
+      normalizedUrl
+      siteName
+      checkStatus
+      lastCheckedAt
+      lastSuccessfulVisitAt
+      lastHttpStatus
+      lastFailureReason
+      lastFinalUrl
+    }
+    book {
+      ...BookFields
+    }
+    bookLookup {
+      id
+      status
+    }
   }
-  book {
-    title
-    author
+}
+
+fragment BookFields on Book {
+  id
+  title
+  subtitle
+  authors
+  publisher
+  publishedYear
+  isbn13
+  isbn10
+  coverId
+  matchStatus
+  openLibraryWorkKey
+}
+
+fragment CategoryEvidenceFields on CategoryEvidence {
+  lineId
+  mentionId
+  conceptId
+  conceptName
+  path {
+    type
+    conceptId
+    conceptName
+  }
+}
+
+fragment CategoryMembershipFields on CategoryMembership {
+  id
+  state
+  origin
+  decidedAt
+  evidence {
+    ...CategoryEvidenceFields
+  }
+  category {
+    id
+    name
+    slug
+    kind
   }
 }
 
@@ -42,6 +101,7 @@ fragment IngredientBlockFields on IngredientBlock {
     reviewStatus
     isActive
     parserVersion
+    lineKind
     mentions {
       ...MentionFields
     }
@@ -53,6 +113,7 @@ fragment InstructionFields on InstructionLine {
   lineIndex
   text
   isActive
+  lineKind
 }
 
 query JobStatus($jobId: ID!) {

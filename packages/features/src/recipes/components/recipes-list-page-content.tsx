@@ -21,6 +21,7 @@ import { AppLink, buildHref, useAppNavigation } from "../../app-navigation";
 import { InlineError, type MutationAction, PageLinks, SearchForm, useMutation } from "../../shared";
 import type { ConceptRef } from "../../teach/types";
 import type {
+  CategoryProvenance,
   RecipeListItem,
   RecipeTaxonomyOptions,
   RecipesFilters,
@@ -47,6 +48,10 @@ export function RecipesListPageContent({
   const currentParams = {
     q: filters.query,
     category: filters.category,
+    provenance:
+      filters.categoryProvenance && filters.categoryProvenance !== "ANY"
+        ? filters.categoryProvenance.toLowerCase()
+        : undefined,
     tag: filters.tag,
     concept: filters.conceptId,
   };
@@ -72,6 +77,14 @@ export function RecipesListPageContent({
             options={options.categories}
             onChange={(category) => navigate({ category })}
           />
+          {filters.category ? (
+            <ProvenanceSelect
+              value={filters.categoryProvenance ?? "ANY"}
+              onChange={(provenance) =>
+                navigate({ provenance: provenance === "ANY" ? undefined : provenance.toLowerCase() })
+              }
+            />
+          ) : null}
           <TaxonomySelect
             id="recipes-tag"
             label="Tag"
@@ -80,7 +93,12 @@ export function RecipesListPageContent({
             onChange={(tag) => navigate({ tag })}
           />
         </div>
-        {onPromoteCompletedNotes ? <PromoteNotesButton onPromote={onPromoteCompletedNotes} /> : null}
+        <div className="flex flex-wrap items-end gap-2">
+          <AppLink href="/recipes/categories" className="text-sm text-primary hover:underline">
+            Manage categories
+          </AppLink>
+          {onPromoteCompletedNotes ? <PromoteNotesButton onPromote={onPromoteCompletedNotes} /> : null}
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
@@ -207,6 +225,38 @@ function TaxonomySelect({
           {options.map((option) => (
             <SelectItem key={option} value={option}>
               {option}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
+const PROVENANCE_LABELS: Record<CategoryProvenance, string> = {
+  ANY: "Approved or suggested",
+  APPROVED: "Approved only",
+  INFERRED: "Suggested only",
+};
+
+function ProvenanceSelect({
+  value,
+  onChange,
+}: {
+  value: CategoryProvenance;
+  onChange: (value: CategoryProvenance) => void;
+}): ReactNode {
+  return (
+    <div className="flex flex-col gap-1">
+      <Label htmlFor="recipes-category-provenance">Category membership</Label>
+      <Select value={value} onValueChange={(next) => onChange(next as CategoryProvenance)}>
+        <SelectTrigger id="recipes-category-provenance" className="w-52">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {(Object.keys(PROVENANCE_LABELS) as CategoryProvenance[]).map((option) => (
+            <SelectItem key={option} value={option}>
+              {PROVENANCE_LABELS[option]}
             </SelectItem>
           ))}
         </SelectContent>

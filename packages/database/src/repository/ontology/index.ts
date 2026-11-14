@@ -1,3 +1,4 @@
+export * from "./analytics-snapshots.js";
 export * from "./adjacency.js";
 export * from "./apply-decision.js";
 export * from "./attributes.js";
@@ -7,7 +8,9 @@ export * from "./concept-editing.js";
 export * from "./concepts.js";
 export * from "./corpus-health.js";
 export * from "./decisions.js";
+export * from "./explorer.js";
 export * from "./grammar-loop.js";
+export * from "./graph.js";
 export * from "./health-trends.js";
 export * from "./ingredient-card.js";
 export * from "./discoveries.js";
@@ -24,6 +27,7 @@ export {
 } from "./helpers.js";
 export * from "./legacy-mapping.js";
 export * from "./lexicon.js";
+export * from "./lexicon-explorer.js";
 export * from "./mentions.js";
 export * from "./merge.js";
 export * from "./preview.js";

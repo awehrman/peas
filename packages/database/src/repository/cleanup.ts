@@ -15,6 +15,7 @@ export interface ImportCleanupCounts {
   sources: number;
   websites: number;
   books: number;
+  bookLookups: number;
   queueJobs: number;
   statusEvents: number;
   urls: number;
@@ -36,13 +37,14 @@ export interface OntologyCleanupCounts {
   ingredientTags: number;
   legacyMappings: number;
   healthSnapshots: number;
+  conceptCategories: number;
 }
 
 export type CleanupCounts = ImportCleanupCounts &
   Partial<OntologyCleanupCounts>;
 
 /**
- * Deletes everything an import created (DANGEROUS): notes, recipes, ingredient lines and their mentions, sources, note categories and tags, queue jobs, reinterpretation runs, and open or deferred discoveries left with no example lines. Users, food knowledge (concepts, lexicon, attributes, relationships), decisions, resolved and rejected discoveries, corpus health snapshots, and lexicon revisions are kept.
+ * Deletes everything an import created (DANGEROUS): notes, recipes, ingredient lines and their mentions, sources, note categories and tags, queue jobs, reinterpretation runs, corpus analytics snapshots (computed from those notes), and open or deferred discoveries left with no example lines. Users, food knowledge (concepts, lexicon, attributes, relationships), decisions, resolved and rejected discoveries, corpus health snapshots, and lexicon revisions are kept.
  *
  * With `includeOntology`, food knowledge goes too (see `deleteOntology`).
  *
@@ -69,20 +71,24 @@ export async function cleanupAllData(
       })
     ).count;
     const reinterpretRuns = (await prisma.reinterpretRun.deleteMany({})).count;
+    await prisma.corpusAnalyticsSnapshot.deleteMany({});
 
     await prisma.parsedInstructionLine.deleteMany({});
     const notes = (await prisma.note.deleteMany({})).count;
     const evernoteMetadata = (await prisma.evernoteMetadata.deleteMany({}))
       .count;
 
-    // URLs reference sources and websites
+    // URLs reference sources and websites; note links to sources cascade with the notes
     const urls = (await prisma.uRL.deleteMany({})).count;
     const websites = (await prisma.website.deleteMany({})).count;
-    const books = (await prisma.book.deleteMany({})).count;
+    const bookLookups = (await prisma.bookLookup.deleteMany({})).count;
     const sources = (await prisma.source.deleteMany({})).count;
+    const books = (await prisma.book.deleteMany({})).count;
 
-    // Note categories and tags come from imported notebooks and Evernote tags
-    const categories = (await prisma.category.deleteMany({})).count;
+    // Manual categories and tags come from imports and recipe edits; ingredient-rule (CONCEPT) categories are knowledge and stay, their memberships going with the notes
+    const categories = (
+      await prisma.category.deleteMany({ where: { kind: "MANUAL" } })
+    ).count;
     const tags = (await prisma.tag.deleteMany({})).count;
 
     const deletedCounts: CleanupCounts = {
@@ -93,6 +99,7 @@ export async function cleanupAllData(
       sources,
       websites,
       books,
+      bookLookups,
       queueJobs,
       statusEvents,
       urls,
@@ -111,7 +118,7 @@ export async function cleanupAllData(
 }
 
 /**
- * Deletes food knowledge in one transaction: concepts (with their relationships, classifications, substitutions, attributes, and merge records), every lexicon entry, attribute definitions, preparations, decisions, every review card, products, brands, ingredient tags, legacy ingredient mappings, and corpus health snapshots. Lexicon revisions are kept so the revision number keeps rising; a new "reset:ontology" revision tells cached lexicons to reload. Users are kept.
+ * Deletes food knowledge in one transaction: concepts (with their relationships, classifications, substitutions, attributes, and merge records), ingredient-rule (CONCEPT) categories, every lexicon entry, attribute definitions, preparations, decisions, every review card, products, brands, ingredient tags, legacy ingredient mappings, and corpus health snapshots. Lexicon revisions are kept so the revision number keeps rising; a new "reset:ontology" revision tells cached lexicons to reload. Users are kept.
  */
 async function deleteOntology(): Promise<OntologyCleanupCounts> {
   return prisma.$transaction(async (tx) => {
@@ -121,6 +128,10 @@ async function deleteOntology(): Promise<OntologyCleanupCounts> {
     const legacyMappings = (await tx.legacyIngredientMapping.deleteMany({}))
       .count;
     const products = (await tx.foodProduct.deleteMany({})).count;
+    // A CONCEPT category without its concept matches nothing
+    const conceptCategories = (
+      await tx.category.deleteMany({ where: { kind: "CONCEPT" } })
+    ).count;
     const concepts = (await tx.foodConcept.deleteMany({})).count;
     const attributeDefinitions = (await tx.attributeDefinition.deleteMany({}))
       .count;
@@ -143,6 +154,7 @@ async function deleteOntology(): Promise<OntologyCleanupCounts> {
       ingredientTags,
       legacyMappings,
       healthSnapshots,
+      conceptCategories,
     };
   }, ONTOLOGY_RESET_TIMEOUT);
 }

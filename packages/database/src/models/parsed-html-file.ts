@@ -15,6 +15,8 @@ export type ParsedInstructionLine = {
 export type ParsedHTMLFile = {
   title: string;
   contents: string;
+  /** The en-note child element of each content line ("div", "p", "li"), parallel to `contents` split on newlines. */
+  contentTags?: string[];
   ingredients: ParsedIngredientLine[];
   instructions: ParsedInstructionLine[];
   images?: Array<{

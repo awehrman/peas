@@ -367,6 +367,39 @@ describe("R2Service", () => {
     });
   });
 
+  describe("deletePrefix", () => {
+    it("deletes every listed key across pages and totals the results", async () => {
+      mockS3Client.send
+        .mockResolvedValueOnce({
+          Contents: [{ Key: "originals/a.jpg" }, { Key: "originals/b.jpg" }],
+          IsTruncated: true,
+          NextContinuationToken: "page-2",
+        })
+        .mockResolvedValueOnce({
+          Deleted: [{ Key: "originals/a.jpg" }, { Key: "originals/b.jpg" }],
+        })
+        .mockResolvedValueOnce({
+          Contents: [{ Key: "originals/c.jpg" }, {}],
+          IsTruncated: false,
+        })
+        .mockResolvedValueOnce({ Errors: [{ Key: "originals/c.jpg" }] });
+
+      const result = await r2Service.deletePrefix("originals/");
+
+      expect(result).toEqual({ deleted: 2, errors: 1 });
+      expect(mockS3Client.send).toHaveBeenCalledTimes(4);
+    });
+
+    it("skips the delete call when nothing is listed", async () => {
+      mockS3Client.send.mockResolvedValueOnce({ IsTruncated: false });
+
+      const result = await r2Service.deletePrefix("processed/");
+
+      expect(result).toEqual({ deleted: 0, errors: 0 });
+      expect(mockS3Client.send).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe("getPublicUrl", () => {
     it("should return public URL when publicUrl is configured", () => {
       // Access private method through type assertion

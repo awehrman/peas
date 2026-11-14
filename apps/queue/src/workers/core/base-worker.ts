@@ -326,6 +326,7 @@ export abstract class BaseWorker<
         connection: redisConfig,
         /* istanbul ignore next -- @preserve */
         concurrency: this.config.concurrency ?? this.getConcurrency(),
+        ...(this.getRateLimit() ? { limiter: this.getRateLimit() } : {}),
       }
     );
 
@@ -340,6 +341,13 @@ export abstract class BaseWorker<
    */
   protected getConcurrency(): number {
     return 5;
+  }
+
+  /**
+   * Optional BullMQ rate limit for workers that call external services, e.g. { max: 1, duration: 1000 } for one job per second.
+   */
+  protected getRateLimit(): { max: number; duration: number } | undefined {
+    return undefined;
   }
 
   /**

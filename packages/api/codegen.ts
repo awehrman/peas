@@ -16,8 +16,10 @@ const config: CodegenConfig = {
         contextType: "../context.js#ApiContext",
         scalars: { JSON: "unknown" },
         mappers: {
+          Concept: "./teach-views-types.js#ConceptParent",
           Discovery: "./teach-views-types.js#DiscoveryParent",
           IngredientLine: "./teach-views-types.js#IngredientLineParent",
+          LexiconEntryDetail: "./teach-views-types.js#LexiconEntryDetailParent",
         },
       },
     },

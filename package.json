@@ -20,6 +20,7 @@
     "storybook": "turbo storybook --concurrency=15",
     "build-storybook": "turbo build-storybook --concurrency=15",
     "generate-peas": "turbo run generate --concurrency=15",
+    "reset": "yarn workspace @peas/database build && yarn workspace @peas/queue clear-imports --yes --include-ontology --include-r2 && yarn workspace @peas/database db:seed:all",
     "prepare": "husky"
   },
   "devDependencies": {

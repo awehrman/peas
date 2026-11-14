@@ -28,6 +28,8 @@ export interface ConceptDetailProps extends ConceptEditActions {
   concept: ConceptDetail;
   /** Recipes filtered to this concept and its more specific concepts. */
   recipesHref?: string;
+  /** The relationship graph centered on this concept. */
+  graphHref?: string;
   /** Where the back link goes; admins return to the concepts workbench, everyone else to the ingredients list. */
   backLink?: { href: string; label: string };
   onApplyDecision?: MutationAction<
@@ -37,6 +39,8 @@ export interface ConceptDetailProps extends ConceptEditActions {
   onSearchConcepts?: SearchConcepts;
   /** Checks what an edit would do to stored mentions before it is saved. */
   onPreview?: PreviewDecision;
+  /** Rendered below the concept card, e.g. a ConceptUsagePanel. */
+  usage?: ReactNode;
 }
 
 function Section({
@@ -64,10 +68,12 @@ function Section({
 export function ConceptDetailPageContent({
   concept,
   recipesHref,
+  graphHref,
   backLink = { href: "/concepts", label: "All concepts" },
   onApplyDecision,
   onSearchConcepts,
   onPreview,
+  usage,
   ...editActions
 }: ConceptDetailProps): ReactNode {
   const [approvedMessage, setApprovedMessage] = useState<string | null>(null);
@@ -121,14 +127,24 @@ export function ConceptDetailPageContent({
         {concept.description ? (
           <p className="text-sm text-greyscale-700">{concept.description}</p>
         ) : null}
-        {recipesHref ? (
-          <AppLink
-            href={recipesHref}
-            className="self-start text-sm text-primary underline underline-offset-2"
-          >
-            Recipes with {concept.canonicalName}
-          </AppLink>
-        ) : null}
+        <div className="flex flex-wrap gap-x-4 gap-y-1">
+          {recipesHref ? (
+            <AppLink
+              href={recipesHref}
+              className="text-sm text-primary underline underline-offset-2"
+            >
+              Recipes with {concept.canonicalName}
+            </AppLink>
+          ) : null}
+          {graphHref ? (
+            <AppLink
+              href={graphHref}
+              className="text-sm text-primary underline underline-offset-2"
+            >
+              Explore relationships
+            </AppLink>
+          ) : null}
+        </div>
       </header>
 
       <ConceptCard
@@ -138,6 +154,8 @@ export function ConceptDetailPageContent({
         onSearchConcepts={onSearchConcepts}
         {...editActions}
       />
+
+      {usage}
 
       <div className="grid gap-6 md:grid-cols-2">
         <Section title="Example mentions">

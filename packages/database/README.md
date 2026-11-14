@@ -41,11 +41,10 @@ scripts/                   # build-schema, verify-migrations, seeds, exports
   - `ParsedIngredientLine`, `ParsedInstructionLine` (an ingredient line's meaning lives in its `IngredientMention` rows)
 
 - **`meta.prisma`**: Categorization and tagging
-  - `Category`, `Tag`
+  - `Category` (`MANUAL`, or `CONCEPT` with a target food and traversal), `NoteCategory` (a note's membership: `INFERRED`, `APPROVED`, or `EXCLUDED`, with evidence), `Tag`
 
-- **`source.prisma`**: Source tracking and references
-  - `Source`, `URL`, `Book`
-  - `SourceType` enum
+- **`source.prisma`**: Where recipes came from (see `docs/architecture/import-integrity.md`)
+  - `Source` (one identity per URL, book, or other text; `canonicalKey`), `URL` (normalized form and the last reachability check), `Website`, `Book` (an Open Library work), `BookLookup` (one per distinct source text), `NoteSource` (a note's link to a source, with its primary flag and original string)
 
 - **`tags-and-brands.prisma`**: `IngredientTag` (concept tags) and `Brand` (product brands). The legacy ingredient tables (`Ingredient`, `Alias`, `IngredientProperty`, `IngredientReference`, `IngredientCategory`) and the v1 parsing tables (`ParsedSegment`, `ParsingRule`, `UniqueLinePattern`) were dropped in Phase 7 of the ingredient rebuild; `LegacyIngredientMapping` keeps the old ingredient ids as plain text.
 
@@ -108,10 +107,11 @@ processIngredientLine("1 lb boneless chicken thighs", context).mentions[0].statu
 
 ### Seeds
 
-Run in this order; each is idempotent and bumps the lexicon revision only when it writes something.
+Run in this order, or all at once with `db:seed:all`; each is idempotent and bumps the lexicon revision only when it writes something.
 
 | Script | What it does |
 | --- | --- |
+| `db:seed` | Base recipe categories and ingredient tags |
 | `db:seed:ontology` | Attribute dimensions, values, and preparation operations from `@peas/parser/v2` |
 | `db:seed:modifiers` | The 99 reviewed modifier entries in `packages/parser/fixtures/lexicon/modifiers.seed.json` (ACTIVE), resolved against the vocabulary |
 | `db:seed:foods` | The starter foods in `packages/parser/fixtures/lexicon/starter-foods.seed.json`: chicken and its parts, dairy, pantry staples, produce, and oils, with canonical, plural, and alias names, relationships (chicken thigh PART_OF chicken, kosher salt IS_A salt, ...), characterizing attributes, and attribute applicability (bone and skin apply to chicken, so "boneless skinless chicken thighs" keeps both). Concepts are matched by canonical name. Every food is seeded approved (VERIFIED, with ACTIVE names); set `status: "PROPOSED"` on the file or on a food to put foods in the review queue instead. |
@@ -182,6 +182,7 @@ The `add_food_ontology` migration adds what Prisma cannot model: the `pg_trgm` e
 - `yarn db:seed:ontology` - Seed attribute dimensions, values, and preparation operations from `@peas/parser/v2` (idempotent; bumps the lexicon revision only when something was added)
 - `yarn db:seed:modifiers` - Seed reviewed modifier lexicon entries (after `db:seed:ontology`)
 - `yarn db:seed:foods` - Seed the starter foods with their names and hierarchy (after `db:seed:modifiers`)
+- `yarn db:seed:all` - Every seed above, in order (`yarn reset` at the repository root runs it after clearing everything but users)
 - `yarn db:evaluate:resolution` - Resolution report against the live database (read-only)
 - `yarn pull:fixtures --discovery <id>` - A structural pattern's lines as pending golden cases in `packages/parser/fixtures/golden/pending/` (read-only)
 - `yarn export:calibration-labels [--out path]` - Verified mentions and the resolver snapshot as labels for `calibrate:thresholds --labels` (read-only)

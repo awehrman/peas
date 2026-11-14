@@ -10,6 +10,15 @@ enum ReviewStatus {
   INCORRECT
 }
 
+/// What a stored line is after structure review (Phase 8.5). The importer files INGREDIENT and INSTRUCTION; a reviewer can mark a line as a heading, a note, or other text, or record that it moved to the other list (the original row is kept inactive with the kind it moved to).
+enum LineKind {
+  INGREDIENT
+  INSTRUCTION
+  SECTION_HEADING
+  NOTE
+  OTHER
+}
+
 // Parsing module
 // Contains parsed content from recipe notes
 
@@ -34,6 +43,12 @@ model ParsedIngredientLine {
   // The parser that produced the mentions, e.g. "v2:2.3.0"
   parserVersion String?
 
+  /// Position in the extracted note content (Note.html split on newlines, blank lines included).
+  contentIndex Int?
+  /// The en-note child element the line came from ("div", "p", "li"), for new imports.
+  elementTag   String?
+  lineKind     LineKind @default(INGREDIENT)
+
   Note   Note?   @relation(fields: [noteId], references: [id], onDelete: Cascade)
   noteId String?
 
@@ -56,6 +71,12 @@ model ParsedInstructionLine {
   reviewStatus ReviewStatus @default(UNREVIEWED)
 
   isActive Boolean @default(true)
+
+  /// Position in the extracted note content (Note.html split on newlines, blank lines included).
+  contentIndex Int?
+  /// The en-note child element the line came from, for new imports.
+  elementTag   String?
+  lineKind     LineKind @default(INSTRUCTION)
 
   note   Note?   @relation(fields: [noteId], references: [id], onDelete: Cascade)
   noteId String?

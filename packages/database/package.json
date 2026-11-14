@@ -30,9 +30,14 @@
     "test:coverage": "vitest run --config vitest.int.config.ts --coverage",
     "db:seed:modifiers": "dotenv -e ../../.env.local -- tsx scripts/seed-lexicon-modifiers.ts",
     "db:seed:foods": "dotenv -e ../../.env.local -- tsx scripts/seed-starter-foods.ts",
+    "db:seed:all": "yarn db:seed && yarn db:seed:ontology && yarn db:seed:modifiers && yarn db:seed:foods",
+    "db:backfill:import-integrity": "dotenv -e ../../.env.local -- tsx scripts/backfill-sources-and-categories.ts",
     "pull:fixtures": "dotenv -e ../../.env.local -- tsx scripts/pull-fixtures.ts",
     "export:calibration-labels": "dotenv -e ../../.env.local -- tsx scripts/export-calibration-labels.ts",
-    "db:evaluate:resolution": "dotenv -e ../../.env.local -- tsx scripts/evaluate-resolution.ts"
+    "db:evaluate:resolution": "dotenv -e ../../.env.local -- tsx scripts/evaluate-resolution.ts",
+    "db:benchmark:explorer": "tsx scripts/benchmark-explorer.ts",
+    "db:backfill:structure": "dotenv -e ../../.env.local -- tsx scripts/backfill-structure.ts",
+    "db:reclassify:structure": "dotenv -e ../../.env.local -- tsx scripts/reclassify-structure.ts"
   },
   "dependencies": {
     "@peas/parser": "*",

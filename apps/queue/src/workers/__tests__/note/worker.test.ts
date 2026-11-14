@@ -103,6 +103,7 @@ describe("NoteWorker", () => {
         categorizationQueue: { name: "categorization" } as any,
         sourceQueue: { name: "source" } as any,
         reinterpretQueue: { name: "reinterpret" } as any,
+        bookLookupQueue: { name: "reinterpret" } as any,
       },
       cache: {} as any,
       database: {} as any,
@@ -377,6 +378,7 @@ describe("createNoteWorker", () => {
         categorizationQueue: { name: "categorization" } as any,
         sourceQueue: { name: "source" } as any,
         reinterpretQueue: { name: "reinterpret" } as any,
+        bookLookupQueue: { name: "reinterpret" } as any,
       },
       database: {
         prisma: vi.fn(),

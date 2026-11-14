@@ -169,9 +169,18 @@ function RelationshipLines({
           : "No narrower concepts yet."}
       </p>
     );
+  const typeOrder = (type: string) => {
+    const index = RELATIONSHIP_TYPES.indexOf(type as RelationshipType);
+    return index === -1 ? RELATIONSHIP_TYPES.length : index;
+  };
+  const grouped = [...edges].sort(
+    (a, b) =>
+      typeOrder(a.type) - typeOrder(b.type) ||
+      a.concept.canonicalName.localeCompare(b.concept.canonicalName)
+  );
   return (
     <ul className="flex flex-col gap-1 text-sm">
-      {edges.map((edge) => (
+      {grouped.map((edge) => (
         <li key={edge.id}>
           {direction === "parent" ? (
             <>

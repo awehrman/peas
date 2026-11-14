@@ -7,3 +7,4 @@ export { metricsRouter } from "./metrics";
 export { cacheRouter } from "./cache";
 export { performanceRouter } from "./performance";
 export { reinterpretRouter } from "./reinterpret";
+export { sourcesRouter } from "./sources";

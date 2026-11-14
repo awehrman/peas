@@ -47,3 +47,37 @@ export interface DashboardStats {
   topTags: LabelCount[];
   notesBySavedYear: YearCount[];
 }
+
+/**
+ * A food's direct settled mentions (and notes) and its mentions including kinds and parts.
+ *
+ * @example
+ * { concept: { id: "0193...", canonicalName: "chicken", status: "VERIFIED" }, directMentions: 3, directNotes: 3, expandedMentions: 15 }
+ */
+export interface ConceptUsageRank {
+  concept: { id: string; canonicalName: string; status: string };
+  directMentions: number;
+  directNotes: number;
+  expandedMentions: number;
+}
+
+/** Corpus-wide usage (Phase 8-D), over settled mentions only. */
+export interface CorpusAnalytics {
+  computedAt: string;
+  isStale: boolean;
+  settledMentions: number;
+  conceptsWithMentions: number;
+  unusedVerifiedConcepts: number;
+  rareConceptCount: number;
+  topExpanded: ConceptUsageRank[];
+  rare: ConceptUsageRank[];
+  preparations: { preparationKey: string; label: string; mentions: number; concepts: number }[];
+  attributes: {
+    definitionKey: string;
+    definitionName: string;
+    valueKey: string;
+    label: string;
+    mentions: number;
+    asserted: number;
+  }[];
+}

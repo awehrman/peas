@@ -17,6 +17,9 @@ export const INVALIDATION_DOMAINS = [
   "CONCEPT_DETAIL",
   "MENTIONS",
   "CORPUS_HEALTH",
+  "IMPORT_REVIEW",
+  "CATEGORIES",
+  "STRUCTURE_REVIEW",
 ] as const;
 
 export type InvalidationDomain = (typeof INVALIDATION_DOMAINS)[number];
@@ -35,6 +38,7 @@ export const REVISION_SENSITIVE_DOMAINS: readonly InvalidationDomain[] = [
 
 /** Everything a Teach Peas decision can make stale. */
 export const KNOWLEDGE_DOMAINS: readonly InvalidationDomain[] = [
+  "CATEGORIES",
   "DISCOVERIES",
   "CONCEPTS",
   "CONCEPT_DETAIL",
@@ -48,6 +52,7 @@ export const KNOWLEDGE_DOMAINS: readonly InvalidationDomain[] = [
 
 /** Domains refreshed when a background reprocessing job finishes. */
 export const JOB_COMPLETION_DOMAINS: readonly InvalidationDomain[] = [
+  "CATEGORIES",
   "NOTES",
   "NOTE_DETAIL",
   "RECIPES",

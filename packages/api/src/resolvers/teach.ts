@@ -64,6 +64,7 @@ import type {
 import {
   notifyLexiconRevision,
   requestBackgroundReinterpret,
+  requestCategoryRecompute,
 } from "../queue-client";
 
 const CONCEPTS_PAGE_SIZE = 50;
@@ -72,7 +73,7 @@ const REINTERPRET_LIMIT = 1000;
 
 const BAD_USER_INPUT = "BAD_USER_INPUT";
 
-function requireCurator(context: ApiContext) {
+export function requireCurator(context: ApiContext) {
   const viewer = requireViewer(context);
   if (!canCurateKnowledge(viewer))
     throw new GraphQLError("You can't teach Peas yet", {
@@ -167,6 +168,7 @@ export const TeachQuery: Pick<
       query: toFilter(args.query),
       role,
       includeRetired: args.includeRetired ?? false,
+      newestFirst: args.newestFirst ?? false,
       offset: (page - 1) * CONCEPTS_PAGE_SIZE,
       limit: CONCEPTS_PAGE_SIZE,
     });
@@ -375,6 +377,8 @@ export async function followUpDecision(
     reinterpreted.mentionsChanged
   );
   void notifyLexiconRevision(applied.revision, userId);
+  // Foods and relationships may have changed, so inferred categories may have too
+  void requestCategoryRecompute({ all: true, reason: `revision-${applied.revision}` }, userId);
   const reprocessingJobId = reinterpreted.needsBackgroundReinterpret
     ? await requestBackgroundReinterpret(
         applied.revision,

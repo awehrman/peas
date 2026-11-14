@@ -1,3 +1,4 @@
+import type { CategoryMembership, NoteSourceLink } from "../import-integrity/types";
 import type { NoteMention } from "../teach/mention-panel";
 
 export const NOTE_STATUS_OPTIONS = [
@@ -28,6 +29,7 @@ export interface NoteListItem {
   thumbnailUrl: string | null;
   notebook: string | null;
   recipeId: string | null;
+  archivedAt: string | null;
   createdAt: string;
 }
 
@@ -52,6 +54,8 @@ export interface NoteIngredientLine {
   reviewStatus: LineReviewStatus;
   isActive: boolean;
   parserVersion: string | null;
+  /** SECTION_HEADING for a heading filed by structure review; other kinds mark a line moved or set aside. */
+  lineKind?: string;
   /** v2 mentions, one per segment part; empty until the line is parsed. */
   mentions: NoteMention[];
 }
@@ -76,17 +80,15 @@ export interface NoteDetail {
     thumbnailUrl: string | null;
     processingStatus: string;
   }[];
-  sources: {
-    id: string;
-    urls: {
-      id: string;
-      url: string;
-      isBrokenLink: boolean;
-      siteName: string | null;
-    }[];
-    book: { title: string; author: string | null } | null;
-  }[];
-  categories: { id: string; name: string }[];
+  archivedAt: string | null;
+  archivedReason: string | null;
+  supersededById: string | null;
+  /** Open duplicate candidates for this note. */
+  pendingDuplicateIds: string[];
+  /** Primary first. */
+  sources: NoteSourceLink[];
+  /** Every membership, excluded ones included. */
+  categories: CategoryMembership[];
   tags: { id: string; name: string }[];
   ingredientBlocks: { blockIndex: number; lines: NoteIngredientLine[] }[];
   instructions: {
@@ -94,6 +96,7 @@ export interface NoteDetail {
     lineIndex: number;
     text: string;
     isActive: boolean;
+    lineKind?: string;
   }[];
   recipeId: string | null;
 }

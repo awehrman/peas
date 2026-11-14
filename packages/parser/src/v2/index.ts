@@ -57,6 +57,7 @@ export {
   type ParseLineOptions,
 } from "./parse-line.js";
 export * from "./preview/diff.js";
+export * from "./structure/index.js";
 export {
   addRational,
   formatRational,

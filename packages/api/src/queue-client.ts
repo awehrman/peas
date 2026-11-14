@@ -108,3 +108,69 @@ export async function notifyLexiconRevision(
     fetchImpl
   ).catch(() => undefined);
 }
+
+/**
+ * Queues a reachability check for one URL now (the Recheck button).
+ *
+ * @example
+ * await requestUrlRecheck("cm3u...", userId) // "url-check-cm3u..."
+ */
+export async function requestUrlRecheck(
+  urlId: string,
+  userId: string,
+  fetchImpl: typeof fetch = fetch
+): Promise<string> {
+  const response = await postToQueue<{ jobId: string }>(
+    "/sources/url-check",
+    { urlId },
+    userId,
+    fetchImpl
+  );
+  return response.jobId;
+}
+
+/**
+ * Queues a book lookup again (Retry on the review page).
+ *
+ * @example
+ * await requestBookLookup("0193...", userId) // "book-lookup-0193..."
+ */
+export async function requestBookLookup(
+  lookupId: string,
+  userId: string,
+  fetchImpl: typeof fetch = fetch
+): Promise<string> {
+  const response = await postToQueue<{ jobId: string }>(
+    "/sources/book-lookup",
+    { lookupId },
+    userId,
+    fetchImpl
+  );
+  return response.jobId;
+}
+
+export type CategoryRecomputeRequest =
+  | { noteId: string }
+  | { categoryId: string }
+  | { all: true; reason: string };
+
+/**
+ * Asks the queue to recompute inferred category memberships: one note, one category after its rule changed, or every ingredient-rule category after a knowledge change. Failures are ignored; the next import or reinterpretation run recomputes too.
+ *
+ * @example
+ * await requestCategoryRecompute({ all: true, reason: "revision-15" }, userId)
+ */
+export async function requestCategoryRecompute(
+  request: CategoryRecomputeRequest,
+  userId: string,
+  fetchImpl: typeof fetch = fetch
+): Promise<string | null> {
+  return postToQueue<{ jobId: string }>(
+    "/sources/categories/recompute",
+    request,
+    userId,
+    fetchImpl
+  )
+    .then((response) => response.jobId)
+    .catch(() => null);
+}

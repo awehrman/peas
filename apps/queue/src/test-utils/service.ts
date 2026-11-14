@@ -83,6 +83,7 @@ export function createMockQueueService() {
     reinterpretQueue: {
       name: "reinterpret",
     } as Partial<Queue> as Queue,
+    bookLookupQueue: { name: "book-lookup" } as Partial<Queue> as Queue,
   };
 }
 

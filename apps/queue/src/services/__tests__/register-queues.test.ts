@@ -39,6 +39,7 @@ describe("register-queues.ts", () => {
         categorizationQueue: mockQueue,
         sourceQueue: mockQueue,
         reinterpretQueue: mockQueue,
+        bookLookupQueue: mockQueue,
       };
 
       expect(queueService).toHaveProperty("noteQueue");
@@ -71,7 +72,7 @@ describe("register-queues.ts", () => {
       });
 
       it("should call createQueue for each queue type", () => {
-        expect(mockCreateQueue).toHaveBeenCalledTimes(7);
+        expect(mockCreateQueue).toHaveBeenCalledTimes(8);
         expect(mockCreateQueue).toHaveBeenCalledWith("note");
         expect(mockCreateQueue).toHaveBeenCalledWith("image");
         expect(mockCreateQueue).toHaveBeenCalledWith("ingredient");
@@ -244,12 +245,12 @@ describe("register-queues.ts", () => {
       vi.clearAllMocks();
 
       registerQueues();
-      expect(mockCreateQueue).toHaveBeenCalledTimes(7);
+      expect(mockCreateQueue).toHaveBeenCalledTimes(8);
 
       vi.clearAllMocks();
 
       registerQueues();
-      expect(mockCreateQueue).toHaveBeenCalledTimes(7);
+      expect(mockCreateQueue).toHaveBeenCalledTimes(8);
     });
   });
 

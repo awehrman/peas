@@ -14,3 +14,4 @@ export * from "./playground";
 export * from "./reinterpret-progress";
 export * from "./structural-review";
 export * from "./types";
+export * from "./structure-review";

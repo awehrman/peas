@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
+import { type Mock, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { StructuredLogger } from "../../../../../types";
 import type { NotePipelineData } from "../../../../../types/notes";
@@ -10,6 +10,7 @@ import { initializeNoteCompletion } from "../../../../note/actions/track-complet
 vi.mock("@peas/database", () => ({
   createNote: vi.fn(),
   createNoteWithEvernoteMetadata: vi.fn(),
+  validateStoredNote: vi.fn(),
 }));
 
 // Mock the track-completion service
@@ -658,5 +659,72 @@ describe("saveNote", () => {
       expect(result).toBeDefined();
       // The initializeNoteCompletion function should not be called when importId is empty
     });
+  });
+});
+
+describe("saveNote structure review", () => {
+  const file = {
+    title: "Brine",
+    contents: "For the brine:\n4 cups water",
+    contentTags: ["div", "div"],
+    ingredients: [],
+    instructions: [],
+  };
+
+  async function run(validate: () => Promise<unknown>) {
+    vi.clearAllMocks();
+    const dbModule = await import("@peas/database");
+    vi.mocked(dbModule.createNoteWithEvernoteMetadata).mockResolvedValue({
+      id: "note-1",
+      title: "Brine",
+      parsedIngredientLines: [],
+      parsedInstructionLines: [],
+    } as any);
+    vi.mocked(dbModule.validateStoredNote).mockImplementation(validate as any);
+    const logger = { log: vi.fn() };
+    const result = await saveNote({ content: "", file } as any, logger);
+    return {
+      result,
+      logger,
+      validateStoredNote: vi.mocked(dbModule.validateStoredNote),
+    };
+  }
+
+  it("validates the new note with its element tags and logs proposals", async () => {
+    const { result, logger, validateStoredNote } = await run(async () => ({
+      findings: 2,
+      carriedOver: 1,
+    }));
+    expect(validateStoredNote).toHaveBeenCalledWith("note-1", {
+      contentTags: ["div", "div"],
+    });
+    expect(logger.log).toHaveBeenCalledWith(
+      "[SAVE_NOTE] Structure review: 2 proposal(s) for note note-1, 1 decided as before"
+    );
+    expect(result.noteId).toBe("note-1");
+  });
+
+  it("stays quiet when nothing looks misfiled", async () => {
+    const { logger } = await run(async () => ({ findings: 0, carriedOver: 0 }));
+    expect(logger.log).not.toHaveBeenCalledWith(
+      expect.stringContaining("Structure review:")
+    );
+  });
+
+  it("logs proposals without carry-over", async () => {
+    const { logger } = await run(async () => ({ findings: 1, carriedOver: 0 }));
+    expect(logger.log).toHaveBeenCalledWith(
+      "[SAVE_NOTE] Structure review: 1 proposal(s) for note note-1"
+    );
+  });
+
+  it("never fails the import when validation fails", async () => {
+    const { result, logger } = await run(async () => {
+      throw new Error("boom");
+    });
+    expect(result.noteId).toBe("note-1");
+    expect(logger.log).toHaveBeenCalledWith(
+      "[SAVE_NOTE] Structure review skipped: Error: boom"
+    );
   });
 });

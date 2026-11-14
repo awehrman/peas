@@ -22,7 +22,7 @@ export function createCategorizationPipeline(
     CategorizationJobData
   >,
   dependencies: CategorizationWorkerDependencies,
-  _data: CategorizationJobData,
+  data: CategorizationJobData,
   _context: ActionContext
 ): WorkerAction<
   CategorizationJobData,
@@ -34,6 +34,17 @@ export function createCategorizationPipeline(
     CategorizationWorkerDependencies,
     CategorizationJobData
   >[] = [];
+
+  // Recompute jobs run a single action
+  if (data.kind === "RECOMPUTE_NOTE_CATEGORIES") {
+    return [actionFactory.create(ActionName.RECOMPUTE_NOTE_CATEGORIES, dependencies)];
+  }
+  if (data.kind === "RECOMPUTE_CATEGORY") {
+    return [actionFactory.create(ActionName.RECOMPUTE_CATEGORY, dependencies)];
+  }
+  if (data.kind === "RECOMPUTE_ALL_CATEGORIES") {
+    return [actionFactory.create(ActionName.RECOMPUTE_ALL_CATEGORIES, dependencies)];
+  }
 
   try {
     // Determine category based on ingredients
@@ -54,6 +65,11 @@ export function createCategorizationPipeline(
     // Save the determined tags
     actions.push(
       actionFactory.create(ActionName.SAVE_TAGS, dependencies)
+    );
+
+    // Derive categories from the parsed ingredients (food concepts and their relationships)
+    actions.push(
+      actionFactory.create(ActionName.RECOMPUTE_NOTE_CATEGORIES, dependencies)
     );
   } catch (error) {
     // Handle action creation errors

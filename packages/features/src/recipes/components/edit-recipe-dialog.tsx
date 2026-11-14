@@ -21,15 +21,24 @@ import type { RecipeDetail, RecipeUpdateInput } from "../types";
 
 export type UpdateRecipe = MutationAction<[input: RecipeUpdateInput]>;
 
+/** Approved and suggested categories; leaving a suggested one out of the save excludes it. */
+function visibleCategoryNames(recipe: RecipeDetail): string[] {
+  return recipe.categories
+    .filter((membership) => membership.state !== "EXCLUDED")
+    .map((membership) => membership.category.name);
+}
+
 interface EditRecipeDialogProps {
   recipe: RecipeDetail;
   onUpdate: UpdateRecipe;
+  /** Existing category names offered while typing. */
+  categoryOptions?: string[];
 }
 
-export function EditRecipeDialog({ recipe, onUpdate }: EditRecipeDialogProps): ReactNode {
+export function EditRecipeDialog({ recipe, onUpdate, categoryOptions }: EditRecipeDialogProps): ReactNode {
   const [isOpen, setIsOpen] = useState(false);
   const [title, setTitle] = useState(recipe.title);
-  const [categories, setCategories] = useState(recipe.categories.map((item) => item.name));
+  const [categories, setCategories] = useState(visibleCategoryNames(recipe));
   const [tags, setTags] = useState(recipe.tags.map((item) => item.name));
   const update = useMutation(onUpdate);
   const titleError = title.trim() ? null : "Title is required";
@@ -38,7 +47,7 @@ export function EditRecipeDialog({ recipe, onUpdate }: EditRecipeDialogProps): R
     setIsOpen(open);
     if (open) {
       setTitle(recipe.title);
-      setCategories(recipe.categories.map((item) => item.name));
+      setCategories(visibleCategoryNames(recipe));
       setTags(recipe.tags.map((item) => item.name));
       update.clearError();
     }
@@ -89,7 +98,8 @@ export function EditRecipeDialog({ recipe, onUpdate }: EditRecipeDialogProps): R
             label="Categories"
             values={categories}
             onChange={setCategories}
-            description="Press Enter or comma to add a category."
+            suggestions={categoryOptions}
+            description="Press Enter or comma to add a category. Removing a suggested category excludes it, so reprocessing won't add it back."
           />
           <ChipInput
             id="recipe-tags"

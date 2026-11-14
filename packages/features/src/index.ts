@@ -8,6 +8,7 @@ export * from "./dashboard";
 export * from "./form";
 
 // Data features
+export * from "./import-integrity";
 export * from "./recipes";
 export * from "./notes";
 export * from "./teach";

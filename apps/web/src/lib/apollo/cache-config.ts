@@ -12,7 +12,17 @@ const ID_KEYED_TYPES = [
   "NoteImage",
   "Source",
   "SourceUrl",
+  "NoteSource",
+  "Book",
+  "BookLookupRef",
+  "BookLookup",
   "NamedTag",
+  "CategoryRef",
+  "CategoryMembership",
+  "Category",
+  "DuplicateCandidate",
+  "DuplicateCandidateDetail",
+  "DuplicateNoteSummary",
   "Recipe",
   "RecipeSummary",
   "Discovery",
@@ -27,6 +37,8 @@ const ID_KEYED_TYPES = [
   "LexiconEntryRow",
   "ConceptRef",
   "LexiconEntryRef",
+  "LexiconEntryDetail",
+  "StructureProposal",
 ] as const;
 
 /** Value objects that must never be normalized. EntityRef's `id` belongs to another type, so normalizing it would merge unrelated entities. */
@@ -58,7 +70,73 @@ const EMBEDDED_TYPES = [
   "DecisionPreviewExample",
   "PlaygroundResult",
   "PlaygroundMention",
+  "CategoryEvidence",
+  "CategoryEvidenceStep",
+  "CategoryRulePreview",
+  "CategoryRuleExample",
+  "DuplicateSignals",
+  "DuplicateResolution",
+  "DuplicateResolutionPreview",
+  "PreviewSource",
+  "PreviewCategory",
+  "PrimarySourceChange",
+  "NoteTitleRef",
+  "BookCandidate",
+  "FailedUrlCheck",
+  "ImportReviewCounts",
+  "ConceptUsage",
+  "UsageCounts",
+  "UsageStatusCounts",
+  "UsageContributor",
+  "ConceptObservedForms",
+  "ObservedForm",
+  "ConceptDistributions",
+  "PreparationUsage",
+  "AttributeUsage",
+  "ModifierUsage",
+  "ConceptOccurrence",
+  "ConceptOccurrencePage",
+  "ConceptOccurrenceFacets",
+  "OccurrenceSourceFacet",
+  "OccurrenceCategoryFacet",
+  "LexiconOccurrence",
+  "LexiconOccurrencePage",
+  "UnknownExpression",
+  "UnknownExpressionsPage",
+  "CorpusAnalytics",
+  "ConceptUsageRank",
+  "CorpusPreparationCount",
+  "CorpusAttributeCount",
+  "ConceptGraph",
+  "ConceptGraphNode",
+  "ConceptGraphEdge",
+  "ConceptGraphDecision",
+  "StructureSignal",
+  "StructureSplitPart",
+  "ContextLine",
+  "StructureProposalsPage",
+  "StructureCounts",
+  "StructurePatternCount",
+  "StructurePattern",
 ] as const;
+
+interface OccurrencePageCache {
+  items: readonly unknown[];
+  [field: string]: unknown;
+}
+
+/** "Load more" pages of conceptOccurrences: one cache entry per concept and filter, later pages appended. */
+const occurrencePages = {
+  keyArgs: ["conceptId", "filter", "limit"],
+  merge(
+    existing: OccurrencePageCache | undefined,
+    incoming: OccurrencePageCache,
+    { args }: { args: Record<string, unknown> | null }
+  ): OccurrencePageCache {
+    if (!existing || !args?.after) return incoming;
+    return { ...incoming, items: [...existing.items, ...incoming.items] };
+  },
+};
 
 interface RedirectOptions {
   args: Record<string, unknown> | null;
@@ -93,6 +171,10 @@ export const cacheConfig: InMemoryCacheConfig = {
       ])
     ),
     Job: { keyFields: ["jobId"] },
+    LexiconEntryDetail: {
+      keyFields: ["id"],
+      fields: { occurrences: { ...occurrencePages, keyArgs: ["limit"] } },
+    },
     Query: {
       fields: {
         note: redirectToEntity("Note"),
@@ -101,6 +183,9 @@ export const cacheConfig: InMemoryCacheConfig = {
         concept: redirectToEntity("Concept"),
         ingredient: redirectToEntity("Ingredient"),
         mention: redirectToEntity("Mention"),
+        duplicateCandidate: redirectToEntity("DuplicateCandidateDetail"),
+        bookLookup: redirectToEntity("BookLookup"),
+        conceptOccurrences: occurrencePages,
       },
     },
   },

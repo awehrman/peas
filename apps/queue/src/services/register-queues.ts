@@ -11,6 +11,7 @@ export interface IQueueService {
   categorizationQueue: Queue;
   sourceQueue: Queue;
   reinterpretQueue: Queue;
+  bookLookupQueue: Queue;
 }
 
 // Default queue service implementation
@@ -22,6 +23,7 @@ export class QueueService implements IQueueService {
   public readonly categorizationQueue: Queue;
   public readonly sourceQueue: Queue;
   public readonly reinterpretQueue: Queue;
+  public readonly bookLookupQueue: Queue;
 
   constructor() {
     this.noteQueue = createQueue(QueueName.NOTE);
@@ -31,6 +33,7 @@ export class QueueService implements IQueueService {
     this.categorizationQueue = createQueue(QueueName.CATEGORIZATION);
     this.sourceQueue = createQueue(QueueName.SOURCE);
     this.reinterpretQueue = createQueue(QueueName.REINTERPRET);
+    this.bookLookupQueue = createQueue(QueueName.BOOK_LOOKUP);
   }
 }
 

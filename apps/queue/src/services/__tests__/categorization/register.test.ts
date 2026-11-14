@@ -63,11 +63,11 @@ describe("Categorization Register", () => {
       registerCategorizationActions(mockFactory);
 
       // Assert
-      expect(mockFactory.register).toHaveBeenCalledTimes(4);
+      expect(mockFactory.register).toHaveBeenCalledTimes(7);
 
       // Check that all four actions are registered
       const registerCalls = vi.mocked(mockFactory.register).mock.calls;
-      expect(registerCalls).toHaveLength(4);
+      expect(registerCalls).toHaveLength(7);
 
       // Verify the action names are registered
       const registeredActionNames = registerCalls.map((call) => call[0]);
@@ -140,13 +140,16 @@ describe("Categorization Register", () => {
 
       // Assert
       const registerCalls = vi.mocked(mockFactory.register).mock.calls;
-      expect(registerCalls).toHaveLength(4);
+      expect(registerCalls).toHaveLength(7);
 
       // Verify order: determine category, save category, determine tags, save tags
       expect(registerCalls[0]?.[0]).toBe(ActionName.DETERMINE_CATEGORY);
       expect(registerCalls[1]?.[0]).toBe(ActionName.SAVE_CATEGORY);
       expect(registerCalls[2]?.[0]).toBe(ActionName.DETERMINE_TAGS);
       expect(registerCalls[3]?.[0]).toBe(ActionName.SAVE_TAGS);
+      expect(registerCalls[4]?.[0]).toBe(ActionName.RECOMPUTE_NOTE_CATEGORIES);
+      expect(registerCalls[5]?.[0]).toBe(ActionName.RECOMPUTE_CATEGORY);
+      expect(registerCalls[6]?.[0]).toBe(ActionName.RECOMPUTE_ALL_CATEGORIES);
     });
 
     it("should register actions with correct action classes", async () => {
@@ -218,7 +221,7 @@ describe("Categorization Register", () => {
       registerCategorizationActions(extendedFactory);
 
       // Assert
-      expect(extendedFactory.register).toHaveBeenCalledTimes(4);
+      expect(extendedFactory.register).toHaveBeenCalledTimes(7);
     });
 
     it("should handle factory with async register method", async () => {
@@ -236,7 +239,7 @@ describe("Categorization Register", () => {
       registerCategorizationActions(asyncFactory);
 
       // Assert
-      expect(asyncFactory.register).toHaveBeenCalledTimes(4);
+      expect(asyncFactory.register).toHaveBeenCalledTimes(7);
     });
   });
 });

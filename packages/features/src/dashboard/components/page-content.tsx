@@ -22,11 +22,14 @@ interface DashboardPageContentProps {
   stats: DashboardStats;
   /** Only provided for admins; the cleanup card is hidden without it */
   onCleanupAllData?: () => Promise<CleanupAllDataResult>;
+  /** Rendered below the overview cards, e.g. a CorpusAnalyticsSection. */
+  analytics?: ReactNode;
 }
 
 export function DashboardPageContent({
   stats,
   onCleanupAllData,
+  analytics,
 }: DashboardPageContentProps): ReactNode {
   const adminTools = onCleanupAllData ? (
     <div className="md:w-1/3">
@@ -99,6 +102,8 @@ export function DashboardPageContent({
           <p className="text-sm text-muted-foreground">No saved dates yet.</p>
         )}
       </StatCard>
+
+      {analytics}
 
       {adminTools}
     </div>

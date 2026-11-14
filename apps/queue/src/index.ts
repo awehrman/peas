@@ -10,6 +10,7 @@ import {
   reinterpretRouter,
   notesRouter,
   performanceRouter,
+  sourcesRouter,
   uploadRouter,
 } from "./routes";
 import { ServiceContainer } from "./services";
@@ -36,6 +37,7 @@ import { errorHandler as stdErrorHandler } from "./utils/standardized-error-hand
 import { LOG_MESSAGES, LoggerFactory } from "./utils/standardized-logger";
 import { subscribeToLexiconRevisions } from "./services/ingredient/lexicon-cache";
 import { scheduleMaintenanceJobs } from "./services/reinterpret/schedules";
+import { scheduleSourceJobs } from "./services/source/schedules";
 import { startWorkers } from "./workers/startup";
 
 // Type guard to check if value is an Error
@@ -213,6 +215,8 @@ async function initializeApp() {
         queues: [
           new BullMQAdapter(serviceContainer.queues.noteQueue),
           new BullMQAdapter(serviceContainer.queues.imageQueue),
+          new BullMQAdapter(serviceContainer.queues.sourceQueue),
+          new BullMQAdapter(serviceContainer.queues.bookLookupQueue),
           // TODO: Add back other queues as needed
           // new BullMQAdapter(serviceContainer.queues.ingredientQueue),
           // new BullMQAdapter(serviceContainer.queues.instructionQueue),
@@ -279,6 +283,7 @@ initializeApp()
     app.use("/images", requireQueueAuth, imagesRouter);
     app.use("/metrics", requireQueueAuth, metricsRouter);
     app.use("/reinterpret", requireQueueAuth, reinterpretRouter);
+    app.use("/sources", requireQueueAuth, sourcesRouter);
     app.use("/cache", requireQueueAuth, cacheRouter); // Cache management endpoints
     app.use("/performance", requireQueueAuth, performanceRouter); // Performance monitoring endpoints
 
@@ -381,6 +386,15 @@ initializeApp()
 
     // Start workers
     startWorkers(serviceContainer.queues, serviceContainer);
+
+    // Weekly URL rechecks and daily pending book lookups
+    scheduleSourceJobs(
+      serviceContainer.queues.sourceQueue,
+      serviceContainer.queues.bookLookupQueue,
+      serviceContainer.logger
+    ).catch((error: unknown) =>
+      serviceContainer.logger.log(`[SOURCES] scheduling failed: ${error}`, "warn")
+    );
 
     // Daily corpus health snapshots and weekly exploratory sweeps
     scheduleMaintenanceJobs(serviceContainer.queues.reinterpretQueue, serviceContainer.logger).catch(

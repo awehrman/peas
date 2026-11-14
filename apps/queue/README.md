@@ -219,15 +219,21 @@ yarn workspace @peas/queue reparse
 ### Clearing imports
 
 ```bash
-# Stop yarn dev first. Deletes imported notes, lines, mentions, recipes, sources, queued jobs, Redis work, and local uploads; keeps users and food knowledge
+# Everything except users, then the seeds again (run from the repository root with yarn dev stopped)
+yarn reset
+
+# Stop yarn dev first. Deletes imported notes, lines, mentions, recipes, sources, queued jobs, Redis work, and local uploads (including processed images in uploads/media); keeps users and food knowledge
 yarn workspace @peas/queue clear-imports --yes
 
-# Also deletes food knowledge (concepts, lexicon, attributes, preparations, decisions, review cards, products, brands, ingredient tags, legacy mappings, health snapshots) and cached lexicon snapshots; reseed afterwards
+# Also deletes food knowledge (concepts, ingredient-rule categories, lexicon, attributes, preparations, decisions, review cards, products, brands, ingredient tags, legacy mappings, health snapshots) and cached lexicon snapshots; reseed afterwards
 yarn workspace @peas/queue clear-imports --yes --include-ontology
-yarn workspace @peas/database db:seed:ontology && yarn workspace @peas/database db:seed:modifiers && yarn workspace @peas/database db:seed:foods
+yarn workspace @peas/database db:seed:all
+
+# Also deletes uploaded images in R2 (originals/ and processed/)
+yarn workspace @peas/queue clear-imports --yes --include-r2
 ```
 
-Without `--yes` the script only prints what it would delete. R2 isn't touched; the dashboard's Delete All Data (admins) cleans R2 too and always keeps food knowledge.
+Without `--yes` the script only prints what it would delete. `yarn reset` rebuilds `@peas/database`, runs `clear-imports --yes --include-ontology --include-r2`, then `db:seed:all` (recipe categories and ingredient tags, ontology vocabulary, modifiers, starter foods). The dashboard's Delete All Data (admins) also cleans R2 but always keeps food knowledge.
 
 ### API Endpoints
 

@@ -1,5 +1,11 @@
 // Repository exports
+export * from "./import-integrity/index.js";
+export * from "./repository/book-lookup.js";
+export * from "./repository/categories.js";
 export * from "./repository/cleanup";
+export * from "./repository/duplicates.js";
+export * from "./repository/import-integrity-backfill.js";
+export * from "./repository/import-review.js";
 export * from "./repository/dashboard";
 export * from "./repository/instruction";
 export * from "./repository/note";
@@ -8,6 +14,7 @@ export * from "./repository/queueJob";
 export * from "./repository/recipe";
 export * from "./repository/source";
 export * from "./repository/status";
+export * from "./repository/structure.js";
 export {
   createPrismaClient,
   prisma,

@@ -1,3 +1,4 @@
+import { takeCorpusAnalyticsSnapshot } from "./analytics-snapshots.js";
 import { getCorpusHealth } from "./corpus-health.js";
 import { type DbClient, toJson } from "./helpers.js";
 import { getCurrentRevision } from "./revision.js";
@@ -95,7 +96,7 @@ function toRecord(row: {
 }
 
 /**
- * Stores today's corpus health numbers as one `CorpusHealthSnapshot` row (aggregate SQL only), for the trends on /teach/health. The queue takes one daily and after every reinterpretation or reparse run.
+ * Stores today's corpus health numbers as one `CorpusHealthSnapshot` row (aggregate SQL only), for the trends on /teach/health, and refreshes the corpus analytics snapshot with the same trigger. The queue takes one daily and after every reinterpretation or reparse run.
  *
  * @example
  * await takeCorpusHealthSnapshot("SCHEDULED") // { totalMentions: 5402, byResolutionStatus: { AUTO_RESOLVED: 4100, ... }, byParserVersion: { "2.1.0": { total: 5402, unresolved: 540 } }, ... }
@@ -138,6 +139,7 @@ export async function takeCorpusHealthSnapshot(
       avgCandidates,
     },
   });
+  await takeCorpusAnalyticsSnapshot(trigger, db);
   return toRecord(row);
 }
 

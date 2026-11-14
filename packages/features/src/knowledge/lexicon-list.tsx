@@ -55,13 +55,15 @@ function lexiconHref(
   query: string | undefined,
   role: LexiconRoleFilter | null,
   page: number,
-  includeRetired = false
+  includeRetired = false,
+  newestFirst = false
 ): string {
   const params = new URLSearchParams();
   if (query) params.set("query", query);
   if (role) params.set("role", role);
   if (page > 1) params.set("page", String(page));
   if (includeRetired) params.set("retired", "1");
+  if (newestFirst) params.set("newest", "1");
   const search = params.toString();
   return search ? `/lexicon?${search}` : "/lexicon";
 }
@@ -115,6 +117,7 @@ export function LexiconPageContent({
   query,
   role,
   includeRetired = false,
+  newestFirst = false,
   editing,
 }: {
   data: LexiconPageData;
@@ -122,6 +125,8 @@ export function LexiconPageContent({
   role: LexiconRoleFilter | null;
   /** Lists retired entries too, so they can be restored. */
   includeRetired?: boolean;
+  /** Most recently added first, to see what Peas learned lately. */
+  newestFirst?: boolean;
   editing?: LexiconEditing;
 }): ReactNode {
   const { push } = useAppNavigation();
@@ -149,7 +154,15 @@ export function LexiconPageContent({
           defaultValue={query}
           placeholder="chicken"
           onSearch={(value) =>
-            push(lexiconHref(value || undefined, role, 1, includeRetired))
+            push(
+              lexiconHref(
+                value || undefined,
+                role,
+                1,
+                includeRetired,
+                newestFirst
+              )
+            )
           }
         />
         <nav aria-label="Lexicon role">
@@ -157,7 +170,13 @@ export function LexiconPageContent({
             {LEXICON_ROLE_FILTERS.map((filter) => (
               <li key={filter.label}>
                 <AppLink
-                  href={lexiconHref(query, filter.role, 1, includeRetired)}
+                  href={lexiconHref(
+                    query,
+                    filter.role,
+                    1,
+                    includeRetired,
+                    newestFirst
+                  )}
                   aria-current={filter.role === role ? "page" : undefined}
                   className={cn(
                     "text-sm underline-offset-4",
@@ -173,10 +192,22 @@ export function LexiconPageContent({
           </ul>
         </nav>
         <AppLink
-          href={lexiconHref(query, role, 1, !includeRetired)}
+          href={lexiconHref(query, role, 1, !includeRetired, newestFirst)}
           className="text-sm text-greyscale-600 underline-offset-4 hover:underline"
         >
           {includeRetired ? "Hide retired" : "Show retired"}
+        </AppLink>
+        <AppLink
+          href={lexiconHref(query, role, 1, includeRetired, !newestFirst)}
+          className="text-sm text-greyscale-600 underline-offset-4 hover:underline"
+        >
+          {newestFirst ? "A to Z" : "Newest first"}
+        </AppLink>
+        <AppLink
+          href="/lexicon/unknown"
+          className="text-sm text-greyscale-600 underline-offset-4 hover:underline"
+        >
+          Unknown expressions
         </AppLink>
         {editing && !isAdding ? (
           <Button
@@ -250,7 +281,12 @@ export function LexiconPageContent({
               ) : (
                 <tr key={entry.id}>
                   <td className="py-2 pr-4 font-medium text-greyscale-900">
-                    {entry.text}
+                    <AppLink
+                      href={`/lexicon/${entry.id}`}
+                      className="underline-offset-2 hover:underline"
+                    >
+                      {entry.text}
+                    </AppLink>
                   </td>
                   <td className="py-2 pr-4 text-greyscale-700">
                     {lower(entry.role)}
@@ -312,7 +348,9 @@ export function LexiconPageContent({
         page={data.page}
         pageSize={data.pageSize}
         total={data.total}
-        getHref={(page) => lexiconHref(query, role, page, includeRetired)}
+        getHref={(page) =>
+          lexiconHref(query, role, page, includeRetired, newestFirst)
+        }
         label="Lexicon pages"
       />
     </div>

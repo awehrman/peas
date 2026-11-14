@@ -19,6 +19,7 @@ import {
 
 // Mock the @peas/database module
 vi.mock("@peas/database", () => ({
+  markNoteCompleted: vi.fn().mockResolvedValue({ updated: true }),
   updateNote: vi.fn(),
   updateParsingErrorCount: vi.fn(),
 }));
@@ -350,6 +351,24 @@ describe("Track Completion Service", () => {
           message: "Note processing completed successfully",
           context: "note_completion",
         })
+      );
+    });
+
+    it("completes the note through markNoteCompleted, which leaves DUPLICATE notes alone", async () => {
+      const noteId = "test-note-duplicate";
+      const { markNoteCompleted, updateNote } = await import("@peas/database");
+      vi.mocked(markNoteCompleted).mockClear();
+      vi.mocked(updateNote).mockClear();
+
+      initializeNoteCompletion(noteId, "test-import-dup");
+      for (const worker of ["note", "instruction", "ingredient", "image"] as const) {
+        await markWorkerCompleted(noteId, worker, mockLogger, mockStatusBroadcaster);
+      }
+
+      expect(markNoteCompleted).toHaveBeenCalledWith(noteId);
+      expect(updateNote).not.toHaveBeenCalledWith(
+        noteId,
+        expect.objectContaining({ status: "COMPLETED" })
       );
     });
 

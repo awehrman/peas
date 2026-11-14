@@ -28,6 +28,11 @@ vi.mock("../categorization", () => ({
   createCategorizationWorker: vi.fn(),
 }));
 
+vi.mock("../source", () => ({
+  createSourceWorker: vi.fn(),
+  createBookLookupWorker: vi.fn(),
+}));
+
 vi.mock("../image/factory", () => ({
   createImageWorker: vi.fn(),
 }));
@@ -52,6 +57,8 @@ vi.mock("../../config/constants", () => ({
       IMAGE: "image_processing",
       PATTERN_TRACKING: "reinterpret_processing",
       CATEGORIZATION: "categorization_processing",
+      SOURCE: "source_processing",
+      BOOK_LOOKUP: "book_lookup_processing",
     },
   },
 }));
@@ -176,6 +183,8 @@ describe("Worker Startup", () => {
           { name: "test-config" },
           { name: "test-config" },
           { name: "test-config" },
+          { name: "test-config" },
+          { name: "test-config" },
         ],
         mockServiceContainer
       );
@@ -226,7 +235,7 @@ describe("Worker Startup", () => {
       const { startWorkers } = await import("../startup");
       const result = startWorkers(mockQueues, mockServiceContainer);
 
-      expect(mockCreateWorkerConfig).toHaveBeenCalledTimes(6);
+      expect(mockCreateWorkerConfig).toHaveBeenCalledTimes(8);
       expect(mockCreateWorkers).toHaveBeenCalledTimes(1);
       expect(result).toEqual(mockWorkers);
     });

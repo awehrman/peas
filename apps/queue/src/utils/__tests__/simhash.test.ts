@@ -35,6 +35,18 @@ describe("SimHash Utilities", () => {
       expect(generateSimHash(null as unknown as string)).toBe("");
       expect(generateSimHash(undefined as unknown as string)).toBe("");
     });
+
+    it("always returns 32 binary digits, so hashes with leading zeros still compare", () => {
+      const titles = ["a", "Chili", "Weeknight Chicken Thighs", "Pão de Queijo", "1", "zz"];
+      for (const title of titles) {
+        const hash = generateSimHash(title);
+        expect(hash).toMatch(/^[01]{32}$/);
+      }
+      const distances = titles.map((title) =>
+        calculateHammingDistance(generateSimHash(title), generateSimHash("Chili"))
+      );
+      expect(distances.every((distance) => distance <= 32)).toBe(true);
+    });
   });
 
   describe("calculateHammingDistance", () => {

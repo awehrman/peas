@@ -162,7 +162,7 @@ describe("ProcessSourceAction", () => {
     it("should execute the service action with correct parameters", async () => {
       const result = await action.execute(mockData, mockDeps, mockContext);
 
-      expect(mockProcessSource).toHaveBeenCalledWith(mockData, mockDeps.logger);
+      expect(mockProcessSource).toHaveBeenCalledWith(mockData, mockDeps.logger, mockDeps.queues);
       expect(result).toBe(mockData);
     });
 
@@ -268,7 +268,8 @@ describe("ProcessSourceAction", () => {
       expect(result).toBe(mockData); // Service returns the original mockData
       expect(mockProcessSource).toHaveBeenCalledWith(
         dataWithDifferentNoteId,
-        mockDeps.logger
+        mockDeps.logger,
+        mockDeps.queues
       );
     });
 
@@ -301,7 +302,8 @@ describe("ProcessSourceAction", () => {
       expect(result).toBe(mockData); // Service returns the original mockData
       expect(mockProcessSource).toHaveBeenCalledWith(
         complexData,
-        mockDeps.logger
+        mockDeps.logger,
+        mockDeps.queues
       );
     });
   });

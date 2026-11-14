@@ -97,18 +97,18 @@ export const Mutation: MutationResolvers = {
   },
 
   updateRecipe: async (_parent, { input }, context) => {
-    requireViewer(context);
+    const viewer = requireViewer(context);
 
     try {
       const data = recipeUpdateSchema.parse(input);
-      await updateRecipe(data);
+      await updateRecipe(data, viewer.id);
 
       return {
         __typename: "BasicPayload",
         success: true,
         effect: createMutationEffect({
           changed: [{ typename: "Recipe", id: data.id }],
-          invalidatedDomains: ["RECIPES", "RECIPE_TAXONOMY"],
+          invalidatedDomains: ["RECIPES", "RECIPE_TAXONOMY", "NOTE_DETAIL", "CATEGORIES"],
         }),
       };
     } catch (error) {

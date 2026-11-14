@@ -46,6 +46,7 @@ export enum QueueName {
   IMAGE = "image",
   CATEGORIZATION = "categorization",
   REINTERPRET = "reinterpret",
+  BOOK_LOOKUP = "book-lookup",
 }
 
 /**
@@ -90,9 +91,16 @@ export enum ActionName {
   DETERMINE_TAGS = "determine_tags",
   SAVE_TAGS = "save_tags",
   COMPLETION_STATUS = "completion_status",
+  RECOMPUTE_NOTE_CATEGORIES = "recompute_note_categories",
+  RECOMPUTE_CATEGORY = "recompute_category",
+  RECOMPUTE_ALL_CATEGORIES = "recompute_all_categories",
 
   // Source actions
   PROCESS_SOURCE = "process_source",
+  CHECK_URL = "check_url",
+  RECHECK_STALE_URLS = "recheck_stale_urls",
+  LOOKUP_BOOK = "lookup_book",
+  LOOKUP_PENDING_BOOKS = "lookup_pending_books",
 
   // Reinterpretation actions
   REINTERPRET_FAN_OUT = "reinterpret_fan_out",
@@ -284,8 +292,16 @@ export const QUEUE_ACTIONS: Record<QueueName, ActionName[]> = {
     ActionName.SAVE_CATEGORY,
     ActionName.DETERMINE_TAGS,
     ActionName.SAVE_TAGS,
+    ActionName.RECOMPUTE_NOTE_CATEGORIES,
+    ActionName.RECOMPUTE_CATEGORY,
+    ActionName.RECOMPUTE_ALL_CATEGORIES,
   ],
-  [QueueName.SOURCE]: [ActionName.PROCESS_SOURCE],
+  [QueueName.SOURCE]: [
+    ActionName.PROCESS_SOURCE,
+    ActionName.CHECK_URL,
+    ActionName.RECHECK_STALE_URLS,
+  ],
+  [QueueName.BOOK_LOOKUP]: [ActionName.LOOKUP_BOOK, ActionName.LOOKUP_PENDING_BOOKS],
   [QueueName.REINTERPRET]: [
     ActionName.REINTERPRET_FAN_OUT,
     ActionName.REINTERPRET_BATCH,
@@ -337,9 +353,16 @@ export const ACTION_CATEGORIES: Record<ActionName, ActionCategory> = {
   [ActionName.DETERMINE_TAGS]: ActionCategory.CATEGORIZATION,
   [ActionName.SAVE_TAGS]: ActionCategory.CATEGORIZATION,
   [ActionName.COMPLETION_STATUS]: ActionCategory.CATEGORIZATION,
+  [ActionName.RECOMPUTE_NOTE_CATEGORIES]: ActionCategory.CATEGORIZATION,
+  [ActionName.RECOMPUTE_CATEGORY]: ActionCategory.CATEGORIZATION,
+  [ActionName.RECOMPUTE_ALL_CATEGORIES]: ActionCategory.CATEGORIZATION,
 
   // Source actions
   [ActionName.PROCESS_SOURCE]: ActionCategory.SOURCE,
+  [ActionName.CHECK_URL]: ActionCategory.SOURCE,
+  [ActionName.RECHECK_STALE_URLS]: ActionCategory.SOURCE,
+  [ActionName.LOOKUP_BOOK]: ActionCategory.SOURCE,
+  [ActionName.LOOKUP_PENDING_BOOKS]: ActionCategory.SOURCE,
 
   // Reinterpretation actions
   [ActionName.REINTERPRET_FAN_OUT]: ActionCategory.INGREDIENT,

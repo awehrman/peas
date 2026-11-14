@@ -25,6 +25,7 @@ const searchSchema = z.object({
   role: optionalEnum(ROLES),
   page: optionalPage,
   retired: optionalFlag,
+  newest: optionalFlag,
 });
 
 export const Route = createFileRoute("/_authed/lexicon/")({
@@ -37,6 +38,7 @@ export const Route = createFileRoute("/_authed/lexicon/")({
         role: deps.role ?? null,
         page: deps.page ?? 1,
         includeRetired: deps.retired ?? false,
+        newestFirst: deps.newest ?? false,
       },
     }),
   }),
@@ -56,6 +58,7 @@ function LexiconPage() {
       query={search.query}
       role={search.role ?? null}
       includeRetired={search.retired ?? false}
+      newestFirst={search.newest ?? false}
       editing={{
         vocabulary: data.vocabulary,
         onApplyDecision,

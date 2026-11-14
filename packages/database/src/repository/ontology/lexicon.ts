@@ -248,7 +248,7 @@ export async function getLexiconEntryRefs(
 }
 
 /**
- * One page of the lexicon for the Knowledge section: every name and modifier Peas knows, alphabetical, filtered by text and role. Retired (DEPRECATED) entries are hidden unless `includeRetired` asks for them, so they can be restored.
+ * One page of the lexicon for the Knowledge section: every name and modifier Peas knows, alphabetical (or newest first), filtered by text and role. Retired (DEPRECATED) entries are hidden unless `includeRetired` asks for them, so they can be restored.
  *
  * @example
  * await listLexiconEntries({ query: "chicken", role: "FOOD" }) // { items: [{ text: "chicken thighs", kind: "PLURAL", targetLabel: "chicken thigh" }, ...], total: 9 }
@@ -258,12 +258,15 @@ export async function listLexiconEntries(
     query,
     role,
     includeRetired = false,
+    newestFirst = false,
     offset = 0,
     limit = 50,
   }: {
     query?: string;
     role?: LexiconRole;
     includeRetired?: boolean;
+    /** Most recently added first (by revision), to see what Peas learned lately. */
+    newestFirst?: boolean;
     offset?: number;
     limit?: number;
   } = {},
@@ -278,7 +281,9 @@ export async function listLexiconEntries(
   const [rows, total] = await Promise.all([
     db.lexiconEntry.findMany({
       where,
-      orderBy: [{ normalized: "asc" }, { role: "asc" }, { id: "asc" }],
+      orderBy: newestFirst
+        ? [{ revisionAdded: "desc" }, { normalized: "asc" }, { id: "asc" }]
+        : [{ normalized: "asc" }, { role: "asc" }, { id: "asc" }],
       skip: offset,
       take: limit,
       select: ENTRY_REF_SELECT,

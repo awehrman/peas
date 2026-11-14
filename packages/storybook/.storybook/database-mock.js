@@ -66,8 +66,8 @@ export async function getNoteWithIngredients(noteId) {
   return Promise.resolve(null);
 }
 
-export async function markNoteAsDuplicate() {
-  return Promise.resolve();
+export async function markNoteCompleted() {
+  return Promise.resolve({ updated: true });
 }
 
 export async function updateNoteTitleSimHash() {

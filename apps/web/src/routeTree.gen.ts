@@ -15,7 +15,6 @@ import { Route as PasswordResetRouteImport } from './routes/password-reset'
 import { Route as AuthedIndexRouteImport } from './routes/_authed/index'
 import { Route as AuthedConceptsRouteRouteImport } from './routes/_authed/concepts/route'
 import { Route as AuthedDesignRouteImport } from './routes/_authed/design'
-import { Route as AuthedImportRouteImport } from './routes/_authed/import'
 import { Route as AuthedIngredientsRouteImport } from './routes/_authed/ingredients'
 import { Route as AuthedLexiconRouteRouteImport } from './routes/_authed/lexicon/route'
 import { Route as AuthedTeachRouteRouteImport } from './routes/_authed/teach/route'
@@ -23,16 +22,26 @@ import { Route as ApiGraphqlRouteImport } from './routes/api/graphql'
 import { Route as InviteCodeRouteImport } from './routes/invite.$code'
 import { Route as AuthedConceptsIndexRouteImport } from './routes/_authed/concepts/index'
 import { Route as AuthedConceptsIdRouteImport } from './routes/_authed/concepts/$id'
+import { Route as AuthedImportIndexRouteImport } from './routes/_authed/import/index'
 import { Route as AuthedLexiconIndexRouteImport } from './routes/_authed/lexicon/index'
+import { Route as AuthedLexiconEntryIdRouteImport } from './routes/_authed/lexicon/$entryId'
+import { Route as AuthedLexiconUnknownRouteImport } from './routes/_authed/lexicon/unknown'
 import { Route as AuthedNotesIndexRouteImport } from './routes/_authed/notes/index'
 import { Route as AuthedNotesIdRouteImport } from './routes/_authed/notes/$id'
 import { Route as AuthedRecipesIndexRouteImport } from './routes/_authed/recipes/index'
 import { Route as AuthedRecipesIdRouteImport } from './routes/_authed/recipes/$id'
+import { Route as AuthedRecipesCategoriesRouteImport } from './routes/_authed/recipes/categories'
 import { Route as AuthedTeachIndexRouteImport } from './routes/_authed/teach/index'
 import { Route as AuthedTeachDiscoveryIdRouteImport } from './routes/_authed/teach/$discoveryId'
 import { Route as AuthedTeachGlossaryRouteImport } from './routes/_authed/teach/glossary'
 import { Route as AuthedTeachHealthRouteImport } from './routes/_authed/teach/health'
 import { Route as AuthedTeachPlaygroundRouteImport } from './routes/_authed/teach/playground'
+import { Route as AuthedTeachStructureRouteImport } from './routes/_authed/teach/structure'
+import { Route as AuthedConceptsIdGraphRouteImport } from './routes/_authed/concepts/$id_.graph'
+import { Route as AuthedConceptsIdUsageRouteImport } from './routes/_authed/concepts/$id_.usage'
+import { Route as AuthedImportBooksIndexRouteImport } from './routes/_authed/import/books/index'
+import { Route as AuthedImportBooksLookupIdRouteImport } from './routes/_authed/import/books/$lookupId'
+import { Route as AuthedImportDuplicatesIdRouteImport } from './routes/_authed/import/duplicates/$id'
 
 const AuthedRoute = AuthedRouteImport.update({
   id: '/_authed',
@@ -61,11 +70,6 @@ const AuthedConceptsRouteRoute = AuthedConceptsRouteRouteImport.update({
 const AuthedDesignRoute = AuthedDesignRouteImport.update({
   id: '/design',
   path: '/design',
-  getParentRoute: () => AuthedRoute,
-} as any)
-const AuthedImportRoute = AuthedImportRouteImport.update({
-  id: '/import',
-  path: '/import',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedIngredientsRoute = AuthedIngredientsRouteImport.update({
@@ -103,9 +107,24 @@ const AuthedConceptsIdRoute = AuthedConceptsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => AuthedConceptsRouteRoute,
 } as any)
+const AuthedImportIndexRoute = AuthedImportIndexRouteImport.update({
+  id: '/import/',
+  path: '/import/',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedLexiconIndexRoute = AuthedLexiconIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AuthedLexiconRouteRoute,
+} as any)
+const AuthedLexiconEntryIdRoute = AuthedLexiconEntryIdRouteImport.update({
+  id: '/$entryId',
+  path: '/$entryId',
+  getParentRoute: () => AuthedLexiconRouteRoute,
+} as any)
+const AuthedLexiconUnknownRoute = AuthedLexiconUnknownRouteImport.update({
+  id: '/unknown',
+  path: '/unknown',
   getParentRoute: () => AuthedLexiconRouteRoute,
 } as any)
 const AuthedNotesIndexRoute = AuthedNotesIndexRouteImport.update({
@@ -126,6 +145,11 @@ const AuthedRecipesIndexRoute = AuthedRecipesIndexRouteImport.update({
 const AuthedRecipesIdRoute = AuthedRecipesIdRouteImport.update({
   id: '/recipes/$id',
   path: '/recipes/$id',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedRecipesCategoriesRoute = AuthedRecipesCategoriesRouteImport.update({
+  id: '/recipes/categories',
+  path: '/recipes/categories',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedTeachIndexRoute = AuthedTeachIndexRouteImport.update({
@@ -153,6 +177,38 @@ const AuthedTeachPlaygroundRoute = AuthedTeachPlaygroundRouteImport.update({
   path: '/playground',
   getParentRoute: () => AuthedTeachRouteRoute,
 } as any)
+const AuthedTeachStructureRoute = AuthedTeachStructureRouteImport.update({
+  id: '/structure',
+  path: '/structure',
+  getParentRoute: () => AuthedTeachRouteRoute,
+} as any)
+const AuthedConceptsIdGraphRoute = AuthedConceptsIdGraphRouteImport.update({
+  id: '/$id_/graph',
+  path: '/$id/graph',
+  getParentRoute: () => AuthedConceptsRouteRoute,
+} as any)
+const AuthedConceptsIdUsageRoute = AuthedConceptsIdUsageRouteImport.update({
+  id: '/$id_/usage',
+  path: '/$id/usage',
+  getParentRoute: () => AuthedConceptsRouteRoute,
+} as any)
+const AuthedImportBooksIndexRoute = AuthedImportBooksIndexRouteImport.update({
+  id: '/import/books/',
+  path: '/import/books/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedImportBooksLookupIdRoute =
+  AuthedImportBooksLookupIdRouteImport.update({
+    id: '/import/books/$lookupId',
+    path: '/import/books/$lookupId',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedImportDuplicatesIdRoute =
+  AuthedImportDuplicatesIdRouteImport.update({
+    id: '/import/duplicates/$id',
+    path: '/import/duplicates/$id',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthedIndexRoute
@@ -162,44 +218,62 @@ export interface FileRoutesByFullPath {
   '/lexicon': typeof AuthedLexiconRouteRouteWithChildren
   '/teach': typeof AuthedTeachRouteRouteWithChildren
   '/design': typeof AuthedDesignRoute
-  '/import': typeof AuthedImportRoute
   '/ingredients': typeof AuthedIngredientsRoute
   '/api/graphql': typeof ApiGraphqlRoute
   '/invite/$code': typeof InviteCodeRoute
   '/concepts/$id': typeof AuthedConceptsIdRoute
+  '/lexicon/$entryId': typeof AuthedLexiconEntryIdRoute
+  '/lexicon/unknown': typeof AuthedLexiconUnknownRoute
   '/notes/$id': typeof AuthedNotesIdRoute
   '/recipes/$id': typeof AuthedRecipesIdRoute
+  '/recipes/categories': typeof AuthedRecipesCategoriesRoute
   '/teach/$discoveryId': typeof AuthedTeachDiscoveryIdRoute
   '/teach/glossary': typeof AuthedTeachGlossaryRoute
   '/teach/health': typeof AuthedTeachHealthRoute
   '/teach/playground': typeof AuthedTeachPlaygroundRoute
+  '/teach/structure': typeof AuthedTeachStructureRoute
   '/concepts/': typeof AuthedConceptsIndexRoute
+  '/import/': typeof AuthedImportIndexRoute
   '/lexicon/': typeof AuthedLexiconIndexRoute
   '/notes/': typeof AuthedNotesIndexRoute
   '/recipes/': typeof AuthedRecipesIndexRoute
   '/teach/': typeof AuthedTeachIndexRoute
+  '/concepts/$id/graph': typeof AuthedConceptsIdGraphRoute
+  '/concepts/$id/usage': typeof AuthedConceptsIdUsageRoute
+  '/import/books/$lookupId': typeof AuthedImportBooksLookupIdRoute
+  '/import/duplicates/$id': typeof AuthedImportDuplicatesIdRoute
+  '/import/books/': typeof AuthedImportBooksIndexRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/password-reset': typeof PasswordResetRoute
   '/design': typeof AuthedDesignRoute
-  '/import': typeof AuthedImportRoute
   '/ingredients': typeof AuthedIngredientsRoute
   '/api/graphql': typeof ApiGraphqlRoute
   '/invite/$code': typeof InviteCodeRoute
   '/': typeof AuthedIndexRoute
   '/concepts/$id': typeof AuthedConceptsIdRoute
+  '/lexicon/$entryId': typeof AuthedLexiconEntryIdRoute
+  '/lexicon/unknown': typeof AuthedLexiconUnknownRoute
   '/notes/$id': typeof AuthedNotesIdRoute
   '/recipes/$id': typeof AuthedRecipesIdRoute
+  '/recipes/categories': typeof AuthedRecipesCategoriesRoute
   '/teach/$discoveryId': typeof AuthedTeachDiscoveryIdRoute
   '/teach/glossary': typeof AuthedTeachGlossaryRoute
   '/teach/health': typeof AuthedTeachHealthRoute
   '/teach/playground': typeof AuthedTeachPlaygroundRoute
+  '/teach/structure': typeof AuthedTeachStructureRoute
   '/concepts': typeof AuthedConceptsIndexRoute
+  '/import': typeof AuthedImportIndexRoute
   '/lexicon': typeof AuthedLexiconIndexRoute
   '/notes': typeof AuthedNotesIndexRoute
   '/recipes': typeof AuthedRecipesIndexRoute
   '/teach': typeof AuthedTeachIndexRoute
+  '/concepts/$id/graph': typeof AuthedConceptsIdGraphRoute
+  '/concepts/$id/usage': typeof AuthedConceptsIdUsageRoute
+  '/import/books/$lookupId': typeof AuthedImportBooksLookupIdRoute
+  '/import/duplicates/$id': typeof AuthedImportDuplicatesIdRoute
+  '/import/books': typeof AuthedImportBooksIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -210,23 +284,32 @@ export interface FileRoutesById {
   '/_authed/lexicon': typeof AuthedLexiconRouteRouteWithChildren
   '/_authed/teach': typeof AuthedTeachRouteRouteWithChildren
   '/_authed/design': typeof AuthedDesignRoute
-  '/_authed/import': typeof AuthedImportRoute
   '/_authed/ingredients': typeof AuthedIngredientsRoute
   '/api/graphql': typeof ApiGraphqlRoute
   '/invite/$code': typeof InviteCodeRoute
   '/_authed/': typeof AuthedIndexRoute
   '/_authed/concepts/$id': typeof AuthedConceptsIdRoute
+  '/_authed/lexicon/$entryId': typeof AuthedLexiconEntryIdRoute
+  '/_authed/lexicon/unknown': typeof AuthedLexiconUnknownRoute
   '/_authed/notes/$id': typeof AuthedNotesIdRoute
   '/_authed/recipes/$id': typeof AuthedRecipesIdRoute
+  '/_authed/recipes/categories': typeof AuthedRecipesCategoriesRoute
   '/_authed/teach/$discoveryId': typeof AuthedTeachDiscoveryIdRoute
   '/_authed/teach/glossary': typeof AuthedTeachGlossaryRoute
   '/_authed/teach/health': typeof AuthedTeachHealthRoute
   '/_authed/teach/playground': typeof AuthedTeachPlaygroundRoute
+  '/_authed/teach/structure': typeof AuthedTeachStructureRoute
   '/_authed/concepts/': typeof AuthedConceptsIndexRoute
+  '/_authed/import/': typeof AuthedImportIndexRoute
   '/_authed/lexicon/': typeof AuthedLexiconIndexRoute
   '/_authed/notes/': typeof AuthedNotesIndexRoute
   '/_authed/recipes/': typeof AuthedRecipesIndexRoute
   '/_authed/teach/': typeof AuthedTeachIndexRoute
+  '/_authed/concepts/$id_/graph': typeof AuthedConceptsIdGraphRoute
+  '/_authed/concepts/$id_/usage': typeof AuthedConceptsIdUsageRoute
+  '/_authed/import/books/$lookupId': typeof AuthedImportBooksLookupIdRoute
+  '/_authed/import/duplicates/$id': typeof AuthedImportDuplicatesIdRoute
+  '/_authed/import/books/': typeof AuthedImportBooksIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -238,44 +321,62 @@ export interface FileRouteTypes {
     | '/lexicon'
     | '/teach'
     | '/design'
-    | '/import'
     | '/ingredients'
     | '/api/graphql'
     | '/invite/$code'
     | '/concepts/$id'
+    | '/lexicon/$entryId'
+    | '/lexicon/unknown'
     | '/notes/$id'
     | '/recipes/$id'
+    | '/recipes/categories'
     | '/teach/$discoveryId'
     | '/teach/glossary'
     | '/teach/health'
     | '/teach/playground'
+    | '/teach/structure'
     | '/concepts/'
+    | '/import/'
     | '/lexicon/'
     | '/notes/'
     | '/recipes/'
     | '/teach/'
+    | '/concepts/$id/graph'
+    | '/concepts/$id/usage'
+    | '/import/books/$lookupId'
+    | '/import/duplicates/$id'
+    | '/import/books/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
     | '/password-reset'
     | '/design'
-    | '/import'
     | '/ingredients'
     | '/api/graphql'
     | '/invite/$code'
     | '/'
     | '/concepts/$id'
+    | '/lexicon/$entryId'
+    | '/lexicon/unknown'
     | '/notes/$id'
     | '/recipes/$id'
+    | '/recipes/categories'
     | '/teach/$discoveryId'
     | '/teach/glossary'
     | '/teach/health'
     | '/teach/playground'
+    | '/teach/structure'
     | '/concepts'
+    | '/import'
     | '/lexicon'
     | '/notes'
     | '/recipes'
     | '/teach'
+    | '/concepts/$id/graph'
+    | '/concepts/$id/usage'
+    | '/import/books/$lookupId'
+    | '/import/duplicates/$id'
+    | '/import/books'
   id:
     | '__root__'
     | '/_authed'
@@ -285,23 +386,32 @@ export interface FileRouteTypes {
     | '/_authed/lexicon'
     | '/_authed/teach'
     | '/_authed/design'
-    | '/_authed/import'
     | '/_authed/ingredients'
     | '/api/graphql'
     | '/invite/$code'
     | '/_authed/'
     | '/_authed/concepts/$id'
+    | '/_authed/lexicon/$entryId'
+    | '/_authed/lexicon/unknown'
     | '/_authed/notes/$id'
     | '/_authed/recipes/$id'
+    | '/_authed/recipes/categories'
     | '/_authed/teach/$discoveryId'
     | '/_authed/teach/glossary'
     | '/_authed/teach/health'
     | '/_authed/teach/playground'
+    | '/_authed/teach/structure'
     | '/_authed/concepts/'
+    | '/_authed/import/'
     | '/_authed/lexicon/'
     | '/_authed/notes/'
     | '/_authed/recipes/'
     | '/_authed/teach/'
+    | '/_authed/concepts/$id_/graph'
+    | '/_authed/concepts/$id_/usage'
+    | '/_authed/import/books/$lookupId'
+    | '/_authed/import/duplicates/$id'
+    | '/_authed/import/books/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -356,13 +466,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedDesignRouteImport
       parentRoute: typeof AuthedRoute
     }
-    '/_authed/import': {
-      id: '/_authed/import'
-      path: '/import'
-      fullPath: '/import'
-      preLoaderRoute: typeof AuthedImportRouteImport
-      parentRoute: typeof AuthedRoute
-    }
     '/_authed/ingredients': {
       id: '/_authed/ingredients'
       path: '/ingredients'
@@ -412,11 +515,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedConceptsIdRouteImport
       parentRoute: typeof AuthedConceptsRouteRoute
     }
+    '/_authed/import/': {
+      id: '/_authed/import/'
+      path: '/import'
+      fullPath: '/import/'
+      preLoaderRoute: typeof AuthedImportIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/lexicon/': {
       id: '/_authed/lexicon/'
       path: '/'
       fullPath: '/lexicon/'
       preLoaderRoute: typeof AuthedLexiconIndexRouteImport
+      parentRoute: typeof AuthedLexiconRouteRoute
+    }
+    '/_authed/lexicon/$entryId': {
+      id: '/_authed/lexicon/$entryId'
+      path: '/$entryId'
+      fullPath: '/lexicon/$entryId'
+      preLoaderRoute: typeof AuthedLexiconEntryIdRouteImport
+      parentRoute: typeof AuthedLexiconRouteRoute
+    }
+    '/_authed/lexicon/unknown': {
+      id: '/_authed/lexicon/unknown'
+      path: '/unknown'
+      fullPath: '/lexicon/unknown'
+      preLoaderRoute: typeof AuthedLexiconUnknownRouteImport
       parentRoute: typeof AuthedLexiconRouteRoute
     }
     '/_authed/notes/': {
@@ -445,6 +569,13 @@ declare module '@tanstack/react-router' {
       path: '/recipes/$id'
       fullPath: '/recipes/$id'
       preLoaderRoute: typeof AuthedRecipesIdRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/recipes/categories': {
+      id: '/_authed/recipes/categories'
+      path: '/recipes/categories'
+      fullPath: '/recipes/categories'
+      preLoaderRoute: typeof AuthedRecipesCategoriesRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/teach/': {
@@ -482,27 +613,77 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedTeachPlaygroundRouteImport
       parentRoute: typeof AuthedTeachRouteRoute
     }
+    '/_authed/teach/structure': {
+      id: '/_authed/teach/structure'
+      path: '/structure'
+      fullPath: '/teach/structure'
+      preLoaderRoute: typeof AuthedTeachStructureRouteImport
+      parentRoute: typeof AuthedTeachRouteRoute
+    }
+    '/_authed/concepts/$id_/graph': {
+      id: '/_authed/concepts/$id_/graph'
+      path: '/$id/graph'
+      fullPath: '/concepts/$id/graph'
+      preLoaderRoute: typeof AuthedConceptsIdGraphRouteImport
+      parentRoute: typeof AuthedConceptsRouteRoute
+    }
+    '/_authed/concepts/$id_/usage': {
+      id: '/_authed/concepts/$id_/usage'
+      path: '/$id/usage'
+      fullPath: '/concepts/$id/usage'
+      preLoaderRoute: typeof AuthedConceptsIdUsageRouteImport
+      parentRoute: typeof AuthedConceptsRouteRoute
+    }
+    '/_authed/import/books/': {
+      id: '/_authed/import/books/'
+      path: '/import/books'
+      fullPath: '/import/books/'
+      preLoaderRoute: typeof AuthedImportBooksIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/import/books/$lookupId': {
+      id: '/_authed/import/books/$lookupId'
+      path: '/import/books/$lookupId'
+      fullPath: '/import/books/$lookupId'
+      preLoaderRoute: typeof AuthedImportBooksLookupIdRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/import/duplicates/$id': {
+      id: '/_authed/import/duplicates/$id'
+      path: '/import/duplicates/$id'
+      fullPath: '/import/duplicates/$id'
+      preLoaderRoute: typeof AuthedImportDuplicatesIdRouteImport
+      parentRoute: typeof AuthedRoute
+    }
   }
 }
 
 interface AuthedConceptsRouteRouteChildren {
   AuthedConceptsIdRoute: typeof AuthedConceptsIdRoute
   AuthedConceptsIndexRoute: typeof AuthedConceptsIndexRoute
+  AuthedConceptsIdGraphRoute: typeof AuthedConceptsIdGraphRoute
+  AuthedConceptsIdUsageRoute: typeof AuthedConceptsIdUsageRoute
 }
 
 const AuthedConceptsRouteRouteChildren: AuthedConceptsRouteRouteChildren = {
   AuthedConceptsIdRoute: AuthedConceptsIdRoute,
   AuthedConceptsIndexRoute: AuthedConceptsIndexRoute,
+  AuthedConceptsIdGraphRoute: AuthedConceptsIdGraphRoute,
+  AuthedConceptsIdUsageRoute: AuthedConceptsIdUsageRoute,
 }
 
 const AuthedConceptsRouteRouteWithChildren =
   AuthedConceptsRouteRoute._addFileChildren(AuthedConceptsRouteRouteChildren)
 
 interface AuthedLexiconRouteRouteChildren {
+  AuthedLexiconEntryIdRoute: typeof AuthedLexiconEntryIdRoute
+  AuthedLexiconUnknownRoute: typeof AuthedLexiconUnknownRoute
   AuthedLexiconIndexRoute: typeof AuthedLexiconIndexRoute
 }
 
 const AuthedLexiconRouteRouteChildren: AuthedLexiconRouteRouteChildren = {
+  AuthedLexiconEntryIdRoute: AuthedLexiconEntryIdRoute,
+  AuthedLexiconUnknownRoute: AuthedLexiconUnknownRoute,
   AuthedLexiconIndexRoute: AuthedLexiconIndexRoute,
 }
 
@@ -514,6 +695,7 @@ interface AuthedTeachRouteRouteChildren {
   AuthedTeachGlossaryRoute: typeof AuthedTeachGlossaryRoute
   AuthedTeachHealthRoute: typeof AuthedTeachHealthRoute
   AuthedTeachPlaygroundRoute: typeof AuthedTeachPlaygroundRoute
+  AuthedTeachStructureRoute: typeof AuthedTeachStructureRoute
   AuthedTeachIndexRoute: typeof AuthedTeachIndexRoute
 }
 
@@ -522,6 +704,7 @@ const AuthedTeachRouteRouteChildren: AuthedTeachRouteRouteChildren = {
   AuthedTeachGlossaryRoute: AuthedTeachGlossaryRoute,
   AuthedTeachHealthRoute: AuthedTeachHealthRoute,
   AuthedTeachPlaygroundRoute: AuthedTeachPlaygroundRoute,
+  AuthedTeachStructureRoute: AuthedTeachStructureRoute,
   AuthedTeachIndexRoute: AuthedTeachIndexRoute,
 }
 
@@ -533,13 +716,17 @@ interface AuthedRouteChildren {
   AuthedLexiconRouteRoute: typeof AuthedLexiconRouteRouteWithChildren
   AuthedTeachRouteRoute: typeof AuthedTeachRouteRouteWithChildren
   AuthedDesignRoute: typeof AuthedDesignRoute
-  AuthedImportRoute: typeof AuthedImportRoute
   AuthedIngredientsRoute: typeof AuthedIngredientsRoute
   AuthedIndexRoute: typeof AuthedIndexRoute
   AuthedNotesIdRoute: typeof AuthedNotesIdRoute
   AuthedRecipesIdRoute: typeof AuthedRecipesIdRoute
+  AuthedRecipesCategoriesRoute: typeof AuthedRecipesCategoriesRoute
+  AuthedImportIndexRoute: typeof AuthedImportIndexRoute
   AuthedNotesIndexRoute: typeof AuthedNotesIndexRoute
   AuthedRecipesIndexRoute: typeof AuthedRecipesIndexRoute
+  AuthedImportBooksLookupIdRoute: typeof AuthedImportBooksLookupIdRoute
+  AuthedImportDuplicatesIdRoute: typeof AuthedImportDuplicatesIdRoute
+  AuthedImportBooksIndexRoute: typeof AuthedImportBooksIndexRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
@@ -547,13 +734,17 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedLexiconRouteRoute: AuthedLexiconRouteRouteWithChildren,
   AuthedTeachRouteRoute: AuthedTeachRouteRouteWithChildren,
   AuthedDesignRoute: AuthedDesignRoute,
-  AuthedImportRoute: AuthedImportRoute,
   AuthedIngredientsRoute: AuthedIngredientsRoute,
   AuthedIndexRoute: AuthedIndexRoute,
   AuthedNotesIdRoute: AuthedNotesIdRoute,
   AuthedRecipesIdRoute: AuthedRecipesIdRoute,
+  AuthedRecipesCategoriesRoute: AuthedRecipesCategoriesRoute,
+  AuthedImportIndexRoute: AuthedImportIndexRoute,
   AuthedNotesIndexRoute: AuthedNotesIndexRoute,
   AuthedRecipesIndexRoute: AuthedRecipesIndexRoute,
+  AuthedImportBooksLookupIdRoute: AuthedImportBooksLookupIdRoute,
+  AuthedImportDuplicatesIdRoute: AuthedImportDuplicatesIdRoute,
+  AuthedImportBooksIndexRoute: AuthedImportBooksIndexRoute,
 }
 
 const AuthedRouteWithChildren =

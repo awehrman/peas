@@ -17,9 +17,13 @@ export interface RecipesPageData {
   pageSize: number;
 }
 
+export type CategoryProvenance = "ANY" | "APPROVED" | "INFERRED";
+
 export interface RecipesFilters {
   query?: string;
   category?: string;
+  /** Which category memberships the category filter counts. */
+  categoryProvenance?: CategoryProvenance;
   tag?: string;
   /** Recipes that mention this concept or a more specific one. */
   conceptId?: string;
@@ -35,7 +39,7 @@ export interface RecipeDetail {
   title: string;
   noteId: string;
   imageUrl: string | null;
-  categories: { id: string; name: string }[];
+  categories: NoteDetail["categories"];
   tags: { id: string; name: string }[];
   sources: NoteDetail["sources"];
   ingredientBlocks: NoteDetail["ingredientBlocks"];

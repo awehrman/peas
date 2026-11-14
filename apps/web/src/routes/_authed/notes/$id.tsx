@@ -5,6 +5,7 @@ import {
   SetLineReviewStatusDocument,
 } from "~/graphql/generated";
 import { useMutationAction } from "~/lib/apollo/cache-coordinator-provider";
+import { useCategoryActions, useRecheckUrl } from "~/lib/import-integrity";
 import { canCurateKnowledge } from "~/lib/permissions";
 import { useTeachActions } from "~/lib/teach";
 
@@ -27,6 +28,8 @@ function NoteDetailPage() {
   const { data } = useReadQuery(queryRef);
   const { viewer } = Route.useRouteContext();
   const { onApplyDecision, onSearchConcepts } = useTeachActions();
+  const categoryActions = useCategoryActions(data.note?.id ?? "");
+  const onRecheckUrl = useRecheckUrl();
 
   // The payload returns the refreshed note, so this view (and any other view of the note) updates from the cache.
   const onSetReviewStatus = useMutationAction(SetLineReviewStatusDocument, {
@@ -51,6 +54,8 @@ function NoteDetailPage() {
       note={data.note}
       onSetReviewStatus={onSetReviewStatus}
       onPromoteToRecipe={onPromoteToRecipe}
+      onRecheckUrl={onRecheckUrl}
+      {...categoryActions}
       onCorrectMention={canCurateKnowledge(viewer) ? onApplyDecision : undefined}
       onSearchConcepts={canCurateKnowledge(viewer) ? onSearchConcepts : undefined}
     />

@@ -19,8 +19,8 @@ export default defineConfig({
       reporter: ["text-summary", "html"],
       include: ["src/**/*.ts"],
       exclude: ["src/**/__tests__/**"],
-      // Ratchet: the floor of the last measured coverage (13 November 2026); raise it as coverage grows
-      thresholds: { statements: 77, branches: 67, functions: 75, lines: 79 },
+      // Ratchet: the floor of the last measured coverage (13 November 2026, after import integrity); raise it as coverage grows
+      thresholds: { statements: 80, branches: 69, functions: 79, lines: 83 },
     },
   },
 });

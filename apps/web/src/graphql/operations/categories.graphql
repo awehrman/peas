@@ -1,0 +1,79 @@
+fragment CategoryFields on Category {
+  id
+  name
+  slug
+  kind
+  description
+  concept {
+    id
+    canonicalName
+    status
+  }
+  traversal
+  ruleVersion
+  approvedCount
+  inferredCount
+  excludedCount
+}
+
+query CategoriesPage {
+  categories {
+    ...CategoryFields
+  }
+}
+
+query PreviewCategoryRule($conceptId: ID!, $traversal: [FoodRelationshipType!]!) {
+  previewCategoryRule(conceptId: $conceptId, traversal: $traversal) {
+    noteCount
+    examples {
+      noteId
+      title
+      evidence {
+        ...CategoryEvidenceFields
+      }
+    }
+  }
+}
+
+mutation CreateCategory($input: CategoryInput!) {
+  createCategory(input: $input) {
+    ...PayloadFields
+    id
+  }
+}
+
+mutation UpdateCategoryRule($id: ID!, $input: CategoryInput!) {
+  updateCategoryRule(id: $id, input: $input) {
+    ...PayloadFields
+  }
+}
+
+mutation AddCategoryToNote($noteId: ID!, $categoryId: ID, $categoryName: String) {
+  addCategoryToNote(noteId: $noteId, categoryId: $categoryId, categoryName: $categoryName) {
+    ...PayloadFields
+  }
+}
+
+mutation ApproveCategory($noteId: ID!, $categoryId: ID!) {
+  approveCategory(noteId: $noteId, categoryId: $categoryId) {
+    ...PayloadFields
+  }
+}
+
+mutation ExcludeCategory($noteId: ID!, $categoryId: ID!) {
+  excludeCategory(noteId: $noteId, categoryId: $categoryId) {
+    ...PayloadFields
+  }
+}
+
+mutation RestoreCategory($noteId: ID!, $categoryId: ID!) {
+  restoreCategory(noteId: $noteId, categoryId: $categoryId) {
+    ...PayloadFields
+  }
+}
+
+mutation RemoveCategory($noteId: ID!, $categoryId: ID!) {
+  removeCategory(noteId: $noteId, categoryId: $categoryId) {
+    ...PayloadFields
+  }
+}

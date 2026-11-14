@@ -30,7 +30,8 @@
     "explain:line": "tsx scripts/explain-line.ts",
     "test:coverage": "vitest run --coverage",
     "extract:descriptors": "tsx scripts/extract-v1-descriptors.ts",
-    "evaluate:resolution": "tsx scripts/evaluate-resolution.ts"
+    "evaluate:resolution": "tsx scripts/evaluate-resolution.ts",
+    "evaluate:structure": "tsx scripts/evaluate-structure.ts"
   },
   "dependencies": {
     "peggy": "^5.1.1",

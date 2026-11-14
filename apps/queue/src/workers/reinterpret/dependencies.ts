@@ -63,9 +63,18 @@ export function buildReinterpretDependencies(
         const { runReinterpretBatch, enqueueSnapshot } = await import(
           "../../services/reinterpret/service"
         );
+        const { enqueueCategoryRecompute } = await import("../../services/categorization/recompute");
         return runReinterpretBatch(data, serviceContainer.logger, attemptNumber, {
-          onRunFinished: (trigger, runJobId) =>
-            enqueueSnapshot(serviceContainer.queues.reinterpretQueue, trigger, runJobId),
+          onRunFinished: async (trigger, runJobId) => {
+            await enqueueSnapshot(serviceContainer.queues.reinterpretQueue, trigger, runJobId);
+            // Mentions now name different foods, so inferred categories may have changed
+            await enqueueCategoryRecompute(serviceContainer.queues.categorizationQueue, {
+              scope: "ALL",
+              reason: runJobId,
+            }).catch((error: unknown) =>
+              serviceContainer.logger.log(`[RECOMPUTE_CATEGORIES] could not queue after ${runJobId}: ${error}`, "warn")
+            );
+          },
         });
       },
       snapshot: async (data) => {

@@ -77,7 +77,11 @@ describe("LexiconPageContent", () => {
       within(rows[1]!).getByRole("link", { name: "chicken thigh" })
     ).toHaveAttribute("href", "/concepts/00000000-0000-4000-8000-000000000010");
     expect(within(rows[2]!).getByText("color: green")).toBeInTheDocument();
-    expect(within(rows[2]!).queryByRole("link")).toBeNull();
+    expect(
+      within(rows[2]!)
+        .getAllByRole("link")
+        .map((link) => link.getAttribute("href"))
+    ).toEqual([expect.stringMatching(/^\/lexicon\//)]);
     expect(within(rows[2]!).getByText("proposed")).toBeInTheDocument();
   });
 

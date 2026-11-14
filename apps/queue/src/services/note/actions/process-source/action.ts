@@ -49,7 +49,7 @@ export class ProcessSourceAction extends BaseAction<
       data,
       deps,
       context,
-      serviceCall: () => processSource(data, deps.logger),
+      serviceCall: () => processSource(data, deps.logger, deps.queues),
       contextName: "source_connection",
       startMessage: "Processing source...",
       completionMessage: "Added source!",

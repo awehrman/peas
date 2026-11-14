@@ -4,14 +4,19 @@ export type PossibleTypesResultData = {
       "ApplyDecisionPayload",
       "BasicPayload",
       "CleanupAllDataPayload",
+      "CreateCategoryPayload",
       "CreateIngredientPayload",
       "MarkNoisePayload",
       "PromoteCompletedNotesPayload",
       "PromoteNotePayload",
       "RefreshDiscoveriesPayload",
+      "ResolveDuplicatePayload",
+      "ResolveExactDuplicatesPayload",
       "SaveIngredientPayload",
       "SetLineReviewStatusPayload",
-      "StartJobPayload"
+      "StartJobPayload",
+      "StructureDecisionPayload",
+      "StructurePatternPayload"
     ]
   }
 };
@@ -21,14 +26,19 @@ const result: PossibleTypesResultData = {
       "ApplyDecisionPayload",
       "BasicPayload",
       "CleanupAllDataPayload",
+      "CreateCategoryPayload",
       "CreateIngredientPayload",
       "MarkNoisePayload",
       "PromoteCompletedNotesPayload",
       "PromoteNotePayload",
       "RefreshDiscoveriesPayload",
+      "ResolveDuplicatePayload",
+      "ResolveExactDuplicatesPayload",
       "SaveIngredientPayload",
       "SetLineReviewStatusPayload",
-      "StartJobPayload"
+      "StartJobPayload",
+      "StructureDecisionPayload",
+      "StructurePatternPayload"
     ]
   }
 };

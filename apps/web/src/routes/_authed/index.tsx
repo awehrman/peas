@@ -1,14 +1,17 @@
 import {
   CleanupAllDataDocument,
+  CorpusAnalyticsDocument,
+  type CorpusAnalyticsQuery,
   DashboardStatsDocument,
 } from "~/graphql/generated";
 import { useMutationAction } from "~/lib/apollo/cache-coordinator-provider";
 
-import { useCallback } from "react";
+import { type ReactNode, Suspense, useCallback } from "react";
 
-import { useReadQuery } from "@apollo/client/react";
+import { type QueryRef, useReadQuery } from "@apollo/client/react";
 import {
   type CleanupAllDataResult,
+  CorpusAnalyticsSection,
   DashboardPageContent,
 } from "@peas/features";
 import { createFileRoute } from "@tanstack/react-router";
@@ -16,6 +19,7 @@ import { createFileRoute } from "@tanstack/react-router";
 export const Route = createFileRoute("/_authed/")({
   loader: ({ context: { preloadQuery } }) => ({
     queryRef: preloadQuery(DashboardStatsDocument),
+    analyticsRef: preloadQuery(CorpusAnalyticsDocument),
   }),
   head: () => ({ meta: [{ title: "Dashboard · Peas" }] }),
   component: DashboardPage,
@@ -23,7 +27,7 @@ export const Route = createFileRoute("/_authed/")({
 
 function DashboardPage() {
   const { viewer } = Route.useRouteContext();
-  const { queryRef } = Route.useLoaderData();
+  const { queryRef, analyticsRef } = Route.useLoaderData();
   const { data } = useReadQuery(queryRef);
 
   const cleanup = useMutationAction(CleanupAllDataDocument, {
@@ -54,6 +58,20 @@ function DashboardPage() {
     <DashboardPageContent
       stats={data.dashboardStats}
       onCleanupAllData={viewer.isAdmin ? onCleanupAllData : undefined}
+      analytics={
+        <Suspense fallback={null}>
+          <Analytics analyticsRef={analyticsRef} />
+        </Suspense>
+      }
     />
   );
+}
+
+function Analytics({
+  analyticsRef,
+}: {
+  analyticsRef: QueryRef<CorpusAnalyticsQuery>;
+}): ReactNode {
+  const { data } = useReadQuery(analyticsRef);
+  return <CorpusAnalyticsSection analytics={data.corpusAnalytics} />;
 }

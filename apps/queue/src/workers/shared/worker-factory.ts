@@ -11,12 +11,21 @@ import type { BaseJobData, BaseWorkerDependencies } from "../types";
 import type { ImageWorker } from "../image/worker";
 import type { ReinterpretWorker } from "../reinterpret/worker";
 import type { CategorizationWorker } from "../categorization/worker";
+import type { BookLookupWorker, SourceWorker } from "../source/worker";
 
 /**
  * Union type of all concrete worker types in the system.
  * Extend this as you add more workers.
  */
-export type AllWorkers = NoteWorker | InstructionWorker | IngredientWorker | ImageWorker | ReinterpretWorker | CategorizationWorker;
+export type AllWorkers =
+  | NoteWorker
+  | InstructionWorker
+  | IngredientWorker
+  | ImageWorker
+  | ReinterpretWorker
+  | CategorizationWorker
+  | SourceWorker
+  | BookLookupWorker;
 
 /**
  * Worker factory function type

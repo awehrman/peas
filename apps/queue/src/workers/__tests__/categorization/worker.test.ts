@@ -90,13 +90,14 @@ describe("CategorizationWorker", () => {
       ).createActionPipeline(mockData, mockContext);
 
       // Verify pipeline has the expected actions
-      expect(pipeline).toHaveLength(4);
+      expect(pipeline).toHaveLength(5);
 
       // Check that the actions are properly created (they should have the correct names)
       expect(pipeline[0]?.name).toBe(ActionName.DETERMINE_CATEGORY);
       expect(pipeline[1]?.name).toBe(ActionName.SAVE_CATEGORY);
       expect(pipeline[2]?.name).toBe(ActionName.DETERMINE_TAGS);
       expect(pipeline[3]?.name).toBe(ActionName.SAVE_TAGS);
+      expect(pipeline[4]?.name).toBe(ActionName.RECOMPUTE_NOTE_CATEGORIES);
     });
   });
 
@@ -176,7 +177,7 @@ describe("CategorizationWorker", () => {
         }
       ).createActionPipeline(testData, testContext);
 
-      expect(pipeline).toHaveLength(4);
+      expect(pipeline).toHaveLength(5);
       expect(consoleSpy).toHaveBeenCalledWith(
         "[CATEGORIZATION_WORKER] Creating action pipeline..."
       );
@@ -186,7 +187,7 @@ describe("CategorizationWorker", () => {
       );
       expect(consoleSpy).toHaveBeenCalledWith(
         "[CATEGORIZATION_WORKER] Created pipeline with",
-        4,
+        5,
         "actions"
       );
 

@@ -19,10 +19,19 @@ import {
   CardHeader,
   CardTitle,
   buttonVariants,
+  cn,
 } from "@peas/components";
 import { ArrowLeft, CookingPot } from "lucide-react";
 
 import { AppLink, useAppNavigation } from "../../app-navigation";
+import {
+  type CategoryActions,
+  CategoryChips,
+} from "../../import-integrity/components/category-chips";
+import {
+  type RecheckUrl,
+  SourceList,
+} from "../../import-integrity/components/source-list";
 import {
   InlineError,
   type MutationAction,
@@ -32,9 +41,11 @@ import {
 import { RoleLegend } from "../../teach/highlighted-line";
 import type { NoteDetail } from "../types";
 
-interface NoteDetailPageContentProps extends IngredientLineActions {
+interface NoteDetailPageContentProps
+  extends IngredientLineActions, CategoryActions {
   note: NoteDetail;
   onPromoteToRecipe?: MutationAction<[noteId: string], { recipeId: string }>;
+  onRecheckUrl?: RecheckUrl;
 }
 
 export function NoteDetailPageContent({
@@ -43,6 +54,8 @@ export function NoteDetailPageContent({
   onPromoteToRecipe,
   onCorrectMention,
   onSearchConcepts,
+  onRecheckUrl,
+  ...categoryActions
 }: NoteDetailPageContentProps): ReactNode {
   const heroImage = note.images[0];
   const hasIngredients = note.ingredientBlocks.length > 0;
@@ -76,7 +89,43 @@ export function NoteDetailPageContent({
         <RecipeAction note={note} onPromoteToRecipe={onPromoteToRecipe} />
       </header>
 
-      {note.errorMessage ? (
+      {note.archivedAt ? (
+        <Alert>
+          <AlertTitle>Archived</AlertTitle>
+          <AlertDescription>
+            {note.archivedReason ?? "This note was archived."} Its data is kept,
+            and the decision can be undone on the import page.
+            {note.supersededById ? (
+              <>
+                {" "}
+                <AppLink
+                  href={`/notes/${note.supersededById}`}
+                  className="text-primary hover:underline"
+                >
+                  Open the kept note
+                </AppLink>
+              </>
+            ) : null}
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
+      {note.pendingDuplicateIds.length > 0 ? (
+        <Alert>
+          <AlertTitle>Possible duplicate</AlertTitle>
+          <AlertDescription>
+            This note looks like one already imported.{" "}
+            <AppLink
+              href={`/import/duplicates/${note.pendingDuplicateIds[0]}`}
+              className="text-primary hover:underline"
+            >
+              Compare and decide
+            </AppLink>
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
+      {note.errorMessage && note.pendingDuplicateIds.length === 0 ? (
         <Alert variant="destructive">
           <AlertTitle>Import error</AlertTitle>
           <AlertDescription>{note.errorMessage}</AlertDescription>
@@ -112,15 +161,22 @@ export function NoteDetailPageContent({
                       aria-label={`Ingredient group ${block.blockIndex + 1}`}
                       className="flex flex-col gap-1"
                     >
-                      {block.lines.map((line) => (
-                        <IngredientLineRow
-                          key={line.id}
-                          line={line}
-                          onSetReviewStatus={onSetReviewStatus}
-                          onCorrectMention={onCorrectMention}
-                          onSearchConcepts={onSearchConcepts}
-                        />
-                      ))}
+                      {block.lines.map((line) =>
+                        line.lineKind === "SECTION_HEADING" ? (
+                          <SectionHeadingItem
+                            key={line.id}
+                            text={line.reference}
+                          />
+                        ) : (
+                          <IngredientLineRow
+                            key={line.id}
+                            line={line}
+                            onSetReviewStatus={onSetReviewStatus}
+                            onCorrectMention={onCorrectMention}
+                            onSearchConcepts={onSearchConcepts}
+                          />
+                        )
+                      )}
                     </ul>
                   ))}
                 </div>
@@ -142,10 +198,22 @@ export function NoteDetailPageContent({
               {note.instructions.length > 0 ? (
                 <ol className="list-decimal space-y-2 pl-5">
                   {note.instructions
-                    .filter((instruction) => instruction.isActive)
-                    .map((instruction) => (
-                      <li key={instruction.id}>{instruction.text}</li>
-                    ))}
+                    .filter(
+                      (instruction) =>
+                        instruction.isActive ||
+                        instruction.lineKind === "SECTION_HEADING"
+                    )
+                    .map((instruction) =>
+                      instruction.lineKind === "SECTION_HEADING" ? (
+                        <SectionHeadingItem
+                          key={instruction.id}
+                          text={instruction.text}
+                          className="-ml-5 list-none"
+                        />
+                      ) : (
+                        <li key={instruction.id}>{instruction.text}</li>
+                      )
+                    )}
                 </ol>
               ) : (
                 <p className="text-sm text-greyscale-600">
@@ -165,8 +233,20 @@ export function NoteDetailPageContent({
               loading="lazy"
             />
           ) : null}
-          <SourcesCard note={note} />
-          <TaxonomyCard title="Categories" items={note.categories} />
+          <SourcesCard note={note} onRecheckUrl={onRecheckUrl} />
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                <h2>Categories</h2>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CategoryChips
+                memberships={note.categories}
+                {...categoryActions}
+              />
+            </CardContent>
+          </Card>
           <TaxonomyCard title="Tags" items={note.tags} />
         </aside>
       </div>
@@ -215,51 +295,28 @@ function RecipeAction({
   );
 }
 
-function SourcesCard({ note }: { note: NoteDetail }): ReactNode {
-  const urls = note.sources.flatMap((source) => source.urls);
-  const books = note.sources
-    .map((source) => source.book)
-    .filter((book): book is NonNullable<typeof book> => book !== null);
-  const fallbackSource = note.evernote?.source;
-
-  if (urls.length === 0 && books.length === 0 && !fallbackSource) return null;
+function SourcesCard({
+  note,
+  onRecheckUrl,
+}: {
+  note: NoteDetail;
+  onRecheckUrl?: RecheckUrl;
+}): ReactNode {
+  if (note.sources.length === 0 && !note.evernote?.source) return null;
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>
-          <h2>Source</h2>
+          <h2>{note.sources.length > 1 ? "Sources" : "Source"}</h2>
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <ul className="flex flex-col gap-2 text-sm">
-          {urls.map((url) => (
-            <li key={url.id}>
-              <a
-                href={url.url}
-                target="_blank"
-                rel="noreferrer noopener"
-                className="break-all text-primary hover:underline"
-              >
-                {url.siteName ?? url.url}
-              </a>
-              {url.isBrokenLink ? (
-                <Badge variant="destructive" className="ml-2">
-                  Broken link
-                </Badge>
-              ) : null}
-            </li>
-          ))}
-          {books.map((book) => (
-            <li key={book.title}>
-              <span className="font-medium">{book.title}</span>
-              {book.author ? ` by ${book.author}` : ""}
-            </li>
-          ))}
-          {urls.length === 0 && books.length === 0 && fallbackSource ? (
-            <li className="break-all">{fallbackSource}</li>
-          ) : null}
-        </ul>
+        <SourceList
+          sources={note.sources}
+          fallbackSource={note.evernote?.source}
+          onRecheckUrl={onRecheckUrl}
+        />
       </CardContent>
     </Card>
   );
@@ -291,5 +348,20 @@ function TaxonomyCard({
         </ul>
       </CardContent>
     </Card>
+  );
+}
+
+/** A heading inside an ingredient or instruction list, filed by structure review ("For the sauce:"). */
+export function SectionHeadingItem({
+  text,
+  className,
+}: {
+  text: string;
+  className?: string;
+}): ReactNode {
+  return (
+    <li className={cn("pt-1", className)}>
+      <h3 className="text-sm font-semibold text-greyscale-800">{text}</h3>
+    </li>
   );
 }

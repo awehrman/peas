@@ -1,17 +1,32 @@
 "use client";
 
+import { EditRecipeDialog, type UpdateRecipe } from "./edit-recipe-dialog";
+
 import type { ReactNode } from "react";
 
-import { Badge, Card, CardContent, CardHeader, CardTitle } from "@peas/components";
+import {
+  Badge,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@peas/components";
 import { ArrowLeft } from "lucide-react";
 
 import { AppLink } from "../../app-navigation";
+import {
+  type CategoryActions,
+  CategoryChips,
+} from "../../import-integrity/components/category-chips";
+import {
+  type RecheckUrl,
+  SourceList,
+} from "../../import-integrity/components/source-list";
 import { IngredientLineText } from "../../notes/components/ingredient-line-text";
+import { SectionHeadingItem } from "../../notes/components/note-detail-page-content";
 import type { NoteMention } from "../../teach/mention-panel";
 import type { ConceptRef } from "../../teach/types";
 import type { RecipeDetail } from "../types";
-
-import { EditRecipeDialog, type UpdateRecipe } from "./edit-recipe-dialog";
 
 function conceptsOf(mentions: readonly NoteMention[]): ConceptRef[] {
   const byId = new Map<string, ConceptRef>();
@@ -20,20 +35,20 @@ function conceptsOf(mentions: readonly NoteMention[]): ConceptRef[] {
   return [...byId.values()];
 }
 
-interface RecipeDetailPageContentProps {
+interface RecipeDetailPageContentProps extends CategoryActions {
   recipe: RecipeDetail;
   onUpdate: UpdateRecipe;
+  onRecheckUrl?: RecheckUrl;
+  categoryOptions?: string[];
 }
 
 export function RecipeDetailPageContent({
   recipe,
   onUpdate,
+  onRecheckUrl,
+  categoryOptions,
+  ...categoryActions
 }: RecipeDetailPageContentProps): ReactNode {
-  const urls = recipe.sources.flatMap((source) => source.urls);
-  const books = recipe.sources
-    .map((source) => source.book)
-    .filter((book): book is NonNullable<typeof book> => book !== null);
-
   return (
     <article className="flex max-w-5xl flex-col gap-6">
       <AppLink
@@ -46,49 +61,34 @@ export function RecipeDetailPageContent({
 
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex flex-col gap-2">
-          <h1 className="text-3xl font-semibold text-greyscale-900">{recipe.title}</h1>
-          {recipe.categories.length > 0 || recipe.tags.length > 0 ? (
-            <ul className="flex flex-wrap gap-1" aria-label="Categories and tags">
-              {recipe.categories.map((category) => (
-                <li key={category.id}>
-                  <AppLink href={`/recipes?category=${encodeURIComponent(category.name)}`}>
-                    <Badge>{category.name}</Badge>
-                  </AppLink>
-                </li>
-              ))}
+          <h1 className="text-3xl font-semibold text-greyscale-900">
+            {recipe.title}
+          </h1>
+          {recipe.tags.length > 0 ? (
+            <ul className="flex flex-wrap gap-1" aria-label="Tags">
               {recipe.tags.map((tag) => (
                 <li key={tag.id}>
-                  <AppLink href={`/recipes?tag=${encodeURIComponent(tag.name)}`}>
+                  <AppLink
+                    href={`/recipes?tag=${encodeURIComponent(tag.name)}`}
+                  >
                     <Badge variant="secondary">{tag.name}</Badge>
                   </AppLink>
                 </li>
               ))}
             </ul>
           ) : null}
-          <div className="flex flex-wrap gap-3 text-sm text-greyscale-600">
-            {urls.map((url) => (
-              <a
-                key={url.id}
-                href={url.url}
-                target="_blank"
-                rel="noreferrer noopener"
-                className="text-primary hover:underline"
-              >
-                {url.siteName ?? url.url}
-              </a>
-            ))}
-            {books.map((book) => (
-              <span key={book.title}>
-                From <span className="font-medium">{book.title}</span>
-                {book.author ? ` by ${book.author}` : ""}
-              </span>
-            ))}
-            <AppLink href={`/notes/${recipe.noteId}`} className="hover:underline">
-              View imported note
-            </AppLink>
-          </div>
+          <AppLink
+            href={`/notes/${recipe.noteId}`}
+            className="text-sm text-greyscale-600 hover:underline"
+          >
+            View imported note
+          </AppLink>
         </div>
-        <EditRecipeDialog recipe={recipe} onUpdate={onUpdate} />
+        <EditRecipeDialog
+          recipe={recipe}
+          onUpdate={onUpdate}
+          categoryOptions={categoryOptions}
+        />
       </header>
 
       {recipe.imageUrl ? (
@@ -98,6 +98,37 @@ export function RecipeDetailPageContent({
           className="max-h-[28rem] w-full rounded-lg object-cover"
         />
       ) : null}
+
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              <h2>Categories</h2>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <CategoryChips
+              memberships={recipe.categories}
+              {...categoryActions}
+            />
+          </CardContent>
+        </Card>
+        {recipe.sources.length > 0 ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                <h2>{recipe.sources.length > 1 ? "Sources" : "Source"}</h2>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <SourceList
+                sources={recipe.sources}
+                onRecheckUrl={onRecheckUrl}
+              />
+            </CardContent>
+          </Card>
+        ) : null}
+      </div>
 
       <div className="grid gap-6 md:grid-cols-[1fr_1.5fr]">
         <Card>
@@ -117,28 +148,38 @@ export function RecipeDetailPageContent({
                   className="flex flex-col gap-1"
                 >
                   {block.lines
-                    .filter((line) => line.isActive)
-                    .map((line) => (
-                      <li
-                        key={line.id}
-                        className="flex flex-wrap items-baseline gap-x-2"
-                      >
-                        <IngredientLineText
-                          reference={line.reference}
-                          parseStatus={line.parseStatus}
-                          mentions={line.mentions}
+                    .filter(
+                      (line) =>
+                        line.isActive || line.lineKind === "SECTION_HEADING"
+                    )
+                    .map((line) =>
+                      line.lineKind === "SECTION_HEADING" ? (
+                        <SectionHeadingItem
+                          key={line.id}
+                          text={line.reference}
                         />
-                        {conceptsOf(line.mentions).map((concept) => (
-                          <AppLink
-                            key={concept.id}
-                            href={`/concepts/${concept.id}`}
-                            className="text-xs text-primary underline underline-offset-2"
-                          >
-                            {concept.canonicalName}
-                          </AppLink>
-                        ))}
-                      </li>
-                    ))}
+                      ) : (
+                        <li
+                          key={line.id}
+                          className="flex flex-wrap items-baseline gap-x-2"
+                        >
+                          <IngredientLineText
+                            reference={line.reference}
+                            parseStatus={line.parseStatus}
+                            mentions={line.mentions}
+                          />
+                          {conceptsOf(line.mentions).map((concept) => (
+                            <AppLink
+                              key={concept.id}
+                              href={`/concepts/${concept.id}`}
+                              className="text-xs text-primary underline underline-offset-2"
+                            >
+                              {concept.canonicalName}
+                            </AppLink>
+                          ))}
+                        </li>
+                      )
+                    )}
                 </ul>
               ))
             )}
@@ -157,10 +198,22 @@ export function RecipeDetailPageContent({
             ) : (
               <ol className="list-decimal space-y-3 pl-5">
                 {recipe.instructions
-                  .filter((instruction) => instruction.isActive)
-                  .map((instruction) => (
-                    <li key={instruction.id}>{instruction.text}</li>
-                  ))}
+                  .filter(
+                    (instruction) =>
+                      instruction.isActive ||
+                      instruction.lineKind === "SECTION_HEADING"
+                  )
+                  .map((instruction) =>
+                    instruction.lineKind === "SECTION_HEADING" ? (
+                      <SectionHeadingItem
+                        key={instruction.id}
+                        text={instruction.text}
+                        className="-ml-5 list-none"
+                      />
+                    ) : (
+                      <li key={instruction.id}>{instruction.text}</li>
+                    )
+                  )}
               </ol>
             )}
           </CardContent>

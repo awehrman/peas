@@ -25,9 +25,15 @@ export const DOMAIN_CACHE_KEYS: Readonly<
   RECIPE_DETAIL: { fields: ["recipe"], types: ["Recipe"] },
   RECIPE_TAXONOMY: { fields: ["recipeTaxonomy"], types: [] },
   IMPORT_STATS: { fields: ["importStats"], types: [] },
-  DASHBOARD_STATS: { fields: ["dashboardStats"], types: [] },
+  DASHBOARD_STATS: { fields: ["dashboardStats", "corpusAnalytics"], types: [] },
   DISCOVERIES: {
-    fields: ["discoveryQueue", "discoveryCounts", "discovery"],
+    fields: [
+      "discoveryQueue",
+      "discoveryCounts",
+      "discovery",
+      "unknownExpressions",
+      "unknownExpressionSources",
+    ],
     types: ["Discovery"],
   },
   CONCEPTS: {
@@ -39,20 +45,51 @@ export const DOMAIN_CACHE_KEYS: Readonly<
       "ingredientCounts",
       "ingredientCategoryNames",
       "searchIngredients",
+      "lexiconEntry",
     ],
-    types: ["ConceptSummary", "IngredientSummary"],
+    types: ["ConceptSummary", "IngredientSummary", "LexiconEntryDetail"],
   },
   CONCEPT_DETAIL: {
-    fields: ["concept", "ingredient"],
+    fields: [
+      "concept",
+      "ingredient",
+      "conceptOccurrences",
+      "conceptOccurrenceFacets",
+      "conceptGraph",
+    ],
     types: ["Concept", "Ingredient"],
   },
   MENTIONS: {
-    fields: ["mention", "playground", "previewDecision"],
+    fields: ["mention", "playground", "previewDecision", "conceptOccurrences"],
     types: ["Mention"],
   },
+  STRUCTURE_REVIEW: {
+    fields: [
+      "structureProposals",
+      "structureProposal",
+      "structureCounts",
+      "structurePatterns",
+    ],
+    types: ["StructureProposal"],
+  },
   CORPUS_HEALTH: {
-    fields: ["corpusHealth", "corpusHealthTrends"],
+    fields: ["corpusHealth", "corpusHealthTrends", "corpusAnalytics"],
     types: ["CorpusHealthSnapshot"],
+  },
+  IMPORT_REVIEW: {
+    fields: [
+      "importReviewCounts",
+      "duplicateCandidates",
+      "duplicateCandidate",
+      "bookLookups",
+      "bookLookup",
+      "failedUrlChecks",
+    ],
+    types: ["DuplicateCandidate", "DuplicateCandidateDetail", "BookLookup"],
+  },
+  CATEGORIES: {
+    fields: ["categories", "category"],
+    types: ["Category"],
   },
 };
 

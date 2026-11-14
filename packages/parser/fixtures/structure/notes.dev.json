@@ -1,0 +1,224 @@
+{
+  "description": "Labelled note content for the structure validator (Phase 8.5), used while tuning. Each line is '<code> | <text>' (I ingredient, S step, H heading, N note, O other; 'H+S' is a heading glued to a step); blank strings are blank lines, which drive the importer's DOM rules. Lines are written as the importer extracts them (the text of each en-note child).",
+  "notes": [
+    {
+      "id": "venison-backstrap",
+      "description": "The stored dev note (American Beauty Venison Backstrap): clean blocks, and a sauce heading glued to its step.",
+      "lines": [
+        "",
+        "I | 1 (1- to 1½-pound) venison backstrap",
+        "I | ¼ cup, plus 1 tablespoon extra-virgin olive oil",
+        "I | 2 tablespoons balsamic vinegar",
+        "I | 1 tablespoon fresh thyme leaves",
+        "I | ½ teaspoon sea salt",
+        "",
+        "I | ½ cup American beautyberry jelly (may substitute currant, blackberry, or wild dewberry jelly)",
+        "I | 1 cup port",
+        "I | Zest and juice of 1 orange",
+        "I | Zest and juice of 1 lemon",
+        "I | ¼ teaspoon dry mustard",
+        "I | ¼ teaspoon salt",
+        "I | ⅛ teaspoon ground cayenne",
+        "I | ⅛ teaspoon ground ginger",
+        "I | ⅛ teaspoon ground cloves",
+        "",
+        "S | Dry-age the backstrap by placing it on a rack over a drip pan in the refrigerator for 24 – 48 hours.",
+        "",
+        "S | When you are ready to cook, place the backstrap in a narrow baking dish and add ¼ cup of the oil, the vinegar, thyme, and salt. Using tongs, turn the meat to coat evenly with the marinade. Cover loosely with plastic wrap and let sit at room temperature for 2 hours, turning the backstrap every 15 minutes so that all surfaces are evenly coated.",
+        "",
+        "S | Preheat the oven to 400 degrees.",
+        "",
+        "S | Heat the remaining 1 tablespoon oil in a cast-iron skillet over medium-high heat, then add the backstrap and sear for 3 – 6 minutes, turning it with tongs every few minutes to sear evenly on all sides.",
+        "",
+        "S | Place the backstrap in a baking dish and cook in the oven, uncovered, for 10 minutes, or until the internal temperature reaches 130 degrees. Remove from the oven, loosely tent with foil, and let the meat rest for 5 minutes to allow the juices to reabsorb.",
+        "",
+        "H+S | For the Cumberland sauce: Combine all the ingredients in a small saucepan over medium-low heat and simmer for 30 minutes, until the sauce is reduced by half and thick enough to coat a spoon. Serve warm.",
+        "",
+        "S | Cut venison into -inch-thick medallions, plate, and drizzle with Cumberland sauce.",
+        ""
+      ]
+    },
+    {
+      "id": "sauce-heading-in-block",
+      "description": "A colon heading opening its own ingredient block.",
+      "lines": [
+        "I | 2 lb chicken thighs",
+        "I | 1 tsp kosher salt",
+        "",
+        "H | For the sauce:",
+        "I | 3 tbsp soy sauce",
+        "I | 2 tbsp honey",
+        "I | 1 tbsp rice vinegar",
+        "",
+        "S | Season the chicken with salt and let it sit for 15 minutes.",
+        "",
+        "S | Whisk the sauce ingredients together in a small bowl.",
+        ""
+      ]
+    },
+    {
+      "id": "marinade-without-colon",
+      "description": "'For the marinade' with no colon, between two ingredient lines.",
+      "lines": [
+        "I | 1 flank steak (about 1½ pounds)",
+        "H | For the marinade",
+        "I | ¼ cup olive oil",
+        "I | 3 cloves garlic, minced",
+        "I | Juice of 2 limes",
+        "I | Salt and pepper to taste",
+        "",
+        "S | Combine the marinade ingredients in a zip-top bag, add the steak, and refrigerate for at least 4 hours or overnight.",
+        "",
+        "S | Grill over high heat for 4 to 5 minutes per side.",
+        ""
+      ]
+    },
+    {
+      "id": "garnish-and-serve",
+      "description": "A bare 'Garnish' heading inside a block, and a short 'To serve:' that the importer files as its own ingredient block.",
+      "lines": [
+        "I | 1 lb spaghetti",
+        "I | 4 tbsp butter",
+        "I | 1 cup grated Parmesan",
+        "I | Freshly ground black pepper",
+        "H | Garnish",
+        "I | Chopped parsley",
+        "I | Lemon wedges, for serving",
+        "",
+        "S | Cook the pasta in salted boiling water until al dente. Reserve 1 cup of the cooking water.",
+        "",
+        "S | Toss the pasta with butter, cheese, and enough pasta water to make a glossy sauce.",
+        "",
+        "H | To serve:",
+        "",
+        "S | Divide among warm bowls and top with more cheese.",
+        ""
+      ]
+    },
+    {
+      "id": "steps-without-blank-lines",
+      "description": "Steps written without blank lines between them, so the importer files them as an ingredient block.",
+      "lines": [
+        "I | 2 cups flour",
+        "I | 1 tsp baking soda",
+        "I | ½ tsp salt",
+        "I | 1 cup buttermilk",
+        "",
+        "S | Preheat the oven to 375°F and line a baking sheet with parchment.",
+        "S | Whisk the flour, baking soda, and salt in a large bowl.",
+        "S | Stir in the buttermilk until just combined; do not overmix.",
+        "S | Bake for 12 to 15 minutes, until golden.",
+        ""
+      ]
+    },
+    {
+      "id": "ingredient-standing-alone",
+      "description": "An ingredient line between blank lines, which the importer files as a step.",
+      "lines": [
+        "I | 1 pound shrimp, peeled and deveined",
+        "I | 2 tablespoons butter",
+        "",
+        "I | 1 cup heavy cream, divided",
+        "",
+        "S | Melt the butter in a large skillet over medium heat.",
+        "",
+        "S | Add the shrimp and cook until pink, about 2 minutes per side.",
+        ""
+      ]
+    },
+    {
+      "id": "notes-and-yield",
+      "description": "A yield line (the first line is always filed as an ingredient) and a note filed as a step.",
+      "lines": [
+        "O | Serves 4",
+        "",
+        "I | 1 head cauliflower, cut into florets",
+        "I | 3 tbsp olive oil",
+        "I | 1 tsp smoked paprika",
+        "",
+        "S | Toss the cauliflower with oil and paprika and roast at 425°F for 25 minutes.",
+        "",
+        "N | Note: The cauliflower can be roasted a day ahead and reheated.",
+        ""
+      ]
+    },
+    {
+      "id": "precision-guards",
+      "description": "Correctly filed lines that look like steps or headings and must not be flagged.",
+      "lines": [
+        "I | Salt and pepper to taste",
+        "I | Roasted red peppers, sliced",
+        "I | 2 cups chicken stock, kept at a simmer",
+        "I | Olive oil, for drizzling",
+        "I | Zest and juice of 1 orange",
+        "I | Cooking spray",
+        "I | Fresh herbs, to serve",
+        "I | Ice cubes",
+        "I | Brown sugar, packed",
+        "I | Dry white wine",
+        "I | Warm water (110°F)",
+        "I | Mix of salad greens",
+        "I | Store-bought pie crust",
+        "I | Butter, for greasing the pan",
+        "I | Optional: 1 tsp chili flakes",
+        "",
+        "S | Stir-fry the vegetables until crisp-tender.",
+        "",
+        "S | Cook for 20 minutes, stirring occasionally.",
+        "",
+        "S | Serve warm.",
+        "",
+        "S | Garnish with parsley and serve.",
+        "",
+        "S | To serve, slice the steak against the grain.",
+        ""
+      ]
+    },
+    {
+      "id": "all-caps-headings",
+      "description": "All-caps section names opening ingredient blocks.",
+      "lines": [
+        "H | CRUST",
+        "I | 1½ cups graham cracker crumbs",
+        "I | 6 tbsp melted butter",
+        "",
+        "H | FILLING",
+        "I | 16 oz cream cheese, softened",
+        "I | ¾ cup sugar",
+        "I | 2 large eggs",
+        "",
+        "S | Press the crust mixture into a 9-inch pan and bake for 10 minutes.",
+        ""
+      ]
+    },
+    {
+      "id": "numbered-steps-in-block",
+      "description": "Numbered steps without blank lines between them.",
+      "lines": [
+        "I | 1 lb ground beef",
+        "I | 1 onion, diced",
+        "I | 1 can (14 oz) diced tomatoes",
+        "",
+        "S | 1. Brown the beef in a large pot over medium-high heat.",
+        "S | 2. Add the onion and cook until soft, about 5 minutes.",
+        "S | 3. Stir in the tomatoes and simmer for 20 minutes.",
+        ""
+      ]
+    },
+    {
+      "id": "heading-glued-to-ingredient",
+      "description": "A topping label glued to its only ingredient.",
+      "lines": [
+        "I | 1 prebaked pie crust",
+        "I | 2 cups strawberries, hulled and halved",
+        "I | ⅓ cup sugar",
+        "H+I | Topping: 1 cup whipped cream",
+        "",
+        "S | Toss the strawberries with sugar and let stand for 10 minutes.",
+        "",
+        "S | Spoon into the crust and finish with whipped cream.",
+        ""
+      ]
+    }
+  ]
+}

@@ -1,24 +1,63 @@
 // Source module
-// Contains source tracking and references
+// Where a recipe came from: a web page, a book, or text that is neither (yet).
+// Notes link to sources through NoteSource; recipes read their note's sources.
+
+enum SourceKind {
+  URL
+  BOOK
+  OTHER
+}
+
+enum UrlCheckStatus {
+  UNCHECKED
+  REACHABLE
+  UNREACHABLE
+  BLOCKED
+}
+
+enum BookMatchStatus {
+  UNMATCHED
+  AUTO_MATCHED
+  CONFIRMED
+  MANUAL
+}
+
+enum BookLookupStatus {
+  PENDING
+  MATCHED
+  AMBIGUOUS
+  NO_MATCH
+  ERROR
+  LEFT_UNRESOLVED
+}
+
+enum NoteSourceOrigin {
+  EVERNOTE_IMPORT
+  DUPLICATE_MERGE
+  MANUAL
+}
 
 model Source {
   id String @id @default(cuid())
 
-  // URLs associated with this source
-  urls URL[]
-  
-  // Book information (optional)
-  book Book? @relation(fields: [bookId], references: [id])
+  kind SourceKind @default(OTHER)
+  /// Identity used for deduplication: "url:<normalized url>", "book:<bookId>", or "text:<normalized text>".
+  canonicalKey String  @unique
+  displayName  String?
+  metadata     Json?
+
+  url URL?
+
+  book   Book?   @relation(fields: [bookId], references: [id])
   bookId String?
 
-  // Notes that reference this source
-  notes Note[]
-
-  // Recipes promoted from those notes
-  recipes Recipe[]
+  noteSources NoteSource[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([kind])
+  @@index([bookId])
 }
 
 model Website {
@@ -41,37 +80,107 @@ model URL {
   id String @id @default(cuid())
 
   author String?
-  url String
-  lastAccessed DateTime?
-  isBrokenLink Boolean @default(false)
+  /// The URL exactly as it appeared in the import.
+  originalUrl   String
+  /// Identity of the URL (normalizeUrl); legacy non-http rows keep their original string.
+  normalizedUrl String  @unique
+
+  checkStatus           UrlCheckStatus @default(UNCHECKED)
+  consecutiveFailures   Int            @default(0)
+  lastCheckedAt         DateTime?
+  /// Last 2xx response after permitted redirects. Reachability says nothing about whether the page still holds the recipe.
+  lastSuccessfulVisitAt DateTime?
+  lastHttpStatus        Int?
+  lastFailureReason     String?
+  lastFinalUrl          String?
+  canonicalUrl          String?
 
   // Website this URL belongs to
   website Website? @relation(fields: [websiteId], references: [id])
   websiteId String?
 
-  // Source this URL belongs to
-  source Source @relation(fields: [sourceId], references: [id])
-  sourceId String
+  source   Source @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  sourceId String @unique
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([url])
-  @@index([lastAccessed])
-  @@index([isBrokenLink])
+  @@index([originalUrl])
+  @@index([lastFinalUrl])
+  @@index([checkStatus])
+  @@index([lastCheckedAt])
 }
 
+/// A work. Edition fields (ISBNs, edition key) are set only with evidence for that edition.
 model Book {
   id String @id @default(cuid())
 
-  title String
-  author String?
-  publisher String?
-  publicationDate DateTime?
-  isbn String?
+  title         String
+  subtitle      String?
+  authors       String[]
+  publisher     String?
+  publishedYear Int?
+
+  isbn10                String?
+  isbn13                String?
+  openLibraryWorkKey    String? @unique
+  openLibraryEditionKey String?
+  coverId               Int?
+
+  matchStatus   BookMatchStatus @default(UNMATCHED)
+  /// The source text this book was first matched from.
+  originalTitle String?
+  provenance    Json?
 
   sources Source[]
+  lookups BookLookup[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-} 
+
+  @@index([isbn13])
+  @@index([isbn10])
+}
+
+/// One bibliographic lookup per distinct source text, so a cookbook cited by hundreds of notes is looked up once.
+model BookLookup {
+  id String @id @default(uuid(7)) @db.Uuid
+
+  queryKey String           @unique
+  query    String
+  status   BookLookupStatus @default(PENDING)
+  /// Ranked candidates with their matching evidence (BookCandidatesSchema).
+  candidates  Json?
+  provider    String    @default("openlibrary")
+  fetchedAt   DateTime?
+  attempts    Int       @default(0)
+  errorReason String?
+
+  book   Book?   @relation(fields: [bookId], references: [id], onDelete: SetNull)
+  bookId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+}
+
+model NoteSource {
+  id String @id @default(uuid(7)) @db.Uuid
+
+  note     Note   @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  noteId   String
+  source   Source @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  sourceId String
+
+  /// The source string as it appeared on this note.
+  originalText String?
+  /// At most one per note (partial unique index in the migration).
+  isPrimary    Boolean          @default(false)
+  origin       NoteSourceOrigin @default(EVERNOTE_IMPORT)
+
+  createdAt DateTime @default(now())
+
+  @@unique([noteId, sourceId])
+  @@index([sourceId])
+}

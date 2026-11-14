@@ -13,6 +13,11 @@ import { DetermineCategoryAction } from "./actions/determine-category/action";
 import { SaveCategoryAction } from "./actions/save-category/action";
 import { DetermineTagsAction } from "./actions/determine-tags/action";
 import { SaveTagsAction } from "./actions/save-tags/action";
+import {
+  RecomputeAllCategoriesAction,
+  RecomputeCategoryAction,
+  RecomputeNoteCategoriesAction,
+} from "./actions/recompute-categories/action";
 
 /**
  * Register all categorization actions in the given ActionFactory with type safety
@@ -49,5 +54,20 @@ export function registerCategorizationActions(
       CategorizationWorkerDependencies,
       CategorizationJobData
     >(ActionName.SAVE_TAGS, SaveTagsAction),
+    createActionRegistration<
+      CategorizationJobData,
+      CategorizationWorkerDependencies,
+      CategorizationJobData
+    >(ActionName.RECOMPUTE_NOTE_CATEGORIES, RecomputeNoteCategoriesAction),
+    createActionRegistration<
+      CategorizationJobData,
+      CategorizationWorkerDependencies,
+      CategorizationJobData
+    >(ActionName.RECOMPUTE_CATEGORY, RecomputeCategoryAction),
+    createActionRegistration<
+      CategorizationJobData,
+      CategorizationWorkerDependencies,
+      CategorizationJobData
+    >(ActionName.RECOMPUTE_ALL_CATEGORIES, RecomputeAllCategoriesAction),
   ]);
 }

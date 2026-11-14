@@ -235,6 +235,8 @@ export const WORKER_CONSTANTS = {
     IMAGE: "image_processing",
     REINTERPRET: "reinterpret_processing",
     CATEGORIZATION: "categorization_processing",
+    SOURCE: "source_processing",
+    BOOK_LOOKUP: "book_lookup_processing",
   },
   /** Job types */
   JOB_TYPES: {

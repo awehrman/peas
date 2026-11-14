@@ -129,6 +129,7 @@ describe.skipIf(!hasTestDatabase)("Teach Peas resolvers (integration)", () => {
       "CONCEPT_DETAIL",
       "MENTIONS",
       "CORPUS_HEALTH",
+      "CATEGORIES",
     ]);
     expect(created.data?.applyDecision.effect.lexiconRevision).toBe(
       created.data?.applyDecision.revision

@@ -13,9 +13,8 @@ model Recipe {
   image   Image?  @relation(fields: [imageId], references: [id], onDelete: SetNull)
   imageId String?
 
-  categories Category[]
-  tags       Tag[]
-  sources    Source[]
+  /// Categories and sources are read through the note (NoteCategory, NoteSource).
+  tags Tag[]
 
   /// Food concepts that this recipe makes, e.g. a "garam masala" recipe (FoodConcept.isComposed).
   composedConcepts FoodConcept[]

@@ -3,6 +3,7 @@ import { createInstructionWorker } from "./instruction";
 import { createNoteWorker } from "./note";
 import { createReinterpretWorker } from "./reinterpret";
 import { createCategorizationWorker } from "./categorization";
+import { createBookLookupWorker, createSourceWorker } from "./source";
 
 import { Queue } from "bullmq";
 
@@ -31,7 +32,8 @@ export function startWorkers(
     imageQueue: Queue;
     reinterpretQueue: Queue;
     categorizationQueue: Queue;
-    // TODO more queues here
+    sourceQueue: Queue;
+    bookLookupQueue: Queue;
   },
   serviceContainer: IServiceContainer
 ): WorkerRegistry<FlexibleWorker> {
@@ -71,7 +73,16 @@ export function startWorkers(
       createCategorizationWorker,
       queues.categorizationQueue
     ),
-    // TODO more workers here
+    createWorkerConfig(
+      WORKER_CONSTANTS.NAMES.SOURCE,
+      createSourceWorker,
+      queues.sourceQueue
+    ),
+    createWorkerConfig(
+      WORKER_CONSTANTS.NAMES.BOOK_LOOKUP,
+      createBookLookupWorker,
+      queues.bookLookupQueue
+    ),
   ];
 
   console.log("[WORKER_STARTUP] Created worker configs:", workerConfigs.length);
@@ -87,6 +98,8 @@ export function startWorkers(
   queueMonitor.startMonitoring(queues.imageQueue);
   queueMonitor.startMonitoring(queues.reinterpretQueue);
   queueMonitor.startMonitoring(queues.categorizationQueue);
+  queueMonitor.startMonitoring(queues.sourceQueue);
+  queueMonitor.startMonitoring(queues.bookLookupQueue);
   // TODO: Add monitoring for additional queues as they're implemented
 
   console.log("[WORKER_STARTUP] Started queue monitoring");
@@ -99,7 +112,8 @@ export function startWorkers(
     imageWorker: workers[WORKER_CONSTANTS.NAMES.IMAGE],
     reinterpretWorker: workers[WORKER_CONSTANTS.NAMES.REINTERPRET],
     categorizationWorker: workers[WORKER_CONSTANTS.NAMES.CATEGORIZATION],
-    // TODO more workers here
+    sourceWorker: workers[WORKER_CONSTANTS.NAMES.SOURCE],
+    bookLookupWorker: workers[WORKER_CONSTANTS.NAMES.BOOK_LOOKUP],
   } as WorkerRegistry<FlexibleWorker>;
 
   console.log("[WORKER_STARTUP] Stored workers in service container");

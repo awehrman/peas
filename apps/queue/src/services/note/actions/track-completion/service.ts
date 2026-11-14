@@ -1,4 +1,8 @@
-import { updateNote, updateParsingErrorCount } from "@peas/database";
+import {
+  markNoteCompleted,
+  updateNote,
+  updateParsingErrorCount,
+} from "@peas/database";
 import type { Prisma } from "@peas/database";
 
 import type { StructuredLogger } from "../../../../types";
@@ -303,10 +307,8 @@ export async function markWorkerCompleted(
   // This prevents intermediate status updates that cause UI resets
   if (allCompleted) {
     try {
-      // Update the note status in the database
-      await updateNote(noteId, {
-        status: "COMPLETED",
-      });
+      // A note held for a duplicate decision stays DUPLICATE
+      await markNoteCompleted(noteId);
 
       // Update the parsing error count based on actual parsing errors
       try {

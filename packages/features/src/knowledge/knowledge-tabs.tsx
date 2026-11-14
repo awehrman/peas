@@ -10,6 +10,7 @@ export const KNOWLEDGE_SECTIONS = [
   { key: "queue", label: "Review queue", href: "/teach" },
   { key: "concepts", label: "Concepts", href: "/concepts" },
   { key: "lexicon", label: "Lexicon", href: "/lexicon" },
+  { key: "structure", label: "Structure", href: "/teach/structure" },
   { key: "health", label: "Health", href: "/teach/health" },
   { key: "glossary", label: "Glossary", href: "/teach/glossary" },
 ] as const;
@@ -27,6 +28,7 @@ export function knowledgeSectionFor(pathname: string): KnowledgeSection {
   if (pathname.startsWith("/concepts")) return "concepts";
   if (pathname.startsWith("/lexicon")) return "lexicon";
   if (pathname.startsWith("/teach/health")) return "health";
+  if (pathname.startsWith("/teach/structure")) return "structure";
   if (pathname.startsWith("/teach/glossary")) return "glossary";
   return "queue";
 }

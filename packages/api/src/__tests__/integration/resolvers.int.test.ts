@@ -172,20 +172,20 @@ describe.skipIf(!hasTestDatabase)(
         const detail = await execute<{
           recipe: {
             title: string;
-            categories: { name: string }[];
+            categories: { state: string; category: { name: string } }[];
             tags: { name: string }[];
             noteId: string;
           };
         }>(
           server,
           user,
-          `query ($id: ID!) { recipe(id: $id) { title noteId categories { name } tags { name } } }`,
+          `query ($id: ID!) { recipe(id: $id) { title noteId categories { state category { name } } tags { name } } }`,
           { id: recipeId }
         );
         expect(detail.data?.recipe).toMatchObject({
           title: "Best Chili",
           noteId,
-          categories: [{ name: "Dinner" }],
+          categories: [{ state: "APPROVED", category: { name: "Dinner" } }],
         });
         expect(detail.data?.recipe.tags.map((tag) => tag.name).sort()).toEqual([
           "freezer",

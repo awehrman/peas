@@ -1,13 +1,24 @@
-import type { Prisma } from "@prisma/client";
+import type { CategoryAssignmentState, Prisma } from "@prisma/client";
 
 import { prisma } from "../client.js";
 
+import { type NoteCategoryRecord, setNoteManualCategories } from "./categories.js";
 import { type NoteDetailRecord, getNoteDetail } from "./note.js";
 import { getDescendants } from "./ontology/relationships.js";
+
+/** Which category memberships a filter counts: any visible one, only reviewer-approved, or only inferred. */
+export type CategoryProvenanceFilter = "ANY" | "APPROVED" | "INFERRED";
+
+const VISIBLE_STATES: CategoryAssignmentState[] = ["APPROVED", "INFERRED"];
+
+function statesFor(provenance: CategoryProvenanceFilter): CategoryAssignmentState[] {
+  return provenance === "ANY" ? VISIBLE_STATES : [provenance];
+}
 
 export interface RecipesPageQuery {
   query?: string;
   category?: string;
+  categoryProvenance?: CategoryProvenanceFilter;
   tag?: string;
   /** Recipes with an active line that mentions this concept or, unless `exactConcept`, a more specific one (IS_A or PART_OF: "chicken" also finds "chicken thigh"). */
   conceptId?: string;
@@ -53,7 +64,8 @@ export interface RecipeDetailRecord {
   title: string;
   noteId: string;
   imageUrl: string | null;
-  categories: { id: string; name: string }[];
+  /** The note's category memberships; a recipe reads its note's categories. */
+  categories: NoteCategoryRecord[];
   tags: { id: string; name: string }[];
   sources: NoteDetailRecord["sources"];
   ingredientBlocks: NoteDetailRecord["ingredientBlocks"];
@@ -71,8 +83,7 @@ export interface RecipeUpdateInput {
 const DEFAULT_RECIPES_PAGE_SIZE = 24;
 
 /**
- * Creates a recipe from a note, copying its title, first image and
- * taxonomy. Returns the existing recipe if the note was already promoted.
+ * Creates a recipe from a note, copying its title, first image and tags. Sources and categories are read through the note, so they are not copied. Returns the existing recipe if the note was already promoted.
  */
 export async function promoteNoteToRecipe(noteId: string): Promise<{ id: string }> {
   const existing = await prisma.recipe.findUnique({
@@ -85,33 +96,31 @@ export async function promoteNoteToRecipe(noteId: string): Promise<{ id: string 
     where: { id: noteId },
     select: {
       title: true,
+      archivedAt: true,
       images: { select: { id: true }, orderBy: { createdAt: "asc" }, take: 1 },
-      categories: { select: { id: true } },
       tags: { select: { id: true } },
-      sources: { select: { id: true } },
     },
   });
   if (!note) throw new Error("Note not found");
+  if (note.archivedAt) throw new Error("Archived notes can't become recipes");
 
   return prisma.recipe.create({
     data: {
       title: note.title?.trim() || "Untitled recipe",
       noteId,
       imageId: note.images[0]?.id ?? null,
-      categories: { connect: note.categories },
       tags: { connect: note.tags },
-      sources: { connect: note.sources },
     },
     select: { id: true },
   });
 }
 
 /**
- * Promotes every completed, non-duplicate note that isn't a recipe yet.
+ * Promotes every completed, non-duplicate, unarchived note that isn't a recipe yet.
  */
 export async function promoteCompletedNotesToRecipes(): Promise<{ created: number }> {
   const notes = await prisma.note.findMany({
-    where: { status: "COMPLETED", recipe: null },
+    where: { status: "COMPLETED", recipe: null, archivedAt: null },
     select: { id: true },
     orderBy: { createdAt: "asc" },
   });
@@ -126,6 +135,7 @@ export async function promoteCompletedNotesToRecipes(): Promise<{ created: numbe
 export async function getRecipesPage({
   query,
   category,
+  categoryProvenance = "ANY",
   tag,
   conceptId,
   exactConcept = false,
@@ -138,26 +148,36 @@ export async function getRecipesPage({
     ? await conceptIdsForSearch(conceptId, exactConcept)
     : null;
 
-  const where: Prisma.RecipeWhereInput = {
-    ...(trimmedQuery
-      ? { title: { contains: trimmedQuery, mode: "insensitive" } }
-      : {}),
+  const noteWhere: Prisma.NoteWhereInput = {
+    archivedAt: null,
     ...(category
-      ? { categories: { some: { name: { equals: category, mode: "insensitive" } } } }
-      : {}),
-    ...(tag ? { tags: { some: { name: { equals: tag, mode: "insensitive" } } } } : {}),
-    ...(conceptIds
       ? {
-          note: {
-            parsedIngredientLines: {
-              some: {
-                isActive: true,
-                mentions: { some: { conceptId: { in: conceptIds } } },
-              },
+          categoryMemberships: {
+            some: {
+              state: { in: statesFor(categoryProvenance) },
+              category: { name: { equals: category, mode: "insensitive" } },
             },
           },
         }
       : {}),
+    ...(conceptIds
+      ? {
+          parsedIngredientLines: {
+            some: {
+              isActive: true,
+              mentions: { some: { conceptId: { in: conceptIds } } },
+            },
+          },
+        }
+      : {}),
+  };
+
+  const where: Prisma.RecipeWhereInput = {
+    ...(trimmedQuery
+      ? { title: { contains: trimmedQuery, mode: "insensitive" } }
+      : {}),
+    ...(tag ? { tags: { some: { name: { equals: tag, mode: "insensitive" } } } } : {}),
+    note: noteWhere,
   };
 
   const [total, recipes] = await Promise.all([
@@ -174,9 +194,17 @@ export async function getRecipesPage({
         image: {
           select: { crop4x3ImageUrl: true, thumbnailImageUrl: true, originalImageUrl: true },
         },
-        categories: { select: { name: true }, orderBy: { name: "asc" } },
         tags: { select: { name: true }, orderBy: { name: "asc" } },
-        note: { select: { _count: { select: { parsedIngredientLines: true } } } },
+        note: {
+          select: {
+            _count: { select: { parsedIngredientLines: true } },
+            categoryMemberships: {
+              where: { state: { in: VISIBLE_STATES } },
+              select: { category: { select: { name: true } } },
+              orderBy: { category: { name: "asc" } },
+            },
+          },
+        },
       },
     }),
   ]);
@@ -193,7 +221,7 @@ export async function getRecipesPage({
           recipe.image.thumbnailImageUrl ??
           recipe.image.originalImageUrl)
         : null,
-      categories: recipe.categories.map((item) => item.name),
+      categories: recipe.note.categoryMemberships.map((item) => item.category.name),
       tags: recipe.tags.map((item) => item.name),
       ingredientLineCount: recipe.note._count.parsedIngredientLines,
       createdAt: recipe.createdAt.toISOString(),
@@ -210,7 +238,14 @@ export async function getRecipeTaxonomyOptions(): Promise<{
 }> {
   const [categories, tags] = await Promise.all([
     prisma.category.findMany({
-      where: { recipes: { some: {} } },
+      where: {
+        memberships: {
+          some: {
+            state: { in: VISIBLE_STATES },
+            note: { recipe: { isNot: null }, archivedAt: null },
+          },
+        },
+      },
       select: { name: true },
       distinct: ["name"],
       orderBy: { name: "asc" },
@@ -234,7 +269,6 @@ export async function getRecipeDetail(id: string): Promise<RecipeDetailRecord | 
     where: { id },
     include: {
       image: { select: { crop3x2ImageUrl: true, originalImageUrl: true } },
-      categories: { select: { id: true, name: true }, orderBy: { name: "asc" } },
       tags: { select: { id: true, name: true }, orderBy: { name: "asc" } },
     },
   });
@@ -249,7 +283,7 @@ export async function getRecipeDetail(id: string): Promise<RecipeDetailRecord | 
     imageUrl: recipe.image
       ? (recipe.image.crop3x2ImageUrl ?? recipe.image.originalImageUrl)
       : null,
-    categories: recipe.categories,
+    categories: note?.categories ?? [],
     tags: recipe.tags,
     sources: note?.sources ?? [],
     ingredientBlocks: note?.ingredientBlocks ?? [],
@@ -258,46 +292,43 @@ export async function getRecipeDetail(id: string): Promise<RecipeDetailRecord | 
   };
 }
 
-async function findOrCreateByName(
+async function findOrCreateTags(
   tx: Prisma.TransactionClient,
-  model: "category" | "tag",
   names: string[]
 ): Promise<{ id: string }[]> {
   const unique = [...new Set(names.map((name) => name.trim()).filter(Boolean))];
   const ids: { id: string }[] = [];
 
   for (const name of unique) {
-    const where = { name: { equals: name, mode: "insensitive" as const } };
-    const existing =
-      model === "category"
-        ? await tx.category.findFirst({ where, select: { id: true } })
-        : await tx.tag.findFirst({ where, select: { id: true } });
-
-    if (existing) {
-      ids.push(existing);
-      continue;
-    }
-
-    const created =
-      model === "category"
-        ? await tx.category.create({ data: { name }, select: { id: true } })
-        : await tx.tag.create({ data: { name }, select: { id: true } });
-    ids.push(created);
+    const existing = await tx.tag.findFirst({
+      where: { name: { equals: name, mode: "insensitive" } },
+      select: { id: true },
+    });
+    ids.push(existing ?? (await tx.tag.create({ data: { name }, select: { id: true } })));
   }
 
   return ids;
 }
 
-export async function updateRecipe(input: RecipeUpdateInput): Promise<{ id: string }> {
+/**
+ * Saves the recipe edit dialog. Categories are the note's manual choices: names not yet visible are approved, and visible categories left out are removed (or excluded when an ingredient rule would add them back).
+ */
+export async function updateRecipe(
+  input: RecipeUpdateInput,
+  userId: string | null = null
+): Promise<{ id: string }> {
   return prisma.$transaction(async (tx) => {
-    const categories = await findOrCreateByName(tx, "category", input.categories);
-    const tags = await findOrCreateByName(tx, "tag", input.tags);
+    const recipe = await tx.recipe.findUniqueOrThrow({
+      where: { id: input.id },
+      select: { noteId: true },
+    });
+    await setNoteManualCategories(tx, recipe.noteId, input.categories, userId);
+    const tags = await findOrCreateTags(tx, input.tags);
 
     return tx.recipe.update({
       where: { id: input.id },
       data: {
         title: input.title.trim(),
-        categories: { set: categories },
         tags: { set: tags },
       },
       select: { id: true },

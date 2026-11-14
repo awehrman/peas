@@ -163,6 +163,7 @@ model FoodConcept {
   survivorMerges    ConceptMergeRecord[]      @relation("MergeSurvivor")
   mergedMerges      ConceptMergeRecord[]      @relation("MergeMerged")
   legacyMappings    LegacyIngredientMapping[]
+  recipeCategories  Category[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -576,6 +577,19 @@ model CorpusHealthSnapshot {
   openDiscoveriesByType Json
   verifiedCount         Int
   avgCandidates         Float
+
+  @@index([takenAt])
+}
+
+/// Corpus-wide usage computed in the background (Phase 8-D), so the dashboard never aggregates every mention on request. Taken with every health snapshot and when the newest one is stale.
+model CorpusAnalyticsSnapshot {
+  id              String   @id @default(uuid(7)) @db.Uuid
+  takenAt         DateTime @default(now())
+  /// SCHEDULED, REINTERPRET, REPARSE, MANUAL, or STALE (refreshed after a request found it out of date).
+  trigger         String
+  lexiconRevision Int
+  /// CorpusAnalyticsRecord (Zod-validated).
+  payload         Json
 
   @@index([takenAt])
 }

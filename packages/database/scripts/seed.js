@@ -5,75 +5,22 @@ import { createScriptClient } from "./prisma-client.js";
 
 const prisma = createScriptClient();
 
+function slugify(name) {
+  return (
+    name
+      .normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/&/g, " and ")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "category"
+  );
+}
+
 async function main() {
   console.log("🌱 Starting database seed...");
 
-  // Create base ingredient categories
-  const categories = [
-    // Core Food Groups
-    { name: "Vegetables" },
-    { name: "Fruits" },
-    { name: "Grains" },
-    { name: "Legumes" },
-    { name: "Meat" },
-    { name: "Poultry" },
-    { name: "Fish" },
-    { name: "Shellfish" },
-    { name: "Dairy" },
-    { name: "Eggs" },
-
-    // Flavoring & Pantry Essentials
-    { name: "Spices" },
-    { name: "Herbs" },
-    { name: "Oils" },
-    { name: "Vinegars" },
-    { name: "Condiments" },
-    { name: "Sauces" },
-    { name: "Sweeteners" },
-    { name: "Salts" },
-    { name: "Baking Ingredients" },
-
-    // Prepared / Preserved
-    { name: "Canned Goods" },
-    { name: "Frozen Items" },
-    { name: "Fermented Foods" },
-    { name: "Pickled Items" },
-    { name: "Jams & Spreads" },
-    { name: "Pasta & Noodles" },
-    { name: "Breads" },
-    { name: "Snacks" },
-
-    // Drinks
-    { name: "Non-Dairy Milks" },
-    { name: "Juices" },
-    { name: "Alcohol" },
-    { name: "Beverages" },
-
-    // Specialty / Dietary
-    { name: "Plant-Based Proteins" },
-    { name: "Gluten-Free Products" },
-    { name: "Protein Powders" },
-    { name: "Supplements" },
-
-    // Non-food (optional)
-    { name: "Equipment" },
-    { name: "Paper Products" },
-  ];
-
-  console.log("📂 Creating ingredient categories...");
-  for (const category of categories) {
-    // Check if category already exists
-    const existingCategory = await prisma.ingredientCategory.findFirst({
-      where: { name: category.name },
-    });
-
-    if (!existingCategory) {
-      await prisma.ingredientCategory.create({
-        data: category,
-      });
-    }
-  }
-  console.log(`✅ Created ${categories.length} ingredient categories`);
+  // Ingredient categories are CATEGORY:<name> classifications on food concepts now (seeded by db:seed:foods)
 
   // Create base recipe categories
   const recipeCategories = [
@@ -97,12 +44,12 @@ async function main() {
   for (const category of recipeCategories) {
     // Check if category already exists
     const existingCategory = await prisma.category.findFirst({
-      where: { name: category.name },
+      where: { name: { equals: category.name, mode: "insensitive" } },
     });
 
     if (!existingCategory) {
       await prisma.category.create({
-        data: category,
+        data: { ...category, slug: slugify(category.name), kind: "MANUAL" },
       });
     }
   }

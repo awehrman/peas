@@ -1,0 +1,247 @@
+query ImportReviewCounts {
+  importReviewCounts {
+    ...ImportReviewCountsFields
+  }
+}
+
+fragment ImportReviewCountsFields on ImportReviewCounts {
+  pendingImports
+  importedNotes
+  exactDuplicates
+  likelyDuplicates
+  possibleDuplicates
+  sourceConflicts
+  bookMatchesToReview
+  failedSourceChecks
+  resolved
+}
+
+fragment DuplicateNoteSummaryFields on DuplicateNoteSummary {
+  id
+  title
+  status
+  createdAt
+  archivedAt
+  recipeId
+  ingredientLineCount
+}
+
+fragment DuplicateCandidateFields on DuplicateCandidate {
+  id
+  kind
+  confidence
+  status
+  signals {
+    rawHtmlHash
+    contentHash
+    sharedSourceIds
+    titleSimilarity
+    ingredientSimilarity
+    reasons
+  }
+  resolution {
+    keep
+    mergeSources
+  }
+  resolvedAt
+  createdAt
+  incoming {
+    ...DuplicateNoteSummaryFields
+  }
+  existing {
+    ...DuplicateNoteSummaryFields
+  }
+}
+
+fragment BookLookupFields on BookLookup {
+  id
+  query
+  status
+  fetchedAt
+  attempts
+  errorReason
+  noteCount
+  candidates {
+    workKey
+    title
+    subtitle
+    authors
+    firstPublishYear
+    publishers
+    editionCount
+    coverId
+    isbns
+    matchedIsbn
+    score
+    evidence
+  }
+  book {
+    ...BookFields
+  }
+}
+
+query ImportReviewDuplicates(
+  $kind: DuplicateKind
+  $status: DuplicateCandidateStatus
+  $sourceConflicts: Boolean
+  $page: Int
+) {
+  importReviewCounts {
+    ...ImportReviewCountsFields
+  }
+  duplicateCandidates(kind: $kind, status: $status, sourceConflicts: $sourceConflicts, page: $page) {
+    items {
+      ...DuplicateCandidateFields
+    }
+    total
+    page
+    pageSize
+  }
+}
+
+query ImportReviewBooks($page: Int) {
+  importReviewCounts {
+    ...ImportReviewCountsFields
+  }
+  bookLookups(page: $page) {
+    items {
+      ...BookLookupFields
+    }
+    total
+    page
+    pageSize
+  }
+}
+
+query ImportReviewFailedChecks($page: Int) {
+  importReviewCounts {
+    ...ImportReviewCountsFields
+  }
+  failedUrlChecks(page: $page) {
+    items {
+      urlId
+      sourceId
+      originalUrl
+      checkStatus
+      lastCheckedAt
+      lastSuccessfulVisitAt
+      lastHttpStatus
+      lastFailureReason
+      consecutiveFailures
+      notes {
+        id
+        title
+      }
+    }
+    total
+    page
+    pageSize
+  }
+}
+
+query DuplicateCandidateDetail($id: ID!) {
+  duplicateCandidate(id: $id) {
+    id
+    candidate {
+      ...DuplicateCandidateFields
+    }
+    incomingNote {
+      ...NoteDetailFields
+    }
+    existingNote {
+      ...NoteDetailFields
+    }
+  }
+}
+
+fragment DuplicateResolutionPreviewFields on DuplicateResolutionPreview {
+  keptNote {
+    id
+    title
+  }
+  archivedNote {
+    id
+    title
+  }
+  attachedSources {
+    sourceId
+    label
+    inactive
+  }
+  primarySourceChange {
+    from
+    to
+  }
+  carriedCategories {
+    name
+    state
+  }
+  carriedTags
+  movedRecipeId
+  summary
+}
+
+query PreviewDuplicateResolution($id: ID!, $input: DuplicateResolutionInput!) {
+  previewDuplicateResolution(id: $id, input: $input) {
+    ...DuplicateResolutionPreviewFields
+  }
+}
+
+mutation ResolveDuplicate($id: ID!, $input: DuplicateResolutionInput!) {
+  resolveDuplicate(id: $id, input: $input) {
+    ...PayloadFields
+    preview {
+      ...DuplicateResolutionPreviewFields
+    }
+  }
+}
+
+mutation UndoDuplicateResolution($id: ID!) {
+  undoDuplicateResolution(id: $id) {
+    ...PayloadFields
+  }
+}
+
+mutation ResolveExactDuplicates {
+  resolveExactDuplicates {
+    ...PayloadFields
+    resolved
+    failed
+  }
+}
+
+query BookLookupDetail($id: ID!) {
+  bookLookup(id: $id) {
+    ...BookLookupFields
+  }
+}
+
+mutation SelectBookCandidate($lookupId: ID!, $workKey: ID!) {
+  selectBookCandidate(lookupId: $lookupId, workKey: $workKey) {
+    ...PayloadFields
+  }
+}
+
+mutation CreateBookManually($lookupId: ID!, $input: ManualBookInput!) {
+  createBookManually(lookupId: $lookupId, input: $input) {
+    ...PayloadFields
+  }
+}
+
+mutation LeaveBookUnresolved($lookupId: ID!) {
+  leaveBookUnresolved(lookupId: $lookupId) {
+    ...PayloadFields
+  }
+}
+
+mutation RetryBookLookup($lookupId: ID!) {
+  retryBookLookup(lookupId: $lookupId) {
+    ...PayloadFields
+  }
+}
+
+mutation RecheckUrl($urlId: ID!) {
+  recheckUrl(urlId: $urlId) {
+    ...PayloadFields
+  }
+}

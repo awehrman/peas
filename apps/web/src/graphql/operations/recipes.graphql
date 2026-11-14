@@ -1,6 +1,7 @@
 query RecipesPage(
   $query: String
   $category: String
+  $categoryProvenance: CategoryProvenance
   $tag: String
   $conceptId: ID
   $page: Int
@@ -8,6 +9,7 @@ query RecipesPage(
   recipes(
     query: $query
     category: $category
+    categoryProvenance: $categoryProvenance
     tag: $tag
     conceptId: $conceptId
     page: $page
@@ -43,15 +45,14 @@ query RecipeDetail($id: ID!) {
     noteId
     imageUrl
     categories {
-      id
-      name
+      ...CategoryMembershipFields
     }
     tags {
       id
       name
     }
     sources {
-      ...SourceFields
+      ...NoteSourceFields
     }
     ingredientBlocks {
       ...IngredientBlockFields
@@ -60,6 +61,10 @@ query RecipeDetail($id: ID!) {
       ...InstructionFields
     }
     createdAt
+  }
+  recipeTaxonomy {
+    categories
+    tags
   }
 }
 

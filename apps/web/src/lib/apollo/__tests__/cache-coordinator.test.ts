@@ -139,6 +139,7 @@ const recipeDetail = (title: string) => ({
     instructions: [],
     createdAt: "2026-11-12T00:00:00.000Z",
   },
+  recipeTaxonomy: { __typename: "RecipeTaxonomy", categories: [], tags: [] },
 });
 
 describe("cache coordinator", () => {
@@ -204,9 +205,10 @@ describe("cache coordinator", () => {
     });
     const recipe = await watch(client, RecipeDetailDocument, { id: "r1" });
 
+    // The recipe page reads the taxonomy for category suggestions, so RECIPE_TAXONOMY would refresh it
     await coordinator.apply(
       createMutationEffect({
-        invalidatedDomains: ["RECIPES", "RECIPE_TAXONOMY"],
+        invalidatedDomains: ["RECIPES", "DASHBOARD_STATS"],
       })
     );
 

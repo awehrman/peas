@@ -41,6 +41,7 @@ describe("Image Worker Dependencies", () => {
         categorizationQueue: mockQueue,
         sourceQueue: mockQueue,
         reinterpretQueue: mockQueue,
+        bookLookupQueue: mockQueue,
       },
       errorHandler: {
         withErrorHandling: vi.fn(),

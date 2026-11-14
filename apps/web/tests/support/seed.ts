@@ -48,7 +48,34 @@ export const E2E_TEACH = {
 
 export type E2eProject = keyof typeof E2E_TEACH.perProject;
 
+/** One duplicate pair per browser project, so each project resolves (and undoes) its own. */
+export const E2E_DUPLICATES: Record<E2eProject, { title: string; lines: string[] }> = {
+  chromium: { title: "E2E Duplicate Pancakes", lines: ["1 cup flour", "1 cup milk", "1 egg"] },
+  webkit: { title: "E2E Duplicate Waffles", lines: ["2 cups flour", "2 eggs"] },
+};
+
 /** One proposed food per browser project, so each project approves its own from the ingredient card. */
+/**
+ * A note per browser whose step starts with a glued section heading, for the Structure tab. The note's ingredient line is inactive and the proposal is on an instruction, so nothing here reaches the mention backfill or the review queue the other suites use.
+ */
+export const E2E_STRUCTURE_NOTES: Record<
+  E2eProject,
+  { title: string; heading: string; step: string; lines: string[] }
+> = {
+  chromium: {
+    title: "E2E Structure Chromium Glaze",
+    heading: "For the chromium glaze:",
+    step: "Whisk the sugar and lemon juice until smooth.",
+    lines: ["2 cups e2e chromium sugar", "", "For the chromium glaze: Whisk the sugar and lemon juice until smooth.", ""],
+  },
+  webkit: {
+    title: "E2E Structure Webkit Glaze",
+    heading: "For the webkit glaze:",
+    step: "Whisk the sugar and orange juice until smooth.",
+    lines: ["2 cups e2e webkit sugar", "", "For the webkit glaze: Whisk the sugar and orange juice until smooth.", ""],
+  },
+};
+
 export const E2E_PROPOSED_FOOD: Record<E2eProject, string> = {
   chromium: "shallot",
   webkit: "leek",
@@ -111,7 +138,7 @@ export async function seedE2eDatabase(): Promise<{
   await prisma.$executeRawUnsafe(
     `TRUNCATE "Note", "Recipe", "IngredientTag", "Category", "Tag", "Session", "User",
       "LexiconRevision", "FoodConcept", "LexiconEntry", "AttributeDefinition", "PreparationOperation", "Discovery", "LexiconDecision",
-      "ReinterpretRun"
+      "ReinterpretRun", "Source", "URL", "Website", "Book", "BookLookup", "CorpusAnalyticsSnapshot", "StructureProposal"
      RESTART IDENTITY CASCADE`
   );
 
@@ -197,6 +224,78 @@ export async function seedE2eDatabase(): Promise<{
     await prisma.recipe.create({
       data: { title: recipe.title, noteId: recipeNoteRow.id },
     });
+  }
+
+  for (const duplicate of Object.values(E2E_DUPLICATES)) {
+    const [existing, incoming] = await Promise.all(
+      ["COMPLETED", "DUPLICATE"].map((status) =>
+        prisma.note.create({
+          data: {
+            title: duplicate.title,
+            html: "<p></p>",
+            status: status as "COMPLETED" | "DUPLICATE",
+            totalIngredientLines: duplicate.lines.length,
+            parsedIngredientLines: {
+              create: duplicate.lines.map((reference, lineIndex) => ({
+                blockIndex: 0,
+                lineIndex,
+                reference,
+                parseStatus: "COMPLETED_SUCCESSFULLY" as const,
+                parserVersion: "static_v1",
+              })),
+            },
+          },
+          select: { id: true },
+        })
+      )
+    );
+    await prisma.duplicateCandidate.create({
+      data: {
+        noteId: incoming!.id,
+        existingNoteId: existing!.id,
+        kind: "EXACT",
+        confidence: 1,
+        signals: {
+          rawHtmlHash: false,
+          contentHash: true,
+          sharedSourceIds: [],
+          titleSimilarity: 1,
+          ingredientSimilarity: 1,
+          reasons: ["Same title, ingredients, and instructions"],
+        },
+      },
+    });
+  }
+
+  const { validateStoredNote } = await import("@peas/database");
+  for (const structure of Object.values(E2E_STRUCTURE_NOTES)) {
+    const [ingredient, , instruction] = structure.lines;
+    const structureNote = await prisma.note.create({
+      data: {
+        title: structure.title,
+        html: structure.lines.join("\n"),
+        status: "COMPLETED",
+        totalIngredientLines: 1,
+        totalInstructionLines: 1,
+        parsedIngredientLines: {
+          create: [
+            {
+              blockIndex: 0,
+              lineIndex: 0,
+              reference: ingredient ?? "",
+              parseStatus: "COMPLETED_SUCCESSFULLY",
+              parserVersion: "static_v1",
+              isActive: false,
+            },
+          ],
+        },
+        parsedInstructionLines: {
+          create: [{ lineIndex: 0, originalText: instruction ?? "" }],
+        },
+      },
+      select: { id: true },
+    });
+    await validateStoredNote(structureNote.id);
   }
 
   await seedTeachData();

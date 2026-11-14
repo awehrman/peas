@@ -11,6 +11,7 @@ query NotesPage($status: NoteStatus, $query: String, $page: Int) {
       thumbnailUrl
       notebook
       recipeId
+      archivedAt
       createdAt
     }
     total
@@ -27,6 +28,10 @@ fragment NoteDetailFields on Note {
   errorMessage
   duplicateConfidence
   parsingErrorCount
+  archivedAt
+  archivedReason
+  supersededById
+  pendingDuplicateIds
   evernote {
     source
     notebook
@@ -40,11 +45,10 @@ fragment NoteDetailFields on Note {
     processingStatus
   }
   sources {
-    ...SourceFields
+    ...NoteSourceFields
   }
   categories {
-    id
-    name
+    ...CategoryMembershipFields
   }
   tags {
     id

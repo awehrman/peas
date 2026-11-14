@@ -1,88 +1,67 @@
-import {
-  connectNoteToSource,
-  createOrFindSourceWithBook,
-  createOrFindSourceWithUrl,
-  getNoteWithEvernoteMetadata,
-  isValidUrl,
-  upsertEvernoteMetadataSource,
-} from "@peas/database";
+import { attachImportedSource } from "@peas/database";
 
-import type { StructuredLogger } from "../../../../types";
+import type { Queue } from "bullmq";
+
+import { LogLevel, type StructuredLogger } from "../../../../types";
 import type { NotePipelineData } from "../../../../types/notes";
+import { enqueueBookLookup, enqueueUrlCheck } from "../../../source/enqueue";
 
+export interface ProcessSourceQueues {
+  sourceQueue?: Pick<Queue, "add">;
+  bookLookupQueue?: Pick<Queue, "add">;
+}
+
+/**
+ * Links the note's Evernote source to a structured source (a normalized URL, or text that may name a book) and queues the background work: a reachability check for a URL, a bibliographic lookup for new text. Failures are logged and never fail the import; the raw source stays on EvernoteMetadata either way.
+ *
+ * @example
+ * await processSource(data, logger, deps.queues) // the note now has a NoteSource; "url-check-<id>" is queued
+ */
 export async function processSource(
   data: NotePipelineData,
-  logger: StructuredLogger
+  logger: StructuredLogger,
+  queues: ProcessSourceQueues = {}
 ): Promise<NotePipelineData> {
   logger.log(
     `[PROCESS_SOURCE] Starting source processing for note: ${data.noteId}`
   );
 
-  // Validate that we have a note ID
   if (!data.noteId) {
     throw new Error("No note ID available for source processing");
   }
 
+  const rawSource = data.file?.evernoteMetadata?.source;
+  if (!rawSource?.trim()) {
+    logger.log(`[PROCESS_SOURCE] No source found for note: ${data.noteId}`);
+    return data;
+  }
+
   try {
-    // Get the note with its parsed file data
-    const note = await getNoteWithEvernoteMetadata(data.noteId);
-
-    if (!note) {
-      throw new Error(`Note with ID ${data.noteId} not found`);
-    }
-
-    // Extract source information from the parsed file
-    const sourceUrl = data.file?.evernoteMetadata?.source;
-
-    if (!sourceUrl) {
-      logger.log(
-        `[PROCESS_SOURCE] No source URL found for note: ${data.noteId}`
-      );
+    const attached = await attachImportedSource(data.noteId, rawSource);
+    if (!attached) {
+      logger.log(`[PROCESS_SOURCE] Source "${rawSource}" has no usable text; kept on the Evernote metadata only`);
       return data;
     }
-
     logger.log(
-      `[PROCESS_SOURCE] Processing source URL: ${sourceUrl} for note: ${data.noteId}`
+      `[PROCESS_SOURCE] Linked note ${data.noteId} to ${attached.kind} source ${attached.sourceId}`
     );
 
-    // Determine if this is a URL or book reference
-    const isUrl = isValidUrl(sourceUrl);
-
-    let sourceId: string;
-
-    if (isUrl) {
-      // Create or find existing source with URL (this will also handle Website creation)
-      logger.log(
-        `[PROCESS_SOURCE] Creating or finding source with URL: ${sourceUrl}`
-      );
-      sourceId = await createOrFindSourceWithUrl(sourceUrl);
-      logger.log(`[PROCESS_SOURCE] Source created/found with ID: ${sourceId}`);
-    } else {
-      // Treat as book reference
-      logger.log(
-        `[PROCESS_SOURCE] Creating or finding source with book reference: ${sourceUrl}`
-      );
-      sourceId = await createOrFindSourceWithBook(sourceUrl);
-      logger.log(
-        `[PROCESS_SOURCE] Book source created/found with ID: ${sourceId}`
+    if (attached.urlIdToCheck && queues.sourceQueue) {
+      await enqueueUrlCheck(queues.sourceQueue, attached.urlIdToCheck).catch((error: unknown) =>
+        logger.log(`[PROCESS_SOURCE] Could not queue the URL check: ${error}`, LogLevel.WARN)
       );
     }
-
-    // Upsert the note's EvernoteMetadata with the source
-    if (note.evernoteMetadataId) {
-      await upsertEvernoteMetadataSource(note.evernoteMetadataId, sourceUrl);
+    if (attached.bookLookupIdToRun && queues.bookLookupQueue) {
+      await enqueueBookLookup(queues.bookLookupQueue, attached.bookLookupIdToRun).catch((error: unknown) =>
+        logger.log(`[PROCESS_SOURCE] Could not queue the book lookup: ${error}`, LogLevel.WARN)
+      );
     }
-
-    // Connect the note to the source
-    await connectNoteToSource(data.noteId, sourceId);
-
-    logger.log(
-      `[PROCESS_SOURCE] Successfully processed source for note: ${data.noteId}, source ID: ${sourceId}`
-    );
-
-    return data;
   } catch (error) {
-    logger.log(`[PROCESS_SOURCE] Failed to process source: ${error}`);
-    throw error;
+    logger.log(
+      `[PROCESS_SOURCE] Failed to link the source for note ${data.noteId}, continuing the import: ${error}`,
+      LogLevel.WARN
+    );
   }
+
+  return data;
 }

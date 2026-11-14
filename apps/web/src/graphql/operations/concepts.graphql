@@ -91,6 +91,147 @@ query ConceptDetail($id: ID!) {
   }
 }
 
+fragment ConceptDistributionFields on ConceptDistributions {
+  preparations {
+    preparationKey
+    label
+    degreeKey
+    direct
+    expanded
+  }
+  attributes {
+    definitionKey
+    definitionName
+    valueKey
+    label
+    direct
+    expanded
+    asserted
+  }
+  modifiers {
+    role
+    valueKey
+    direct
+    expanded
+  }
+}
+
+query ConceptExplorer(
+  $id: ID!
+  $expand: [FoodRelationshipType!]
+  $includeNeedsReview: Boolean
+) {
+  concept(id: $id) {
+    id
+    usage(expand: $expand, includeNeedsReview: $includeNeedsReview) {
+      expand
+      includeNeedsReview
+      direct {
+        mentions
+        lines
+        notes
+        recipes
+      }
+      expanded {
+        mentions
+        lines
+        notes
+        recipes
+      }
+      byStatus {
+        autoResolved
+        verified
+        needsReview
+      }
+      contributors {
+        concept {
+          ...ConceptRefFields
+        }
+        path
+        depth
+        counts {
+          mentions
+          lines
+          notes
+          recipes
+        }
+      }
+    }
+    observedForms(includeNeedsReview: $includeNeedsReview) {
+      forms {
+        entryId
+        text
+        kind
+        status
+        mentions
+        notes
+        example
+      }
+      otherMentions
+    }
+    distributions(expand: $expand, includeNeedsReview: $includeNeedsReview) {
+      ...ConceptDistributionFields
+    }
+  }
+}
+
+query ConceptOccurrences(
+  $conceptId: ID!
+  $filter: ConceptOccurrenceFilter
+  $after: String
+  $expand: [FoodRelationshipType!]
+  $includeNeedsReview: Boolean
+) {
+  concept(id: $conceptId) {
+    id
+    canonicalName
+    distributions(expand: $expand, includeNeedsReview: $includeNeedsReview) {
+      ...ConceptDistributionFields
+    }
+  }
+  conceptOccurrences(conceptId: $conceptId, filter: $filter, after: $after) {
+    total
+    nextCursor
+    items {
+      mentionId
+      lineId
+      lineText
+      span {
+        start
+        end
+        text
+      }
+      noteId
+      noteTitle
+      recipeId
+      recipeTitle
+      concept {
+        ...ConceptRefFields
+      }
+      path
+      status
+      preparations
+      attributes
+    }
+  }
+  conceptOccurrenceFacets(
+    conceptId: $conceptId
+    expand: $expand
+    includeNeedsReview: $includeNeedsReview
+  ) {
+    sources {
+      id
+      label
+      notes
+    }
+    categories {
+      id
+      name
+      notes
+    }
+  }
+}
+
 mutation SetConceptClassification($input: ConceptClassificationInput!) {
   setConceptClassification(input: $input) {
     ...PayloadFields
@@ -129,12 +270,14 @@ query LexiconPage(
   $role: String
   $page: Int
   $includeRetired: Boolean
+  $newestFirst: Boolean
 ) {
   lexicon(
     query: $query
     role: $role
     page: $page
     includeRetired: $includeRetired
+    newestFirst: $newestFirst
   ) {
     items {
       id
@@ -174,5 +317,102 @@ query LexiconPage(
     degreeKeys
     measurementModifierKeys
     instructionKeys
+  }
+}
+
+query LexiconEntryPage($id: ID!, $after: String) {
+  lexiconEntry(id: $id) {
+    id
+    text
+    role
+    kind
+    status
+    targetLabel
+    conceptId
+    revisionAdded
+    revisionRetired
+    createdAt
+    occurrences(after: $after) {
+      total
+      nextCursor
+      items {
+        mentionId
+        lineText
+        span {
+          start
+          end
+          text
+        }
+        noteId
+        noteTitle
+        recipeId
+        recipeTitle
+        conceptName
+        status
+      }
+    }
+  }
+}
+
+query UnknownExpressionsPage(
+  $type: UnknownExpressionType
+  $sourceId: ID
+  $page: Int
+) {
+  unknownExpressions(type: $type, sourceId: $sourceId, page: $page) {
+    items {
+      discoveryId
+      type
+      phrase
+      mentions
+      notes
+    }
+    total
+    page
+    pageSize
+  }
+  unknownExpressionSources {
+    id
+    label
+    notes
+  }
+}
+
+query ConceptGraphPage(
+  $conceptId: ID!
+  $depth: Int
+  $types: [FoodRelationshipType!]
+  $direction: GraphDirection
+) {
+  concept(id: $conceptId) {
+    id
+    canonicalName
+  }
+  conceptGraph(
+    conceptId: $conceptId
+    depth: $depth
+    types: $types
+    direction: $direction
+  ) {
+    centerId
+    truncated
+    nodes {
+      id
+      canonicalName
+      status
+      level
+      directMentions
+    }
+    edges {
+      id
+      sourceId
+      targetId
+      type
+      status
+      decision {
+        revision
+        username
+      }
+    }
   }
 }

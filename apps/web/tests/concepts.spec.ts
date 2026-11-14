@@ -118,6 +118,123 @@ test.describe("Concepts", () => {
     await expect(page).not.toHaveURL(/concept=/);
   });
 
+  test("explores a concept's usage down to the lines behind it", async ({
+    page,
+  }) => {
+    await openConcept(page, "chicken");
+    const usage = page.getByRole("region", { name: "Usage in the collection" });
+    await expect(
+      usage.getByRole("table", { name: "How often chicken appears" })
+    ).toBeVisible();
+    await expect(
+      usage.getByRole("link", { name: "chicken thigh" })
+    ).toBeVisible();
+    await expectNoAccessibilityViolations(page);
+
+    await usage.getByRole("link", { name: /^See all \d+ mentions?$/ }).click();
+    await expect(page).toHaveURL(/\/concepts\/[^/?]+\/usage/);
+    const main = page.getByRole("main");
+    await expect(
+      main.getByRole("heading", { level: 1, name: "Lines with chicken" })
+    ).toBeVisible();
+    await expect(
+      main.getByRole("link", { name: E2E_CONCEPT_RECIPE.title, exact: true })
+    ).toBeVisible();
+    await expectNoAccessibilityViolations(page);
+
+    await main
+      .getByLabel("Attribute")
+      .selectOption({ label: "Bone: Boneless" });
+    await expect(page).toHaveURL(/attr=bone(%3A|:)boneless/);
+    await expect(
+      main.getByRole("link", { name: E2E_CONCEPT_RECIPE.title, exact: true })
+    ).toHaveCount(0);
+    await expect(
+      main.getByText(/boneless skinless chicken thighs/).first()
+    ).toBeVisible();
+
+    await main.getByRole("button", { name: "Clear filters" }).click();
+    await expect(page).not.toHaveURL(/attr=/);
+    await main
+      .getByRole("link", { name: "chicken", exact: true })
+      .first()
+      .click();
+    await expect(
+      page.getByRole("main").getByRole("heading", { name: "chicken", level: 1 })
+    ).toBeVisible();
+  });
+
+  test("shows where a lexicon entry is used and lists unknown expressions", async ({
+    page,
+  }) => {
+    await visit(page, "/lexicon?query=chicken%20thighs&role=FOOD");
+    const main = page.getByRole("main");
+    await main
+      .getByRole("link", { name: "chicken thighs", exact: true })
+      .click();
+    await expect(page).toHaveURL(/\/lexicon\/[0-9a-f-]{36}$/);
+    await expect(
+      main.getByRole("heading", { level: 1, name: "chicken thighs" })
+    ).toBeVisible();
+    await expect(
+      main.getByRole("heading", { level: 2, name: /^Used in \d+ lines?$/ })
+    ).toBeVisible();
+    await expect(main.locator("mark").first()).toContainText(/chicken thighs/i);
+    await expectNoAccessibilityViolations(page);
+
+    await visit(page, "/lexicon");
+    await main.getByRole("link", { name: "Unknown expressions" }).click();
+    await expect(
+      main.getByRole("heading", { level: 1, name: "Unknown expressions" })
+    ).toBeVisible();
+    await expectNoAccessibilityViolations(page);
+  });
+
+  test("explores a concept's relationship graph and the corpus analytics", async ({
+    page,
+  }) => {
+    await openConcept(page, "chicken thigh");
+    await page.getByRole("link", { name: "Explore relationships" }).click();
+    await expect(page).toHaveURL(/\/concepts\/[^/?]+\/graph/);
+    const main = page.getByRole("main");
+    await expect(
+      main.getByRole("heading", {
+        level: 1,
+        name: "Relationships around chicken thigh",
+      })
+    ).toBeVisible();
+    const relationships = main.getByRole("region", { name: "Relationships" });
+    await expect(relationships).toContainText(
+      "chicken thigh is part of chicken"
+    );
+    await expectNoAccessibilityViolations(page);
+
+    await main.getByRole("checkbox", { name: "part of" }).click();
+    await expect(page).toHaveURL(
+      /types=IS_A%2CDERIVED_FROM%2CPROCESSED_FROM|types=IS_A,DERIVED_FROM,PROCESSED_FROM/
+    );
+    await expect(relationships).not.toContainText("is part of chicken");
+    await main.getByRole("checkbox", { name: "part of" }).click();
+
+    const foods = main.getByRole("region", { name: "Foods" });
+    await foods.getByRole("link", { name: "chicken", exact: true }).click();
+    await expect(
+      main.getByRole("heading", {
+        level: 1,
+        name: "Relationships around chicken",
+      })
+    ).toBeVisible();
+
+    await visit(page, "/");
+    await expect(
+      page.getByRole("heading", { level: 2, name: "Foods in the collection" })
+    ).toBeVisible();
+    await expect(
+      page.getByRole("list", { name: "Most-used foods with kinds and parts" })
+    ).toBeVisible();
+    await expectNoAccessibilityViolations(page);
+  });
+
   test("approving a proposed concept puts it on the ingredients page", async ({
     page,
   }) => {
@@ -157,7 +274,9 @@ test.describe("Concepts", () => {
     await expect(page).toHaveURL(/query=chicken/);
     const plural = page.getByRole("row", { name: /chicken thighs/ });
     await expect(plural).toContainText("food (plural)");
-    await plural.getByRole("link", { name: "chicken thigh" }).click();
+    await plural
+      .getByRole("link", { name: "chicken thigh", exact: true })
+      .click();
     await expect(
       page
         .getByRole("main")

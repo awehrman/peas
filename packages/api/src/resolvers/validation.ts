@@ -63,6 +63,74 @@ export const conceptSubstitutionSchema = z
     path: ["substituteId"],
   });
 
+/**
+ * @example
+ * { keep: "EXISTING", mergeSources: true }
+ */
+export const duplicateResolutionSchema = z.object({
+  keep: z.enum(["EXISTING", "INCOMING", "BOTH"]),
+  mergeSources: z.boolean(),
+});
+
+const isbnSchema = (length: 10 | 13) =>
+  z
+    .string()
+    .trim()
+    .transform((value) => value.replace(/[-\s]/g, "").toUpperCase())
+    .refine((value) => value === "" || new RegExp(`^\\d{${length - 1}}[\\dX]$`).test(value), {
+      message: `ISBN-${length} must have ${length} digits`,
+    })
+    .nullish()
+    .transform((value) => (value ? value : null));
+
+/**
+ * @example
+ * { title: "Grandma's Binder", subtitle: null, authors: ["Ruth"], publisher: null, publishedYear: 1974, isbn13: null, isbn10: null }
+ */
+export const manualBookSchema = z.object({
+  title: z.string().trim().min(1, "Title is required").max(300),
+  subtitle: optionalText(300),
+  authors: z.array(z.string().trim().min(1).max(200)).max(20),
+  publisher: optionalText(200),
+  publishedYear: z.number().int().min(1400).max(2200).nullish().transform((value) => value ?? null),
+  isbn13: isbnSchema(13),
+  isbn10: isbnSchema(10),
+});
+
+const RELATIONSHIP_TYPES = ["IS_A", "PART_OF", "DERIVED_FROM", "PROCESSED_FROM"] as const;
+
+/**
+ * @example
+ * { name: "Chicken", description: null, conceptId: "0193...", traversal: ["IS_A", "PART_OF"] }
+ */
+export const categoryInputSchema = z.object({
+  name: z.string().trim().min(1, "Name is required").max(100),
+  description: optionalText(500),
+  conceptId: z.uuid().nullish().transform((value) => value ?? null),
+  traversal: z
+    .array(z.enum(RELATIONSHIP_TYPES))
+    .min(1, "Pick at least one relationship")
+    .max(4)
+    .nullish()
+    .transform((value) => value ?? undefined),
+});
+
+export const categoryMembershipSchema = z.object({
+  noteId: z.string().min(1),
+  categoryId: z.string().min(1),
+});
+
+export const addCategorySchema = z
+  .object({
+    noteId: z.string().min(1),
+    categoryId: z.string().min(1).nullish(),
+    categoryName: z.string().trim().min(1).max(100).nullish(),
+  })
+  .refine((input) => Boolean(input.categoryId || input.categoryName), {
+    message: "Pick a category or type a name",
+    path: ["categoryName"],
+  });
+
 /** Normalizes a 1-based page argument. */
 export function toPage(page: number | null | undefined): number {
   return typeof page === "number" && Number.isInteger(page) && page > 0

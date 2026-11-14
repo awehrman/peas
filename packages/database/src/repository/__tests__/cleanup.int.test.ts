@@ -100,6 +100,14 @@ async function importAndReview() {
       status: "MAPPED",
     },
   });
+  await prisma.category.create({
+    data: {
+      name: "Drumsticks",
+      slug: "drumsticks",
+      kind: "CONCEPT",
+      conceptId: drumstick.id,
+    },
+  });
   await takeCorpusHealthSnapshot("MANUAL");
 }
 
@@ -132,6 +140,9 @@ describe.skipIf(!hasTestDatabase)("cleanupAllData (integration)", () => {
     ).toBe(1);
     expect(await prisma.legacyIngredientMapping.count()).toBe(1);
     expect(await prisma.corpusHealthSnapshot.count()).toBe(1);
+    expect(await prisma.category.count({ where: { kind: "CONCEPT" } })).toBe(
+      1
+    );
     expect(await getCurrentRevision()).toBe(revision);
   });
 
@@ -148,6 +159,7 @@ describe.skipIf(!hasTestDatabase)("cleanupAllData (integration)", () => {
       decisions: 1,
       legacyMappings: 1,
       healthSnapshots: 1,
+      conceptCategories: 1,
     });
     expect(deletedCounts.lexiconEntries).toBeGreaterThan(0);
     expect(deletedCounts.attributeDefinitions).toBeGreaterThan(0);
@@ -162,6 +174,7 @@ describe.skipIf(!hasTestDatabase)("cleanupAllData (integration)", () => {
       prisma.discovery.count(),
       prisma.legacyIngredientMapping.count(),
       prisma.corpusHealthSnapshot.count(),
+      prisma.category.count(),
     ]))
       expect(count).toBe(0);
     expect(await prisma.user.count()).toBe(1);

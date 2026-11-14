@@ -27,6 +27,7 @@ export interface IQueueService {
   categorizationQueue: Queue;
   sourceQueue: Queue;
   reinterpretQueue: Queue;
+  bookLookupQueue: Queue;
 }
 
 /**
